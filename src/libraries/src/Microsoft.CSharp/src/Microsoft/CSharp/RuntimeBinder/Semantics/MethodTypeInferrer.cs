@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class MethodTypeInferrer
+    internal sealed class MethodTypeInferrer
     {
         private enum NewInferenceResult
         {
@@ -26,16 +25,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Direct = 0x11,
             Indirect = 0x12
         }
-        private SymbolLoader _symbolLoader;
-        private ExpressionBinder _binder;
-        private TypeArray _pMethodTypeParameters;
-        private TypeArray _pClassTypeArguments;
-        private TypeArray _pMethodFormalParameterTypes;
-        private ArgInfos _pMethodArguments;
-        private List<CType>[] _pExactBounds;
-        private List<CType>[] _pUpperBounds;
-        private List<CType>[] _pLowerBounds;
-        private CType[] _pFixedResults;
+        private readonly SymbolLoader _symbolLoader;
+        private readonly ExpressionBinder _binder;
+        private readonly TypeArray _pMethodTypeParameters;
+        private readonly TypeArray _pClassTypeArguments;
+        private readonly TypeArray _pMethodFormalParameterTypes;
+        private readonly ArgInfos _pMethodArguments;
+        private readonly List<CType>[] _pExactBounds;
+        private readonly List<CType>[] _pUpperBounds;
+        private readonly List<CType>[] _pLowerBounds;
+        private readonly CType[] _pFixedResults;
         private Dependency[][] _ppDependencies;
         private bool _dependenciesDirty;
 
@@ -89,16 +88,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             out TypeArray ppInferredTypeArguments)
         {
             Debug.Assert(pMethod != null);
-            Debug.Assert(pMethod.typeVars.size > 0);
+            Debug.Assert(pMethod.typeVars.Count > 0);
             Debug.Assert(pMethod.isParamArray || pMethod.Params == pMethodFormalParameterTypes);
             ppInferredTypeArguments = null;
-            if (pMethodFormalParameterTypes.size == 0 || pMethod.InferenceMustFail())
+            if (pMethodFormalParameterTypes.Count == 0 || pMethod.InferenceMustFail())
             {
                 return false;
             }
             Debug.Assert(pMethodArguments != null);
             Debug.Assert(pMethodFormalParameterTypes != null);
-            Debug.Assert(pMethodArguments.carg <= pMethodFormalParameterTypes.size);
+            Debug.Assert(pMethodArguments.carg <= pMethodFormalParameterTypes.Count);
 
             var inferrer = new MethodTypeInferrer(binder, symbolLoader,
                 pMethodFormalParameterTypes, pMethodArguments,
@@ -137,11 +136,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pMethodArguments = pMethodArguments;
             _pMethodTypeParameters = pMethodTypeParameters;
             _pClassTypeArguments = pClassTypeArguments;
-            _pFixedResults = new CType[pMethodTypeParameters.size];
-            _pLowerBounds = new List<CType>[pMethodTypeParameters.size];
-            _pUpperBounds = new List<CType>[pMethodTypeParameters.size];
-            _pExactBounds = new List<CType>[pMethodTypeParameters.size];
-            for (int iBound = 0; iBound < pMethodTypeParameters.size; ++iBound)
+            _pFixedResults = new CType[pMethodTypeParameters.Count];
+            _pLowerBounds = new List<CType>[pMethodTypeParameters.Count];
+            _pUpperBounds = new List<CType>[pMethodTypeParameters.Count];
+            _pExactBounds = new List<CType>[pMethodTypeParameters.Count];
+            for (int iBound = 0; iBound < pMethodTypeParameters.Count; ++iBound)
             {
                 _pLowerBounds[iBound] = new List<CType>();
                 _pUpperBounds[iBound] = new List<CType>();
@@ -170,7 +169,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // This is nice and concise.  However, it falls down if there are multiple
             // CType params that we have left.
 
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 // We iterate through the resultant types and replace any that are
                 // null, or an error CType that has less information (e.g null name or
@@ -196,10 +195,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pFixedResults[iParam] = GetTypeManager().GetErrorType(
                                         null/*pParentType*/,
                                         null,
-                                        _pMethodTypeParameters.ItemAsTypeParameterType(iParam).GetName(),
+                                        (_pMethodTypeParameters.ItemAsTypeParameterType(iParam)).GetName(),
                                         BSYMMGR.EmptyTypeArray());
             }
-            return GetGlobalSymbols().AllocParams(_pMethodTypeParameters.size, _pFixedResults);
+            return GetGlobalSymbols().AllocParams(_pMethodTypeParameters.Count, _pFixedResults);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +206,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool IsUnfixed(int iParam)
         {
             Debug.Assert(0 <= iParam);
-            Debug.Assert(iParam < _pMethodTypeParameters.size);
+            Debug.Assert(iParam < _pMethodTypeParameters.Count);
             return _pFixedResults[iParam] == null;
         }
 
@@ -226,7 +225,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool AllFixed()
         {
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
                 if (IsUnfixed(iParam))
                 {
@@ -277,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool HasBound(int iParam)
         {
             Debug.Assert(0 <= iParam);
-            Debug.Assert(iParam < _pMethodTypeParameters.size);
+            Debug.Assert(iParam < _pMethodTypeParameters.Count);
             return !_pLowerBounds[iParam].IsEmpty() ||
                 !_pExactBounds[iParam].IsEmpty() ||
                 !_pUpperBounds[iParam].IsEmpty();
@@ -295,14 +294,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // or there may be input parameters fixed to _unfixed_ method CType variables.
             // Both of those scenarios are legal.)
 
-            CType[] ppMethodParameters = new CType[_pMethodTypeParameters.size];
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            CType[] ppMethodParameters = new CType[_pMethodTypeParameters.Count];
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 TypeParameterType pParam = _pMethodTypeParameters.ItemAsTypeParameterType(iParam);
                 ppMethodParameters[iParam] = IsUnfixed(iParam) ? pParam : _pFixedResults[iParam];
             }
-            SubstContext subsctx = new SubstContext(_pClassTypeArguments.ToArray(), _pClassTypeArguments.size,
-                ppMethodParameters, _pMethodTypeParameters.size);
+            SubstContext subsctx = new SubstContext(_pClassTypeArguments.Items, _pClassTypeArguments.Count,
+                ppMethodParameters, _pMethodTypeParameters.Count);
             AggregateType pFixedDelegateType =
                 GetTypeManager().SubstType(pDelegateType, subsctx).AsAggregateType();
             TypeArray pFixedDelegateParams =
@@ -348,7 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(_pMethodFormalParameterTypes != null);
             Debug.Assert(_pMethodArguments != null);
-            Debug.Assert(_pMethodArguments.carg <= _pMethodFormalParameterTypes.size);
+            Debug.Assert(_pMethodArguments.carg <= _pMethodFormalParameterTypes.Count);
 
             // SPEC: For each of the method arguments Ei:
             for (int iArg = 0; iArg < _pMethodArguments.carg; iArg++)
@@ -361,14 +360,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // SPEC ISSUE: We should put language in the spec saying that we skip 
                 // SPEC ISSUE: inference on any argument that was created via the 
                 // SPEC ISSUE: optional parameter mechanism.
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
 
                 if (pExpr.IsOptionalArgument)
                 {
                     continue;
                 }
 
-                CType pDest = _pMethodFormalParameterTypes.Item(iArg);
+                CType pDest = _pMethodFormalParameterTypes[iArg];
 
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // RUNTIME BINDER ONLY CHANGE
@@ -377,11 +376,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // dynamic operands enter method type inference with their
                 // actual runtime type, and in this way can infer implemented
                 // types that are not visible on more public types. (for ex.,
-                // private classes that implement IEnumerable, as in iterators).
+                // private sealed classes that implement IEnumerable, as in iterators).
 
-                CType pSource = pExpr.RuntimeObjectActualType != null
-                    ? pExpr.RuntimeObjectActualType
-                    : _pMethodArguments.types.Item(iArg);
+                CType pSource = pExpr.RuntimeObjectActualType ?? _pMethodArguments.types[iArg];
 
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // END RUNTIME BINDER ONLY CHANGE
@@ -531,8 +528,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   then each such Xi is fixed. If any fixing operation fails then
             // SPEC:   CType inference fails.
 
-            NewInferenceResult res;
-            res = FixNondependentParameters();
+            NewInferenceResult res = FixNondependentParameters();
             if (res != NewInferenceResult.NoProgress)
             {
                 return res;
@@ -563,16 +559,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (int iArg = 0; iArg < _pMethodArguments.carg; iArg++)
             {
-                CType pDest = _pMethodFormalParameterTypes.Item(iArg);
+                CType pDest = _pMethodFormalParameterTypes[iArg];
                 if (pDest.IsParameterModifierType())
                 {
                     pDest = pDest.AsParameterModifierType().GetParameterType();
                 }
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
                 if (HasUnfixedParamInOutputType(pExpr, pDest) &&
                     !HasUnfixedParamInInputType(pExpr, pDest))
                 {
-                    CType pSource = _pMethodArguments.types.Item(iArg);
+                    CType pSource = _pMethodArguments.types[iArg];
                     if (pSource.IsParameterModifierType())
                     {
                         pSource = pSource.AsParameterModifierType().GetParameterType();
@@ -597,10 +593,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // dependent on anything. We need to first determine which parameters need to be 
             // fixed, and then fix them all at once.
 
-            bool[] pNeedsFixing = new bool[_pMethodTypeParameters.size];
+            bool[] pNeedsFixing = new bool[_pMethodTypeParameters.Count];
             int iParam;
             NewInferenceResult res = NewInferenceResult.NoProgress;
-            for (iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 if (IsUnfixed(iParam) && HasBound(iParam) && !DependsOnAny(iParam))
                 {
@@ -608,7 +604,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     res = NewInferenceResult.MadeProgress;
                 }
             }
-            for (iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 // Fix as much as you can, even if there are errors.  That will
                 // help with intellisense.
@@ -634,10 +630,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // As above, we must collect up everything that needs fixing first,
             // and then fix them.
 
-            bool[] pNeedsFixing = new bool[_pMethodTypeParameters.size];
+            bool[] pNeedsFixing = new bool[_pMethodTypeParameters.Count];
             int iParam;
             NewInferenceResult res = NewInferenceResult.NoProgress;
-            for (iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 if (IsUnfixed(iParam) && HasBound(iParam) && AnyDependsOn(iParam))
                 {
@@ -645,7 +641,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     res = NewInferenceResult.MadeProgress;
                 }
             }
-            for (iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 // Fix as much as you can, even if there are errors.  That will
                 // help with intellisense.
@@ -664,7 +660,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Input types
         //
-        private bool DoesInputTypeContain(EXPR pSource, CType pDest,
+        private bool DoesInputTypeContain(Expr pSource, CType pDest,
             TypeParameterType pParam)
         {
             // SPEC: If E is a method group or an anonymous function and T is a delegate
@@ -693,9 +689,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool HasUnfixedParamInInputType(EXPR pSource, CType pDest)
+        private bool HasUnfixedParamInInputType(Expr pSource, CType pDest)
         {
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 if (IsUnfixed(iParam))
                 {
@@ -713,7 +709,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Output types
         //
-        private bool DoesOutputTypeContain(EXPR pSource, CType pDest,
+        private bool DoesOutputTypeContain(Expr pSource, CType pDest,
             TypeParameterType pParam)
         {
             // SPEC: If E is a method group or an anonymous function and T is a delegate
@@ -741,9 +737,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool HasUnfixedParamInOutputType(EXPR pSource, CType pDest)
+        private bool HasUnfixedParamInOutputType(Expr pSource, CType pDest)
         {
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 if (IsUnfixed(iParam))
                 {
@@ -764,8 +760,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool DependsDirectlyOn(int iParam, int jParam)
         {
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.size);
-            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.size);
+            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.Count);
 
             // SPEC: An unfixed CType parameter Xi depends directly on an unfixed CType
             // SPEC: parameter Xj if for some argument Ek with CType Tk, Xj occurs
@@ -782,13 +778,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (int iArg = 0; iArg < _pMethodArguments.carg; iArg++)
             {
-                CType pDest = _pMethodFormalParameterTypes.Item(iArg);
+                CType pDest = _pMethodFormalParameterTypes[iArg];
                 if (pDest.IsParameterModifierType())
                 {
                     pDest = pDest.AsParameterModifierType().GetParameterType();
                 }
 
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
 
                 if (DoesInputTypeContain(pExpr, pDest,
                         _pMethodTypeParameters.ItemAsTypeParameterType(jParam)) &&
@@ -841,11 +837,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // be an O(n^2) algorithm in practice.
 
             Debug.Assert(_ppDependencies == null);
-            _ppDependencies = new Dependency[_pMethodTypeParameters.size][];
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            _ppDependencies = new Dependency[_pMethodTypeParameters.Count][];
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
-                _ppDependencies[iParam] = new Dependency[_pMethodTypeParameters.size];
-                for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+                _ppDependencies[iParam] = new Dependency[_pMethodTypeParameters.Count];
+                for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
                 {
                     if (DependsDirectlyOn(iParam, jParam))
                     {
@@ -867,8 +863,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC: directly on Xk and Xk depends on Xj. Thus "depends on" is the
             // SPEC: transitive but not reflexive closure of "depends directly on".
 
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.size);
-            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.size);
+            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.Count);
 
             if (_dependenciesDirty)
             {
@@ -883,8 +879,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool DependsTransitivelyOn(int iParam, int jParam)
         {
             Debug.Assert(_ppDependencies != null);
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.size);
-            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.size);
+            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            Debug.Assert(0 <= jParam && jParam < _pMethodTypeParameters.Count);
 
             // Can we find Xk such that Xi depends on Xk and Xk depends on Xj?
             // If so, then Xi depends indirectly on Xj.  (Note that there is
@@ -894,7 +890,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // directly OR indirectly on Xk and Xk depends on Xj, then that's
             // good enough.)
 
-            for (int kParam = 0; kParam < _pMethodTypeParameters.size; ++kParam)
+            for (int kParam = 0; kParam < _pMethodTypeParameters.Count; ++kParam)
             {
                 if (0 != ((_ppDependencies[iParam][kParam]) & Dependency.DependsMask) &&
                     0 != ((_ppDependencies[kParam][jParam]) & Dependency.DependsMask))
@@ -924,9 +920,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(_ppDependencies != null);
             bool madeProgress = false;
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
-                for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+                for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
                 {
                     if (_ppDependencies[iParam][jParam] == Dependency.Unknown)
                     {
@@ -946,9 +942,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private void SetUnknownsToNotDependent()
         {
             Debug.Assert(_ppDependencies != null);
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
-                for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+                for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
                 {
                     if (_ppDependencies[iParam][jParam] == Dependency.Unknown)
                     {
@@ -963,9 +959,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private void SetIndirectsToUnknown()
         {
             Debug.Assert(_ppDependencies != null);
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
-                for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+                for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
                 {
                     if (_ppDependencies[iParam][jParam] == Dependency.Indirect)
                     {
@@ -984,7 +980,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return;
             }
-            for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+            for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
             {
                 _ppDependencies[iParam][jParam] = Dependency.NotDependent;
                 _ppDependencies[jParam][iParam] = Dependency.NotDependent;
@@ -996,8 +992,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool DependsOnAny(int iParam)
         {
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.size);
-            for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
             {
                 if (DependsOn(iParam, jParam))
                 {
@@ -1011,8 +1007,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool AnyDependsOn(int iParam)
         {
-            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.size);
-            for (int jParam = 0; jParam < _pMethodTypeParameters.size; ++jParam)
+            Debug.Assert(0 <= iParam && iParam < _pMethodTypeParameters.Count);
+            for (int jParam = 0; jParam < _pMethodTypeParameters.Count; ++jParam)
             {
                 if (DependsOn(jParam, iParam))
                 {
@@ -1031,7 +1027,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private void OutputTypeInference(EXPR pExpr, CType pSource, CType pDest)
+        private void OutputTypeInference(Expr pExpr, CType pSource, CType pDest)
         {
             // SPEC: An output CType inference is made from an expression E to a CType T
             // SPEC: in the following way:
@@ -1060,7 +1056,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool MethodGroupReturnTypeInference(EXPR pSource, CType pType)
+        private bool MethodGroupReturnTypeInference(Expr pSource, CType pType)
         {
             // SPEC:  Otherwise, if E is a method group and T is a delegate CType or
             // SPEC:   expression tree CType with parameter types T1...Tk and return
@@ -1096,7 +1092,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            ArgInfos argInfo = new ArgInfos() { carg = pDelegateParameters.size, types = pDelegateParameters, fHasExprs = false, prgexpr = null };
+            ArgInfos argInfo = new ArgInfos() { carg = pDelegateParameters.Count, types = pDelegateParameters, fHasExprs = false, prgexpr = null };
 
             var argsBinder = new ExpressionBinder.GroupToArgsBinder(_binder, 0/* flags */, pSource.asMEMGRP(), argInfo, null, false, pDelegateType);
 
@@ -1249,11 +1245,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(pSourceArgs != null);
             Debug.Assert(pDestArgs != null);
-            Debug.Assert(pSourceArgs.size == pDestArgs.size);
+            Debug.Assert(pSourceArgs.Count == pDestArgs.Count);
 
-            for (int arg = 0; arg < pSourceArgs.size; ++arg)
+            for (int arg = 0; arg < pSourceArgs.Count; ++arg)
             {
-                ExactInference(pSourceArgs.Item(arg), pDestArgs.Item(arg));
+                ExactInference(pSourceArgs[arg], pDestArgs[arg]);
             }
         }
 
@@ -1400,7 +1396,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
                 AggregateType pAggregateDest = pDest.AsAggregateType();
-                pElementDest = pAggregateDest.GetTypeArgsThis().Item(0);
+                pElementDest = pAggregateDest.GetTypeArgsThis()[0];
             }
             else
             {
@@ -1450,7 +1446,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             AggregateType pConstructedDest = pDest.AsAggregateType();
             TypeArray pDestArgs = pConstructedDest.GetTypeArgsAll();
-            if (pDestArgs.size == 0)
+            if (pDestArgs.Count == 0)
             {
                 return false;
             }
@@ -1620,14 +1616,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pSourceArgs != null);
             Debug.Assert(pDestArgs != null);
 
-            Debug.Assert(pTypeParams.size == pSourceArgs.size);
-            Debug.Assert(pTypeParams.size == pDestArgs.size);
+            Debug.Assert(pTypeParams.Count == pSourceArgs.Count);
+            Debug.Assert(pTypeParams.Count == pDestArgs.Count);
 
-            for (int arg = 0; arg < pSourceArgs.size; ++arg)
+            for (int arg = 0; arg < pSourceArgs.Count; ++arg)
             {
                 TypeParameterType pTypeParam = pTypeParams.ItemAsTypeParameterType(arg);
-                CType pSourceArg = pSourceArgs.Item(arg);
-                CType pDestArg = pDestArgs.Item(arg);
+                CType pSourceArg = pSourceArgs[arg];
+                CType pDestArg = pDestArgs[arg];
 
                 if (pSourceArg.IsRefType() && pTypeParam.Covariant)
                 {
@@ -1635,11 +1631,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (pSourceArg.IsRefType() && pTypeParam.Contravariant)
                 {
-                    UpperBoundInference(pSourceArgs.Item(arg), pDestArgs.Item(arg));
+                    UpperBoundInference(pSourceArgs[arg], pDestArgs[arg]);
                 }
                 else
                 {
-                    ExactInference(pSourceArgs.Item(arg), pDestArgs.Item(arg));
+                    ExactInference(pSourceArgs[arg], pDestArgs[arg]);
                 }
             }
         }
@@ -1748,7 +1744,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
                 AggregateType pAggregateSource = pSource.AsAggregateType();
-                pElementSource = pAggregateSource.GetTypeArgsThis().Item(0);
+                pElementSource = pAggregateSource.GetTypeArgsThis()[0];
             }
             else
             {
@@ -1777,7 +1773,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             AggregateType pConstructedSource = pSource.AsAggregateType();
             TypeArray pSourceArgs = pConstructedSource.GetTypeArgsAll();
-            if (pSourceArgs.size == 0)
+            if (pSourceArgs.Count == 0)
             {
                 return false;
             }
@@ -1920,14 +1916,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pSourceArgs != null);
             Debug.Assert(pDestArgs != null);
 
-            Debug.Assert(pTypeParams.size == pSourceArgs.size);
-            Debug.Assert(pTypeParams.size == pDestArgs.size);
+            Debug.Assert(pTypeParams.Count == pSourceArgs.Count);
+            Debug.Assert(pTypeParams.Count == pDestArgs.Count);
 
-            for (int arg = 0; arg < pSourceArgs.size; ++arg)
+            for (int arg = 0; arg < pSourceArgs.Count; ++arg)
             {
                 TypeParameterType pTypeParam = pTypeParams.ItemAsTypeParameterType(arg);
-                CType pSourceArg = pSourceArgs.Item(arg);
-                CType pDestArg = pDestArgs.Item(arg);
+                CType pSourceArg = pSourceArgs[arg];
+                CType pDestArg = pDestArgs[arg];
 
                 if (pSourceArg.IsRefType() && pTypeParam.Covariant)
                 {
@@ -1935,11 +1931,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (pSourceArg.IsRefType() && pTypeParam.Contravariant)
                 {
-                    LowerBoundInference(pSourceArgs.Item(arg), pDestArgs.Item(arg));
+                    LowerBoundInference(pSourceArgs[arg], pDestArgs[arg]);
                 }
                 else
                 {
-                    ExactInference(pSourceArgs.Item(arg), pDestArgs.Item(arg));
+                    ExactInference(pSourceArgs[arg], pDestArgs[arg]);
                 }
             }
         }
@@ -1978,17 +1974,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 foreach (CType pCurrent in _pLowerBounds[iParam])
                 {
-                    if (!typeSet.Contains(pCurrent))
+                    if (typeSet.Add(pCurrent))
                     {
-                        typeSet.Add(pCurrent);
                         initialCandidates.Add(pCurrent);
                     }
                 }
+
                 foreach (CType pCurrent in _pUpperBounds[iParam])
                 {
-                    if (!typeSet.Contains(pCurrent))
+                    if (typeSet.Add(pCurrent))
                     {
-                        typeSet.Add(pCurrent);
                         initialCandidates.Add(pCurrent);
                     }
                 }
@@ -2134,12 +2129,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(_pMethodFormalParameterTypes != null);
             Debug.Assert(_pMethodArguments != null);
-            Debug.Assert(_pMethodArguments.carg <= _pMethodFormalParameterTypes.size);
+            Debug.Assert(_pMethodArguments.carg <= _pMethodFormalParameterTypes.Count);
 
             for (int iArg = 0; iArg < _pMethodArguments.carg; iArg++)
             {
-                CType pDest = _pMethodFormalParameterTypes.Item(iArg);
-                CType pSource = _pMethodArguments.types.Item(iArg);
+                CType pDest = _pMethodFormalParameterTypes[iArg];
+                CType pSource = _pMethodArguments.types[iArg];
                 if (pDest.IsParameterModifierType())
                 {
                     pDest = pDest.AsParameterModifierType().GetParameterType();
@@ -2157,7 +2152,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // In the event of failure we still want to fix as much as we can, so
             // that intellisense gives the best possible result.
 
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; iParam++)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
                 if (!HasBound(iParam) || !Fix(iParam))
                 {
@@ -2223,16 +2218,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ArgInfos pMethodArguments)
         {
             Debug.Assert(pMethod != null);
-            Debug.Assert(pMethod.typeVars.size > 0);
+            Debug.Assert(pMethod.typeVars.Count > 0);
             Debug.Assert(pMethodFormalParameterTypes != null);
             Debug.Assert(pMethod.isParamArray || pMethod.Params == pMethodFormalParameterTypes);
             // We need at least one formal parameter type and at least one argument.
-            if (pMethodFormalParameterTypes.size < 1 || pMethod.InferenceMustFail())
+            if (pMethodFormalParameterTypes.Count < 1 || pMethod.InferenceMustFail())
             {
                 return false;
             }
             Debug.Assert(pMethodArguments != null);
-            Debug.Assert(pMethodArguments.carg <= pMethodFormalParameterTypes.size);
+            Debug.Assert(pMethodArguments.carg <= pMethodFormalParameterTypes.Count);
             if (pMethodArguments.carg < 1)
             {
                 return false;
@@ -2247,11 +2242,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool CanInferExtensionObject()
         {
             Debug.Assert(_pMethodFormalParameterTypes != null);
-            Debug.Assert(_pMethodFormalParameterTypes.size >= 1);
+            Debug.Assert(_pMethodFormalParameterTypes.Count >= 1);
             Debug.Assert(_pMethodArguments != null);
             Debug.Assert(_pMethodArguments.carg >= 1);
-            CType pDest = _pMethodFormalParameterTypes.Item(0);
-            CType pSource = _pMethodArguments.types.Item(0);
+            CType pDest = _pMethodFormalParameterTypes[0];
+            CType pSource = _pMethodArguments.types[0];
             if (pDest.IsParameterModifierType())
             {
                 pDest = pDest.AsParameterModifierType().GetParameterType();
@@ -2270,7 +2265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             LowerBoundInference(pSource, pDest);
             // Now check to see that every CType parameter used by the first
             // formal parameter CType was successfully inferred.
-            for (int iParam = 0; iParam < _pMethodTypeParameters.size; ++iParam)
+            for (int iParam = 0; iParam < _pMethodTypeParameters.Count; ++iParam)
             {
                 TypeParameterType pParam = _pMethodTypeParameters.ItemAsTypeParameterType(iParam);
                 if (!TypeManager.TypeContainsType(pDest, pParam))

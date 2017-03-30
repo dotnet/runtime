@@ -398,7 +398,7 @@ namespace System.Xml.Serialization
             else if (mapping is NullableMapping)
                 ExportMapping(((NullableMapping)mapping).BaseMapping, ns, isAny);
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private void ExportElementMapping(XmlSchemaElement element, Mapping mapping, string ns, bool isAny)
@@ -430,7 +430,7 @@ namespace System.Xml.Serialization
                 ExportElementMapping(element, ((NullableMapping)mapping).BaseMapping, ns, isAny);
             }
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
                         }
                     }
                 default:
-                    throw new ArgumentException(SR.XmlInternalError, "mapping");
+                    throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
             }
         }
 
@@ -597,7 +597,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsuported anonymous mapping type: " + mapping.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsupported anonymous mapping type: " + mapping.ToString()));
             }
         }
 
@@ -900,7 +900,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        static internal string ExportDefaultValue(TypeMapping mapping, object value)
+        internal static string ExportDefaultValue(TypeMapping mapping, object value)
         {
             if (!(mapping is PrimitiveMapping))
                 // should throw, but it will be a breaking change;

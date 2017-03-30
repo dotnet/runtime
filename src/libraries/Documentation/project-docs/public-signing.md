@@ -16,3 +16,21 @@ Known issues when debugging and testing public signed assemblies on .NET Framewo
 - You will not be able to install the assembly to the [Global Assembly Cache (GAC)](https://msdn.microsoft.com/en-us/library/yf1d93sz.aspx)
 - You will not be able to load the assembly in an AppDomain where shadow copying is turned on.
 - You will not be able to load the assembly in a partially trusted AppDomain
+
+The `corflags.exe` tool that ships with the .NET Framework SDK can show whether a binary is delay-signed or strong-named. For a delay-signed assembly it may show:
+
+```
+CorFlags  : 0x20003
+```
+
+For a strong-named assembly it can show:
+
+```
+CorFlags  : 0x2000b
+```
+
+The bit that is flipped is 0x8. If the bit is set, the assembly is strong-named. Additionally, the `sn.exe -vf` tool can show the same information. It will output `<assembly> is a delay-signed or test-signed assembly` or `Failed to verify assembly -- Strong name validation failed.` for a public-signed binary.
+
+The [FakeSign package on NuGet](https://www.nuget.org/packages/fakesign) contains the `FakeSign.exe` tool that can flip the bit on or off.
+
+Additionally, starting with Visual Studio 2015 Update 2 the C# and VB compilers support the new `/publicsign` command-line argument. You can also pass it to the compiler from your MSBuild project by setting the `<PublicSign>True</PublicSign>` MSBuild property to true. Note that you have to set `<DelaySign>False</DelaySign>` otherwise you will get an error that DelaySign and PublicSign can't be both specified at the same time.

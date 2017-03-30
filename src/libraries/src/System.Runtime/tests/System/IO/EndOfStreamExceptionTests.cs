@@ -18,7 +18,7 @@ namespace System.Tests
         public static void EndOfStreamException_Ctor_Empty()
         {
             EndOfStreamException i = new EndOfStreamException();
-            Assert.Equal(COR_E_ENDOFSTREAM, (uint)i.HResult);
+            Assert.Equal(COR_E_ENDOFSTREAM, unchecked((uint)i.HResult));
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace System.Tests
         {
             EndOfStreamException i = new EndOfStreamException(exceptionMessage);
             Assert.Equal(exceptionMessage, i.Message);
-            Assert.Equal(COR_E_ENDOFSTREAM, (uint)i.HResult);
+            Assert.Equal(COR_E_ENDOFSTREAM, unchecked((uint)i.HResult));
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace System.Tests
             Assert.Equal(exceptionMessage, i.Message);
             Assert.Equal(i.InnerException.Message, innerExceptionMessage);
             Assert.Equal(i.InnerException.HResult, ex.HResult);
-            Assert.Equal(COR_E_ENDOFSTREAM, (uint)i.HResult);
+            Assert.Equal(COR_E_ENDOFSTREAM, unchecked((uint)i.HResult));
         }
     }
 }

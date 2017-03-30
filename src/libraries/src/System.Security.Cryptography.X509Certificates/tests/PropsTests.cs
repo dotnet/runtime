@@ -233,11 +233,20 @@ Wry5FNNo
         }
 
         [Fact]
-        public static void TestPrivateKey()
+        public static void TestHasPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.False(c.HasPrivateKey);
+            }
+        }
+
+        [Fact]
+        public static void TestPrivateKey()
+        {
+            using (var c = new X509Certificate2(TestData.MsCertificate))
+            {
+                Assert.Null(c.PrivateKey);
             }
         }
 
@@ -258,7 +267,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // MsCertificate not supported on Unix
         public static void TestArchive_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -274,7 +283,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // MsCertificate not supported on Unix
         public static void TestArchive_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -290,7 +299,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // MsCertificate not supported on Unix
         public static void TestFriendlyName_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -306,7 +315,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // MsCertificate not supported on Unix
         public static void TestFriendlyName_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))

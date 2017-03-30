@@ -50,7 +50,7 @@ namespace Test
                                 {
                                     bool useFutureFactory = (z == 0);
 
-                                    // This would be a non-sensical combination
+                                    // This would be a nonsensical combination
                                     if (useFutureFactory && !continuationIsFuture)
                                         continue;
 
@@ -220,7 +220,7 @@ namespace Test
 
         public static void TestContinueWhenAnyException(Task[] antecedents, bool FutureFactory, bool continuationIsFuture)
         {
-            bool antecedentsAreFutures = antecedents is Task<int>[];
+            bool antecedentsAreFutures = (antecedents as Task<int>[]) != null;
 
             Debug.WriteLine(" * Test Exceptions in TaskFactory{0}.ContinueWhenAny(Task{1}[],Task{2})",
                 FutureFactory ? "<TResult>" : "",

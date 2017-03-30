@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
 
         private readonly Action<KeyValuePair<string, object>> _writeCallback;
 
-        private bool _writeObserverEnabled;
+        private Func<string, object, object, bool> _writeObserverEnabled = (name, arg1, arg2) => false;
 
         public FakeDiagnosticListenerObserver(Action<KeyValuePair<string, object>> writeCallback)
         {
@@ -59,17 +59,27 @@ namespace System.Net.Http.Functional.Tests
 
         public void Enable()
         {
-            _writeObserverEnabled = true;
+            _writeObserverEnabled = (name, arg1, arg2) => true;
+        }
+
+        public void Enable(Func<string, bool> writeObserverEnabled)
+        {
+            _writeObserverEnabled = (name, arg1, arg2) => writeObserverEnabled(name);
+        }
+
+        public void Enable(Func<string, object, object, bool> writeObserverEnabled)
+        {
+            _writeObserverEnabled = writeObserverEnabled;
         }
 
         public void Disable()
         {
-            _writeObserverEnabled = false;
+            _writeObserverEnabled = (name, arg1, arg2) => false;
         }
 
-        private bool IsEnabled(string s)
+        private bool IsEnabled(string s, object arg1, object arg2)
         {
-            return _writeObserverEnabled;
+            return _writeObserverEnabled.Invoke(s, arg1, arg2);
         }
     }
 }

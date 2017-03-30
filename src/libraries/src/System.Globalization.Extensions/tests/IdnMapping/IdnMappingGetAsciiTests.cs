@@ -15,11 +15,11 @@ namespace System.Globalization.Tests
             for (int i = 0x20; i < 0x7F; i++)
             {
                 char c = (char)i;
-                
+
                 // We test '.' separately
-                if (c == '.') 
+                if (c == '.')
                 {
-                    continue; 
+                    continue;
                 }
                 string ascii = c.ToString();
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
@@ -54,10 +54,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 0, 21, "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d" }; // Fully qualified domain name
 
             // Embedded domain name conversion (NLS + only)(Priority 1)
-            // Per the spec [7], "The index and count parameters (when provided) allow the 
-            // conversion to be done on a larger string where the domain name is embedded 
-            // (such as a URI or IRI). The output string is only the converted FQDN or 
-            // label, not the whole input string (if the input string contains more 
+            // Per the spec [7], "The index and count parameters (when provided) allow the
+            // conversion to be done on a larger string where the domain name is embedded
+            // (such as a URI or IRI). The output string is only the converted FQDN or
+            // label, not the whole input string (if the input string contains more
             // character than the substring to convert)."
             // Fully Qualified Domain Name (Label1.Label2.Label3)
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 0, 21, "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d" };
@@ -83,23 +83,22 @@ namespace System.Globalization.Tests
             }
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
-        
+
         [Fact]
         public void TestGetAsciiWithDot()
         {
             string result = "";
             Exception ex = Record.Exception(()=> result = new IdnMapping().GetAscii("."));
-            
             if (ex == null)
             {
-                // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception   
+                // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception
                 Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                 Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
                 Assert.Equal(result, ".");
             }
             else
             {
-                Assert.True(ex is ArgumentException);
+                Assert.IsType<ArgumentException>(ex);                
             }
         }
 
@@ -122,7 +121,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 8, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 9, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 11, 10, typeof(ArgumentException) };
-            
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))  // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -132,7 +131,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { "-", 0, 1, typeof(ArgumentException) };
             }
             else
-            {                
+            {
                 yield return new object[] { ".", 0, 1, typeof(ArgumentException) };
             }
 

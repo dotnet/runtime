@@ -37,7 +37,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_PurgeAudit_TestData))]
-        [ActiveIssue(15)]
         public static void TestPurgeAudit(bool isContainer, bool isDS, string sddl, string sidString, string verifierSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

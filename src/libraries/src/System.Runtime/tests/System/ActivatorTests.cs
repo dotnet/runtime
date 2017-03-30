@@ -85,11 +85,15 @@ namespace System.Tests
             // out of Activator.CreateInstance. Accidental or not, we'll inherit that behavior on .NET Native.)
             Assert.Throws<InvalidCastException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { new VarIntArgs(), 1, (short)2 }));
 
-            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
-            Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor throws an exception
+            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(TypeWithoutDefaultCtor))); // Type has no default constructor
+            Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(typeof(TypeWithDefaultCtorThatThrows))); // Type has a default constructor throws an exception
+            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(AbstractTypeWithDefaultCtor))); // Type is abstract
+            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(IInterfaceType))); // Type is an interface
 
+#if netcoreapp
             // Type is not a valid RuntimeType
             Assert.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
+#endif // netcoreapp
         }
 
         [Fact]
@@ -109,6 +113,23 @@ namespace System.Tests
 
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
             Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor that throws
+            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<AbstractTypeWithDefaultCtor>()); // Type is abstract
+            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<IInterfaceType>()); // Type is an interface
+        }
+
+        [Fact]
+        public static void TestActivatorOnNonActivatableFinalizableTypes()
+        {
+            // On runtimes where the generic Activator is implemented with special codegen intrinsics, we might allocate
+            // an uninitialized instance of the object before we realize there's no default constructor to run.
+            // Make sure this has no observable side effects.
+            Assert.ThrowsAny<MissingMemberException>(() => { Activator.CreateInstance<TypeWithPrivateDefaultCtorAndFinalizer>(); });
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(TypeWithPrivateDefaultCtorAndFinalizer.WasCreated);
         }
 
         class PrivateType
@@ -192,6 +213,27 @@ namespace System.Tests
         public class VarStringArgs { }
 
         public class VarIntArgs { }
+
+        public class TypeWithPrivateDefaultCtorAndFinalizer
+        {
+            public static bool WasCreated { get; private set; }
+
+            private TypeWithPrivateDefaultCtorAndFinalizer() { }
+
+            ~TypeWithPrivateDefaultCtorAndFinalizer()
+            {
+                WasCreated = true;
+            }
+        }
+
+        private interface IInterfaceType
+        {
+        }
+
+        public abstract class AbstractTypeWithDefaultCtor
+        {
+            public AbstractTypeWithDefaultCtor() { }
+        }
 
         public struct StructTypeWithoutReflectionMetadata { }
 

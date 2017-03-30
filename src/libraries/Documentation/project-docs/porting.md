@@ -74,11 +74,12 @@ Feature owners reserve the right to call out what they don't want to support on 
 
 This list, while not complete, is meant as a reference point. We'll add to it as we refine our porting plan. Also, just because something is currently not implemented, doesn't imply it's intentionally unsupported. Feel free to [file an issue](https://github.com/dotnet/corefx/issues/new) to ask for specific APIs and technologies. Porting requests are generally marked as [port-to-core](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aport-to-core).
 
+Binary Serialization is supported post 1.1, however we do not support cross-platform binary serialization. For new code you may want to consider other serialization approaches such as data contract serialization, XML serialization, JSON.NET, and protobuf-net.
+
 Technology                 | More information
 ---------------------------|-----------------------------------
 AppDomains                 | [Details](#app_domains)
 Remoting                   | [Details](#remoting)
-Binary Serialization       | [Details](#binary-serialization)
 Code Access Security (CAS) | [Details](#code-access-security-cas)
 Security Transparency      | [Details](#security-transparency)
 
@@ -94,12 +95,6 @@ Security Transparency      | [Details](#security-transparency)
 
 **Replacement**. For communication across processes, inter-process communication (IPC) should be used, such as pipes or memory mapped files. Across machines, you should use a network based solution, preferably a low-overhead plain text protocol such as HTTP.
 
-### Binary Serialization
-
-**Justification**. After a decade of servicing we've learned that serialization is incredibly complicated and a huge compatibility burden for the types supporting it. Thus, we made the decision that serialization should be a protocol implemented on top of the available public APIs. However, binary serialization requires intimate knowledge of the types as it allows to serialize object graphs including private state.
-
-**Replacement**. Choose the serialization technology that fits your goals for formatting and footprint. Popular choices include data contract serialization, XML serialization, JSON.NET, and protobuf-net.
-
 ### Code Access Security (CAS)
 
 **Justification**. Sand-boxing, i.e. relying on the runtime or the framework to constrain which resources a managed application can run, is considered a non-goal for .NET Core. We've already state previously that relying on sand-boxing for security reasons isn't an approach we're feeling comfortable with; there are simply too many pieces in object oriented framework that can result in elevation of privileges. Thus we don't treat CAS as security boundary anymore. On top of that, it makes the implementation more complicated and often has performance implications for the happy path.
@@ -111,3 +106,4 @@ Security Transparency      | [Details](#security-transparency)
 **Justification**. Similar to CAS, this feature allows separating sand-boxed code from security critical code in a declarative fashion. This feature was heavily used by Silverlight. 
 
 **Replacement**. Use operating system provided security boundaries, such as user accounts for running processes with the least set of privileges.
+

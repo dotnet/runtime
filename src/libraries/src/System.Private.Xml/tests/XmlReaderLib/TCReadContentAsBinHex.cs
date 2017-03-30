@@ -110,7 +110,7 @@ namespace System.Xml.Tests
 
             // for function TestTextReadBinHex_21
             {
-                this.AddChild(new CVariation(TestTextReadBinHex_21) { Attribute = new Variation("ReadBinHex with whitespaces") });
+                this.AddChild(new CVariation(TestTextReadBinHex_21) { Attribute = new Variation("ReadBinHex with whitespace") });
             }
 
 

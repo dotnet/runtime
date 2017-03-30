@@ -76,21 +76,21 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IPv6StringToAddress", SetLastError = true)]
-        internal static extern int IPv6StringToAddress(string address, string port, byte[] buffer, int bufferLength, out uint scope);
+        internal static extern unsafe int IPv6StringToAddress(string address, string port, byte* buffer, int bufferLength, out uint scope);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IPv4StringToAddress", SetLastError = true)]
-        internal static extern int IPv4StringToAddress(string address, byte[] buffer, int bufferLength, out ushort port);
+        internal static extern unsafe int IPv4StringToAddress(string address, byte* buffer, int bufferLength, out ushort port);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IPAddressToString")]
-        internal unsafe static extern int IPAddressToString(byte* address, int addressLength, bool isIPv6, byte* str, int stringLength, uint scope = 0);
+        internal static extern unsafe int IPAddressToString(byte* address, int addressLength, bool isIPv6, byte* str, int stringLength, uint scope = 0);
 
-        internal unsafe static uint IPAddressToString(byte[] address, bool isIPv6, StringBuilder addressString, uint scope = 0)
+        internal static unsafe uint IPAddressToString(byte[] address, bool isIPv6, StringBuilder addressString, uint scope = 0)
         {
             Debug.Assert(address != null, "address was null");
             Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes), $"Unexpected address length: {address.Length}");
 
             int err;
-            fixed (byte* rawAddress = address)
+            fixed (byte* rawAddress = &address[0])
             {
                 int bufferLength = isIPv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
                 byte* buffer = stackalloc byte[bufferLength];

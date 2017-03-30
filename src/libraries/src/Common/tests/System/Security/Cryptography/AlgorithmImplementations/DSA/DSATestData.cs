@@ -19,6 +19,47 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly byte[] HelloBytes = new ASCIIEncoding().GetBytes("Hello");
 
+        internal static DSAParameters Dsa512Parameters = new DSAParameters
+        {
+            P = (
+                "D6A8B7F1CAF7A6964D07663FC691D22F6ABCD55C37AEF58D20746740D82FE14E" +
+                "146363627D91925142DCDEE384BE0A1E04ED5BF5F471486F4D986D42A2E7DF95").HexToByteArray(),
+
+            Q = "FAB5F625D5D5E16430A1EF630EBE33897CC224F9".HexToByteArray(),
+
+            G = (
+                "0844C490E52EF58E05902C636D64D1D5EB2C6082A0D4F3BFD1CE078E87B43A7E" +
+                "F7BBECE19A4EFE2A6D9C229D360083CEA9F721F39B05BAF97052DEFC67A58A2B").HexToByteArray(),
+
+            X = "2E3D7A84C85B66785E1F6FE796982B22B0CB98BC".HexToByteArray(),
+
+            Y = (
+                "C300E0E67D877E6CED39FEEAAAC1F2C2BD568E6A32467227E12B6AE45A8D9478" +
+                "541A480AC80038AAC863827D6E3984061A25905C18BD2499A839663C3CA45605").HexToByteArray(),
+        };
+
+        internal static DSAParameters Dsa576Parameters = new DSAParameters
+        {
+            P = (
+                "E2167306BFFD86BB62F4327B778BBFA07BA42323EC567B106B9563882BDDD6D7" +
+                "F2EE7360F299888DE9F40A61C78D0BD8442EFA9C322B868AD367B3941D72B7A3" +
+                "32C954EB1629132B").HexToByteArray(),
+
+            Q = "CCDCECCF5F0B2C8FE238E2F06F22137F17FAEB1B".HexToByteArray(),
+
+            G = (
+                "AF17D4061302079E33034A77A058DDB4B832ACB114B7B8D2D3AE4451DFF85EB8" +
+                "DD75D4474218369D485B2206506406044AB4E6407FDAA5A29E95D4964CA559E8" +
+                "1C6F7CFCDA872665").HexToByteArray(),
+
+            X = "AC32693E1CD72AD63E1A0B6E8157EBBCA671D3DB".HexToByteArray(),
+
+            Y = (
+                "815A549B6FD0CEDAF044B00B7CFE1351902D7727D6D7FB736003A4E1C4CD8DFB" +
+                "F431E4FF4733F3FA92C765F0CFF944E3ED56A85B75953EB16901248985BB5F89" +
+                "1398EAB5E39645E7").HexToByteArray(),
+        };
+
         internal static DSAParameters GetDSA1024Params()
         {
             DSAParameters p = new DSAParameters();
@@ -66,6 +107,34 @@ namespace System.Security.Cryptography.Dsa.Tests
                 "3C2810C2972219525646127F9C4B81612C12AEDC2DC91E81153B0A207C1FBC00795B3EB8E86796CED29AC1247FF7122A1EAF" +
                 "081025751572").HexToByteArray();
             return p;
+        }
+
+        // The parameters and signature come from FIPS 186-2 APPENDIX 5. EXAMPLE OF THE DSA
+        internal static void GetDSA1024_186_2(out DSAParameters parameters, out byte[] signature, out byte[] data)
+        {
+            parameters = new DSAParameters()
+            {
+                P = (
+                "8df2a494492276aa3d25759bb06869cbeac0d83afb8d0cf7cbb8324f0d7882e5d0762fc5b7210eafc2e9adac32ab7aac" +
+                "49693dfbf83724c2ec0736ee31c80291").HexToByteArray(),
+                Q = ("c773218c737ec8ee993b4f2ded30f48edace915f").HexToByteArray(),
+                G = (
+                "626d027839ea0a13413163a55b4cb500299d5522956cefcb3bff10f399ce2c2e71cb9de5fa24babf58e5b79521925c9c" +
+                "c42e9f6f464b088cc572af53e6d78802").HexToByteArray(),
+                X = ("2070b3223dba372fde1c0ffc7b2e3b498b260614").HexToByteArray(),
+                Y = (
+                "19131871d75b1612a819f29d78d1b0d7346f7aa77bb62a859bfd6c5675da9d212d3a36ef1672ef660b8c7c255cc0ec74" +
+                "858fba33f44c06699630a76b030ee333").HexToByteArray()
+            };
+
+            signature = (
+                // r
+                "8bac1ab66410435cb7181f95b16ab97c92b341c0" +
+                // s
+                "41e2345f1f56df2458f426d155b4ba2db6dcd8c8"
+                ).HexToByteArray();
+
+            data = Encoding.ASCII.GetBytes("abc");
         }
     }
 }

@@ -4,15 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_GlobalElements", Desc = "")]
-    public class TC_SchemaSet_GlobalElements
+    public class TC_SchemaSet_GlobalElements : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -181,7 +179,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema schema1 = ss.Add(null, TestData._Root + uri1);
+            XmlSchema schema1 = ss.Add(null, Path.Combine(TestData._Root, uri1));
             ss.Compile();
             CError.Compare(ss.GlobalElements.Count, 3, "Types Count after add"); // +1 for root in ns-a
             CError.Compare(ss.GlobalElements.Contains(new XmlQualifiedName(e1, ns1)), true, "Contains1");
@@ -217,8 +215,8 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "xsdauthor.xsd");
-            XmlSchema schema1 = ss.Add(null, TestData._Root + uri1);
+            ss.Add(null, Path.Combine(TestData._Root, "xsdauthor.xsd"));
+            XmlSchema schema1 = ss.Add(null, Path.Combine(TestData._Root, uri1));
             ss.Compile();
             CError.Compare(ss.GlobalElements.Count, 4, "Types Count");  // +1 for root in ns-a and xsdauthor
             CError.Compare(ss.GlobalElements.Contains(new XmlQualifiedName(e1, ns1)), true, "Contains1");
@@ -241,7 +239,7 @@ namespace System.Xml.Tests
             string e1 = param1.ToString();
             string e2 = param2.ToString();
             XmlSchema s1 = GetSchema(ns1, e1, e2);
-            XmlSchema s2 = XmlSchema.Read(new StreamReader(new FileStream(TestData._Root + "invalid.xsd", FileMode.Open, FileAccess.Read)), null);
+            XmlSchema s2 = XmlSchema.Read(new StreamReader(new FileStream(Path.Combine(TestData._Root, "invalid.xsd"), FileMode.Open, FileAccess.Read)), null);
 
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.Add(s1);

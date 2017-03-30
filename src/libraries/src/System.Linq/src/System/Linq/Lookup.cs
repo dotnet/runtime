@@ -65,6 +65,8 @@ namespace System.Linq
         bool Contains(TKey key);
     }
 
+    [DebuggerDisplay("Count = {Count}")]
+    [DebuggerTypeProxy(typeof(SystemLinq_LookupDebugView<,>))]
     public class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IIListProvider<IGrouping<TKey, TElement>>
     {
         private readonly IEqualityComparer<TKey> _comparer;

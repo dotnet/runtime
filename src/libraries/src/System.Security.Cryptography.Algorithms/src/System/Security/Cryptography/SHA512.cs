@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -17,28 +14,26 @@ namespace System.Security.Cryptography
 
     public abstract class SHA512 : HashAlgorithm
     {
-        protected SHA512()
-        {
-        }
+        protected SHA512() { }
 
-        public static SHA512 Create()
+        public static new SHA512 Create()
         {
             return new Implementation();
         }
 
+        public static new SHA512 Create(string hashName)
+        {
+            return (SHA512)CryptoConfig.CreateFromName(hashName);
+        }
+
         private sealed class Implementation : SHA512
         {
+            private readonly HashProvider _hashProvider;
+
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.SHA512);
-            }
-
-            public sealed override int HashSize
-            {
-                get
-                {
-                    return _hashProvider.HashSizeInBytes * 8;
-                }
+                HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
             protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)
@@ -63,8 +58,6 @@ namespace System.Security.Cryptography
                 _hashProvider.Dispose(disposing);
                 base.Dispose(disposing);
             }
-
-            private readonly HashProvider _hashProvider;
         }
     }
 }

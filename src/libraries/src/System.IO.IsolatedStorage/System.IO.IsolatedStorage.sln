@@ -1,56 +1,50 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{BBCAE80E-0A19-4A6B-BC93-57BFECEFD529}"
-	ProjectSection(SolutionItems) = preProject
-		pkg\System.IO.IsolatedStorage.builds = pkg\System.IO.IsolatedStorage.builds
-		pkg\System.IO.IsolatedStorage.pkgproj = pkg\System.IO.IsolatedStorage.pkgproj
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{0610303E-B70C-468D-B4AA-4E91573254E7}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4779DC08-FCB3-4678-9470-2E6076F924D1}"
-	ProjectSection(SolutionItems) = preProject
-		src\project.json = src\project.json
-		src\System.IO.IsolatedStorage.builds = src\System.IO.IsolatedStorage.builds
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage.Tests", "tests\System.IO.IsolatedStorage.Tests.csproj", "{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB} = {FAF5D1E4-BA43-4663-8429-C069066D75CB}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage", "src\System.IO.IsolatedStorage.csproj", "{FAF5D1E4-BA43-4663-8429-C069066D75CB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74} = {750200D5-661A-42AA-9E1F-2A151F5AEE74}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage", "ref\System.IO.IsolatedStorage.csproj", "{27225772-FE8B-49D7-8E58-29242D536130}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage", "ref\System.IO.IsolatedStorage.csproj", "{750200D5-661A-42AA-9E1F-2A151F5AEE74}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		uap101_Debug|Any CPU = uap101_Debug|Any CPU
-		uap101_Release|Any CPU = uap101_Release|Any CPU
-		Windows_Debug|Any CPU = Windows_Debug|Any CPU
-		Windows_Release|Any CPU = Windows_Release|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.uap101_Debug|Any CPU.ActiveCfg = uap101_Debug|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.uap101_Debug|Any CPU.Build.0 = uap101_Debug|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.uap101_Release|Any CPU.ActiveCfg = uap101_Release|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.uap101_Release|Any CPU.Build.0 = uap101_Release|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.uap101_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.uap101_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.uap101_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.uap101_Release|Any CPU.Build.0 = Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{27225772-FE8B-49D7-8E58-29242D536130}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{FAF5D1E4-BA43-4663-8429-C069066D75CB} = {4779DC08-FCB3-4678-9470-2E6076F924D1}
-		{27225772-FE8B-49D7-8E58-29242D536130} = {0610303E-B70C-468D-B4AA-4E91573254E7}
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{FAF5D1E4-BA43-4663-8429-C069066D75CB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{750200D5-661A-42AA-9E1F-2A151F5AEE74} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal

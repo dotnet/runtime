@@ -20,8 +20,8 @@ namespace XLinqTests
             AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - root element only") { Param = "<A/>", Priority = 1 } });
             AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Empty") { Param = "", Priority = 1 } });
             AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Decl + root element only") { Param = "<?xml version='1.0'?><A/>", Priority = 1 } });
-            AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Decl + DTD + nodes") { Param = "<?xml version='1.0'?><!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--commnet--></square>", Priority = 0 } });
-            AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Decl + DTD + nodes") { Param = "<?xml version='1.0'?><!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]>\t\n<?PI?><square>text<B/><!--commnet--></square>\n\t<!--here is the end ... -->", Priority = 1 } });
+            AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Decl + DTD + nodes") { Param = "<?xml version='1.0'?><!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--comment--></square>", Priority = 0 } });
+            AddChild(new TestVariation(OnXDocument1) { Attribute = new VariationAttribute("On XDocument - Decl + DTD + nodes") { Param = "<?xml version='1.0'?><!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]>\t\n<?PI?><square>text<B/><!--comment--></square>\n\t<!--here is the end ... -->", Priority = 1 } });
         }
 
         /// <summary>

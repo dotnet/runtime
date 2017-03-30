@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface01.integeregererface01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface01.integeregererface01;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params in an interface</Title>
     // <Description>Simple Declaration of a method with optional parameters in an interface</Description>
@@ -38,8 +36,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface05.integeregererface05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface05.integeregererface05;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params in an interface</Title>
     // <Description>Simple Declaration of a method with optional parameters in an interface.
@@ -71,7 +67,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface12.integeregererface12
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface12.integeregererface12;
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a method with optional parameters. cast of an int to long</Description>
@@ -106,7 +101,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface13.integeregererface13
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface13.integeregererface13;
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a method with optional parameters. cast of an int to long</Description>
@@ -144,8 +138,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface16.integeregererface16
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface16.integeregererface16;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a Explicitly implemented interface</Description>
@@ -186,8 +178,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface17.integeregererface17
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.integeregererface.integeregererface17.integeregererface17;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a Explicitly implemented interface</Description>

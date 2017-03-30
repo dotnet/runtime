@@ -8,9 +8,5 @@ namespace Microsoft.CSharp.RuntimeBinder
 {
     internal sealed class ResetBindException : Exception
     {
-        public ResetBindException()
-            : base()
-        {
-        }
     }
 }

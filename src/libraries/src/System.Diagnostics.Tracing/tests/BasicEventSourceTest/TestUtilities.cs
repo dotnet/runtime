@@ -23,7 +23,8 @@ namespace BasicEventSourceTests
             foreach (var eventSource in EventSource.GetSources())
             {
                 if (eventSource.Name != "System.Threading.Tasks.TplEventSource"
-                   && eventSource.Name != "System.Diagnostics.Eventing.FrameworkEventSource")
+                   && eventSource.Name != "System.Diagnostics.Eventing.FrameworkEventSource"
+                   && eventSource.Name != "System.Buffers.ArrayPoolEventSource")
                 {
                     eventSourceNames += eventSource.Name + " ";
                 }

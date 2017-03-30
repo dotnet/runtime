@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Globalization;
 
 using Xunit;
@@ -118,15 +117,17 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+            Assert.False(rect1.Equals((object)rect2));
         }
-        
+
         [Fact]
         public static void EqualityTest_NotRectangleF()
         {
             var rectangle = new RectangleF(0, 0, 0, 0);
             Assert.False(rectangle.Equals(null));
             Assert.False(rectangle.Equals(0));
-            Assert.False(rectangle.Equals(new Rectangle(0, 0, 0, 0)));
+            Assert.True(rectangle.Equals(new Rectangle(0, 0, 0, 0))); // Implicit cast
+            Assert.False(rectangle.Equals((object)new Rectangle(0, 0, 0, 0))); // No implicit cast
         }
 
         [Fact]
@@ -159,7 +160,7 @@ namespace System.Drawing.PrimitivesTest
 
         [Theory]
         [InlineData(0, 0, 0, 0)]
-        [InlineData(float.MaxValue/2, float.MinValue/2, float.MinValue/2, float.MaxValue/2)]
+        [InlineData(float.MaxValue / 2, float.MinValue / 2, float.MinValue / 2, float.MaxValue / 2)]
         [InlineData(0, float.MinValue, float.MaxValue, 0)]
         public void InflateTest(float x, float y, float width, float height)
         {
@@ -177,7 +178,7 @@ namespace System.Drawing.PrimitivesTest
         }
 
         [Theory]
-        [InlineData(float.MaxValue, float.MinValue, float.MaxValue/2, float.MinValue/2)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue / 2, float.MinValue / 2)]
         [InlineData(0, float.MinValue, float.MaxValue, 0)]
         public void IntersectTest(float x, float y, float width, float height)
         {

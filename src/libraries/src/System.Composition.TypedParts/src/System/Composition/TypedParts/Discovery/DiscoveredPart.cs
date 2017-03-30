@@ -191,6 +191,18 @@ namespace System.Composition.TypedParts.Discovery
 
         public bool TryCloseGenericPart(Type[] typeArguments, out DiscoveredPart closed)
         {
+            for (int index = 0; index < _partType.GenericTypeParameters.Length; index++)
+            {
+                foreach (var genericParameterConstraints in _partType.GenericTypeParameters[index].GetTypeInfo().GetGenericParameterConstraints())
+                {
+                    if (!genericParameterConstraints.GetTypeInfo().IsAssignableFrom(typeArguments[index].GetTypeInfo()))
+                    {
+                        closed = null;
+                        return false;
+                    }
+                }
+            }
+
             if (_appliedArguments.Any(args => Enumerable.SequenceEqual(args, typeArguments)))
             {
                 closed = null;

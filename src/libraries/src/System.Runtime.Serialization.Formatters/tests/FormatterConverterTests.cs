@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
@@ -37,7 +38,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.True(new FormatterConverter().ToBoolean("true"));
             Assert.Equal((byte)42, new FormatterConverter().ToByte("42"));
             Assert.Equal('c', new FormatterConverter().ToChar("c"));
-            Assert.Equal(new DateTime(2000, 1, 1), new FormatterConverter().ToDateTime(new DateTime(2000, 1, 1).ToString()));
+            Assert.Equal(new DateTime(2000, 1, 1), new FormatterConverter().ToDateTime(new DateTime(2000, 1, 1).ToString(CultureInfo.InvariantCulture)));
             Assert.Equal(1.2m, new FormatterConverter().ToDecimal("1.2"));
             Assert.Equal(1.2, new FormatterConverter().ToDouble("1.2"));
             Assert.Equal((short)42, new FormatterConverter().ToInt16("42"));

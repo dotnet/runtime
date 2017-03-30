@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -116,12 +116,12 @@ namespace System.Linq.Expressions
             return esb.ToString();
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close) where T : Expression
+        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close) where T : Expression
         {
             VisitExpressions(open, expressions, close, ", ");
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close, string seperator) where T : Expression
+        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close, string seperator) where T : Expression
         {
             Out(open);
             if (expressions != null)
@@ -221,7 +221,7 @@ namespace System.Linq.Expressions
                 Out("ref ");
             }
             string name = node.Name;
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
                 Out("Param_" + GetParamId(node));
             }
@@ -234,15 +234,25 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
-            if (node.Parameters.Count == 1)
+            if (node.ParameterCount == 1)
             {
                 // p => body
-                Visit(node.Parameters[0]);
+                Visit(node.GetParameter(0));
             }
             else
             {
                 // (p1, p2, ..., pn) => body
-                VisitExpressions('(', node.Parameters, ')');
+                Out('(');
+                string sep = ", ";
+                for (int i = 0, n = node.ParameterCount; i < n; i++)
+                {
+                    if (i > 0)
+                    {
+                        Out(sep);
+                    }
+                    Visit(node.GetParameter(i));
+                }
+                Out(')');
             }
             Out(" => ");
             Visit(node.Body);
@@ -308,7 +318,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            string s = String.Format(
+            string s = string.Format(
                 CultureInfo.CurrentCulture,
                 "<DebugInfo({0}: {1}, {2}, {3}, {4})>",
                 node.Document.FileName,
@@ -499,7 +509,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            var members = node.Members;
+            ReadOnlyCollection<MemberInfo> members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
@@ -594,7 +604,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitBlock(BlockExpression node)
         {
             Out('{');
-            foreach (var v in node.Variables)
+            foreach (ParameterExpression v in node.Variables)
             {
                 Out("var ");
                 Visit(v);
@@ -671,7 +681,7 @@ namespace System.Linq.Expressions
         {
             Out("catch (");
             Out(node.Test.Name);
-            if (node.Variable != null && !string.IsNullOrEmpty(node.Variable.Name))
+            if (!string.IsNullOrEmpty(node.Variable?.Name))
             {
                 Out(' ');
                 Out(node.Variable.Name);
@@ -718,7 +728,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            var toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());
@@ -728,21 +738,14 @@ namespace System.Linq.Expressions
             Out('[');
             // For 3.5 subclasses, print the NodeType.
             // For Extension nodes, print the class name.
-            if (node.NodeType == ExpressionType.Extension)
-            {
-                Out(node.GetType().FullName);
-            }
-            else
-            {
-                Out(node.NodeType.ToString());
-            }
+            Out(node.NodeType == ExpressionType.Extension ? node.GetType().FullName : node.NodeType.ToString());
             Out(']');
             return node;
         }
 
         private void DumpLabel(LabelTarget target)
         {
-            if (!String.IsNullOrEmpty(target.Name))
+            if (!string.IsNullOrEmpty(target.Name))
             {
                 Out(target.Name);
             }

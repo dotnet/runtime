@@ -185,10 +185,11 @@ namespace System.Tests
             PerfUtils utils = new PerfUtils();
             string testString = utils.CreateString(size);
             string existingValue = testString.Substring(testString.Length / 2, 1);
+            string[] separator = new string[] { existingValue };
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
-                        testString.Split(existingValue);
+                        testString.Split(separator, StringSplitOptions.None);
         }
 
         [Benchmark]

@@ -6,7 +6,9 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +42,7 @@ namespace System.IO.Pipes
 
 
             int openMode = ((int)direction) |
-                           (maxNumberOfServerInstances == 1 ? Interop.mincore.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE : 0) |
+                           (maxNumberOfServerInstances == 1 ? Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE : 0) |
                            (int)options;
 
             // We automatically set the ReadMode to match the TransmissionMode.
@@ -52,8 +54,8 @@ namespace System.IO.Pipes
                 maxNumberOfServerInstances = 255;
             }
 
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
-            SafePipeHandle handle = Interop.mincore.CreateNamedPipe(fullPipeName, openMode, pipeModes,
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
+            SafePipeHandle handle = Interop.Kernel32.CreateNamedPipe(fullPipeName, openMode, pipeModes,
                 maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
 
             if (handle.IsInvalid)
@@ -81,17 +83,17 @@ namespace System.IO.Pipes
             }
             else
             {
-                if (!Interop.mincore.ConnectNamedPipe(InternalHandle, IntPtr.Zero))
+                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, IntPtr.Zero))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode != Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
+                    if (errorCode != Interop.Errors.ERROR_PIPE_CONNECTED)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
 
                     // pipe already connected
-                    if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
+                    if (errorCode == Interop.Errors.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
                     }
@@ -126,7 +128,7 @@ namespace System.IO.Pipes
             CheckDisconnectOperations();
 
             // Disconnect the pipe.
-            if (!Interop.mincore.DisconnectNamedPipe(InternalHandle))
+            if (!Interop.Kernel32.DisconnectNamedPipe(InternalHandle))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -142,9 +144,9 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            StringBuilder userName = new StringBuilder(Interop.mincore.CREDUI_MAX_USERNAME_LENGTH + 1);
+            StringBuilder userName = new StringBuilder(Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1);
 
-            if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
+            if (!Interop.Kernel32.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
                 IntPtr.Zero, IntPtr.Zero, userName, userName.Capacity))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
@@ -157,12 +159,9 @@ namespace System.IO.Pipes
         // ---- PAL layer ends here ----
         // -----------------------------
 
-#if RunAs
         // This method calls a delegate while impersonating the client. Note that we will not have
         // access to the client's security token until it has written at least once to the pipe 
         // (and has set its impersonationLevel argument appropriately). 
-        [SecurityCritical]
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlPrincipal)]
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
@@ -185,7 +184,6 @@ namespace System.IO.Pipes
         private static RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(ImpersonateAndTryCode);
         private static RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(RevertImpersonationOnBackout);
 
-        [SecurityCritical]
         private static void ImpersonateAndTryCode(Object helper)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
@@ -194,7 +192,7 @@ namespace System.IO.Pipes
             try { }
             finally
             {
-                if (UnsafeNativeMethods.ImpersonateNamedPipeClient(execHelper._handle))
+                if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle))
                 {
                     execHelper._mustRevert = true;
                 }
@@ -211,15 +209,13 @@ namespace System.IO.Pipes
             }
         }
 
-        [SecurityCritical]
-        [PrePrepareMethod]
         private static void RevertImpersonationOnBackout(Object helper, bool exceptionThrown)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 
             if (execHelper._mustRevert)
             {
-                if (!UnsafeNativeMethods.RevertToSelf())
+                if (!Interop.Advapi32.RevertToSelf())
                 {
                     execHelper._revertImpersonateErrorCode = Marshal.GetLastWin32Error();
                 }
@@ -241,10 +237,8 @@ namespace System.IO.Pipes
                 _handle = handle;
             }
         }
-#endif
 
         // Async version of WaitForConnection.  See the comments above for more info.
-        [SecurityCritical]
         private unsafe Task WaitForConnectionCoreAsync(CancellationToken cancellationToken)
         {
             CheckConnectOperationsServerWithHandle();
@@ -256,18 +250,18 @@ namespace System.IO.Pipes
 
             var completionSource = new ConnectionCompletionSource(this, cancellationToken);
 
-            if (!Interop.mincore.ConnectNamedPipe(InternalHandle, completionSource.Overlapped))
+            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, completionSource.Overlapped))
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
                 switch (errorCode)
                 {
-                    case Interop.mincore.Errors.ERROR_IO_PENDING:
+                    case Interop.Errors.ERROR_IO_PENDING:
                         break;
 
                     // If we are here then the pipe is already connected, or there was an error
                     // so we should unpin and free the overlapped.
-                    case Interop.mincore.Errors.ERROR_PIPE_CONNECTED:
+                    case Interop.Errors.ERROR_PIPE_CONNECTED:
                         // IOCompletitionCallback will not be called because we completed synchronously.
                         completionSource.ReleaseResources();
                         if (State == PipeState.Connected)

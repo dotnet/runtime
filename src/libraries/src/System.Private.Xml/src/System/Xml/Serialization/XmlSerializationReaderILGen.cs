@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     using System;
@@ -358,32 +358,8 @@ namespace System.Xml.Serialization
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(typeof(void), "InitCallbacks", Array.Empty<Type>(), Array.Empty<string>(),
                 CodeGenerator.ProtectedOverrideMethodAttributes);
-
-            string dummyArrayMethodName = NextMethodName("Array");
-            bool needDummyArrayMethod = false;
             ilg.EndMethod();
-
-            if (needDummyArrayMethod)
-            {
-                ilg.BeginMethod(
-                    typeof(object),
-                    GetMethodBuilder(dummyArrayMethodName),
-                    Array.Empty<Type>(),
-                    Array.Empty<string>(),
-                    CodeGenerator.PrivateMethodAttributes);
-                MethodInfo XmlSerializationReader_UnknownNode1 = typeof(XmlSerializationReader).GetMethod(
-                      "UnknownNode",
-                      CodeGenerator.InstanceBindingFlags,
-                      new Type[] { typeof(object) }
-                      );
-                ilg.Ldarg(0);
-                ilg.Load(null);
-                ilg.Call(XmlSerializationReader_UnknownNode1);
-                ilg.Load(null);
-                ilg.EndMethod();
-            }
         }
-
 
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
@@ -2765,7 +2741,7 @@ namespace System.Xml.Serialization
                 ilg.Ldc(1);
                 ilg.Add();
                 ilg.Stloc(localI);
-                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.GetTypeInfo().IsValueType)
+                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.IsValueType)
                 {
                     ilg.Ldelema(arrayElementType);
                 }
@@ -2833,7 +2809,7 @@ namespace System.Xml.Serialization
                 object oVar = ilg.GetVariable(match.Groups["locA1"].Value);
                 Type arrayElementType = ilg.GetVariableType(oVar).GetElementType();
                 ilg.ConvertValue(elementType, arrayElementType);
-                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.GetTypeInfo().IsValueType)
+                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.IsValueType)
                 {
                     ilg.Stobj(arrayElementType);
                 }
@@ -2848,7 +2824,7 @@ namespace System.Xml.Serialization
             {
                 int index = source.LastIndexOf(".Add(", StringComparison.Ordinal);
                 LocalBuilder localA = ilg.GetLocal(source.Substring(0, index));
-                Debug.Assert(!localA.LocalType.GetTypeInfo().IsGenericType || (localA.LocalType.GetGenericArguments().Length == 1 && localA.LocalType.GetGenericArguments()[0].IsAssignableFrom(elementType)));
+                Debug.Assert(!localA.LocalType.IsGenericType || (localA.LocalType.GetGenericArguments().Length == 1 && localA.LocalType.GetGenericArguments()[0].IsAssignableFrom(elementType)));
                 MethodInfo Add = localA.LocalType.GetMethod(
                      "Add",
                      CodeGenerator.InstanceBindingFlags,

@@ -1,9 +1,17 @@
-<Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
+
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
 
   <ItemGroup>
     <Project Include="ref.builds" />
+    <Project Include="shims\shims.proj" />
+    <Project Include="Native\native-binplace.proj" />
     <Project Include="src.builds" />
+    <Project Include="shims\ApiCompat.proj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />

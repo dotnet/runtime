@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -177,6 +176,20 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedDivideNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyDivideNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
         #endregion
 
         #region Helpers
@@ -218,12 +231,12 @@ namespace System.Linq.Expressions.Tests
 
         public static sbyte DivideNullableSByte(sbyte a, sbyte b)
         {
-            return (sbyte)(a / b);
+            return unchecked((sbyte)(a / b));
         }
 
         public static short DivideNullableShort(short a, short b)
         {
-            return (short)(a / b);
+            return unchecked((short)(a / b));
         }
 
         public static uint DivideNullableUInt(uint a, uint b)
@@ -368,7 +381,7 @@ namespace System.Linq.Expressions.Tests
             if (a.HasValue && b == 0)
                 Assert.Throws<DivideByZeroException>(() => f());
             else
-                Assert.Equal((sbyte?)(a / b), f());
+                Assert.Equal(unchecked((sbyte?)(a / b)), f());
         }
 
         private static void VerifyDivideNullableShort(short? a, short? b, bool useInterpreter)
@@ -384,7 +397,7 @@ namespace System.Linq.Expressions.Tests
             if (a.HasValue && b == 0)
                 Assert.Throws<DivideByZeroException>(() => f());
             else
-                Assert.Equal((short?)(a / b), f());
+                Assert.Equal(unchecked((short?)(a / b)), f());
         }
 
         private static void VerifyDivideNullableUInt(uint? a, uint? b, bool useInterpreter)
@@ -433,6 +446,22 @@ namespace System.Linq.Expressions.Tests
                 Assert.Throws<DivideByZeroException>(() => f());
             else
                 Assert.Equal((ushort?)(a / b), f());
+        }
+
+        private static void VerifyDivideNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.Divide(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            if (a.HasValue && b == new Number(0))
+                Assert.Throws<DivideByZeroException>(() => f());
+            else
+                Assert.Equal(a / b, f());
         }
 
         #endregion

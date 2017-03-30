@@ -1,22 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{101EB757-55A4-4F48-841C-C088640B8F57}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Security.Cryptography.Primitives.Tests</AssemblyName>
-    <RootNamespace>System.Security.Cryptography.Primitives.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Security.Cryptography.Primitives.pkgproj">
-      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
     <Compile Include="CryptoStream.cs" />
@@ -32,8 +25,8 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="CryptoConfigTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

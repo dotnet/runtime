@@ -270,6 +270,12 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Min());
         }
 
+        [Theory, MemberData(nameof(Min_NullableInt_TestData))]
+        public void Min_NullableIntRunOnce(IEnumerable<int?> source, int? expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Min());
+        }
+
         [Fact]
         public void Min_NullableInt_NullSource_ThrowsArgumentNullException()
         {
@@ -480,6 +486,13 @@ namespace System.Linq.Tests
         {
             Assert.Equal(expected, source.Min());
             Assert.Equal(expected, source.Min(x => x));
+        }
+
+        [Theory, MemberData(nameof(Min_String_TestData))]
+        public void Min_StringRunOnce(IEnumerable<string> source, string expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Min());
+            Assert.Equal(expected, source.RunOnce().Min(x => x));
         }
 
         [Fact]

@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
-using System.Reflection;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Runtime.CompilerServices
@@ -67,12 +66,19 @@ namespace System.Runtime.CompilerServices
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
+                    var parameters = new HashSet<ParameterExpression>();
+
+                    for (int i = 0, n = node.ParameterCount; i < n; i++)
+                    {
+                        parameters.Add(node.GetParameter(i));
+                    }
+
+                    _shadowedVars.Push(parameters);
                 }
                 Expression b = Visit(node.Body);
-                if (node.Parameters.Count > 0)
+                if (node.ParameterCount > 0)
                 {
                     _shadowedVars.Pop();
                 }
@@ -80,7 +86,7 @@ namespace System.Runtime.CompilerServices
                 {
                     return node;
                 }
-                return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
+                return node.Rewrite(b, parameters: null);
             }
 
             protected internal override Expression VisitBlock(BlockExpression node)
@@ -89,7 +95,7 @@ namespace System.Runtime.CompilerServices
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                var b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
+                Expression[] b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
@@ -126,7 +132,7 @@ namespace System.Runtime.CompilerServices
                 var boxes = new List<IStrongBox>();
                 var vars = new List<ParameterExpression>();
                 var indexes = new int[count];
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < indexes.Length; i++)
                 {
                     IStrongBox box = GetBox(node.Variables[i]);
                     if (box == null)
@@ -147,7 +153,7 @@ namespace System.Runtime.CompilerServices
                     return node;
                 }
 
-                var boxesConst = Expression.Constant(new RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
+                ConstantExpression boxesConst = Expression.Constant(new RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
                 // All of them were rewritten. Just return the array as a constant
                 if (vars.Count == 0)
                 {
@@ -204,80 +210,6 @@ namespace System.Runtime.CompilerServices
                 // Unbound variable: an error should've been thrown already
                 // from VariableBinder
                 throw ContractUtils.Unreachable;
-            }
-        }
-
-        private sealed class RuntimeVariables : IRuntimeVariables
-        {
-            private readonly IStrongBox[] _boxes;
-
-            internal RuntimeVariables(IStrongBox[] boxes)
-            {
-                _boxes = boxes;
-            }
-
-            int IRuntimeVariables.Count
-            {
-                get { return _boxes.Length; }
-            }
-
-            object IRuntimeVariables.this[int index]
-            {
-                get
-                {
-                    return _boxes[index].Value;
-                }
-                set
-                {
-                    _boxes[index].Value = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Provides a list of variables, supporting read/write of the values
-        /// Exposed via RuntimeVariablesExpression
-        /// </summary>
-        private sealed class MergedRuntimeVariables : IRuntimeVariables
-        {
-            private readonly IRuntimeVariables _first;
-            private readonly IRuntimeVariables _second;
-
-            // For reach item, the index into the first or second list
-            // Positive values mean the first array, negative means the second
-            private readonly int[] _indexes;
-
-            internal MergedRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
-            {
-                _first = first;
-                _second = second;
-                _indexes = indexes;
-            }
-
-            public int Count
-            {
-                get { return _indexes.Length; }
-            }
-
-            public object this[int index]
-            {
-                get
-                {
-                    index = _indexes[index];
-                    return (index >= 0) ? _first[index] : _second[-1 - index];
-                }
-                set
-                {
-                    index = _indexes[index];
-                    if (index >= 0)
-                    {
-                        _first[index] = value;
-                    }
-                    else
-                    {
-                        _second[-1 - index] = value;
-                    }
-                }
             }
         }
     }

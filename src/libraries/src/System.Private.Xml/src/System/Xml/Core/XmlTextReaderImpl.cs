@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Text;
-using System.Security;
-using System.Threading;
 using System.Xml.Schema;
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -114,7 +109,7 @@ namespace System.Xml
         //
         private readonly bool _useAsync;
 
-        #region Later Init Fileds
+        #region Later Init Fields
 
         //later init means in the construction stage, do not open filestream and do not read any data from Stream/TextReader
         //the purpose is to make the Create of XmlReader do not block on IO.
@@ -323,14 +318,7 @@ namespace System.Xml
             _nameTable = nt;
             nt.Add(string.Empty);
 
-            if (!System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
-            {
-                _xmlResolver = null;
-            }
-            else
-            {
-                _xmlResolver = new XmlUrlResolver();
-            }
+            _xmlResolver = null;
 
             _xml = nt.Add("xml");
             _xmlNs = nt.Add("xmlns");
@@ -568,7 +556,7 @@ namespace System.Xml
             }
             if (url.Length == 0)
             {
-                throw new ArgumentException(SR.Xml_EmptyUrl, "url");
+                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
             }
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -833,11 +821,7 @@ namespace System.Xml
                 settings.DtdProcessing = _dtdProcessing;
                 settings.MaxCharactersInDocument = _maxCharactersInDocument;
                 settings.MaxCharactersFromEntities = _maxCharactersFromEntities;
-
-                if (!System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
-                {
-                    settings.XmlResolver = _xmlResolver;
-                }
+                settings.XmlResolver = _xmlResolver;
                 settings.ReadOnly = true;
                 return settings;
             }
@@ -2579,7 +2563,7 @@ namespace System.Xml
         {
             get
             {
-                return _xmlResolver == null || (LocalAppContextSwitches.ProhibitDefaultUrlResolver && !_xmlResolverIsSet);
+                return _xmlResolver == null || !_xmlResolverIsSet;
             }
         }
 
@@ -4095,7 +4079,7 @@ namespace System.Xml
                 {
                     goto ReadData;
                 }
-                // something else -> root level whitespaces
+                // something else -> root level whitespace
                 else
                 {
                     if (_fragmentType == XmlNodeType.Document)
@@ -4454,7 +4438,7 @@ namespace System.Xml
             }
 
             char ch = chars[pos];
-            // white space after element name -> there are probably some attributes
+            // whitespace after element name -> there are probably some attributes
             bool isWs;
             unsafe
             {
@@ -4657,7 +4641,7 @@ namespace System.Xml
                     }
                 }
 
-                // eat whitespaces
+                // eat whitespace
                 if (chars[pos] != '>')
                 {
                     char tmpCh;
@@ -4754,7 +4738,7 @@ namespace System.Xml
 
             for (;;)
             {
-                // eat whitespaces
+                // eat whitespace
                 int lineNoDelta = 0;
                 char tmpch0;
                 unsafe
@@ -4987,9 +4971,9 @@ namespace System.Xml
                 if (tmpch3 == quoteChar)
                 {
 #if DEBUG
-                    if (normalize)
+                    if (_normalize)
                     {
-                        string val = new string(chars, ps.charPos, pos - ps.charPos);
+                        string val = new string(chars, _ps.charPos, pos - _ps.charPos);
                         Debug.Assert(val == XmlComplianceUtil.CDataNormalize(val), "The attribute value is not CDATA normalized!"); 
                     }
 #endif
@@ -5485,9 +5469,9 @@ namespace System.Xml
             }
         }
 
-        // Parses text or white space node.
+        // Parses text or whitespace node.
         // Returns true if a node has been parsed and its data set to curNode. 
-        // Returns false when a white space has been parsed and ignored (according to current whitespace handling) or when parsing mode is not Full.
+        // Returns false when a whitespace has been parsed and ignored (according to current whitespace handling) or when parsing mode is not Full.
         // Also returns false if there is no text to be parsed.
         private bool ParseText()
         {
@@ -8250,19 +8234,19 @@ namespace System.Xml
         {
             if (array == null)
             {
-                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : "array");
+                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : nameof(array));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "index" : "offset");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(index): "offset");
             }
             if (array.Length - index < count)
             {
-                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
 
             if (count == 0)
@@ -9650,7 +9634,7 @@ namespace System.Xml
         }
 
         [System.Security.SecuritySafeCritical]
-        static internal unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < chars.Length);
@@ -9663,7 +9647,7 @@ namespace System.Xml
         }
 
         [System.Security.SecuritySafeCritical]
-        static internal unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < str.Length);
@@ -9676,7 +9660,7 @@ namespace System.Xml
         }
 
         [System.Security.SecurityCritical]
-        static internal unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
         {
             int lastNewLinePos = -1;
             for (int i = 0; i < length; i++)

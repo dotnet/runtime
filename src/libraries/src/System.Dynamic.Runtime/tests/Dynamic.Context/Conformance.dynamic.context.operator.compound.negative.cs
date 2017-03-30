@@ -6,14 +6,12 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.field01.field01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.field01.field01;
     // <Title> Compound operator in readonly field.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -50,14 +48,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.field02.field02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.field02.field02;
     // <Title> Compound operator non-delegate += delegate.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -98,14 +94,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property01.property01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property01.property01;
     // <Title> Compound operator in readonly property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -148,14 +142,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property02.property02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property02.property02;
     // <Title> Compound operator in readonly property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class TestClass
     {
@@ -205,14 +197,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property03.property03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property03.property03;
     // <Title> Compound operator in readonly property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -254,14 +244,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property04.property04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.property04.property04;
     // <Title> Compound operator: property += delegate.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -327,14 +315,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer01.indexer01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer01.indexer01;
     // <Title> Compound operator in readonly indexer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -377,14 +363,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer02.indexer02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer02.indexer02;
     // <Title> Compound operator in readonly indexer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class TestClass
     {
@@ -434,14 +418,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer03.indexer03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer03.indexer03;
     // <Title> Compound operator in readonly indexer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -483,14 +465,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer04.indexer04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.negative.indexer04.indexer04;
     // <Title> Compound operator indexer += delegate.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {

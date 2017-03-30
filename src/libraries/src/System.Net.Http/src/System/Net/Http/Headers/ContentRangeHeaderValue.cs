@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -20,7 +21,7 @@ namespace System.Net.Http.Headers
             get { return _unit; }
             set
             {
-                HeaderUtilities.CheckValidToken(value, "value");
+                HeaderUtilities.CheckValidToken(value, nameof(value));
                 _unit = value;
             }
         }
@@ -150,7 +151,8 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(_unit);
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append(_unit);
             sb.Append(' ');
 
             if (HasRange)
@@ -174,7 +176,7 @@ namespace System.Net.Http.Headers
                 sb.Append('*');
             }
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public static ContentRangeHeaderValue Parse(string input)

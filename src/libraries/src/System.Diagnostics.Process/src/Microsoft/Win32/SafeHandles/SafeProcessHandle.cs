@@ -19,25 +19,24 @@ using System.Security;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    public sealed partial class SafeProcessHandle : SafeHandle
+    public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle(new IntPtr(DefaultInvalidHandleValue));
+        internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
         internal SafeProcessHandle()
-            : base(new IntPtr(DefaultInvalidHandleValue), true) 
+            : this(new IntPtr(DefaultInvalidHandleValue))
         {
         }
 
         internal SafeProcessHandle(IntPtr handle)
-            : base(new IntPtr(DefaultInvalidHandleValue), true)
+            : this(handle, true)
         {
-            SetHandle(handle);
         }
 
-        public SafeProcessHandle(IntPtr handle, bool ownsHandle)
-            : base(new IntPtr(DefaultInvalidHandleValue), ownsHandle)
+        public SafeProcessHandle(IntPtr existingHandle, bool ownsHandle)
+            : base(ownsHandle)
         {
-            SetHandle(handle);
+            SetHandle(existingHandle);
         }
 
         internal void InitialSetHandle(IntPtr h)

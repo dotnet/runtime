@@ -32,13 +32,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("strInput", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
 
             Assert.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.IsNormalized(null));
-            
-            Exception exception = Record.Exception(() => ((string)null).IsNormalized());
-            
-            // On desktop IsNormalized is not extension method, trying to do ((string)null).IsNormalized()
-            // will get NullReferenceException, in .Net Core we use extension method which will throw
-            // ArgumentNullException
-            Assert.True((exception is ArgumentNullException) || (exception is NullReferenceException));
         }
 
         [Theory]
@@ -71,13 +64,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("strInput", () => "\uD800\uD800".Normalize()); // Invalid surrogate pair
 
             Assert.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.Normalize(null));
-            
-            Exception exception = Record.Exception(() => ((string)null).Normalize());
-            
-            // On desktop Normalize is not extension method, trying to do ((string)null).Normalize()
-            // will get NullReferenceException, in .Net Core we use extension method which will throw
-            // ArgumentNullException
-            Assert.True((exception is ArgumentNullException) || (exception is NullReferenceException));
         }
     }
 }

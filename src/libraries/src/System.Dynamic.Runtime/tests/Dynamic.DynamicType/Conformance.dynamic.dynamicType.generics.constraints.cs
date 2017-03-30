@@ -6,7 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex001.complex001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex001.complex001;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
@@ -49,7 +48,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex002.complex002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex002.complex002;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
@@ -92,14 +90,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex008.complex008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex008.complex008;
     // <Title>Generic constraints</Title>
     // <Description> Trying to pass in int and dynamic as type parameters used to give an error saying that there is no boxing conversion from int to dynamic
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System.Collections.Generic;
 
     public class M
     {
@@ -149,14 +145,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex009.complex009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex009.complex009;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -200,14 +194,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex010.complex010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex010.complex010;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Base<T>
     {
@@ -252,14 +244,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex011.complex011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex011.complex011;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections.Generic;
 
     public class Base<T>
@@ -300,7 +290,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex012.complex012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.complex012.complex012;
     // <Title>Derived generic types</Title>
     // <Description>
     // </Description>
@@ -308,7 +297,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
     // <Expects Status=success></Expects>
     // <Code>
     using System;
-    using System.Collections.Generic;
 
     public class Base<T>
     {
@@ -352,8 +340,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple001.simple001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple001.simple001;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -394,8 +380,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple002.simple002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple002.simple002;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -436,8 +420,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple006.simple006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple006.simple006;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -477,8 +459,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple008.simple008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple008.simple008;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -519,8 +499,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple009.simple009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple009.simple009;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -561,8 +539,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple012.simple012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple012.simple012;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -603,8 +579,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple013.simple013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple013.simple013;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -645,8 +619,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple015.simple015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple015.simple015;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -687,8 +659,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple016.simple016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple016.simple016;
-
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
@@ -729,13 +699,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple018.simple018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple018.simple018;
     // <Title>Generic constraints</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -767,14 +735,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple019.simple019
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple019.simple019;
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class B
     {
@@ -809,14 +775,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple020.simple020
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple020.simple020;
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class B
     {
@@ -853,14 +817,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple021.simple021
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple021.simple021;
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class B
     {
@@ -890,14 +852,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple022.simple022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.simple022.simple022;
     // <Title>Generic constraints</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class B
     {
@@ -936,14 +896,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference001.typeinference001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference001.typeinference001;
     // <Title>Generic Type Inference</Title>
     // <Description> Runtime type inference succeeds in cases where it should fail
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class C
     {
@@ -984,14 +942,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference002.typeinference002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference002.typeinference002;
     // <Title>Generic Type Inference</Title>
     // <Description> 
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class A
     {
@@ -1100,14 +1056,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference003.typeinference003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference003.typeinference003;
     // <Title>Generic Type Inference</Title>
     // <Description> 
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public struct S
     {
@@ -1212,14 +1166,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference004.typeinference004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference004.typeinference004;
     // <Title>Generic Type Inference</Title>
     // <Description> 
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1344,14 +1296,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference005.typeinference005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference005.typeinference005;
     // <Title>Generic Type Inference</Title>
     // <Description> 
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public struct Test
     {
@@ -1448,7 +1398,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference006.typeinference006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cnstraintegeregers.typeinference006.typeinference006;
     // <Title>Generic Type Inference</Title>
     // <Description> We used to give compiler errors in these cases
     // </Description>

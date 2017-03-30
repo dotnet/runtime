@@ -23,10 +23,9 @@ internal static partial class Interop
         private const int PROC_PIDTHREADINFO = 5;
         private const int PROC_PIDLISTTHREADS = 6;
         private const int PROC_PIDPATHINFO_MAXSIZE = 4 * MAXPATHLEN;
-        private static int PROC_PIDLISTTHREADS_SIZE = (Marshal.SizeOf<uint>() * 2);
 
         // Constants from sys\resource.h
-        private const int RUSAGE_SELF = 0;
+        private const int RUSAGE_INFO_V3 = 3;
 
         // Defines from proc_info.h
         internal enum ThreadRunState
@@ -171,7 +170,7 @@ internal static partial class Interop
         /// <param name="buffersize">The length of the block of memory allocated for the PID array</param>
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_listallpids(
+        private static extern unsafe int proc_listallpids(
             int*    pBuffer, 
             int     buffersize);
 
@@ -199,9 +198,9 @@ internal static partial class Interop
                 // To make sure it isn't #2, when the result == size, increase the buffer and try again
                 processes = new int[(int)(numProcesses * 1.10)];
 
-                fixed (int* pBuffer = processes)
+                fixed (int* pBuffer = &processes[0])
                 {
-                    numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
+                    numProcesses = proc_listallpids(pBuffer, processes.Length * sizeof(int));
                     if (numProcesses <= 0)
                     {
                         throw new Win32Exception(SR.CantGetAllPids);
@@ -230,7 +229,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -251,7 +250,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -272,7 +271,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -293,7 +292,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -317,7 +316,7 @@ internal static partial class Interop
             }
 
             // Get the process information for the specified pid
-            int size = Marshal.SizeOf<proc_taskallinfo>();
+            int size = sizeof(proc_taskallinfo);
             proc_taskallinfo info = default(proc_taskallinfo);
             int result = proc_pidinfo(pid, PROC_PIDTASKALLINFO, 0, &info, size);
             return (result == size ? new proc_taskallinfo?(info) : null);
@@ -346,7 +345,7 @@ internal static partial class Interop
             }
 
             // Get the thread information for the specified thread in the specified process
-            int size = Marshal.SizeOf<proc_threadinfo>();
+            int size = sizeof(proc_threadinfo);
             proc_threadinfo info = default(proc_threadinfo);
             int result = proc_pidinfo(pid, PROC_PIDTHREADINFO, (ulong)thread, &info, size);
             return (result == size ? new proc_threadinfo?(info) : null);
@@ -371,9 +370,9 @@ internal static partial class Interop
             do
             {
                 threadIds = new ulong[size];
-                fixed (ulong* pBuffer = threadIds)
+                fixed (ulong* pBuffer = &threadIds[0])
                 {
-                    result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, Marshal.SizeOf<ulong>() * threadIds.Length);
+                    result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, sizeof(ulong) * threadIds.Length);
                 }
 
                 if (result <= 0)
@@ -391,12 +390,12 @@ internal static partial class Interop
                     }
                 }
             }
-            while (result == Marshal.SizeOf<ulong>() * threadIds.Length);
+            while (result == sizeof(ulong) * threadIds.Length);
 
-            Debug.Assert((result % Marshal.SizeOf<ulong>()) == 0);
+            Debug.Assert((result % sizeof(ulong)) == 0);
 
             // Loop over each thread and get the thread info
-            int count = (int)(result / Marshal.SizeOf<ulong>());
+            int count = (int)(result / sizeof(ulong));
             threads.Capacity = count;
             for (int i = 0; i < count; i++)
             {        
@@ -414,7 +413,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the buffer, should be PROC_PIDPATHINFO_MAXSIZE</param>
         /// <returns>Returns the length of the path returned on success</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidpath(
+        private static extern unsafe int proc_pidpath(
             int pid, 
             byte* buffer, 
             uint bufferSize);
@@ -435,7 +434,7 @@ internal static partial class Interop
             // The path is a fixed buffer size, so use that and trim it after
             int result = 0;
             byte* pBuffer = stackalloc byte[PROC_PIDPATHINFO_MAXSIZE];
-            result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * Marshal.SizeOf<byte>()));
+            result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * sizeof(byte)));
             if (result <= 0)
             {
                 throw new Win32Exception();
@@ -449,18 +448,14 @@ internal static partial class Interop
         /// Gets the rusage information for the process identified by the PID
         /// </summary>
         /// <param name="pid">The process to retrieve the rusage for</param>
-        /// <param name="flavor">Should be RUSAGE_SELF to specify getting the info for the specified process</param>
-        /// <param name="rusage_info_t">A buffer to be filled with rusage_info data</param>
+        /// <param name="flavor">Specifies the type of struct that is passed in to <paramref>buffer</paramref>. Should be RUSAGE_INFO_V3 to specify a rusage_info_v3 struct.</param>
+        /// <param name="buffer">A buffer to be filled with rusage_info data</param>
         /// <returns>Returns 0 on success; on fail, -1 and errno is set with the error code</returns>
-        /// <remarks>
-        /// We need to use IntPtr here for the buffer since the function signature uses 
-        /// void* and not a strong type even though it returns a rusage_info struct
-        /// </remarks>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pid_rusage(
+        private static extern unsafe int proc_pid_rusage(
             int pid,
             int flavor,
-            rusage_info_v3* rusage_info_t);
+            rusage_info_v3* buffer);
 
         /// <summary>
         /// Gets the rusage information for the process identified by the PID
@@ -480,7 +475,7 @@ internal static partial class Interop
             rusage_info_v3 info = new rusage_info_v3();
 
             // Get the PIDs rusage info
-            int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
+            int result = proc_pid_rusage(pid, RUSAGE_INFO_V3, &info);
             if (result < 0)
             {
                 throw new InvalidOperationException(SR.RUsageFailure);

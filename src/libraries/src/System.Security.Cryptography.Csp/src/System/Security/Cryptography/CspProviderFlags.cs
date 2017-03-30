@@ -4,8 +4,9 @@
 
 namespace System.Security.Cryptography
 {
-    //In case you are adding more values in the CspProviderFlags Flags below.
+    // In case you are adding more values in the CspProviderFlags Flags below.
     // please change the Flags Set where int allFlags is initialized with 0x00FF;
+    [Serializable]
     [Flags]
     public enum CspProviderFlags
     {

@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{135980AC-4583-44EC-894E-CB3B1A481920}</ProjectGuid>
+    <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);0649</NoWarn>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\DirectoryServices\Protocols\externdll.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttribute.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttributeOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryControl.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryRequest.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryResponse.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\PartialResultsCollection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ReferralChasingOption.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ResultCode.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchResults.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchScope.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\utils.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapAsyncResult.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapDirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

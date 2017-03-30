@@ -12,7 +12,7 @@ namespace System.ComponentModel
     /// <summary>
     ///     Represents a collection of attributes.
     /// </summary>
-    public class AttributeCollection : ICollection
+    public class AttributeCollection : ICollection, IEnumerable
     {
         /// <summary>
         ///     An empty AttributeCollection that can used instead of creating a new one.
@@ -34,7 +34,7 @@ namespace System.ComponentModel
 
         private AttributeEntry[] _foundAttributeTypes;
 
-        private int _index = 0;
+        private int _index;
 
         /// <summary>
         ///     Creates a new AttributeCollection.
@@ -90,7 +90,7 @@ namespace System.ComponentModel
                 bool match = false;
                 for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                 {
-                    if (newArray[existingIdx].GetTypeId().Equals(newAttributes[idx].GetTypeId()))
+                    if (newArray[existingIdx].TypeId.Equals(newAttributes[idx].TypeId))
                     {
                         match = true;
                         newArray[existingIdx] = newAttributes[idx];
@@ -107,7 +107,7 @@ namespace System.ComponentModel
             // Now, if we collapsed some attributes, create a new array.
             //
 
-            Attribute[] attributes = null;
+            Attribute[] attributes;
             if (actualCount < newArray.Length)
             {
                 attributes = new Attribute[actualCount];
@@ -125,35 +125,17 @@ namespace System.ComponentModel
         ///     Gets the attributes collection.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Matches constructor input type")]
-        protected virtual Attribute[] Attributes
-        {
-            get
-            {
-                return _attributes;
-            }
-        }
+        protected virtual Attribute[] Attributes => _attributes;
 
         /// <summary>
         ///     Gets the number of attributes.
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return Attributes.Length;
-            }
-        }
+        public int Count => Attributes.Length;
 
         /// <summary>
         ///     Gets the attribute with the specified index number.
         /// </summary>
-        public virtual Attribute this[int index]
-        {
-            get
-            {
-                return Attributes[index];
-            }
-        }
+        public virtual Attribute this[int index] => Attributes[index];
 
         /// <summary>
         ///    Gets the attribute with the specified type.
@@ -223,8 +205,7 @@ namespace System.ComponentModel
                     for (int i = 0; i < count; i++)
                     {
                         Attribute attribute = Attributes[i];
-                        Type aType = attribute.GetType();
-                        if (attributeType.GetTypeInfo().IsAssignableFrom(aType.GetTypeInfo()))
+                        if (attributeType.IsInstanceOfType(attribute))
                         {
                             _foundAttributeTypes[ind].index = i;
                             return attribute;
@@ -292,7 +273,7 @@ namespace System.ComponentModel
 
                 // Not in the table, so do the legwork to discover the default value.
                 Type reflect = TypeDescriptor.GetReflectionType(attributeType);
-                FieldInfo field = reflect.GetTypeInfo().GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
+                FieldInfo field = reflect.GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
 
                 if (field != null && field.IsStatic)
                 {
@@ -300,7 +281,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.GetTypeInfo().UnderlyingSystemType.GetTypeInfo().GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());
@@ -361,21 +342,16 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection.IsSynchronized => false;
 
         /// <internalonly/>
-        object ICollection.SyncRoot
+        object ICollection.SyncRoot => null;
+
+        int ICollection.Count => Count;
+
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            get
-            {
-                return null;
-            }
+            return GetEnumerator();
         }
 
         /// <summary>

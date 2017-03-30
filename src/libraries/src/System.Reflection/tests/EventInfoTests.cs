@@ -34,8 +34,8 @@ namespace System.Reflection.Tests
         public void GetAddMethod(Type type, string name, bool isVisible)
         {
             EventInfo eventInfo = GetEventInfo(type, name);
-            Assert.Equal(!isVisible, eventInfo.GetAddMethod() == null);
-            Assert.Equal(!isVisible, eventInfo.GetAddMethod(false) == null);
+            Assert.Equal(isVisible, eventInfo.GetAddMethod() != null);
+            Assert.Equal(isVisible, eventInfo.GetAddMethod(false) != null);
             Assert.NotNull(eventInfo.GetAddMethod(true));
 
             MethodInfo addMethod = eventInfo.AddMethod;
@@ -54,8 +54,8 @@ namespace System.Reflection.Tests
         public void GetRemoveMethod(Type type, string name, bool isVisible)
         {
             EventInfo eventInfo = GetEventInfo(type, name);
-            Assert.Equal(!isVisible, eventInfo.GetRemoveMethod() == null);
-            Assert.Equal(!isVisible, eventInfo.GetRemoveMethod(false) == null);
+            Assert.Equal(isVisible, eventInfo.GetRemoveMethod() != null);
+            Assert.Equal(isVisible, eventInfo.GetRemoveMethod(false) != null);
             Assert.NotNull(eventInfo.GetRemoveMethod(true));
 
             MethodInfo removeMethod = eventInfo.RemoveMethod;
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
                 Assert.Equal(typeof(void), removeMethod.ReturnParameter.ParameterType);
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(Events_TestData))]
         public void GetRaiseMethod(Type type, string name)
@@ -149,7 +149,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, eventInfo1.Equals(eventInfo2));
             Assert.Equal(expected, eventInfo1.GetHashCode().Equals(eventInfo2.GetHashCode()));
         }
-        
+
         [Theory]
         [MemberData(nameof(Events_TestData))]
         public void EventHandlerType(Type type, string name)

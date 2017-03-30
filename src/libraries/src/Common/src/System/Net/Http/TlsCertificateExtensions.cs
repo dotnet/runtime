@@ -78,6 +78,7 @@ namespace System.Net.Http
             var chain = new X509Chain();
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             if (includeClientApplicationPolicy)
             {
                 chain.ChainPolicy.ApplicationPolicy.Add(s_clientCertOidInst);

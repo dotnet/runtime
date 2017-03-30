@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{03D6021D-CB0B-43BD-83A5-7FDEDB39AE45}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System.Net.WebClient.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
+    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.Net.Requests\ref\System.Net.Requests.csproj" />
+    <ProjectReference Include="..\..\System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj" />
+    <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

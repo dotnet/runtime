@@ -56,6 +56,20 @@ namespace System.Linq.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(LongCount_TestData))]
+        public static void LongCountRunOnce(IEnumerable<int> source, Func<int, bool> predicate, long expected)
+        {
+            if (predicate == null)
+            {
+                Assert.Equal(expected, source.RunOnce().LongCount());
+            }
+            else
+            {
+                Assert.Equal(expected, source.RunOnce().LongCount(predicate));
+            }
+        }
+
         [Fact]
         public void NullableArray_IncludesNullValues()
         {

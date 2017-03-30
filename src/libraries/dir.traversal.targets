@@ -1,100 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Target Name="FilterProjects">
-    <PropertyGroup>
-      <FilterToOSGroup Condition="'$(FilterToOSGroup)'=='' and '$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)</FilterToOSGroup>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
-      <Project>
-        <AdditionalProperties Condition="'%(Project.TargetGroup)'!=''">TargetGroup=%(Project.TargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <FilterToTargetGroup Condition="'$(FilterToTargetGroup)'!=''">$(FilterToTargetGroup)</FilterToTargetGroup>
-      </Project>
-      <Project>
-        <FilterToOSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</FilterToOSGroup>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.OSGroup)'!=''">OSGroup=%(Project.OSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.Platform)'!=''">Platform=%(Project.Platform);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.FilterToTargetGroup)'!=''">FilterToTargetGroup=%(Project.FilterToTargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.InputOSGroup)' != ''">InputOSGroup=%(Project.InputOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <AdditionalProperties Condition="'%(Project.BuildAllOSGroups)' != ''">BuildAllOSGroups=%(Project.BuildAllOSGroups);%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-      <Project>
-        <!-- If a project isn't setting the OSGroup via metadata then undefine it so that the globally set OSGroup doesn't override empty OSGroup -->
-        <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
-      </Project>
-      <Project>
-        <UndefineProperties Condition="'%(Project.Extension)'!='.builds' and '%(Project.Extension)'!='.proj'">%(Project.UndefineProperties);TestTFMs;FilterToOSGroup;FilterToTestTFM;DefaultBuildAllTarget;SerializeProjects;BuildAllOSGroups</UndefineProperties>
-      </Project>
-    </ItemGroup>
-
-    <!-- If we have enabled code coverage and set the projects to be serialized we need to pass that property down to the childe projects -->
-    <ItemGroup Condition="'$(CodeCoverageEnabled)'=='true' and '$(SerializeProjects)'=='true'">
-      <Project>
-        <AdditionalProperties>SerializeProjects=true;%(Project.AdditionalProperties)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <PropertyGroup>
-      <OSGroupList>AnyOS;$(FilterToOSGroup);</OSGroupList>
-      <OSGroupList Condition="'$(FilterToOSGroup)'=='OSX'">$(OSGroupList);Unix;</OSGroupList>
-      <OSGroupList Condition="'$(FilterToOSGroup)'=='Linux'">$(OSGroupList);Unix;</OSGroupList>
-      <OSGroupList Condition="'$(FilterToOSGroup)'=='FreeBSD'">$(OSGroupList);Unix;</OSGroupList>
-      <OSGroupList Condition="'$(FilterToOSGroup)'=='NetBSD'">$(OSGroupList);Unix;</OSGroupList>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(FilterToOSGroup)'!='' and '$(BuildAllOSGroups)' != 'true'">
-      <ProjectsToBuild Include="@(Project)" Condition="$(OSGroupList.Contains('%(Project.OSGroup);'))" />
- 
-      <Project Remove="@(Project)" />
-      <Project Include="@(ProjectsToBuild)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <TargetGroupList>;$(FilterToTargetGroup);</TargetGroupList>
-      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net46'">$(TargetGroupList)net461;net462;</TargetGroupList>
-      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net461'">$(TargetGroupList)net462;</TargetGroupList>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(FilterToTargetGroup)'!=''">
-      <FilteredProjectsToBuild Include="@(Project)" Condition="$(TargetGroupList.Contains(';%(Project.TargetGroup);')) Or '%(Project.Extension)' == '.proj' Or '%(Project.Extension)' == '.builds'" />
-
-      <Project Remove="@(Project)" />
-      <Project Include="@(FilteredProjectsToBuild)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="DumpTargets" DependsOnTargets="FilterProjects">
-        <MSBuild Targets="$(DefaultBuildAllTarget)"
-             Projects="@(Project)"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
-             ContinueOnError="ErrorAndContinue" />
-  </Target>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Target Name="ProducesPackageId"
-          Returns="@(PackageIds)" 
+          Returns="@(PackageIds)"
           DependsOnTargets="FilterProjects">
     <MSBuild Targets="ProducesPackageId"
              Projects="@(Project)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="TargetOutputs"
-              ItemName="PackageIds" />             
+              ItemName="PackageIds" />
     </MSBuild>
     <ItemGroup>
       <PackageIds Include="@(PackageIds)" />
@@ -107,10 +22,12 @@
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="TargetOutputs"
-              ItemName="PackageIds" />      
+              ItemName="PackageIds" />
     </MSBuild>
     <Message Text="%(PackageIds.Identity)" Importance="High" />
   </Target>
+
+  <Import Project="buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true'" />
 
   <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
@@ -122,86 +39,37 @@
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
-             ContinueOnError="ErrorAndContinue" />
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             ContinueOnError="ErrorAndStop" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
              BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue" />
+             ContinueOnError="ErrorAndStop" />
 
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <!-- FilterProjectsToTest will filter the project list according to the FilterToTestTFM value -->
-  <Target Name="FilterProjectsToTest"
-          BeforeTargets="TestAllProjects" 
-          Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+  <Target Name="TestAllProjects"
+          AfterTargets="BuildAllProjects"
+          Condition="$(MSBuildProjectName.EndsWith('tests'))">
 
-    <ItemGroup>
-      <Project>
-        <!-- make sure every defined TestTFM value are surrounded by semicolons for easier search, e.g. ";net46;"" -->
-        <TestTFMs Condition="'%(Project.TestTFMs)' != ''">;%(Project.TestTFMs);</TestTFMs>
-      </Project>
-
-      <!-- for projects not defining TestTFM in .builds files, we assume the TestTFM is the default which is netcoreapp1.0 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'netcoreapp1.1' And '%(Project.TestTFMs)' == ''" />
-
-      <!-- include the projects have TestTFM value match FilterToTestTFM -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And $([System.String]::new('%(Project.TestTFMs)').Contains(';$(FilterToTestTFM);'))" /> 
-
-      <!-- For netcoreapp1.1 we include projects with TestTFM values of netcoreapp1.0 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'netcoreapp1.1' And $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))" /> 
-
-      <!-- For net46 we include projects with TestTFM values net461 and net462 and net463-->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net461;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net462;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net46' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
-      <!-- For net461 we include projects with TestTFM values net462 and net463 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net461' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net462;'))" /> 
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net461' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
-      <!-- For net462 we include projects with TestTFM values net463 -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '$(FilterToTestTFM)' == 'net462' And $([System.String]::new('%(Project.TestTFMs)').Contains(';net463;'))" /> 
-
-      <ProjectsToTest>
-       <AdditionalProperties Condition="'%(ProjectsToTest.TestTFMs)'!=''">TestTFMs=%(ProjectsToTest.TestTFMs);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <!-- When TestTFMs is not set, and FilterToTestTFM is netcoreapp1.1 -->
-       <AdditionalProperties Condition="('%(ProjectsToTest.TestTFMs)'=='' Or $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))) And '$(FilterToTestTFM)'=='netcoreapp1.1'">TestTFM=netcoreapp1.0;%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <AdditionalProperties Condition="('%(ProjectsToTest.TestTFMs)'=='' Or $([System.String]::new('%(Project.TestTFMs)').Contains(';netcoreapp1.0;'))) And '$(FilterToTestTFM)'!='netcoreapp1.1'">TestTFM=$(FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <FilterToTestTFM>$(FilterToTestTFM)</FilterToTestTFM>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <AdditionalProperties Condition="'%(ProjectsToTest.FilterToTestTFM)'!=''">FilterToTestTFM=%(ProjectsToTest.FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-    </ItemGroup>
-  </Target>
-
-  <!-- TestAllProjects will run all tests according to TestTFM value we are filtering with -->
-  <Target Name="TestAllProjects" 
-          AfterTargets="BuildAllProjects" 
-          Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
 
-    <MSBuild Targets="PrepareForRun;Test"
-             Projects="@(ProjectsToTest)"
+    <MSBuild Targets="Test"
+             Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
              ContinueOnError="ErrorAndContinue" />
 
-    <MSBuild Targets="PrepareForRun;Test"
-             Projects="@(ProjectsToTest)"
+    <MSBuild Targets="Test"
+             Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -209,11 +77,12 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="GetFilesToPackage" DependsOnTargets="FilterProjects"
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="FilterProjects"
           Returns="@(FilesToPackage)">
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
-             BuildInParallel="$(BuildInParallel)"
+             BuildInParallel="true"
              Properties="$(ProjectProperties)"
              ContinueOnError="ErrorAndContinue" >
       <Output TaskParameter="TargetOutputs"
@@ -248,62 +117,6 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="RestoreAllProjectPackages" DependsOnTargets="FilterProjects">
-    <Message Importance="High" Text="Restoring project packages..." />
-
-    <PropertyGroup>
-      <DefaultRestoreAllPackagesTarget Condition="'$(DefaultRestoreAllPackagesTarget)'==''">RestorePackages</DefaultRestoreAllPackagesTarget>
-    </PropertyGroup>
-
-    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
-      however since the project names are unique it will essentially force each to run in its own batch -->
-    <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
-             Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="RestoreAllPackages=true"
-             ContinueOnError="ErrorAndContinue" />
-
-    <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
-             Projects="@(Project)"
-             Condition="'$(SerializeProjects)'!='true'"
-             Properties="RestoreAllPackages=true"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-  </Target>
-
-  <Target Name="GenerateAllTestProjectJsons">
-    <PropertyGroup>
-      <DefaultGenerateAllTestProjectJsonsTarget Condition="'$(DefaultGenerateAllTestProjectJsonsTarget)' == ''">GenerateAllTestProjectJsons</DefaultGenerateAllTestProjectJsonsTarget>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <GeneratedProject Include="@(Project)">
-        <AdditionalProperties>GeneratedTargetGroup=%(Project.TargetGroup);GeneratedOSGroup=%(Project.OSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </GeneratedProject>
-    </ItemGroup>
-
-    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
-         however since the project names are unique it will essentially force each to run in its own batch -->
-    <MSBuild Targets="$(DefaultGenerateAllTestProjectJsonsTarget)"
-             Projects="@(GeneratedProject)"
-             Condition="'$(SerializeProjects)' != 'true'"
-             Properties="GenerateAllTestProjectJsons=$(DefaultGenerateAllTestProjectJsonsTarget)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue" />
-
-    <MSBuild Targets="$(DefaultGenerateAllTestProjectJsonsTarget)"
-             Projects="@(GeneratedProject)"
-             Condition="'$(SerializeProjects)' == 'true' AND '%(Identity)' != ''"
-             Properties="GenerateAllTestProjectJsons=$(DefaultGenerateAllTestProjectJsonsTarget)"
-             ContinueOnError="ErrorAndContinue" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-  </Target> 
-
   <PropertyGroup>
     <TraversalBuildDependsOn>
       BuildAllProjects;
@@ -314,21 +127,6 @@
       CleanAllProjects;
       $(TraversalCleanDependsOn);
     </TraversalCleanDependsOn>
-
-    <TraversalGenerateTestProjectJsonsDependsOn>
-      GenerateAllTestProjectJsons;
-      $(TraversalGenerateTestProjectJsonsDependsOn)
-    </TraversalGenerateTestProjectJsonsDependsOn>
-
-    <TraversalRestorePackagesDependsOn>
-      RestoreAllProjectPackages;
-      $(TraversalRestorePackagesDependsOn)
-    </TraversalRestorePackagesDependsOn>
-
-    <TraversalRestorePackagesDependsOn Condition="'$(_BuildAgainstPackages)' == 'true'">
-      $(TraversalGenerateTestProjectJsonsDependsOn);
-      $(TraversalRestorePackagesDependsOn)
-    </TraversalRestorePackagesDependsOn>
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
@@ -337,12 +135,7 @@
 
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Target Name="RestorePackages" DependsOnTargets="$(TraversalRestorePackagesDependsOn)" />
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
-
-  <!-- Target will be overridden if buildagainstpackages.targets is imported. -->
-  <Target Name="GenerateTestProjectJson" />
-  <Import Condition="'$(_BuildAgainstPackages)' == 'true'" Project="$(ToolsDir)/buildagainstpackages.targets" />
 </Project>

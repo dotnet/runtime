@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -53,14 +52,11 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
-        public void PathWithInvalidCharactersAsPath_ReturnsFalse()
+        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
+        public void PathWithInvalidCharactersAsPath_ReturnsFalse(string invalidPath)
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
-            Assert.All((IOInputs.GetPathsWithInvalidCharacters()), (component) =>
-            {
-                Assert.False(Exists(component));
-            });
+            Assert.False(Exists(invalidPath));
 
             Assert.False(Exists(".."));
             Assert.False(Exists("."));
@@ -141,7 +137,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // Unix equivalent tested already in CreateDirectory
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix equivalent tested already in CreateDirectory
         public void WindowsNonSignificantWhiteSpaceAsPath_ReturnsFalse()
         {
             // Checks that errors aren't thrown when calling Exists() on impossible paths
@@ -174,7 +170,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // In Windows, trailing whitespace in a path is trimmed
+        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed
         public void TrimTrailingWhitespacePath()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -186,7 +182,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // alternate data stream
+        [PlatformSpecific(TestPlatforms.Windows)] // alternate data stream
         public void PathWithAlternateDataStreams_ReturnsFalse()
         {
             Assert.All((IOInputs.GetPathsWithAlternativeDataStreams()), (component) =>
@@ -197,7 +193,7 @@ namespace System.IO.Tests
 
         [Fact]
         [OuterLoop]
-        [PlatformSpecific(XunitPlatformID.Windows)] // device names
+        [PlatformSpecific(TestPlatforms.Windows)] // device names
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse()
         {
             Assert.All((IOInputs.GetPathsWithReservedDeviceNames()), (component) =>
@@ -207,7 +203,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // UNC paths
         public void UncPathWithoutShareNameAsPath_ReturnsFalse()
         {
             Assert.All((IOInputs.GetUncPathsWithoutShareName()), (component) =>
@@ -217,7 +212,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // max directory length not fixed on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // max directory length not fixed on Unix
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ReturnsFalse()
         {
             Assert.All((IOInputs.GetPathsWithComponentLongerThanMaxComponent()), (component) =>
@@ -227,7 +222,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();

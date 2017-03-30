@@ -1,6 +1,0 @@
-CannotAddAbstractMembers : Member 'System.Security.CodeAccessPermission.FromXml(System.Security.SecurityElement)' is abstract in the implementation but is missing in the contract.
-CannotAddAbstractMembers : Member 'System.Security.CodeAccessPermission.ToXml()' is abstract in the implementation but is missing in the contract.
-InterfacesShouldHaveSameMembers : Implementation interface member 'System.Security.ISecurityEncodable.FromXml(System.Security.SecurityElement)' is not in the contract.
-InterfacesShouldHaveSameMembers : Implementation interface member 'System.Security.ISecurityEncodable.ToXml()' is not in the contract.
-InterfacesShouldHaveSameMembers : Implementation interface member 'System.Security.ISecurityPolicyEncodable.FromXml(System.Security.SecurityElement, System.Security.Policy.PolicyLevel)' is not in the contract.
-InterfacesShouldHaveSameMembers : Implementation interface member 'System.Security.ISecurityPolicyEncodable.ToXml(System.Security.Policy.PolicyLevel)' is not in the contract.

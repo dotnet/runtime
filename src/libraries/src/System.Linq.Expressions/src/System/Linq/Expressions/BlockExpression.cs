@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -15,39 +14,23 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents a block that contains a sequence of expressions where variables can be defined.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.BlockExpressionProxy))]
+    [DebuggerTypeProxy(typeof(BlockExpressionProxy))]
     public class BlockExpression : Expression
     {
         /// <summary>
         /// Gets the expressions in this block.
         /// </summary>
-        public ReadOnlyCollection<Expression> Expressions
-        {
-            get { return GetOrMakeExpressions(); }
-        }
+        public ReadOnlyCollection<Expression> Expressions => GetOrMakeExpressions();
 
         /// <summary>
         /// Gets the variables defined in this block.
         /// </summary>
-        public ReadOnlyCollection<ParameterExpression> Variables
-        {
-            get
-            {
-                return GetOrMakeVariables();
-            }
-        }
+        public ReadOnlyCollection<ParameterExpression> Variables => GetOrMakeVariables();
 
         /// <summary>
         /// Gets the last expression in this block.
         /// </summary>
-        public Expression Result
-        {
-            get
-            {
-                Debug.Assert(ExpressionCount > 0);
-                return GetExpression(ExpressionCount - 1);
-            }
-        }
+        public Expression Result => GetExpression(ExpressionCount - 1);
 
         internal BlockExpression()
         {
@@ -66,36 +49,68 @@ namespace System.Linq.Expressions
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Block; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Block;
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return GetExpression(ExpressionCount - 1).Type; }
-        }
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        public override Type Type => GetExpression(ExpressionCount - 1).Type;
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="variables">The <see cref="Variables" /> property of the result.</param>
-        /// <param name="expressions">The <see cref="Expressions" /> property of the result.</param>
+        /// <param name="variables">The <see cref="Variables"/> property of the result.</param>
+        /// <param name="expressions">The <see cref="Expressions"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public BlockExpression Update(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
-            if (variables == Variables && expressions == Expressions)
+            if (expressions != null)
             {
-                return this;
+                // Ensure variables is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                ICollection<ParameterExpression> vars;
+                if (variables == null)
+                {
+                    vars = null;
+                }
+                else
+                {
+                    vars = variables as ICollection<ParameterExpression>;
+                    if (vars == null)
+                    {
+                        variables = vars = variables.ToReadOnly();
+                    }
+                }
+
+                if (SameVariables(vars))
+                {
+                    // Ensure expressions is safe to enumerate twice.
+                    // (If this means a second call to ToReadOnly it will return quickly).
+                    ICollection<Expression> exps = expressions as ICollection<Expression>;
+                    if (exps == null)
+                    {
+                        expressions = exps = expressions.ToReadOnly();
+                    }
+                    if (SameExpressions(exps))
+                    {
+                        return this;
+                    }
+                }
             }
 
-            return Expression.Block(Type, variables, expressions);
+            return Block(Type, variables, expressions);
+        }
+
+        internal virtual bool SameVariables(ICollection<ParameterExpression> variables) =>
+            variables == null || variables.Count == 0;
+
+        [ExcludeFromCodeCoverage] // Unreachable
+        internal virtual bool SameExpressions(ICollection<Expression> expressions)
+        {
+            throw ContractUtils.Unreachable;
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
@@ -125,14 +140,14 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Makes a copy of this node replacing the parameters/args with the provided values.  The 
+        /// Makes a copy of this node replacing the parameters/args with the provided values.  The
         /// shape of the parameters/args needs to match the shape of the current block - in other
         /// words there should be the same # of parameters and args.
-        /// 
+        ///
         /// parameters can be null in which case the existing parameters are used.
-        /// 
+        ///
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
-        /// subclass of BlockExpression which is being used. 
+        /// subclass of BlockExpression which is being used.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
@@ -142,15 +157,15 @@ namespace System.Linq.Expressions
 
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        /// 
+        ///
         /// This is similar to the ReturnReadOnly which only takes a single argument. This version
         /// supports nodes which hold onto 5 Expressions and puts all of the arguments into the
         /// ReadOnlyCollection.
-        /// 
-        /// Ultimately this means if we create the readonly collection we will be slightly more wasteful as we'll
-        /// have a readonly collection + some fields in the type.  The DLR internally avoids accessing anything
-        /// which would force the readonly collection to be created.
-        /// 
+        ///
+        /// Ultimately this means if we create the read-only collection we will be slightly more wasteful as we'll
+        /// have a read-only collection + some fields in the type.  The DLR internally avoids accessing anything
+        /// which would force the read-only collection to be created.
+        ///
         /// This is used by BlockExpression5 and MethodCallExpression5.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnlyExpressions(BlockExpression provider, ref object collection)
@@ -158,7 +173,7 @@ namespace System.Linq.Expressions
             Expression tObj = collection as Expression;
             if (tObj != null)
             {
-                // otherwise make sure only one readonly collection ever gets exposed
+                // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<Expression>(new BlockExpressionList(provider, tObj)),
@@ -166,7 +181,7 @@ namespace System.Linq.Expressions
                 );
             }
 
-            // and return what is not guaranteed to be a readonly collection
+            // and return what is not guaranteed to be a read-only collection
             return (ReadOnlyCollection<Expression>)collection;
         }
     }
@@ -175,7 +190,7 @@ namespace System.Linq.Expressions
 
     internal sealed class Block2 : BlockExpression
     {
-        private object _arg0;                   // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                   // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1;      // storage for the 2nd argument.
 
         internal Block2(Expression arg0, Expression arg1)
@@ -188,19 +203,38 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
         }
 
-        internal override int ExpressionCount
+        internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            get
+            Debug.Assert(expressions != null);
+            if (expressions.Count == 2)
             {
-                return 2;
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(expressions, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = expressions.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        return en.Current == _arg1;
+                    }
+                }
             }
+
+            return false;
         }
+
+        internal override int ExpressionCount => 2;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -219,7 +253,7 @@ namespace System.Linq.Expressions
 
     internal sealed class Block3 : BlockExpression
     {
-        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd and 3rd arguments.
 
         internal Block3(Expression arg0, Expression arg1, Expression arg2)
@@ -229,24 +263,47 @@ namespace System.Linq.Expressions
             _arg2 = arg2;
         }
 
+        internal override bool SameExpressions(ICollection<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            if (expressions.Count == 3)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(expressions, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = expressions.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            return en.Current == _arg2;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         internal override Expression GetExpression(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        internal override int ExpressionCount => 3;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -265,8 +322,8 @@ namespace System.Linq.Expressions
 
     internal sealed class Block4 : BlockExpression
     {
-        private object _arg0;                               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1, _arg2, _arg3;    // storarg for the 2nd, 3rd, and 4th arguments.
+        private object _arg0;                               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1, _arg2, _arg3;    // storage for the 2nd, 3rd, and 4th arguments.
 
         internal Block4(Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
@@ -276,11 +333,44 @@ namespace System.Linq.Expressions
             _arg3 = arg3;
         }
 
+        internal override bool SameExpressions(ICollection<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            if (expressions.Count == 4)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(expressions, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = expressions.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            if (en.Current == _arg2)
+                            {
+                                en.MoveNext();
+                                return en.Current == _arg3;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         internal override Expression GetExpression(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -288,13 +378,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        internal override int ExpressionCount => 4;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -313,7 +397,7 @@ namespace System.Linq.Expressions
 
     internal sealed class Block5 : BlockExpression
     {
-        private object _arg0;                                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                                       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3, _arg4;     // storage for the 2nd - 5th args.
 
         internal Block5(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
@@ -329,7 +413,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -338,13 +422,44 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
+        internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            get
+            Debug.Assert(expressions != null);
+            if (expressions.Count == 5)
             {
-                return 5;
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(expressions, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = expressions.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            if (en.Current == _arg2)
+                            {
+                                en.MoveNext();
+                                if (en.Current == _arg3)
+                                {
+                                    en.MoveNext();
+                                    return en.Current == _arg4;
+                                }
+                            }
+                        }
+                    }
+                }
             }
+
+            return false;
         }
+
+        internal override int ExpressionCount => 5;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -363,14 +478,17 @@ namespace System.Linq.Expressions
 
     internal class BlockN : BlockExpression
     {
-        private IList<Expression> _expressions;         // either the original IList<Expression> or a ReadOnlyCollection if the user has accessed it.
+        private IReadOnlyList<Expression> _expressions;         // either the original IList<Expression> or a ReadOnlyCollection if the user has accessed it.
 
-        internal BlockN(IList<Expression> expressions)
+        internal BlockN(IReadOnlyList<Expression> expressions)
         {
             Debug.Assert(expressions.Count != 0);
 
             _expressions = expressions;
         }
+
+        internal override bool SameExpressions(ICollection<Expression> expressions) =>
+            ExpressionUtils.SameElements(expressions, _expressions);
 
         internal override Expression GetExpression(int index)
         {
@@ -379,17 +497,11 @@ namespace System.Linq.Expressions
             return _expressions[index];
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return _expressions.Count;
-            }
-        }
+        internal override int ExpressionCount => _expressions.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
-            return ReturnReadOnly(ref _expressions);
+            return ExpressionUtils.ReturnReadOnly(ref _expressions);
         }
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
@@ -403,28 +515,25 @@ namespace System.Linq.Expressions
 
     internal class ScopeExpression : BlockExpression
     {
-        private IList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the readonly collection
+        private IReadOnlyList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the read-only collection
 
-        internal ScopeExpression(IList<ParameterExpression> variables)
+        internal ScopeExpression(IReadOnlyList<ParameterExpression> variables)
         {
             _variables = variables;
         }
 
+        internal override bool SameVariables(ICollection<ParameterExpression> variables) =>
+            ExpressionUtils.SameElements(variables, _variables);
+
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
         {
-            return ReturnReadOnly(ref _variables);
+            return ExpressionUtils.ReturnReadOnly(ref _variables);
         }
 
-        protected IList<ParameterExpression> VariablesList
-        {
-            get
-            {
-                return _variables;
-            }
-        }
+        protected IReadOnlyList<ParameterExpression> VariablesList => _variables;
 
         // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
-        internal IList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
+        internal IReadOnlyList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
         {
             if (variables != null && variables != VariablesList)
             {
@@ -443,33 +552,48 @@ namespace System.Linq.Expressions
     {
         private object _body;
 
-        internal Scope1(IList<ParameterExpression> variables, Expression body)
+        internal Scope1(IReadOnlyList<ParameterExpression> variables, Expression body)
             : this(variables, (object)body)
         {
         }
 
-        private Scope1(IList<ParameterExpression> variables, object body)
+        private Scope1(IReadOnlyList<ParameterExpression> variables, object body)
             : base(variables)
         {
             _body = body;
+        }
+
+        internal override bool SameExpressions(ICollection<Expression> expressions)
+        {
+            Debug.Assert(expressions != null);
+            if (expressions.Count == 1)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _body as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(expressions, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = expressions.GetEnumerator())
+                {
+                    en.MoveNext();
+                    return ExpressionUtils.ReturnObject<Expression>(_body) == en.Current;
+                }
+            }
+
+            return false;
         }
 
         internal override Expression GetExpression(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_body);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_body);
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        internal override int ExpressionCount => 1;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -493,35 +617,26 @@ namespace System.Linq.Expressions
 
     internal class ScopeN : ScopeExpression
     {
-        private IList<Expression> _body;
+        private IReadOnlyList<Expression> _body;
 
-        internal ScopeN(IList<ParameterExpression> variables, IList<Expression> body)
+        internal ScopeN(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> body)
             : base(variables)
         {
             _body = body;
         }
 
-        protected IList<Expression> Body
-        {
-            get { return _body; }
-        }
+        internal override bool SameExpressions(ICollection<Expression> expressions) =>
+            ExpressionUtils.SameElements(expressions, _body);
 
-        internal override Expression GetExpression(int index)
-        {
-            return _body[index];
-        }
+        protected IReadOnlyList<Expression> Body => _body;
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return _body.Count;
-            }
-        }
+        internal override Expression GetExpression(int index) => _body[index];
+
+        internal override int ExpressionCount => _body.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
-            return ReturnReadOnly(ref _body);
+            return ExpressionUtils.ReturnReadOnly(ref _body);
         }
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
@@ -539,20 +654,15 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class ScopeWithType : ScopeN
+    internal sealed class ScopeWithType : ScopeN
     {
-        private readonly Type _type;
-
-        internal ScopeWithType(IList<ParameterExpression> variables, IList<Expression> expressions, Type type)
+        internal ScopeWithType(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> expressions, Type type)
             : base(variables, expressions)
         {
-            _type = type;
+            Type = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type { get; }
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
@@ -560,12 +670,12 @@ namespace System.Linq.Expressions
             {
                 Debug.Assert(variables.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
-                return new ScopeWithType(variables, Body, _type);
+                return new ScopeWithType(variables, Body, Type);
             }
             Debug.Assert(args.Length == ExpressionCount);
             Debug.Assert(variables == null || variables.Count == Variables.Count);
 
-            return new ScopeWithType(ReuseOrValidateVariables(variables), args, _type);
+            return new ScopeWithType(ReuseOrValidateVariables(variables), args, Type);
         }
     }
 
@@ -665,19 +775,29 @@ namespace System.Linq.Expressions
             return IndexOf(item) != -1;
         }
 
-        public void CopyTo(Expression[] array, int arrayIndex)
+        public void CopyTo(Expression[] array, int index)
         {
-            array[arrayIndex++] = _arg0;
-            for (int i = 1; i < _block.ExpressionCount; i++)
+            ContractUtils.RequiresNotNull(array, nameof(array));
+            if (index < 0)
             {
-                array[arrayIndex++] = _block.GetExpression(i);
+                throw Error.ArgumentOutOfRange(nameof(index));
+            }
+
+            int n = _block.ExpressionCount;
+            Debug.Assert(n > 0);
+            if (index + n > array.Length)
+            {
+                throw new ArgumentException();
+            }
+
+            array[index++] = _arg0;
+            for (int i = 1; i < n; i++)
+            {
+                array[index++] = _block.GetExpression(i);
             }
         }
 
-        public int Count
-        {
-            get { return _block.ExpressionCount; }
-        }
+        public int Count => _block.ExpressionCount;
 
         [ExcludeFromCodeCoverage] // Unreachable
         public bool IsReadOnly
@@ -716,6 +836,7 @@ namespace System.Linq.Expressions
         {
             return GetEnumerator();
         }
+
         #endregion
     }
 
@@ -731,11 +852,12 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1)
         {
-            RequiresCanRead(arg0, nameof(arg0));
-            RequiresCanRead(arg1, nameof(arg1));
+            ExpressionUtils.RequiresCanRead(arg0, nameof(arg0));
+            ExpressionUtils.RequiresCanRead(arg1, nameof(arg1));
 
             return new Block2(arg0, arg1);
         }
+
         /// <summary>
         /// Creates a <see cref="BlockExpression"/> that contains three expressions and has no variables.
         /// </summary>
@@ -745,9 +867,9 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2)
         {
-            RequiresCanRead(arg0, nameof(arg0));
-            RequiresCanRead(arg1, nameof(arg1));
-            RequiresCanRead(arg2, nameof(arg2));
+            ExpressionUtils.RequiresCanRead(arg0, nameof(arg0));
+            ExpressionUtils.RequiresCanRead(arg1, nameof(arg1));
+            ExpressionUtils.RequiresCanRead(arg2, nameof(arg2));
             return new Block3(arg0, arg1, arg2);
         }
 
@@ -761,10 +883,10 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
-            RequiresCanRead(arg0, nameof(arg0));
-            RequiresCanRead(arg1, nameof(arg1));
-            RequiresCanRead(arg2, nameof(arg2));
-            RequiresCanRead(arg3, nameof(arg3));
+            ExpressionUtils.RequiresCanRead(arg0, nameof(arg0));
+            ExpressionUtils.RequiresCanRead(arg1, nameof(arg1));
+            ExpressionUtils.RequiresCanRead(arg2, nameof(arg2));
+            ExpressionUtils.RequiresCanRead(arg3, nameof(arg3));
             return new Block4(arg0, arg1, arg2, arg3);
         }
 
@@ -779,11 +901,11 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
         {
-            RequiresCanRead(arg0, nameof(arg0));
-            RequiresCanRead(arg1, nameof(arg1));
-            RequiresCanRead(arg2, nameof(arg2));
-            RequiresCanRead(arg3, nameof(arg3));
-            RequiresCanRead(arg4, nameof(arg4));
+            ExpressionUtils.RequiresCanRead(arg0, nameof(arg0));
+            ExpressionUtils.RequiresCanRead(arg1, nameof(arg1));
+            ExpressionUtils.RequiresCanRead(arg2, nameof(arg2));
+            ExpressionUtils.RequiresCanRead(arg3, nameof(arg3));
+            ExpressionUtils.RequiresCanRead(arg4, nameof(arg4));
 
             return new Block5(arg0, arg1, arg2, arg3, arg4);
         }
@@ -866,18 +988,18 @@ namespace System.Linq.Expressions
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
-            var variableList = variables.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
             {
-                var expressionList = expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly();
+                IReadOnlyList<Expression> expressionList = expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly();
                 RequiresCanRead(expressionList, nameof(expressions));
 
                 return GetOptimizedBlockExpression(expressionList);
             }
             else
             {
-                var expressionList = expressions.ToReadOnly();
+                ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
                 RequiresCanRead(expressionList, nameof(expressions));
 
                 return BlockCore(null, variableList, expressionList);
@@ -896,18 +1018,18 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
 
-            var expressionList = expressions.ToReadOnly();
+            ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
             RequiresCanRead(expressionList, nameof(expressions));
 
-            var variableList = variables.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0 && expressionList.Count != 0)
             {
-                var expressionCount = expressionList.Count;
+                int expressionCount = expressionList.Count;
 
                 if (expressionCount != 0)
                 {
-                    var lastExpression = expressionList[expressionCount - 1];
+                    Expression lastExpression = expressionList[expressionCount - 1];
 
                     if (lastExpression.Type == type)
                     {
@@ -993,7 +1115,7 @@ namespace System.Linq.Expressions
                 case 4: return new Block4(expressions[0], expressions[1], expressions[2], expressions[3]);
                 case 5: return new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
                 default:
-                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
+                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IReadOnlyList<Expression>)expressions.ToArray());
             }
         }
     }

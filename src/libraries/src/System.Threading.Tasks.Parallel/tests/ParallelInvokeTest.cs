@@ -23,7 +23,7 @@ namespace System.Threading.Tasks.Tests
         private ActionType _actionType; // type of actions
 
         private Action[] _actions;
-        private double[] _results;  // global place to store the workload results for verication
+        private double[] _results;  // global place to store the workload results for verification
 
         #endregion
 
@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Tests
             _actions = new Action[_count];
             _results = new double[_count];
 
-            // intialize actions 
+            // initialize actions 
             for (int i = 0; i < _count; i++)
             {
                 int iCopy = i;
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Tests
 
         #region Helper Methods
 
-        // calcuate 1 + 1/(2*2) + 1/(3*3) + ... +  1/(n*n) = Math.Pow (Math.PI, 2) / 6
+        // calculate 1 + 1/(2*2) + 1/(3*3) + ... +  1/(n*n) = Math.Pow (Math.PI, 2) / 6
         private static double ZetaSequence(int n)
         {
             double result = 0;

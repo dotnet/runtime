@@ -30,7 +30,7 @@ namespace System.Xml
         {
             IntArray keys;
             if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             if (_maps.TryGetValue(value.Dictionary, out keys))
             {

@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Emit
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public enum FlowControl
     {
         Branch = 0,
@@ -13,6 +13,8 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
+        [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
+        Phi = 6,
         Return = 7,
         Throw = 8,
     }

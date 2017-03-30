@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -130,6 +129,25 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NullNullableValueException(bool useInterpreter)
+        {
+            string localizedMessage = null;
+            try
+            {
+                int dummy = default(int?).Value;
+            }
+            catch (InvalidOperationException ioe)
+            {
+                localizedMessage = ioe.Message;
+            }
+
+            Expression<Func<long>> e = () => default(long?).Value;
+            Func<long> f = e.Compile(useInterpreter);
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => f());
+            Assert.Equal(localizedMessage, exception.Message);
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckMemberAccessClassInstanceFieldTest(bool useInterpreter)
@@ -225,6 +243,18 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public static void Field_ByrefTypeFieldAccessor_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<string>).MakeByRefType(), nameof(GenericClass<string>.Field)));
+        }
+
+        [Fact]
+        public static void Field_GenericFieldAccessor_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<>), nameof(GenericClass<string>.Field)));
+        }
+
+        [Fact]
         public static void Field_InstanceField_NullExpression_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentNullException>("expression", () => Expression.Field(null, "fieldName"));
@@ -256,7 +286,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>(null, () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.II))));
         }
-        
+
         [Fact]
         public static void Field_NoSuchFieldName_ThrowsArgumentException()
         {
@@ -395,7 +425,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>("property", () => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
         }
-        
+
         [Fact]
         public static void Property_NullProperty_ThrowsArgumentNullException()
         {
@@ -453,7 +483,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, typeof(PC).GetProperty(nameof(PC.II))));
         }
-        
+
         [Fact]
         public static void Property_NoSuchPropertyName_ThrowsArgumentException()
         {
@@ -470,14 +500,21 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Property_GenericPropertyAccessor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(GenericClass<>).GetMethod(nameof(GenericClass<string>.Method))));
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(GenericClass<>).GetProperty(nameof(GenericClass<string>.Property)).GetGetMethod()));
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.GenericMethod))));
+            Assert.Throws<ArgumentException>("property", () => Expression.Property(null, typeof(GenericClass<>).GetProperty(nameof(GenericClass<string>.Property))));
         }
 
         [Fact]
         public static void Property_PropertyAccessorNotFromProperty_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticMethod))));
+        }
+
+        [Fact]
+        public static void Property_ByRefStaticAccess_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(NonGenericClass).MakeByRefType(), nameof(NonGenericClass.NonGenericProperty)));
         }
 
         [Fact]
@@ -515,6 +552,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.MakeMemberAccess(Expression.Constant(new PC()), member));
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
@@ -527,7 +565,7 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = type.CreateTypeInfo();
             PropertyInfo createdProperty = createdType.DeclaredProperties.First();
 
-            Expression expression = Expression.Constant(Activator.CreateInstance(createdType.AsType()));
+            Expression expression = Expression.Constant(Activator.CreateInstance(createdType));
 
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty));
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty.Name));
@@ -536,15 +574,38 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, createdProperty));
         }
+#endif
 
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.Property(null, typeof(DateTime).GetProperty(nameof(DateTime.Now)));
+            MemberExpression e1 = Expression.Property(null, typeof(DateTime).GetProperty(nameof(DateTime.Now)));
             Assert.Equal("DateTime.Now", e1.ToString());
 
-            var e2 = Expression.Property(Expression.Parameter(typeof(DateTime), "d"), typeof(DateTime).GetProperty(nameof(DateTime.Year)));
+            MemberExpression e2 = Expression.Property(Expression.Parameter(typeof(DateTime), "d"), typeof(DateTime).GetProperty(nameof(DateTime.Year)));
             Assert.Equal("d.Year", e2.ToString());
+        }
+
+        [Fact]
+        public static void UpdateSameResturnsSame()
+        {
+            var exp = Expression.Constant(new PS {II = 42});
+            var pro = Expression.Property(exp, nameof(PS.II));
+            Assert.Same(pro, pro.Update(exp));
+        }
+
+        [Fact]
+        public static void UpdateStaticResturnsSame()
+        {
+            var pro = Expression.Property(null, typeof(PS), nameof(PS.SI));
+            Assert.Same(pro, pro.Update(null));
+        }
+
+        [Fact]
+        public static void UpdateDifferentResturnsDifferent()
+        {
+            var pro = Expression.Property(Expression.Constant(new PS {II = 42}), nameof(PS.II));
+            Assert.NotSame(pro, pro.Update(Expression.Constant(new PS {II = 42})));
         }
     }
 }

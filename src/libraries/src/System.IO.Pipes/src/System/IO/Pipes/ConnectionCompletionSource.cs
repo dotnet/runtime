@@ -26,7 +26,7 @@ namespace System.IO.Pipes
         protected override void AsyncCallback(uint errorCode, uint numBytes)
         {
             // Special case for when the client has already connected to us.
-            if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
+            if (errorCode == Interop.Errors.ERROR_PIPE_CONNECTED)
             {
                 errorCode = 0;
             }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.Policy;
 using Xunit;
 
 namespace System.Security.Permissions.Tests
@@ -11,23 +12,24 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void ApplicationTrustCollectionCallMethods()
         {
-            Policy.ApplicationTrustCollection atc = (Policy.ApplicationTrustCollection)Activator.CreateInstance(typeof(Policy.ApplicationTrustCollection), true);
-            Policy.ApplicationTrust at = new Policy.ApplicationTrust();
+            ApplicationTrustCollection atc = (ApplicationTrustCollection)Activator.CreateInstance(typeof(ApplicationTrustCollection), true);
+            ApplicationTrust at = new ApplicationTrust();
             int testint = atc.Add(at);
-            Policy.ApplicationTrust[] atarray = new Policy.ApplicationTrust[1];
+            ApplicationTrust[] atarray = new ApplicationTrust[1];
             atc.AddRange(atarray);
             atc.AddRange(atc);
             atc.Clear();
             atc.CopyTo(atarray, 0);
-            Policy.ApplicationTrustEnumerator ate = atc.GetEnumerator();
+            ApplicationTrustEnumerator ate = atc.GetEnumerator();
             atc.Remove(at);
             atc.RemoveRange(atarray);
             atc.RemoveRange(atc);
         }
+
         [Fact]
         public static void ApplicationTrustEnumeratorCallMethods()
         {
-            Policy.ApplicationTrustEnumerator ate = (Policy.ApplicationTrustEnumerator)Activator.CreateInstance(typeof(Policy.ApplicationTrustEnumerator), true);
+            ApplicationTrustEnumerator ate = (ApplicationTrustEnumerator)Activator.CreateInstance(typeof(ApplicationTrustEnumerator), true);
             bool testbool = ate.MoveNext();
             ate.Reset();
         }

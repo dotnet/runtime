@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
+using System.Numerics.Hashing;
 
 namespace System.Drawing
 {
@@ -11,7 +13,8 @@ namespace System.Drawing
     ///       Stores the location and size of a rectangular region. 
     ///    </para>
     /// </summary>
-    public struct Rectangle
+    [Serializable]
+    public struct Rectangle : IEquatable<Rectangle>
     {
         public static readonly Rectangle Empty = new Rectangle();
 
@@ -52,13 +55,8 @@ namespace System.Drawing
         ///    Creates a new <see cref='System.Drawing.Rectangle'/> with
         ///    the specified location and size.
         /// </summary>
-        public static Rectangle FromLTRB(int left, int top, int right, int bottom)
-        {
-            return new Rectangle(left,
-                                 top,
-                                 right - left,
-                                 bottom - top);
-        }
+        public static Rectangle FromLTRB(int left, int top, int right, int bottom) =>
+            new Rectangle(left, top, unchecked(right - left), unchecked(bottom - top));
 
         /// <summary>
         ///    <para>
@@ -66,12 +64,10 @@ namespace System.Drawing
         ///       upper-left corner of the rectangular region represented by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public Point Location
         {
-            get
-            {
-                return new Point(X, Y);
-            }
+            get { return new Point(X, Y); }
             set
             {
                 X = value.X;
@@ -82,12 +78,10 @@ namespace System.Drawing
         /// <summary>
         ///    Gets or sets the size of this <see cref='System.Drawing.Rectangle'/>.
         /// </summary>
+        [Browsable(false)]
         public Size Size
         {
-            get
-            {
-                return new Size(Width, Height);
-            }
+            get { return new Size(Width, Height); }
             set
             {
                 Width = value.Width;
@@ -101,14 +95,8 @@ namespace System.Drawing
         /// </summary>
         public int X
         {
-            get
-            {
-                return _x;
-            }
-            set
-            {
-                _x = value;
-            }
+            get { return _x; }
+            set { _x = value; }
         }
 
         /// <summary>
@@ -117,14 +105,8 @@ namespace System.Drawing
         /// </summary>
         public int Y
         {
-            get
-            {
-                return _y;
-            }
-            set
-            {
-                _y = value;
-            }
+            get { return _y; }
+            set { _y = value; }
         }
 
         /// <summary>
@@ -133,14 +115,8 @@ namespace System.Drawing
         /// </summary>
         public int Width
         {
-            get
-            {
-                return _width;
-            }
-            set
-            {
-                _width = value;
-            }
+            get { return _width; }
+            set { _width = value; }
         }
 
         /// <summary>
@@ -149,14 +125,8 @@ namespace System.Drawing
         /// </summary>
         public int Height
         {
-            get
-            {
-                return _height;
-            }
-            set
-            {
-                _height = value;
-            }
+            get { return _height; }
+            set { _height = value; }
         }
 
         /// <summary>
@@ -165,13 +135,8 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
-        public int Left
-        {
-            get
-            {
-                return X;
-            }
-        }
+        [Browsable(false)]
+        public int Left => X;
 
         /// <summary>
         ///    <para>
@@ -179,13 +144,8 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
-        public int Top
-        {
-            get
-            {
-                return Y;
-            }
-        }
+        [Browsable(false)]
+        public int Top => Y;
 
         /// <summary>
         ///    <para>
@@ -193,13 +153,8 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
-        public int Right
-        {
-            get
-            {
-                return X + Width;
-            }
-        }
+        [Browsable(false)]
+        public int Right => unchecked(X + Width);
 
         /// <summary>
         ///    <para>
@@ -207,13 +162,8 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
-        public int Bottom
-        {
-            get
-            {
-                return Y + Height;
-            }
-        }
+        [Browsable(false)]
+        public int Bottom => unchecked(Y + Height);
 
         /// <summary>
         ///    <para>
@@ -221,13 +171,8 @@ namespace System.Drawing
         ///       or a <see cref='System.Drawing.Rectangle.Height'/> of 0.
         ///    </para>
         /// </summary>
-        public bool IsEmpty
-        {
-            get
-            {
-                return _height == 0 && _width == 0 && _x == 0 && _y == 0;
-            }
-        }
+        [Browsable(false)]
+        public bool IsEmpty => _height == 0 && _width == 0 && _x == 0 && _y == 0;
 
         /// <summary>
         ///    <para>
@@ -235,15 +180,9 @@ namespace System.Drawing
         ///       the same location and size of this Rectangle.
         ///    </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Rectangle))
-                return false;
+        public override bool Equals(object obj) => obj is Rectangle && Equals((Rectangle)obj);
 
-            Rectangle comp = (Rectangle)obj;
-
-            return (comp.X == X) && (comp.Y == Y) && (comp.Width == Width) && (comp.Height == Height);
-        }
+        public bool Equals(Rectangle other) => this == other;
 
         /// <summary>
         ///    <para>
@@ -251,11 +190,8 @@ namespace System.Drawing
         ///       objects have equal location and size.
         ///    </para>
         /// </summary>
-        public static bool operator ==(Rectangle left, Rectangle right)
-        {
-            return (left.X == right.X && left.Y == right.Y &&
-                left.Width == right.Width && left.Height == right.Height);
-        }
+        public static bool operator ==(Rectangle left, Rectangle right) =>
+            left.X == right.X && left.Y == right.Y && left.Width == right.Width && left.Height == right.Height;
 
         /// <summary>
         ///    <para>
@@ -263,10 +199,7 @@ namespace System.Drawing
         ///       objects differ in location or size.
         ///    </para>
         /// </summary>
-        public static bool operator !=(Rectangle left, Rectangle right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(Rectangle left, Rectangle right) => !(left == right);
 
         /// <summary>
         ///   Converts a RectangleF to a Rectangle by performing a ceiling operation on
@@ -274,10 +207,14 @@ namespace System.Drawing
         /// </summary>
         public static Rectangle Ceiling(RectangleF value)
         {
-            return new Rectangle((int)Math.Ceiling(value.X),
-                                 (int)Math.Ceiling(value.Y),
-                                 (int)Math.Ceiling(value.Width),
-                                 (int)Math.Ceiling(value.Height));
+            unchecked
+            {
+                return new Rectangle(
+                    (int)Math.Ceiling(value.X),
+                    (int)Math.Ceiling(value.Y),
+                    (int)Math.Ceiling(value.Width),
+                    (int)Math.Ceiling(value.Height));
+            }
         }
 
         /// <summary>
@@ -286,10 +223,14 @@ namespace System.Drawing
         /// </summary>
         public static Rectangle Truncate(RectangleF value)
         {
-            return new Rectangle((int)value.X,
-                                 (int)value.Y,
-                                 (int)value.Width,
-                                 (int)value.Height);
+            unchecked
+            {
+                return new Rectangle(
+                    (int)value.X,
+                    (int)value.Y,
+                    (int)value.Width,
+                    (int)value.Height);
+            }
         }
 
         /// <summary>
@@ -298,10 +239,14 @@ namespace System.Drawing
         /// </summary>
         public static Rectangle Round(RectangleF value)
         {
-            return new Rectangle((int)Math.Round(value.X),
-                                 (int)Math.Round(value.Y),
-                                 (int)Math.Round(value.Width),
-                                 (int)Math.Round(value.Height));
+            unchecked
+            {
+                return new Rectangle(
+                    (int)Math.Round(value.X),
+                    (int)Math.Round(value.Y),
+                    (int)Math.Round(value.Width),
+                    (int)Math.Round(value.Height));
+            }
         }
 
         /// <summary>
@@ -311,10 +256,7 @@ namespace System.Drawing
         ///    </para>
         /// </summary>
         [Pure]
-        public bool Contains(int x, int y)
-        {
-            return X <= x && x < X + Width && Y <= y && y < Y + Height;
-        }
+        public bool Contains(int x, int y) => X <= x && x < X + Width && Y <= y && y < Y + Height;
 
         /// <summary>
         ///    <para>
@@ -323,10 +265,7 @@ namespace System.Drawing
         ///    </para>
         /// </summary>
         [Pure]
-        public bool Contains(Point pt)
-        {
-            return Contains(pt.X, pt.Y);
-        }
+        public bool Contains(Point pt) => Contains(pt.X, pt.Y);
 
         /// <summary>
         ///    <para>
@@ -336,17 +275,12 @@ namespace System.Drawing
         ///    </para>
         /// </summary>
         [Pure]
-        public bool Contains(Rectangle rect)
-        {
-            return (X <= rect.X) && ((rect.X + rect.Width) <= (X + Width)) &&
-                (Y <= rect.Y) && ((rect.Y + rect.Height) <= (Y + Height));
-        }
+        public bool Contains(Rectangle rect) =>
+            (X <= rect.X) && (rect.X + rect.Width <= X + Width) &&
+            (Y <= rect.Y) && (rect.Y + rect.Height <= Y + Height);
 
-        public override int GetHashCode()
-        {
-            return (int)((uint)X ^ (((uint)Y << 13) | ((uint)Y >> 19)) ^
-                (((uint)Width << 26) | ((uint)Width >> 6)) ^ (((uint)Height << 7) | ((uint)Height >> 25)));
-        }
+        public override int GetHashCode() =>
+            HashHelpers.Combine(HashHelpers.Combine(HashHelpers.Combine(X, Y), Width), Height);
 
         /// <summary>
         ///    <para>
@@ -356,19 +290,20 @@ namespace System.Drawing
         /// </summary>
         public void Inflate(int width, int height)
         {
-            X -= width;
-            Y -= height;
-            Width += 2 * width;
-            Height += 2 * height;
+            unchecked
+            {
+                X -= width;
+                Y -= height;
+
+                Width += 2 * width;
+                Height += 2 * height;
+            }
         }
 
         /// <summary>
         ///    Inflates this <see cref='System.Drawing.Rectangle'/> by the specified amount.
         /// </summary>
-        public void Inflate(Size size)
-        {
-            Inflate(size.Width, size.Height);
-        }
+        public void Inflate(Size size) => Inflate(size.Width, size.Height);
 
         /// <summary>
         ///    <para>
@@ -387,7 +322,7 @@ namespace System.Drawing
         /// </summary>
         public void Intersect(Rectangle rect)
         {
-            Rectangle result = Rectangle.Intersect(rect, this);
+            Rectangle result = Intersect(rect, this);
 
             X = result.X;
             Y = result.Y;
@@ -418,11 +353,9 @@ namespace System.Drawing
         ///     Determines if this rectangle intersects with rect.
         /// </summary>
         [Pure]
-        public bool IntersectsWith(Rectangle rect)
-        {
-            return (rect.X < X + Width) && (X < (rect.X + rect.Width)) &&
-                (rect.Y < Y + Height) && (Y < rect.Y + rect.Height);
-        }
+        public bool IntersectsWith(Rectangle rect) =>
+            (rect.X < X + Width) && (X < rect.X + rect.Width) &&
+            (rect.Y < Y + Height) && (Y < rect.Y + rect.Height);
 
         /// <summary>
         ///    <para>
@@ -446,18 +379,18 @@ namespace System.Drawing
         ///       Adjusts the location of this rectangle by the specified amount.
         ///    </para>
         /// </summary>
-        public void Offset(Point pos)
-        {
-            Offset(pos.X, pos.Y);
-        }
+        public void Offset(Point pos) => Offset(pos.X, pos.Y);
 
         /// <summary>
         ///    Adjusts the location of this rectangle by the specified amount.
         /// </summary>
         public void Offset(int x, int y)
         {
-            X += x;
-            Y += y;
+            unchecked
+            {
+                X += x;
+                Y += y;
+            }
         }
 
         /// <summary>
@@ -466,10 +399,8 @@ namespace System.Drawing
         ///       human readable string.
         ///    </para>
         /// </summary>
-        public override string ToString()
-        {
-            return "{X=" + X.ToString() + ",Y=" + Y.ToString() +
-                ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
-        }
+        public override string ToString() =>
+            "{X=" + X.ToString() + ",Y=" + Y.ToString() +
+            ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
     }
 }

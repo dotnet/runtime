@@ -27,9 +27,8 @@ namespace System.Runtime.Serialization
             if (cache.HasOnSerializingEvents)
             {
                 // Check to see if we have invoked the events on the object
-                if (!_objectSeenTable.ContainsKey(obj))
+                if (_objectSeenTable.TryAdd(obj, true))
                 {
-                    _objectSeenTable[obj] = true;
                     // Invoke the events
                     cache.InvokeOnSerializing(obj, _context);
                     // Register for OnSerialized event

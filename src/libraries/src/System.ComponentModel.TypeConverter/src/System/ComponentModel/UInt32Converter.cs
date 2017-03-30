@@ -15,13 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
         /// </summary>
-        internal override Type TargetType
-        {
-            get
-            {
-                return typeof(UInt32);
-            }
-        }
+        internal override Type TargetType => typeof(uint);
 
         /// <summary>
         /// Convert the given value to a string using the given radix

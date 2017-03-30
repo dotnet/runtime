@@ -17,7 +17,6 @@
 //     }
 
 using System.Diagnostics;
-using System.IO;
 
 namespace System.Threading.Tasks
 {
@@ -45,10 +44,7 @@ namespace System.Threading.Tasks
             {
                 // Synchronous completion.
                 asyncResult = new TaskWrapperAsyncResult(task, state, completedSynchronously: true);
-                if (callback != null)
-                {
-                    callback(asyncResult);
-                }
+                callback?.Invoke(asyncResult);
             }
             else
             {

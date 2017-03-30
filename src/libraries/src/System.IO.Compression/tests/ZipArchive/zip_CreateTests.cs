@@ -53,38 +53,62 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData("small", true)]
-        [InlineData("small", false)]
-        [InlineData("normal", true)]
-        [InlineData("normal", false)]
-        [InlineData("empty", true)]
-        [InlineData("empty", false)]
-        [InlineData("emptydir", true)]
-        [InlineData("emptydir", false)]
-        public static async Task CreateNormal(string folder, bool seekable)
+        [InlineData("small")]
+        [InlineData("normal")]
+        [InlineData("empty")]
+        [InlineData("emptydir")]
+        public static async Task CreateNormal_Seekable(string folder)
         {
             using (var s = new MemoryStream())
             {
-                var testStream = new WrappedStream(s, false, true, seekable, null);
+                var testStream = new WrappedStream(s, false, true, true, null);
                 await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
 
                 IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
             }
         }
 
-
         [Theory]
-        [InlineData("unicode", true)]
-        [InlineData("unicode", false)]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
-        public static async Task CreateNormal_Unicode(string folder, bool seekable)
+        [InlineData("small")]
+        [InlineData("normal")]
+        [InlineData("empty")]
+        [InlineData("emptydir")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not allow unseekable streams.")]
+        public static async Task CreateNormal_Unseekable(string folder)
         {
             using (var s = new MemoryStream())
             {
-                var testStream = new WrappedStream(s, false, true, seekable, null);
+                var testStream = new WrappedStream(s, false, true, false, null);
                 await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
 
                 IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+            }
+        }
+
+        [Fact]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
+        public static async Task CreateNormal_Unicode_Seekable()
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, true, null);
+                await CreateFromDir(zfolder("unicode"), testStream, ZipArchiveMode.Create);
+
+                IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+            }
+        }
+
+        [Fact]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not allow unseekable streams.")]
+        public static async Task CreateNormal_Unicode_Unseekable()
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, false, null);
+                await CreateFromDir(zfolder("unicode"), testStream, ZipArchiveMode.Create);
+
+                IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
             }
         }
     }

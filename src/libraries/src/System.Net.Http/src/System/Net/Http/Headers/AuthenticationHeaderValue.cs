@@ -37,7 +37,7 @@ namespace System.Net.Http.Headers
 
         public AuthenticationHeaderValue(string scheme, string parameter)
         {
-            HeaderUtilities.CheckValidToken(scheme, "scheme");
+            HeaderUtilities.CheckValidToken(scheme, nameof(scheme));
             _scheme = scheme;
             _parameter = parameter;
         }
@@ -150,7 +150,7 @@ namespace System.Net.Http.Headers
                 return current - startIndex;
             }
 
-            // We need at least one space between the scheme and parameters. If there are no whitespace, then we must
+            // We need at least one space between the scheme and parameters. If there is no whitespace, then we must
             // have reached the end of the string (i.e. scheme-only string).
             if (whitespaceLength == 0)
             {

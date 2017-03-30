@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
                     }
 
                     blob = new byte[blobSize];
-                    fixed (byte* pDsaBlob = blob)
+                    fixed (byte* pDsaBlob = &blob[0])
                     {
                         // Build the header
                         BCRYPT_DSA_KEY_BLOB* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB*)pDsaBlob;
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
                         (includePrivateParameters ? parameters.X.Length : 0);
 
                     blob = new byte[blobSize];
-                    fixed (byte* pDsaBlob = blob)
+                    fixed (byte* pDsaBlob = &blob[0])
                     {
                         // Build the header
                         BCRYPT_DSA_KEY_BLOB_V2* pBcryptBlob = (BCRYPT_DSA_KEY_BLOB_V2*)pDsaBlob;

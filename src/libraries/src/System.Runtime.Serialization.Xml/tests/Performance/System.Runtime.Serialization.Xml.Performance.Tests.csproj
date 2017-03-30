@@ -1,18 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Runtime.Serialization.Xml.Performance.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Serialization.Xml.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <ProjectGuid>{122A5432-C5B7-4293-AFDA-B24F4D54FDEF}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>ContractReferences/project.json</ProjectJson>
-    <ProjectLockJson>ContractReferences/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="..\Utils.cs" />
     <Compile Include="..\SerializationTypes.cs" />
@@ -24,12 +21,11 @@
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''">
-    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
-    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
-  </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

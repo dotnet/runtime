@@ -4,11 +4,12 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public sealed partial class RegistryPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public RegistryPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
-        [System.ObsoleteAttribute("Please use the ViewAndModify property instead.")]
+        public RegistryPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
+        [Obsolete("Please use the ViewAndModify property instead.")]
         public string All { get; set; }
         public string ChangeAccessControl { get; set; }
         public string Create { get; set; }
@@ -16,6 +17,6 @@ namespace System.Security.Permissions
         public string ViewAccessControl { get; set; }
         public string ViewAndModify { get; set; }
         public string Write { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

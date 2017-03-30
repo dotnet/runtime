@@ -104,7 +104,18 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void CreateFallbackBuffer_Fallback_InvalidSurrogateChars_ThrowsArgumentOutOfRangeException()
+        {
+            EncoderFallbackBuffer buffer = new EncoderReplacementFallback().CreateFallbackBuffer();
+
+            Assert.Throws<ArgumentOutOfRangeException>("charUnknownHigh", () => buffer.Fallback('a', '\uDC00', 0));
+            Assert.Throws<ArgumentOutOfRangeException>("charUnknownLow", () => buffer.Fallback('\uD800', 'a', 0));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void CreateFallbackBuffer_Fallback_InvalidSurrogateChars_ThrowsArgumentOutOfRangeException_Desktop()
         {
             EncoderFallbackBuffer buffer = new EncoderReplacementFallback().CreateFallbackBuffer();
 

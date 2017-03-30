@@ -15,7 +15,7 @@ namespace System.Data.SqlClient
 {
     internal sealed class SqlStatistics
     {
-        static internal SqlStatistics StartTimer(SqlStatistics statistics)
+        internal static SqlStatistics StartTimer(SqlStatistics statistics)
         {
             if ((null != statistics) && !statistics.RequestExecutionTimer())
             {
@@ -25,7 +25,7 @@ namespace System.Data.SqlClient
             return statistics;
         }
 
-        static internal void StopTimer(SqlStatistics statistics)
+        internal static void StopTimer(SqlStatistics statistics)
         {
             if (null != statistics)
             {
@@ -222,8 +222,11 @@ namespace System.Data.SqlClient
             }
         }
 
-        // We subclass Dictionary to provide our own implementation of CopyTo, Keys.CopyTo, and
-        // Values.CopyTo to match the behavior of Hashtable, which is used in the full framework:
+        // We subclass Dictionary to provide our own implementation of GetEnumerator, CopyTo, Keys.CopyTo,
+        // and Values.CopyTo to match the behavior of Hashtable, which is used in the full framework:
+        //
+        //  - Hashtable's IEnumerator.GetEnumerator enumerator yields DictionaryEntry entries whereas
+        //    Dictionary's yields KeyValuePair entries.
         //
         //  - When arrayIndex > array.Length, Hashtable throws ArgumentException whereas Dictionary
         //    throws ArgumentOutOfRangeException.
@@ -240,7 +243,7 @@ namespace System.Data.SqlClient
         //
         // Ideally this would derive from Dictionary<string, long>, but that would break compatibility
         // with the full framework, which allows adding keys/values of any type.
-        private sealed class StatisticsDictionary : Dictionary<object, object>, IDictionary
+        private sealed class StatisticsDictionary : Dictionary<object, object>, IDictionary, IEnumerable
         {
             private Collection _keys;
             private Collection _values;
@@ -250,6 +253,9 @@ namespace System.Data.SqlClient
             ICollection IDictionary.Keys => _keys ?? (_keys = new Collection(this, Keys));
 
             ICollection IDictionary.Values => _values ?? (_values = new Collection(this, Values));
+
+            // Return a DictionaryEntry enumerator instead of a KeyValuePair enumerator.
+            IEnumerator IEnumerable.GetEnumerator() => ((IDictionary)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int arrayIndex)
             {

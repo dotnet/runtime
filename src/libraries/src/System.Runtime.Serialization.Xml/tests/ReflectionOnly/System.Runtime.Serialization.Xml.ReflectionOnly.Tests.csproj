@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
+    <ProjectGuid>{38889701-0af4-48b3-999c-e99d639c61b6}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.netcoreapp.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.netcoreapp.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(TestSourceFolder)..\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerTestData.cs" />
+    <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlDictionaryWriterTest.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

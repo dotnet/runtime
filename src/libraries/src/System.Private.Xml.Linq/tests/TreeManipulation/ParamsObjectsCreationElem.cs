@@ -64,8 +64,8 @@ namespace XLinqTests
             AddChild(new TestVariation(XElementNotAllowedXDocType) { Attribute = new VariationAttribute("XElement - Not allowed - XDocumentType") { Param = 3, Priority = 2 } });
             AddChild(new TestVariation(XElementEmptyArray) { Attribute = new VariationAttribute("XElement - nulls") { Priority = 3 } });
             AddChild(new TestVariation(BuildFromQuery) { Attribute = new VariationAttribute("XElement - build from Query result") { Priority = 2 } });
-            AddChild(new TestVariation(IsEmptyProp1) { Attribute = new VariationAttribute("IsEmpty propert Manipulation I.") { Priority = 0 } });
-            AddChild(new TestVariation(IsEmptyProp2) { Attribute = new VariationAttribute("IsEmpty propert Manipulation II.") { Priority = 0 } });
+            AddChild(new TestVariation(IsEmptyProp1) { Attribute = new VariationAttribute("IsEmpty property Manipulation I.") { Priority = 0 } });
+            AddChild(new TestVariation(IsEmptyProp2) { Attribute = new VariationAttribute("IsEmpty property Manipulation II.") { Priority = 0 } });
         }
 
         //[Variation(Priority = 0, Desc = "(BVT)XElement - multiple nodes, connected", Params = new object[] { true, 2 })]
@@ -97,7 +97,7 @@ namespace XLinqTests
             TestLog.Compare(expectedAttributes.EqualAllAttributes(e.Attributes(), Helpers.MyAttributeComparer), "Attributes");
         }
 
-        //[Variation(Priority = 0, Desc = "IsEmpty propert Manipulation I.")]
+        //[Variation(Priority = 0, Desc = "IsEmpty property Manipulation I.")]
         public void IsEmptyProp1()
         {
             var e = new XElement("e");
@@ -117,7 +117,7 @@ namespace XLinqTests
             TestLog.Compare(e.Value, "", "value 3");
         }
 
-        //[Variation(Priority = 0, Desc = "IsEmpty propert Manipulation II.")]
+        //[Variation(Priority = 0, Desc = "IsEmpty property Manipulation II.")]
         public void IsEmptyProp2()
         {
             var e = new XElement("e", "");

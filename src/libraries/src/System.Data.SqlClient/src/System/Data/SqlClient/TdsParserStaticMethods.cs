@@ -16,7 +16,7 @@ namespace System.Data.SqlClient
         // Encrypt password to be sent to SQL Server
         // Note: The same logic is used in SNIPacketSetData (SniManagedWrapper) to encrypt passwords stored in SecureString
         //       If this logic changed, SNIPacketSetData needs to be changed as well
-        static internal Byte[] EncryptPassword(string password)
+        internal static Byte[] EncryptPassword(string password)
         {
             Byte[] bEnc = new Byte[password.Length << 1];
             int s;
@@ -36,7 +36,7 @@ namespace System.Data.SqlClient
 
         private const int NoProcessId = -1;
         private static int s_currentProcessId = NoProcessId;
-        static internal int GetCurrentProcessIdForTdsLoginOnly()
+        internal static int GetCurrentProcessIdForTdsLoginOnly()
         {
             if (s_currentProcessId == NoProcessId)
             {
@@ -51,14 +51,14 @@ namespace System.Data.SqlClient
         }
 
 
-        static internal Int32 GetCurrentThreadIdForTdsLoginOnly()
+        internal static Int32 GetCurrentThreadIdForTdsLoginOnly()
         {
             return Environment.CurrentManagedThreadId;
         }
 
 
         private static byte[] s_nicAddress = null;
-        static internal byte[] GetNetworkPhysicalAddressForTdsLoginOnly()
+        internal static byte[] GetNetworkPhysicalAddressForTdsLoginOnly()
         {
             // For ProjectK\CoreCLR we don't want to take a dependency on the registry to try to read a value
             // that isn't usually set, so we'll just use a random value each time instead
@@ -74,7 +74,7 @@ namespace System.Data.SqlClient
         }
 
         // translates remaining time in stateObj (from user specified timeout) to timeout value for SNI
-        static internal Int32 GetTimeoutMilliseconds(long timeoutTime)
+        internal static Int32 GetTimeoutMilliseconds(long timeoutTime)
         {
             // User provided timeout t | timeout value for SNI | meaning
             // ------------------------+-----------------------+------------------------------
@@ -101,7 +101,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static internal long GetTimeout(long timeoutMilliseconds)
+        internal static long GetTimeout(long timeoutMilliseconds)
         {
             long result;
             if (timeoutMilliseconds <= 0)
@@ -123,7 +123,7 @@ namespace System.Data.SqlClient
             return result;
         }
 
-        static internal bool TimeoutHasExpired(long timeoutTime)
+        internal static bool TimeoutHasExpired(long timeoutTime)
         {
             bool result = false;
 
@@ -134,7 +134,7 @@ namespace System.Data.SqlClient
             return result;
         }
 
-        static internal int NullAwareStringLength(string str)
+        internal static int NullAwareStringLength(string str)
         {
             if (str == null)
             {
@@ -146,7 +146,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        static internal int GetRemainingTimeout(int timeout, long start)
+        internal static int GetRemainingTimeout(int timeout, long start)
         {
             if (timeout <= 0)
             {

@@ -1,0 +1,60 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Functional.Tests", "tests\Functional\System.Net.Mail.Functional.Tests.csproj", "{A26D88B7-6EF6-4C8C-828B-7B57732CCE38}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89} = {2BA70C31-18B0-461B-B6C9-14B11B65BE89}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Unit.Tests", "tests\Unit\System.Net.Mail.Unit.Tests.csproj", "{2525E37E-0EC1-4374-92FD-D2752BEED978}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89} = {2BA70C31-18B0-461B-B6C9-14B11B65BE89}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail", "src\System.Net.Mail.csproj", "{2BA70C31-18B0-461B-B6C9-14B11B65BE89}"
+	ProjectSection(ProjectDependencies) = postProject
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF} = {301ABDC3-6604-477F-B7CB-1AAD6A8408CF}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail", "ref\System.Net.Mail.csproj", "{301ABDC3-6604-477F-B7CB-1AAD6A8408CF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A26D88B7-6EF6-4C8C-828B-7B57732CCE38}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{A26D88B7-6EF6-4C8C-828B-7B57732CCE38}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{A26D88B7-6EF6-4C8C-828B-7B57732CCE38}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{A26D88B7-6EF6-4C8C-828B-7B57732CCE38}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A26D88B7-6EF6-4C8C-828B-7B57732CCE38} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{2525E37E-0EC1-4374-92FD-D2752BEED978} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{2BA70C31-18B0-461B-B6C9-14B11B65BE89} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{301ABDC3-6604-477F-B7CB-1AAD6A8408CF} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+EndGlobal

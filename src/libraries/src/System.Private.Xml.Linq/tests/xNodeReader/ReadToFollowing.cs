@@ -216,7 +216,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.ReadToFollowing("child1"), true, "Cant find child1");
                     TestLog.Compare(DataReader.ReadToFollowing("child2"), true, "Cant find child2");
                     TestLog.Compare(DataReader.ReadToFollowing("child3"), true, "Cant find child3");
-                    TestLog.Compare(DataReader.ReadToFollowing("child4"), true, "shouldnt find child4");
+                    TestLog.Compare(DataReader.ReadToFollowing("child4"), true, "Shouldn't find child4");
                     TestLog.Compare(DataReader.NodeType, XmlNodeType.Element, "Not on Element");
 
                     while (DataReader.Read()) ;

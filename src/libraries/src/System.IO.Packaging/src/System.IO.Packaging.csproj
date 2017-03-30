@@ -1,23 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{1F827C19-6023-48D3-909F-9F43AB42FAF0}</ProjectGuid>
     <RootNamespace>System.IO.Packaging</RootNamespace>
     <AssemblyName>System.IO.Packaging</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Text.Encoding" />
+    <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\IO\Packaging\CompressionOption.cs" />
     <Compile Include="System\IO\Packaging\ContentType.cs" />
     <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
@@ -45,9 +58,9 @@
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="WindowsBase" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

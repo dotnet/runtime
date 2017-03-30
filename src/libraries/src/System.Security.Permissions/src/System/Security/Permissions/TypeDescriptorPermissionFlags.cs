@@ -4,7 +4,8 @@
 
 namespace System.Security.Permissions
 {
-    [System.FlagsAttribute]
+    [Serializable]
+    [Flags]
     public enum TypeDescriptorPermissionFlags
     {
         NoFlags = 0,

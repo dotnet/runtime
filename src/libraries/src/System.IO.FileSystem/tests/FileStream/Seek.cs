@@ -271,7 +271,7 @@ namespace System.IO.Tests
                 // Write data to the file
                 var buffer = new byte[FileLength];
                 for (int i = 0; i < buffer.Length; i++)
-                    buffer[i] = (byte)i;
+                    buffer[i] = unchecked((byte)i);
                 fs.Write(buffer, 0, buffer.Length);
                 fs.Position = 0;
 

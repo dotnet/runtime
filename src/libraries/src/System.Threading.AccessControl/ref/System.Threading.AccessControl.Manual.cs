@@ -25,17 +25,17 @@ namespace System.Security.AccessControl
     public sealed partial class EventWaitHandleSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public EventWaitHandleSecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }
-        public override System.Type AccessRightType { get { return default(System.Type); } }
-        public override System.Type AccessRuleType { get { return default(System.Type); } }
-        public override System.Type AuditRuleType { get { return default(System.Type); } }
-        public override System.Security.AccessControl.AccessRule AccessRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) { return default(System.Security.AccessControl.AccessRule); }
+        public override System.Type AccessRightType { get { throw null; } }
+        public override System.Type AccessRuleType { get { throw null; } }
+        public override System.Type AuditRuleType { get { throw null; } }
+        public override System.Security.AccessControl.AccessRule AccessRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) { throw null; }
         public void AddAccessRule(System.Security.AccessControl.EventWaitHandleAccessRule rule) { }
         public void AddAuditRule(System.Security.AccessControl.EventWaitHandleAuditRule rule) { }
-        public override System.Security.AccessControl.AuditRule AuditRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) { return default(System.Security.AccessControl.AuditRule); }
-        public bool RemoveAccessRule(System.Security.AccessControl.EventWaitHandleAccessRule rule) { return default(bool); }
+        public override System.Security.AccessControl.AuditRule AuditRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) { throw null; }
+        public bool RemoveAccessRule(System.Security.AccessControl.EventWaitHandleAccessRule rule) { throw null; }
         public void RemoveAccessRuleAll(System.Security.AccessControl.EventWaitHandleAccessRule rule) { }
         public void RemoveAccessRuleSpecific(System.Security.AccessControl.EventWaitHandleAccessRule rule) { }
-        public bool RemoveAuditRule(System.Security.AccessControl.EventWaitHandleAuditRule rule) { return default(bool); }
+        public bool RemoveAuditRule(System.Security.AccessControl.EventWaitHandleAuditRule rule) { throw null; }
         public void RemoveAuditRuleAll(System.Security.AccessControl.EventWaitHandleAuditRule rule) { }
         public void RemoveAuditRuleSpecific(System.Security.AccessControl.EventWaitHandleAuditRule rule) { }
         public void ResetAccessRule(System.Security.AccessControl.EventWaitHandleAccessRule rule) { }

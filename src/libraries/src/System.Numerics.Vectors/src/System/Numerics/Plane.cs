@@ -97,7 +97,7 @@ namespace System.Numerics
 
                 // Normalize(N)
                 float ls = nx * nx + ny * ny + nz * nz;
-                float invNorm = 1.0f / (float)Math.Sqrt((double)ls);
+                float invNorm = 1.0f / MathF.Sqrt(ls);
 
                 Vector3 normal = new Vector3(
                     nx * invNorm,
@@ -122,12 +122,12 @@ namespace System.Numerics
             if (Vector.IsHardwareAccelerated)
             {
                 float normalLengthSquared = value.Normal.LengthSquared();
-                if (Math.Abs(normalLengthSquared - 1.0f) < FLT_EPSILON)
+                if (MathF.Abs(normalLengthSquared - 1.0f) < FLT_EPSILON)
                 {
                     // It already normalized, so we don't need to farther process.
                     return value;
                 }
-                float normalLength = (float)Math.Sqrt(normalLengthSquared);
+                float normalLength = MathF.Sqrt(normalLengthSquared);
                 return new Plane(
                     value.Normal / normalLength,
                     value.D / normalLength);
@@ -136,12 +136,12 @@ namespace System.Numerics
             {
                 float f = value.Normal.X * value.Normal.X + value.Normal.Y * value.Normal.Y + value.Normal.Z * value.Normal.Z;
 
-                if (Math.Abs(f - 1.0f) < FLT_EPSILON)
+                if (MathF.Abs(f - 1.0f) < FLT_EPSILON)
                 {
                     return value; // It already normalized, so we don't need to further process.
                 }
 
-                float fInv = 1.0f / (float)Math.Sqrt(f);
+                float fInv = 1.0f / MathF.Sqrt(f);
 
                 return new Plane(
                     value.Normal.X * fInv,

@@ -580,7 +580,7 @@ namespace System.Xml.Xsl
             }
 
             //-----------------------------------------------
-            // ItemType, OccurenceIndicator Properties
+            // ItemType, OccurrenceIndicator Properties
             //-----------------------------------------------
 
             /// <summary>
@@ -860,7 +860,7 @@ namespace System.Xml.Xsl
             }
 
             //-----------------------------------------------
-            // ItemType, OccurenceIndicator Properties
+            // ItemType, OccurrenceIndicator Properties
             //-----------------------------------------------
 
             /// <summary>
@@ -1074,7 +1074,7 @@ namespace System.Xml.Xsl
             }
 
             //-----------------------------------------------
-            // ItemType, OccurenceIndicator Properties
+            // ItemType, OccurrenceIndicator Properties
             //-----------------------------------------------
 
             /// <summary>
@@ -1976,7 +1976,7 @@ namespace System.Xml.Xsl
         }
 
         /// <summary>
-        /// Convert particle occurrance range into cardinality
+        /// Convert particle occurrence range into cardinality
         /// </summary>
         private XmlQueryCardinality CardinalityOfParticle(XmlSchemaParticle particle) {
             if (particle.MinOccurs == decimal.Zero) {

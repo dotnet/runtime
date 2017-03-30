@@ -30,12 +30,11 @@ namespace System.Linq.Expressions
             return false;
         }
 
-
         /// <summary>
         /// If the result of a TypeBinaryExpression is known statically, this
         /// returns the result, otherwise it returns null, meaning we'll need
         /// to perform the IsInst instruction at runtime.
-        /// 
+        ///
         /// The result of this function must be equivalent to IsInst, or
         /// null.
         /// </summary>
@@ -48,7 +47,7 @@ namespace System.Linq.Expressions
         /// If the result of an isinst opcode is known statically, this
         /// returns the result, otherwise it returns null, meaning we'll need
         /// to perform the IsInst instruction at runtime.
-        /// 
+        ///
         /// The result of this function must be equivalent to IsInst, or
         /// null.
         /// </summary>
@@ -62,7 +61,7 @@ namespace System.Linq.Expressions
                 return testType == typeof(void) ? AnalyzeTypeIsResult.KnownTrue : AnalyzeTypeIsResult.KnownFalse;
             }
 
-            if (testType == typeof(void))
+            if (testType == typeof(void) || testType.IsPointer)
             {
                 return AnalyzeTypeIsResult.KnownFalse;
             }
@@ -86,7 +85,7 @@ namespace System.Linq.Expressions
             {
                 // If the operand is a value type (other than nullable), we
                 // know the result is always true.
-                if (operandType.GetTypeInfo().IsValueType && !operandType.IsNullableType())
+                if (operandType.IsValueType && !operandType.IsNullableType())
                 {
                     return AnalyzeTypeIsResult.KnownTrue;
                 }

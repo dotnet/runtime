@@ -2416,7 +2416,7 @@ namespace System.Xml.Schema
                 case SchemaNames.Token.XsdGroup:
                     if (_group.Particle != null)
                     {
-                        SendValidationEvent(SR.Sch_DupGroupParticle, "particle");
+                        SendValidationEvent(SR.Sch_DupGroupParticle, nameof(particle));
                     }
                     _group.Particle = (XmlSchemaGroupBase)particle;
                     break;

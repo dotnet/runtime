@@ -718,7 +718,7 @@ namespace System.Xml.Schema
             }
             if (!_schemas.ContainsKey(schema.SchemaId))
             {
-                throw new ArgumentException(SR.Sch_SchemaDoesNotExist, "schema");
+                throw new ArgumentException(SR.Sch_SchemaDoesNotExist, nameof(schema));
             }
             XmlSchema originalSchema = schema;
             lock (InternalSyncObject)

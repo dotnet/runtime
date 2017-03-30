@@ -71,12 +71,12 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
 
                     triggerResponseWrite.SetResult(true);
-                    Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), "Elapsed time should be short");
+                    Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), $"Elapsed time {stopwatch.Elapsed} should be short");
                 });
             }
         }
 
-        [ActiveIssue(9075, PlatformID.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
+        [ActiveIssue(9075, TestPlatforms.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
         [OuterLoop] // includes seconds of delay
         [Fact]
         public Task ReadAsStreamAsync_ReadAsync_Cancel_BodyNeverStarted_TaskCanceledQuickly()
@@ -133,7 +133,7 @@ namespace System.Net.Http.Functional.Tests
 
                         triggerResponseWrite.SetResult(true);
                         _output.WriteLine("ReadAsync() completed at: {0}", stopwatch.Elapsed.ToString());
-                        Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), "Elapsed time should be short");
+                        Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), $"Elapsed time {stopwatch.Elapsed} should be short");
                     }
                 });
             }

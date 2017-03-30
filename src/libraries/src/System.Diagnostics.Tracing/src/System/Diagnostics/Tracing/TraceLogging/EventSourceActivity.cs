@@ -315,7 +315,7 @@ namespace System.Diagnostics.Tracing
         private State state;
         private string eventName;
 
-        static internal Guid s_empty;
+        internal static Guid s_empty;
         #endregion
     }
 }

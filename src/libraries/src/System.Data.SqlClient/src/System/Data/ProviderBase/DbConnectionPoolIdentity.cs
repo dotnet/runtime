@@ -10,9 +10,10 @@ using System.Security.Principal;
 
 namespace System.Data.ProviderBase
 {
+    [Serializable]
     sealed internal partial class DbConnectionPoolIdentity
     {
-        static public readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(String.Empty, false, true);
+        public static readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(String.Empty, false, true);
 
         private readonly string _sidString;
         private readonly bool _isRestricted;

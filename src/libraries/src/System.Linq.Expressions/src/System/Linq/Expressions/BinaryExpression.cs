@@ -2,31 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions
 {
     /// <summary>
     /// Represents an expression that has a binary operator.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.BinaryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(BinaryExpressionProxy))]
     public class BinaryExpression : Expression
     {
-        private readonly Expression _left;
-        private readonly Expression _right;
-
         internal BinaryExpression(Expression left, Expression right)
         {
-            _left = left;
-            _right = right;
+            Left = left;
+            Right = right;
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the expression tree node can be reduced. 
+        /// Gets a value that indicates whether the expression tree node can be reduced.
         /// </summary>
         public override bool CanReduce
         {
@@ -63,31 +61,19 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the right operand of the binary operation.
         /// </summary>
-        public Expression Right
-        {
-            get { return _right; }
-        }
+        public Expression Right { get; }
 
         /// <summary>
         /// Gets the left operand of the binary operation.
         /// </summary>
-        public Expression Left
-        {
-            get { return _left; }
-        }
+        public Expression Left { get; }
 
         /// <summary>
         /// Gets the implementing method for the binary operation.
         /// </summary>
-        public MethodInfo Method
-        {
-            get { return GetMethod(); }
-        }
+        public MethodInfo Method => GetMethod();
 
-        internal virtual MethodInfo GetMethod()
-        {
-            return null;
-        }
+        internal virtual MethodInfo GetMethod() => null;
 
         // Note: takes children in evaluation order, which is also the order
         // that ExpressionVisitor visits them. Having them this way reduces the
@@ -99,9 +85,9 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="left">The <see cref="Left" /> property of the result.</param>
-        /// <param name="conversion">The <see cref="Conversion" /> property of the result.</param>
-        /// <param name="right">The <see cref="Right" /> property of the result.</param>
+        /// <param name="left">The <see cref="Left"/> property of the result.</param>
+        /// <param name="conversion">The <see cref="Conversion"/> property of the result.</param>
+        /// <param name="right">The <see cref="Right"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public BinaryExpression Update(Expression left, LambdaExpression conversion, Expression right)
         {
@@ -124,9 +110,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Reduces the binary expression node to a simpler expression. 
+        /// Reduces the binary expression node to a simpler expression.
         /// If CanReduce returns true, this should return a valid expression.
-        /// This method is allowed to return another node which itself 
+        /// This method is allowed to return another node which itself
         /// must be reduced.
         /// </summary>
         /// <returns>The reduced expression.</returns>
@@ -135,7 +121,7 @@ namespace System.Linq.Expressions
             // Only reduce OpAssignment expressions.
             if (IsOpAssignment(NodeType))
             {
-                switch (_left.NodeType)
+                switch (Left.NodeType)
                 {
                     case ExpressionType.MemberAccess:
                         return ReduceMember();
@@ -195,18 +181,18 @@ namespace System.Linq.Expressions
             // ... is reduced into ...
             // v = v (op) r
             ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
-            Expression r = Expression.MakeBinary(op, _left, _right, false, Method);
+            Expression r = Expression.MakeBinary(op, Left, Right, false, Method);
             LambdaExpression conversion = GetConversion();
             if (conversion != null)
             {
                 r = Expression.Invoke(conversion, r);
             }
-            return Expression.Assign(_left, r);
+            return Expression.Assign(Left, r);
         }
 
         private Expression ReduceMember()
         {
-            MemberExpression member = (MemberExpression)_left;
+            MemberExpression member = (MemberExpression)Left;
 
             if (member.Expression == null)
             {
@@ -228,7 +214,7 @@ namespace System.Linq.Expressions
 
                 // 2. temp2 = temp1.b (op) r
                 ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
-                Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), _right, false, Method);
+                Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), Right, false, Method);
                 LambdaExpression conversion = GetConversion();
                 if (conversion != null)
                 {
@@ -244,8 +230,8 @@ namespace System.Linq.Expressions
                 Expression e4 = temp2;
 
                 return Expression.Block(
-                    new ParameterExpression[] { temp1, temp2 },
-                    e1, e2, e3, e4
+                    new TrueReadOnlyCollection<ParameterExpression>(temp1, temp2),
+                    new TrueReadOnlyCollection<Expression>(e1, e2, e3, e4)
                 );
             }
         }
@@ -263,58 +249,52 @@ namespace System.Linq.Expressions
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             // tempObj[tempArg0, ... tempArgN] = tempValue
 
-            var index = (IndexExpression)_left;
+            var index = (IndexExpression)Left;
 
-            var vars = new List<ParameterExpression>(index.ArgumentCount + 2);
-            var exprs = new List<Expression>(index.ArgumentCount + 3);
+            var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
+            var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
-            var tempObj = Expression.Variable(index.Object.Type, "tempObj");
-            vars.Add(tempObj);
-            exprs.Add(Expression.Assign(tempObj, index.Object));
+            ParameterExpression tempObj = Expression.Variable(index.Object.Type, "tempObj");
+            vars.UncheckedAdd(tempObj);
+            exprs.UncheckedAdd(Expression.Assign(tempObj, index.Object));
 
-            var n = index.ArgumentCount;
-            var tempArgs = new List<Expression>(n);
+            int n = index.ArgumentCount;
+            var tempArgs = new ArrayBuilder<Expression>(n);
             for (var i = 0; i < n; i++)
             {
-                var arg = index.GetArgument(i);
-                var tempArg = Expression.Variable(arg.Type, "tempArg" + tempArgs.Count);
-                vars.Add(tempArg);
-                tempArgs.Add(tempArg);
-                exprs.Add(Expression.Assign(tempArg, arg));
+                Expression arg = index.GetArgument(i);
+                ParameterExpression tempArg = Expression.Variable(arg.Type, "tempArg" + i);
+                vars.UncheckedAdd(tempArg);
+                tempArgs.UncheckedAdd(tempArg);
+                exprs.UncheckedAdd(Expression.Assign(tempArg, arg));
             }
 
-            var tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs);
+            IndexExpression tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs.ToReadOnly());
 
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
-            Expression op = Expression.MakeBinary(binaryOp, tempIndex, _right, false, Method);
+            Expression op = Expression.MakeBinary(binaryOp, tempIndex, Right, false, Method);
             LambdaExpression conversion = GetConversion();
             if (conversion != null)
             {
                 op = Expression.Invoke(conversion, op);
             }
-            var tempValue = Expression.Variable(op.Type, "tempValue");
-            vars.Add(tempValue);
-            exprs.Add(Expression.Assign(tempValue, op));
+            ParameterExpression tempValue = Expression.Variable(op.Type, "tempValue");
+            vars.UncheckedAdd(tempValue);
+            exprs.UncheckedAdd(Expression.Assign(tempValue, op));
 
             // tempObj[tempArg0, ... tempArgN] = tempValue
-            exprs.Add(Expression.Assign(tempIndex, tempValue));
+            exprs.UncheckedAdd(Expression.Assign(tempIndex, tempValue));
 
-            return Expression.Block(vars, exprs);
+            return Expression.Block(vars.ToReadOnly(), exprs.ToReadOnly());
         }
 
         /// <summary>
         /// Gets the type conversion function that is used by a coalescing or compound assignment operation.
         /// </summary>
-        public LambdaExpression Conversion
-        {
-            get { return GetConversion(); }
-        }
+        public LambdaExpression Conversion => GetConversion();
 
-        internal virtual LambdaExpression GetConversion()
-        {
-            return null;
-        }
+        internal virtual LambdaExpression GetConversion() => null;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator.
@@ -327,25 +307,20 @@ namespace System.Linq.Expressions
                 {
                     return false;
                 }
-                if (TypeUtils.IsNullableType(_left.Type))
+                if (Left.Type.IsNullableType())
                 {
                     MethodInfo method = GetMethod();
                     return method == null ||
-                        !TypeUtils.AreEquivalent(method.GetParametersCached()[0].ParameterType.GetNonRefType(), _left.Type);
+                        !TypeUtils.AreEquivalent(method.GetParametersCached()[0].ParameterType.GetNonRefType(), Left.Type);
                 }
                 return false;
             }
         }
+
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator whose return type is lifted to a nullable type.
         /// </summary>
-        public bool IsLiftedToNull
-        {
-            get
-            {
-                return IsLifted && TypeUtils.IsNullableType(Type);
-            }
-        }
+        public bool IsLiftedToNull => IsLifted && Type.IsNullableType();
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -378,17 +353,17 @@ namespace System.Linq.Expressions
         {
             get
             {
-                Type left = _left.Type;
-                Type right = _right.Type;
+                Type left = Left.Type;
+                Type right = Right.Type;
                 MethodInfo method = GetMethod();
                 ExpressionType kind = NodeType;
 
                 return
                     (kind == ExpressionType.AndAlso || kind == ExpressionType.OrElse) &&
                     TypeUtils.AreEquivalent(right, left) &&
-                    TypeUtils.IsNullableType(left) &&
+                    left.IsNullableType() &&
                     method != null &&
-                    TypeUtils.AreEquivalent(method.ReturnType, TypeUtils.GetNonNullableType(left));
+                    TypeUtils.AreEquivalent(method.ReturnType, left.GetNonNullableType());
             }
         }
 
@@ -396,13 +371,13 @@ namespace System.Linq.Expressions
         {
             get
             {
-                Type left = _left.Type;
-                Type right = _right.Type;
+                Type left = Left.Type;
+                Type right = Right.Type;
                 MethodInfo method = GetMethod();
                 ExpressionType kind = NodeType;
 
                 return (kind == ExpressionType.Equal || kind == ExpressionType.NotEqual) &&
-                    method == null && !left.GetTypeInfo().IsValueType && !right.GetTypeInfo().IsValueType;
+                    method == null && !left.IsValueType && !right.IsValueType;
             }
         }
 
@@ -413,7 +388,7 @@ namespace System.Linq.Expressions
         // L.HasValue
         //     ? T.op_False(L.GetValueOrDefault())
         //         ? L
-        //         : R.HasValue 
+        //         : R.HasValue
         //             ? (T?)(T.op_BitwiseAnd(L.GetValueOrDefault(), R.GetValueOrDefault()))
         //             : null
         //     : null
@@ -424,14 +399,14 @@ namespace System.Linq.Expressions
         // L.HasValue
         //     ? T.op_True(L.GetValueOrDefault())
         //         ? L
-        //         : R.HasValue 
+        //         : R.HasValue
         //             ? (T?)(T.op_BitwiseOr(L.GetValueOrDefault(), R.GetValueOrDefault()))
         //             : null
         //     : null
         //
         //
         // This is the same behavior as VB. If you think about it, it makes
-        // sense: it's combining the normal pattern for short-circuiting 
+        // sense: it's combining the normal pattern for short-circuiting
         // operators, with the normal pattern for lifted operations: if either
         // of the operands is null, the result is also null.
         //
@@ -439,38 +414,42 @@ namespace System.Linq.Expressions
         {
             Debug.Assert(IsLiftedLogical);
 
-            var left = Parameter(_left.Type, "left");
-            var right = Parameter(Right.Type, "right");
+            ParameterExpression left = Parameter(Left.Type, "left");
+            ParameterExpression right = Parameter(Right.Type, "right");
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
             MethodInfo opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
             Debug.Assert(opTrueFalse != null);
 
             return Block(
-                new[] { left },
-                Assign(left, _left),
-                Condition(
-                    Property(left, "HasValue"),
+                new TrueReadOnlyCollection<ParameterExpression>(left),
+                new TrueReadOnlyCollection<Expression>(
+                    Assign(left, Left),
                     Condition(
-                        Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
-                        left,
-                        Block(
-                            new[] { right },
-                            Assign(right, _right),
-                            Condition(
-                                Property(right, "HasValue"),
-                                Convert(
-                                    Call(
-                                        Method,
-                                        Call(left, "GetValueOrDefault", null),
-                                        Call(right, "GetValueOrDefault", null)
-                                    ),
-                                    Type
-                                ),
-                                Constant(null, Type)
+                        Property(left, "HasValue"),
+                        Condition(
+                            Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
+                            left,
+                            Block(
+                                new TrueReadOnlyCollection<ParameterExpression>(right),
+                                new TrueReadOnlyCollection<Expression>(
+                                    Assign(right, Right),
+                                    Condition(
+                                        Property(right, "HasValue"),
+                                        Convert(
+                                            Call(
+                                                Method,
+                                                Call(left, "GetValueOrDefault", null),
+                                                Call(right, "GetValueOrDefault", null)
+                                            ),
+                                            Type
+                                        ),
+                                        Constant(null, Type)
+                                    )
+                                )
                             )
-                        )
-                    ),
-                    Constant(null, Type)
+                        ),
+                        Constant(null, Type)
+                    )
                 )
             );
         }
@@ -480,42 +459,52 @@ namespace System.Linq.Expressions
     // && || == != > < >= <=
     internal sealed class LogicalBinaryExpression : BinaryExpression
     {
-        private readonly ExpressionType _nodeType;
-
         internal LogicalBinaryExpression(ExpressionType nodeType, Expression left, Expression right)
             : base(left, right)
         {
-            _nodeType = nodeType;
+            NodeType = nodeType;
         }
 
-        public sealed override Type Type
-        {
-            get { return typeof(bool); }
-        }
+        public sealed override Type Type => typeof(bool);
 
-        public sealed override ExpressionType NodeType
-        {
-            get { return _nodeType; }
-        }
+        public sealed override ExpressionType NodeType { get; }
     }
 
     // Optimized assignment node, only holds onto children
-    internal sealed class AssignBinaryExpression : BinaryExpression
+    internal class AssignBinaryExpression : BinaryExpression
     {
         internal AssignBinaryExpression(Expression left, Expression right)
             : base(left, right)
         {
         }
 
-        public sealed override Type Type
+        public static AssignBinaryExpression Make(Expression left, Expression right, bool byRef)
         {
-            get { return Left.Type; }
+            if (byRef)
+            {
+                return new ByRefAssignBinaryExpression(left, right);
+            }
+            else
+            {
+                return new AssignBinaryExpression(left, right);
+            }
         }
 
-        public sealed override ExpressionType NodeType
+        internal virtual bool IsByRef => false;
+
+        public sealed override Type Type => Left.Type;
+
+        public sealed override ExpressionType NodeType => ExpressionType.Assign;
+    }
+
+    internal class ByRefAssignBinaryExpression : AssignBinaryExpression
+    {
+        internal ByRefAssignBinaryExpression(Expression left, Expression right)
+            : base(left, right)
         {
-            get { return ExpressionType.Assign; }
         }
+
+        internal override bool IsByRef => true;
     }
 
     // Coalesce with conversion
@@ -531,20 +520,11 @@ namespace System.Linq.Expressions
             _conversion = conversion;
         }
 
-        internal override LambdaExpression GetConversion()
-        {
-            return _conversion;
-        }
+        internal override LambdaExpression GetConversion() => _conversion;
 
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Coalesce; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Coalesce;
 
-        public sealed override Type Type
-        {
-            get { return Right.Type; }
-        }
+        public sealed override Type Type => Right.Type;
     }
 
     // OpAssign with conversion
@@ -560,35 +540,23 @@ namespace System.Linq.Expressions
             _conversion = conversion;
         }
 
-        internal override LambdaExpression GetConversion()
-        {
-            return _conversion;
-        }
+        internal override LambdaExpression GetConversion() => _conversion;
     }
 
     // Class that handles most binary expressions
     // If needed, it can be optimized even more (often Type == left.Type)
     internal class SimpleBinaryExpression : BinaryExpression
     {
-        private readonly ExpressionType _nodeType;
-        private readonly Type _type;
-
         internal SimpleBinaryExpression(ExpressionType nodeType, Expression left, Expression right, Type type)
             : base(left, right)
         {
-            _nodeType = nodeType;
-            _type = type;
+            NodeType = nodeType;
+            Type = type;
         }
 
-        public sealed override ExpressionType NodeType
-        {
-            get { return _nodeType; }
-        }
+        public sealed override ExpressionType NodeType { get; }
 
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type { get; }
     }
 
     // Class that handles binary expressions with a method
@@ -603,10 +571,7 @@ namespace System.Linq.Expressions
             _method = method;
         }
 
-        internal override MethodInfo GetMethod()
-        {
-            return _method;
-        }
+        internal override MethodInfo GetMethod() => _method;
     }
 
     public partial class Expression
@@ -616,15 +581,15 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see ref="F:ExpressionType.Assign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Assign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Assign(Expression left, Expression right)
         {
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             TypeUtils.ValidateType(left.Type, nameof(left));
             TypeUtils.ValidateType(right.Type, nameof(right));
             if (!TypeUtils.AreReferenceAssignable(left.Type, right.Type))
@@ -636,7 +601,6 @@ namespace System.Linq.Expressions
 
         #endregion
 
-
         private static BinaryExpression GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
         {
             // try exact match first
@@ -646,16 +610,16 @@ namespace System.Linq.Expressions
                 return new MethodBinaryExpression(binaryType, left, right, method.ReturnType, method);
             }
             // try lifted call
-            if (TypeUtils.IsNullableType(left.Type) && TypeUtils.IsNullableType(right.Type))
+            if (left.Type.IsNullableType() && right.Type.IsNullableType())
             {
-                Type nnLeftType = TypeUtils.GetNonNullableType(left.Type);
-                Type nnRightType = TypeUtils.GetNonNullableType(right.Type);
+                Type nnLeftType = left.Type.GetNonNullableType();
+                Type nnRightType = right.Type.GetNonNullableType();
                 method = GetUserDefinedBinaryOperator(binaryType, nnLeftType, nnRightType, name);
-                if (method != null && method.ReturnType.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(method.ReturnType))
+                if (method != null && method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
                 {
                     if (method.ReturnType != typeof(bool) || liftToNull)
                     {
-                        return new MethodBinaryExpression(binaryType, left, right, TypeUtils.GetNullableType(method.ReturnType), method);
+                        return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.GetNullableType(), method);
                     }
                     else
                     {
@@ -666,11 +630,10 @@ namespace System.Linq.Expressions
             return null;
         }
 
-
         private static BinaryExpression GetMethodBasedBinaryOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, bool liftToNull)
         {
             System.Diagnostics.Debug.Assert(method != null);
-            ValidateOperator(method, nameof(method));
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
@@ -681,14 +644,14 @@ namespace System.Linq.Expressions
                 return new MethodBinaryExpression(binaryType, left, right, method.ReturnType, method);
             }
             // check for lifted call
-            if (TypeUtils.IsNullableType(left.Type) && TypeUtils.IsNullableType(right.Type) &&
-                ParameterIsAssignable(pms[0], TypeUtils.GetNonNullableType(left.Type)) &&
-                ParameterIsAssignable(pms[1], TypeUtils.GetNonNullableType(right.Type)) &&
-                method.ReturnType.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(method.ReturnType))
+            if (left.Type.IsNullableType() && right.Type.IsNullableType() &&
+                ParameterIsAssignable(pms[0], left.Type.GetNonNullableType()) &&
+                ParameterIsAssignable(pms[1], right.Type.GetNonNullableType()) &&
+                method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
             {
                 if (method.ReturnType != typeof(bool) || liftToNull)
                 {
-                    return new MethodBinaryExpression(binaryType, left, right, TypeUtils.GetNullableType(method.ReturnType), method);
+                    return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.GetNullableType(), method);
                 }
                 else
                 {
@@ -717,7 +680,6 @@ namespace System.Linq.Expressions
             }
             return b;
         }
-
 
         private static BinaryExpression GetUserDefinedBinaryOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
         {
@@ -752,14 +714,13 @@ namespace System.Linq.Expressions
             return b;
         }
 
-
         private static MethodInfo GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name)
         {
             // This algorithm is wrong, we should be checking for uniqueness and erroring if
             // it is defined on both types.
             Type[] types = new Type[] { leftType, rightType };
-            Type nnLeftType = TypeUtils.GetNonNullableType(leftType);
-            Type nnRightType = TypeUtils.GetNonNullableType(rightType);
+            Type nnLeftType = leftType.GetNonNullableType();
+            Type nnRightType = rightType.GetNonNullableType();
             MethodInfo method = nnLeftType.GetAnyStaticMethodValidated(name, types);
             if (method == null && !TypeUtils.AreEquivalent(leftType, rightType))
             {
@@ -773,15 +734,13 @@ namespace System.Linq.Expressions
             return method;
         }
 
-
         private static bool IsLiftingConditionalLogicalOperator(Type left, Type right, MethodInfo method, ExpressionType binaryType)
         {
-            return TypeUtils.IsNullableType(right) &&
-                    TypeUtils.IsNullableType(left) &&
+            return right.IsNullableType() &&
+                    left.IsNullableType() &&
                     method == null &&
                     (binaryType == ExpressionType.AndAlso || binaryType == ExpressionType.OrElse);
         }
-
 
         internal static bool ParameterIsAssignable(ParameterInfo pi, Type argType)
         {
@@ -791,19 +750,17 @@ namespace System.Linq.Expressions
             return TypeUtils.AreReferenceAssignable(pType, argType);
         }
 
-
         private static void ValidateParamswithOperandsOrThrow(Type paramType, Type operandType, ExpressionType exprType, string name)
         {
-            if (TypeUtils.IsNullableType(paramType) && !TypeUtils.IsNullableType(operandType))
+            if (paramType.IsNullableType() && !operandType.IsNullableType())
             {
                 throw Error.OperandTypesDoNotMatchParameters(exprType, name);
             }
         }
 
-
-        private static void ValidateOperator(MethodInfo method, string paramName)
+        private static void ValidateOperator(MethodInfo method)
         {
-            System.Diagnostics.Debug.Assert(method != null);
+            Debug.Assert(method != null);
             ValidateMethodInfo(method, nameof(method));
             if (!method.IsStatic)
                 throw Error.UserDefinedOperatorMustBeStatic(method, nameof(method));
@@ -811,13 +768,11 @@ namespace System.Linq.Expressions
                 throw Error.UserDefinedOperatorMustNotBeVoid(method, nameof(method));
         }
 
-
         private static void ValidateMethodInfo(MethodInfo method, string paramName)
         {
             if (method.ContainsGenericParameters)
                 throw method.IsGenericMethodDefinition ? Error.MethodIsGeneric(method, paramName) : Error.MethodContainsGenericParameters(method, paramName);
         }
-
 
         private static bool IsNullComparison(Expression left, Expression right)
         {
@@ -825,17 +780,10 @@ namespace System.Linq.Expressions
             // nullable but not null, then this is treated as a call to x.HasValue
             // and is legal even if there is no equality operator defined on the
             // type of x.
-            if (IsNullConstant(left) && !IsNullConstant(right) && TypeUtils.IsNullableType(right.Type))
-            {
-                return true;
-            }
-            if (IsNullConstant(right) && !IsNullConstant(left) && TypeUtils.IsNullableType(left.Type))
-            {
-                return true;
-            }
-            return false;
+            return IsNullConstant(left)
+                ? !IsNullConstant(right) && right.Type.IsNullableType()
+                : IsNullConstant(right) && left.Type.IsNullableType();
         }
-
 
         // Note: this has different meaning than ConstantCheck.IsNull
         // That function attempts to determine if the result of a tree will be
@@ -848,21 +796,20 @@ namespace System.Linq.Expressions
             return c != null && c.Value == null;
         }
 
-
         private static void ValidateUserDefinedConditionalLogicOperator(ExpressionType nodeType, Type left, Type right, MethodInfo method)
         {
-            ValidateOperator(method, nameof(method));
+            ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 2)
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (!ParameterIsAssignable(pms[0], left))
             {
-                if (!(TypeUtils.IsNullableType(left) && ParameterIsAssignable(pms[0], TypeUtils.GetNonNullableType(left))))
+                if (!(left.IsNullableType() && ParameterIsAssignable(pms[0], left.GetNonNullableType())))
                     throw Error.OperandTypesDoNotMatchParameters(nodeType, method.Name);
             }
             if (!ParameterIsAssignable(pms[1], right))
             {
-                if (!(TypeUtils.IsNullableType(right) && ParameterIsAssignable(pms[1], TypeUtils.GetNonNullableType(right))))
+                if (!(right.IsNullableType() && ParameterIsAssignable(pms[1], right.GetNonNullableType())))
                     throw Error.OperandTypesDoNotMatchParameters(nodeType, method.Name);
             }
             if (pms[0].ParameterType != pms[1].ParameterType)
@@ -875,11 +822,15 @@ namespace System.Linq.Expressions
             }
             if (IsValidLiftedConditionalLogicalOperator(left, right, pms))
             {
-                left = TypeUtils.GetNonNullableType(left);
-                right = TypeUtils.GetNonNullableType(left);
+                left = left.GetNonNullableType();
             }
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_True");
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_False");
+            Type declaringType = method.DeclaringType;
+            if (declaringType == null)
+            {
+                throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
+            }
+            MethodInfo opTrue = TypeUtils.GetBooleanOperator(declaringType, "op_True");
+            MethodInfo opFalse = TypeUtils.GetBooleanOperator(declaringType, "op_False");
             if (opTrue == null || opTrue.ReturnType != typeof(bool) ||
                 opFalse == null || opFalse.ReturnType != typeof(bool))
             {
@@ -897,7 +848,7 @@ namespace System.Linq.Expressions
 
             if (!ParameterIsAssignable(pmsOpTrue[0], left))
             {
-                if (!(TypeUtils.IsNullableType(left) && ParameterIsAssignable(pmsOpTrue[0], TypeUtils.GetNonNullableType(left))))
+                if (!(left.IsNullableType() && ParameterIsAssignable(pmsOpTrue[0], left.GetNonNullableType())))
                     throw Error.OperandTypesDoNotMatchParameters(nodeType, opTrue.Name);
             }
         }
@@ -905,13 +856,12 @@ namespace System.Linq.Expressions
         private static bool IsValidLiftedConditionalLogicalOperator(Type left, Type right, ParameterInfo[] pms)
         {
             return TypeUtils.AreEquivalent(left, right) &&
-                   TypeUtils.IsNullableType(right) &&
-                   TypeUtils.AreEquivalent(pms[1].ParameterType, TypeUtils.GetNonNullableType(right));
+                   right.IsNullableType() &&
+                   TypeUtils.AreEquivalent(pms[1].ParameterType, right.GetNonNullableType());
         }
 
-
         /// <summary>
-        /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
+        /// Creates a <see cref="BinaryExpression" />, given the left and right operands, by calling an appropriate factory method.
         /// </summary>
         /// <param name="binaryType">The ExpressionType that specifies the type of binary operation.</param>
         /// <param name="left">An Expression that represents the left operand.</param>
@@ -919,11 +869,11 @@ namespace System.Linq.Expressions
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
         public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right)
         {
-            return MakeBinary(binaryType, left, right, false, null, null);
+            return MakeBinary(binaryType, left, right, liftToNull: false, method: null, conversion: null);
         }
 
         /// <summary>
-        /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
+        /// Creates a <see cref="BinaryExpression" />, given the left and right operands, by calling an appropriate factory method.
         /// </summary>
         /// <param name="binaryType">The ExpressionType that specifies the type of binary operation.</param>
         /// <param name="left">An Expression that represents the left operand.</param>
@@ -933,12 +883,12 @@ namespace System.Linq.Expressions
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
         public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            return MakeBinary(binaryType, left, right, liftToNull, method, null);
+            return MakeBinary(binaryType, left, right, liftToNull, method, conversion: null);
         }
 
         ///
         /// <summary>
-        /// Creates a BinaryExpression, given the left and right operands, by calling an appropriate factory method.
+        /// Creates a <see cref="BinaryExpression" />, given the left and right operands, by calling an appropriate factory method.
         /// </summary>
         /// <param name="binaryType">The ExpressionType that specifies the type of binary operation.</param>
         /// <param name="left">An Expression that represents the left operand.</param>
@@ -1037,33 +987,32 @@ namespace System.Linq.Expressions
 
         #region Equality Operators
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an equality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Equal"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Equal"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Equal(Expression left, Expression right)
         {
-            return Equal(left, right, false, null);
+            return Equal(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an equality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Equal"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Equal"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Equal(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetEqualityComparisonOperator(ExpressionType.Equal, "op_Equality", left, right, liftToNull);
@@ -1074,15 +1023,15 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a reference equality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Equal"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Equal"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ReferenceEqual(Expression left, Expression right)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (TypeUtils.HasReferenceEquality(left.Type, right.Type))
             {
                 return new LogicalBinaryExpression(ExpressionType.Equal, left, right);
@@ -1093,29 +1042,29 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an inequality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.NotEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NotEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression NotEqual(Expression left, Expression right)
         {
-            return NotEqual(left, right, false, null);
+            return NotEqual(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an inequality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.NotEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NotEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression NotEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetEqualityComparisonOperator(ExpressionType.NotEqual, "op_Inequality", left, right, liftToNull);
@@ -1126,15 +1075,15 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a reference inequality comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.NotEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NotEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ReferenceNotEqual(Expression left, Expression right)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (TypeUtils.HasReferenceEquality(left.Type, right.Type))
             {
                 return new LogicalBinaryExpression(ExpressionType.NotEqual, left, right);
@@ -1145,12 +1094,12 @@ namespace System.Linq.Expressions
         private static BinaryExpression GetEqualityComparisonOperator(ExpressionType binaryType, string opName, Expression left, Expression right, bool liftToNull)
         {
             // known comparison - numeric types, bools, object, enums
-            if (left.Type == right.Type && (TypeUtils.IsNumeric(left.Type) ||
+            if (left.Type == right.Type && (left.Type.IsNumeric() ||
                 left.Type == typeof(object) ||
-                TypeUtils.IsBool(left.Type) ||
-                TypeUtils.GetNonNullableType(left.Type).GetTypeInfo().IsEnum))
+                left.Type.IsBool() ||
+                left.Type.GetNonNullableType().IsEnum))
             {
-                if (TypeUtils.IsNullableType(left.Type) && liftToNull)
+                if (left.Type.IsNullableType() && liftToNull)
                 {
                     return new SimpleBinaryExpression(binaryType, left, right, typeof(bool?));
                 }
@@ -1167,7 +1116,7 @@ namespace System.Linq.Expressions
             }
             if (TypeUtils.HasBuiltInEqualityOperator(left.Type, right.Type) || IsNullComparison(left, right))
             {
-                if (TypeUtils.IsNullableType(left.Type) && liftToNull)
+                if (left.Type.IsNullableType() && liftToNull)
                 {
                     return new SimpleBinaryExpression(binaryType, left, right, typeof(bool?));
                 }
@@ -1183,33 +1132,32 @@ namespace System.Linq.Expressions
 
         #region Comparison Expressions
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.GreaterThan"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThan"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression GreaterThan(Expression left, Expression right)
         {
-            return GreaterThan(left, right, false, null);
+            return GreaterThan(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.GreaterThan"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThan"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression GreaterThan(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetComparisonOperator(ExpressionType.GreaterThan, "op_GreaterThan", left, right, liftToNull);
@@ -1220,30 +1168,30 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LessThan"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThan"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
 
         public static BinaryExpression LessThan(Expression left, Expression right)
         {
-            return LessThan(left, right, false, null);
+            return LessThan(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LessThan"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThan"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression LessThan(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetComparisonOperator(ExpressionType.LessThan, "op_LessThan", left, right, liftToNull);
@@ -1251,33 +1199,32 @@ namespace System.Linq.Expressions
             return GetMethodBasedBinaryOperator(ExpressionType.LessThan, left, right, method, liftToNull);
         }
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than or equal" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.GreaterThanOrEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThanOrEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression GreaterThanOrEqual(Expression left, Expression right)
         {
-            return GreaterThanOrEqual(left, right, false, null);
+            return GreaterThanOrEqual(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "greater than or equal" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.GreaterThanOrEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThanOrEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression GreaterThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetComparisonOperator(ExpressionType.GreaterThanOrEqual, "op_GreaterThanOrEqual", left, right, liftToNull);
@@ -1285,33 +1232,32 @@ namespace System.Linq.Expressions
             return GetMethodBasedBinaryOperator(ExpressionType.GreaterThanOrEqual, left, right, method, liftToNull);
         }
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than or equal" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LessThanOrEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThanOrEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression LessThanOrEqual(Expression left, Expression right)
         {
-            return LessThanOrEqual(left, right, false, null);
+            return LessThanOrEqual(left, right, liftToNull: false, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a "less than or equal" numeric comparison.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LessThanOrEqual"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.IsLiftedToNull"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThanOrEqual"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression LessThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 return GetComparisonOperator(ExpressionType.LessThanOrEqual, "op_LessThanOrEqual", left, right, liftToNull);
@@ -1319,12 +1265,11 @@ namespace System.Linq.Expressions
             return GetMethodBasedBinaryOperator(ExpressionType.LessThanOrEqual, left, right, method, liftToNull);
         }
 
-
         private static BinaryExpression GetComparisonOperator(ExpressionType binaryType, string opName, Expression left, Expression right, bool liftToNull)
         {
-            if (left.Type == right.Type && TypeUtils.IsNumeric(left.Type))
+            if (left.Type == right.Type && left.Type.IsNumeric())
             {
-                if (TypeUtils.IsNullableType(left.Type) && liftToNull)
+                if (left.Type.IsNullableType() && liftToNull)
                 {
                     return new SimpleBinaryExpression(binaryType, left, right, typeof(bool?));
                 }
@@ -1340,32 +1285,31 @@ namespace System.Linq.Expressions
 
         #region Boolean Expressions
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional AND operation that evaluates the second operand only if it has to.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AndAlso"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAlso"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression AndAlso(Expression left, Expression right)
         {
-            return AndAlso(left, right, null);
+            return AndAlso(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional AND operation that evaluates the second operand only if it has to.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AndAlso"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAlso"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AndAlso(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             Type returnType;
             if (method == null)
             {
@@ -1384,42 +1328,41 @@ namespace System.Linq.Expressions
                 if (method != null)
                 {
                     ValidateUserDefinedConditionalLogicOperator(ExpressionType.AndAlso, left.Type, right.Type, method);
-                    returnType = (TypeUtils.IsNullableType(left.Type) && TypeUtils.AreEquivalent(method.ReturnType, TypeUtils.GetNonNullableType(left.Type))) ? left.Type : method.ReturnType;
+                    returnType = (left.Type.IsNullableType() && TypeUtils.AreEquivalent(method.ReturnType, left.Type.GetNonNullableType())) ? left.Type : method.ReturnType;
                     return new MethodBinaryExpression(ExpressionType.AndAlso, left, right, returnType, method);
                 }
                 throw Error.BinaryOperatorNotDefined(ExpressionType.AndAlso, left.Type, right.Type);
             }
             ValidateUserDefinedConditionalLogicOperator(ExpressionType.AndAlso, left.Type, right.Type, method);
-            returnType = (TypeUtils.IsNullableType(left.Type) && TypeUtils.AreEquivalent(method.ReturnType, TypeUtils.GetNonNullableType(left.Type))) ? left.Type : method.ReturnType;
+            returnType = (left.Type.IsNullableType() && TypeUtils.AreEquivalent(method.ReturnType, left.Type.GetNonNullableType())) ? left.Type : method.ReturnType;
             return new MethodBinaryExpression(ExpressionType.AndAlso, left, right, returnType, method);
         }
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional OR operation that evaluates the second operand only if it has to.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.OrElse"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrElse"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression OrElse(Expression left, Expression right)
         {
-            return OrElse(left, right, null);
+            return OrElse(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a conditional OR operation that evaluates the second operand only if it has to.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.OrElse"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrElse"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression OrElse(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             Type returnType;
             if (method == null)
             {
@@ -1438,13 +1381,13 @@ namespace System.Linq.Expressions
                 if (method != null)
                 {
                     ValidateUserDefinedConditionalLogicOperator(ExpressionType.OrElse, left.Type, right.Type, method);
-                    returnType = (TypeUtils.IsNullableType(left.Type) && method.ReturnType == TypeUtils.GetNonNullableType(left.Type)) ? left.Type : method.ReturnType;
+                    returnType = (left.Type.IsNullableType() && method.ReturnType == left.Type.GetNonNullableType()) ? left.Type : method.ReturnType;
                     return new MethodBinaryExpression(ExpressionType.OrElse, left, right, returnType, method);
                 }
                 throw Error.BinaryOperatorNotDefined(ExpressionType.OrElse, left.Type, right.Type);
             }
             ValidateUserDefinedConditionalLogicOperator(ExpressionType.OrElse, left.Type, right.Type, method);
-            returnType = (TypeUtils.IsNullableType(left.Type) && method.ReturnType == TypeUtils.GetNonNullableType(left.Type)) ? left.Type : method.ReturnType;
+            returnType = (left.Type.IsNullableType() && method.ReturnType == left.Type.GetNonNullableType()) ? left.Type : method.ReturnType;
             return new MethodBinaryExpression(ExpressionType.OrElse, left, right, returnType, method);
         }
 
@@ -1452,31 +1395,31 @@ namespace System.Linq.Expressions
 
         #region Coalescing Expressions
 
-
         /// <summary>
-        /// Creates a BinaryExpression that represents a coalescing operation.
+        /// Creates a <see cref="BinaryExpression" /> that represents a coalescing operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A BinaryExpression that has the NodeType property equal to Coalesce and the Left and Right properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression" /> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Coalesce"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Coalesce(Expression left, Expression right)
         {
-            return Coalesce(left, right, null);
+            return Coalesce(left, right, conversion: null);
         }
 
-
         /// <summary>
-        /// Creates a BinaryExpression that represents a coalescing operation.
+        /// Creates a <see cref="BinaryExpression" /> that represents a coalescing operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
         /// <param name="conversion">A LambdaExpression to set the Conversion property equal to.</param>
-        /// <returns>A BinaryExpression that has the NodeType property equal to Coalesce and the Left, Right and Conversion properties set to the specified values.
+        /// <returns>A <see cref="BinaryExpression" /> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Coalesce"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/> and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Coalesce(Expression left, Expression right, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
 
             if (conversion == null)
             {
@@ -1484,7 +1427,7 @@ namespace System.Linq.Expressions
                 return new SimpleBinaryExpression(ExpressionType.Coalesce, left, right, resultType);
             }
 
-            if (left.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(left.Type))
+            if (left.Type.IsValueType && !left.Type.IsNullableType())
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }
@@ -1497,7 +1440,7 @@ namespace System.Linq.Expressions
                 throw Error.UserDefinedOperatorMustNotBeVoid(conversion, nameof(conversion));
             }
             ParameterInfo[] pms = method.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1512,7 +1455,7 @@ namespace System.Linq.Expressions
             }
             // The parameter of the conversion lambda must either be assignable
             // from the erased or unerased type of the left hand side.
-            if (!ParameterIsAssignable(pms[0], TypeUtils.GetNonNullableType(left.Type)) &&
+            if (!ParameterIsAssignable(pms[0], left.Type.GetNonNullableType()) &&
                 !ParameterIsAssignable(pms[0], left.Type))
             {
                 throw Error.OperandTypesDoNotMatchParameters(ExpressionType.Coalesce, conversion.ToString());
@@ -1520,23 +1463,22 @@ namespace System.Linq.Expressions
             return new CoalesceConversionBinaryExpression(left, right, conversion);
         }
 
-
         private static Type ValidateCoalesceArgTypes(Type left, Type right)
         {
-            Type leftStripped = TypeUtils.GetNonNullableType(left);
-            if (left.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(left))
+            Type leftStripped = left.GetNonNullableType();
+            if (left.IsValueType && !left.IsNullableType())
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }
-            else if (TypeUtils.IsNullableType(left) && TypeUtils.IsImplicitlyConvertible(right, leftStripped))
+            else if (left.IsNullableType() && right.IsImplicitlyConvertibleTo(leftStripped))
             {
                 return leftStripped;
             }
-            else if (TypeUtils.IsImplicitlyConvertible(right, left))
+            else if (right.IsImplicitlyConvertibleTo(left))
             {
                 return left;
             }
-            else if (TypeUtils.IsImplicitlyConvertible(leftStripped, right))
+            else if (leftStripped.IsImplicitlyConvertibleTo(right))
             {
                 return right;
             }
@@ -1546,96 +1488,91 @@ namespace System.Linq.Expressions
             }
         }
 
-
-
         #endregion
 
         #region Arithmetic Expressions
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Add"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Add"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Add(Expression left, Expression right)
         {
-            return Add(left, right, null);
+            return Add(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Add"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Add"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Add(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Add, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Add, "op_Addition", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Add, "op_Addition", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Add, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Add, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression AddAssign(Expression left, Expression right)
         {
-            return AddAssign(left, right, null, null);
+            return AddAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo method)
         {
-            return AddAssign(left, right, method, null);
+            return AddAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-
         public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -1644,9 +1581,9 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.AddAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AddAssign, "op_Addition", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AddAssign, "op_Addition", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.AddAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.AddAssign, left, right, method, conversion, liftToNull: true);
         }
 
         private static void ValidateOpAssignConversionLambda(LambdaExpression conversion, Expression left, MethodInfo method, ExpressionType nodeType)
@@ -1655,7 +1592,7 @@ namespace System.Linq.Expressions
             Debug.Assert(typeof(System.MulticastDelegate).IsAssignableFrom(delegateType) && delegateType != typeof(System.MulticastDelegate));
             MethodInfo mi = delegateType.GetMethod("Invoke");
             ParameterInfo[] pms = mi.GetParametersCached();
-            Debug.Assert(pms.Length == conversion.Parameters.Count);
+            Debug.Assert(pms.Length == conversion.ParameterCount);
             if (pms.Length != 1)
             {
                 throw Error.IncorrectNumberOfMethodCallArguments(conversion, nameof(conversion));
@@ -1664,65 +1601,62 @@ namespace System.Linq.Expressions
             {
                 throw Error.OperandTypesDoNotMatchParameters(nodeType, conversion.ToString());
             }
-            if (method != null)
+            Debug.Assert(method != null);
+            // The parameter type of conversion lambda must be the same as the return type of the overload method
+            if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
             {
-                // The parameter type of conversion lambda must be the same as the return type of the overload method
-                if (!TypeUtils.AreEquivalent(pms[0].ParameterType, method.ReturnType))
-                {
-                    throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
-                }
+                throw Error.OverloadOperatorTypeDoesNotMatchConversionType(nodeType, conversion.ToString());
             }
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.AddAssignChecked"/> and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> 
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to
+        /// <see cref="ExpressionType.AddAssignChecked"/> and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/>
         /// properties set to the specified values.
         /// </returns>
         public static BinaryExpression AddAssignChecked(Expression left, Expression right)
         {
-            return AddAssignChecked(left, right, null);
+            return AddAssignChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo method)
         {
-            return AddAssignChecked(left, right, method, null);
+            return AddAssignChecked(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an addition assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
 
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -1731,131 +1665,128 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.AddAssignChecked, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AddAssignChecked, "op_Addition", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AddAssignChecked, "op_Addition", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.AddAssignChecked, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.AddAssignChecked, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression AddChecked(Expression left, Expression right)
         {
-            return AddChecked(left, right, null);
+            return AddChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic addition operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AddChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AddChecked(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.AddChecked, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, false);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.AddChecked, "op_Addition", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.AddChecked, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.AddChecked, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Subtract"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Subtract"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Subtract(Expression left, Expression right)
         {
-            return Subtract(left, right, null);
+            return Subtract(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Subtract"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Subtract"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Subtract(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Subtract, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Subtract, "op_Subtraction", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Subtract, "op_Subtraction", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Subtract, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Subtract, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression SubtractAssign(Expression left, Expression right)
         {
-            return SubtractAssign(left, right, null, null);
+            return SubtractAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo method)
         {
-            return SubtractAssign(left, right, method, null);
+            return SubtractAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -1864,57 +1795,56 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.SubtractAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.SubtractAssign, "op_Subtraction", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.SubtractAssign, "op_Subtraction", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.SubtractAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.SubtractAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression SubtractAssignChecked(Expression left, Expression right)
         {
-            return SubtractAssignChecked(left, right, null);
+            return SubtractAssignChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo method)
         {
-            return SubtractAssignChecked(left, right, method, null);
+            return SubtractAssignChecked(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a subtraction assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -1923,131 +1853,128 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.SubtractAssignChecked, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.SubtractAssignChecked, "op_Subtraction", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.SubtractAssignChecked, "op_Subtraction", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.SubtractAssignChecked, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.SubtractAssignChecked, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression SubtractChecked(Expression left, Expression right)
         {
-            return SubtractChecked(left, right, null);
+            return SubtractChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic subtraction operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.SubtractChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression SubtractChecked(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.SubtractChecked, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.SubtractChecked, "op_Subtraction", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.SubtractChecked, "op_Subtraction", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.SubtractChecked, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.SubtractChecked, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic division operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Divide"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Divide"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Divide(Expression left, Expression right)
         {
-            return Divide(left, right, null);
+            return Divide(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic division operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Divide"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Divide"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Divide(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Divide, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Divide, "op_Division", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Divide, "op_Division", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Divide, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Divide, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.DivideAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.DivideAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression DivideAssign(Expression left, Expression right)
         {
-            return DivideAssign(left, right, null, null);
+            return DivideAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.DivideAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.DivideAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo method)
         {
-            return DivideAssign(left, right, method, null);
+            return DivideAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a division assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.DivideAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.DivideAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2056,94 +1983,92 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.DivideAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.DivideAssign, "op_Division", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.DivideAssign, "op_Division", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.DivideAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.DivideAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic remainder operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Modulo"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Modulo"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Modulo(Expression left, Expression right)
         {
-            return Modulo(left, right, null);
+            return Modulo(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic remainder operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Modulo"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Modulo"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Modulo(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Modulo, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Modulo, "op_Modulus", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Modulo, "op_Modulus", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Modulo, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Modulo, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ModuloAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ModuloAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression ModuloAssign(Expression left, Expression right)
         {
-            return ModuloAssign(left, right, null, null);
+            return ModuloAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ModuloAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ModuloAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo method)
         {
-            return ModuloAssign(left, right, method, null);
+            return ModuloAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a remainder assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ModuloAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ModuloAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2152,94 +2077,92 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.ModuloAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.ModuloAssign, "op_Modulus", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.ModuloAssign, "op_Modulus", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.ModuloAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.ModuloAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Multiply"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Multiply"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Multiply(Expression left, Expression right)
         {
-            return Multiply(left, right, null);
+            return Multiply(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Multiply"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Multiply"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Multiply(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Multiply, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Multiply, "op_Multiply", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Multiply, "op_Multiply", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Multiply, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Multiply, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression MultiplyAssign(Expression left, Expression right)
         {
-            return MultiplyAssign(left, right, null, null);
+            return MultiplyAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo method)
         {
-            return MultiplyAssign(left, right, method, null);
+            return MultiplyAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that does not have overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2248,57 +2171,56 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.MultiplyAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.MultiplyAssign, "op_Multiply", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.MultiplyAssign, "op_Multiply", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right)
         {
-            return MultiplyAssignChecked(left, right, null);
+            return MultiplyAssignChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo method)
         {
-            return MultiplyAssignChecked(left, right, method, null);
+            return MultiplyAssignChecked(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a multiplication assignment operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyAssignChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssignChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2307,52 +2229,51 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.MultiplyAssignChecked, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.MultiplyAssignChecked, "op_Multiply", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.MultiplyAssignChecked, "op_Multiply", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssignChecked, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.MultiplyAssignChecked, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression MultiplyChecked(Expression left, Expression right)
         {
-            return MultiplyChecked(left, right, null);
+            return MultiplyChecked(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an arithmetic multiplication operation that has overflow checking.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.MultiplyChecked"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyChecked"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression MultiplyChecked(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsArithmetic(left.Type))
+                if (left.Type == right.Type && left.Type.IsArithmetic())
                 {
                     return new SimpleBinaryExpression(ExpressionType.MultiplyChecked, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.MultiplyChecked, "op_Multiply", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.MultiplyChecked, "op_Multiply", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.MultiplyChecked, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.MultiplyChecked, left, right, method, liftToNull: true);
         }
 
         private static bool IsSimpleShift(Type left, Type right)
         {
-            return TypeUtils.IsInteger(left)
-                && TypeUtils.GetNonNullableType(right) == typeof(int);
+            return left.IsInteger()
+                && right.GetNonNullableType() == typeof(int);
         }
 
         private static Type GetResultTypeOfShift(Type left, Type right)
@@ -2365,32 +2286,31 @@ namespace System.Linq.Expressions
             return left;
         }
 
-
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise left-shift operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LeftShift"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShift"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression LeftShift(Expression left, Expression right)
         {
-            return LeftShift(left, right, null);
+            return LeftShift(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise left-shift operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LeftShift"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShift"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression LeftShift(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 if (IsSimpleShift(left.Type, right.Type))
@@ -2398,54 +2318,53 @@ namespace System.Linq.Expressions
                     Type resultType = GetResultTypeOfShift(left.Type, right.Type);
                     return new SimpleBinaryExpression(ExpressionType.LeftShift, left, right, resultType);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.LeftShift, "op_LeftShift", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.LeftShift, "op_LeftShift", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.LeftShift, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.LeftShift, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LeftShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression LeftShiftAssign(Expression left, Expression right)
         {
-            return LeftShiftAssign(left, right, null, null);
+            return LeftShiftAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LeftShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo method)
         {
-            return LeftShiftAssign(left, right, method, null);
+            return LeftShiftAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise left-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.LeftShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 if (IsSimpleShift(left.Type, right.Type))
@@ -2458,37 +2377,36 @@ namespace System.Linq.Expressions
                     Type resultType = GetResultTypeOfShift(left.Type, right.Type);
                     return new SimpleBinaryExpression(ExpressionType.LeftShiftAssign, left, right, resultType);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.LeftShiftAssign, "op_LeftShift", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.LeftShiftAssign, "op_LeftShift", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.LeftShiftAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.LeftShiftAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise right-shift operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.RightShift"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShift"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression RightShift(Expression left, Expression right)
         {
-            return RightShift(left, right, null);
+            return RightShift(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise right-shift operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.RightShift"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShift"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression RightShift(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 if (IsSimpleShift(left.Type, right.Type))
@@ -2496,54 +2414,53 @@ namespace System.Linq.Expressions
                     Type resultType = GetResultTypeOfShift(left.Type, right.Type);
                     return new SimpleBinaryExpression(ExpressionType.RightShift, left, right, resultType);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.RightShift, "op_RightShift", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.RightShift, "op_RightShift", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.RightShift, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.RightShift, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.RightShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression RightShiftAssign(Expression left, Expression right)
         {
-            return RightShiftAssign(left, right, null, null);
+            return RightShiftAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.RightShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo method)
         {
-            return RightShiftAssign(left, right, method, null);
+            return RightShiftAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise right-shift assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.RightShiftAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShiftAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
                 if (IsSimpleShift(left.Type, right.Type))
@@ -2556,94 +2473,92 @@ namespace System.Linq.Expressions
                     Type resultType = GetResultTypeOfShift(left.Type, right.Type);
                     return new SimpleBinaryExpression(ExpressionType.RightShiftAssign, left, right, resultType);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.RightShiftAssign, "op_RightShift", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.RightShiftAssign, "op_RightShift", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.RightShiftAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.RightShiftAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise AND operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.And"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.And"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression And(Expression left, Expression right)
         {
-            return And(left, right, null);
+            return And(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise AND operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.And"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.And"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression And(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     return new SimpleBinaryExpression(ExpressionType.And, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.And, "op_BitwiseAnd", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.And, "op_BitwiseAnd", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.And, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.And, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AndAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression AndAssign(Expression left, Expression right)
         {
-            return AndAssign(left, right, null, null);
+            return AndAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AndAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo method)
         {
-            return AndAssign(left, right, method, null);
+            return AndAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise AND assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.AndAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2652,94 +2567,92 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.AndAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AndAssign, "op_BitwiseAnd", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.AndAssign, "op_BitwiseAnd", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.AndAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.AndAssign, left, right, method, conversion, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise OR operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Or"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Or"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Or(Expression left, Expression right)
         {
-            return Or(left, right, null);
+            return Or(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents an bitwise OR operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Or"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Or"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Or(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     return new SimpleBinaryExpression(ExpressionType.Or, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Or, "op_BitwiseOr", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.Or, "op_BitwiseOr", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Or, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Or, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.OrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression OrAssign(Expression left, Expression right)
         {
-            return OrAssign(left, right, null, null);
+            return OrAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.OrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo method)
         {
-            return OrAssign(left, right, method, null);
+            return OrAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise OR assignment operation.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.OrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2748,92 +2661,92 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.OrAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.OrAssign, "op_BitwiseOr", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.OrAssign, "op_BitwiseOr", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.OrAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.OrAssign, left, right, method, conversion, liftToNull: true);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise or logical XOR operation, using op_ExclusiveOr for user-defined types.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ExclusiveOr"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOr"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression ExclusiveOr(Expression left, Expression right)
         {
-            return ExclusiveOr(left, right, null);
+            return ExclusiveOr(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise or logical XOR operation, using op_ExclusiveOr for user-defined types.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ExclusiveOr"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOr"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ExclusiveOr(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     return new SimpleBinaryExpression(ExpressionType.ExclusiveOr, left, right, left.Type);
                 }
-                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.ExclusiveOr, "op_ExclusiveOr", left, right, true);
+                return GetUserDefinedBinaryOperatorOrThrow(ExpressionType.ExclusiveOr, "op_ExclusiveOr", left, right, liftToNull: true);
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.ExclusiveOr, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.ExclusiveOr, left, right, method, liftToNull: true);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise or logical XOR assignment operation, using op_ExclusiveOr for user-defined types.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ExclusiveOrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right)
         {
-            return ExclusiveOrAssign(left, right, null, null);
+            return ExclusiveOrAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise or logical XOR assignment operation, using op_ExclusiveOr for user-defined types.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ExclusiveOrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo method)
         {
-            return ExclusiveOrAssign(left, right, method, null);
+            return ExclusiveOrAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents a bitwise or logical XOR assignment operation, using op_ExclusiveOr for user-defined types.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.ExclusiveOrAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOrAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                if (left.Type == right.Type && TypeUtils.IsIntegerOrBool(left.Type))
+                if (left.Type == right.Type && left.Type.IsIntegerOrBool())
                 {
                     // conversion is not supported for binary ops on arithmetic types without operator overloading
                     if (conversion != null)
@@ -2842,118 +2755,115 @@ namespace System.Linq.Expressions
                     }
                     return new SimpleBinaryExpression(ExpressionType.ExclusiveOrAssign, left, right, left.Type);
                 }
-                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.ExclusiveOrAssign, "op_ExclusiveOr", left, right, conversion, true);
+                return GetUserDefinedAssignOperatorOrThrow(ExpressionType.ExclusiveOrAssign, "op_ExclusiveOr", left, right, conversion, liftToNull: true);
             }
-            return GetMethodBasedAssignOperator(ExpressionType.ExclusiveOrAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.ExclusiveOrAssign, left, right, method, conversion, liftToNull: true);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising a number to a power.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Power"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Power"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression Power(Expression left, Expression right)
         {
-            return Power(left, right, null);
+            return Power(left, right, method: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising a number to a power.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.Power"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Power"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression Power(Expression left, Expression right, MethodInfo method)
         {
-            RequiresCanRead(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                Type mathType = typeof(System.Math);
-                method = mathType.GetMethod("Pow", BindingFlags.Static | BindingFlags.Public);
+                method = Math_Pow_Double_Double;
                 if (method == null)
                 {
                     throw Error.BinaryOperatorNotDefined(ExpressionType.Power, left.Type, right.Type);
                 }
             }
-            return GetMethodBasedBinaryOperator(ExpressionType.Power, left, right, method, true);
+            return GetMethodBasedBinaryOperator(ExpressionType.Power, left, right, method, liftToNull: true);
         }
-
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.PowerAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/> and <see cref="P:BinaryExpression.Right"/> properties set to the specified values.</returns>
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.PowerAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression PowerAssign(Expression left, Expression right)
         {
-            return PowerAssign(left, right, null, null);
+            return PowerAssign(left, right, method: null, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.PowerAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, and <see cref="P:BinaryExpression.Method"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.PowerAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo method)
         {
-            return PowerAssign(left, right, method, null);
+            return PowerAssign(left, right, method, conversion: null);
         }
 
         /// <summary>
         /// Creates a <see cref="BinaryExpression"/> that represents raising an expression to a power and assigning the result back to the expression.
         /// </summary>
-        /// <param name="left">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Left"/> property equal to.</param>
-        /// <param name="right">An <see cref="Expression"/> to set the <see cref="P:BinaryExpression.Right"/> property equal to.</param>
-        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="P:BinaryExpression.Method"/> property equal to.</param>
-        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="P:BinaryExpression.Conversion"/> property equal to.</param>
-        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to <see cref="F:ExpressionType.PowerAssign"/> 
-        /// and the <see cref="P:BinaryExpression.Left"/>, <see cref="P:BinaryExpression.Right"/>, <see cref="P:BinaryExpression.Method"/>,
-        /// and <see cref="P:BinaryExpression.Conversion"/> properties set to the specified values.
+        /// <param name="left">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="right">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <param name="method">A <see cref="MethodInfo"/> to set the <see cref="BinaryExpression.Method"/> property equal to.</param>
+        /// <param name="conversion">A <see cref="LambdaExpression"/> to set the <see cref="BinaryExpression.Conversion"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.PowerAssign"/>
+        /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
+        /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
         public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
         {
-            RequiresCanRead(left, nameof(left));
+            ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
-            RequiresCanRead(right, nameof(right));
+            ExpressionUtils.RequiresCanRead(right, nameof(right));
             if (method == null)
             {
-                Type mathType = typeof(System.Math);
-                method = mathType.GetMethod("Pow", BindingFlags.Static | BindingFlags.Public);
+                method = Math_Pow_Double_Double;
                 if (method == null)
                 {
                     throw Error.BinaryOperatorNotDefined(ExpressionType.PowerAssign, left.Type, right.Type);
                 }
             }
-            return GetMethodBasedAssignOperator(ExpressionType.PowerAssign, left, right, method, conversion, true);
+            return GetMethodBasedAssignOperator(ExpressionType.PowerAssign, left, right, method, conversion, liftToNull: true);
         }
 
         #endregion
 
         #region ArrayIndex Expression
 
-
         /// <summary>
-        /// Creates a BinaryExpression that represents applying an array index operator to an array of rank one.
+        /// Creates a <see cref="BinaryExpression"/> that represents applying an array index operator to an array of rank one.
         /// </summary>
-        /// <param name="array">An Expression to set the Left property equal to.</param>
-        /// <param name="index">An Expression to set the Right property equal to.</param>
-        /// <returns>A BinaryExpression that has the NodeType property equal to ArrayIndex and the Left and Right properties set to the specified values.</returns>
+        /// <param name="array">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Left"/> property equal to.</param>
+        /// <param name="index">An <see cref="Expression"/> to set the <see cref="BinaryExpression.Right"/> property equal to.</param>
+        /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ArrayIndex"/>
+        /// and the <see cref="BinaryExpression.Left"/> and <see cref="BinaryExpression.Right"/> properties set to the specified values.</returns>
         public static BinaryExpression ArrayIndex(Expression array, Expression index)
         {
-            RequiresCanRead(array, nameof(array));
-            RequiresCanRead(index, nameof(index));
+            ExpressionUtils.RequiresCanRead(array, nameof(array));
+            ExpressionUtils.RequiresCanRead(index, nameof(index));
             if (index.Type != typeof(int))
             {
                 throw Error.ArgumentMustBeArrayIndexType(nameof(index));
@@ -2971,6 +2881,7 @@ namespace System.Linq.Expressions
 
             return new SimpleBinaryExpression(ExpressionType.ArrayIndex, array, index, arrayType.GetElementType());
         }
+
         #endregion
     }
 }

@@ -12,7 +12,7 @@ namespace System.Collections.Tests
     /// Contains tests that ensure the correctness of any class that implements the generic
     /// IDictionary interface
     /// </summary>
-    public abstract class IDictionary_Generic_Tests<TKey, TValue> : ICollection_Generic_Tests<KeyValuePair<TKey, TValue>>
+    public abstract partial class IDictionary_Generic_Tests<TKey, TValue> : ICollection_Generic_Tests<KeyValuePair<TKey, TValue>>
     {
         #region IDictionary<TKey, TValue> Helper Methods
 
@@ -766,8 +766,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, CreateTValue(5341));
+                dictionary.TryAdd(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.Remove(missingKey));
             }
         }
@@ -797,8 +796,7 @@ namespace System.Collections.Tests
                 TKey missingKey = GetNewKey(dictionary);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, value);
+                dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }
@@ -833,8 +831,7 @@ namespace System.Collections.Tests
                 TKey missingKey = default(TKey);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, value);
+                dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }

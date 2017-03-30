@@ -1,1 +1,0 @@
-PermitPortableVersionMismatch=.NETPortable,Version=v4.5,Profile=Profile259;.NETPortable,Version=v4.5,Profile=Profile49;.NETPortable,Version=v4.5,Profile=Profile78;.NETPortable,Version=v4.6,Profile=Profile157;.NETPortable,Version=v4.6,Profile=Profile31;.NETPortable,Version=v4.6,Profile=Profile84

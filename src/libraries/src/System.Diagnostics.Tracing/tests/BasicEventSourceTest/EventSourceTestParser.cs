@@ -428,148 +428,148 @@ using Address = System.UInt64;
 //        #region private
 //        protected override string GetProviderName() { return ProviderName; }
 
-//        static private EmptyTraceData Event0Template(Action<EmptyTraceData> action)
+//        private static EmptyTraceData Event0Template(Action<EmptyTraceData> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EmptyTraceData(action, 1, 65533, "Event0", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventEnumArgs EventEnumTemplate(Action<EventEnumArgs> action)
+//        private static EventEnumArgs EventEnumTemplate(Action<EventEnumArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventEnumArgs(action, 19, 65515, "EventEnum", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventEnum1Args EventEnum1Template(Action<EventEnum1Args> action)
+//        private static EventEnum1Args EventEnum1Template(Action<EventEnum1Args> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventEnum1Args(action, 20, 65514, "EventEnum1", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventFlagsArgs EventFlagsTemplate(Action<EventFlagsArgs> action)
+//        private static EventFlagsArgs EventFlagsTemplate(Action<EventFlagsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventFlagsArgs(action, 21, 65513, "EventFlags", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventFlags1Args EventFlags1Template(Action<EventFlags1Args> action)
+//        private static EventFlags1Args EventFlags1Template(Action<EventFlags1Args> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventFlags1Args(action, 22, 65512, "EventFlags1", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventIArgs EventITemplate(Action<EventIArgs> action)
+//        private static EventIArgs EventITemplate(Action<EventIArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventIArgs(action, 2, 65532, "EventI", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventIIArgs EventIITemplate(Action<EventIIArgs> action)
+//        private static EventIIArgs EventIITemplate(Action<EventIIArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventIIArgs(action, 3, 65531, "EventII", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventIIIArgs EventIIITemplate(Action<EventIIIArgs> action)
+//        private static EventIIIArgs EventIIITemplate(Action<EventIIIArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventIIIArgs(action, 4, 65530, "EventIII", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventLArgs EventLTemplate(Action<EventLArgs> action)
+//        private static EventLArgs EventLTemplate(Action<EventLArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventLArgs(action, 5, 65529, "EventL", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventLLArgs EventLLTemplate(Action<EventLLArgs> action)
+//        private static EventLLArgs EventLLTemplate(Action<EventLLArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventLLArgs(action, 6, 65528, "EventLL", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventLLLArgs EventLLLTemplate(Action<EventLLLArgs> action)
+//        private static EventLLLArgs EventLLLTemplate(Action<EventLLLArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventLLLArgs(action, 7, 65527, "EventLLL", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventNoAttributesArgs EventNoAttributesTemplate(Action<EventNoAttributesArgs> action)
+//        private static EventNoAttributesArgs EventNoAttributesTemplate(Action<EventNoAttributesArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventNoAttributesArgs(action, 16, 65518, "EventNoAttributes", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSArgs EventSTemplate(Action<EventSArgs> action)
+//        private static EventSArgs EventSTemplate(Action<EventSArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSArgs(action, 8, 65526, "EventS", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSIArgs EventSITemplate(Action<EventSIArgs> action)
+//        private static EventSIArgs EventSITemplate(Action<EventSIArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSIArgs(action, 11, 65523, "EventSI", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSIIArgs EventSIITemplate(Action<EventSIIArgs> action)
+//        private static EventSIIArgs EventSIITemplate(Action<EventSIIArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSIIArgs(action, 13, 65521, "EventSII", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSLArgs EventSLTemplate(Action<EventSLArgs> action)
+//        private static EventSLArgs EventSLTemplate(Action<EventSLArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSLArgs(action, 12, 65522, "EventSL", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSSArgs EventSSTemplate(Action<EventSSArgs> action)
+//        private static EventSSArgs EventSSTemplate(Action<EventSSArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSSArgs(action, 9, 65525, "EventSS", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventSSSArgs EventSSSTemplate(Action<EventSSSArgs> action)
+//        private static EventSSSArgs EventSSSTemplate(Action<EventSSSArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventSSSArgs(action, 10, 65524, "EventSSS", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWith7StringsArgs EventWith7StringsTemplate(Action<EventWith7StringsArgs> action)
+//        private static EventWith7StringsArgs EventWith7StringsTemplate(Action<EventWith7StringsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWith7StringsArgs(action, 26, 65508, "EventWith7Strings", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWith9StringsArgs EventWith9StringsTemplate(Action<EventWith9StringsArgs> action)
+//        private static EventWith9StringsArgs EventWith9StringsTemplate(Action<EventWith9StringsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWith9StringsArgs(action, 27, 65507, "EventWith9Strings", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithByteArrArgArgs EventWithByteArrArgTemplate(Action<EventWithByteArrArgArgs> action)
+//        private static EventWithByteArrArgArgs EventWithByteArrArgTemplate(Action<EventWithByteArrArgArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithByteArrArgArgs(action, 34, 65500, "EventWithByteArrArg", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithBytePtrArgArgs EventWithBytePtrArgTemplate(Action<EventWithBytePtrArgArgs> action)
+//        private static EventWithBytePtrArgArgs EventWithBytePtrArgTemplate(Action<EventWithBytePtrArgArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithBytePtrArgArgs(action, 35, 65499, "EventWithBytePtrArg", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithEscapingMessageArgs EventWithEscapingMessageTemplate(Action<EventWithEscapingMessageArgs> action)
+//        private static EventWithEscapingMessageArgs EventWithEscapingMessageTemplate(Action<EventWithEscapingMessageArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithEscapingMessageArgs(action, 32, 65502, "EventWithEscapingMessage", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithManyTypeArgsArgs EventWithManyTypeArgsTemplate(Action<EventWithManyTypeArgsArgs> action)
+//        private static EventWithManyTypeArgsArgs EventWithManyTypeArgsTemplate(Action<EventWithManyTypeArgsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithManyTypeArgsArgs(action, 25, 65509, "EventWithManyTypeArgs", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithMoreEscapingMessageArgs EventWithMoreEscapingMessageTemplate(Action<EventWithMoreEscapingMessageArgs> action)
+//        private static EventWithMoreEscapingMessageArgs EventWithMoreEscapingMessageTemplate(Action<EventWithMoreEscapingMessageArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithMoreEscapingMessageArgs(action, 33, 65501, "EventWithMoreEscapingMessage", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithWeirdArgsArgs EventWithWeirdArgsTemplate(Action<EventWithWeirdArgsArgs> action)
+//        private static EventWithWeirdArgsArgs EventWithWeirdArgsTemplate(Action<EventWithWeirdArgsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithWeirdArgsArgs(action, 30, 65504, "EventWithWeirdArgs", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EmptyTraceData LogTransferNoOpcodeTemplate(Action<EmptyTraceData> action)
+//        private static EmptyTraceData LogTransferNoOpcodeTemplate(Action<EmptyTraceData> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EmptyTraceData(action, 28, 65506, "LogTransferNoOpcode", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private MessageArgs MessageTemplate(Action<MessageArgs> action)
+//        private static MessageArgs MessageTemplate(Action<MessageArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new MessageArgs(action, 14, 65520, "Message", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private SlowerHelperArgs SlowerHelperTemplate(Action<SlowerHelperArgs> action)
+//        private static SlowerHelperArgs SlowerHelperTemplate(Action<SlowerHelperArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new SlowerHelperArgs(action, 18, 65516, "SlowerHelper", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private EventDateTimeArgs WorkDateTimeOpcode1Template(Action<EventDateTimeArgs> action)
+//        private static EventDateTimeArgs WorkDateTimeOpcode1Template(Action<EventDateTimeArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventDateTimeArgs(action, 24, 5, "WorkDateTime", Guid.Empty, 11, "Opcode1", ProviderGuid, ProviderName);
 //        }
-//        static private EmptyTraceData WorkItemTemplate(Action<EmptyTraceData> action)
+//        private static EmptyTraceData WorkItemTemplate(Action<EmptyTraceData> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EmptyTraceData(action, 15, 1, "WorkItem", Guid.Empty, 0, "", ProviderGuid, ProviderName);
 //        }
-//        static private LogTaskScheduledBadArgs WorkItemBadSendTemplate(Action<LogTaskScheduledBadArgs> action)
+//        private static LogTaskScheduledBadArgs WorkItemBadSendTemplate(Action<LogTaskScheduledBadArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new LogTaskScheduledBadArgs(action, 23, 2, "WorkItemBad", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
 //        }
-//        static private LogTaskScheduledArgs WorkItemSendTemplate(Action<LogTaskScheduledArgs> action)
+//        private static LogTaskScheduledArgs WorkItemSendTemplate(Action<LogTaskScheduledArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new LogTaskScheduledArgs(action, 17, 1, "WorkItem", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithXferManyTypeArgsArgs WorkManyArgsSendTemplate(Action<EventWithXferManyTypeArgsArgs> action)
+//        private static EventWithXferManyTypeArgsArgs WorkManyArgsSendTemplate(Action<EventWithXferManyTypeArgsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithXferManyTypeArgsArgs(action, 29, 3, "WorkManyArgs", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
 //        }
-//        static private EventWithXferWeirdArgsArgs WorkWeirdArgsSendTemplate(Action<EventWithXferWeirdArgsArgs> action)
+//        private static EventWithXferWeirdArgsArgs WorkWeirdArgsSendTemplate(Action<EventWithXferWeirdArgsArgs> action)
 //        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
 //            return new EventWithXferWeirdArgsArgs(action, 31, 4, "WorkWeirdArgs", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
 //        }
 
-//        static private volatile TraceEvent[] s_templates;
+//        private static volatile TraceEvent[] s_templates;
 //        protected override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
 //        {
 //            if (s_templates == null)

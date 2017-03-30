@@ -11,6 +11,8 @@ namespace System.Diagnostics
     // another version of this partial class with the public visibility 
     static partial class Debug
     {
+        private static string NewLine => "\n"; 
+
         // internal and not readonly so that the tests can swap this out.
         internal static IDebugLogger s_logger = new UnixDebugLogger();
 
@@ -22,7 +24,7 @@ namespace System.Diagnostics
         {
             private const string EnvVar_DebugWriteToStdErr = "COMPlus_DebugWriteToStdErr";
             private static readonly bool s_shouldWriteToStdErr = 
-                Environment.GetEnvironmentVariable(EnvVar_DebugWriteToStdErr) == "1";
+                Internal.Runtime.Augments.EnvironmentAugments.GetEnvironmentVariable(EnvVar_DebugWriteToStdErr) == "1";
 
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
@@ -82,7 +84,7 @@ namespace System.Diagnostics
                     int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle fileHandle = SafeFileHandle.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)))
+                    using (SafeFileHandle fileHandle = SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)))
                     {
                         while (i < message.Length)
                         {

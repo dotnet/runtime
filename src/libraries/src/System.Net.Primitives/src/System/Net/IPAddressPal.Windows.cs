@@ -34,20 +34,20 @@ namespace System.Net
             return Interop.NtDll.RtlIpv6AddressToStringExW(address, scopeId, 0, buffer, ref length);
         }
 
-        public static uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
+        public static unsafe uint Ipv4StringToAddress(string ipString, byte* bytes, int bytesLength, out ushort port)
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv4AddressBytes);
+            Debug.Assert(bytesLength == IPAddressParserStatics.IPv4AddressBytes);
 
             return Interop.NtDll.RtlIpv4StringToAddressExW(ipString, false, bytes, out port);
         }
 
-        public static uint Ipv6StringToAddress(string ipString, byte[] bytes, out uint scope)
+        public static unsafe uint Ipv6StringToAddress(string ipString, byte* bytes, int bytesLength, out uint scope)
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length == IPAddressParserStatics.IPv6AddressBytes);
+            Debug.Assert(bytesLength == IPAddressParserStatics.IPv6AddressBytes);
 
             ushort port;
             return Interop.NtDll.RtlIpv6StringToAddressExW(ipString, bytes, out scope, out port);

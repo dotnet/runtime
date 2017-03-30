@@ -49,6 +49,7 @@ namespace System.Text
     **
     ==============================================================================*/
 
+    [Serializable]
     internal class ISO2022Encoding : DBCSCodePageEncoding
     {
         private const byte SHIFT_OUT = (byte)0x0E;
@@ -478,7 +479,7 @@ namespace System.Text
                     }
 
                     // Make sure we're in the right mode (JIS 0208 or JIS 0212)
-                    // Note: Right now we don't use JIS 0212.  Also this table'd be wrong
+                    // Note: Right now we don't use JIS 0212.  Also this table would be wrong
 
                     // Its JIS extension 0208
                     if (currentMode != ISO2022Modes.ModeJIS0208)
@@ -1655,14 +1656,14 @@ namespace System.Text
                 }
 
             // Just ASCII
-            // We allow some chars > 7f because everett did, so we have to look them up.
+            // We allow some chars > 7f because Everett did, so we have to look them up.
             STOREASCII:
                 char c = mapBytesToUnicode[ch];
 
                 // Check if it was unknown
                 if ((c == UNKNOWN_CHAR_FLAG || c == 0) && (ch != 0))
                 {
-                    // fallback the unkown bytes
+                    // fallback the unknown bytes
                     if (!buffer.Fallback((byte)ch))
                         break;
                     continue;
@@ -1804,6 +1805,7 @@ namespace System.Text
             return new ISO2022Decoder(this);
         }
 
+        [Serializable]
         internal class ISO2022Encoder : System.Text.EncoderNLS
         {
             internal ISO2022Modes currentMode;
@@ -1836,6 +1838,7 @@ namespace System.Text
             }
         }
 
+        [Serializable]
         internal class ISO2022Decoder : System.Text.DecoderNLS
         {
             internal byte[] bytesLeftOver;

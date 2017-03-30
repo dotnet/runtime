@@ -1,0 +1,264 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Prepare build environment",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(VS140COMNTOOLS)\\VsDevCmd.bat",
+        "arguments": "",
+        "modifyEnvironment": "true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize tools",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "init-tools.cmd",
+        "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Generate version assets",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "msbuild",
+        "arguments": "build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$(OfficialBuildId) /p:BuildVersionFile=bin\\obj\\BuildVersion-$(OfficialBuildId).props",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Copy test assets from Azure",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sync.cmd",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Container) -- /p:\"DownloadDirectory=$(Build.SourcesDirectory)\\$(DownloadDirectory)\" /verbosity:$(MSBuildVerbosity)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "PowerShell Script",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "$(OfficialBuildId) $(Build.SourcesDirectory)",
+        "inlineScript": "param(\n  [string]$OfficialBuildId,\n  [string]$SourcesDir\n)\n$VersionPropsFile=$SourcesDir + \"\\bin\\obj\\BuildVersion-\" + $OfficialBuildId + \".props\"\n[xml]$versionXml=Get-Content $VersionPropsFile\n$env:BuildNumber=$versionXml.Project.PropertyGroup.BuildNumberMajor.InnerText + \".\" + $versionXml.Project.PropertyGroup.BuildNumberMinor.InnerText\nWrite-Host (\"##vso[task.setvariable variable=BuildNumber;]$env:BuildNumber\")",
+        "workingFolder": "",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish to Artifact Services Drop",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
+        "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/tests/$(OSGroup)/$(Platform)/$(TestTFM)",
+        "sourcePath": "$(Build.SourcesDirectory)\\$(DownloadDirectory)\\$(OSGroup).$(Platform).Release\\archive\\tests\\$(TestTFM)",
+        "dropExePath": "",
+        "toLowerCase": "true",
+        "detailedLog": "false",
+        "usePat": "false"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "234347",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "Container": {
+      "value": "$(Label)-$(TestContainerSuffix)-test"
+    },
+    "Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "TestContainerSuffix": {
+      "value": "empty",
+      "allowOverride": true
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "DownloadDirectory": {
+      "value": "Packages\\AzureTransfer"
+    },
+    "TestTFM": {
+      "value": "tfm",
+      "allowOverride": true
+    },
+    "GitHubRepositoryName": {
+      "value": "reponame",
+      "allowOverride": true
+    },
+    "SourceBranch": {
+      "value": "branch",
+      "allowOverride": true
+    },
+    "OSGroup": {
+      "value": "AnyOS",
+      "allowOverride": true
+    },
+    "Platform": {
+      "value": "AnyCPU",
+      "allowOverride": true
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "MSBuildVerbosity": {
+      "value": "diagnostic",
+      "allowOverride": true
+    }
+  },
+  "demands": [
+    "Agent.OS -equals windows_nt"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 60,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true"
+    },
+    "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
+    "type": "TfsGit",
+    "name": "DotNet-CoreFX-Trusted",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-CoreFX-Trusted",
+    "defaultBranch": "refs/heads/master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "defaultBranch": "refs/heads/master",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\",
+  "type": "build",
+  "id": 3811,
+  "name": "DotNet-Trusted-Tests-Publish",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097423
+  }
+}

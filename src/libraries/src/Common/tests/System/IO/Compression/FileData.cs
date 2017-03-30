@@ -9,31 +9,24 @@ using System.Linq;
 
 public class FileData
 {
-    public String Name { get; set; }
-    public String FullName { get; set; }
+    public string Name { get; set; }
+    public string FullName { get; set; }
     public long Length { get; set; }
-    public String CRC { get; set; }
+    public string CRC { get; set; }
     public DateTime LastModifiedDate { get; set; }
     public bool IsFile { get; set; }
     public bool IsFolder { get; set; }
-    public String OrigFolder { get; set; }
+    public string OrigFolder { get; set; }
 
-    public override string ToString()
-    {
-        return FullName;
-    }
+    public override string ToString() => FullName;
 
-    public static List<FileData> Files { get; private set; }
+    public static List<FileData> Files { get; }
 
-    public static FileData GetFile(String Path)
-    {
-        return Files.Where(f => String.Equals(System.IO.Path.Combine(f.OrigFolder, f.FullName), Path, StringComparison.OrdinalIgnoreCase)).First();
-    }
+    public static FileData GetFile(string Path) =>
+        Files.Where(f => string.Equals(System.IO.Path.Combine(f.OrigFolder, f.FullName), Path, StringComparison.OrdinalIgnoreCase)).First();
 
-    public static List<FileData> InPath(String Path)
-    {
-        return Files.Where(f => String.Equals(f.OrigFolder, Path, StringComparison.OrdinalIgnoreCase)).ToList();
-    }
+    public static List<FileData> InPath(string Path) =>
+        Files.Where(f => string.Equals(f.OrigFolder, Path, StringComparison.OrdinalIgnoreCase)).ToList();
 
     static FileData()
     {

@@ -57,18 +57,22 @@ namespace System.Diagnostics.TraceSourceTests
             var listener = new TestTraceListener();
             trace.Listeners.Add(listener);
             trace.Close();
-            // NOTE: this assertion fails on .net 4.5
-            // where TraceSource.Close calls TraceListener.Close, not Dispose.
-            Assert.Equal(1, listener.GetCallCount(Method.Dispose));
+            Assert.Equal(1, listener.GetCallCount(Method.Close));
             // Assert that writing to a closed TraceSource is not an error.
             trace.TraceEvent(TraceEventType.Critical, 0);
+        }
+
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static WeakReference PruneMakeRef()
+        {
+            return new WeakReference(new TraceSource("TestTraceSource"));
         }
 
         [Fact]
         public void PruneTest()
         {
             var strongTrace = new TraceSource("TestTraceSource");
-            var traceRef = new WeakReference(new TraceSource("TestTraceSource"));
+            var traceRef = PruneMakeRef();
             Assert.True(traceRef.IsAlive);
             GC.Collect(2);
             Trace.Refresh();
@@ -127,8 +131,20 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void EmptySourceName()
         {
-            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty));
-            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty, SourceLevels.All));
+            ArgumentException exception1 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty));
+            ArgumentException exception2 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty, SourceLevels.All));
+
+            // In Desktop in TraceSource.ctor we create the ArgumentException without param name, just with Message = "name", so ParamName is null
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Null(exception1.ParamName);
+                Assert.Null(exception2.ParamName);
+            }
+            else
+            {
+                Assert.Equal("name", exception1.ParamName);
+                Assert.Equal("name", exception2.ParamName);
+            }
         }
     }
 
@@ -292,6 +308,18 @@ namespace System.Diagnostics.TraceSourceTests
             trace.Listeners.Add(listener);
             trace.TraceData(TraceEventType.Verbose, 0, new Object[0]);
             Assert.Equal(1, listener.GetCallCount(Method.TraceData));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceTransferTest()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceTransfer(1, "Trace transfer test message", Trace.CorrelationManager.ActivityId);
+            Assert.Equal(1, listener.GetCallCount(Method.TraceTransfer));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }

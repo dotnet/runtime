@@ -10,9 +10,7 @@ namespace System.IO.Compression.Tests
     public class zip_ManualAndCompatabilityTests : ZipFileTestBase
     {
         [Theory]
-        [ActiveIssue(11685)]
         [InlineData("7zip.zip", "normal", true, true)]
-        [InlineData("deflate64.zip", "normal", true, true)]
         [InlineData("windows.zip", "normalWithoutEmptyDir", false, true)]
         [InlineData("dotnetzipstreaming.zip", "normal", false, false)]
         [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", false, false)]
@@ -20,6 +18,13 @@ namespace System.IO.Compression.Tests
         public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is a netcore feature not available on full framework.")]
+        public static async Task Deflate64Zip()
+        {
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip")), zfolder("normal"), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
         }
 
         [Theory]
@@ -35,8 +40,8 @@ namespace System.IO.Compression.Tests
 
         /// <summary>
         /// This test ensures that a zipfile created on one platform with a file containing potentially invalid characters elsewhere
-        /// will be interpreted based on the source OS path name validation rules. 
-        /// 
+        /// will be interpreted based on the source OS path name validation rules.
+        ///
         /// For example, the file "aa\bb\cc\dd" in a zip created on Unix should be one file "aa\bb\cc\dd" whereas the same file
         /// in a zip created on Windows should be interpreted as the file "dd" underneath three subdirectories.
         /// </summary>
@@ -62,7 +67,7 @@ namespace System.IO.Compression.Tests
         /// This test compares binary content of a zip produced by the current version with a zip produced by
         /// other frameworks. It does this by searching the two zips for the header signature and then
         /// it compares the subsequent header values for equality.
-        /// 
+        ///
         /// This test looks for the local file headers that each entry within a zip possesses and compares these
         /// values:
         /// local file header signature     4 bytes  (0x04034b50)
@@ -71,9 +76,9 @@ namespace System.IO.Compression.Tests
         /// compression method              2 bytes
         /// last mod file time              2 bytes
         /// last mod file date              2 bytes
-        /// 
+        ///
         /// it does not compare these values:
-        /// 
+        ///
         /// crc-32                          4 bytes
         /// compressed size                 4 bytes
         /// uncompressed size               4 bytes
@@ -93,7 +98,7 @@ namespace System.IO.Compression.Tests
             using (MemoryStream expectedArchiveStream = await StreamHelpers.CreateTempCopyStream(compat(zipFile)))
             {
                 byte[] localFileHeaderSignature = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
-                
+
                 // Produce a ZipFile
                 await CreateFromDir(zfolder(zipFolder), actualArchiveStream, ZipArchiveMode.Create);
 
@@ -121,7 +126,7 @@ namespace System.IO.Compression.Tests
         /// This test compares binary content of a zip produced by the current version with a zip produced by
         /// other frameworks. It does this by searching the two zips for the header signature and then
         /// it compares the subsequent header values for equality.
-        /// 
+        ///
         /// This test looks for the central directory headers that each entry within a zip possesses and compares these
         /// values:
         /// central file header signature   4 bytes  (0x02014b50)

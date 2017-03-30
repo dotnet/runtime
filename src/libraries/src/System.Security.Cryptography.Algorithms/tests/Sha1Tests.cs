@@ -28,6 +28,12 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        public void Sha1_Rfc3174_MultiBlock()
+        {
+            VerifyMultiBlock("ab", "c", "A9993E364706816ABA3E25717850C26C9CD0D89D", "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709");
+        }
+
+        [Fact]
         public void Sha1_Rfc3174_2()
         {
             Verify("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "84983E441C3BD26EBAAE4AA1F95129E5E54670F1");

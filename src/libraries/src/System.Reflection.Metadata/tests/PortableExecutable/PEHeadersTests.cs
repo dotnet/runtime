@@ -1,12 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Reflection.Metadata.Tests;
 using Xunit;
 
@@ -14,6 +11,21 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     public class PEHeadersTests
     {
+        [Fact]
+        public void Sizes()
+        {
+            Assert.Equal(20, CoffHeader.Size);
+            Assert.Equal(224, PEHeader.Size(is32Bit: true));
+            Assert.Equal(240, PEHeader.Size(is32Bit: false));
+            Assert.Equal(8, SectionHeader.NameSize);
+            Assert.Equal(40, SectionHeader.Size);
+
+            Assert.Equal(128 + 4 + 20 + 224, new PEHeaderBuilder(Machine.I386).ComputeSizeOfPEHeaders(0));
+            Assert.Equal(128 + 4 + 20 + 224 + 16, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(0));
+            Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 1, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(1));
+            Assert.Equal(128 + 4 + 20 + 224 + 16 + 40 * 2, new PEHeaderBuilder(Machine.Amd64).ComputeSizeOfPEHeaders(2));
+        }
+
         [Fact]
         public void Ctor_Streams()
         {
@@ -69,7 +81,6 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [ActiveIssue(1664)]
         public void TryGetDirectoryOffset()
         {
             var peHeaders = new PEReader(SynthesizedPeImages.Image1).PEHeaders;

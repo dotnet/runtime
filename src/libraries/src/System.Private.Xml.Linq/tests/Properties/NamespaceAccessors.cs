@@ -136,7 +136,7 @@ namespace System.Xml.Linq.Tests
         //  ~ Not declared namespace
         //  ~ Default namespace
         //  ~ Namespace defined
-        //      ~ localy
+        //      ~ locally
         //      ~ on parent (in scope)
         //      ~ redefined
         //  ~ Null, String.Empty
@@ -186,7 +186,7 @@ namespace System.Xml.Linq.Tests
             Assert.Equal("b", b2.GetPrefixOfNamespace("nsA")); // original value
 
             b2.Attribute(XNamespace.Xmlns + "b").Value = "nsNEW";
-            Assert.Equal("b", b2.GetPrefixOfNamespace("nsNEW")); // value channge
+            Assert.Equal("b", b2.GetPrefixOfNamespace("nsNEW")); // value change
 
             b2.Attribute(XNamespace.Xmlns + "b").Remove();
             Assert.Equal("p", b2.GetPrefixOfNamespace("nsA")); // removed value, take one from parent

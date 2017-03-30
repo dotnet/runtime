@@ -1,4 +1,4 @@
-#Portable PDB v1.0: Format Specification
+# Portable PDB v1.0: Format Specification
 
 ## Portable PDB
 The Portable PDB (Program Database) format describes an encoding of debugging information produced by compilers of Common Language Infrastructure (CLI) languages and consumed by debuggers and other tools. The format is based on the ECMA-335 Partition II metadata standard. It extends its schema while using the same physical table and stream layouts and encodings. The schema of the debugging metadata is complementary to the ECMA-335 metadata schema, therefore, the debugging metadata can (but doesn’t need to) be stored in the same metadata section of the PE/COFF file as the type system metadata.
@@ -133,7 +133,7 @@ _Sequence points blob_ has the following structure:
     Blob ::= header SequencePointRecord (SequencePointRecord | document-record)*
     SequencePointRecord ::= sequence-point-record | hidden-sequence-point-record
 
-#####header
+##### header
 | component        | value stored                  | integer representation |
 |:-----------------|:------------------------------|:-----------------------|
 | _LocalSignature_ | StandAloneSig table row id    | unsigned compressed    |
@@ -143,7 +143,7 @@ _LocalSignature_ stores the row id of the local signature of the method. This in
 
 _InitialDocument_ is only present if the _Document_ field of the _MethodDebugInformation_ table is nil (i.e. the method body spans multiple documents).
 
-#####sequence-point-record
+##### sequence-point-record
 | component      | value stored                                         | integer representation                      |
 |:---------------|:-----------------------------------------------------|:--------------------------------------------|
 | _δILOffset_    | _ILOffset_ if this is the first sequence point       | unsigned compressed                         |
@@ -156,7 +156,7 @@ _InitialDocument_ is only present if the _Document_ field of the _MethodDebugInf
 | _δStartColumn_ | _StartColumn_ if this is the first non-hidden sequence point | unsigned compressed |
 |                | _StartColumn_ - _PreviousNonHidden_._StartColumn_ otherwise  | signed compressed   |
 
-#####hidden-sequence-point-record
+##### hidden-sequence-point-record
 | component    | value stored                                           | integer representation          |
 |:-------------|:-------------------------------------------------------|:--------------------------------|
 | _δILOffset_  | _ILOffset_ if this is the first sequence point         | unsigned compressed             |
@@ -164,7 +164,7 @@ _InitialDocument_ is only present if the _Document_ field of the _MethodDebugInf
 | _ΔLine_      | 0                                                      | unsigned compressed             |
 | _ΔColumn_	   | 0                                                      | unsigned compressed             |
 
-#####document-record
+##### document-record
 | component    | value stored                       | integer representation         |
 |:-------------|:-----------------------------------|:-------------------------------|
 | _δILOffset_  | 0                                  | unsigned compressed            |

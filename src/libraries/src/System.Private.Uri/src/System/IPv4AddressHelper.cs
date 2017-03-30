@@ -84,7 +84,7 @@ namespace System
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal unsafe static bool IsValid(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static unsafe bool IsValid(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
@@ -110,7 +110,7 @@ namespace System
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal unsafe static bool IsValidCanonical(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+        internal static unsafe bool IsValidCanonical(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
         {
             int dots = 0;
             int number = 0;
@@ -180,7 +180,7 @@ namespace System
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal unsafe static long ParseNonCanonical(char* name, int start, ref int end, bool notImplicitFile)
+        internal static unsafe long ParseNonCanonical(char* name, int start, ref int end, bool notImplicitFile)
         {
             int numberBase = Decimal;
             char ch;
@@ -328,7 +328,7 @@ namespace System
         //
         //  Convert this IPv4 address into a sequence of 4 8-bit numbers
         //
-        unsafe private static bool Parse(string name, byte* numbers, int start, int end)
+        private static unsafe bool Parse(string name, byte* numbers, int start, int end)
         {
             fixed (char* ipString = name)
             {
@@ -337,10 +337,13 @@ namespace System
                 // end includes ports, so changedEnd may be different from end
                 Debug.Assert(result != Invalid, "Failed to parse after already validated: " + name);
 
-                numbers[0] = (byte)(result >> 24);
-                numbers[1] = (byte)(result >> 16);
-                numbers[2] = (byte)(result >> 8);
-                numbers[3] = (byte)(result);
+                unchecked
+                {
+                    numbers[0] = (byte)(result >> 24);
+                    numbers[1] = (byte)(result >> 16);
+                    numbers[2] = (byte)(result >> 8);
+                    numbers[3] = (byte)(result);
+                }
             }
 
             return numbers[0] == 127;
@@ -351,7 +354,7 @@ namespace System
         //  of 8-bit numbers and the characters '.'
         //  Address may terminate with ':' or with the end of the string
         //
-        unsafe private static bool ParseCanonical(string name, byte* numbers, int start, int end)
+        private static unsafe bool ParseCanonical(string name, byte* numbers, int start, int end)
         {
             for (int i = 0; i < NumberOfLabels; ++i)
             {

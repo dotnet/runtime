@@ -90,7 +90,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        // We can have version atribute later. For now remember this attribute and continue
+                        // We can have version attribute later. For now remember this attribute and continue
                         badAttribute = name;
                     }
                 }

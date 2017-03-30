@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using System.Xml.Schema;
+using System.Threading;
+using System.Threading.Tasks;
 
 using CultureInfo = System.Globalization.CultureInfo;
 using IEnumerable = System.Collections.IEnumerable;
@@ -137,9 +139,27 @@ namespace System.Xml.Linq
         {
         }
 
+        private XElement(AsyncConstructionSentry s)
+        {
+            // Dummy ctor used to avoid public default ctor.  This is used
+            // by async methods meant to perform the same operations as
+            // the XElement constructors that do synchronous processing;
+            // the async methods instead construct an XElement using this
+            // constructor (which doesn't do any processing) and then themselves
+            // do the async processing.  This is because ctors can't be 'async'.
+        }
+        private struct AsyncConstructionSentry { }
+
         internal XElement(XmlReader r, LoadOptions o)
         {
             ReadElementFrom(r, o);
+        }
+
+        internal static async Task<XElement> CreateAsync(XmlReader r, CancellationToken cancellationToken)
+        {
+            XElement xe = new XElement(default(AsyncConstructionSentry));
+            await xe.ReadElementFromAsync(r, LoadOptions.None, cancellationToken).ConfigureAwait(false);
+            return xe;
         }
 
         ///<overloads>
@@ -632,6 +652,42 @@ namespace System.Xml.Linq
                 return Load(r, options);
             }
         }
+
+        /// <summary>
+        /// Create a new <see cref="XElement"/> and initialize its underlying XML tree using
+        /// the passed <see cref="Stream"/> parameter.  Optionally whitespace handling
+        /// can be preserved.
+        /// </summary>
+        /// <remarks>
+        /// If LoadOptions.PreserveWhitespace is enabled then
+        /// the <see cref="XmlReaderSettings"/> property <see cref="XmlReaderSettings.IgnoreWhitespace"/>
+        /// is set to false.
+        /// </remarks>
+        /// <param name="stream">
+        /// A <see cref="Stream"/> containing the raw XML to read into the newly
+        /// created <see cref="XElement"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.</param>
+        /// <returns>
+        /// A new <see cref="XElement"/> containing the contents of the passed in
+        /// <see cref="Stream"/>.
+        /// </returns>
+        public static async Task<XElement> LoadAsync(Stream stream, LoadOptions options, CancellationToken cancellationToken)
+        {
+            XmlReaderSettings rs = GetXmlReaderSettings(options);
+
+            rs.Async = true;
+
+            using (XmlReader r = XmlReader.Create(stream, rs))
+            {
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         /// <summary>
         /// Create a new <see cref="XElement"/> and initialize its underlying XML tree using
         /// the passed <see cref="TextReader"/> parameter.  
@@ -680,6 +736,41 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Create a new <see cref="XElement"/> and initialize its underlying XML tree using
+        /// the passed <see cref="TextReader"/> parameter.  Optionally whitespace handling
+        /// can be preserved.
+        /// </summary>
+        /// <remarks>
+        /// If LoadOptions.PreserveWhitespace is enabled then
+        /// the <see cref="XmlReaderSettings"/> property <see cref="XmlReaderSettings.IgnoreWhitespace"/>
+        /// is set to false.
+        /// </remarks>
+        /// <param name="textReader">
+        /// A <see cref="TextReader"/> containing the raw XML to read into the newly
+        /// created <see cref="XElement"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.</param>
+        /// <returns>
+        /// A new <see cref="XElement"/> containing the contents of the passed in
+        /// <see cref="TextReader"/>.
+        /// </returns>
+        public static async Task<XElement> LoadAsync(TextReader textReader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            XmlReaderSettings rs = GetXmlReaderSettings(options);
+
+            rs.Async = true;
+
+            using (XmlReader r = XmlReader.Create(textReader, rs))
+            {
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// Create a new <see cref="XElement"/> containing the contents of the
         /// passed in <see cref="XmlReader"/>.
         /// </summary>
@@ -717,6 +808,46 @@ namespace System.Xml.Linq
             if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
             XElement e = new XElement(reader, options);
             reader.MoveToContent();
+            if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
+            return e;
+        }
+
+        /// <summary>
+        /// Create a new <see cref="XElement"/> containing the contents of the
+        /// passed in <see cref="XmlReader"/>.
+        /// </summary>
+        /// <param name="reader">
+        /// An <see cref="XmlReader"/> containing the XML to be read into the new
+        /// <see cref="XElement"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.</param>
+        /// <returns>
+        /// A new <see cref="XElement"/> containing the contents of the passed
+        /// in <see cref="XmlReader"/>.
+        /// </returns>
+        public static Task<XElement> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<XElement>(cancellationToken);
+            return LoadAsyncInternal(reader, options, cancellationToken);
+        }
+
+        private static async Task<XElement> LoadAsyncInternal(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
+
+            XElement e = new XElement(new AsyncConstructionSentry());
+            await e.ReadElementFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await reader.MoveToContentAsync().ConfigureAwait(false);
+
             if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
             return e;
         }
@@ -933,6 +1064,29 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Output this <see cref="XElement"/> to a <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="stream">
+        /// The <see cref="Stream"/> to output the XML to.  
+        /// </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public async Task SaveAsync(Stream stream, SaveOptions options, CancellationToken cancellationToken)
+        {
+            XmlWriterSettings ws = GetXmlWriterSettings(options);
+
+            ws.Async = true;
+
+            using (XmlWriter w = XmlWriter.Create(stream, ws))
+            {
+                await SaveAsync(w, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// Output this <see cref="XElement"/> to the passed in <see cref="TextWriter"/>.
         /// </summary>
         /// <remarks>
@@ -971,6 +1125,29 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Output this <see cref="XElement"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="textWriter">
+        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public async Task SaveAsync(TextWriter textWriter, SaveOptions options, CancellationToken cancellationToken)
+        {
+            XmlWriterSettings ws = GetXmlWriterSettings(options);
+
+            ws.Async = true;
+
+            using (XmlWriter w = XmlWriter.Create(textWriter, ws))
+            {
+                await SaveAsync(w, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// Output this <see cref="XElement"/> to an <see cref="XmlWriter"/>.
         /// </summary>
         /// <param name="writer">
@@ -982,6 +1159,32 @@ namespace System.Xml.Linq
             writer.WriteStartDocument();
             WriteTo(writer);
             writer.WriteEndDocument();
+        }
+
+        /// <summary>
+        /// Output this <see cref="XElement"/> to an <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> to output the XML to.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public Task SaveAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+            return SaveAsyncInternal(writer, cancellationToken);
+        }
+
+        private async Task SaveAsyncInternal(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            await writer.WriteStartDocumentAsync().ConfigureAwait(false);
+
+            await WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await writer.WriteEndDocumentAsync().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1092,6 +1295,22 @@ namespace System.Xml.Linq
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
             new ElementWriter(writer).WriteElement(this);
+        }
+
+        /// <summary>
+        /// Write this <see cref="XElement"/> to the passed in <see cref="XmlTextWriter"/>.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlTextWriter"/> to write this <see cref="XElement"/> to.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+            return new ElementWriter(writer).WriteElementAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -1784,7 +2003,39 @@ namespace System.Xml.Linq
 
         private void ReadElementFrom(XmlReader r, LoadOptions o)
         {
-            if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
+            ReadElementFromImpl(r, o);
+
+            if (!r.IsEmptyElement)
+            {
+                r.Read();
+                ReadContentFrom(r, o);
+            }
+
+            r.Read();
+        }
+
+        private async Task ReadElementFromAsync(XmlReader r, LoadOptions o, CancellationToken cancellationTokentoken)
+        {
+            ReadElementFromImpl(r, o);
+
+            if (!r.IsEmptyElement)
+            {
+                cancellationTokentoken.ThrowIfCancellationRequested();
+                await r.ReadAsync().ConfigureAwait(false);
+
+                await ReadContentFromAsync(r, o, cancellationTokentoken).ConfigureAwait(false);
+            }
+
+            cancellationTokentoken.ThrowIfCancellationRequested();
+            await r.ReadAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Shared implementation between ReadElementFrom / ReadElementFromAsync.
+        /// </summary>
+        private void ReadElementFromImpl(XmlReader r, LoadOptions o)
+        {
+            if(r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             name = XNamespace.Get(r.NamespaceURI).GetName(r.LocalName);
             if ((o & LoadOptions.SetBaseUri) != 0)
             {
@@ -1816,12 +2067,6 @@ namespace System.Xml.Linq
                 } while (r.MoveToNextAttribute());
                 r.MoveToElement();
             }
-            if (!r.IsEmptyElement)
-            {
-                r.Read();
-                ReadContentFrom(r, o);
-            }
-            r.Read();
         }
 
         internal void RemoveAttribute(XAttribute a)

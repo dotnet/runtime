@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq.Expressions;
@@ -21,6 +20,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16916")] //This test hangs forever in query.GetEnumerator()
         public void NullEnumerableConstantNullExpression()
         {
             IQueryable<int> query = new EnumerableQuery<int>((IEnumerable<int>)null);

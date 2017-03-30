@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -28,6 +29,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private static PublicKey GetTestECDsaKey()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
+            {
+                return cert.PublicKey;
+            }
+        }
+
         /// <summary>
         /// First parameter is the cert, the second is a hash of "Hello"
         /// </summary>
@@ -35,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             get
             {
-#if NETNATIVE
+#if uap
                 yield break;
 #else
                 yield return new object[] {
@@ -61,6 +70,78 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             PublicKey pk = GetTestDsaKey();
             Assert.Equal("1.2.840.10040.4.1", pk.Oid.Value);
+        }
+
+        [Fact]
+        public static void TestOid_ECDSA()
+        {
+            PublicKey pk = GetTestECDsaKey();
+            Assert.Equal("1.2.840.10045.2.1", pk.Oid.Value);
+        }
+
+        [Fact]
+        public static void TestPublicKey_Key_RSA()
+        {
+            PublicKey pk = GetTestRsaKey();
+            using (AsymmetricAlgorithm alg = pk.Key)
+            {
+                Assert.NotNull(alg);
+                Assert.Same(alg, pk.Key);
+                Assert.Equal(2048, alg.KeySize);
+
+                Assert.IsAssignableFrom(typeof(RSA), alg);
+                VerifyKey_RSA( /* cert */ null, (RSA)alg);
+            }
+        }
+
+        [Fact]
+        public static void TestPublicKey_Key_DSA()
+        {
+            PublicKey pk = GetTestDsaKey();
+            using (AsymmetricAlgorithm alg = pk.Key)
+            {
+                Assert.NotNull(alg);
+                Assert.Same(alg, pk.Key);
+                Assert.Equal(1024, alg.KeySize);
+
+                Assert.IsAssignableFrom(typeof(DSA), alg);
+                VerifyKey_DSA((DSA)alg);
+            }
+        }
+
+        [Fact]
+        public static void TestPublicKey_Key_ECDSA()
+        {
+            PublicKey pk = GetTestECDsaKey();
+
+            Assert.Throws<NotSupportedException>(() => pk.Key);
+        }
+
+        private static void VerifyKey_DSA(DSA dsa)
+        {
+            DSAParameters dsaParameters = dsa.ExportParameters(false);
+
+            byte[] expected_g = (
+                "859B5AEB351CF8AD3FABAC22AE0350148FD1D55128472691709EC08481584413" +
+                "E9E5E2F61345043B05D3519D88C021582CCEF808AF8F4B15BD901A310FEFD518" +
+                "AF90ABA6F85F6563DB47AE214A84D0B7740C9394AA8E3C7BFEF1BEEDD0DAFDA0" +
+                "79BF75B2AE4EDB7480C18B9CDFA22E68A06C0685785F5CFB09C2B80B1D05431D").HexToByteArray();
+            byte[] expected_p = (
+                "871018CC42552D14A5A9286AF283F3CFBA959B8835EC2180511D0DCEB8B97928" +
+                "5708C800FC10CB15337A4AC1A48ED31394072015A7A6B525986B49E5E1139737" +
+                "A794833C1AA1E0EAAA7E9D4EFEB1E37A65DBC79F51269BA41E8F0763AA613E29" +
+                "C81C3B977AEEB3D3C3F6FEB25C270CDCB6AEE8CD205928DFB33C44D2F2DBE819").HexToByteArray();
+            byte[] expected_q = "E241EDCF37C1C0E20AADB7B4E8FF7AA8FDE4E75D".HexToByteArray();
+            byte[] expected_y = (
+                "089A43F439B924BEF3529D8D6206D1FCA56A55CAF52B41D6CE371EBF07BDA132" +
+                "C8EADC040007FCF4DA06C1F30504EBD8A77D301F5A4702F01F0D2A0707AC1DA3" +
+                "8DD3251883286E12456234DA62EDA0DF5FE2FA07CD5B16F3638BECCA7786312D" +
+                "A7D3594A4BB14E353884DA0E9AECB86E3C9BDB66FCA78EA85E1CC3F2F8BF0963").HexToByteArray();
+
+            Assert.Equal(expected_g, dsaParameters.G);
+            Assert.Equal(expected_p, dsaParameters.P);
+            Assert.Equal(expected_q, dsaParameters.Q);
+            Assert.Equal(expected_y, dsaParameters.Y);
         }
 
         [Fact]
@@ -98,6 +179,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestEncodedKeyValue_ECDSA()
+        {
+            // Uncompressed key (04), then the X coord, then the Y coord.
+            string expectedPublicKeyHex =
+                "04" +
+                "448D98EE08AEBA0D8B40F3C6DBD500E8B69F07C70C661771655228EA5A178A91" +
+                "0EF5CB1759F6F2E062021D4F973F5BB62031BE87AE915CFF121586809E3219AF";
+
+            PublicKey pk = GetTestECDsaKey();
+
+            Assert.Equal(expectedPublicKeyHex, pk.EncodedKeyValue.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
         public static void TestEncodedParameters_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -127,28 +222,73 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestEncodedParameters_ECDSA()
+        {
+            // OID: 1.2.840.10045.3.1.7
+            string expectedParametersHex = "06082A8648CE3D030107";
+
+            PublicKey pk = GetTestECDsaKey();
+            Assert.Equal(expectedParametersHex, pk.EncodedParameters.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
         public static void TestKey_RSA()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 RSA rsa = cert.GetRSAPublicKey();
-                RSAParameters rsaParameters = rsa.ExportParameters(false);
 
-                byte[] expectedModulus = (
-                    "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
-                    "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
-                    "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
-                    "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
-                    "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
-                    "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
-                    "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
-                    "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
-
-                byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
-
-                Assert.Equal(expectedModulus, rsaParameters.Modulus);
-                Assert.Equal(expectedExponent, rsaParameters.Exponent);
+                VerifyKey_RSA(cert, rsa);
             }
+        }
+
+        private static void VerifyKey_RSA(X509Certificate2 cert, RSA rsa)
+        {
+            RSAParameters rsaParameters = rsa.ExportParameters(false);
+
+            byte[] expectedModulus = (
+                "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
+                "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
+                "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
+                "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
+                "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
+                "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
+                "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
+                "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
+
+            byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
+
+            byte[] originalModulus = rsaParameters.Modulus;
+            byte[] originalExponent = rsaParameters.Exponent;
+
+            if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+            {
+                Console.WriteLine("Modulus or Exponent not equal");
+
+                rsaParameters = rsa.ExportParameters(false);
+
+                if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                    !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+                {
+                    Console.WriteLine("Second call to ExportParameters did not produce valid data either");
+                }
+
+                if (cert != null)
+                {
+                    rsa = cert.GetRSAPublicKey();
+                    rsaParameters = rsa.ExportParameters(false);
+
+                    if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                        !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+                    {
+                        Console.WriteLine("New key handle ExportParameters was not successful either");
+                    }    
+                }
+            }
+
+            Assert.Equal(expectedModulus, originalModulus);
+            Assert.Equal(expectedExponent, originalExponent);
         }
 
         [Fact]
@@ -196,9 +336,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
                 Assert.False(PlatformDetection.IsUbuntu1604);
-                Assert.False(PlatformDetection.IsOSX);
-
-                return;
+                Assert.False(PlatformDetection.IsUbuntu1610);
             }
         }
 
@@ -289,9 +427,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
                 Assert.False(PlatformDetection.IsUbuntu1604);
-                Assert.False(PlatformDetection.IsOSX);
-
-                return;
+                Assert.False(PlatformDetection.IsUbuntu1610);
             }
         }
 
@@ -345,29 +481,81 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if netcoreapp
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        public static void TestDSAPublicKey()
+        {
+            using (var cert = new X509Certificate2(TestData.DssCer))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.NotNull(pubKey);
+                VerifyKey_DSA(pubKey);
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_VerifiesSignature()
+        {
+            byte[] data = { 1, 2, 3, 4, 5 };
+            byte[] wrongData = { 0xFE, 2, 3, 4, 5 };
+            byte[] signature =
+                "B06E26CFC939F25B864F52ABD3288222363A164259B0027FFC95DBC88F9204F7A51A901F3005C9F7".HexToByteArray();
+
+            using (var cert = new X509Certificate2(TestData.Dsa1024Cert))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.True(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies signature");
+                Assert.False(pubKey.VerifyData(wrongData, signature, HashAlgorithmName.SHA1), "pubKey verifies tampered data");
+
+                signature[0] ^= 0xFF;
+                Assert.False(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies tampered signature");
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_RSACert()
+        {
+            using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.Null(pubKey);
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_ECDSACert()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.Null(pubKey);
+            }
+        }
+#endif
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng256()
         {
             TestKey_ECDsaCng(TestData.ECDsa256Certificate, TestData.ECDsaCng256PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng384()
         {
             TestKey_ECDsaCng(TestData.ECDsa384Certificate, TestData.ECDsaCng384PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng521()
         {
             TestKey_ECDsaCng(TestData.ECDsa521Certificate, TestData.ECDsaCng521PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_BrainpoolP160r1()
         {
             if (PlatformDetection.WindowsVersion >= 10)
@@ -378,7 +566,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
         {
-#if !NETNATIVE
+#if !uap
             using (X509Certificate2 cert = new X509Certificate2(certBytes))
             {
                 ECDsaCng e = (ECDsaCng)(cert.GetECDsaPublicKey());
@@ -396,7 +584,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal<byte>(expected.QY, qy);
                 }
             }
-#endif //!NETNATIVE
+#endif // !uap
         }
     }
 }

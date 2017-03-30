@@ -4,15 +4,16 @@
 
 namespace System.Security.Permissions
 {
-    public sealed partial class GacIdentityPermission : System.Security.CodeAccessPermission
+    [Serializable]
+    public sealed partial class GacIdentityPermission : CodeAccessPermission
     {
         public GacIdentityPermission() { }
-        public GacIdentityPermission(System.Security.Permissions.PermissionState state) { }
-        public override System.Security.IPermission Copy() { return default(System.Security.IPermission); }
+        public GacIdentityPermission(PermissionState state) { }
+        public override IPermission Copy() { return default(IPermission); }
         public override void FromXml(SecurityElement securityElement) { }
-        public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return default(IPermission); }
+        public override bool IsSubsetOf(IPermission target) { return false; }
         public override SecurityElement ToXml() { return default(SecurityElement); }
-        public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
+        public override IPermission Union(IPermission target) { return default(IPermission); }
     }
 }

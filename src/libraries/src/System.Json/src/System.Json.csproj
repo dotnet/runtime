@@ -1,15 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
-    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <ProjectGuid>{B11B5B76-F583-44EA-A4B7-3ABD990594F6}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Json\JsonArray.cs" />
     <Compile Include="System\Json\JsonObject.cs" />
@@ -18,8 +17,16 @@
     <Compile Include="System\Json\JsonValue.cs" />
     <Compile Include="System\Json\JavaScriptReader.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Text.Encoding" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

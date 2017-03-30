@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate declaration at top level or under namespaces</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     // <Code>
-    using System;
 
     public delegate dynamic D001(dynamic d);
     public delegate object D002(dynamic d, object o);
@@ -52,20 +48,18 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate001.dlgate001
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate001.dlgate001;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> interchangeable dynamic and object parameters </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
         public class Foo
         {
             // public delegate dynamic D001(dynamic v);
-            static public dynamic M01(dynamic v)
+            public static dynamic M01(dynamic v)
             {
                 return 0x01;
             }
@@ -80,13 +74,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 return 0x03;
             }
 
-            static public dynamic M04(object v)
+            public static dynamic M04(object v)
             {
                 return 0x04;
             }
 
             // public delegate object D002(dynamic d, object o);
-            static public object M05(dynamic v1, object v2)
+            public static object M05(dynamic v1, object v2)
             {
                 return 0x05;
             }
@@ -96,7 +90,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 return 0x06;
             }
 
-            static public dynamic M07(dynamic v1, object v2)
+            public static dynamic M07(dynamic v1, object v2)
             {
                 return 0x07;
             }
@@ -107,7 +101,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // dynamic D003(ref dynamic d1, object o, out dynamic d3);
-            static public dynamic M09(ref dynamic v1, object v2, out dynamic v3)
+            public static dynamic M09(ref dynamic v1, object v2, out dynamic v3)
             {
                 v3 = null;
                 return 0x09;
@@ -126,7 +120,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // public delegate void D004(dynamic[] d1, params dynamic[] d2);
-            static public void M0C(ref int n, dynamic[] v1, params dynamic[] v2)
+            public static void M0C(ref int n, dynamic[] v1, params dynamic[] v2)
             {
                 n += 0x0C;
             }
@@ -151,7 +145,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 Foo foo = new Foo();
                 dynamic d = new object();
@@ -214,22 +208,19 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate002.dlgate002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate002.dlgate002;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> delegate can be assigned by ternary operator| +=, compared for equality
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
         public class Foo
         {
             // DynNamespace01: public delegate dynamic D101(dynamic d, DynInterface01 i);
-            static public dynamic M01(dynamic v1, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynInterface01 v2)
+            public static dynamic M01(dynamic v1, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynInterface01 v2)
             {
                 return 0x01;
             }
@@ -240,7 +231,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // DynNamespace01: public delegate void D102(DynClass01 c, ref dynamic d1, ref object d2)
-            static public void M03(ref ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynClass01 v1, dynamic v2, ref object v3)
+            public static void M03(ref ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynClass01 v1, dynamic v2, ref object v3)
             {
                 v1.n = 3;
             }
@@ -258,7 +249,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 v3 = null;
             }
 
-            static public void M06(ref object v1, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynClass01 v2, out dynamic[] v3, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynStruct01 v4)
+            public static void M06(ref object v1, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynClass01 v2, out dynamic[] v3, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynStruct01 v4)
             {
                 v1 = 6;
                 v3 = null;
@@ -272,7 +263,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
             // DynNamespace01:
             //   public delegate dynamic D202(DynStruct01 st, params object[] d2)
-            static public dynamic M08(ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynStruct01 v1, params object[] v2)
+            public static dynamic M08(ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib01.dlgatedeclarelib01.DynNamespace01.DynStruct01 v1, params object[] v2)
             {
                 return 0x08;
             }
@@ -289,15 +280,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate003.dlgate003;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate declaration under other types</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     // <Code>
-    using System;
 
     namespace DynNamespace01
     {
@@ -329,15 +317,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate003.dlgate003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate003.dlgate003;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> delegates can be aggregated in arrays and compared for equality.
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
@@ -345,7 +330,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
         {
             // DynNamespace01.DynClass:
             //  public delegate string D001(object v1, dynamic v2, ref DynEnum v3)
-            static public string M01(object v1, object v2, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynEnum v3)
+            public static string M01(object v1, object v2, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynEnum v3)
             {
                 return v3.ToString();
             }
@@ -360,7 +345,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 return v3.ToString();
             }
 
-            static public string M02(dynamic v1, dynamic v2, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynEnum v3)
+            public static string M02(dynamic v1, dynamic v2, ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynEnum v3)
             {
                 return v3.ToString();
             }
@@ -392,7 +377,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 bool ret = true;
                 Foo foo = new Foo();
@@ -494,15 +479,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib03.dlgatedeclarelib03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib03.dlgatedeclarelib03;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate004.dlgate004;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate declaration with different modifiers</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     // <Code>
-    using System;
 
     namespace DynNamespace31
     {
@@ -527,15 +509,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate004.dlgate004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib03.dlgatedeclarelib03;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate004.dlgate004;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> delegates can be combined by using +, - +=, -=
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib03.dlgatedeclarelib03.DynNamespace31;
 
     namespace nms
@@ -566,23 +545,23 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
             // DynNamespace31.DynClassDrived:
             // internal delegate long InternalDel(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, dynamic v9)
-            static public long M11(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, dynamic v9)
+            public static long M11(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, dynamic v9)
             {
                 return v1 + (int)v2 + v3 + (int)v4 + v5 + (int)v6 + v7 + (int)v8 + (int)v9;
             }
 
-            static internal long M12(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
+            internal static long M12(sbyte v1, dynamic v2, short v3, dynamic v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
             {
                 return v1 + v3 + v5 + v7 + (int)v9;
             }
 
-            static public long M13(sbyte v1, dynamic v2, short v3, object v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
+            public static long M13(sbyte v1, dynamic v2, short v3, object v4, int v5, dynamic v6, long v7, dynamic v8, object v9)
             {
                 return (int)v2 + (int)v4 + (int)v6 + (int)v8;
             }
 
             // DynNamespace31.DynClassDrived:
-            //  static public delegate int StPublicDel(dynamic v1, decimal v2);
+            //  public static delegate int StPublicDel(dynamic v1, decimal v2);
             internal int M21(dynamic v1, decimal v2)
             {
                 return 33;
@@ -615,7 +594,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 bool ret = true;
                 Foo foo = new Foo();
@@ -689,14 +668,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib04.dlgatedeclarelib04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib04.dlgatedeclarelib04;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate declaration with generic types</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     // <Code>
-    using System;
 
     public delegate R D001<R>(dynamic d);
     namespace DynNamespace41
@@ -723,15 +700,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib05.dlgatedeclarelib05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib05.dlgatedeclarelib05;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate006.dlgate006;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate declaration with optional parameters</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
     // <Code>
-    using System;
 
     public delegate void D001(dynamic d = null); // not allow init with values other than null:(
     public delegate void D002(dynamic v1, object v2 = null, dynamic v3 = null /*DynNamespace51.DynClass.strDyn*/);
@@ -766,7 +740,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate006.dlgate006
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib05.dlgatedeclarelib05;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate006.dlgate006;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> delegates can has optional parameters
@@ -781,9 +754,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     {
         public class Foo
         {
-            static public int val = -1;
-            static public int? nval = -1;
-            static public string str = string.Empty;
+            public static int val = -1;
+            public static int? nval = -1;
+            public static string str = string.Empty;
             // public delegate void D001(dynamic d = null);
             public void M01(dynamic d = null)
             {
@@ -796,7 +769,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // internal delegate void D002(dynamic v1, object v2 = null, dynamic v3 = null)
-            static internal void M11(dynamic v1, object v2, dynamic v3 = null)
+            internal static void M11(dynamic v1, object v2, dynamic v3 = null)
             {
                 str = v3;
             }
@@ -808,19 +781,19 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
 
             // internal delegate int D021(params dynamic[] d);
-            static internal int M31(params dynamic[] d)
+            internal static int M31(params dynamic[] d)
             {
                 return 31;
             }
 
             // public delegate void D022(DynStruct01 v1, dynamic v2 = 0.123f, int v3 = -1);
-            static internal void M41(DynStruct01 v1, dynamic v2 = null, int v3 = 41)
+            internal static void M41(DynStruct01 v1, dynamic v2 = null, int v3 = 41)
             {
                 val = v3;
             }
 
             // public delegate dynamic D031(DynClass01 v1, DynStruct01 v2 = new DynStruct01(), dynamic[] v3 = null);
-            static public dynamic M51(DynClass01 v1, DynStruct01 v2 = new DynStruct01(), dynamic[] v3 = null)
+            public static dynamic M51(DynClass01 v1, DynStruct01 v2 = new DynStruct01(), dynamic[] v3 = null)
             {
                 return 51;
             }
@@ -843,7 +816,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 bool ret = true;
                 Foo foo = new Foo();
@@ -956,35 +929,33 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate007bug.dlgate007bug
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate007bug.dlgate007bug;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description> Assert and NullRef Exception when call with delegate 2nd as out param </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
         public delegate void DelOut(object v1, out object v2);
         public class Foo
         {
-            static public void M01(object v1, out object v2)
+            public static void M01(object v1, out object v2)
             {
                 v2 = null;
             }
 
-            static public void M02(object v1, out dynamic v2)
+            public static void M02(object v1, out dynamic v2)
             {
                 v2 = null;
             }
 
-            static public void M03(dynamic v1, out object v2)
+            public static void M03(dynamic v1, out object v2)
             {
                 v2 = null;
             }
 
-            static internal void M04(dynamic v1, out dynamic v2)
+            internal static void M04(dynamic v1, out dynamic v2)
             {
                 v2 = null;
             }
@@ -998,7 +969,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 dynamic nd = null;
                 dynamic d = new object();
@@ -1039,13 +1010,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate008bug.dlgate008bug
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate008bug.dlgate008bug;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation (Behavior is 'by design' as they are 2 different boxed instances)</Title>
     // <Description> Delegate: compare same delegates return false if the method is struct's not static method </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
@@ -1056,7 +1025,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             {
             }
 
-            static public void SMinStruct(dynamic v1)
+            public static void SMinStruct(dynamic v1)
             {
             }
         }
@@ -1067,7 +1036,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             {
             }
 
-            static public void SMinClass(dynamic v1)
+            public static void SMinClass(dynamic v1)
             {
             }
         }
@@ -1080,7 +1049,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 bool ret = true;
                 Bar bar = new Bar();
@@ -1115,7 +1084,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate009bug.dlgate009bug
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgate009bug.dlgate009bug;
     // <Area> Dynamic type in delegates </Area>
     // <Title> Delegate instantiation</Title>
     // <Description>
@@ -1123,7 +1091,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects status=success></Expects>
-    using System;
 
     namespace nms
     {
@@ -1156,7 +1123,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 Assert.Equal(0, MainMethod());
             }
 
-            static public int MainMethod()
+            public static int MainMethod()
             {
                 Foo foo = new Foo();
                 DOptObj dobj01 = new DOptObj(foo.M01);
@@ -1178,14 +1145,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic001.generic001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic001.generic001;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -1226,7 +1191,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic002.generic002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic002.generic002;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
@@ -1234,7 +1198,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(39,28\).*CS0067</Expects>
-    using System;
 
     public class Program
     {
@@ -1282,7 +1245,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic003.generic003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic003.generic003;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
@@ -1290,7 +1252,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(42,31\).*CS0067</Expects>
-    using System;
 
     public class Program
     {
@@ -1341,7 +1302,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic004.generic004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic004.generic004;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
@@ -1349,7 +1309,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(41,28\).*CS0067</Expects>
-    using System;
 
     public class Program
     {
@@ -1396,7 +1355,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic005.generic005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic005.generic005;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
@@ -1404,7 +1362,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(48,28\).*CS0067</Expects>
-    using System;
 
     public class C
     {
@@ -1459,7 +1416,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic006.generic006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.generic006.generic006;
     // <Title>+= on a generic event does work</Title>
     // <Description>
     // </Description>
@@ -1467,7 +1423,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(43,35\).*CS0067</Expects>
-    using System;
 
     public class C
     {

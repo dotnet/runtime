@@ -70,11 +70,19 @@ namespace System.Data.SqlClient.SNI
         internal const int HandshakeFailureError = 31;
         internal const int InternalExceptionError = 35;
         internal const int ConnOpenFailedError = 40;
+        internal const int ErrorSpnLookup = 44;
         internal const int LocalDBErrorCode = 50;
         internal const int MultiSubnetFailoverWithMoreThan64IPs = 47;
         internal const int MultiSubnetFailoverWithInstanceSpecified = 48;
         internal const int MultiSubnetFailoverWithNonTcpProtocol = 49;
         internal const int MaxErrorValue = 50157;
+        internal const int LocalDBNoInstanceName = 51;
+        internal const int LocalDBNoInstallation = 52;
+        internal const int LocalDBInvalidConfig = 53;
+        internal const int LocalDBNoSqlUserInstanceDllPath = 54;
+        internal const int LocalDBInvalidSqlUserInstanceDllPath = 55;
+        internal const int LocalDBFailedToLoadDll = 56;
+        internal const int LocalDBBadRuntime = 57;
 
         /// <summary>
         /// Validate server certificate callback for SSL

@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using Xunit;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TelemData = System.Collections.Generic.KeyValuePair<string, object>;
+using Xunit;
 
 namespace System.Diagnostics.Tests
 {
@@ -121,13 +122,48 @@ namespace System.Diagnostics.Tests
                     return name == "StructPayload";
                 };
 
+                Assert.False(listener.IsEnabled());
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate))
                 {
                     Assert.False(source.IsEnabled("Uninteresting"));
+                    Assert.False(source.IsEnabled("Uninteresting", "arg1", "arg2"));
                     Assert.True(source.IsEnabled("StructPayload"));
-
+                    Assert.True(source.IsEnabled("StructPayload", "arg1", "arg2"));
                     Assert.True(seenUninteresting);
                     Assert.True(seenStructPayload);
+                    Assert.True(listener.IsEnabled());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Simple tests for the IsEnabled method.
+        /// </summary>
+        [Fact]
+        public void IsEnabledMultipleArgs()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            {
+                DiagnosticSource source = listener;
+                var result = new List<KeyValuePair<string, object>>();
+                Func<string, object, object, bool> isEnabled = (name, arg1, arg2) =>
+                {
+                    if (arg1 != null)
+                        return (bool) arg1;
+                    if (arg2 != null)
+                        return (bool) arg2;
+                    return true;
+                };
+
+                using (listener.Subscribe(new ObserverToList<TelemData>(result), isEnabled))
+                {
+                    Assert.True(source.IsEnabled("event"));
+                    Assert.True(source.IsEnabled("event", null, null));
+                    Assert.True(source.IsEnabled("event", null, true));
+
+                    Assert.False(source.IsEnabled("event", false, false));
+                    Assert.False(source.IsEnabled("event", false, null));
+                    Assert.False(source.IsEnabled("event", null, false));
                 }
             }
         }
@@ -462,55 +498,48 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Stresses the AllListeners by having many threads be added and removed.
+        /// Stresses the AllListeners by having many threads be adding and removing.
         /// </summary>
-        [Fact]
-        public void AllSubscriberStress()
+        [OuterLoop]
+        [Theory]
+        [InlineData(100, 100)] // run multiple times to stress it further
+        [InlineData(100, 100)]
+        [InlineData(100, 100)]
+        [InlineData(100, 100)]
+        [InlineData(100, 100)]
+        public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
-            var list = GetActiveListenersWithPrefix("AllSubscriberStressTest");
-            Assert.Equal(0, list.Count);
+            // No listeners have been created yet
+            Assert.Equal(0, GetActiveListenersWithPrefix(nameof(AllSubscriberStress)).Count);
 
-            var factory = new TaskFactory();
-
-            // To the whole stress test 10 times.  This keeps the task array size needed down while still
-            // having lots of concurrency.   
-            for (int k = 0; k < 10; k++)
+            // Run lots of threads to add/remove listeners
+            Task.WaitAll(Enumerable.Range(0, numThreads).Select(i => Task.Factory.StartNew(delegate
             {
-                // TODO FIX NOW:  Task[1] should be Task[100] but it fails.  Tracked by https://github.com/dotnet/corefx/issues/6872
-                var tasks = new Task[1];
-                for (int i = 0; i < tasks.Length; i++)
+                // Create a set of DiagnosticListeners, which add themselves to the AllListeners list.
+                var listeners = new List<DiagnosticListener>(numListenersPerThread);
+                for (int j = 0; j < numListenersPerThread; j++)
                 {
-                    tasks[i] = (factory.StartNew(delegate ()
-                    {
-                        // Create a set of DiagnosticListeners (which add themselves to the AllListeners list. 
-                        var listeners = new List<DiagnosticListener>();
-                        for (int j = 0; j < 100; j++)
-                            listeners.Insert(0, (new DiagnosticListener("AllSubscriberStressTest_Task " + i + " TestListener" + j)));
-
-                        // They are all in the list
-                        list = GetActiveListenersWithPrefix("AllSubscriberStressTest");
-                        foreach (var listener in listeners)
-                            Assert.Contains(listener, list);
-
-                        // Dispose them all, first the even then the odd, just to mix it up and be more stressful.  
-                        for (int j = 0; j < listeners.Count; j += 2)      // Even
-                            listeners[j].Dispose();
-                        for (int j = 1; j < listeners.Count; j += 2)      // odd
-                            listeners[j].Dispose();
-
-                        // And now they are not in the list.  
-                        list = GetActiveListenersWithPrefix("AllSubscriberStressTest");
-                        foreach (var listener in listeners)
-                            Assert.DoesNotContain(listener, list);
-                    }));
+                    var listener = new DiagnosticListener($"{nameof(AllSubscriberStress)}_Task {i} TestListener{j}");
+                    listeners.Add(listener);
                 }
-                // Wait for all the tasks to finish.  
-                Task.WaitAll(tasks);
-            }
 
-            // There should be no listeners left.  
-            list = GetActiveListenersWithPrefix("AllSubscriberStressTest");
-            Assert.Equal(0, list.Count);
+                // They are all in the list.
+                List<DiagnosticListener> list = GetActiveListenersWithPrefix(nameof(AllSubscriberStress));
+                Assert.All(listeners, listener => Assert.Contains(listener, list));
+
+                // Dispose them all, first the even then the odd, just to mix it up and be more stressful.  
+                for (int j = 0; j < listeners.Count; j += 2) // even
+                    listeners[j].Dispose();
+                for (int j = 1; j < listeners.Count; j += 2) // odd
+                    listeners[j].Dispose();
+
+                // None should be left in the list
+                list = GetActiveListenersWithPrefix(nameof(AllSubscriberStress));
+                Assert.All(listeners, listener => Assert.DoesNotContain(listener, list));
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+
+            // None of the created listeners should remain
+            Assert.Equal(0, GetActiveListenersWithPrefix(nameof(AllSubscriberStress)).Count);
         }
 
         [Fact]
@@ -569,6 +598,35 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, count2);
             Assert.Equal(1, count3);
             sub3.Dispose();
+        }
+
+        [Fact]
+        public void SubscribeWithNullPredicate()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            {
+                Predicate<string> predicate = null;
+                using (listener.Subscribe(new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()), predicate))
+                {
+                    Assert.True(listener.IsEnabled("event"));
+                    Assert.True(listener.IsEnabled("event", null));
+                    Assert.True(listener.IsEnabled("event", "arg1"));
+                    Assert.True(listener.IsEnabled("event", "arg1", "arg2"));
+                }
+            }
+
+            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            {
+                DiagnosticSource source = listener;
+                Func<string, object, object, bool> predicate = null;
+                using (listener.Subscribe(new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()), predicate))
+                {
+                    Assert.True(source.IsEnabled("event"));
+                    Assert.True(source.IsEnabled("event", null));
+                    Assert.True(source.IsEnabled("event", "arg1"));
+                    Assert.True(source.IsEnabled("event", "arg1", "arg2"));
+                }
+            }
         }
 
         #region Helpers 

@@ -6,10 +6,12 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
 {
+    [Serializable]
     public enum WindowsBuiltInRole
     {
         Administrator = 0x220,
@@ -23,6 +25,7 @@ namespace System.Security.Principal
         Replicator = 0x228
     }
 
+    [Serializable]
     public class WindowsPrincipal : ClaimsPrincipal
     {
         private WindowsIdentity _identity = null;
@@ -41,6 +44,26 @@ namespace System.Security.Principal
             Contract.EndContractBlock();
 
             _identity = ntIdentity;
+        }
+
+        [OnDeserialized]
+        private void OnDeserializedMethod(StreamingContext context)
+        {
+            ClaimsIdentity firstNonNullIdentity = null;
+
+            foreach (ClaimsIdentity identity in base.Identities)
+            {
+                if (identity != null)
+                {
+                    firstNonNullIdentity = identity;
+                    break;
+                }
+            }
+
+            if (firstNonNullIdentity == null)
+            {
+                base.AddIdentity(_identity);
+            }
         }
 
         //
@@ -163,7 +186,7 @@ namespace System.Security.Principal
             SafeAccessTokenHandle token = SafeAccessTokenHandle.InvalidHandle;
             if (_identity.ImpersonationLevel == TokenImpersonationLevel.None)
             {
-                if (!Interop.mincore.DuplicateTokenEx(_identity.AccessToken,
+                if (!Interop.Advapi32.DuplicateTokenEx(_identity.AccessToken,
                                                   (uint)TokenAccessLevels.Query,
                                                   IntPtr.Zero,
                                                   (uint)TokenImpersonationLevel.Identification,
@@ -174,7 +197,7 @@ namespace System.Security.Principal
 
             bool isMember = false;
             // CheckTokenMembership will check if the SID is both present and enabled in the access token.
-            if (!Interop.mincore.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
+            if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
                 throw new SecurityException(new Win32Exception().Message);

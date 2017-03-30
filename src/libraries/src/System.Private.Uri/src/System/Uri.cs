@@ -6,10 +6,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-    public partial class Uri
+    [Serializable]
+    public partial class Uri : ISerializable
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -108,6 +111,7 @@ namespace System
             QueryIriCanonical = 0x20000000000,
             FragmentIriCanonical = 0x40000000000,
             IriCanonical = 0x78000000000,
+            UnixPath = 0x100000000000,
         }
 
         private Flags _flags;
@@ -165,6 +169,11 @@ namespace System
         private bool IsUncPath
         {
             get { return (_flags & Flags.UncPath) != 0; }
+        }
+
+        private bool IsUnixPath
+        {
+            get { return (_flags & Flags.UnixPath) != 0; }
         }
 
         private Flags HostType
@@ -388,6 +397,54 @@ namespace System
             CreateUri(baseUri, relativeUri, false);
         }
 
+        //
+        // Uri(SerializationInfo, StreamingContext)
+        //
+        // ISerializable constructor
+        //
+        protected Uri(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            string uriString = serializationInfo.GetString("AbsoluteUri");
+
+            if (uriString.Length != 0)
+            {
+                CreateThis(uriString, false, UriKind.Absolute);
+                return;
+            }
+
+            uriString = serializationInfo.GetString("RelativeUri");
+            if ((object)uriString == null)
+                throw new ArgumentNullException("uriString");
+
+            CreateThis(uriString, false, UriKind.Relative);
+        }
+
+        //
+        // ISerializable method
+        //
+        /// <internalonly/>
+        [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        //
+        // FxCop: provide some way for derived classes to access GetObjectData even if the derived class
+        // explicitly re-inherits ISerializable.
+        //
+        protected void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+
+            if (IsAbsoluteUri)
+                serializationInfo.AddValue("AbsoluteUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+            else
+            {
+                serializationInfo.AddValue("AbsoluteUri", string.Empty);
+                serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+            }
+        }
+
         private void CreateUri(Uri baseUri, string relativeUri, bool dontEscape)
         {
             // Parse relativeUri and populate Uri internal data.
@@ -479,7 +536,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private unsafe static ParsingError GetCombinedString(Uri baseUri, string relativeStr,
+        private static unsafe ParsingError GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -500,11 +557,10 @@ namespace System
                         // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
                         break;
                     }
-                    string scheme = relativeStr.Substring(0, i);
-                    fixed (char* sptr = scheme)
+                    fixed (char* sptr = relativeStr) // relativeStr.Substring(0, i) represents the scheme
                     {
                         UriParser syntax = null;
-                        if (CheckSchemeSyntax(sptr, (ushort)scheme.Length, ref syntax) == ParsingError.None)
+                        if (CheckSchemeSyntax(sptr, (ushort)i, ref syntax) == ParsingError.None)
                         {
                             if (baseUri.Syntax == syntax)
                             {
@@ -811,7 +867,7 @@ namespace System
                     }
                     else
                     {
-                        LowLevelList<string> pathSegments = new LowLevelList<string>();
+                        var pathSegments = new ArrayBuilder<string>();
                         int current = 0;
                         while (current < path.Length)
                         {
@@ -1886,7 +1942,7 @@ namespace System
             return (index >= 0 && uriString[index] == ':');
         }
 
-        internal unsafe static string InternalEscapeString(string rawString)
+        internal static unsafe string InternalEscapeString(string rawString)
         {
             if ((object)rawString == null)
                 return string.Empty;
@@ -1978,6 +2034,14 @@ namespace System
                     ++length;
                 }
 
+                // Unix Path
+                if (!IsWindowsSystem && InFact(Flags.UnixPath))
+                {
+                    _flags |= Flags.BasicHostType;
+                    _flags |= (Flags)idx;
+                    return ParsingError.None;
+                }
+
                 // Old Uri parser tries to figure out on a DosPath in all cases.
                 // Hence http://c:/ is treated as DosPath without the host while it should be a host "c", port 80
                 //
@@ -2036,6 +2100,7 @@ namespace System
                                 }
                             }
                         }
+                        // UNC share?
                         else if (_syntax.InFact(UriSyntaxFlags.FileLikeUri) && (i - idx >= 2 && i - idx != 3 &&
                             i < length && pUriString[i] != '?' && pUriString[i] != '#'))
                         {
@@ -2326,7 +2391,7 @@ namespace System
                         //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
                         if (++idx < info.Offset.End)
                         {
-                            port = (ushort)(userString[idx] - '0');
+                            port = unchecked((ushort)(userString[idx] - '0'));
                             if (!(port == unchecked((ushort)('/' - '0')) || port == (ushort)('?' - '0') ||
                                 port == unchecked((ushort)('#' - '0'))))
                             {
@@ -2337,7 +2402,7 @@ namespace System
                                 }
                                 for (++idx; idx < info.Offset.End; ++idx)
                                 {
-                                    ushort val = (ushort)((ushort)userString[idx] - (ushort)'0');
+                                    ushort val = unchecked((ushort)((ushort)userString[idx] - (ushort)'0'));
                                     if (val == unchecked((ushort)('/' - '0')) || val == (ushort)('?' - '0') ||
                                         val == unchecked((ushort)('#' - '0')))
                                     {
@@ -2632,9 +2697,9 @@ namespace System
         private string GetEscapedParts(UriComponents uriParts)
         {
             // Which Uri parts are not escaped canonically ?
-            // Notice that public UriPart and private Flags must me in Sync so below code can work
+            // Notice that public UriPart and private Flags must be in Sync so below code can work
             //
-            ushort nonCanonical = (ushort)(((ushort)_flags & ((ushort)Flags.CannotDisplayCanonical << 7)) >> 6);
+            ushort nonCanonical = unchecked((ushort)(((ushort)_flags & ((ushort)Flags.CannotDisplayCanonical << 7)) >> 6));
             if (InFact(Flags.SchemeNotCanonical))
             {
                 nonCanonical |= (ushort)Flags.SchemeNotCanonical;
@@ -2654,7 +2719,7 @@ namespace System
                 }
             }
 
-            if (((ushort)uriParts & nonCanonical) == 0)
+            if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string ret = GetUriPartsFromUserString(uriParts);
                 if ((object)ret != null)
@@ -2671,7 +2736,7 @@ namespace System
             // Which Uri parts are not escaped canonically ?
             // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
             //
-            ushort nonCanonical = (ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical);
+            ushort nonCanonical = unchecked((ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical));
 
             // We keep separate flags for some of path canonicalization facts
             if ((uriParts & UriComponents.Path) != 0)
@@ -2687,7 +2752,7 @@ namespace System
                 }
             }
 
-            if (((ushort)uriParts & nonCanonical) == 0)
+            if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string ret = GetUriPartsFromUserString(uriParts);
                 if ((object)ret != null)
@@ -3290,6 +3355,12 @@ namespace System
                         _string = _syntax.SchemeName + SchemeDelimiter;
                     }
                 }
+                
+                // If host is absent, uri is abnormal and relative as in RFC 3986 section 5.4.2
+                if (_info.Offset.Host == _info.Offset.Path)
+                {
+                    _string = _syntax.SchemeName + ":";
+                }
 
                 _info.Offset.Path = (ushort)_string.Length;
                 idx = _info.Offset.Path;
@@ -3551,7 +3622,7 @@ namespace System
         // returns the start of the next component  position
         // throws UriFormatException if invalid scheme
         //
-        unsafe static private ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
+        private static unsafe ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
             ref ParsingError err, ref Flags flags, ref UriParser syntax)
         {
             ushort idx = 0;
@@ -3560,6 +3631,14 @@ namespace System
             while (idx < length && UriHelper.IsLWS(uriString[idx]))
             {
                 ++idx;
+            }
+
+            // Unix: Unix path?
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            {
+                flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
+                syntax = UriParser.UnixFileUri;
+                return idx;
             }
 
             // sets the recognizer for well known registered schemes
@@ -3617,7 +3696,7 @@ namespace System
                 }
                 else if ((c = uriString[idx]) == '/' || c == '\\')
                 {
-                    //UNC share ?
+                    //UNC share?
                     if ((c = uriString[idx + 1]) == '\\' || c == '/')
                     {
                         flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
@@ -3666,7 +3745,7 @@ namespace System
         //
         // Quickly parses well known schemes.
         // nChars does not include the last ':'. Assuming there is one at the end of passed buffer
-        unsafe static private bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
+        private static unsafe bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
         {
             //NOTE beware of too short input buffers!
 
@@ -3700,7 +3779,7 @@ namespace System
             if (nChars == 2)
             {
                 // This is the only known scheme of length 2
-                if ((((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
+                if ((unchecked((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
                 {
                     syntax = UriParser.WsUri;
                     return true;
@@ -3821,7 +3900,7 @@ namespace System
         //
         // This will check whether a scheme string follows the rules
         //
-        unsafe static private ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
+        private static unsafe ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
         {
             //First character must be an alpha
             {
@@ -3864,8 +3943,60 @@ namespace System
                     return ParsingError.BadScheme;
                 }
             }
-            // A not well-known scheme, needs string creation
-            // Note it is already in the lower case as required.
+
+            // Special-case common and known schemes to avoid allocations and dictionary lookups in these cases.
+            switch (length)
+            {
+                case 2:
+                    if (ptr[0] == 'w' && ptr[1] == 's')
+                    {
+                        syntax = UriParser.WsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 3:
+                    const int ftpMask = 'f' << 16 | 't' << 8 | 'p';
+                    const int wssMask = 'w' << 16 | 's' << 8 | 's';
+                    switch (ptr[0] << 16 | ptr[1] << 8 | ptr[2])
+                    {
+                        case ftpMask:
+                            syntax = UriParser.FtpUri;
+                            return ParsingError.None;
+                        case wssMask:
+                            syntax = UriParser.WssUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 4:
+                    const int httpMask = 'h' << 24 | 't' << 16 | 't' << 8 | 'p';
+                    const int fileMask = 'f' << 24 | 'i' << 16 | 'l' << 8 | 'e';
+                    switch (ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3])
+                    {
+                        case httpMask:
+                            syntax = UriParser.HttpUri;
+                            return ParsingError.None;
+                        case fileMask:
+                            syntax = UriParser.FileUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 5:
+                    if (ptr[0] == 'h' && ptr[1] == 't' && ptr[2] == 't' && ptr[3] == 'p' && ptr[4] == 's')
+                    {
+                        syntax = UriParser.HttpsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 6:
+                    if (ptr[0] == 'm' && ptr[1] == 'a' && ptr[2] == 'i' && ptr[3] == 'l' && ptr[4] == 't' && ptr[5] == 'o')
+                    {
+                        syntax = UriParser.MailToUri;
+                        return ParsingError.None;
+                    }
+                    break;
+            }
+
+            // Not special-cased scheme.  Look up the syntax based on the substring.
             string str = new string(ptr, 0, length);
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
@@ -3892,12 +4023,6 @@ namespace System
             bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
-            // need to build new Iri'zed string
-            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
-            {
-                newHost = _originalUnicodeString.Substring(0, startInput);
-            }
-
             //Special case is an empty authority
             if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
             {
@@ -3918,6 +4043,12 @@ namespace System
                 }
 
                 return idx;
+            }
+
+            // need to build new Iri'zed string
+            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+            {
+                newHost = _originalUnicodeString.Substring(0, startInput);
             }
 
             string userInfoString = null;
@@ -4077,7 +4208,7 @@ namespace System
                     int startPort = end;
                     for (idx = (ushort)(end + 1); idx < length; ++idx)
                     {
-                        ushort val = (ushort)((ushort)pString[idx] - (ushort)'0');
+                        ushort val = unchecked((ushort)((ushort)pString[idx] - (ushort)'0'));
                         if ((val >= 0) && (val <= 9))
                         {
                             if ((port = (port * 10 + val)) > 0xFFFF)
@@ -4184,7 +4315,7 @@ namespace System
                             && StaticNotAny(flags, Flags.HostUnicodeNormalized))
                         {
                             // Normalize any other host
-                            string user = new string(pString, startOtherHost, startOtherHost - end);
+                            string user = new string(pString, startOtherHost, end - startOtherHost);
                             try
                             {
                                 newHost += user.Normalize(NormalizationForm.FormC);
@@ -4714,7 +4845,7 @@ namespace System
         }
 
         // works only with ASCII characters, used to partially unescape path before compressing
-        private unsafe static void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
+        private static unsafe void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
         {
             if (end - start < 3)
             {
@@ -5134,6 +5265,10 @@ namespace System
                         path = Compress(path, 3, ref length, basePart.Syntax);
                         return new string(path, 1, length - 1) + extra;
                     }
+                    else if (!IsWindowsSystem && basePart.IsUnixPath)
+                    {
+                        left = basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
+                    }
                     else
                     {
                         left = @"\\" + basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
@@ -5252,7 +5387,7 @@ namespace System
         protected virtual void Canonicalize()
         {
             // this method if suppressed by the derived class
-            // would lead to supressing of a path compression
+            // would lead to suppressing of a path compression
             // It does not make much sense and violates Fxcop on calling a virtual method in the ctor.
             // Should be deprecated and removed asap.
         }

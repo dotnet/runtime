@@ -32,7 +32,7 @@ namespace System.Xml.Schema
     }
 
     /// <summary>
-    /// This structure extends System.DateTime to support timeInTicks zone and Gregorian types scomponents of an Xsd Duration.  It is used internally to support Xsd durations without loss
+    /// This structure extends System.DateTime to support timeInTicks zone and Gregorian types components of an Xsd Duration.  It is used internally to support Xsd durations without loss
     /// of fidelity.  XsdDuration structures are immutable once they've been created.
     /// </summary>
     internal struct XsdDateTime
@@ -759,7 +759,7 @@ namespace System.Xml.Schema
                 _text = text;
                 _length = text.Length;
 
-                // Skip leading withitespace
+                // Skip leading whitespace
                 int start = 0;
                 while (start < _length && char.IsWhiteSpace(text[start]))
                 {
@@ -987,7 +987,7 @@ namespace System.Xml.Schema
                         while (++start < _length)
                         {
                             int d = _text[start] - '0';
-                            if (9u < (uint)d)
+                            if (9u < unchecked((uint)d))
                             { // d < 0 || 9 < d
                                 break;
                             }

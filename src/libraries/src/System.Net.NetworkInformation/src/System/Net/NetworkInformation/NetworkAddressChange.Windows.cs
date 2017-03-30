@@ -12,6 +12,10 @@ namespace System.Net.NetworkInformation
 {
     public class NetworkChange
     {
+        //introduced for supporting design-time loading of System.Windows.dll
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
         {
             add
@@ -46,12 +50,12 @@ namespace System.Net.NetworkInformation
 
         internal static class AvailabilityChangeListener
         {
-            private readonly static object s_syncObject = new object();
-            private readonly static Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> s_availabilityCallerArray =
+            private static readonly object s_syncObject = new object();
+            private static readonly Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> s_availabilityCallerArray =
                 new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext>();
-            private readonly static NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
+            private static readonly NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
             private static volatile bool s_isAvailable = false;
-            private readonly static ContextCallback s_RunHandlerCallback = new ContextCallback(RunHandlerCallback);
+            private static readonly ContextCallback s_RunHandlerCallback = new ContextCallback(RunHandlerCallback);
 
             private static void RunHandlerCallback(object state)
             {
@@ -118,11 +122,11 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal unsafe static class AddressChangeListener
+        internal static unsafe class AddressChangeListener
         {
-            private readonly static Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> s_callerArray =
+            private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> s_callerArray =
                 new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>();
-            private readonly static ContextCallback s_runHandlerCallback = new ContextCallback(RunHandlerCallback);
+            private static readonly ContextCallback s_runHandlerCallback = new ContextCallback(RunHandlerCallback);
             private static RegisteredWaitHandle s_registeredWait;
 
             // Need to keep the reference so it isn't GC'd before the native call executes.
@@ -158,10 +162,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Exception(NetEventSource.ComponentType.NetworkInformation, "AddressChangeListener", "AddressChangedCallback", nie);
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
                     }
 
                     foreach (var handler in copy.Keys)
@@ -250,7 +251,7 @@ namespace System.Net.NetworkInformation
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out length,
-                                SafeNativeOverlapped.Zero, IntPtr.Zero);
+                                IntPtr.Zero, IntPtr.Zero);
 
                             if (errorCode != SocketError.Success)
                             {
@@ -289,7 +290,7 @@ namespace System.Net.NetworkInformation
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out length,
-                                SafeNativeOverlapped.Zero, IntPtr.Zero);
+                                IntPtr.Zero, IntPtr.Zero);
 
                             if (errorCode != SocketError.Success)
                             {

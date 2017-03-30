@@ -1,31 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>win/project.json</ProjectJson>
-    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>unix/project.json</ProjectJson>
-    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
@@ -48,8 +30,8 @@
     <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
-      <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpsTestServer.cs">
+      <Link>Common\System\Net\HttpsTestServer.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
@@ -111,14 +93,9 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Net.Http.pkgproj">
-      <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
-      <Name>System.Net.Http</Name>
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

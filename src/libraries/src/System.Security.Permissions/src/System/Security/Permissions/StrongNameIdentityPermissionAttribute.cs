@@ -4,13 +4,14 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public sealed partial class StrongNameIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public sealed partial class StrongNameIdentityPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public StrongNameIdentityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public StrongNameIdentityPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public string Name { get; set; }
         public string PublicKey { get; set; }
         public string Version { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

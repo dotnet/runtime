@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
-using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Principal;
 
 namespace System.Security.Claims
@@ -15,8 +13,16 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
+    [Serializable]
     public class ClaimsIdentity : IIdentity
     {
+        private const string PreFix = "System.Security.ClaimsIdentity.";
+        private const string AuthenticationTypeKey = PreFix + "authenticationType";
+        private const string LabelKey = PreFix + "label";
+        private const string NameClaimTypeKey = PreFix + "nameClaimType";
+        private const string RoleClaimTypeKey = PreFix + "roleClaimType";
+        private const string VersionKey = PreFix + "version";
+
         private enum SerializationMask
         {
             None = 0,
@@ -29,16 +35,30 @@ namespace System.Security.Claims
             Actor = 64,
             UserData = 128,
         }
+
+        [NonSerialized]
         private byte[] _userSerializationData;
 
         private ClaimsIdentity _actor;
         private string _authenticationType;
         private object _bootstrapContext;
-        private Collection<IEnumerable<Claim>> _externalClaims = new Collection<IEnumerable<Claim>>();
+
+        [NonSerialized]
+        private List<List<Claim>> _externalClaims;
+
         private string _label;
+
+        [NonSerialized]
         private List<Claim> _instanceClaims = new List<Claim>();
+
+        [NonSerialized]
         private string _nameClaimType = DefaultNameClaimType;
+
+        [NonSerialized]
         private string _roleClaimType = DefaultRoleClaimType;
+
+        private string _serializedNameType;
+        private string _serializedRoleType;
 
         public const string DefaultIssuer = @"LOCAL AUTHORITY";
         public const string DefaultNameClaimType = ClaimTypes.Name;
@@ -151,7 +171,6 @@ namespace System.Security.Claims
         /// <exception cref="InvalidOperationException">if 'identity' is a <see cref="ClaimsIdentity"/> and <see cref="ClaimsIdentity.Actor"/> results in a circular refrence back to 'this'.</exception>
         public ClaimsIdentity(IIdentity identity, IEnumerable<Claim> claims, string authenticationType, string nameType, string roleType)
         {
-            // TODO - brentsch, should we have another constructor that takes ClaimsIdentity thereby bypassing the cast below?
             ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
 
             _authenticationType = !string.IsNullOrWhiteSpace(authenticationType) ? authenticationType : (identity != null ? identity.AuthenticationType : null);
@@ -175,7 +194,7 @@ namespace System.Security.Claims
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.GetResourceString("InvalidOperationException_ActorGraphCircular", "Actor cannot be set so that circular directed graph will exist chaining the subjects together."));
+                        throw new InvalidOperationException(SR.InvalidOperationException_ActorGraphCircular);
                     }
                 }
                 SafeAddClaims(claimsIdentity._instanceClaims);
@@ -238,6 +257,35 @@ namespace System.Security.Claims
             SafeAddClaims(other._instanceClaims);
         }
 
+        protected ClaimsIdentity(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Deserialize(info, context, true);
+        }
+
+        /// <summary>
+        /// Initializes an instance of <see cref="ClaimsIdentity"/> from a serialized stream created via 
+        /// <see cref="ISerializable"/>.
+        /// </summary>
+        /// <param name="info">
+        /// The <see cref="SerializationInfo"/> to read from.
+        /// </param>
+        /// <exception cref="ArgumentNullException">Thrown is the <paramref name="info"/> is null.</exception>
+        [SecurityCritical]
+        protected ClaimsIdentity(SerializationInfo info)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Deserialize(info, new StreamingContext(), false);
+        }
+
         /// <summary>
         /// Gets the authentication type that can be used to determine how this <see cref="ClaimsIdentity"/> authenticated to an authority.
         /// </summary>
@@ -257,7 +305,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets or sets a <see cref="ClaimsIdentity"/> that was granted delegation rights.
         /// </summary>
-        /// <exception cref="InvalidOperationException">if 'value' results in a circular refrence back to 'this'.</exception>
+        /// <exception cref="InvalidOperationException">if 'value' results in a circular reference back to 'this'.</exception>
         public ClaimsIdentity Actor
         {
             get { return _actor; }
@@ -267,7 +315,7 @@ namespace System.Security.Claims
                 {
                     if (IsCircular(value))
                     {
-                        throw new InvalidOperationException(SR.GetResourceString("InvalidOperationException_ActorGraphCircular", "Actor cannot be set so that circular directed graph will exist chaining the subjects together."));
+                        throw new InvalidOperationException(SR.InvalidOperationException_ActorGraphCircular);
                     }
                 }
                 _actor = value;
@@ -280,42 +328,47 @@ namespace System.Security.Claims
         public object BootstrapContext
         {
             get { return _bootstrapContext; }
-
-            set
-            { _bootstrapContext = value; }
+            set { _bootstrapContext = value; }
         }
 
         /// <summary>
         /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsIdentity"/>.
         /// </summary>       
-        /// <remarks>May contain nulls.
+        /// <remarks>May contain nulls.</remarks>
         public virtual IEnumerable<Claim> Claims
         {
             get
             {
-                for (int i = 0; i < _instanceClaims.Count; i++)
+                if (_externalClaims == null)
                 {
-                    yield return _instanceClaims[i];
+                    return _instanceClaims;
                 }
 
-                if (_externalClaims != null)
+                return CombinedClaimsIterator();
+            }
+        }
+
+        private IEnumerable<Claim> CombinedClaimsIterator()
+        {
+            for (int i = 0; i < _instanceClaims.Count; i++)
+            {
+                yield return _instanceClaims[i];
+            }
+
+            for (int j = 0; j < _externalClaims.Count; j++)
+            {
+                if (_externalClaims[j] != null)
                 {
-                    for (int j = 0; j < _externalClaims.Count; j++)
+                    foreach (Claim claim in _externalClaims[j])
                     {
-                        if (_externalClaims[j] != null)
-                        {
-                            foreach (Claim claim in _externalClaims[j])
-                            {
-                                yield return claim;
-                            }
-                        }
+                        yield return claim;
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Contains any additional data provided by a derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.</param>
+        /// Contains any additional data provided by a derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.
         /// </summary>
         protected virtual byte[] CustomSerializationData
         {
@@ -329,13 +382,20 @@ namespace System.Security.Claims
         /// Allow the association of claims with this instance of <see cref="ClaimsIdentity"/>. 
         /// The claims will not be serialized or added in Clone(). They will be included in searches, finds and returned from the call to <see cref="ClaimsIdentity.Claims"/>.
         /// </summary>               
-        internal Collection<IEnumerable<Claim>> ExternalClaims
+        internal List<List<Claim>> ExternalClaims
         {
-            get { return _externalClaims; }
+            get
+            {
+                if (_externalClaims == null)
+                {
+                    _externalClaims = new List<List<Claim>>();
+                }
+                return _externalClaims;
+            }
         }
 
         /// <summary>
-        /// Gets or sets the label for this <see cref="Identity"/>
+        /// Gets or sets the label for this <see cref="ClaimsIdentity"/>
         /// </summary>
         public string Label
         {
@@ -371,7 +431,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Gets the value that identifies 'Role' claims. This is used when calling <see cref="ClaimsPrincial.IsInRole"/>.
+        /// Gets the value that identifies 'Role' claims. This is used when calling <see cref="ClaimsPrincipal.IsInRole"/>.
         /// </summary>
         public string RoleClaimType
         {
@@ -446,7 +506,7 @@ namespace System.Security.Claims
 
         /// <summary>
         /// Attempts to remove a <see cref="Claim"/> the internal list. 
-        /// <summary/>
+        /// </summary>
         /// <param name="claim">the <see cref="Claim"/> to match.</param>
         /// <remarks> It is possible that a <see cref="Claim"/> returned from <see cref="Claims"/> cannot be removed. This would be the case for 'External' claims that are provided by reference.
         /// <para>object.ReferenceEquals is used to 'match'.</para>
@@ -474,7 +534,7 @@ namespace System.Security.Claims
 
         /// <summary>
         /// Removes a <see cref="Claim"/> from the internal list. 
-        /// <summary/>
+        /// </summary>
         /// <param name="claim">the <see cref="Claim"/> to match.</param>
         /// <remarks> It is possible that a <see cref="Claim"/> returned from <see cref="Claims"/> cannot be removed. This would be the case for 'External' claims that are provided by reference.
         /// <para>object.ReferenceEquals is used to 'match'.</para>
@@ -484,17 +544,14 @@ namespace System.Security.Claims
         {
             if (!TryRemoveClaim(claim))
             {
-                throw new InvalidOperationException(
-                    string.Format(CultureInfo.InvariantCulture, 
-                                  SR.GetResourceString("InvalidOperation_ClaimCannotBeRemoved", "The Claim '{0}' was not able to be removed.  It is either not part of this Identity or it is a claim that is owned by the Principal that contains this Identity. For example, the Principal will own the claim when creating a GenericPrincipal with roles. The roles will be exposed through the Identity that is passed in the constructor, but not actually owned by the Identity.  Similar logic exists for a RolePrincipal."),
-                                  claim));
+                throw new InvalidOperationException(string.Format(SR.InvalidOperation_ClaimCannotBeRemoved, claim));
             }
         }
 
         /// <summary>
-        /// Adds claims to intenal list. Calling Claim.Clone if Claim.Subject != this.
+        /// Adds claims to internal list. Calling Claim.Clone if Claim.Subject != this.
         /// </summary>
-        /// <param name="claims">a <see cref="IEnumerable<Claim>"/> to add to </param>
+        /// <param name="claims">a <see cref="IEnumerable{Claim}"/> to add to </param>
         /// <remarks>private only call from constructor, adds to internal list.</remarks>
         private void SafeAddClaims(IEnumerable<Claim> claims)
         {
@@ -515,7 +572,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Adds claim to intenal list. Calling Claim.Clone if Claim.Subject != this.
+        /// Adds claim to internal list. Calling Claim.Clone if Claim.Subject != this.
         /// </summary>
         /// <remarks>private only call from constructor, adds to internal list.</remarks>
         private void SafeAddClaim(Claim claim)
@@ -534,7 +591,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Retrieves a <see cref="IEnumerable{Claim}"/> where each claim is matched by <param name="match"/>.
+        /// Retrieves a <see cref="IEnumerable{Claim}"/> where each claim is matched by <paramref name="match"/>.
         /// </summary>
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
@@ -562,7 +619,7 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>   
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.<</remarks>
+        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
@@ -586,7 +643,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Retrieves the first <see cref="Claim"/> that is matched by <param name="match"/>.
+        /// Retrieves the first <see cref="Claim"/> that is matched by <paramref name="match"/>.
         /// </summary>
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
@@ -692,14 +749,11 @@ namespace System.Security.Claims
 
             foreach (Claim claim in Claims)
             {
-                if (claim != null)
+                if (claim != null
+                        && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(claim.Value, value, StringComparison.Ordinal))
                 {
-                    if (claim != null
-                         && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase)
-                         && string.Equals(claim.Value, value, StringComparison.Ordinal))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -779,7 +833,6 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                // TODO - brentschmaltz - maximum size ??
                 int cb = reader.ReadInt32();
                 _userSerializationData = reader.ReadBytes(cb);
                 numPropertiesRead++;
@@ -790,9 +843,9 @@ namespace System.Security.Claims
                 reader.ReadString();
             }
         }
-        
+
         /// <summary>
-        /// Provides and extensibility point for derived types to create a custom <see cref="Claim"/>.
+        /// Provides an extensibility point for derived types to create a custom <see cref="Claim"/>.
         /// </summary>
         /// <param name="reader">the <see cref="BinaryReader"/>that points at the claim.</param>
         /// <returns>a new <see cref="Claim"/>.</returns>
@@ -883,8 +936,8 @@ namespace System.Security.Claims
                 mask |= SerializationMask.UserData;
             }
 
-            writer.Write((Int32)mask);
-            writer.Write((Int32)numberOfPropertiesWritten);
+            writer.Write((int)mask);
+            writer.Write(numberOfPropertiesWritten);
             if ((mask & SerializationMask.AuthenticationType) == SerializationMask.AuthenticationType)
             {
                 writer.Write(_authenticationType);
@@ -912,7 +965,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.HasClaims) == SerializationMask.HasClaims)
             {
-                writer.Write((Int32)_instanceClaims.Count);
+                writer.Write(_instanceClaims.Count);
                 foreach (var claim in _instanceClaims)
                 {
                     claim.WriteTo(writer);
@@ -926,7 +979,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                writer.Write((Int32)userData.Length);
+                writer.Write(userData.Length);
                 writer.Write(userData);
             }
 
@@ -958,6 +1011,117 @@ namespace System.Security.Claims
             }
 
             return false;
+        }
+
+        [OnSerializing]
+        private void OnSerializingMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+            {
+                return;
+            }
+
+            _serializedNameType = _nameClaimType;
+            _serializedRoleType = _roleClaimType;
+            if (_instanceClaims != null && _instanceClaims.Count > 0)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter would be needed
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserializedMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+            {
+                return;
+            }
+
+            _nameClaimType = string.IsNullOrEmpty(_serializedNameType) ? DefaultNameClaimType : _serializedNameType;
+            _roleClaimType = string.IsNullOrEmpty(_serializedRoleType) ? DefaultRoleClaimType : _serializedRoleType;
+        }
+
+        [OnDeserializing]
+        private void OnDeserializingMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+                return;
+
+            _instanceClaims = new List<Claim>();
+        }
+
+        /// <summary>
+        /// Populates the specified <see cref="SerializationInfo"/> with the serialization data for the ClaimsIdentity
+        /// </summary>
+        /// <param name="info">The serialization information stream to write to. Satisfies ISerializable contract.</param>
+        /// <param name="context">Context for serialization. Can be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the info parameter is null.</exception>
+        protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            const string Version = "1.0";
+            info.AddValue(VersionKey, Version);
+            if (!string.IsNullOrEmpty(_authenticationType))
+            {
+                info.AddValue(AuthenticationTypeKey, _authenticationType);
+            }
+
+            info.AddValue(NameClaimTypeKey, _nameClaimType);
+            info.AddValue(RoleClaimTypeKey, _roleClaimType);
+
+            if (!string.IsNullOrEmpty(_label))
+            {
+                info.AddValue(LabelKey, _label);
+            }
+
+            // actor
+            if (_actor != null || _bootstrapContext != null || (_instanceClaims != null && _instanceClaims.Count > 0))
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter needed
+            }
+        }
+
+        private void Deserialize(SerializationInfo info, StreamingContext context, bool useContext)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            SerializationInfoEnumerator enumerator = info.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
+                    case VersionKey:
+                        string version = info.GetString(VersionKey);
+                        break;
+
+                    case AuthenticationTypeKey:
+                        _authenticationType = info.GetString(AuthenticationTypeKey);
+                        break;
+
+                    case NameClaimTypeKey:
+                        _nameClaimType = info.GetString(NameClaimTypeKey);
+                        break;
+
+                    case RoleClaimTypeKey:
+                        _roleClaimType = info.GetString(RoleClaimTypeKey);
+                        break;
+
+                    case LabelKey:
+                        _label = info.GetString(LabelKey);
+                        break;
+
+                    default:
+                        // Ignore other fields for forward compatability.
+                        break;
+                }
+            }
         }
     }
 }

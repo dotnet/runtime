@@ -4,9 +4,15 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [Conditional("DEBUG")] // don't bloat release assemblies
-    [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = false)]
-    internal sealed class ExcludeFromCodeCoverageAttribute : Attribute
+    [AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event, Inherited = false, AllowMultiple = false)]
+#if SYSTEM_DIAGNOSTICS_TOOLS
+    public
+#else
+    internal 
+#endif
+    sealed class ExcludeFromCodeCoverageAttribute: Attribute
     {
+        public ExcludeFromCodeCoverageAttribute()
+        { }
     }
 }

@@ -4,7 +4,7 @@
 
 namespace System.Runtime.Serialization
 {
-    public enum SerializationOption
+    internal enum SerializationOption
     {
         CodeGenOnly = 0,
         ReflectionOnly = 1,

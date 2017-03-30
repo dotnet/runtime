@@ -62,6 +62,23 @@ namespace System.Text.Tests
             yield return new object[] { "a\uD800\uDC00b", 0, 2 };
 
             yield return new object[] { "\uD800\uDC00\u0061\u0CFF", 0, 4 };
+
+            // Invalid Unicode
+            yield return new object[] { "\uD800", 0, 1 }; // Lone high surrogate
+            yield return new object[] { "\uDC00", 0, 1 }; // Lone low surrogate
+            yield return new object[] { "\uD800\uDC00", 0, 1 }; // Surrogate pair out of range
+            yield return new object[] { "\uD800\uDC00", 1, 1 }; // Surrogate pair out of range
+
+            yield return new object[] { "\uD800\uD800", 0, 2 }; // High, high
+            yield return new object[] { "\uDC00\uD800", 0, 2 }; // Low, high
+            yield return new object[] { "\uDC00\uDC00", 0, 2 }; // Low, low
+
+            yield return new object[] { "\u0080\u00FF\u0B71\uFFFF\uD800\uDFFF", 0, 6 };
+
+            // High BMP non-chars
+            yield return new object[] { "\uFFFD", 0, 1 };
+            yield return new object[] { "\uFFFE", 0, 1 };
+            yield return new object[] { "\uFFFF", 0, 1 };
         }
 
         [Theory]
@@ -74,27 +91,6 @@ namespace System.Text.Tests
             // Encoding invalid chars should throw with an EncoderExceptionFallback
             Encoding exceptionEncoding = Encoding.GetEncoding("ascii", new EncoderExceptionFallback(), new DecoderReplacementFallback("?"));
             NegativeEncodingTests.Encode_Invalid(exceptionEncoding, source, index, count);
-        }
-
-        [Fact]
-        public void Encode_InvalidChars()
-        {
-            // TODO: move to Encode_InvalidChars_TestData when #7166 is fixed
-            Encode_InvalidChars("\uD800", 0, 1); // Lone high surrogate
-            Encode_InvalidChars("\uDC00", 0, 1); // Lone low surrogate
-            Encode_InvalidChars("\uD800\uDC00", 0, 1); // Surrogate pair out of range
-            Encode_InvalidChars("\uD800\uDC00", 1, 1); // Surrogate pair out of range
-
-            Encode_InvalidChars("\uD800\uD800", 0, 2); // High, high
-            Encode_InvalidChars("\uDC00\uD800", 0, 2); // Low, high
-            Encode_InvalidChars("\uDC00\uDC00", 0, 2); // Low, low
-
-            Encode_InvalidChars("\u0080\u00FF\u0B71\uFFFF\uD800\uDFFF", 0, 6);
-
-            // High BMP non-chars
-            Encode_InvalidChars("\uFFFD", 0, 1);
-            Encode_InvalidChars("\uFFFE", 0, 1);
-            Encode_InvalidChars("\uFFFF", 0, 1);
         }
 
         private static byte[] GetBytes(string source, int index, int count)

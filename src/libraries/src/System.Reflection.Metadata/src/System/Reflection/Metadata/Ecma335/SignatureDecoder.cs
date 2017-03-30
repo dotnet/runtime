@@ -11,10 +11,11 @@ namespace System.Reflection.Metadata.Ecma335
     /// Decodes signature blobs.
     /// See Metadata Specification section II.23.2: Blobs and signatures.
     /// </summary>
-    public struct SignatureDecoder<TType>
+    public struct SignatureDecoder<TType, TGenericContext>
     {
-        private readonly ISignatureTypeProvider<TType> _provider;
+        private readonly ISignatureTypeProvider<TType, TGenericContext> _provider;
         private readonly MetadataReader _metadataReaderOpt;
+        private readonly TGenericContext _genericContext;
 
         /// <summary>
         /// Creates a new SignatureDecoder.
@@ -23,9 +24,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="metadataReader">
         /// The metadata reader from which the signature was obtained. It may be null if the given provider allows it.
         /// </param>
+        /// <param name="genericContext">
+        /// Additional context needed to resolve generic parameters.
+        /// </param>
         public SignatureDecoder(
-            ISignatureTypeProvider<TType> provider, 
-            MetadataReader metadataReader = null)
+            ISignatureTypeProvider<TType, TGenericContext> provider,
+            MetadataReader metadataReader,
+            TGenericContext genericContext)
         {
             if (provider == null)
             {
@@ -34,6 +39,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             _metadataReaderOpt = metadataReader;
             _provider = provider;
+            _genericContext = genericContext;
         }
 
         /// <summary>
@@ -111,11 +117,11 @@ namespace System.Reflection.Metadata.Ecma335
 
                 case (int)SignatureTypeCode.GenericTypeParameter:
                     index = blobReader.ReadCompressedInteger();
-                    return _provider.GetGenericTypeParameter(index);
+                    return _provider.GetGenericTypeParameter(_genericContext, index);
 
                 case (int)SignatureTypeCode.GenericMethodParameter:
                     index = blobReader.ReadCompressedInteger();
-                    return _provider.GetGenericMethodParameter(index);
+                    return _provider.GetGenericMethodParameter(_genericContext, index);
 
                 case (int)SignatureTypeKind.Class:
                 case (int)SignatureTypeKind.ValueType:
@@ -279,7 +285,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             TType genericType = DecodeType(ref blobReader);
             ImmutableArray<TType> types = DecodeTypeSequence(ref blobReader);
-            return _provider.GetGenericInstance(genericType, types);
+            return _provider.GetGenericInstantiation(genericType, types);
         }
 
         private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)
@@ -287,7 +293,7 @@ namespace System.Reflection.Metadata.Ecma335
             TType modifier = DecodeTypeHandle(ref blobReader, 0, allowTypeSpecifications: true);
             TType unmodifiedType = DecodeType(ref blobReader);
 
-            return _provider.GetModifiedType(_metadataReaderOpt, isRequired, modifier, unmodifiedType);
+            return _provider.GetModifiedType(modifier, unmodifiedType, isRequired);
         }
 
         private TType DecodeTypeHandle(ref BlobReader blobReader, byte rawTypeKind, bool allowTypeSpecifications)
@@ -311,7 +317,7 @@ namespace System.Reflection.Metadata.Ecma335
                             throw new BadImageFormatException(SR.NotTypeDefOrRefHandle);
                         }
 
-                        return _provider.GetTypeFromSpecification(_metadataReaderOpt, (TypeSpecificationHandle)handle, rawTypeKind);
+                        return _provider.GetTypeFromSpecification(_metadataReaderOpt, _genericContext, (TypeSpecificationHandle)handle, rawTypeKind);
 
                     default:
                         // indicates an error returned from ReadTypeHandle, otherwise unreachable.

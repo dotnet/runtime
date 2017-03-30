@@ -1,17 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <ProjectGuid>{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Xml.XmlSerializer.cs" />
-    <Compile Include="System.Xml.XmlSerializer.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\ref\System.Xml.XmlDocument.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

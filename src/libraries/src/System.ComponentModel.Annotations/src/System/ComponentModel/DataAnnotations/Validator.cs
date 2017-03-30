@@ -384,13 +384,13 @@ namespace System.ComponentModel.DataAnnotations
             if (value == null)
             {
                 // Null can be assigned only to reference types or Nullable or Nullable<>
-                return !destinationType.GetTypeInfo().IsValueType ||
-                       (destinationType.GetTypeInfo().IsGenericType &&
+                return !destinationType.IsValueType ||
+                       (destinationType.IsGenericType &&
                         destinationType.GetGenericTypeDefinition() == typeof(Nullable<>));
             }
 
             // Not null -- be sure it can be cast to the right type
-            return destinationType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo());
+            return destinationType.IsInstanceOfType(value);
         }
 
         /// <summary>

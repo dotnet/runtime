@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -95,7 +95,12 @@ namespace System.Net.Http
             private static void SetSslVersion(EasyRequest easy, IntPtr sslCtx = default(IntPtr))
             {
                 // Get the requested protocols.
-                System.Security.Authentication.SslProtocols protocols = easy._handler.ActualSslProtocols;
+                SslProtocols protocols = easy._handler.SslProtocols;
+                if (protocols == SslProtocols.None)
+                {
+                    // Let libcurl use its defaults if None is set.
+                    return;
+                }
 
                 // We explicitly disallow choosing SSL2/3. Make sure they were filtered out.
                 Debug.Assert((protocols & ~SecurityProtocol.AllowedSecurityProtocols) == 0, 
@@ -107,17 +112,17 @@ namespace System.Net.Http
                 Interop.Http.CurlSslVersion curlSslVersion;
                 switch (protocols)
                 {
-                    case System.Security.Authentication.SslProtocols.Tls:
+                    case SslProtocols.Tls:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_0;
                         break;
-                    case System.Security.Authentication.SslProtocols.Tls11:
+                    case SslProtocols.Tls11:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_1;
                         break;
-                    case System.Security.Authentication.SslProtocols.Tls12:
+                    case SslProtocols.Tls12:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_2;
                         break;
 
-                    case System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12:
+                    case SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1;
                         break;
 
@@ -137,13 +142,24 @@ namespace System.Net.Http
 
             private static CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer)
             {
-                // Configure the SSL protocols allowed.
                 EasyRequest easy;
                 if (!TryGetEasyRequest(curl, out easy))
                 {
                     return CURLcode.CURLE_ABORTED_BY_CALLBACK;
                 }
-                Interop.Ssl.SetProtocolOptions(sslCtx, easy._handler.ActualSslProtocols);
+
+                // Configure the SSL protocols allowed.
+                SslProtocols protocols = easy._handler.SslProtocols;
+                if (protocols == SslProtocols.None)
+                {
+                    // If None is selected, let OpenSSL use its defaults, but with SSL2/3 explicitly disabled.
+                    // Since the shim/OpenSSL work on a disabling system, where any protocols for which bits aren't
+                    // set are disabled, we set all of the bits other than those we want disabled.
+#pragma warning disable 0618 // the enum values are obsolete
+                    protocols = ~(SslProtocols.Ssl2 | SslProtocols.Ssl3);
+#pragma warning restore 0618
+                }
+                Interop.Ssl.SetProtocolOptions(sslCtx, protocols);
 
                 // Configure the SSL server certificate verification callback.
                 Interop.Ssl.SslCtxSetCertVerifyCallback(sslCtx, s_sslVerifyCallback, curl);

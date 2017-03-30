@@ -16,7 +16,7 @@ namespace XPathTests.FunctionalTests
     public static partial class LexicalStructureTests
     {
         /// <summary>
-        /// Expression with intervening white spaces after node type. If the character following an NCName (possibly after intervening ExprWhitespace) is (, then the token must be recognized as a NodeType or a FunctionName
+        /// Expression with intervening whitespace after node type. If the character following an NCName (possibly after intervening ExprWhitespace) is (, then the token must be recognized as a NodeType or a FunctionName
         /// node     ()
         /// </summary>
         [Fact]
@@ -42,7 +42,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces after function name.
+        /// Expression with intervening whitespace after function name.
         /// name   ()
         /// </summary>
         [Fact]
@@ -85,7 +85,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression for white spaces before and after ::
+        /// Expression for whitespace before and after ::
         /// /bookstore/child   ::   book
         /// </summary>
         [Fact]
@@ -176,7 +176,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces after '(' and before ')'
+        /// Expression with intervening whitespace after '(' and before ')'
         /// name( )
         /// </summary>
         [Fact]
@@ -191,7 +191,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces after ')'
+        /// Expression with intervening whitespace after ')'
         /// name()
         /// </summary>
         [Fact]
@@ -206,7 +206,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces before axis name.
+        /// Expression with intervening whitespace before axis name.
         /// /bookstore/ child::book
         /// </summary>
         [Fact]
@@ -297,7 +297,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces after axis name.
+        /// Expression with intervening whitespace after axis name.
         /// /bookstore/child ::book
         /// </summary>
         [Fact]
@@ -388,7 +388,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces before nametest
+        /// Expression with intervening whitespace before name test
         /// /bookstore/child:: book
         /// </summary>
         [Fact]
@@ -479,7 +479,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Expression with intervening white spaces after name test
+        /// Expression with intervening whitespace after name test
         /// /bookstore/child::book
         /// </summary>
         [Fact]
@@ -570,7 +570,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Testing for intervening white spaces before node type.
+        /// Testing for intervening whitespace before node type.
         /// /bookstore/child:: node()
         /// </summary>
         [Fact]
@@ -788,7 +788,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Testing with intervening white spaces before function name.
+        /// Testing with intervening whitespace before function name.
         /// name()
         /// </summary>
         [Fact]
@@ -803,7 +803,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Testing with intervening white spaces before @
+        /// Testing with intervening whitespace before @
         /// /bookstore/book/ @style
         /// </summary>
         [Fact]
@@ -874,7 +874,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Testing for intervening white spaces after @
+        /// Testing for intervening whitespace after @
         /// /bookstore/book/@ style
         /// </summary>
         [Fact]
@@ -1281,7 +1281,7 @@ namespace XPathTests.FunctionalTests
         }
 
         /// <summary>
-        /// Check if operator is scaned properly
+        /// Check if operator is scanned properly
         /// ""!=true()
         /// </summary>
         [Fact]

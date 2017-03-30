@@ -76,7 +76,7 @@ namespace SdtEventSources
         public void StartTrackingActivity() { WriteEvent(15); }
         
         [Event(17, Keywords = Keywords.Transfer | Keywords.HasStringArgs, Opcode = EventOpcode.Send, Task = Tasks.WorkItem)]
-        unsafe public void LogTaskScheduled(Guid RelatedActivityId, string message)
+        public unsafe void LogTaskScheduled(Guid RelatedActivityId, string message)
         {
             unsafe
             {

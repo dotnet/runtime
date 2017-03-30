@@ -56,7 +56,7 @@ namespace System
     //
     // Only internal members are included here
     //
-    internal abstract partial class UriParser
+    public abstract partial class UriParser
     {
         private static readonly LowLevelDictionary<string, UriParser> s_table;
         private static LowLevelDictionary<string, UriParser> s_tempTable;
@@ -87,6 +87,7 @@ namespace System
         internal static UriParser WssUri;
         internal static UriParser FtpUri;
         internal static UriParser FileUri;
+        internal static UriParser UnixFileUri;
         internal static UriParser GopherUri;
         internal static UriParser NntpUri;
         internal static UriParser NewsUri;
@@ -125,6 +126,7 @@ namespace System
             s_table[FtpUri.SchemeName] = FtpUri;                    //FTP
 
             FileUri = new BuiltInUriParser("file", NoDefaultPort, s_fileSyntaxFlags);
+            UnixFileUri = new BuiltInUriParser("file", NoDefaultPort, s_unixFileSyntaxFlags);
             s_table[FileUri.SchemeName] = FileUri;                   //FILE
 
             GopherUri = new BuiltInUriParser("gopher", 70, GopherSyntaxFlags);
@@ -230,6 +232,36 @@ namespace System
             _scheme = string.Empty;
         }
 
+        private static void FetchSyntax(UriParser syntax, string lwrCaseSchemeName, int defaultPort)
+        {
+            if (syntax.SchemeName.Length != 0)
+                throw new InvalidOperationException(SR.Format(SR.net_uri_NeedFreshParser, syntax.SchemeName));
+ 
+            lock (s_table)
+            {
+                syntax._flags &= ~UriSyntaxFlags.V1_UnknownUri;
+                UriParser oldSyntax = null;
+                s_table.TryGetValue(lwrCaseSchemeName, out oldSyntax);
+                if (oldSyntax != null)
+                    throw new InvalidOperationException(SR.Format(SR.net_uri_AlreadyRegistered, oldSyntax.SchemeName));
+                
+                s_tempTable.TryGetValue(syntax.SchemeName, out oldSyntax);
+                if (oldSyntax != null)
+                {
+                    // optimization on schemeName, will try to keep the first reference
+                    lwrCaseSchemeName = oldSyntax._scheme;
+                    s_tempTable.Remove(lwrCaseSchemeName);
+                }
+ 
+                syntax.OnRegister(lwrCaseSchemeName, defaultPort);
+                syntax._scheme = lwrCaseSchemeName;
+                syntax.CheckSetIsSimpleFlag();
+                syntax._port = defaultPort;
+ 
+                s_table[syntax.SchemeName] = syntax;
+            }
+        } 
+
         private const int c_MaxCapacity = 512;
         //schemeStr must be in lower case!
         internal static UriParser FindOrFetchAsUnknownV1Syntax(string lwrCaseScheme)
@@ -277,6 +309,25 @@ namespace System
             get
             {
                 return InFact(UriSyntaxFlags.SimpleUserSyntax);
+            }
+        }
+
+        internal void CheckSetIsSimpleFlag()
+        {
+            Type type  = this.GetType();
+ 
+            if (    type == typeof(GenericUriParser)     
+                ||  type == typeof(HttpStyleUriParser)   
+                ||  type == typeof(FtpStyleUriParser)   
+                ||  type == typeof(FileStyleUriParser)   
+                ||  type == typeof(NewsStyleUriParser)   
+                ||  type == typeof(GopherStyleUriParser) 
+                ||  type == typeof(NetPipeStyleUriParser) 
+                ||  type == typeof(NetTcpStyleUriParser) 
+                ||  type == typeof(LdapStyleUriParser)
+                )
+            {
+                _flags |= UriSyntaxFlags.SimpleUserSyntax;
             }
         }
 
@@ -421,6 +472,8 @@ namespace System
                                         UriSyntaxFlags.AllowIdn |
                                         UriSyntaxFlags.AllowIriParsing;
 
+        private static readonly UriSyntaxFlags s_unixFileSyntaxFlags =
+                                        s_fileSyntaxFlags & ~UriSyntaxFlags.ConvertPathSlashes;
 
         private const UriSyntaxFlags VsmacrosSyntaxFlags =
                                         UriSyntaxFlags.MustHaveAuthority |

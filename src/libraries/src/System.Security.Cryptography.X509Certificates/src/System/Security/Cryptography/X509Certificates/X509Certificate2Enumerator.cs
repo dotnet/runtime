@@ -2,30 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Collections;
-using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509Certificate2Enumerator : IEnumerator
     {
-        // This is a mutable struct enumerator, so don't mark it as readonly.
-        private List<X509Certificate>.Enumerator _enumerator;
+        private readonly IEnumerator _enumerator;
 
         internal X509Certificate2Enumerator(X509Certificate2Collection collection)
         {
             Debug.Assert(collection != null);
 
-            collection.GetEnumerator(out _enumerator);
+            _enumerator = ((IEnumerable)collection).GetEnumerator();
         }
 
         public X509Certificate2 Current
         {
-            // Call the struct enumerator's IEnumerator.Current implementation, which has the
-            // behavior we want of throwing InvalidOperationException when the enumerator
-            // hasn't been started or has ended, without boxing.
-            get { return (X509Certificate2)(EnumeratorHelper.GetCurrent(ref _enumerator)); }
+            get { return (X509Certificate2)_enumerator.Current; }
         }
 
         object IEnumerator.Current
@@ -45,8 +40,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Reset()
         {
-            // Call Reset on the struct enumerator without boxing.
-            EnumeratorHelper.Reset(ref _enumerator);
+            _enumerator.Reset();
         }
 
         void IEnumerator.Reset()

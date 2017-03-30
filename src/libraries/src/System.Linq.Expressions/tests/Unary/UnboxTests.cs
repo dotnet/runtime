@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -183,6 +182,40 @@ namespace System.Linq.Expressions.Tests
             Assert.False(unbox.CanReduce);
             Assert.Same(unbox, unbox.Reduce());
             Assert.Throws<ArgumentException>(null, () => unbox.ReduceAndCheck());
+        }
+
+        [Fact]
+        public static void PointerType()
+        {
+            Type pointerType = typeof(int).MakePointerType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Unbox(Expression.Constant(new object()), pointerType));
+        }
+
+        [Fact]
+        public static void ByRefType()
+        {
+            Type byRefType = typeof(int).MakeByRefType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Unbox(Expression.Constant(new object()), byRefType));
+        }
+
+        private struct GenericValueType<T>
+        {
+            public T Value { get; set; }
+        }
+
+        [Fact]
+        public static void GenericType()
+        {
+            Type genType = typeof(GenericValueType<>);
+            Assert.Throws<ArgumentException>("type", () => Expression.Unbox(Expression.Constant(new object()), genType));
+        }
+
+
+        [Fact]
+        public static void GenericTypeParameters()
+        {
+            Type genType = typeof(GenericValueType<>);
+            Assert.Throws<ArgumentException>("type", () => Expression.Unbox(Expression.Constant(new object()), genType.MakeGenericType(genType)));
         }
     }
 }

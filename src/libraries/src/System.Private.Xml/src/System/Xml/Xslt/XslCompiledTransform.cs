@@ -17,7 +17,6 @@ using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.Xslt;
 using System.Runtime.Versioning;
-using System.Xml.XmlConfiguration;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -50,7 +49,7 @@ namespace System.Xml.Xsl
         private static readonly XmlReaderSettings s_readerSettings = null;
 
         // Version for GeneratedCodeAttribute
-        private const string Version = ThisAssembly.Version;
+        private readonly string Version = typeof(XslCompiledTransform).Assembly.GetName().Version.ToString();
 
         static XslCompiledTransform()
         {
@@ -61,7 +60,7 @@ namespace System.Xml.Xsl
         private bool _enableDebug = false;
 
         // Results of compilation
-        private CompilerResults _compilerResults = null;
+        private CompilerErrorCollection _compilerErrorColl = null;
         private XmlWriterSettings _outputSettings = null;
         private QilExpression _qil = null;
 
@@ -80,15 +79,10 @@ namespace System.Xml.Xsl
         /// </summary>
         private void Reset()
         {
-            _compilerResults = null;
+            _compilerErrorColl = null;
             _outputSettings = null;
             _qil = null;
             _command = null;
-        }
-
-        internal CompilerErrorCollection Errors
-        {
-            get { return _compilerResults != null ? _compilerResults.Errors : null; }
         }
 
         /// <summary>
@@ -102,11 +96,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        internal TempFileCollection TemporaryFiles
-        {
-            get { return _compilerResults != null ? _compilerResults.TempFiles : null; }
-        }
-
         //------------------------------------------------
         // Load methods
         //------------------------------------------------
@@ -116,7 +105,7 @@ namespace System.Xml.Xsl
         public void Load(XmlReader stylesheet)
         {
             Reset();
-            LoadInternal(stylesheet, XsltSettings.Default, XsltConfigSection.CreateDefaultResolver());
+            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver());
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -132,7 +121,7 @@ namespace System.Xml.Xsl
         public void Load(IXPathNavigable stylesheet)
         {
             Reset();
-            LoadInternal(stylesheet, XsltSettings.Default, XsltConfigSection.CreateDefaultResolver());
+            LoadInternal(stylesheet, XsltSettings.Default, CreateDefaultResolver());
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -150,7 +139,7 @@ namespace System.Xml.Xsl
             {
                 throw new ArgumentNullException(nameof(stylesheetUri));
             }
-            LoadInternal(stylesheetUri, XsltSettings.Default, XsltConfigSection.CreateDefaultResolver());
+            LoadInternal(stylesheetUri, XsltSettings.Default, CreateDefaultResolver());
         }
 
         public void Load(string stylesheetUri, XsltSettings settings, XmlResolver stylesheetResolver)
@@ -163,7 +152,7 @@ namespace System.Xml.Xsl
             LoadInternal(stylesheetUri, settings, stylesheetResolver);
         }
 
-        private CompilerResults LoadInternal(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
+        private CompilerErrorCollection LoadInternal(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
         {
             if (stylesheet == null)
             {
@@ -183,13 +172,12 @@ namespace System.Xml.Xsl
             {
                 CompileQilToMsil(settings);
             }
-            return _compilerResults;
+            return _compilerErrorColl;
         }
 
         private void CompileXsltToQil(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
         {
-            //BinCompat TODO: Change arugment back to _enableDebug when all coomented-out dynamic modules and methods setup in XmlILModule is fixed
-            _compilerResults = new Compiler(settings, false /*_enableDebug*/, null).Compile(stylesheet, stylesheetResolver, out _qil);
+            _compilerErrorColl = new Compiler(settings, _enableDebug, null).Compile(stylesheet, stylesheetResolver, out _qil);
         }
 
         /// <summary>
@@ -197,7 +185,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private CompilerError GetFirstError()
         {
-            foreach (CompilerError error in _compilerResults.Errors)
+            foreach (CompilerError error in _compilerErrorColl)
             {
                 if (!error.IsWarning)
                 {
@@ -215,47 +203,6 @@ namespace System.Xml.Xsl
         }
 
         //------------------------------------------------
-        // Compile stylesheet to a TypeBuilder
-        //------------------------------------------------
-
-        private static volatile ConstructorInfo s_generatedCodeCtor;
-
-        internal static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, bool debug, TypeBuilder typeBuilder, string scriptAssemblyPath)
-        {
-            if (stylesheet == null)
-                throw new ArgumentNullException(nameof(stylesheet));
-
-            if (typeBuilder == null)
-                throw new ArgumentNullException(nameof(typeBuilder));
-
-            if (settings == null)
-                settings = XsltSettings.Default;
-
-            if (settings.EnableScript && scriptAssemblyPath == null)
-                throw new ArgumentNullException(nameof(scriptAssemblyPath));
-
-            if (scriptAssemblyPath != null)
-                scriptAssemblyPath = Path.GetFullPath(scriptAssemblyPath);
-
-            QilExpression qil;
-            CompilerErrorCollection errors = new Compiler(settings, debug, scriptAssemblyPath).Compile(stylesheet, stylesheetResolver, out qil).Errors;
-
-            if (!errors.HasErrors)
-            {
-                // Mark the type with GeneratedCodeAttribute to identify its origin
-                if (s_generatedCodeCtor == null)
-                    s_generatedCodeCtor = typeof(GeneratedCodeAttribute).GetConstructor(new Type[] { typeof(string), typeof(string) });
-
-                typeBuilder.SetCustomAttribute(new CustomAttributeBuilder(s_generatedCodeCtor,
-                    new object[] { typeof(XslCompiledTransform).FullName, Version }));
-
-                new XmlILGenerator().Generate(qil, typeBuilder);
-            }
-
-            return errors;
-        }
-
-        //------------------------------------------------
         // Load compiled stylesheet from a Type
         //------------------------------------------------
 
@@ -265,15 +212,15 @@ namespace System.Xml.Xsl
             if (compiledStylesheet == null)
                 throw new ArgumentNullException(nameof(compiledStylesheet));
 
-            IEnumerable<Attribute> customAttrs = compiledStylesheet.GetTypeInfo().GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
-            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Count() > 0 ? (GeneratedCodeAttribute)customAttrs.First() : null;
+            object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
+            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Length > 0 ? (GeneratedCodeAttribute)customAttrs[0] : null;
 
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
             {
                 if (new Version(Version).CompareTo(new Version(generatedCodeAttr.Version)) < 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, Version), "compiledStylesheet");
+                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, Version), nameof(compiledStylesheet));
                 }
 
                 FieldInfo fldData = compiledStylesheet.GetField(XmlQueryStaticData.DataFieldName, BindingFlags.Static | BindingFlags.NonPublic);
@@ -282,12 +229,6 @@ namespace System.Xml.Xsl
                 // If private fields are not there, it is not a compiled stylesheet class
                 if (fldData != null && fldTypes != null)
                 {
-                    /*if (System.Xml.XmlConfiguration.XsltConfigSection.EnableMemberAccessForXslCompiledTransform)
-                    {
-                        // Need MemberAccess reflection permission to access a private data field and create a delegate
-                        new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
-                    }*/
-
                     // Retrieve query static data from the type
                     byte[] queryData = fldData.GetValue(/*this:*/null) as byte[];
 
@@ -305,7 +246,7 @@ namespace System.Xml.Xsl
 
             // Throw an exception if the command was not loaded
             if (_command == null)
-                throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), "compiledStylesheet");
+                throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
         }
 
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[] earlyBoundTypes)
@@ -318,18 +259,6 @@ namespace System.Xml.Xsl
             if (queryData == null)
                 throw new ArgumentNullException(nameof(queryData));
 
-            // earlyBoundTypes may be null
-
-            /*if (!System.Xml.XmlConfiguration.XsltConfigSection.EnableMemberAccessForXslCompiledTransform)
-            {
-                // make sure we have permission to create the delegate if the type is not visible.
-                // If the declaring type is null we cannot check for visibility.
-                // NOTE: a DynamicMethod will always have a DeclaringType == null. DynamicMethods will do demand on their own if skipVisibility is true. 
-                if (executeMethod.DeclaringType != null && !executeMethod.DeclaringType.IsVisible)
-                {
-                    new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Demand();
-                }
-            }*/
 
             DynamicMethod dm = executeMethod as DynamicMethod;
             Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
@@ -344,13 +273,13 @@ namespace System.Xml.Xsl
         public void Transform(IXPathNavigable input, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, (XsltArgumentList)null, results, XsltConfigSection.CreateDefaultResolver());
+            Transform(input, (XsltArgumentList)null, results, CreateDefaultResolver());
         }
 
         public void Transform(IXPathNavigable input, XsltArgumentList arguments, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, arguments, results, XsltConfigSection.CreateDefaultResolver());
+            Transform(input, arguments, results, CreateDefaultResolver());
         }
 
         public void Transform(IXPathNavigable input, XsltArgumentList arguments, TextWriter results)
@@ -358,7 +287,7 @@ namespace System.Xml.Xsl
             CheckArguments(input, results);
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(input, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(input, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -368,7 +297,7 @@ namespace System.Xml.Xsl
             CheckArguments(input, results);
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(input, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(input, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -380,13 +309,13 @@ namespace System.Xml.Xsl
         public void Transform(XmlReader input, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, (XsltArgumentList)null, results, XsltConfigSection.CreateDefaultResolver());
+            Transform(input, (XsltArgumentList)null, results, CreateDefaultResolver());
         }
 
         public void Transform(XmlReader input, XsltArgumentList arguments, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, arguments, results, XsltConfigSection.CreateDefaultResolver());
+            Transform(input, arguments, results, CreateDefaultResolver());
         }
 
         public void Transform(XmlReader input, XsltArgumentList arguments, TextWriter results)
@@ -394,7 +323,7 @@ namespace System.Xml.Xsl
             CheckArguments(input, results);
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(input, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(input, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -404,7 +333,7 @@ namespace System.Xml.Xsl
             CheckArguments(input, results);
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(input, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(input, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -422,7 +351,7 @@ namespace System.Xml.Xsl
             CheckArguments(inputUri, results);
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
             {
-                Transform(reader, (XsltArgumentList)null, results, XsltConfigSection.CreateDefaultResolver());
+                Transform(reader, (XsltArgumentList)null, results, CreateDefaultResolver());
             }
         }
 
@@ -432,7 +361,7 @@ namespace System.Xml.Xsl
             CheckArguments(inputUri, results);
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
             {
-                Transform(reader, arguments, results, XsltConfigSection.CreateDefaultResolver());
+                Transform(reader, arguments, results, CreateDefaultResolver());
             }
         }
 
@@ -443,7 +372,7 @@ namespace System.Xml.Xsl
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(reader, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(reader, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -455,7 +384,7 @@ namespace System.Xml.Xsl
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
             using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
             {
-                Transform(reader, arguments, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(reader, arguments, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -473,7 +402,7 @@ namespace System.Xml.Xsl
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
             using (XmlWriter writer = XmlWriter.Create(resultsFile, OutputSettings))
             {
-                Transform(reader, (XsltArgumentList)null, writer, XsltConfigSection.CreateDefaultResolver());
+                Transform(reader, (XsltArgumentList)null, writer, CreateDefaultResolver());
                 writer.Close();
             }
         }
@@ -530,6 +459,18 @@ namespace System.Xml.Xsl
             }
         }
 
+        private static XmlResolver CreateDefaultResolver()
+        {
+            if (LocalAppContextSwitches.AllowDefaultResolver)
+            {
+                return new XmlUrlResolver();
+            }
+            else
+            {
+                return XmlNullResolver.Singleton;
+            }
+        }
+
         //------------------------------------------------
         // Test suites entry points
         //------------------------------------------------
@@ -566,4 +507,4 @@ namespace System.Xml.Xsl
         }
     }
 #endif // ! HIDE_XSL
-}
+        }

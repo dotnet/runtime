@@ -13,6 +13,8 @@ namespace System.Data.SqlClient
 {
     public sealed class SqlTransaction : DbTransaction
     {
+        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
+
         internal readonly IsolationLevel _isolationLevel = IsolationLevel.ReadCommitted;
 
         private SqlInternalTransaction _internalTransaction;
@@ -120,6 +122,9 @@ namespace System.Data.SqlClient
 
         override public void Commit()
         {
+            Exception e = null;
+            Guid operationId = s_diagnosticListener.WriteTransactionCommitBefore(_isolationLevel, _connection);
+
             ZombieCheck();
 
             SqlStatistics statistics = null;
@@ -131,8 +136,22 @@ namespace System.Data.SqlClient
 
                 _internalTransaction.Commit();
             }
+            catch (Exception ex)
+            {
+                e = ex;
+                throw;
+            }
             finally
             {
+                if (e != null)
+                {
+                    s_diagnosticListener.WriteTransactionCommitError(operationId, _isolationLevel, _connection, e);
+                }
+                else
+                {
+                    s_diagnosticListener.WriteTransactionCommitAfter(operationId, _isolationLevel, _connection);
+                }
+
                 _isFromAPI = false;
 
                 SqlStatistics.StopTimer(statistics);
@@ -153,6 +172,9 @@ namespace System.Data.SqlClient
 
         override public void Rollback()
         {
+            Exception e = null;
+            Guid operationId = s_diagnosticListener.WriteTransactionRollbackBefore(_isolationLevel, _connection, null);
+
             if (IsYukonPartialZombie)
             {
                 // Put something in the trace in case a customer has an issue
@@ -171,8 +193,21 @@ namespace System.Data.SqlClient
 
                     _internalTransaction.Rollback();
                 }
+                catch (Exception ex)
+                {
+                    e = ex;
+                    throw;
+                }
                 finally
                 {
+                    if (e != null)
+                    {
+                        s_diagnosticListener.WriteTransactionRollbackError(operationId, _isolationLevel, _connection, null, e);
+                    }
+                    else
+                    {
+                        s_diagnosticListener.WriteTransactionRollbackAfter(operationId, _isolationLevel, _connection, null);
+                    }
                     _isFromAPI = false;
 
                     SqlStatistics.StopTimer(statistics);
@@ -182,6 +217,9 @@ namespace System.Data.SqlClient
 
         public void Rollback(string transactionName)
         {
+            Exception e = null;
+            Guid operationId = s_diagnosticListener.WriteTransactionRollbackBefore(_isolationLevel, _connection, transactionName);
+
             ZombieCheck();
 
             SqlStatistics statistics = null;
@@ -193,8 +231,22 @@ namespace System.Data.SqlClient
 
                 _internalTransaction.Rollback(transactionName);
             }
+            catch (Exception ex)
+            {
+                e = ex;
+                throw;
+            }
             finally
             {
+                if (e != null)
+                {
+                    s_diagnosticListener.WriteTransactionRollbackError(operationId, _isolationLevel, _connection, transactionName, e);
+                }
+                else
+                {
+                    s_diagnosticListener.WriteTransactionRollbackAfter(operationId, _isolationLevel, _connection, transactionName);
+                }
+
                 _isFromAPI = false;
 
                 SqlStatistics.StopTimer(statistics);

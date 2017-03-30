@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
-namespace Microsoft.Win32.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
-    public static class Win32ExceptionTestType
+    public static partial class Win32ExceptionTestType
     {
-
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
         private const int FirstPassBufferSize = 256;
 
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
             int dwFlags,
             IntPtr lpSource_mustBeNull,
@@ -80,7 +77,7 @@ namespace Microsoft.Win32.Primitives.Tests
         private const int E_FAIL = unchecked((int)0x80004005);
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to check whether the exception resource length >256 chars
         public static void InstantiateExceptionWithLongErrorString()
         {
             // This test checks that Win32Exception supports error strings greater than 256 characters.

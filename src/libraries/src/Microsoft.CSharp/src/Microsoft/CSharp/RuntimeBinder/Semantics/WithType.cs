@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -59,49 +60,37 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static bool operator ==(SymWithType swt1, SymWithType swt2)
         {
-            if (object.ReferenceEquals(swt1, swt2))
+            if (ReferenceEquals(swt1, swt2))
             {
                 return true;
             }
-            else if (object.ReferenceEquals(swt1, null))
+            else if (ReferenceEquals(swt1, null))
             {
                 return swt2._sym == null;
             }
-            else if (object.ReferenceEquals(swt2, null))
+            else if (ReferenceEquals(swt2, null))
             {
                 return swt1._sym == null;
             }
             return swt1.Sym == swt2.Sym && swt1.Ats == swt2.Ats;
         }
 
-        public static bool operator !=(SymWithType swt1, SymWithType swt2)
-        {
-            if (object.ReferenceEquals(swt1, swt2))
-            {
-                return false;
-            }
-            else if (object.ReferenceEquals(swt1, null))
-            {
-                return swt2._sym != null;
-            }
-            else if (object.ReferenceEquals(swt2, null))
-            {
-                return swt1._sym != null;
-            }
-            return swt1.Sym != swt2.Sym || swt1.Ats != swt2.Ats;
-        }
+        public static bool operator !=(SymWithType swt1, SymWithType swt2) => !(swt1 == swt2);
 
+        [ExcludeFromCodeCoverage] // == overload should always be the method called.
         public override bool Equals(object obj)
         {
+            Debug.Fail("Sub-optimal equality called. Check if this is correct.");
             SymWithType other = obj as SymWithType;
             if (other == null) return false;
-            return this.Sym == other.Sym && this.Ats == other.Ats;
+            return Sym == other.Sym && Ats == other.Ats;
         }
 
+        [ExcludeFromCodeCoverage] // Never used as a key.
         public override int GetHashCode()
         {
-            return (this.Sym != null ? this.Sym.GetHashCode() : 0) +
-                (this.Ats != null ? this.Ats.GetHashCode() : 0);
+            Debug.Fail("If using this as a key, implement IEquatable<SymWithType>");
+            return (Sym?.GetHashCode() ?? 0) + (Ats?.GetHashCode() ?? 0);
         }
 
         // The SymWithType is considered NULL iff the Symbol is NULL.
@@ -113,27 +102,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // These assert that the Symbol is of the correct type.
         public MethodOrPropertySymbol MethProp()
         {
-            return this.Sym as MethodOrPropertySymbol;
+            return Sym as MethodOrPropertySymbol;
         }
 
         public MethodSymbol Meth()
         {
-            return this.Sym as MethodSymbol;
+            return Sym as MethodSymbol;
         }
 
         public PropertySymbol Prop()
         {
-            return this.Sym as PropertySymbol;
+            return Sym as PropertySymbol;
         }
 
         public FieldSymbol Field()
         {
-            return this.Sym as FieldSymbol;
+            return Sym as FieldSymbol;
         }
 
         public EventSymbol Event()
         {
-            return this.Sym as EventSymbol;
+            return Sym as EventSymbol;
         }
 
         public void Set(Symbol sym, AggregateType ats)
@@ -158,7 +147,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class MethWithType : MethPropWithType
+    internal sealed class MethWithType : MethPropWithType
     {
         public MethWithType()
         {
@@ -170,7 +159,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class PropWithType : MethPropWithType
+    internal sealed class PropWithType : MethPropWithType
     {
         public PropWithType()
         { }
@@ -186,7 +175,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class EventWithType : SymWithType
+    internal sealed class EventWithType : SymWithType
     {
         public EventWithType()
         {
@@ -198,7 +187,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class FieldWithType : SymWithType
+    internal sealed class FieldWithType : SymWithType
     {
         public FieldWithType()
         {
@@ -255,11 +244,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             Debug.Assert(ats == null || mps != null && mps.getClass() == ats.getAggregate());
             base.Set(mps, ats);
-            this.TypeArgs = typeArgs;
+            TypeArgs = typeArgs;
         }
     }
 
-    internal class MethWithInst : MethPropWithInst
+    internal sealed class MethWithInst : MethPropWithInst
     {
         public MethWithInst()
         {

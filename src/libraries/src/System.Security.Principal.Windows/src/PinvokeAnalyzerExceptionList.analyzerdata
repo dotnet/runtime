@@ -1,0 +1,16 @@
+advapi32.dll!ImpersonateLoggedOnUser
+advapi32.dll!LsaClose
+advapi32.dll!LsaFreeMemory
+advapi32.dll!LsaLookupNames2
+advapi32.dll!LsaLookupSids
+advapi32.dll!LsaOpenPolicy
+advapi32.dll!OpenProcessToken
+advapi32.dll!OpenThreadToken
+advapi32.dll!RevertToSelf
+ntdll.dll!RtlNtStatusToDosError
+sspicli.dll!LsaConnectUntrusted
+sspicli.dll!LsaDeregisterLogonProcess
+sspicli.dll!LsaFreeReturnBuffer
+sspicli.dll!LsaGetLogonSessionData
+sspicli.dll!LsaLogonUser
+sspicli.dll!LsaLookupAuthenticationPackage

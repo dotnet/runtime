@@ -4,12 +4,9 @@
 
 using System.IO;
 using System.Diagnostics;
-using Microsoft.Win32;
 using System.Globalization;
 using System.Security;
 using System.Xml.Schema;
-using System.Xml.XmlConfiguration;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -66,14 +63,6 @@ namespace System.Xml
         public XmlReaderSettings()
         {
             Initialize();
-        }
-
-        // introduced for supporting design-time loading of phone assemblies
-        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public XmlReaderSettings(XmlResolver resolver)
-        {
-            Initialize(resolver);
         }
 
         //
@@ -134,7 +123,7 @@ namespace System.Xml
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
         internal XmlResolver GetXmlResolver_CheckConfig()
         {
-            if (LocalAppContextSwitches.ProhibitDefaultUrlResolver && !IsXmlResolverSet)
+            if (!LocalAppContextSwitches.AllowDefaultResolver && !IsXmlResolverSet)
                 return null;
             else
                 return _xmlResolver;
@@ -549,18 +538,11 @@ namespace System.Xml
         private void Initialize(XmlResolver resolver)
         {
             _nameTable = null;
-            if (!EnableLegacyXmlSettings())
-            {
-                _xmlResolver = resolver;
-                // limit the entity resolving to 10 million character. the caller can still
-                // override it to any other value or set it to zero for unlimiting it
-                _maxCharactersFromEntities = (long)1e7;
-            }
-            else
-            {
-                _xmlResolver = (resolver == null ? CreateDefaultResolver() : resolver);
-                _maxCharactersFromEntities = 0;
-            }
+            _xmlResolver = resolver;
+            // limit the entity resolving to 10 million character. the caller can still
+            // override it to any other value or set it to zero for unlimiting it
+            _maxCharactersFromEntities = (long)1e7;
+
             _lineNumberOffset = 0;
             _linePositionOffset = 0;
             _checkCharacters = true;
@@ -597,8 +579,7 @@ namespace System.Xml
                 XmlResolver resolver = GetXmlResolver_CheckConfig();
 
                 if (resolver == null &&
-                    !this.IsXmlResolverSet &&
-                    !EnableLegacyXmlSettings())
+                    !this.IsXmlResolverSet)
                 {
                     resolver = new XmlUrlResolver();
                 }
@@ -669,7 +650,7 @@ namespace System.Xml
                 if (_ignoreWhitespace)
                 {
                     WhitespaceHandling wh = WhitespaceHandling.All;
-                    // special-case our V1 readers to see if whey already filter whitespaces
+                    // special-case our V1 readers to see if whey already filter whitespace
                     if (v1XmlTextReader != null)
                     {
                         wh = v1XmlTextReader.WhitespaceHandling;
@@ -756,57 +737,6 @@ namespace System.Xml
             {
                 return baseReader;
             }
-        }
-
-        private static bool? s_enableLegacyXmlSettings = null;
-
-        static internal bool EnableLegacyXmlSettings()
-        {
-            if (s_enableLegacyXmlSettings.HasValue)
-            {
-                return s_enableLegacyXmlSettings.Value;
-            }
-
-            if (!System.Xml.BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_2)
-            {
-                s_enableLegacyXmlSettings = true;
-                return s_enableLegacyXmlSettings.Value;
-            }
-
-            bool enableSettings = false; // default value
-            if (!ReadSettingsFromRegistry(Registry.LocalMachine, ref enableSettings))
-            {
-                // still ok if this call return false too as we'll use the default value which is false
-                ReadSettingsFromRegistry(Registry.CurrentUser, ref enableSettings);
-            }
-
-            s_enableLegacyXmlSettings = enableSettings;
-            return s_enableLegacyXmlSettings.Value;
-        }
-
-        [SecuritySafeCritical]
-        private static bool ReadSettingsFromRegistry(RegistryKey hive, ref bool value)
-        {
-            const string regValueName = "EnableLegacyXmlSettings";
-            const string regValuePath = @"SOFTWARE\Microsoft\.NETFramework\XML";
-
-            try
-            {
-                using (RegistryKey xmlRegKey = hive.OpenSubKey(regValuePath, false))
-                {
-                    if (xmlRegKey != null)
-                    {
-                        if (xmlRegKey.GetValueKind(regValueName) == RegistryValueKind.DWord)
-                        {
-                            value = ((int)xmlRegKey.GetValue(regValueName)) == 1;
-                            return true;
-                        }
-                    }
-                }
-            }
-            catch { /* use the default if we couldn't read the key */ }
-
-            return false;
         }
     }
 }

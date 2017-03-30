@@ -88,6 +88,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            string[] source = { "Prakash", "Alpha", "DAN", "dan", "Prakash" };
+            string[] expected = { "Prakash", "Prakash", "DAN", "dan", "Alpha" };
+
+            Assert.Equal(expected, source.RunOnce().OrderByDescending(e => e, StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
         public void FirstAndLastAreDuplicatesNullPassedAsComparer()
         {
             int[] source = { 5, 1, 3, 2, 5 };

@@ -168,7 +168,7 @@ namespace System.ComponentModel.Tests
         [InlineData("propertyDescriptor2", true, true)]
         [InlineData("propertyDescriptor8", true, true)]
         [InlineData("propertyDescriptor9", true, true)]
-        [InlineData("propertyDescriptorNotExistant", true, false)]
+        [InlineData("propertyDescriptorNotExistent", true, false)]
         [Theory]
         public void Find(string name, bool ignoreCase, bool exists)
         {

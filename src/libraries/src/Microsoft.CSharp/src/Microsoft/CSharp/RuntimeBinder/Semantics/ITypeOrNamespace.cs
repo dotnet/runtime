@@ -9,8 +9,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal interface ITypeOrNamespace
     {
-        bool IsType();
-        bool IsNamespace();
+        bool IsType { get; }
+
+        bool IsNamespace { get; }
 
         AssemblyQualifiedNamespaceSymbol AsNamespace();
         CType AsType();

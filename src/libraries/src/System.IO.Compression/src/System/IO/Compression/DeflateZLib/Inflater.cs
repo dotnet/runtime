@@ -9,46 +9,37 @@ using System.Security;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides a wrapper around the ZLib decompression API
+    /// Provides a wrapper around the ZLib decompression API.
     /// </summary>
     internal sealed class Inflater : IDisposable
     {
+        private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
+        private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
+
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
-        private readonly object _syncLock = new object();   // Used to make writing to unmanaged structures atomic 
-        private const int minWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
-        private const int maxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
 
-        #region Exposed Members
+        private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
         internal Inflater(int windowBits)
         {
-            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
+            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
             _isDisposed = false;
             InflateInit(windowBits);
         }
 
-        public int AvailableOutput
-        {
-            get
-            {
-                return (int)_zlibStream.AvailOut;
-            }
-        }
+        public int AvailableOutput => (int)_zlibStream.AvailOut;
 
         /// <summary>
         /// Returns true if the end of the stream has been reached.
         /// </summary>
-        public bool Finished()
-        {
-            return _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
-        }
+        public bool Finished() => _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
 
         public unsafe bool Inflate(out byte b)
         {
@@ -95,10 +86,7 @@ namespace System.IO.Compression
             }
         }
 
-        public bool NeedsInput()
-        {
-            return _zlibStream.AvailIn == 0;
-        }
+        public bool NeedsInput() => _zlibStream.AvailIn == 0;
 
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
@@ -110,7 +98,7 @@ namespace System.IO.Compression
             if (0 == count)
                 return;
 
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
                 _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject() + startIndex;
@@ -145,12 +133,8 @@ namespace System.IO.Compression
             Dispose(false);
         }
 
-        #endregion
-
-        #region Helper Methods
-
         /// <summary>
-        /// Creates the ZStream that will handle inflation
+        /// Creates the ZStream that will handle inflation.
         /// </summary>
         [SecuritySafeCritical]
         private void InflateInit(int windowBits)
@@ -189,7 +173,7 @@ namespace System.IO.Compression
         /// </summary>
         private unsafe ZLibNative.ErrorCode ReadInflateOutput(byte* bufPtr, int length, ZLibNative.FlushCode flushCode, out int bytesRead)
         {
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 _zlibStream.NextOut = (IntPtr)bufPtr;
                 _zlibStream.AvailOut = (uint)length;
@@ -246,14 +230,12 @@ namespace System.IO.Compression
         {
             Debug.Assert(_inputBufferHandle.IsAllocated);
 
-            lock (_syncLock)
+            lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
                 _inputBufferHandle.Free();
             }
         }
-
-        #endregion
     }
 }

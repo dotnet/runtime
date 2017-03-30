@@ -9,6 +9,8 @@ namespace System.Threading
     /// </summary>
     internal sealed class ThreadPoolBoundHandleOverlapped : Overlapped
     {
+        private static readonly unsafe IOCompletionCallback s_completionCallback = CompletionCallback;
+
         private readonly IOCompletionCallback _userCallback;
         internal readonly object _userState;
         internal PreAllocatedOverlapped _preAllocated;
@@ -22,12 +24,12 @@ namespace System.Threading
             _userState = state;
             _preAllocated = preAllocated;
 
-            _nativeOverlapped = Pack(CompletionCallback, pinData);
+            _nativeOverlapped = Pack(s_completionCallback, pinData);
             _nativeOverlapped->OffsetLow = 0;        // CLR reuses NativeOverlapped instances and does not reset these
             _nativeOverlapped->OffsetHigh = 0;
         }
 
-        private unsafe static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
+        private static unsafe void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
             ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Overlapped.Unpack(nativeOverlapped);
 

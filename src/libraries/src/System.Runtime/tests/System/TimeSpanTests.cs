@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class TimeSpanTests
+    public static partial class TimeSpanTests
     {
         [Fact]
         public static void MaxValue()
@@ -269,7 +269,6 @@ namespace System.Tests
             yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(1, 2, 3, 5, 5), false };
             yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(1, 2, 4, 4, 5), false };
             yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(1, 3, 3, 4, 5), false };
-            yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(2, 2, 3, 4, 5), false };
             yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(2, 2, 3, 4, 5), false };
 
             yield return new object[] { new TimeSpan(1, 2, 3, 4, 5), new TimeSpan(1, 2, 3, 4), false };

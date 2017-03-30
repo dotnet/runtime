@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization
 
         private static Getter CreateGetterInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            if (typeof(DeclaringType).GetTypeInfo().IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
+            if (typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
             {
                 if (propInfo.Name == "Key")
                 {
@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            if (typeof(DeclaringType).GetTypeInfo().IsValueType)
+            if (typeof(DeclaringType).IsValueType)
             {
                 var getMethod = propInfo.GetMethod.CreateDelegate<StructGetDelegate<DeclaringType, PropertyType>>();
 
@@ -133,7 +133,7 @@ namespace System.Runtime.Serialization
 
         private static Setter CreateSetterInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            if(typeof(DeclaringType).GetTypeInfo().IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
+            if(typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
             {
                 if(propInfo.Name == "Key")
                 {
@@ -151,7 +151,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            if (typeof(DeclaringType).GetTypeInfo().IsValueType)
+            if (typeof(DeclaringType).IsValueType)
             {
                 var setMethod = propInfo.SetMethod.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();
 

@@ -1,36 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
+    <ProjectGuid>{D293A0E4-AE6C-4DF7-99AE-CC1A37BF4918}</ProjectGuid>
     <AssemblyName>System.IO.Pipes</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == ''">
-    <ProjectJson>win/project.json</ProjectJson>
-    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <ProjectJson>unix/project.json</ProjectJson>
-    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <!-- Compiled Source Files -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeClientStream.cs" />
@@ -42,103 +28,112 @@
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.cs" />
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
-    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
-      <Link>Common\System\IO\StreamHelpers.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GenericOperations.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GenericOperations.cs">
       <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleOptions.cs">
       <Link>Common\Interop\Windows\Interop.HandleOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.PipeOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PipeOptions.cs">
       <Link>Common\Interop\Windows\Interop.PipeOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileOperations.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileOperations.cs">
       <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileTypes.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileTypes.cs">
       <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.GetCurrentProcess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DuplicateHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs">
       <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreatePipe_SafePipeHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreatePipe_SafePipeHandle.cs">
       <Link>Common\Interop\Windows\Interop.CreatePipe_SafePipeHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConnectNamedPipe.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ConnectNamedPipe.cs">
       <Link>Common\Interop\Windows\Interop.ConnectNamedPipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WaitNamedPipe.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitNamedPipe.cs">
       <Link>Common\Interop\Windows\Interop.WaitNamedPipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNamedPipeHandleState.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetNamedPipeHandleState.cs">
       <Link>Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNamedPipeInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetNamedPipeInfo.cs">
       <Link>Common\Interop\Windows\Interop.GetNamedPipeInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateNamedPipeClient.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateNamedPipeClient.cs">
       <Link>Common\Interop\Windows\Interop.CreateNamedPipeClient.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetNamedPipeHandleState.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetNamedPipeHandleState.cs">
       <Link>Common\Interop\Windows\Interop.SetNamedPipeHandleState.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CancelIoEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CancelIoEx.cs">
       <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FlushFileBuffers.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs">
       <Link>Common\Interop\Windows\Interop.FlushFileBuffers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DisconnectNamedPipe.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DisconnectNamedPipe.cs">
       <Link>Common\Interop\Windows\Interop.DisconnectNamedPipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateNamedPipe.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateNamedPipe.cs">
       <Link>Common\Interop\Windows\Interop.CreateNamedPipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RevertToSelf.cs">
+      <Link>Common\Interop\Windows\Interop.RevertToSelf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ImpersonateNamedPipeClient.cs">
+      <Link>Common\Interop\Windows\Interop.ImpersonateNamedPipeClient.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
@@ -159,8 +154,8 @@
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -198,9 +193,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.Pipe.cs">
-      <Link>Common\Interop\Unix\Interop.Open.Pipe.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
     </Compile>
@@ -228,16 +220,36 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.Pipe.cs">
       <Link>Common\Interop\Unix\Interop.Stat.Pipe.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPeerID.cs">
+      <Link>Common\Interop\Unix\Interop.GetPeerID.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetEUid.cs">
+      <Link>Common\Interop\Unix\Interop.SetEUid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\ForceAsyncAwaiter.cs">
       <Link>Common\System\Threading\Tasks\ForceAsyncAwaiter.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System.Core" />
-  </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Overlapped" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Sockets" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

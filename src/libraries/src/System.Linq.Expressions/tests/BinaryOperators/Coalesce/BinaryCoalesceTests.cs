@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Tests
             Type type2 = array2.GetType().GetElementType();
             for (int i = 0; i < array1.Length; i++)
             {
-                var value1 = array1.GetValue(i);
+                object value1 = array1.GetValue(i);
                 for (int j = 0; j < array2.Length; j++)
                 {
                     VerifyCoalesce(value1, type1, array2.GetValue(j), type2, useInterpreter);
@@ -109,13 +109,13 @@ namespace System.Linq.Expressions.Tests
             Type type1 = array1.GetType().GetElementType();
             for (int i = 0; i < array1.Length; i++)
             {
-                var value1 = array1.GetValue(i);
+                object value1 = array1.GetValue(i);
                 for (int j = 0; j < array2.Length; j++)
                 {
-                    var value2 = array2.GetValue(j);
-                    var type2 = value2.GetType();
+                    object value2 = array2.GetValue(j);
+                    Type type2 = value2.GetType();
 
-                    var result = value1 != null ? value1 : value2;
+                    object result = value1 != null ? value1 : value2;
                     if (result.GetType() == typeof(char))
                     {
                         // ChangeType does not support conversion of char to float, double, or decimal,
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Tests
                         result = Convert.ChangeType(result, typeof(int));
                     }
 
-                    var expected = Convert.ChangeType(result, type2);
+                    object expected = Convert.ChangeType(result, type2);
 
                     VerifyCoalesce(value1, type1, value2, type2, useInterpreter, expected);
                 }
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Tests
         {
             CheckGenericWithStructRestrictionCoalesceHelper<Scs>(useInterpreter);
         }
-        
+
         private static void CheckGenericWithClassRestrictionCoalesceHelper<Tc>(bool useInterpreter) where Tc : class
         {
             Tc[] array1 = new Tc[] { null, default(Tc) };
@@ -296,8 +296,8 @@ namespace System.Linq.Expressions.Tests
         {
             int? i = 0;
             double? d = 0;
-            var left = Expression.Constant(d, typeof(double?));
-            var right = Expression.Constant(i, typeof(int?));
+            ConstantExpression left = Expression.Constant(d, typeof(double?));
+            ConstantExpression right = Expression.Constant(i, typeof(int?));
             Expression<Func<double?, int?>> conversion = x => 1 + (int?)x;
 
             BinaryExpression actual = Expression.Coalesce(left, right, conversion);
@@ -307,7 +307,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(ExpressionType.Coalesce, actual.NodeType);
 
             // Compile and evaluate with interpretation flag and without
-            // in case there are bugs in the compiler/interpreter. 
+            // in case there are bugs in the compiler/interpreter.
             Assert.Equal(2, conversion.Compile(false).Invoke(1.1));
             Assert.Equal(2, conversion.Compile(true).Invoke(1.1));
         }
@@ -356,28 +356,28 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [InlineData(null, "YY")]
-        [InlineData("abc", "abcdef")]
-        public static void Conversion_String(string parameter, string expected)
+        [InlinePerCompilationType(null, "YY")]
+        [InlinePerCompilationType("abc", "abcdef")]
+        public static void Conversion_String(string parameter, string expected, bool useInterpreter)
         {
             Expression<Func<string, string>> conversion = x => x + "def";
             ParameterExpression parameterExpression = Expression.Parameter(typeof(string));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant("YY"), conversion);
 
-            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile();
+            Func<string, string> result = Expression.Lambda<Func<string, string>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
         [Theory]
-        [InlineData(null, 5)]
-        [InlineData(5, 10)]
-        public static void Conversion_NullableInt(int? parameter, int? expected)
+        [InlinePerCompilationType(null, 5)]
+        [InlinePerCompilationType(5, 10)]
+        public static void Conversion_NullableInt(int? parameter, int? expected, bool useInterpreter)
         {
             Expression<Func<int?, int?>> conversion = x => x * 2;
             ParameterExpression parameterExpression = Expression.Parameter(typeof(int?));
             BinaryExpression coalescion = Expression.Coalesce(parameterExpression, Expression.Constant(5, typeof(int?)), conversion);
 
-            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile();
+            Func<int?, int?> result = Expression.Lambda<Func<int?, int?>>(coalescion, parameterExpression).Compile(useInterpreter);
             Assert.Equal(expected, result(parameter));
         }
 
@@ -389,7 +389,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5), Expression.Constant(5)));
             Assert.Throws<InvalidOperationException>(() => Expression.Coalesce(Expression.Constant(5), Expression.Constant(5), conversion));
         }
-        
+
         [Fact]
         public static void RightLeft_NonEquivilentTypes_ThrowsArgumentException()
         {
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
+            BinaryExpression e = Expression.Coalesce(Expression.Parameter(typeof(string), "a"), Expression.Parameter(typeof(string), "b"));
             Assert.Equal("(a ?? b)", e.ToString());
         }
     }

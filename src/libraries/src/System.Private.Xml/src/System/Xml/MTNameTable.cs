@@ -58,7 +58,7 @@ namespace System.Xml {
                 return string.Empty;
             }
             int hashCode = len + hashCodeRandomizer;
-            // use key.Length to eliminate the rangecheck
+            // use key.Length to eliminate the range check
             for ( int i = 0; i < key.Length; i++ ) {
                 hashCode += ( hashCode << 7 ) ^ key[i];
             }
@@ -115,7 +115,7 @@ namespace System.Xml {
 
             int len = value.Length + hashCodeRandomizer;
             int hashCode = len;
-            // use value.Length to eliminate the rangecheck
+            // use value.Length to eliminate the range check
             for ( int i = 0; i < value.Length; i++ ) {
                 hashCode += ( hashCode << 7 ) ^ value[i];
             }
@@ -190,7 +190,7 @@ namespace System.Xml {
             Entry[] oldEntries = entries;
             Entry[] newEntries = new Entry[newMask+1];
 
-            // use oldEntries.Length to eliminate the rangecheck            
+            // use oldEntries.Length to eliminate the range check            
             for ( int i = 0; i < oldEntries.Length; i++ ) {
                 Entry e = oldEntries[i];
                 while ( e != null ) {
@@ -207,7 +207,7 @@ namespace System.Xml {
         }
 
         private static bool TextEquals( string array, char[] text, int start ) {
-            // use array.Length to eliminate the rangecheck
+            // use array.Length to eliminate the range check
             for ( int i = 0; i < array.Length; i++ ) {
                 if ( array[i] != text[start+i] ) {
                     return false;
@@ -560,7 +560,7 @@ namespace System.Xml {
             this.hash = Hash(array, start, len);
         }
 
-        static private Int64 Hash(String value) {
+        private static Int64 Hash(String value) {
             Int64 hash = 0;
             int len = value.Length;
 
@@ -579,7 +579,7 @@ namespace System.Xml {
             return hash;
         }    
 
-        static private Int64 Hash(char[] key, int start, int len) {
+        private static Int64 Hash(char[] key, int start, int len) {
             Int64 hash = 0;
 
             if (len > 0)

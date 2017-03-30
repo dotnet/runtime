@@ -161,7 +161,7 @@ namespace CoreXml.Test.XLinq
                     BoolToLTMResult(bPassed);
                 }
 
-                //[Variation("ReadInnerXml with with entity references, EntityHandling = ExpandEntities")]
+                //[Variation("ReadInnerXml with entity references, EntityHandling = ExpandEntities")]
                 public void TestReadInnerXml8()
                 {
                     bool bPassed = false;
@@ -293,7 +293,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Text, String.Empty, "yyy"), true, "VN");
                 }
 
-                //[Variation("ReadInnerXml with with entity references, EntityHandling = ExpandCharEntites")]
+                //[Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites")]
                 public void TestTextReadInnerXml2()
                 {
                     bool bPassed = false;

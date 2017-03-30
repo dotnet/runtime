@@ -1,6 +1,11 @@
 #pragma once
 
 #cmakedefine PAL_UNIX_NAME @PAL_UNIX_NAME@
+#cmakedefine01 HAVE_LSEEK64
+#cmakedefine01 HAVE_MMAP64
+#cmakedefine01 HAVE_FTRUNCATE64
+#cmakedefine01 HAVE_POSIX_FADVISE64
+#cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
@@ -16,8 +21,6 @@
 #cmakedefine01 HAVE_POSIX_ADVISE
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
-#cmakedefine01 HAVE_IN6_U
-#cmakedefine01 HAVE_U6_ADDR
 #cmakedefine01 HAVE_IOCTL
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
@@ -27,8 +30,10 @@
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_EPOLL
+#cmakedefine01 HAVE_ACCEPT_4
 #cmakedefine01 HAVE_KQUEUE
-#cmakedefine01 HAVE_SENDFILE
+#cmakedefine01 HAVE_SENDFILE_4
+#cmakedefine01 HAVE_SENDFILE_6
 #cmakedefine01 HAVE_FCOPYFILE
 #cmakedefine01 HAVE_GETHOSTBYNAME_R
 #cmakedefine01 HAVE_GETHOSTBYADDR_R
@@ -49,7 +54,9 @@
 #cmakedefine01 HAVE_GETDOMAINNAME_SIZET
 #cmakedefine01 HAVE_INOTIFY
 #cmakedefine01 HAVE_CLOCK_MONOTONIC
+#cmakedefine01 HAVE_CLOCK_REALTIME
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
+#cmakedefine01 HAVE_MACH_TIMEBASE_INFO
 #cmakedefine01 HAVE_CURLM_ADDED_ALREADY
 #cmakedefine01 HAVE_CURL_HTTP_VERSION_2_0
 #cmakedefine01 HAVE_CURLPIPE_MULTIPLEX
@@ -62,6 +69,15 @@
 #cmakedefine01 HAVE_HEIMDAL_HEADERS
 #cmakedefine01 HAVE_NSGETENVIRON
 #cmakedefine01 HAVE_CRT_EXTERNS_H
+#cmakedefine01 HAVE_GETDOMAINNAME
+#cmakedefine01 HAVE_UNAME
+#cmakedefine01 HAVE_FUTIMES
+#cmakedefine01 HAVE_FUTIMENS
+#cmakedefine01 HAVE_MKSTEMPS
+#cmakedefine01 HAVE_MKSTEMP
+#cmakedefine01 IPV6MR_INTERFACE_UNSIGNED
+#cmakedefine01 BIND_ADDRLEN_UNSIGNED
+#cmakedefine01 INOTIFY_RM_WATCH_WD_UNSIGNED
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

@@ -106,7 +106,22 @@ namespace System.Net.NetworkInformation
         public override UdpStatistics GetUdpIPv6Statistics()
         {
             throw new PlatformNotSupportedException();
-        }        
+        }
+
+        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override UnicastIPAddressInformationCollection GetUnicastAddresses()
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {

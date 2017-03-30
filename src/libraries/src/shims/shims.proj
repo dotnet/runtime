@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="dir.props" />
+
+  <Target Name="GetGenFacadesInputs">
+    <ItemGroup>
+      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')">
+        <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' == ''">StrongName</StrongNameSig>
+        <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' != ''">%(NetfxReference.StrongNameSig)</StrongNameSig>
+      </NetFxContracts>
+      <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
+      <GenFacadesSeeds Include="$(RefPath)*.dll" Exclude="$(RefPath)System.Private.CoreLib.dll" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <GenFacadesResponseFile>$(IntermediateOutputPath)genfacades.rsp</GenFacadesResponseFile>
+    <GenFacadesSemaphoreFile>$(IntermediateOutputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
+  </PropertyGroup>
+
+  <!-- Generate Facades -->
+  <Target Name="RunGenFacades"
+          DependsOnTargets="GetGenFacadesInputs"
+          Inputs="@(GenFacadesContracts);@(GenFacadeSeeds)"
+          Outputs="$(GenFacadesSemaphoreFile)">
+
+    <PropertyGroup>
+      <!--<GenFacadesArgs>$(GenFacadesArgs) -contracts:"@(GenFacadesContracts, ',')"</GenFacadesArgs>-->
+      <GenFacadesArgs>$(GenFacadesArgs) -seeds:"@(GenFacadesSeeds, ',')"</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -facadePath:"$(GenFacadesOutputPath)"</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -producePdb:false</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -assemblyFileVersion:$(AssemblyFileVersion)</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -forceZeroVersionSeeds</GenFacadesArgs>
+      <!-- TODO: We should remove this flag once we have all the types for netstandard -->
+      <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(GenFacadesResponseFile)" Lines="$(GenFacadesArgs)" Overwrite="true" />
+
+    <PropertyGroup>
+      <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
+    </PropertyGroup>
+
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+
+    <WriteSigningRequired
+        Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        AuthenticodeSig="Microsoft"
+        StrongNameSig="%(NetFxContracts.StrongNameSig)"
+        MarkerFile="$(GenFacadesOutputPath)%(NetFxContracts.Filename)%(NetFxContracts.Extension).requires_signing" />
+
+    <!--
+    Currently we don't have a way to fully sign with the open key as part of our signing step so disabling these for now.
+    See issue https://github.com/dotnet/corefx/issues/17494
+    <WriteSigningRequired
+        Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        AuthenticodeSig="Microsoft"
+        StrongNameSig="Open"
+        MarkerFile="$(GenFacadesOutputPath)%(NETStandardContracts.Filename)%(NETStandardContracts.Extension).requires_signing" />
+    -->
+
+    <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlace" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <Target Name="GetBinPlaceItems">
+    <ItemGroup>
+      <BinPlaceItem Include="$(GenFacadesOutputPath)*.dll" />
+      <FileWrites Include="@(BinPlaceItem)" />
+    </ItemGroup>
+  </Target>
+</Project>
+
+

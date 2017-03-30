@@ -18,21 +18,21 @@ namespace Microsoft.Internal
             return e;
         }
 
-        static public ArgumentException ArgumentException(string message)
+        public static ArgumentException ArgumentException(string message)
         {
             var e = new ArgumentException(message);
             LogException(e);
             return e;
         }
 
-        static public CompositionFailedException CardinalityMismatch_TooManyExports(string exportKey)
+        public static CompositionFailedException CardinalityMismatch_TooManyExports(string exportKey)
         {
             var e = new CompositionFailedException(string.Format(Resources.CardinalityMismatch_TooManyExports, exportKey));
             LogException(e);
             return e;
         }
 
-        static public CompositionFailedException CompositionException(string message)
+        public static CompositionFailedException CompositionException(string message)
         {
             var e = new CompositionFailedException(message);
             LogException(e);

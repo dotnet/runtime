@@ -8,11 +8,13 @@ using System.Security;
 using Microsoft.Win32;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 namespace System.IO
 {
-    public abstract partial class FileSystemInfo
+    [Serializable]
+    public abstract partial class FileSystemInfo : MarshalByRefObject, ISerializable
     {
         protected String FullPath;          // fully qualified path of the file or directory
         protected String OriginalPath;      // path passed in by the user
@@ -21,6 +23,23 @@ namespace System.IO
         [System.Security.SecurityCritical]
         protected FileSystemInfo()
         {
+        }
+
+        protected FileSystemInfo(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            FullPath = Path.GetFullPath(info.GetString(nameof(FullPath)));
+            OriginalPath = info.GetString(nameof(OriginalPath));
+        }
+
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(nameof(OriginalPath), OriginalPath, typeof(String));
+            info.AddValue(nameof(FullPath), FullPath, typeof(String));
         }
 
         // Full path of the directory/file

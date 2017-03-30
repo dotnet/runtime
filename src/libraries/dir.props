@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
   <!-- We shipped assembly file version 4.6.x up until the end of rc3.  Version assembly as
@@ -8,30 +8,12 @@
     <MajorVersion>4</MajorVersion>
     <MinorVersion>6</MinorVersion>
   </PropertyGroup>
-  <!--
-    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
-  -->
-  <PropertyGroup>
-    <!-- Temp change to make OS X build behave as a Linux build -->
-    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='OSX'">Unix</OsEnvironment>
-    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
-  </PropertyGroup>
 
-  <PropertyGroup>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
-  </PropertyGroup>
+  <Import Condition="Exists('$(MSBuildProjectDirectory)/Configurations.props')" Project="$(MSBuildProjectDirectory)/Configurations.props" />
 
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
   <PropertyGroup>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -41,6 +23,7 @@
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
+
     <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
@@ -52,69 +35,67 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
+    <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
+
+    <!-- needs to be defined all the time to avoid indexing every file from the root -->
+    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
+
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
+
+  <!-- Temporarily enable local build of tools -->
+  <Import Project="$(SourceDir)Tools\corefxTools.props" />
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
-  <PropertyGroup>
-    <GenFacadesArgs>-ignoreBuildAndRevisionMismatch</GenFacadesArgs>
-  </PropertyGroup>
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
+
+  <PropertyGroup>
+    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
+  </PropertyGroup>
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
 
+  <!-- Default properties for CI builds -->
+  <PropertyGroup Condition="'$(IsCIBuild)' == 'true'">
+    <WithoutCategories>IgnoreForCI</WithoutCategories>
+    <EnableDumpling>true</EnableDumpling>
+    <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
+  </PropertyGroup>
+
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
-  <!-- Explicitly setting 
-       - SupportsUWP to true when TargetGroup is uap101*. This will enable the correct pinvoke checker to be picked 
-       - BlockReflectionAttribute to true. This will enable injecting BlockReflectionAttribute.cs into the compile target.
-       TODO: Both of these properties are being set in buildtools targets, however they need to be updated to reflect uap101 changes.
-  -->
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101' or '$(TargetGroup)' == 'uap101aot'">
-    <SupportsUWP>true</SupportsUWP>
-    <BlockReflectionAttribute>true</BlockReflectionAttribute>
-  </PropertyGroup>
-
-  <!-- Import packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
-
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
-    <!-- PackagesDrops is passed in via the commandline "/p:PackagesDrops=[drop location]" -->
-    <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
+    <!-- Example to consume local CoreCLR package:
+         /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
+    -->
+    <DnuSourceList Include="$(OverridePackageSource)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core-dev-api/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
+    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
-
-  <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
-  <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
-    <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
-  </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
-    <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
   </ItemGroup>
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(RunningOnUnix)'!='true'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(RunningOnUnix)'=='true'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(RunningOnUnix)'!='true'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(RunningOnUnix)'=='true'">$(DotnetCliPath)dotnet</DotnetToolCommand>
     <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
@@ -128,82 +109,54 @@
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
   </PropertyGroup>
 
-  <!-- Create a collection of all project.json files for dependency updates. -->
-  <ItemGroup>
-    <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
-    <RestorePackages>false</RestorePackages>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <!-- dotnet/corefx#8899 tracks fixing this -->
-    <RunApiCompat Condition="'$(OSEnvironment)' == 'Windows_NT'">true</RunApiCompat>
+    <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
-  <!--
-  Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
-  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
-  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
-  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
-  a single binary folder and can have a similar experience between the command line and Visual Studio.
-  -->
-
-  <!--
-  If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
-  values for $(ConfigurationGroup), $(TargetGroup), or $(OSGroup) or accept the defaults for them.
-  -->
-  <PropertyGroup Condition="'$(Configuration)'==''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-    <Configuration>$(ConfigurationGroup)</Configuration>
-    <Configuration Condition="'$(TargetGroup)'!=''">$(TargetGroup)_$(Configuration)</Configuration>
-    <Configuration Condition="'$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)_$(Configuration)</Configuration>
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
+    <!-- When building in VS setup the ConfigurationGroup based on the given Configuration -->
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
   </PropertyGroup>
 
-  <!--
-  If Configuration is set then someone explicitly passed it in or we building from VS. In either case
-  default $(ConfigurationGroup), $(TargetGroup), or $(OSGroup) from the Configuration if they aren't
-  already explicitly set.
-  -->
-  <PropertyGroup Condition="'$(Configuration)'!=''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
+  <PropertyGroup>
+    <!--
+      These *Group properties are only intended to enable passing them individually at the command line to initialize
+      BuildConfiguration. They will be overwritten by our configurations/configuration.props file and defaulted
+      based on Configuration for the individual projects which is selected based on BuildConfiguration.
 
-    <BuildAllOSGroups Condition="'$(BuildAllOSGroups)' == ''">true</BuildAllOSGroups>
+      See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
+    -->
+    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Unix'))">Unix</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('NetBSD'))">NetBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
+    <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
 
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50aot'))">netcore50aot</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard13aot'))">netstandard13aot</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard15aot'))">netstandard15aot</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard1.7'))">netstandard1.7</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.0'))">netcoreapp1.0</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.1'))">netcoreapp1.1</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net463'))">net463</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net462'))">net462</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net461'))">net461</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net45'))">net45</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net451'))">net451</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('win8'))">win8</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('wpa81'))">wpa81</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('uap101aot'))">uap101aot</TargetGroup>
-    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('uap101'))">uap101</TargetGroup>
+    <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
+    <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>
+
+    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
+    <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
+  </PropertyGroup>
+
+  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
+
+  <!-- Import packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
+
+  <!-- set properties for each vertical -->
+  <PropertyGroup>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netfx' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingUAPVertical Condition="'$(BuildingUAPVertical)' == '' AND ('$(_bc_TargetGroup)'=='uap' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPVertical>
+    <BuildingUAPAOTVertical Condition="'$(BuildingUAPAOTVertical)' == '' AND ('$(_bc_TargetGroup)'=='uapaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPAOTVertical>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -224,261 +177,7 @@
         <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
       </PropertyGroup>
     </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown ConfigurationGroup [$(ConfigurationGroup)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
   </Choose>
-
-  <!-- Setup properties per OSGroup -->
-  <Choose>
-    <When Condition="'$(OSGroup)'=='AnyOS'">
-      <PropertyGroup>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='Windows_NT'">
-      <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-        <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
-        <PackageTargetRuntime>win</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='Unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
-        <PackageTargetRuntime>unix</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
-        <PackageTargetRuntime>linux</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.10-x64</TestNugetRuntimeId>
-        <PackageTargetRuntime>osx</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>   <!-- TODO -->
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-
-  <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'Unix' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'NetBSD' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
-  </PropertyGroup>
-
-  <!-- Setup properties per TargetGroup -->
-  <Choose>
-    <When Condition="'$(TargetGroup)'==''">
-      <PropertyGroup>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netcore50'">
-      <PropertyGroup>
-        <PackageTargetFramework>netcore50</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netcore50aot'">
-      <PropertyGroup>
-        <PackageTargetFramework>netcore50</PackageTargetFramework>
-        <PackageTargetRuntime>aot</PackageTargetRuntime>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.0'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.1'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.2'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.2</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.3'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.4'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.5'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.6'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.6</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard1.7'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard13aot'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-        <PackageTargetRuntime>aot</PackageTargetRuntime>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netstandard15aot'">
-      <PropertyGroup>
-        <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
-        <PackageTargetRuntime>aot</PackageTargetRuntime>
-        <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netcoreapp1.0'">
-      <PropertyGroup>
-        <PackageTargetFramework>netcoreapp1.0</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='netcoreapp1.1'">
-      <PropertyGroup>
-        <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
-        <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='dnxcore50'">
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net463'">
-      <PropertyGroup>
-        <PackageTargetFramework>net463</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net462'">
-      <PropertyGroup>
-        <PackageTargetFramework>net462</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net461'">
-      <PropertyGroup>
-        <PackageTargetFramework>net461</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net46'">
-      <PropertyGroup>
-        <PackageTargetFramework>net46</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net451'">
-      <PropertyGroup>
-        <PackageTargetFramework>net451</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='net45'">
-      <PropertyGroup>
-        <PackageTargetFramework>net45</PackageTargetFramework>
-        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
-        <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='win8'">
-      <PropertyGroup>
-        <PackageTargetFramework>win8</PackageTargetFramework>
-        <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='wpa81'">
-      <PropertyGroup>
-        <PackageTargetFramework>wpa81</PackageTargetFramework>
-        <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='uap101aot'">
-      <PropertyGroup>
-        <PackageTargetFramework>uap10.1</PackageTargetFramework>
-        <PackageTargetRuntime>aot</PackageTargetRuntime>
-        <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetGroup)'=='uap101'">
-      <PropertyGroup>
-        <PackageTargetFramework>uap10.1</PackageTargetFramework>
-        <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown TargetGroup [$(TargetGroup)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-
-  <!-- Default Test platform to deploy the netstandard compiled tests to -->
-  <PropertyGroup>
-    <TestTFM Condition="'$(TestTFM)'=='' AND '$(TargetGroup)'=='netstandard1.7'">netcoreapp1.1</TestTFM>
-    <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
-    <!-- we default FilterToTestTFM to netcoreapp1.1 if it is not explicity defined -->
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.1</FilterToTestTFM>        
-  </PropertyGroup>
-
-  <ItemGroup>
-    <TestNugetTargetMoniker Include=".NETCoreApp,Version=v1.1" Condition="'$(TestTFM)' == 'netcoreapp1.1'">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>
@@ -487,7 +186,7 @@
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50'">win8</NuGetRuntimeIdentifier>
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</NuGetRuntimeIdentifier>
 
-    <!-- workaround Dev14 issue with nuget targets -->
+    <!-- workaround Dev14 issue with nuget targets, misspelling is intentional to align with Dev14 RTM targets -->
     <RuntimeIndentifier>$(NuGetRuntimeIdentifier)</RuntimeIndentifier>
   </PropertyGroup>
 
@@ -504,6 +203,7 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
   </PropertyGroup>
 
   <!-- Set up handling of build warnings -->
@@ -524,13 +224,50 @@
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+
     <OutputPathSubfolder Condition="'$(IsCompatAssembly)'=='true'">/Compat</OutputPathSubfolder>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
 
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>
 
-    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)/$(MSBuildProjectName)/</TestPath>
+    <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
+    <RefRootPath>$(BinDir)ref/</RefRootPath>
+    <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
+    <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$(RefRootPath)$(_bc_TargetGroup.TrimEnd('aot'))/</BuildConfigurationRefPath>
+    <RefPath>$(RefRootPath)$(TargetGroup)/</RefPath>
+    <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$(RefRootPath)$(TargetGroup.TrimEnd('aot'))/</RefPath>
+    <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
+    <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
+
+    <!-- project file to use when resolving ReferenceFromRuntime items -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(ProjectDir)\external\runtime\runtime.depproj</RuntimeProjectFile>
+
+    <!-- Paths to binplace package content -->
+    <NETCoreAppPackageRefPath>$(BinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(BinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
+    <UAPPackageRefPath>$(BinDir)pkg\uap\ref</UAPPackageRefPath>
+    <UAPPackageRuntimePath>$(BinDir)pkg\uap\lib</UAPPackageRuntimePath>
+    <UAPAOTPackageRuntimePath>$(BinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>
+
+    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
+    <BinPlaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
+    <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
+
+    <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
+    <NETCoreAppTestRootPath>$(BinDir)testhost/$(BuildConfiguration)/</NETCoreAppTestRootPath>
+    <NETCoreAppTestHostFxrPath>$(NETCoreAppTestRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$(NETCoreAppTestRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
+    <ILCFXInputFolder>$(NETCoreAppTestRootPath)ILCInputFolder</ILCFXInputFolder>
+
+    <!-- For UAP, we'll produce the layout and hard-link this into each test's directory --> 	
+    <UAPTestSharedFrameworkPath>$(NETCoreAppTestRootPath)UAPLayout</UAPTestSharedFrameworkPath>	
+
+    <!-- Constructed shared fx path for testing -->
+    <TestSharedFxDir Condition="'$(BinPlaceTestSharedFramework)' == 'true' or '$(BinPlaceUAPFramework)'=='true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>
+    <TestSharedFxDir Condition="'$(BuildingUAPAOTVertical)' == 'true'">$(ILCFXInputFolder)</TestSharedFxDir>
+    <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true' And '$(TestILCFolder)' != ''">true</UseDotNetNativeToolchain>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
@@ -543,6 +280,6 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)')" />
 </Project>

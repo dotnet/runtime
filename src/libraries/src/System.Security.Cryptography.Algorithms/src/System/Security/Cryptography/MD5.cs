@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -17,28 +14,26 @@ namespace System.Security.Cryptography
 
     public abstract class MD5 : HashAlgorithm
     {
-        protected MD5()
-        {
-        }
+        protected MD5() { }
 
-        public static MD5 Create()
+        public static new MD5 Create()
         {
             return new Implementation();
         }
 
+        public static new MD5 Create(String algName)
+        {
+            return (MD5)CryptoConfig.CreateFromName(algName);
+        }
+
         private sealed class Implementation : MD5
         {
+            private readonly HashProvider _hashProvider;
+
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.MD5);
-            }
-
-            public sealed override int HashSize
-            {
-                get
-                {
-                    return _hashProvider.HashSizeInBytes * 8;
-                }
+                HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
             protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)
@@ -63,8 +58,6 @@ namespace System.Security.Cryptography
                 _hashProvider.Dispose(disposing);
                 base.Dispose(disposing);
             }
-
-            private readonly HashProvider _hashProvider;
         }
     }
 }

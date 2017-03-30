@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCwd", SetLastError = true)]
-        private static unsafe extern byte* GetCwd(byte* buffer, int bufferLength);
+        private static extern unsafe byte* GetCwd(byte* buffer, int bufferLength);
 
         internal static unsafe string GetCwd()
         {      
@@ -34,7 +34,7 @@ internal static partial class Interop
                 {
                     checked { bufferSize *= 2; }
                     var buf = new byte[Math.Min(bufferSize, maxPath)];
-                    fixed (byte* ptr = buf)
+                    fixed (byte* ptr = &buf[0])
                     {
                         result = GetCwdHelper(ptr, buf.Length);
                         if (result != null)

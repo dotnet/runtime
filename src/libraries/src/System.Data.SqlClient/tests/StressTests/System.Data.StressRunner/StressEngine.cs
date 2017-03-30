@@ -60,7 +60,7 @@ namespace DPStressHarness
             }
             catch (Exception e)
             {
-                Console.WriteLine("Warning: An error ocurred initializing performance counters. Performance counters can only be initialized when running with Administrator privileges. Error Message: " + e.Message);
+                Console.WriteLine("Warning: An error occurred initializing performance counters. Performance counters can only be initialized when running with Administrator privileges. Error Message: " + e.Message);
             }
         }
 

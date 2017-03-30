@@ -179,7 +179,7 @@ namespace System.Xml
             {
                 _hashTable[prefix] = _lastDecl;
             }
-            // or create a new hashTable if the threashold has been reached
+            // or create a new hashTable if the threshold has been reached
             else if (_lastDecl >= MinDeclsCountForHashtable)
             {
                 // add all to hash table

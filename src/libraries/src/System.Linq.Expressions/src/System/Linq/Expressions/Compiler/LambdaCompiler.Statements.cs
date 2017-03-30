@@ -5,9 +5,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Globalization;
+using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
@@ -36,8 +37,8 @@ namespace System.Linq.Expressions.Compiler
             CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
             for (int index = 0; index < count - 1; index++)
             {
-                var e = node.GetExpression(index);
-                var next = node.GetExpression(index + 1);
+                Expression e = node.GetExpression(index);
+                Expression next = node.GetExpression(index + 1);
 
                 CompilationFlags tailCallFlag;
                 if (tailCall != CompilationFlags.EmitAsNoTail)
@@ -132,7 +133,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Type != typeof(void))
             {
                 // emit default(T)
-                _ilg.EmitDefault(node.Type);
+                _ilg.EmitDefault(node.Type, this);
             }
         }
 
@@ -199,8 +200,8 @@ namespace System.Linq.Expressions.Compiler
             // transform the tree to avoid stack overflow on a big switch.
             //
 
-            var switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
-            var testValue = Expression.Parameter(GetTestValueType(node), "testValue");
+            ParameterExpression switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
+            ParameterExpression testValue = Expression.Parameter(GetTestValueType(node), "testValue");
             _scope.AddLocal(this, switchValue);
             _scope.AddLocal(this, testValue);
 
@@ -248,7 +249,7 @@ namespace System.Linq.Expressions.Compiler
             Type result = node.Comparison.GetParametersCached()[1].ParameterType.GetNonRefType();
             if (node.IsLifted)
             {
-                result = TypeUtils.GetNullableType(result);
+                result = result.GetNullableType();
             }
             return result;
         }
@@ -284,8 +285,8 @@ namespace System.Linq.Expressions.Compiler
                 Value = value;
                 Default = @default;
                 Type = Node.SwitchValue.Type;
-                IsUnsigned = TypeUtils.IsUnsigned(Type);
-                var code = Type.GetTypeCode();
+                IsUnsigned = Type.IsUnsigned();
+                TypeCode code = Type.GetTypeCode();
                 Is64BitSwitch = code == TypeCode.UInt64 || code == TypeCode.Int64;
             }
         }
@@ -418,7 +419,7 @@ namespace System.Linq.Expressions.Compiler
             // Sort the keys, and group them into buckets.
             keys.Sort((x, y) => Math.Sign(x.Key - y.Key));
             var buckets = new List<List<SwitchLabel>>();
-            foreach (var key in keys)
+            foreach (SwitchLabel key in keys)
             {
                 AddToBuckets(buckets, key);
             }
@@ -549,7 +550,7 @@ namespace System.Linq.Expressions.Compiler
                 // explicit guard
                 Label secondHalf = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(buckets[mid - 1].Last().Constant);
+                EmitConstant(buckets[mid - 1].Last().Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
                 EmitSwitchBuckets(info, buckets, first, mid - 1);
                 _ilg.MarkLabel(secondHalf);
@@ -564,12 +565,12 @@ namespace System.Linq.Expressions.Compiler
             if (bucket.Count == 1)
             {
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket[0].Constant);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(OpCodes.Beq, bucket[0].Label);
                 return;
             }
 
-            // 
+            //
             // If we're switching off of Int64/UInt64, we need more guards here
             // because we'll have to narrow the switch value to an Int32, and
             // we can't do that unless the value is in the right range.
@@ -579,10 +580,10 @@ namespace System.Linq.Expressions.Compiler
             {
                 after = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket.Last().Constant);
+                EmitConstant(bucket.Last().Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, after.Value);
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket[0].Constant);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Blt_Un : OpCodes.Blt, after.Value);
             }
 
@@ -592,7 +593,7 @@ namespace System.Linq.Expressions.Compiler
             decimal key = bucket[0].Key;
             if (key != 0)
             {
-                _ilg.EmitConstant(bucket[0].Constant);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(OpCodes.Sub);
             }
 
@@ -667,7 +668,7 @@ namespace System.Linq.Expressions.Compiler
             // immediately. But that would cause the two code paths to be more
             // different than they really need to be.
             var initializers = new List<ElementInit>(tests);
-            var cases = new List<SwitchCase>(node.Cases.Count);
+            var cases = new ArrayBuilder<SwitchCase>(node.Cases.Count);
 
             int nullCase = -1;
             MethodInfo add = DictionaryOfStringInt32_Add_String_Int32;
@@ -677,14 +678,14 @@ namespace System.Linq.Expressions.Compiler
                 {
                     if (t.Value != null)
                     {
-                        initializers.Add(Expression.ElementInit(add, t, Expression.Constant(i)));
+                        initializers.Add(Expression.ElementInit(add, new TrueReadOnlyCollection<Expression>(t, Utils.Constant(i))));
                     }
                     else
                     {
                         nullCase = i;
                     }
                 }
-                cases.Add(Expression.SwitchCase(node.Cases[i].Body, Expression.Constant(i)));
+                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, new TrueReadOnlyCollection<Expression>(Utils.Constant(i))));
             }
 
             // Create the field to hold the lazily initialized dictionary
@@ -700,7 +701,9 @@ namespace System.Linq.Expressions.Compiler
                     Expression.ListInit(
                         Expression.New(
                             DictionaryOfStringInt32_Ctor_Int32,
-                            Expression.Constant(initializers.Count)
+                            new TrueReadOnlyCollection<Expression>(
+                                Utils.Constant(initializers.Count)
+                            )
                         ),
                         initializers
                     )
@@ -729,21 +732,23 @@ namespace System.Linq.Expressions.Compiler
             //     default:
             // }
             //
-            var switchValue = Expression.Variable(typeof(string), "switchValue");
-            var switchIndex = Expression.Variable(typeof(int), "switchIndex");
-            var reduced = Expression.Block(
-                new[] { switchIndex, switchValue },
-                Expression.Assign(switchValue, node.SwitchValue),
-                Expression.IfThenElse(
-                    Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
-                    Expression.Assign(switchIndex, Expression.Constant(nullCase)),
+            ParameterExpression switchValue = Expression.Variable(typeof(string), "switchValue");
+            ParameterExpression switchIndex = Expression.Variable(typeof(int), "switchIndex");
+            BlockExpression reduced = Expression.Block(
+                new TrueReadOnlyCollection<ParameterExpression>(switchIndex, switchValue),
+                new TrueReadOnlyCollection<Expression>(
+                    Expression.Assign(switchValue, node.SwitchValue),
                     Expression.IfThenElse(
-                        Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
-                        Expression.Empty(),
-                        Expression.Assign(switchIndex, Expression.Constant(-1))
-                    )
-                ),
-                Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases)
+                        Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
+                        Expression.Assign(switchIndex, Utils.Constant(nullCase)),
+                        Expression.IfThenElse(
+                            Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
+                            Utils.Empty,
+                            Expression.Assign(switchIndex, Utils.Constant(-1))
+                        )
+                    ),
+                    Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases.ToReadOnly())
+                )
             );
 
             EmitExpression(reduced, flags);
@@ -913,7 +918,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // emit filter block. Filter blocks are untyped so we need to do
-            // the type check ourselves.  
+            // the type check ourselves.
             Label endFilter = _ilg.DefineLabel();
             Label rightType = _ilg.DefineLabel();
 
@@ -934,10 +939,10 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(cb.Filter);
             PopLabelBlock(LabelScopeKind.Filter);
 
-            // begin the catch, clear the exception, we've 
+            // begin the catch, clear the exception, we've
             // already saved it
             _ilg.MarkLabel(endFilter);
-            _ilg.BeginCatchBlock(null);
+            _ilg.BeginCatchBlock(exceptionType: null);
             _ilg.Emit(OpCodes.Pop);
         }
 

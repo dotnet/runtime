@@ -29,11 +29,11 @@ namespace System.Net.Http.Headers
 
         public ProductHeaderValue(string name, string version)
         {
-            HeaderUtilities.CheckValidToken(name, "name");
+            HeaderUtilities.CheckValidToken(name, nameof(name));
 
             if (!string.IsNullOrEmpty(version))
             {
-                HeaderUtilities.CheckValidToken(version, "version");
+                HeaderUtilities.CheckValidToken(version, nameof(version));
                 _version = version;
             }
 

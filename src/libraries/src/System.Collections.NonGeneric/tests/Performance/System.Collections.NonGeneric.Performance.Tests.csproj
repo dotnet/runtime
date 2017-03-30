@@ -1,11 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <RootNamespace>System.Collections.NonGeneric.Performance.Tests</RootNamespace>
-    <AssemblyName>System.Collections.NonGeneric.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <ProjectGuid>{93AB3799-BC91-4B27-B526-28FFFF0DB1B1}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -17,12 +15,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Collections.NonGeneric.pkgproj">
-      <Name>System.Collections.NonGeneric</Name>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

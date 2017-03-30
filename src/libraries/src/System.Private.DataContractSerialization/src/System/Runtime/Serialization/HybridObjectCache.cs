@@ -42,9 +42,9 @@ namespace System.Runtime.Serialization
                 _referencedObjectDictionary = new Dictionary<string, object>();
                 _referencedObjectDictionary.Add(id, null);
             }
-            else if (!_referencedObjectDictionary.ContainsKey(id))
+            else
             {
-                _referencedObjectDictionary.Add(id, null);
+                _referencedObjectDictionary.TryAdd(id, null);
             }
 
             if (_objectDictionary != null)

@@ -306,7 +306,7 @@ namespace System.Xml.Xsl.Xslt
 #if DEBUG
             if (DiagnosticsSwitches.XslTypeInference.TraceVerbose) {
                 Debug.WriteLine(string.Empty);
-                foreach (ProtoTemplate tmpl in compiler.AllTemplates) {
+                foreach (ProtoTemplate tmpl in _compiler.AllTemplates) {
                     Debug.WriteLine(tmpl.TraceName + " = " + (tmpl.Flags & XslFlags.FocusFilter));
                 }
 
@@ -320,7 +320,7 @@ namespace System.Xml.Xsl.Xslt
             if (DiagnosticsSwitches.XslTypeInference.TraceInfo) {
                 int current = 0, position = 0, last = 0;
 
-                foreach (ProtoTemplate tmpl in compiler.AllTemplates) {
+                foreach (ProtoTemplate tmpl in _compiler.AllTemplates) {
                     if ((tmpl.Flags & XslFlags.Current) != 0) {
                         current++;
                     }
@@ -355,7 +355,7 @@ namespace System.Xml.Xsl.Xslt
 
                 Debug.WriteLine(string.Format(CultureInfo.InvariantCulture,
                     "Total => templates/attribute-sets: {0}, variables/parameters: {1}.",
-                    compiler.AllTemplates.Count, totalVarPars
+                    _compiler.AllTemplates.Count, totalVarPars
                 ));
 
                 Debug.WriteLine(string.Format(CultureInfo.InvariantCulture,

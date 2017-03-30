@@ -54,7 +54,7 @@ namespace CoreXml.Test.XLinq
                 this.AddChild(new TCGetAttributeName() { Attribute = new TestCaseAttribute() { Name = "GetAttributeName", Desc = "GetAttributeName" } });
                 this.AddChild(new TCThisOrdinal() { Attribute = new TestCaseAttribute() { Name = "ThisOrdinal", Desc = "ThisOrdinal" } });
                 this.AddChild(new TCMoveToAttributeOrdinal() { Attribute = new TestCaseAttribute() { Name = "MoveToAttributeOrdinal", Desc = "MoveToAttributeOrdinal" } });
-                this.AddChild(new TCMoveToFirstAttribute() { Attribute = new TestCaseAttribute() { Name = "MoveToFirstAtribute", Desc = "MoveToFirstAttribute" } });
+                this.AddChild(new TCMoveToFirstAttribute() { Attribute = new TestCaseAttribute() { Name = "MoveToFirstAttribute", Desc = "MoveToFirstAttribute" } });
                 this.AddChild(new TCMoveToNextAttribute() { Attribute = new TestCaseAttribute() { Name = "MoveToNextAttribute", Desc = "MoveToNextAttribute" } });
                 this.AddChild(new TCAttributeTest() { Attribute = new TestCaseAttribute() { Name = "AttributeTest", Desc = "AttributeTest" } });
                 this.AddChild(new TCXmlns() { Attribute = new TestCaseAttribute() { Name = "Xlmns", Desc = "Xlmns" } });
@@ -469,7 +469,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadInnerXml3) { Attribute = new VariationAttribute("ReadInnerXml on non Empty Tag with text content") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadInnerXml6) { Attribute = new VariationAttribute("ReadInnerXml with multiple Level of elements") });
                     this.AddChild(new TestVariation(TestReadInnerXml7) { Attribute = new VariationAttribute("ReadInnerXml with multiple Level of elements, text and attributes") { Priority = 0 } });
-                    this.AddChild(new TestVariation(TestReadInnerXml8) { Attribute = new VariationAttribute("ReadInnerXml with with entity references, EntityHandling = ExpandEntities") });
+                    this.AddChild(new TestVariation(TestReadInnerXml8) { Attribute = new VariationAttribute("ReadInnerXml with entity references, EntityHandling = ExpandEntities") });
                     this.AddChild(new TestVariation(TestReadInnerXml9) { Attribute = new VariationAttribute("ReadInnerXml on attribute node") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadInnerXml10) { Attribute = new VariationAttribute("ReadInnerXml on attribute node with entity reference in value") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadInnerXml11) { Attribute = new VariationAttribute("ReadInnerXml on Text") { Priority = 0 } });
@@ -480,7 +480,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadInnerXml17) { Attribute = new VariationAttribute("ReadInnerXml on XmlDeclaration") });
                     this.AddChild(new TestVariation(TestReadInnerXml18) { Attribute = new VariationAttribute("Current node after ReadInnerXml on element") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadInnerXml19) { Attribute = new VariationAttribute("Current node after ReadInnerXml on element") });
-                    this.AddChild(new TestVariation(TestTextReadInnerXml2) { Attribute = new VariationAttribute("ReadInnerXml with with entity references, EntityHandling = ExpandCharEntites") });
+                    this.AddChild(new TestVariation(TestTextReadInnerXml2) { Attribute = new VariationAttribute("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml4) { Attribute = new VariationAttribute("ReadInnerXml on EntityReference") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml5) { Attribute = new VariationAttribute("ReadInnerXml on EndEntity") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml18) { Attribute = new VariationAttribute("One large element") });
@@ -704,7 +704,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadBase64_18) { Attribute = new VariationAttribute("No op node types") });
                     this.AddChild(new TestVariation(TestTextReadBase64_23) { Attribute = new VariationAttribute("ReadBase64 with incomplete sequence") });
                     this.AddChild(new TestVariation(TestTextReadBase64_24) { Attribute = new VariationAttribute("ReadBase64 when end tag doesn't exist") });
-                    this.AddChild(new TestVariation(TestTextReadBase64_26) { Attribute = new VariationAttribute("ReadBase64 with whitespaces in the mIddle") });
+                    this.AddChild(new TestVariation(TestTextReadBase64_26) { Attribute = new VariationAttribute("ReadBase64 with whitespace in the mIddle") });
                     this.AddChild(new TestVariation(TestTextReadBase64_27) { Attribute = new VariationAttribute("ReadBase64 with = in the mIddle") });
                     this.AddChild(new TestVariation(RunBase64DoesnNotRunIntoOverflow) { Attribute = new VariationAttribute("ReadBase64 runs into an Overflow") { Params = new object[] { "10000000" } } });
                     this.AddChild(new TestVariation(RunBase64DoesnNotRunIntoOverflow) { Attribute = new VariationAttribute("ReadBase64 runs into an Overflow") { Params = new object[] { "1000000" } } });
@@ -735,7 +735,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadBase64_17) { Attribute = new VariationAttribute("Current node on multiple calls") });
                     this.AddChild(new TestVariation(TestTextReadBase64_23) { Attribute = new VariationAttribute("ReadBase64 with incomplete sequence") });
                     this.AddChild(new TestVariation(TestTextReadBase64_24) { Attribute = new VariationAttribute("ReadBase64 when end tag doesn't exist") });
-                    this.AddChild(new TestVariation(TestTextReadBase64_26) { Attribute = new VariationAttribute("ReadBase64 with whitespaces in the mIddle") });
+                    this.AddChild(new TestVariation(TestTextReadBase64_26) { Attribute = new VariationAttribute("ReadBase64 with whitespace in the mIddle") });
                     this.AddChild(new TestVariation(TestTextReadBase64_27) { Attribute = new VariationAttribute("ReadBase64 with = in the mIddle") });
                     this.AddChild(new TestVariation(ReadBase64DoesNotRunIntoOverflow2) { Attribute = new VariationAttribute("105376: ReadBase64 runs into an Overflow") { Params = new object[] { "10000000" } } });
                     this.AddChild(new TestVariation(ReadBase64DoesNotRunIntoOverflow2) { Attribute = new VariationAttribute("105376: ReadBase64 runs into an Overflow") { Params = new object[] { "1000000" } } });
@@ -766,10 +766,10 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadBinHex_15) { Attribute = new VariationAttribute("ReadBinHex after failed ReadBinHex") });
                     this.AddChild(new TestVariation(TestReadBinHex_16) { Attribute = new VariationAttribute("Read after partial ReadBinHex") });
                     this.AddChild(new TestVariation(TestReadBinHex_17) { Attribute = new VariationAttribute("Current node on multiple calls") });
-                    this.AddChild(new TestVariation(TestTextReadBinHex_21) { Attribute = new VariationAttribute("ReadBinHex with whitespaces") });
+                    this.AddChild(new TestVariation(TestTextReadBinHex_21) { Attribute = new VariationAttribute("ReadBinHex with whitespace") });
                     this.AddChild(new TestVariation(TestTextReadBinHex_22) { Attribute = new VariationAttribute("ReadBinHex with odd number of chars") });
                     this.AddChild(new TestVariation(TestTextReadBinHex_23) { Attribute = new VariationAttribute("ReadBinHex when end tag doesn't exist") });
-                    this.AddChild(new TestVariation(TestTextReadBinHex_24) { Attribute = new VariationAttribute("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going whIdbey to everett") });
+                    this.AddChild(new TestVariation(TestTextReadBinHex_24) { Attribute = new VariationAttribute("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going Whidbey to Everett") });
                     this.AddChild(new TestVariation(DebugAssertInReadContentAsBinHex) { Attribute = new VariationAttribute("DebugAssert in ReadContentAsBinHex") });
                 }
             }
@@ -795,10 +795,10 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadBinHex_14) { Attribute = new VariationAttribute("ReadBinHex with buffer == null") });
                     this.AddChild(new TestVariation(TestReadBinHex_15) { Attribute = new VariationAttribute("ReadBinHex after failed ReadBinHex") });
                     this.AddChild(new TestVariation(TestReadBinHex_16) { Attribute = new VariationAttribute("Read after partial ReadBinHex") });
-                    this.AddChild(new TestVariation(TestTextReadBinHex_21) { Attribute = new VariationAttribute("ReadBinHex with whitespaces") });
+                    this.AddChild(new TestVariation(TestTextReadBinHex_21) { Attribute = new VariationAttribute("ReadBinHex with whitespace") });
                     this.AddChild(new TestVariation(TestTextReadBinHex_22) { Attribute = new VariationAttribute("ReadBinHex with odd number of chars") });
                     this.AddChild(new TestVariation(TestTextReadBinHex_23) { Attribute = new VariationAttribute("ReadBinHex when end tag doesn't exist") });
-                    this.AddChild(new TestVariation(TestTextReadBinHex_24) { Attribute = new VariationAttribute("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going whIdbey to everett") });
+                    this.AddChild(new TestVariation(TestTextReadBinHex_24) { Attribute = new VariationAttribute("WS:WireCompat:hex binary fails to send/return data after 1787 bytes going Whidbey to Everett") });
                     this.AddChild(new TestVariation(TestTextReadBinHex_25) { Attribute = new VariationAttribute("SubtreeReader inserted attributes don't work with ReadContentAsBinHex") });
                 }
             }
@@ -978,12 +978,12 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadChar16) { Attribute = new VariationAttribute("Read after partial ReadValue") });
                     this.AddChild(new TestVariation(TestReadChar19) { Attribute = new VariationAttribute("Test error after successful ReadValue") });
                     this.AddChild(new TestVariation(TestReadChar21) { Attribute = new VariationAttribute("Call on invalid element content after 4k boundary") { Priority = 1 } });
-                    this.AddChild(new TestVariation(TestTextReadValue25) { Attribute = new VariationAttribute("ReadValue with whitespaces") });
+                    this.AddChild(new TestVariation(TestTextReadValue25) { Attribute = new VariationAttribute("ReadValue with whitespace") });
                     this.AddChild(new TestVariation(TestTextReadValue26) { Attribute = new VariationAttribute("ReadValue when end tag doesn't exist") });
                     this.AddChild(new TestVariation(TestCharEntities0) { Attribute = new VariationAttribute("Testing with character entities") });
                     this.AddChild(new TestVariation(TestCharEntities1) { Attribute = new VariationAttribute("Testing with character entities when value more than 4k") });
                     this.AddChild(new TestVariation(TestCharEntities2) { Attribute = new VariationAttribute("Testing with character entities with another pattern") });
-                    this.AddChild(new TestVariation(TestReadValueOnBig) { Attribute = new VariationAttribute("Testing a usecase pattern with large file") });
+                    this.AddChild(new TestVariation(TestReadValueOnBig) { Attribute = new VariationAttribute("Testing a use case pattern with large file") });
                     this.AddChild(new TestVariation(TestReadValueOnComments0) { Attribute = new VariationAttribute("ReadValue on Comments with IgnoreComments") });
                     this.AddChild(new TestVariation(TestReadValueOnPIs0) { Attribute = new VariationAttribute("ReadValue on PI with IgnorePI") });
                     this.AddChild(new TestVariation(bug340158) { Attribute = new VariationAttribute("Skip after ReadAttributeValue/ReadValueChunk") });

@@ -68,8 +68,8 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = ParallelEnumerable.Range(start, count).AsOrdered();
 
             int current = start;
-            Assert.All(query, x => Assert.Equal(current++, x));
-            Assert.Equal(count, current - start);
+            Assert.All(query, x => Assert.Equal(unchecked(current++), x));
+            Assert.Equal(count, unchecked(current - start));
         }
 
         [Theory]
@@ -79,8 +79,8 @@ namespace System.Linq.Parallel.Tests
             IEnumerable<int> query = ParallelEnumerable.Range(start, count).AsSequential();
 
             int current = start;
-            Assert.All(query, x => Assert.Equal(current++, x));
-            Assert.Equal(count, current - start);
+            Assert.All(query, x => Assert.Equal(unchecked(current++), x));
+            Assert.Equal(count, unchecked(current - start));
         }
 
         [Theory]

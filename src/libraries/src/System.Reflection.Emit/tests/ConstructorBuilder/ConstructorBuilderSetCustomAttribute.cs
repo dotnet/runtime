@@ -49,14 +49,14 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateTypeInfo().AsType();
 
             ConstructorInfo createdConstructor = createdType.GetConstructor(new Type[0]);
-            Attribute[] customAttributes = createdConstructor.GetCustomAttributes(true).ToArray();
+            Attribute[] customAttributes = (Attribute[])CustomAttributeExtensions.GetCustomAttributes(createdConstructor, true).ToArray();
 
             Assert.Equal(1, customAttributes.Length);
             Assert.Equal(2, ((IntAllAttribute)customAttributes[0])._i);
         }
 
         [Fact]
-        public void SetCustomAttribute_NullCustomAtributeBuilder_ThrowsArgumentNullException()
+        public void SetCustomAttribute_NullCustomAttributeBuilder_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);

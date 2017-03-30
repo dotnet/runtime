@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.CSharp.RuntimeBinder.Errors;
-using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -15,9 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class NullableType : CType
+    internal sealed class NullableType : CType
     {
-        public AggregateType ats;
+        private AggregateType ats;
         public BSYMMGR symmgr;
         public TypeManager typeManager;
 

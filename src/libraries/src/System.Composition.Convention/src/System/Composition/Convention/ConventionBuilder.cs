@@ -340,22 +340,22 @@ namespace System.Composition.Convention
             return cachedAttributes;
         }
 
-        private static bool IsGenericDescendentOf(TypeInfo openType, TypeInfo baseType)
+        private static bool IsGenericDescendentOf(TypeInfo derivedType, TypeInfo baseType)
         {
-            if (openType.BaseType == null)
+            if (derivedType.BaseType == null)
                 return false;
 
-            if (openType.BaseType == baseType.AsType())
+            if (derivedType.BaseType == baseType.AsType())
                 return true;
 
-            foreach (var iface in openType.ImplementedInterfaces)
+            foreach (var iface in derivedType.ImplementedInterfaces)
             {
                 if (iface.IsConstructedGenericType &&
                     iface.GetGenericTypeDefinition() == baseType.AsType())
                     return true;
             }
 
-            return IsGenericDescendentOf(openType.BaseType.GetTypeInfo(), baseType);
+            return IsGenericDescendentOf(derivedType.BaseType.GetTypeInfo(), baseType);
         }
 
         private static bool IsDescendentOf(Type type, Type baseType)
@@ -368,7 +368,9 @@ namespace System.Composition.Convention
             var ti = type.GetTypeInfo();
             var bti = baseType.GetTypeInfo();
 
-            if (ti.IsGenericTypeDefinition)
+            // The baseType can be an open generic, in that case this ensures
+            // that the derivedType is checked against it
+            if (ti.IsGenericTypeDefinition || bti.IsGenericTypeDefinition)
             {
                 return IsGenericDescendentOf(ti, bti);
             }

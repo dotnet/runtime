@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Runtime.InteropServices;
 
@@ -267,10 +268,10 @@ namespace System.Data.SqlClient
         private static extern uint SNIPacketGetDataWrapper([In] IntPtr packet, [In, Out] byte[] readBuffer, uint readBufferLength, out uint dataSize);
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
-        private static unsafe extern void SNIPacketSetData(SNIPacket pPacket, [In] byte* pbBuf, uint cbBuf);
+        private static extern unsafe void SNIPacketSetData(SNIPacket pPacket, [In] byte* pbBuf, uint cbBuf);
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
-        private static unsafe extern uint SNISecGenClientContextWrapper(
+        private static extern unsafe uint SNISecGenClientContextWrapper(
             [In] SNIHandle pConn,
             [In, Out] byte[] pIn,
             uint cbIn,
@@ -327,6 +328,10 @@ namespace System.Data.SqlClient
                 clientConsumerInfo.timeout = timeout;
                 clientConsumerInfo.fParallel = fParallel;
 
+                clientConsumerInfo.transparentNetworkResolution = TransparentNetworkResolutionMode.DisabledMode;
+                clientConsumerInfo.totalTimeout = SniOpenTimeOut;
+                clientConsumerInfo.isAzureSqlServerEndpoint = ADP.IsAzureSqlServerEndpoint(constring);
+
                 if (spnBuffer != null)
                 {
                     fixed (byte* pin_spnBuffer = &spnBuffer[0])
@@ -375,7 +380,7 @@ namespace System.Data.SqlClient
                     ref sendLength,
                     out local_fDone,
                     pin_serverUserName,
-                    (uint)(serverUserName == null ? 0 : serverUserName.Length),
+                    (uint)serverUserName.Length,
                     null,
                     null);
             }
@@ -411,7 +416,7 @@ namespace System.Data
 {
     internal static class SafeNativeMethods
     {
-        [DllImport("api-ms-win-core-libraryloader-l1-1-0.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(IntPtr HModule, [MarshalAs(UnmanagedType.LPStr), In] string funcName);
     }
 }

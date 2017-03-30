@@ -48,7 +48,17 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, source.Cast<int?>());
         }
-        
+
+        [Fact]
+        public void NullableIntFromAppropriateObjectsRunOnce()
+        {
+            int? i = 10;
+            object[] source = { -4, 1, 2, 3, 9, i };
+            int?[] expected = { -4, 1, 2, 3, 9, i };
+
+            Assert.Equal(expected, source.RunOnce().Cast<int?>());
+        }
+
         [Fact]
         public void LongFromNullableIntInObjectsThrows()
         {
@@ -124,6 +134,15 @@ namespace System.Linq.Tests
             string[] expected = { "Test1", "4.5", null, "Test2" };
 
             Assert.Equal(expected, source.Cast<string>());
+        }
+
+        [Fact]
+        public void CastToStringRunOnce()
+        {
+            object[] source = { "Test1", "4.5", null, "Test2" };
+            string[] expected = { "Test1", "4.5", null, "Test2" };
+
+            Assert.Equal(expected, source.RunOnce().Cast<string>());
         }
 
         [Fact]

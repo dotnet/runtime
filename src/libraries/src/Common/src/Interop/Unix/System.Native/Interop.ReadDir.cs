@@ -46,7 +46,7 @@ internal static partial class Interop
         internal static extern int GetDirentSize();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]
-        private static unsafe extern int ReadDirR(SafeDirectoryHandle dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
+        private static extern unsafe int ReadDirR(SafeDirectoryHandle dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static extern int CloseDir(IntPtr dir);

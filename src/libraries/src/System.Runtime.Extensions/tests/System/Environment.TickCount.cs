@@ -16,14 +16,14 @@ namespace System.Tests
         {
             int start = Environment.TickCount;
             HashSet<int> times = new HashSet<int>();
+            Func<bool> test = () =>
+            {
+                int time = Environment.TickCount;
+                times.Add(time);
+                return time - start > 0;
+            };
             Assert.True(
-                SpinWait.SpinUntil(() =>
-                {
-                    int time = Environment.TickCount;
-                    times.Add(time);
-                    return time - start > 0;
-                },
-                TimeSpan.FromSeconds(1)),
+                SpinWait.SpinUntil(test, TimeSpan.FromSeconds(1)) || test(),
                 $"TickCount did not increase after one second. start: {start}, values tested: {string.Join(", ", times.ToArray())}.");
         }
     }

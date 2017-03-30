@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
@@ -174,11 +173,6 @@ namespace System.Collections.Immutable
             /// <returns>An immutable array.</returns>
             public ImmutableArray<T> ToImmutable()
             {
-                if (Count == 0)
-                {
-                    return Empty;
-                }
-
                 return new ImmutableArray<T>(this.ToArray());
             }
 
@@ -250,6 +244,12 @@ namespace System.Collections.Immutable
                 if (items.TryGetCount(out count))
                 {
                     this.EnsureCapacity(this.Count + count);
+
+                    if (items.TryCopyTo(_elements, _count))
+                    {
+                        _count += count;
+                        return;
+                    }
                 }
 
                 foreach (var item in items)
@@ -408,6 +408,11 @@ namespace System.Collections.Immutable
             /// </summary>
             public T[] ToArray()
             {
+                if (this.Count == 0)
+                {
+                    return Empty.array;
+                }
+
                 T[] result = new T[this.Count];
                 Array.Copy(_elements, 0, result, 0, this.Count);
                 return result;
@@ -738,37 +743,6 @@ namespace System.Collections.Immutable
                 {
                     nodes[offset + i] = items[i];
                 }
-            }
-        }
-    }
-
-    /// <summary>
-    /// A simple view of the immutable collection that the debugger can show to the developer.
-    /// </summary>
-    internal sealed class ImmutableArrayBuilderDebuggerProxy<T>
-    {
-        /// <summary>
-        /// The collection to be enumerated.
-        /// </summary>
-        private readonly ImmutableArray<T>.Builder _builder;
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArrayBuilderDebuggerProxy{T}"/> class.
-        /// </summary>
-        /// <param name="builder">The collection to display in the debugger</param>
-        public ImmutableArrayBuilderDebuggerProxy(ImmutableArray<T>.Builder builder)
-        {
-            _builder = builder;
-        }
-
-        /// <summary>
-        /// Gets a simple debugger-viewable collection.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] A
-        {
-            get
-            {
-                return _builder.ToArray();
             }
         }
     }

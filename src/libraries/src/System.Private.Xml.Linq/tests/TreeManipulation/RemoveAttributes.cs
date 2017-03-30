@@ -28,10 +28,10 @@ namespace XLinqTests
         public override void AddChildren()
         {
             AddChild(new TestVariation(NoAttributes) { Attribute = new VariationAttribute("No attributes") { Priority = 1 } });
-            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single attribute") { Params = new object[] { "<square wIdth='1'>text<B/><!--commnet--></square>", new[] { "wIdth" } }, Priority = 2 } });
-            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Default attribute from DTD") { Params = new object[] { "<!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--commnet--></square>", new[] { "wIdth" } }, Priority = 2 } });
-            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single namespace") { Params = new object[] { "<p:square xmlns:p='x'>text<B/><!--commnet--></p:square>", new[] { "{http://www.w3.org/2000/xmlns/}p" } }, Priority = 2 } });
-            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single namespace (default)") { Params = new object[] { "<square xmlns='x'>text<B/><!--commnet--></square>", new[] { "xmlns" } }, Priority = 2 } });
+            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single attribute") { Params = new object[] { "<square wIdth='1'>text<B/><!--comment--></square>", new[] { "wIdth" } }, Priority = 2 } });
+            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Default attribute from DTD") { Params = new object[] { "<!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--comment--></square>", new[] { "wIdth" } }, Priority = 2 } });
+            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single namespace") { Params = new object[] { "<p:square xmlns:p='x'>text<B/><!--comment--></p:square>", new[] { "{http://www.w3.org/2000/xmlns/}p" } }, Priority = 2 } });
+            AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Single namespace (default)") { Params = new object[] { "<square xmlns='x'>text<B/><!--comment--></square>", new[] { "xmlns" } }, Priority = 2 } });
             AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Multiple attributes") { Params = new object[] { "<square wIdth='1' depth='11'><sub1/>text</square>", new[] { "wIdth", "depth" } }, Priority = 2 } });
             AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Multiple namespaces") { Params = new object[] { "<p:square xmlns:p='x' xmlns='x1'><p:A/><B/></p:square>", new[] { "{http://www.w3.org/2000/xmlns/}p", "{http://www.w3.org/2000/xmlns/}p" } }, Priority = 2 } });
             AddChild(new TestVariation(DeleteAttributes) { Attribute = new VariationAttribute("Multiple namespaces + attributes") { Params = new object[] { "<p:square xmlns:p='x' xmlns='x1' a1='xxx' p:a1='yyy'><p:A/><B p:x='ayay'/></p:square>", new[] { "{http://www.w3.org/2000/xmlns/}p", "{http://www.w3.org/2000/xmlns/}p", "a1", "{x}a1" } }, Priority = 2 } });
@@ -44,10 +44,10 @@ namespace XLinqTests
 
         //[Variation(Priority = 1, Desc = "No attributes")]
 
-        //[Variation(Priority = 2, Desc = "Default attribute from DTD", Params = new object[] { @"<!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--commnet--></square>", new string[] { "wIdth" } })]
-        //[Variation(Priority = 2, Desc = "Single attribute", Params = new object[] { @"<square wIdth='1'>text<B/><!--commnet--></square>", new string[] { "wIdth" } })]
-        //[Variation(Priority = 2, Desc = "Single namespace (default)", Params = new object[] { @"<square xmlns='x'>text<B/><!--commnet--></square>", new string[] { "xmlns" } })]
-        //[Variation(Priority = 2, Desc = "Single namespace", Params = new object[] { @"<p:square xmlns:p='x'>text<B/><!--commnet--></p:square>", new string[] { "{http://www.w3.org/2000/xmlns/}p" } })]
+        //[Variation(Priority = 2, Desc = "Default attribute from DTD", Params = new object[] { @"<!DOCTYPE square [<!ELEMENT square (B*)><!ATTLIST square wIdth CDATA '10'>]><square>text<B/><!--comment--></square>", new string[] { "wIdth" } })]
+        //[Variation(Priority = 2, Desc = "Single attribute", Params = new object[] { @"<square wIdth='1'>text<B/><!--comment--></square>", new string[] { "wIdth" } })]
+        //[Variation(Priority = 2, Desc = "Single namespace (default)", Params = new object[] { @"<square xmlns='x'>text<B/><!--comment--></square>", new string[] { "xmlns" } })]
+        //[Variation(Priority = 2, Desc = "Single namespace", Params = new object[] { @"<p:square xmlns:p='x'>text<B/><!--comment--></p:square>", new string[] { "{http://www.w3.org/2000/xmlns/}p" } })]
         //[Variation(Priority = 2, Desc = "Multiple attributes", Params = new object[] { @"<square wIdth='1' depth='11'><sub1/>text</square>", new string[] { "wIdth", "depth" } })]
         //[Variation(Priority = 2, Desc = "Multiple namespaces", Params = new object[] { @"<p:square xmlns:p='x' xmlns='x1'><p:A/><B/></p:square>", new string[] { "{http://www.w3.org/2000/xmlns/}p", "{http://www.w3.org/2000/xmlns/}p" } })]
         //[Variation(Priority = 2, Desc = "Multiple namespaces + attributes", Params = new object[] { @"<p:square xmlns:p='x' xmlns='x1' a1='xxx' p:a1='yyy'><p:A/><B p:x='ayay'/></p:square>", new string[] { "{http://www.w3.org/2000/xmlns/}p", "{http://www.w3.org/2000/xmlns/}p", "a1", "{x}a1" } })]

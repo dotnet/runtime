@@ -1,20 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Runtime.Loader.Noop.Assembly</RootNamespace>
-    <AssemblyName>System.Runtime.Loader.Noop.Assembly</AssemblyName>
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A57}</ProjectGuid>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
-    <!-- Test expects an un-signed assembly --> 
+    <!-- Test expects an un-signed assembly -->
     <SkipSigning>true</SkipSigning>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="TestClass.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

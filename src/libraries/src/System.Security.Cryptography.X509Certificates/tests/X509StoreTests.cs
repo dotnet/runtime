@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -16,6 +15,91 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 store.Open(OpenFlags.ReadOnly);
             }
+        }
+
+        [Fact]
+        public static void Constructor_DefaultStoreName()
+        {
+            using (X509Store store = new X509Store(StoreLocation.CurrentUser))
+            {
+                Assert.Equal("My", store.Name);
+            }
+        }
+
+        [Fact]
+        public static void Constructor_DefaultStoreLocation()
+        {
+            using (X509Store store = new X509Store(StoreName.My))
+            {
+                Assert.Equal(StoreLocation.CurrentUser, store.Location);
+            }
+
+            using (X509Store store = new X509Store("My"))
+            {
+                Assert.Equal(StoreLocation.CurrentUser, store.Location);
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // Not supported via OpenSSL
+        [Fact]
+        public static void Constructor_StoreHandle()
+        {
+            using (X509Store store1 = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store1.Open(OpenFlags.ReadOnly);
+                bool hadCerts;
+
+                using (var coll = new ImportedCollection(store1.Certificates))
+                {
+                    // Use >1 instead of >0 in case the one is an ephemeral accident.
+                    hadCerts = coll.Collection.Count > 1;
+                    Assert.True(coll.Collection.Count >= 0);
+                }
+
+                using (X509Store store2 = new X509Store(store1.StoreHandle))
+                {
+                    using (var coll = new ImportedCollection(store2.Certificates))
+                    {
+                        if (hadCerts)
+                        {
+                            // Use InRange here instead of True >= 0 so that the error message
+                            // is different, and we can diagnose a bit of what state we might have been in.
+                            Assert.InRange(coll.Collection.Count, 1, int.MaxValue);
+                        }
+                        else
+                        {
+                            Assert.True(coll.Collection.Count >= 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // API not supported via OpenSSL
+        [Fact]
+        public static void Constructor_StoreHandle_Unix()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                Assert.Equal(IntPtr.Zero, store.StoreHandle);
+            }
+
+            Assert.Throws<PlatformNotSupportedException>(() => new X509Chain(IntPtr.Zero));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // StoreHandle not supported via OpenSSL
+        [Fact]
+        public static void TestDispose()
+        {
+            X509Store store;
+            using (store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                Assert.NotEqual(IntPtr.Zero, store.StoreHandle);
+            }
+
+            Assert.Throws<CryptographicException>(() => store.StoreHandle);
         }
 
         [Fact]
@@ -37,7 +121,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void OpenNotExistant()
+        public static void OpenNotExistent()
         {
             using (X509Store store = new X509Store(Guid.NewGuid().ToString("N"), StoreLocation.CurrentUser))
             {
@@ -88,11 +172,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             break;
                         }
                     }
-                }
 
-                if (toAdd != null)
-                {
-                    Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    if (toAdd != null)
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    }
                 }
             }
         }
@@ -123,6 +207,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        /* Placeholder information for these tests until they can be written to run reliably.
+         * Currently such tests would create physical files (Unix) and\or certificates (Windows)
+         * which can collide with other running tests that use the same cert, or from a
+         * test suite running more than once at the same time on the same machine.
+         * Ideally, we use a GUID-named store to aoiv collitions with proper cleanup on Unix and Windows
+         * and\or have lower testing hooks or use Microsoft Fakes Framework to redirect
+         * and encapsulate the actual storage logic so it can be tested, along with mock exceptions
+         * to verify exception handling.
+         * See issue https://github.com/dotnet/corefx/issues/12833
+         * and https://github.com/dotnet/corefx/issues/12223
+
+        [Fact]
+        public static void TestAddAndRemove() {}
+
+        [Fact]
+        public static void TestAddRangeAndRemoveRange() {}
+        */
 
         [Fact]
         public static void EnumerateClosedIsEmpty()
@@ -155,7 +257,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public static void OpenMachineMyStore_Supported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -165,7 +267,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         public static void OpenMachineMyStore_NotSupported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -175,7 +277,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         [InlineData(OpenFlags.ReadOnly, false)]
         [InlineData(OpenFlags.MaxAllowed, false)]
         [InlineData(OpenFlags.ReadWrite, true)]
@@ -215,6 +317,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     int certCount = storeCerts.Collection.Count;
                     Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
+                }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [InlineData(StoreLocation.CurrentUser)]
+        [InlineData(StoreLocation.LocalMachine)]
+        public static void EnumerateDisallowedStore(StoreLocation location)
+        {
+            using (X509Store store = new X509Store(StoreName.Disallowed, location))
+            {
+                store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+
+                using (var storeCerts = new ImportedCollection(store.Certificates))
+                {
+                    // That's all.  We enumerated it.
+                    // There might not even be data in it.
                 }
             }
         }

@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
         [OuterLoop] // involves long delay
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
             {
                 await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
 

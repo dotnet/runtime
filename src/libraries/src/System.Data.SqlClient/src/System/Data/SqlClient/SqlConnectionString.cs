@@ -153,7 +153,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static private Dictionary<string, string> s_sqlClientSynonyms;
+        private static Dictionary<string, string> s_sqlClientSynonyms;
 
         private readonly bool _integratedSecurity;
 
@@ -203,12 +203,6 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
-#if MANAGED_SNI
-            if(_integratedSecurity)
-            {
-                throw SQL.UnsupportedKeyword(KEY.Integrated_Security);
-            }
-#endif
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
             _persistSecurityInfo = ConvertValueToBoolean(KEY.Persist_Security_Info, DEFAULT.Persist_Security_Info);
@@ -521,7 +515,8 @@ namespace System.Data.SqlClient
                 // permission to obtain Environment.MachineName is Asserted
                 // since permission to open the connection has been granted
                 // the information is shared with the server, but not directly with the user
-                result = string.Empty;
+                result = ADP.MachineName();
+                ValidateValueLength(result, TdsEnums.MAXLEN_HOSTNAME, KEY.Workstation_Id);
             }
             return result;
         }
@@ -569,4 +564,3 @@ namespace System.Data.SqlClient
         }
     }
 }
-

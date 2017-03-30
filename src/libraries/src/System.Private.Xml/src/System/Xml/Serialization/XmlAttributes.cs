@@ -27,7 +27,6 @@ namespace System.Xml.Serialization
         XmlnsDeclarations = 0x800,
     }
 
-    /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -50,7 +49,6 @@ namespace System.Xml.Serialization
         private static volatile Type s_ignoreAttributeType;
 
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttributes"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -85,7 +83,7 @@ namespace System.Xml.Serialization
             {
                 if (s_ignoreAttributeType == null)
                 {
-                    s_ignoreAttributeType = typeof(object).GetTypeInfo().Assembly.GetType("System.XmlIgnoreMemberAttribute");
+                    s_ignoreAttributeType = typeof(object).Assembly.GetType("System.XmlIgnoreMemberAttribute");
                     if (s_ignoreAttributeType == null)
                     {
                         s_ignoreAttributeType = typeof(XmlIgnoreAttribute);
@@ -95,32 +93,33 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttributes1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributes(MemberInfo memberInfo)
+        public XmlAttributes(ICustomAttributeProvider provider)
         {
-            // most generic <any/> matches everithig 
+            object[] attrs = provider.GetCustomAttributes(false);
+
+            // most generic <any/> matches everything 
             XmlAnyElementAttribute wildcard = null;
-            foreach (Attribute attr in memberInfo.GetCustomAttributes(false))
+            for (int i = 0; i < attrs.Length; i++)
             {
-                if (attr is XmlIgnoreAttribute || attr is ObsoleteAttribute || attr.GetType() == IgnoreAttribute)
+                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute || attrs[i].GetType() == IgnoreAttribute)
                 {
                     _xmlIgnore = true;
                     break;
                 }
-                else if (attr is XmlElementAttribute)
+                else if (attrs[i] is XmlElementAttribute)
                 {
-                    _xmlElements.Add((XmlElementAttribute)attr);
+                    _xmlElements.Add((XmlElementAttribute)attrs[i]);
                 }
-                else if (attr is XmlArrayItemAttribute)
+                else if (attrs[i] is XmlArrayItemAttribute)
                 {
-                    _xmlArrayItems.Add((XmlArrayItemAttribute)attr);
+                    _xmlArrayItems.Add((XmlArrayItemAttribute)attrs[i]);
                 }
-                else if (attr is XmlAnyElementAttribute)
+                else if (attrs[i] is XmlAnyElementAttribute)
                 {
-                    XmlAnyElementAttribute any = (XmlAnyElementAttribute)attr;
+                    XmlAnyElementAttribute any = (XmlAnyElementAttribute)attrs[i];
                     if ((any.Name == null || any.Name.Length == 0) && any.NamespaceSpecified && any.Namespace == null)
                     {
                         // ignore duplicate wildcards
@@ -128,46 +127,46 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        _xmlAnyElements.Add((XmlAnyElementAttribute)attr);
+                        _xmlAnyElements.Add((XmlAnyElementAttribute)attrs[i]);
                     }
                 }
-                else if (attr is DefaultValueAttribute)
+                else if (attrs[i] is DefaultValueAttribute)
                 {
-                    _xmlDefaultValue = ((DefaultValueAttribute)attr).Value;
+                    _xmlDefaultValue = ((DefaultValueAttribute)attrs[i]).Value;
                 }
-                else if (attr is XmlAttributeAttribute)
+                else if (attrs[i] is XmlAttributeAttribute)
                 {
-                    _xmlAttribute = (XmlAttributeAttribute)attr;
+                    _xmlAttribute = (XmlAttributeAttribute)attrs[i];
                 }
-                else if (attr is XmlArrayAttribute)
+                else if (attrs[i] is XmlArrayAttribute)
                 {
-                    _xmlArray = (XmlArrayAttribute)attr;
+                    _xmlArray = (XmlArrayAttribute)attrs[i];
                 }
-                else if (attr is XmlTextAttribute)
+                else if (attrs[i] is XmlTextAttribute)
                 {
-                    _xmlText = (XmlTextAttribute)attr;
+                    _xmlText = (XmlTextAttribute)attrs[i];
                 }
-                else if (attr is XmlEnumAttribute)
+                else if (attrs[i] is XmlEnumAttribute)
                 {
-                    _xmlEnum = (XmlEnumAttribute)attr;
+                    _xmlEnum = (XmlEnumAttribute)attrs[i];
                 }
-                else if (attr is XmlRootAttribute)
+                else if (attrs[i] is XmlRootAttribute)
                 {
-                    _xmlRoot = (XmlRootAttribute)attr;
+                    _xmlRoot = (XmlRootAttribute)attrs[i];
                 }
-                else if (attr is XmlTypeAttribute)
+                else if (attrs[i] is XmlTypeAttribute)
                 {
-                    _xmlType = (XmlTypeAttribute)attr;
+                    _xmlType = (XmlTypeAttribute)attrs[i];
                 }
-                else if (attr is XmlAnyAttributeAttribute)
+                else if (attrs[i] is XmlAnyAttributeAttribute)
                 {
-                    _xmlAnyAttribute = (XmlAnyAttributeAttribute)attr;
+                    _xmlAnyAttribute = (XmlAnyAttributeAttribute)attrs[i];
                 }
-                else if (attr is XmlChoiceIdentifierAttribute)
+                else if (attrs[i] is XmlChoiceIdentifierAttribute)
                 {
-                    _xmlChoiceIdentifier = (XmlChoiceIdentifierAttribute)attr;
+                    _xmlChoiceIdentifier = (XmlChoiceIdentifierAttribute)attrs[i];
                 }
-                else if (attr is XmlNamespaceDeclarationsAttribute)
+                else if (attrs[i] is XmlNamespaceDeclarationsAttribute)
                 {
                     _xmlns = true;
                 }
@@ -198,12 +197,11 @@ namespace System.Xml.Serialization
 
         internal static object GetAttr(MemberInfo memberInfo, Type attrType)
         {
-            IEnumerable<Attribute> attrs = memberInfo.GetCustomAttributes(attrType, false);
-            if (attrs.Count() == 0) return null;
-            return attrs.First();
+            object[] attrs = memberInfo.GetCustomAttributes(attrType, false);
+            if (attrs.Length == 0) return null;
+            return attrs[0];
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlElements"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -212,7 +210,6 @@ namespace System.Xml.Serialization
             get { return _xmlElements; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -222,7 +219,6 @@ namespace System.Xml.Serialization
             set { _xmlAttribute = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlEnum"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -232,7 +228,6 @@ namespace System.Xml.Serialization
             set { _xmlEnum = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlText"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -242,7 +237,6 @@ namespace System.Xml.Serialization
             set { _xmlText = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlArray"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -252,7 +246,6 @@ namespace System.Xml.Serialization
             set { _xmlArray = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlArrayItems"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -261,7 +254,6 @@ namespace System.Xml.Serialization
             get { return _xmlArrayItems; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlDefaultValue"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -271,7 +263,6 @@ namespace System.Xml.Serialization
             set { _xmlDefaultValue = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlIgnore"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -281,7 +272,6 @@ namespace System.Xml.Serialization
             set { _xmlIgnore = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlType"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -291,7 +281,6 @@ namespace System.Xml.Serialization
             set { _xmlType = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlRoot"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -301,7 +290,6 @@ namespace System.Xml.Serialization
             set { _xmlRoot = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAnyElement"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -310,7 +298,6 @@ namespace System.Xml.Serialization
             get { return _xmlAnyElements; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlAnyAttribute"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -320,13 +307,11 @@ namespace System.Xml.Serialization
             set { _xmlAnyAttribute = value; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.XmlChoiceIdentifier"]/*' />
         public XmlChoiceIdentifierAttribute XmlChoiceIdentifier
         {
             get { return _xmlChoiceIdentifier; }
         }
 
-        /// <include file='doc\XmlAttributes.uex' path='docs/doc[@for="XmlAttributes.Xmlns"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

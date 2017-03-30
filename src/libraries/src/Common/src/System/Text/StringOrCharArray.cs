@@ -151,16 +151,16 @@ namespace System.Text
             for (int i = 0; i < count; ++i)
             {
                 int c = *s++;
-                hash1 = ((hash1 << 5) + hash1) ^ c;
+                hash1 = unchecked((hash1 << 5) + hash1) ^ c;
 
                 if (++i >= count)
                     break;
 
                 c = *s++;
-                hash2 = ((hash2 << 5) + hash2) ^ c;
+                hash2 = unchecked((hash2 << 5) + hash2) ^ c;
             }
 
-            return hash1 + (hash2 * 1566083941);
+            return unchecked(hash1 + (hash2 * 1566083941));
         }
 
         [Conditional("DEBUG")]

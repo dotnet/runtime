@@ -23,7 +23,7 @@ namespace System.IO.Pipes
         public void AddAccessRule(PipeAccessRule rule)
         {
             if (rule == null)
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
 
             base.AddAccessRule(rule);
         }
@@ -31,7 +31,7 @@ namespace System.IO.Pipes
         public void SetAccessRule(PipeAccessRule rule)
         {
             if (rule == null)
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
 
             base.SetAccessRule(rule);
         }
@@ -39,7 +39,7 @@ namespace System.IO.Pipes
         public void ResetAccessRule(PipeAccessRule rule)
         {
             if (rule == null)
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
 
             base.ResetAccessRule(rule);
         }
@@ -48,7 +48,7 @@ namespace System.IO.Pipes
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
 
             // If the rule to be removed matches what is there currently then 
@@ -89,7 +89,7 @@ namespace System.IO.Pipes
         {
             if (rule == null)
             {
-                throw new ArgumentNullException("rule");
+                throw new ArgumentNullException(nameof(rule));
             }
 
             // If the rule to be removed matches what is there currently then 
@@ -160,11 +160,11 @@ namespace System.IO.Pipes
             // since this is an override
             if (inheritanceFlags != InheritanceFlags.None)
             {
-                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, "inheritanceFlags");
+                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, nameof(inheritanceFlags));
             }
             if (propagationFlags != PropagationFlags.None)
             {
-                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, "propagationFlags");
+                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, nameof(propagationFlags));
             }
 
             return new PipeAccessRule(
@@ -189,11 +189,11 @@ namespace System.IO.Pipes
             // since this is an override
             if (inheritanceFlags != InheritanceFlags.None)
             {
-                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, "inheritanceFlags");
+                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, nameof(inheritanceFlags));
             }
             if (propagationFlags != PropagationFlags.None)
             {
-                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, "propagationFlags");
+                throw new ArgumentException(SR.Argument_NonContainerInvalidAnyFlag, nameof(propagationFlags));
             }
 
             return new PipeAuditRule(

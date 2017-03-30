@@ -67,6 +67,11 @@ namespace System.Linq.Tests
                 });
         }
 
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(Enumerable.Range(3, 9), Enumerable.Range(3, 9).RunOnce().ToList());
+        }
 
         [Fact]
         public void ToList_TouchCountWithICollection()

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="CodeCollections\CodeAttributeDeclarationCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeAttributeArgumentCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeCatchClauseCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeStatementCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeCollectionTestBase.cs" />
+    <Compile Include="CodeCollections\CodeCommentStatementCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeDirectiveCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeExpressionCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeNamespaceCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeNamespaceImportCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeParameterDeclarationExpressionCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeDeclarationCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeMemberCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeParameterCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeReferenceCollectionTests.cs" />
+    <Compile Include="CodeCollections\CompilerErrorCollectionTests.cs" />
+    <Compile Include="CodeCollections\TempFileCollectionTests.cs" />
+    <Compile Include="CodeExpressions\CodeObjectCreateExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeParameterDeclarationExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeMethodReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeMethodInvokeExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeVariableReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodePrimitiveExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodePropertyReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeIndexerExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeFieldReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeEventReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeDirectionExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeDelegateInvokeExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeDelegateCreateExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeDefaultValueExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeCastExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeArrayIndexerExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeArrayCreateExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeArgumentReferenceExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeBinaryOperatorExpressionTests.cs" />
+    <Compile Include="CodeExpressions\CodeSnippetExpressionTests.cs" />
+    <Compile Include="CodeGenerationTests.cs" />
+    <Compile Include="CodeObjects\CodeTypeReferenceTests.cs" />
+    <Compile Include="CodeObjects\CodeTypeParameterTests.cs" />
+    <Compile Include="CodeObjects\CodeNamespaceTests.cs" />
+    <Compile Include="CodeObjects\CodeNamespaceImportTests.cs" />
+    <Compile Include="CodeObjects\CodeSnippetCompileUnitTests.cs" />
+    <Compile Include="CodeObjects\CodeCompileUnitTests.cs" />
+    <Compile Include="CodeObjects\CodeCommentTests.cs" />
+    <Compile Include="CodeStatements\CodeTryCatchFinallyStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeRemoveEventStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeVariableDeclarationStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeTypeReferenceExpressionTests.cs" />
+    <Compile Include="CodeStatements\CodeTypeOfExpressionTests.cs" />
+    <Compile Include="CodeStatements\CodeThrowExceptionStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeMethodReturnStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeLabeledStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeIterationStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeGotoStatement.cs" />
+    <Compile Include="CodeStatements\CodeConditionStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeExpressionStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeAttachEventStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeAssignStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeCommentStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeSnippetStatementTests.cs" />
+    <Compile Include="CodeStatements\CodeStatementTestBase.cs" />
+    <Compile Include="CodeTypeMembers\CodeTypeDelegateTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeTypeDeclarationTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeTypeConstructorTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeConstructorTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeMemberMethodTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeSnippetTypeMemberTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeMemberFieldTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeMemberEventTests.cs" />
+    <Compile Include="CodeTypeMembers\CodeTypeMemberTestBase.cs" />
+    <Compile Include="CodeTypeMembers\CodeMemberPropertyTests.cs" />
+    <Compile Include="CodeObjects\CodeChecksumPragmaTests.cs" />
+    <Compile Include="CodeObjects\CodeObjectTestBase.cs" />
+    <Compile Include="Compiler\CodeDomProviderTests.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeProviderTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProviderTests.cs" />
+    <Compile Include="Other\CodeRegionDirectiveTests.cs" />
+    <Compile Include="Other\CodeLinePragmaTests.cs" />
+    <Compile Include="Other\CodeCatchClauseTests.cs" />
+    <Compile Include="Other\CodeAttributeDeclarationTests.cs" />
+    <Compile Include="Other\CodeAttributeArgumentTests.cs" />
+    <Compile Include="VBCodeGenerationTests.cs" />
+    <Compile Include="CSharpCodeGenerationTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

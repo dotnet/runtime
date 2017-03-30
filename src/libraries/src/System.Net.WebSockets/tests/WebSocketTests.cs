@@ -31,7 +31,7 @@ namespace System.Net.WebSockets.Tests
         public static void CreateClientBuffer_ValidSendValues(int size)
         {
             ArraySegment<byte> buffer = WebSocket.CreateClientBuffer(256, size);
-            Assert.InRange(buffer.Count, size, 64 * 1024);
+            Assert.InRange(buffer.Count, size, int.MaxValue);
         }
 
         [Theory]
@@ -48,7 +48,7 @@ namespace System.Net.WebSockets.Tests
         public static void CreateClientBuffer_ValidReceiveValues(int size)
         {
             ArraySegment<byte> buffer = WebSocket.CreateClientBuffer(size, 16);
-            Assert.InRange(buffer.Count, size, 64 * 1024);
+            Assert.InRange(buffer.Count, size, int.MaxValue);
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Net.WebSockets.Tests
         public static void CreateServerBuffer_ValidReceiveValues(int size)
         {
             ArraySegment<byte> buffer = WebSocket.CreateServerBuffer(size);
-            Assert.InRange(buffer.Count, size, 64 * 1024);
+            Assert.InRange(buffer.Count, size, int.MaxValue);
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -83,6 +83,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WebSocket.RegisterPrefixes());
         }
 
+#if netcoreapp
         [Fact]
         public static void IsApplicationTargeting45_AlwaysTrue()
         {
@@ -90,6 +91,7 @@ namespace System.Net.WebSockets.Tests
             Assert.True(WebSocket.IsApplicationTargeting45());
 #pragma warning restore 0618
         }
+#endif // netcoreapp 
 
         [Theory]
         [InlineData(WebSocketState.None)]

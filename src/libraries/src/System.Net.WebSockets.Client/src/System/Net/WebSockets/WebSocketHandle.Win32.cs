@@ -31,9 +31,9 @@ namespace System.Net.WebSockets
         {
             bool isPlatformSupported = false;
 
-            using (SafeLibraryHandle libHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WinHttp, IntPtr.Zero, 0))
+            using (SafeLibraryHandle libHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WinHttp, IntPtr.Zero, 0))
             {
-                isPlatformSupported = Interop.mincore.GetProcAddress(libHandle, WebSocketAvailableApiCheck) != IntPtr.Zero;
+                isPlatformSupported = Interop.Kernel32.GetProcAddress(libHandle, WebSocketAvailableApiCheck) != IntPtr.Zero;
             }
 
             if (!isPlatformSupported)
@@ -55,11 +55,8 @@ namespace System.Net.WebSockets
             }
             catch (Win32Exception ex)
             {
-                WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, ex);
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, "ConnectAsync", wex);
-                }
+                var wex = new WebSocketException(SR.net_webstatus_ConnectFailure, ex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(_webSocket, wex);
                 throw wex;
             }
         }

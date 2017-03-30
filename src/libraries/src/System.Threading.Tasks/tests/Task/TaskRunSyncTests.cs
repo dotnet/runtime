@@ -179,7 +179,7 @@ namespace System.Threading.Tasks.Tests
         private TaskSchedulerType _taskSchedulerType;
 
         private Task _task;                   // the main task to be run synchronously
-        private CancellationTokenSource _cts; // The CancellationTokenSource of which the Token is apssed to the Main task
+        private CancellationTokenSource _cts; // The CancellationTokenSource of which the Token is passed to the Main task
         private int _taskThreadID;
 
         public TaskRunSyncTest(TestParameters_RunSync parameters)
@@ -386,7 +386,7 @@ namespace System.Threading.Tasks.Tests
             {
                 // The following cases will cause an exception
                 // 1. Task already started / canceled / disposed / completed 
-                // 2. Task is an contination task 
+                // 2. Task is a continuation task 
                 return (_preTaskStatus != PreTaskStatus.Created);
             }
         }
@@ -401,7 +401,7 @@ namespace System.Threading.Tasks.Tests
             if (_workloadType == WorkloadType.ThrowException)
                 ae.Flatten().Handle((e) => e is TPLTestException);
             else
-                Assert.True(false, string.Format("Caught un-expected exception - {0]. Fail to re-progogate the test exception via Wait", ae));
+                Assert.True(false, string.Format("Caught un-expected exception - {0]. Fail to re-propagate the test exception via Wait", ae));
         }
     }
 

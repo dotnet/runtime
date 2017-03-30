@@ -172,7 +172,6 @@ public class MyNavigator : XPathNavigator
     //[PermissionSetAttribute(SecurityAction.Deny, Name = "FullTrust")]
     public override XPathExpression Compile(string xpath)
     {
-        //XPathDocument xn = new XPathDocument(_strFileName);
         if (xpath.IndexOf("custom", 0, xpath.Length) >= 0)
             xpath = "custom:dangerous()";
 

@@ -13,8 +13,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
     {
-        private readonly string _typeName;
-
         /// <summary>
         ///    <para>
         ///        Specifies the type to use as a converter for the object this attribute is bound to. This
@@ -30,7 +28,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute()
         {
-            _typeName = string.Empty;
+            ConverterTypeName = string.Empty;
         }
 
         /// <summary>
@@ -41,7 +39,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute(Type type)
         {
-            _typeName = type.AssemblyQualifiedName;
+            ConverterTypeName = type.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -52,7 +50,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute(string typeName)
         {
-            _typeName = typeName;
+            ConverterTypeName = typeName;
         }
 
         /// <summary>
@@ -61,23 +59,17 @@ namespace System.ComponentModel
         ///         the object this attribute is bound to.
         ///     </para>
         /// </summary>
-        public string ConverterTypeName
-        {
-            get
-            {
-                return _typeName;
-            }
-        }
+        public string ConverterTypeName { get; }
 
         public override bool Equals(object obj)
         {
             TypeConverterAttribute other = obj as TypeConverterAttribute;
-            return (other != null) && other.ConverterTypeName == _typeName;
+            return (other != null) && other.ConverterTypeName == ConverterTypeName;
         }
 
         public override int GetHashCode()
         {
-            return _typeName.GetHashCode();
+            return ConverterTypeName.GetHashCode();
         }
     }
 }

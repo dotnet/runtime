@@ -144,7 +144,7 @@ namespace System.Xml.Tests
         private void HandleException(Exception e)
         {
             // There is no way to display an error message in the LTM output at this time due to TestConsole/Error is not set,
-            // so create an "Error" test case that will show this error duting test execution
+            // so create an "Error" test case that will show this error during test execution
             _testModule.AddTestCase(new CXmlDriverErrorTestCase("Error! (" + e.Message + ")", e.Message, e, _testModule));
             _parseError = e;
         }

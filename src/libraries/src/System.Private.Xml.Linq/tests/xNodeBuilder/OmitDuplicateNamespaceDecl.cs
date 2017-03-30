@@ -61,7 +61,7 @@ namespace CoreXml.Test.XLinq
                                                        )
                      select a).ToList().Remove();
 
-                    // Write XElement using XmlWriter without omiting
+                    // Write XElement using XmlWriter without omitting
                     string removedByManual = SaveXElementUsingXmlWriter(elem, NamespaceHandling.Default);
 
                     ReaderDiff.Compare(removedByWriter, removedByManual);

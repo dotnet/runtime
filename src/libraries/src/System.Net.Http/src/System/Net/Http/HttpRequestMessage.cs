@@ -49,15 +49,15 @@ namespace System.Net.Http
             {
                 CheckDisposed();
 
-                if (HttpEventSource.Log.IsEnabled())
+                if (NetEventSource.IsEnabled)
                 {
                     if (value == null)
                     {
-                        HttpEventSource.ContentNull(this);
+                        NetEventSource.ContentNull(this);
                     }
                     else
                     {
-                        HttpEventSource.Associate(this, value);
+                        NetEventSource.Associate(this, value);
                     }
                 }
 
@@ -129,16 +129,16 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri requestUri)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1057:StringUriOverloadsCallSystemUriOverloads",
             Justification = "It is OK to provide 'null' values. A Uri instance is created from 'requestUri' if it is != null.")]
         public HttpRequestMessage(HttpMethod method, string requestUri)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", "Method: " + method + ", Uri: '" + requestUri + "'");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
 
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
@@ -152,7 +152,7 @@ namespace System.Net.Http
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override string ToString()

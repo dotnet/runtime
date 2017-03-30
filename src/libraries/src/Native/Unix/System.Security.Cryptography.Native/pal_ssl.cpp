@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_ssl.h"
-#include "pal_crypto_config.h"
 
 #include <assert.h>
 #include <string.h>
-#include <openssl/err.h>
 
 static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
 static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");
@@ -85,6 +83,7 @@ extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
+    // protocols may be 0 (default). Less secure protocols should be excluded in this case.    
     long protocolOptions = 0;
 
     if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)

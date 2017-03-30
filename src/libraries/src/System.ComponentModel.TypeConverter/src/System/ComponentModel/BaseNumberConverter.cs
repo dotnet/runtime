@@ -15,13 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines whether this editor will attempt to convert hex (0x or #) strings
         /// </summary>
-        internal virtual bool AllowHex
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal virtual bool AllowHex => true;
 
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
@@ -51,7 +45,7 @@ namespace System.ComponentModel
         /// </summary>
         internal virtual Exception FromStringError(string failedText, Exception innerException)
         {
-            return new Exception(SR.Format(SR.ConvertInvalidPrimitive, failedText, this.TargetType.Name), innerException);
+            return new Exception(SR.Format(SR.ConvertInvalidPrimitive, failedText, TargetType.Name), innerException);
         }
 
         /// <summary>
@@ -80,14 +74,14 @@ namespace System.ComponentModel
 
                 try
                 {
-                    if (this.AllowHex && text[0] == '#')
+                    if (AllowHex && text[0] == '#')
                     {
-                        return this.FromString(text.Substring(1), 16);
+                        return FromString(text.Substring(1), 16);
                     }
-                    else if (this.AllowHex && text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                    else if (AllowHex && text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
                              || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.FromString(text.Substring(2), 16);
+                        return FromString(text.Substring(2), 16);
                     }
                     else
                     {
@@ -96,7 +90,7 @@ namespace System.ComponentModel
                             culture = CultureInfo.CurrentCulture;
                         }
                         NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
-                        return this.FromString(text, formatInfo);
+                        return FromString(text, formatInfo);
                     }
                 }
                 catch (Exception e)
@@ -117,17 +111,17 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string) && value != null && this.TargetType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
+            if (destinationType == typeof(string) && value != null && TargetType.IsInstanceOfType(value))
             {
                 if (culture == null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
                 NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
-                return this.ToString(value, formatInfo);
+                return ToString(value, formatInfo);
             }
 
-            if (destinationType.GetTypeInfo().IsPrimitive)
+            if (destinationType.IsPrimitive)
             {
                 return Convert.ChangeType(value, destinationType, culture);
             }
@@ -136,7 +130,7 @@ namespace System.ComponentModel
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return base.CanConvertTo(context, destinationType) || destinationType.GetTypeInfo().IsPrimitive;
+            return base.CanConvertTo(context, destinationType) || destinationType.IsPrimitive;
         }
     }
 }

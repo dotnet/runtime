@@ -826,7 +826,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             if (exceptions != null)
             {
                 // It is important to migrate these exceptions to the source part of the owning join,
-                // because that is the completion task that is publically exposed.
+                // because that is the completion task that is publicly exposed.
                 foreach (Exception exc in exceptions)
                 {
                     _sharedResources._exceptionAction(exc);
@@ -1100,7 +1100,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>The number of joins this block has created.</summary>
         internal long _joinsCreated;
 
-        // *** Private fields and properties - mutatable
+        // *** Private fields and properties - mutable
         /// <summary>A task has reserved the right to run the completion routine.</summary>
         private bool _completionReserved;
 

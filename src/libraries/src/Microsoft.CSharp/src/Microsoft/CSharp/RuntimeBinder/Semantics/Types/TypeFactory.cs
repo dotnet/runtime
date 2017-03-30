@@ -7,13 +7,8 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class TypeFactory
+    internal sealed class TypeFactory
     {
-        // Constructor.
-        public TypeFactory()
-        {
-        }
-
         // Aggregate
         public AggregateType CreateAggregateType(
             Name name,

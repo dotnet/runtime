@@ -13,8 +13,8 @@ namespace System.Net
     {
         public const int DataOffset = 0;
 
-        public readonly static int IPv6AddressSize = GetIPv6AddressSize();
-        public readonly static int IPv4AddressSize = GetIPv4AddressSize();
+        public static readonly int IPv6AddressSize = GetIPv6AddressSize();
+        public static readonly int IPv4AddressSize = GetIPv4AddressSize();
 
         private static unsafe int GetIPv6AddressSize()
         {

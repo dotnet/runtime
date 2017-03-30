@@ -1,26 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
-    <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <ProjectGuid>{66BE33BB-790D-4D0C-9336-E073001CBD15}</ProjectGuid>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarCtor.cs" />
@@ -127,35 +113,8 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
-    <Compile Include="Misc\Calendars.netstandard1.7.cs" />
-  </ItemGroup>
-
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
-    <DefineConstants>$(DefineConstants);net46</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <Name>System.Runtime</Name>
-    </ProjectReference>
+    <Compile Include="Misc\Calendars.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

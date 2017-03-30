@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -145,8 +144,8 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
-        public void WindowsControWhiteSpace()
+        [PlatformSpecific(TestPlatforms.Windows)]  // Control whitespace in path throws ArgumentException
+        public void WindowsControlWhiteSpace()
         {
             // CreateSubdirectory will throw when passed a path with control whitespace e.g. "\t"
             var components = IOInputs.GetControlWhiteSpace();
@@ -158,7 +157,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Simple whitespace is trimmed in path
         public void WindowsSimpleWhiteSpace()
         {
             // CreateSubdirectory trims all simple whitespace, returning us the parent directory
@@ -176,7 +175,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace as path allowed
         public void UnixWhiteSpaceAsPath_Allowed()
         {
             var paths = IOInputs.GetWhiteSpace();
@@ -188,7 +187,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Trailing whitespace in path treated as significant
         public void UnixNonSignificantTrailingWhiteSpace()
         {
             // Unix treats trailing/prename whitespace as significant and a part of the name.
@@ -205,8 +204,9 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Extended windows path
         public void ExtendedPathSubdirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
@@ -217,7 +217,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // UNC shares
+        [PlatformSpecific(TestPlatforms.Windows)] // UNC shares
         public void UNCPathWithOnlySlashes()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

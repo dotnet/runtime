@@ -6,7 +6,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
 
 namespace System.Xml.XmlDiff
 {

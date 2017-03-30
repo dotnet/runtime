@@ -4,6 +4,8 @@
 
 using System.Collections;
 using System.Globalization;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
@@ -18,19 +20,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string warningNoiseMessage = "The full-text search condition contained noise word(s).";
         private const string warningInfoMessage = "Test of info messages";
         private const string orderIdQuery = "select orderid from orders where orderid < 10250";
-
-#if MANAGED_SNI
-        [CheckConnStrSetupFact]
-        public static void NonWindowsIntAuthFailureTest()
-        {
-            string connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = true }).ConnectionString;
-            Assert.Throws<NotSupportedException>(() => new SqlConnection(connectionString).Open());
-
-            // Should not receive any exception when using IntAuth=false
-            connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = false }).ConnectionString;
-            new SqlConnection(connectionString).Open();
-        }
-#endif
 
         [CheckConnStrSetupFact]
         public static void WarningTest()
@@ -215,6 +204,48 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     VerifyConnectionFailure<InvalidOperationException>(() => command.ExecuteReader(), execReaderFailedMessage);
                 }
             }
+        }
+
+        [CheckConnStrSetupFact]
+        public static async Task UnobservedTaskExceptionTest()
+        {
+            List<Exception> exceptionsSeen = new List<Exception>();
+            Action<object, UnobservedTaskExceptionEventArgs> unobservedTaskCallback =
+                (object sender, UnobservedTaskExceptionEventArgs e) =>
+                {
+                    Assert.False(exceptionsSeen.Contains(e.Exception.InnerException), "FAILED: This exception was already observed by awaiting: " + e.Exception.InnerException);
+                };
+            EventHandler<UnobservedTaskExceptionEventArgs> handler = new EventHandler<UnobservedTaskExceptionEventArgs>(unobservedTaskCallback);
+
+            TaskScheduler.UnobservedTaskException += handler;
+
+            using(var connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand("select null; select * from dbo.NonexistentTable;", connection))
+                {
+                    try
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            do
+                            {
+                                while (await reader.ReadAsync())
+                                {
+                                }
+                            } while (await reader.NextResultAsync());
+                        }
+                    }
+                    catch (SqlException ex)
+                    {
+                        exceptionsSeen.Add(ex);
+                    }
+                }
+            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            TaskScheduler.UnobservedTaskException -= handler;
         }
 
         private static void GenerateConnectionException(string connectionString)

@@ -20,8 +20,6 @@ using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
-    using Res = System.SR;
-
     internal abstract class DataFeed
     {
     }
@@ -148,13 +146,14 @@ namespace System.Data.SqlClient
                 {
                     _collation = collation = new SqlCollation();
                 }
-                if ((value & SqlString.x_iValidSqlCompareOptionMask) != value)
+                if ((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) != value)
                 {
                     throw ADP.ArgumentOutOfRange(nameof(CompareInfo));
                 }
                 collation.SqlCompareOptions = value;
             }
         }
+
 
         public string XmlSchemaCollectionDatabase
         {
@@ -323,7 +322,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    localeId = Locale.GetCurrentCultureLcid();
+                    localeId = CultureInfo.CurrentCulture.LCID;
                 }
             }
 
@@ -1624,7 +1623,7 @@ namespace System.Data.SqlClient
             {
                 string errorMsg;
                 {
-                    errorMsg = Res.SQL_TypeName;
+                    errorMsg = SR.SQL_TypeName;
                 }
                 return MultipartIdentifier.ParseMultipartIdentifier(typeName, "[\"", "]\"", '.', 3, true, errorMsg, true);
             }

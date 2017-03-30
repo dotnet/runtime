@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -168,18 +167,31 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedMultiplyNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyMultiplyNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
         #endregion
 
         #region Helpers
 
         public static byte MultiplyNullableByte(byte a, byte b)
         {
-            return (byte)(a * b);
+            return unchecked((byte)(a * b));
         }
 
         public static char MultiplyNullableChar(char a, char b)
         {
-            return (char)(a * b);
+            return unchecked((char)(a * b));
         }
 
         public static decimal MultiplyNullableDecimal(decimal a, decimal b)
@@ -199,37 +211,37 @@ namespace System.Linq.Expressions.Tests
 
         public static int MultiplyNullableInt(int a, int b)
         {
-            return (int)(a * b);
+            return unchecked((int)(a * b));
         }
 
         public static long MultiplyNullableLong(long a, long b)
         {
-            return (long)(a * b);
+            return unchecked((long)(a * b));
         }
 
         public static sbyte MultiplyNullableSByte(sbyte a, sbyte b)
         {
-            return (sbyte)(a * b);
+            return unchecked((sbyte)(a * b));
         }
 
         public static short MultiplyNullableShort(short a, short b)
         {
-            return (short)(a * b);
+            return unchecked((short)(a * b));
         }
 
         public static uint MultiplyNullableUInt(uint a, uint b)
         {
-            return (uint)(a * b);
+            return unchecked((uint)(a * b));
         }
 
         public static ulong MultiplyNullableULong(ulong a, ulong b)
         {
-            return (ulong)(a * b);
+            return unchecked((ulong)(a * b));
         }
 
         public static ushort MultiplyNullableUShort(ushort a, ushort b)
         {
-            return (ushort)(a * b);
+            return unchecked((ushort)(a * b));
         }
 
         #endregion
@@ -246,7 +258,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableByte")));
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)(a * b), f());
+            Assert.Equal(unchecked((byte?)(a * b)), f());
         }
 
         private static void VerifyMultiplyNullableChar(char? a, char? b, bool useInterpreter)
@@ -259,7 +271,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableChar")));
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)(a * b), f());
+            Assert.Equal(unchecked((char?)(a * b)), f());
         }
 
         private static void VerifyMultiplyNullableDecimal(decimal? a, decimal? b, bool useInterpreter)
@@ -322,7 +334,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableInt")));
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyMultiplyNullableLong(long? a, long? b, bool useInterpreter)
@@ -335,7 +347,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableLong")));
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyMultiplyNullableSByte(sbyte? a, sbyte? b, bool useInterpreter)
@@ -348,7 +360,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableSByte")));
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)(a * b), f());
+            Assert.Equal(unchecked((sbyte?)(a * b)), f());
         }
 
         private static void VerifyMultiplyNullableShort(short? a, short? b, bool useInterpreter)
@@ -361,7 +373,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableShort")));
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)(a * b), f());
+            Assert.Equal(unchecked((short?)(a * b)), f());
         }
 
         private static void VerifyMultiplyNullableUInt(uint? a, uint? b, bool useInterpreter)
@@ -374,7 +386,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableUInt")));
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyMultiplyNullableULong(ulong? a, ulong? b, bool useInterpreter)
@@ -387,7 +399,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableULong")));
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyMultiplyNullableUShort(ushort? a, ushort? b, bool useInterpreter)
@@ -400,7 +412,21 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedMultiplyNullableTests).GetTypeInfo().GetDeclaredMethod("MultiplyNullableUShort")));
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)(a * b), f());
+            Assert.Equal(unchecked((ushort?)(a * b)), f());
+        }
+
+        private static void VerifyMultiplyNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.Multiply(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a * b;
+            Assert.Equal(expected, f());
         }
 
         #endregion

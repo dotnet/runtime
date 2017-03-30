@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "Microsoft.NETCore.Platforms": "4.3.0-beta-devapi-24512-01",
-    "System.Collections": "4.3.0-beta-devapi-24512-01"
-  },
-  "frameworks": {
-    "netstandard1.3": {}
-  }
-}

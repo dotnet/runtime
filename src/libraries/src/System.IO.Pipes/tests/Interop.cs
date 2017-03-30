@@ -16,7 +16,7 @@ namespace System.IO.Pipes.Tests
     {
         #region Windows
 
-        [DllImport("api-ms-win-core-io-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         private static extern unsafe bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
 
         internal static unsafe bool CancelIoEx(SafeHandle handle)
@@ -24,7 +24,7 @@ namespace System.IO.Pipes.Tests
             return CancelIoEx(handle, null);
         }
 
-        [DllImport("api-ms-win-core-namedpipe-l1-2-1.dll", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetNamedPipeHandleState(
             SafePipeHandle hNamedPipe,

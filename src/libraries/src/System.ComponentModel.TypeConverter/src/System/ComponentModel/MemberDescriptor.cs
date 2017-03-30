@@ -24,8 +24,8 @@ namespace System.ComponentModel
         private AttributeCollection _attributeCollection;
         private Attribute[] _attributes;
         private Attribute[] _originalAttributes;
-        private bool _attributesFiltered = false;
-        private bool _attributesFilled = false;
+        private bool _attributesFiltered;
+        private bool _attributesFilled;
         private int _metadataVersion;
         private string _category;
         private string _description;
@@ -97,26 +97,26 @@ namespace System.ComponentModel
             _displayName = oldMemberDescriptor.DisplayName;
             _nameHash = _name.GetHashCode();
 
-            ArrayList newArray = new ArrayList();
+            List<Attribute> newList = new List<Attribute>();
 
             if (oldMemberDescriptor.Attributes.Count != 0)
             {
-                foreach (object o in oldMemberDescriptor.Attributes)
+                foreach (Attribute o in oldMemberDescriptor.Attributes)
                 {
-                    newArray.Add(o);
+                    newList.Add(o);
                 }
             }
 
             if (newAttributes != null)
             {
-                foreach (object o in newAttributes)
+                foreach (Attribute o in newAttributes)
                 {
-                    newArray.Add(o);
+                    newList.Add(o);
                 }
             }
 
-            _attributes = new Attribute[newArray.Count];
-            newArray.CopyTo(_attributes, 0);
+            _attributes = new Attribute[newList.Count];
+            newList.CopyTo(_attributes, 0);
             _attributesFiltered = false;
 
             _originalAttributes = _attributes;
@@ -177,17 +177,7 @@ namespace System.ComponentModel
         ///       in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         ///    </para>
         /// </summary>
-        public virtual string Category
-        {
-            get
-            {
-                if (_category == null)
-                {
-                    _category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]).Category;
-                }
-                return _category;
-            }
-        }
+        public virtual string Category => _category ?? (_category = ((CategoryAttribute) Attributes[typeof(CategoryAttribute)]).Category);
 
         /// <summary>
         ///    <para>
@@ -195,17 +185,8 @@ namespace System.ComponentModel
         ///       the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         ///    </para>
         /// </summary>
-        public virtual string Description
-        {
-            get
-            {
-                if (_description == null)
-                {
-                    _description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]).Description;
-                }
-                return _description;
-            }
-        }
+        public virtual string Description => _description ??
+                                             (_description = ((DescriptionAttribute) Attributes[typeof(DescriptionAttribute)]).Description);
 
         /// <summary>
         ///    <para>
@@ -213,13 +194,7 @@ namespace System.ComponentModel
         ///    <see cref='System.ComponentModel.BrowsableAttribute'/>. 
         ///    </para>
         /// </summary>
-        public virtual bool IsBrowsable
-        {
-            get
-            {
-                return ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
-            }
-        }
+        public virtual bool IsBrowsable => ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
 
         /// <summary>
         ///    <para>
@@ -227,17 +202,7 @@ namespace System.ComponentModel
         ///       name of the member.
         ///    </para>
         /// </summary>
-        public virtual string Name
-        {
-            get
-            {
-                if (_name == null)
-                {
-                    return "";
-                }
-                return _name;
-            }
-        }
+        public virtual string Name => _name ?? "";
 
         /// <summary>
         ///    <para>
@@ -245,13 +210,7 @@ namespace System.ComponentModel
         ///       code for the name of the member as specified in <see cref='System.String.GetHashCode'/>.
         ///    </para>
         /// </summary>
-        protected virtual int NameHashCode
-        {
-            get
-            {
-                return _nameHash;
-            }
-        }
+        protected virtual int NameHashCode => _nameHash;
 
         /// <summary>
         ///    <para>
@@ -259,13 +218,7 @@ namespace System.ComponentModel
         ///       design time as specified in the <see cref='System.ComponentModel.DesignOnlyAttribute'/>.
         ///    </para>
         /// </summary>
-        public virtual bool DesignTimeOnly
-        {
-            get
-            {
-                return (DesignOnlyAttribute.Yes.Equals(Attributes[typeof(DesignOnlyAttribute)]));
-            }
-        }
+        public virtual bool DesignTimeOnly => (DesignOnlyAttribute.Yes.Equals(Attributes[typeof(DesignOnlyAttribute)]));
 
         /// <summary>
         ///    <para>
@@ -428,7 +381,7 @@ namespace System.ComponentModel
 
                 for (int i = 0; i < list.Count;)
                 {
-                    if (set.Add(list[i].GetTypeId()))
+                    if (set.Add(list[i].TypeId))
                     {
                         ++i;
                     }
@@ -471,20 +424,16 @@ namespace System.ComponentModel
 
             if (publicOnly)
             {
-                result = componentClass.GetTypeInfo().GetMethod(name, args);
+                result = componentClass.GetMethod(name, args);
             }
             else
             {
                 // The original impementation requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not 
                 // available on .NET Core. The replacement will use the default BindingFlags, which may miss some methods that had been found
                 // on .NET Framework.
-#if FEATURE_GETMETHOD_WITHTYPES
-                result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
-#else
-                result = componentClass.GetTypeInfo().GetMethod(name, args);
-#endif
+                result = componentClass.GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
             }
-            if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
+            if (result != null && !result.ReturnType.IsEquivalentTo(returnType))
             {
                 result = null;
             }
@@ -529,12 +478,23 @@ namespace System.ComponentModel
         /// </summary>
         protected static ISite GetSite(object component)
         {
-            if (!(component is IComponent))
+            return (component as IComponent)?.Site;
+        }
+
+        [Obsolete("This method has been deprecated. Use GetInvocationTarget instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected static object GetInvokee(Type componentClass, object component) {
+
+            if (componentClass == null)
             {
-                return null;
+                throw new ArgumentNullException(nameof(componentClass));
             }
 
-            return ((IComponent)component).Site;
+            if (component == null)
+            {
+                throw new ArgumentNullException(nameof(component));
+            }
+
+            return TypeDescriptor.GetAssociation(componentClass, component);
         }
     }
 }

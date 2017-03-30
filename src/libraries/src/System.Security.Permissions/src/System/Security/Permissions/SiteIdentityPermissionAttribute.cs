@@ -4,11 +4,12 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public sealed partial class SiteIdentityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public sealed partial class SiteIdentityPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public SiteIdentityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public SiteIdentityPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public string Site { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

@@ -34,22 +34,48 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetInstance_NotNull_TestData))]
-        public void GetInstance(IFormatProvider provider)
+        public void GetInstance_NotNull(IFormatProvider provider)
         {
             Assert.NotNull(DateTimeFormatInfo.GetInstance(provider));
         }
 
-        public static IEnumerable<object[]> GetInstance_Specific_TestData()
+        private void AssertSameValues(DateTimeFormatInfo expected, DateTimeFormatInfo value)
         {
-            yield return new object[] { null, DateTimeFormatInfo.CurrentInfo };
-            yield return new object[] { new TestIFormatProviderClass(), DateTimeFormatInfo.CurrentInfo };
+            if (value.Equals(expected))
+            {
+                // same instance, we don't have to test the values 
+                return;
+            }
+
+            Assert.Equal(expected.AbbreviatedDayNames, value.AbbreviatedDayNames);
+            Assert.Equal(expected.AbbreviatedMonthGenitiveNames, value.AbbreviatedMonthGenitiveNames);
+            Assert.Equal(expected.AbbreviatedMonthNames, value.AbbreviatedMonthNames);
+            Assert.Equal(expected.DayNames, value.DayNames);
+            Assert.Equal(expected.MonthGenitiveNames, value.MonthGenitiveNames);
+            Assert.Equal(expected.MonthNames, value.MonthNames);
+            Assert.Equal(expected.ShortestDayNames, value.ShortestDayNames);
+
+            Assert.Equal(expected.AMDesignator, value.AMDesignator);
+            Assert.Equal(expected.FullDateTimePattern, value.FullDateTimePattern);
+            Assert.Equal(expected.LongDatePattern, value.LongDatePattern);
+            Assert.Equal(expected.LongTimePattern, value.LongTimePattern);
+            Assert.Equal(expected.MonthDayPattern, value.MonthDayPattern);
+            Assert.Equal(expected.PMDesignator, value.PMDesignator);
+            Assert.Equal(expected.RFC1123Pattern, value.RFC1123Pattern);
+            Assert.Equal(expected.ShortDatePattern, value.ShortDatePattern);
+            Assert.Equal(expected.ShortTimePattern, value.ShortTimePattern);
+            Assert.Equal(expected.SortableDateTimePattern, value.SortableDateTimePattern);
+            Assert.Equal(expected.UniversalSortableDateTimePattern, value.UniversalSortableDateTimePattern);
+            Assert.Equal(expected.YearMonthPattern, value.YearMonthPattern);
+            Assert.Equal(expected.CalendarWeekRule, value.CalendarWeekRule);
+            Assert.Equal(expected.FirstDayOfWeek, value.FirstDayOfWeek);
         }
 
-        [Theory]
-        [MemberData(nameof(GetInstance_Specific_TestData))]
-        public void GetInstance(IFormatProvider provider, DateTimeFormatInfo expected)
+        [Fact]
+        public void GetInstance_ExpectedCurrent()
         {
-            Assert.Equal(expected, DateTimeFormatInfo.GetInstance(provider));
+            AssertSameValues(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(null));
+            AssertSameValues(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass()));
         }
     }
 }

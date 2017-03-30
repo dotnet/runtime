@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-
-using Internal.Cryptography.Pal.Native;
 
 namespace Internal.Cryptography.Pal
 {
@@ -21,8 +22,9 @@ namespace Internal.Cryptography.Pal
             Dispose();
         }
 
-        public byte[] Export(X509ContentType contentType, string password)
+        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
         {
+            Debug.Assert(password != null);
             switch (contentType)
             {
                 case X509ContentType.Cert:

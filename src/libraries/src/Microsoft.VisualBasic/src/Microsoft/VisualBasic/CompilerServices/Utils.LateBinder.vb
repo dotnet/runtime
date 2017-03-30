@@ -101,7 +101,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End If
 
                 ' if the cached assembly ref has not been set, then set it here
-                s_VBRuntimeAssembly = GetType(Utils).GetTypeInfo.Assembly
+                s_VBRuntimeAssembly = GetType(Utils).Assembly
                 Return s_VBRuntimeAssembly
             End Get
         End Property
@@ -214,7 +214,7 @@ GetSpecialValue:
 
 
             Dim tc As TypeCode
-            If typ.GetTypeInfo.IsEnum Then
+            If typ.IsEnum Then
                 tc = TypeCode.Object
             Else
                 tc = typ.GetTypeCode
@@ -317,7 +317,7 @@ GetSpecialValue:
 
         Private Shared Function GetGenericArgsSuffix(ByVal typ As Type) As String
 
-            If Not typ.GetTypeInfo.IsGenericType Then
+            If Not typ.IsGenericType Then
                 Return Nothing
             End If
 
@@ -325,7 +325,7 @@ GetSpecialValue:
             Dim totalTypeArgsCount As Integer = typeArgs.Length
             Dim typeArgsCount As Integer = totalTypeArgsCount
 
-            If typ.DeclaringType IsNot Nothing AndAlso typ.DeclaringType.GetTypeInfo.IsGenericType Then
+            If typ.DeclaringType IsNot Nothing AndAlso typ.DeclaringType.IsGenericType Then
                 typeArgsCount = typeArgsCount - typ.DeclaringType.GetGenericArguments().Length
             End If
 
@@ -408,7 +408,7 @@ GetSpecialValue:
             End If
 
             If (method.Attributes And System.Reflection.MethodAttributes.Virtual) <> 0 Then
-                If Not method.DeclaringType.GetTypeInfo.IsInterface Then
+                If Not method.DeclaringType.IsInterface Then
                     MethodToString &= "Overrides "
                 End If
             ElseIf IsShared(method) Then
@@ -514,7 +514,7 @@ GetSpecialValue:
             resultString &= "Public "
 
             If (accessor.Attributes And MethodAttributes.Virtual) <> 0 Then
-                If Not prop.DeclaringType.GetTypeInfo.IsInterface Then
+                If Not prop.DeclaringType.IsInterface Then
                     resultString &= "Overrides "
                 End If
             ElseIf IsShared(accessor) Then

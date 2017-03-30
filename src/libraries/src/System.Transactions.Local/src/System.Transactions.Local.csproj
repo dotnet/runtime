@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{E97557E3-7DB1-4828-ACA5-44D8C68B6698}</ProjectGuid>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\Transactions\CommittableTransaction.cs" />
+    <Compile Include="System\Transactions\DependentTransaction.cs" />
+    <Compile Include="System\Transactions\DistributedTransaction.cs" />
+    <Compile Include="System\Transactions\DurableEnlistmentState.cs" />
+    <Compile Include="System\Transactions\EnterpriseServices.cs" />
+    <Compile Include="System\Transactions\Enlistment.cs" />
+    <Compile Include="System\Transactions\EnlistmentState.cs" />
+    <Compile Include="System\Transactions\EnlistmentTraceIdentifier.cs" />
+    <Compile Include="System\Transactions\IEnlistmentNotification.cs" />
+    <Compile Include="System\Transactions\InternalTransaction.cs" />
+    <Compile Include="System\Transactions\IPromotableSinglePhaseNotification.cs" />
+    <Compile Include="System\Transactions\ISimpleTransactionSuperior.cs" />
+    <Compile Include="System\Transactions\ISinglePhaseNotification.cs" />
+    <Compile Include="System\Transactions\ITransactionPromoter.cs" />
+    <Compile Include="System\Transactions\PreparingEnlistment.cs" />
+    <Compile Include="System\Transactions\SinglePhaseEnlistment.cs" />
+    <Compile Include="System\Transactions\SubordinateTransaction.cs" />
+    <Compile Include="System\Transactions\Transaction.cs" />
+    <Compile Include="System\Transactions\TransactionException.cs" />
+    <Compile Include="System\Transactions\TransactionInformation.cs" />
+    <Compile Include="System\Transactions\TransactionInterop.cs" />
+    <Compile Include="System\Transactions\TransactionManager.cs" />
+    <Compile Include="System\Transactions\TransactionOptions.cs" />
+    <Compile Include="System\Transactions\TransactionScope.cs" />
+    <Compile Include="System\Transactions\TransactionState.cs" />
+    <Compile Include="System\Transactions\TransactionTable.cs" />
+    <Compile Include="System\Transactions\TransactionTraceIdentifier.cs" />
+    <Compile Include="System\Transactions\VolatileEnlistmentMultiplexing.cs" />
+    <Compile Include="System\Transactions\VolatileEnlistmentState.cs" />
+    <Compile Include="System\Transactions\Configuration\AppSettings.cs" />
+    <Compile Include="System\Transactions\Configuration\ConfigurationStrings.cs" />
+    <Compile Include="System\Transactions\Configuration\DefaultSettingsSection.cs" />
+    <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Serialization.Formatters" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.Timer" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

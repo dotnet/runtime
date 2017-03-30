@@ -11,16 +11,28 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 using Xunit;
 
 
 public static partial class DataContractSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationOptionSetterName = "set_Option";
+
+    static DataContractSerializerTests()
+    {
+        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
+        method.Invoke(null, new object[] { 1 });
+    }
+#endif
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
@@ -1111,6 +1123,47 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_WriteObject_Use_DataContractResolver()
+    {
+        var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
+        var dcs = new DataContractSerializer(typeof(MyType), settings);
+
+        var value = new MyType() { Value = new MyOtherType() { Str = "Hello World" } };
+        using (var ms = new MemoryStream())
+        {
+            var myresolver = new MyResolver();
+            var xmlWriter = XmlDictionaryWriter.CreateTextWriter(ms);
+            dcs.WriteObject(xmlWriter, value, myresolver);
+
+            xmlWriter.Flush();
+            ms.Position = 0;
+
+            Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked was false");
+            Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked was false");
+
+            ms.Position = 0;
+            myresolver = new MyResolver();
+            var xmlReader = XmlDictionaryReader.CreateTextReader(ms, XmlDictionaryReaderQuotas.Max);
+            MyType deserialized = (MyType)dcs.ReadObject(xmlReader, false, myresolver);
+
+            Assert.NotNull(deserialized);
+            Assert.True(deserialized.Value is MyOtherType, "deserialized.Value was not of MyOtherType.");
+            Assert.Equal(((MyOtherType)value.Value).Str, ((MyOtherType)deserialized.Value).Str);
+
+            Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked was false");
+        }
+    }
+
+    [Fact]
+    public static void DCS_DataContractResolver_Property()
+    {
+        var myresolver = new MyResolver();
+        var settings = new DataContractSerializerSettings() { DataContractResolver = myresolver };
+        var dcs = new DataContractSerializer(typeof(MyType), settings);
+        Assert.Equal(myresolver, dcs.DataContractResolver);
+    }
+
+    [Fact]
     public static void DCS_EnumerableStruct()
     {
         var original = new EnumerableStruct();
@@ -1393,7 +1446,21 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_ExceptionMesageWithSpecialChars()
+    public static void DCS_ArgumentExceptionObject()
+    {
+        var value = new ArgumentException("Test Exception", "paramName");
+        var actual = SerializeAndDeserialize<ArgumentException>(value, @"<ArgumentException xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.ArgumentException</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2147024809</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/><ParamName i:type=""x:string"" xmlns="""">paramName</ParamName></ArgumentException>");
+
+        Assert.StrictEqual(value.Message, actual.Message);
+        Assert.StrictEqual(value.ParamName, actual.ParamName);
+        Assert.StrictEqual(value.Source, actual.Source);
+        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+    }
+
+    [Fact]
+    public static void DCS_ExceptionMessageWithSpecialChars()
     {
         var value = new ArgumentException("Test Exception<>&'\"");
         var actual = SerializeAndDeserialize<ArgumentException>(value, @"<ArgumentException xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.ArgumentException</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception&lt;&gt;&amp;'""</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2147024809</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/><ParamName i:nil=""true"" xmlns=""""/></ArgumentException>");
@@ -1407,7 +1474,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_InnerExceptionMesageWithSpecialChars()
+    public static void DCS_InnerExceptionMessageWithSpecialChars()
     {
         var value = new Exception("", new Exception("Test Exception<>&'\""));
         var actual = SerializeAndDeserialize<Exception>(value, @"<Exception xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.Exception</ClassName><Message i:type=""x:string"" xmlns=""""/><Data i:nil=""true"" xmlns=""""/><InnerException i:type=""a:Exception"" xmlns="""" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><ClassName i:type=""x:string"">System.Exception</ClassName><Message i:type=""x:string"">Test Exception&lt;&gt;&amp;'""</Message><Data i:nil=""true""/><InnerException i:nil=""true""/><HelpURL i:nil=""true""/><StackTraceString i:nil=""true""/><RemoteStackTraceString i:nil=""true""/><RemoteStackIndex i:type=""x:int"">0</RemoteStackIndex><ExceptionMethod i:nil=""true""/><HResult i:type=""x:int"">-2146233088</HResult><Source i:nil=""true""/><WatsonBuckets i:nil=""true""/></InnerException><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2146233088</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/></Exception>");
@@ -1613,6 +1680,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual<TypeWithCommonTypeProperties>(value, deserializedValue);
     }
 
+#if uapaot
     [Fact]
     public static void DCS_TypeWithTypeProperty()
     {
@@ -1622,6 +1690,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Name, deserializedValue.Name);
         Assert.StrictEqual(value.Type, deserializedValue.Type);
     }
+#endif
 
     [Fact]
     public static void DCS_TypeWithExplicitIEnumerableImplementation()
@@ -1931,70 +2000,30 @@ public static partial class DataContractSerializerTests
     public static void DCS_DeserializeEmptyString()
     {
         var serializer = new DataContractSerializer(typeof(object));
-        Assert.Throws<XmlException>(() =>
+        bool exceptionThrown = false;
+        try
         {
             serializer.ReadObject(new MemoryStream());
-        });
-    }
-
-    [Fact]
-    public static void DCS_MyPersonSurrogate()
-    {
-        DataContractSerializer dcs = new DataContractSerializer(typeof(Family));
-        dcs.SetSerializationSurrogateProvider(new MyPersonSurrogateProvider());
-        MemoryStream ms = new MemoryStream();
-        Family myFamily = new Family
-        {
-            Members = new NonSerializablePerson[]
-            {
-                new NonSerializablePerson("John", 34),
-                new NonSerializablePerson("Jane", 32),
-                new NonSerializablePerson("Bob", 5),
-            }
-        };
-        dcs.WriteObject(ms, myFamily);
-        ms.Position = 0;
-        var newFamily = (Family)dcs.ReadObject(ms);
-        Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
-        for (int i = 0; i < myFamily.Members.Length; ++i)
-        {
-            Assert.StrictEqual(myFamily.Members[i].Name, newFamily.Members[i].Name);
         }
-    }
-
-    [Fact]
-    public static void DCS_FileStreamSurrogate()
-    {
-        const string TestFileName = "Test.txt";
-        const string TestFileData = "Some data for data contract surrogate test";
-
-        // Create the serializer and specify the surrogate
-        var dcs = new DataContractSerializer(typeof(MyFileStream));
-        dcs.SetSerializationSurrogateProvider(MyFileStreamSurrogateProvider.Singleton);
-
-        // Create and initialize the stream
-        byte[] serializedStream;
-
-        // Serialize the stream
-        using (MyFileStream stream1 = new MyFileStream(TestFileName))
+        catch (Exception e)
         {
-            stream1.WriteLine(TestFileData);
-            using (MemoryStream memoryStream = new MemoryStream())
+            Type expectedExceptionType = typeof(XmlException);
+            Type actualExceptionType = e.GetType();
+            if (!actualExceptionType.Equals(expectedExceptionType))
             {
-                dcs.WriteObject(memoryStream, stream1);
-                serializedStream = memoryStream.ToArray();
+                var messageBuilder = new StringBuilder();
+                messageBuilder.AppendLine("The actual exception was not of the expected type.");
+                messageBuilder.AppendLine($"Expected exception type: {expectedExceptionType.FullName}, {expectedExceptionType.GetTypeInfo().Assembly.FullName}");
+                messageBuilder.AppendLine($"Actual exception type: {actualExceptionType.FullName}, {actualExceptionType.GetTypeInfo().Assembly.FullName}");
+                messageBuilder.AppendLine($"The type of {nameof(expectedExceptionType)} was: {expectedExceptionType.GetType()}");
+                messageBuilder.AppendLine($"The type of {nameof(actualExceptionType)} was: {actualExceptionType.GetType()}");
+                Assert.True(false, messageBuilder.ToString());
             }
+
+            exceptionThrown = true;
         }
 
-        // Deserialize the stream
-        using (MemoryStream stream = new MemoryStream(serializedStream))
-        {
-            using (MyFileStream stream2 = (MyFileStream)dcs.ReadObject(stream))
-            {
-                string fileData = stream2.ReadLine();
-                Assert.StrictEqual(TestFileData, fileData);
-            }
-        }
+        Assert.True(exceptionThrown, "An expected exception was not thrown.");
     }
 
     [Theory]
@@ -2257,7 +2286,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(x.IntMember, y.IntMember);
     }
 
-    #region Array of primitive types
+#region Array of primitive types
 
     [Fact]
     public static void DCS_ArrayOfBoolean()
@@ -2374,9 +2403,9 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.ID, actual.ID);
     }
 
-    #endregion
+#endregion
 
-    #region Collection
+#region Collection
 
     [Fact]
     public static void DCS_GenericICollectionOfBoolean()
@@ -2480,9 +2509,9 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value[0].Name, actual[0].Name);
     }
 
-    #endregion
+#endregion
 
-    #region Generic Dictionary
+#region Generic Dictionary
 
     [Fact]
     public static void DCS_GenericDictionaryOfInt32Boolean()
@@ -2517,9 +2546,9 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
-    #endregion
+#endregion
 
-    #region Non-Generic Dictionary
+#region Non-Generic Dictionary
 
     [Fact]
     public static void DCS_NonGenericDictionaryOfInt32Boolean()
@@ -2557,17 +2586,180 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<int>().ToArray(), deserialized.Values.Cast<int>().ToArray()));
     }
 
-    #endregion
+#endregion
 
     [Fact]
-    public static void BasicRoundTripResolveDTOTypes()
+    public static void DCS_BasicRoundTripResolveDTOTypes()
     {
         ObjectContainer instance = new ObjectContainer(new DTOContainer());
-        Func<DataContractSerializer> serializerfunc = () => new DataContractSerializer(typeof(ObjectContainer), null, null, null, int.MaxValue, false, false, new DTOResolver());
+        Func<DataContractSerializer> serializerfunc = () =>
+        {
+            var settings = new DataContractSerializerSettings()
+            {
+                DataContractResolver = new DTOResolver()
+            };
+
+            var serializer = new DataContractSerializer(typeof(ObjectContainer), settings);
+            return serializer;
+        };
+
         string expectedxmlstring = "<ObjectContainer xmlns =\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:DTOContainer\" xmlns:a=\"http://www.default.com\"><nDTO i:type=\"a:DTO\"><DateTime xmlns=\"http://schemas.datacontract.org/2004/07/System\">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=\"http://schemas.datacontract.org/2004/07/System\">0</OffsetMinutes></nDTO></_data></ObjectContainer>";
         ObjectContainer deserialized = SerializeAndDeserialize(instance, expectedxmlstring, null, serializerfunc, false);
         Assert.Equal(DateTimeOffset.MaxValue, ((DTOContainer)deserialized.Data).nDTO);
     }
+
+#if ReflectionOnly
+    [ActiveIssue(13699)]
+#endif
+    [Fact]
+    public static void DCS_ExtensionDataObjectTest()
+    {
+        var p2 = new PersonV2();
+        p2.Name = "Elizabeth";
+        p2.ID = 2006;
+
+        // Serialize the PersonV2 object
+        var ser = new DataContractSerializer(typeof(PersonV2));
+        var ms1 = new MemoryStream();
+        ser.WriteObject(ms1, p2);
+
+        // Verify the payload
+        ms1.Position = 0;
+        string actualOutput1 = new StreamReader(ms1).ReadToEnd();
+        string baseline1 = "<Person xmlns=\"http://www.msn.com/employees\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Name>Elizabeth</Name><ID>2006</ID></Person>";
+
+        Utils.CompareResult result = Utils.Compare(baseline1, actualOutput1);
+        Assert.True(result.Equal, $"{nameof(actualOutput1)} was not as expected: {Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+
+        // Deserialize the payload into a Person instance.
+        ms1.Position = 0;
+        var ser2 = new DataContractSerializer(typeof(Person));
+        XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms1, new XmlDictionaryReaderQuotas());
+        var p1 = (Person)ser2.ReadObject(reader, false);
+
+        Assert.True(p1 != null, $"Variable {nameof(p1)} was null.");
+        Assert.True(p1.ExtensionData != null, $"{nameof(p1.ExtensionData)} was null.");
+        Assert.Equal(p2.Name, p1.Name);
+
+        // Serialize the Person instance
+        var ms2 = new MemoryStream();
+        ser2.WriteObject(ms2, p1);
+
+        // Verify the payload
+        ms2.Position = 0;
+        string actualOutput2 = new StreamReader(ms2).ReadToEnd();
+        string baseline2 = "<Person xmlns=\"http://www.msn.com/employees\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Name>Elizabeth</Name><ID>2006</ID></Person>";
+
+        Utils.CompareResult result2 = Utils.Compare(baseline2, actualOutput2);
+        Assert.True(result2.Equal, $"{nameof(actualOutput2)} was not as expected: {Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+    }
+
+    [Fact]
+    public static void DCS_XPathQueryGeneratorTest()
+    {
+        Type t = typeof(Order);
+        MemberInfo[] mi = t.GetMember("Product");
+        MemberInfo[] mi2 = t.GetMember("Value");
+        MemberInfo[] mi3 = t.GetMember("Quantity");
+        Assert.Equal("/xg0:Order/xg0:productName", GenerateaAndGetXPath(t, mi));
+        Assert.Equal("/xg0:Order/xg0:cost", GenerateaAndGetXPath(t, mi2));
+        Assert.Equal("/xg0:Order/xg0:quantity", GenerateaAndGetXPath(t, mi3));
+        Type t2 = typeof(Line);
+        MemberInfo[] mi4 = t2.GetMember("Items");
+        Assert.Equal("/xg0:Line/xg0:Items", GenerateaAndGetXPath(t2, mi4));
+    }
+    static string GenerateaAndGetXPath(Type t, MemberInfo[] mi)
+    {
+        // Create a new name table and name space manager.
+        NameTable nt = new NameTable();
+        XmlNamespaceManager xname = new XmlNamespaceManager(nt);
+        // Generate the query and print it.
+        return XPathQueryGenerator.CreateFromDataContractSerializer(
+            t, mi, out xname);
+    }
+
+    [Fact]
+    public static void XsdDataContractExporterTest()
+    {
+        XsdDataContractExporter exporter = new XsdDataContractExporter();
+        Assert.Throws<PlatformNotSupportedException>(() => exporter.CanExport(typeof(Employee)));
+        Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
+    }
+
+    [Fact]
+    public static void DCS_MyISerializableType()
+    {
+        var value = new MyISerializableType();
+        value.StringValue = "test string";
+
+        var actual = SerializeAndDeserialize(value, "<MyISerializableType xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:x=\"http://www.w3.org/2001/XMLSchema\"><_stringValue i:type=\"x:string\" xmlns=\"\">test string</_stringValue></MyISerializableType>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.StringValue, actual.StringValue);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithNonSerializedField()
+    {
+        var value = new TypeWithSerializableAttributeAndNonSerializedField();
+        value.Member1 = 11;
+        value.Member2 = "22";
+        value.SetMember3(33);
+        value.Member4 = "44";
+
+        var actual = SerializeAndDeserialize(
+            value,
+            "<TypeWithSerializableAttributeAndNonSerializedField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>11</Member1><_member2>22</_member2><_member3>33</_member3></TypeWithSerializableAttributeAndNonSerializedField>",
+            skipStringCompare: false);
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+        Assert.Equal(value.Member3, actual.Member3);
+        Assert.Null(actual.Member4);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithOptionalField()
+    {
+        var value = new TypeWithOptionalField();
+        value.Member1 = 11;
+        value.Member2 = 22;
+
+        var actual = SerializeAndDeserialize(value, "<TypeWithOptionalField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>11</Member1><Member2>22</Member2></TypeWithOptionalField>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+
+        int member1Value = 11;
+        string payloadMissingOptionalField = $"<TypeWithOptionalField xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Member1>{member1Value}</Member1></TypeWithOptionalField>";
+        var deserialized = DeserializeString<TypeWithOptionalField>(payloadMissingOptionalField);
+        Assert.Equal(member1Value, deserialized.Member1);
+        Assert.Equal(0, deserialized.Member2);
+    }
+
+    [Fact]
+    public static void DCS_SerializableEnumWithNonSerializedValue()
+    {
+        var value1 = new TypeWithSerializableEnum();
+        value1.EnumField = SerializableEnumWithNonSerializedValue.One;
+        var actual1 = SerializeAndDeserialize(value1, "<TypeWithSerializableEnum xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><EnumField>One</EnumField></TypeWithSerializableEnum>");
+        Assert.NotNull(actual1);
+        Assert.Equal(value1.EnumField, actual1.EnumField);
+
+        var value2 = new TypeWithSerializableEnum();
+        value2.EnumField = SerializableEnumWithNonSerializedValue.Two;
+        Assert.Throws<SerializationException>(() => SerializeAndDeserialize(value2, ""));
+    }
+
+    [Fact]
+    public static void DCS_SquareWithDeserializationCallback()
+    {
+        var value = new SquareWithDeserializationCallback(2);
+        var actual = SerializeAndDeserialize(value, "<SquareWithDeserializationCallback xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Edge>2</Edge></SquareWithDeserializationCallback>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Area, actual.Area);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;

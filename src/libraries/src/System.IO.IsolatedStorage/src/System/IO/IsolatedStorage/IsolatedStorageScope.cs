@@ -6,6 +6,7 @@ using System;
 
 namespace System.IO.IsolatedStorage
 {
+    [Serializable]
     [Flags]
     public enum IsolatedStorageScope
     {

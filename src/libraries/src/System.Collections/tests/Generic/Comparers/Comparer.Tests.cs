@@ -14,10 +14,10 @@ namespace System.Collections.Generic.Tests
     {
         [Theory]
         [MemberData(nameof(IComparableComparisonsData))]
-        [MemberData(nameof(ULongEnumComparisonsData))]
-        [MemberData(nameof(IntEnumComparisonsData))]
-        [MemberData(nameof(UIntEnumComparisonsData))]
-        [MemberData(nameof(LongEnumComparisonsData))]
+        [MemberData(nameof(UInt64EnumComparisonsData))]
+        [MemberData(nameof(Int32EnumComparisonsData))]
+        [MemberData(nameof(UInt32EnumComparisonsData))]
+        [MemberData(nameof(Int64EnumComparisonsData))]
         [MemberData(nameof(PlainObjectComparisonsData))]
         public void MostComparisons<T>(T left, T right, int expected)
         {
@@ -87,7 +87,7 @@ namespace System.Collections.Generic.Tests
             }
         }
 
-        public static IEnumerable<object[]> ULongEnumComparisonsData()
+        public static IEnumerable<object[]> UInt64EnumComparisonsData()
         {
             var testCases = new[]
             {
@@ -100,12 +100,12 @@ namespace System.Collections.Generic.Tests
             
             foreach (var testCase in testCases)
             {
-                yield return new object[] { (ULongEnum)testCase.Item1, (ULongEnum)testCase.Item2, testCase.Item3 };
-                yield return new object[] { (ULongEnum)testCase.Item2, (ULongEnum)testCase.Item1, -testCase.Item3 };
+                yield return new object[] { (UInt64Enum)testCase.Item1, (UInt64Enum)testCase.Item2, testCase.Item3 };
+                yield return new object[] { (UInt64Enum)testCase.Item2, (UInt64Enum)testCase.Item1, -testCase.Item3 };
             }
         }
 
-        public static IEnumerable<object[]> IntEnumComparisonsData()
+        public static IEnumerable<object[]> Int32EnumComparisonsData()
         {
             var testCases = new[]
             {
@@ -119,12 +119,12 @@ namespace System.Collections.Generic.Tests
 
             foreach (var testCase in testCases)
             {
-                yield return new object[] { (IntEnum)testCase.Item1, (IntEnum)testCase.Item2, testCase.Item3 };
-                yield return new object[] { (IntEnum)testCase.Item2, (IntEnum)testCase.Item1, -testCase.Item3 };
+                yield return new object[] { (Int32Enum)testCase.Item1, (Int32Enum)testCase.Item2, testCase.Item3 };
+                yield return new object[] { (Int32Enum)testCase.Item2, (Int32Enum)testCase.Item1, -testCase.Item3 };
             }
         }
 
-        public static IEnumerable<object[]> UIntEnumComparisonsData()
+        public static IEnumerable<object[]> UInt32EnumComparisonsData()
         {
             var testCases = new[]
             {
@@ -135,12 +135,12 @@ namespace System.Collections.Generic.Tests
 
             foreach (var testCase in testCases)
             {
-                yield return new object[] { (UIntEnum)testCase.Item1, (UIntEnum)testCase.Item2, testCase.Item3 };
-                yield return new object[] { (UIntEnum)testCase.Item2, (UIntEnum)testCase.Item1, -testCase.Item3 };
+                yield return new object[] { (UInt32Enum)testCase.Item1, (UInt32Enum)testCase.Item2, testCase.Item3 };
+                yield return new object[] { (UInt32Enum)testCase.Item2, (UInt32Enum)testCase.Item1, -testCase.Item3 };
             }
         }
 
-        public static IEnumerable<object[]> LongEnumComparisonsData()
+        public static IEnumerable<object[]> Int64EnumComparisonsData()
         {
             var testCases = new[]
             {
@@ -151,8 +151,8 @@ namespace System.Collections.Generic.Tests
             
             foreach (var testCase in testCases)
             {
-                yield return new object[] { (LongEnum)testCase.Item1, (LongEnum)testCase.Item2, testCase.Item3 };
-                yield return new object[] { (LongEnum)testCase.Item2, (LongEnum)testCase.Item1, -testCase.Item3 };
+                yield return new object[] { (Int64Enum)testCase.Item1, (Int64Enum)testCase.Item2, testCase.Item3 };
+                yield return new object[] { (Int64Enum)testCase.Item2, (Int64Enum)testCase.Item1, -testCase.Item3 };
             }
         }
 
@@ -234,8 +234,8 @@ namespace System.Collections.Generic.Tests
         // just for nullables.
 
         [Theory]
-        [MemberData(nameof(NullableOfIntComparisonsData))]
-        [MemberData(nameof(NullableOfIntEnumComparisonsData))]
+        [MemberData(nameof(NullableOfInt32ComparisonsData))]
+        [MemberData(nameof(NullableOfInt32EnumComparisonsData))]
         public void NullableComparisons<T>(T leftValue, bool leftHasValue, T rightValue, bool rightHasValue, int expected) where T : struct
         {
             // Comparer<T> is specialized (for perf reasons) when T : U? where U : IComparable<U>
@@ -286,7 +286,7 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(0, nonGenericComparer.Compare(default(T), default(T)));
         }
 
-        public static IEnumerable<object[]> NullableOfIntComparisonsData()
+        public static IEnumerable<object[]> NullableOfInt32ComparisonsData()
         {
             var testCases = new[]
             {
@@ -301,7 +301,7 @@ namespace System.Collections.Generic.Tests
             }
         }
 
-        public static IEnumerable<object[]> NullableOfIntEnumComparisonsData()
+        public static IEnumerable<object[]> NullableOfInt32EnumComparisonsData()
         {
             // Currently the default Comparer/EqualityComparer is optimized for when
             // T : U? where U : IComparable<U> or T : enum, but not T : U? where

@@ -42,12 +42,12 @@ namespace OLEDB.Test.ModuleCore
 
 
         //Methods
-        static public MyDict<string, string> ParseKeywords(string str)
+        public static MyDict<string, string> ParseKeywords(string str)
         {
             return ParseKeywords(str, s_DefaultTokens);
         }
 
-        static public MyDict<string, string> ParseKeywords(string str, Tokens tokens)
+        public static MyDict<string, string> ParseKeywords(string str, Tokens tokens)
         {
             PARSE state = PARSE.Initial;
             int index = 0;

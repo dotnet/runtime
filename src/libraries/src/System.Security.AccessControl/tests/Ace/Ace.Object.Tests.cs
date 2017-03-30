@@ -61,10 +61,13 @@ namespace System.Security.AccessControl.Tests
             int baseOffset = offset + 4;
             int offsetLocal = 0;
 
-            binaryForm[baseOffset + 0] = (byte)(accessMask >> 0);
-            binaryForm[baseOffset + 1] = (byte)(accessMask >> 8);
-            binaryForm[baseOffset + 2] = (byte)(accessMask >> 16);
-            binaryForm[baseOffset + 3] = (byte)(accessMask >> 24);
+            unchecked
+            {
+                binaryForm[baseOffset + 0] = (byte)(accessMask >> 0);
+                binaryForm[baseOffset + 1] = (byte)(accessMask >> 8);
+                binaryForm[baseOffset + 2] = (byte)(accessMask >> 16);
+                binaryForm[baseOffset + 3] = (byte)(accessMask >> 24);
+            }
             offsetLocal += 4;
 
             binaryForm[baseOffset + offsetLocal + 0] = (byte)(((uint)flags) >> 0);

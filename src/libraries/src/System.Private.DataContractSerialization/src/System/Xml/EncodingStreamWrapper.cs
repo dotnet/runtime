@@ -596,7 +596,11 @@ namespace System.Xml
 
         protected override void Dispose(bool disposing)
         {
-            Flush();
+            if (_stream.CanWrite)
+            {
+                Flush();
+            }
+
             _stream.Dispose();
             base.Dispose(disposing);
         }

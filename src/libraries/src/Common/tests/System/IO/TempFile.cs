@@ -11,7 +11,7 @@ namespace System.IO
     public sealed class TempFile : IDisposable
     {
         /// <summary>Gets the created file's path.</summary>
-        public string Path { get; private set; }
+        public string Path { get; }
 
         public TempFile(string path, long length = 0)
         {

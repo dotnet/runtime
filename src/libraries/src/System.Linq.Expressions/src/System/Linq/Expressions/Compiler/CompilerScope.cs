@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 using static System.Linq.Expressions.CachedReflectionInfo;
+using System.Collections;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -25,9 +26,9 @@ namespace System.Linq.Expressions.Compiler
     ///   1. Parent relationship (for resolving variables)
     ///   2. Information about hoisted variables
     ///   3. Information for resolving closures
-    /// 
+    ///
     /// Instances are produced by VariableBinder, which does a tree walk
-    /// looking for scope nodes: LambdaExpression and BlockExpression.
+    /// looking for scope nodes: LambdaExpression, BlockExpression, and CatchBlock.
     /// </summary>
     internal sealed partial class CompilerScope
     {
@@ -70,7 +71,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Scopes whose variables were merged into this one
-        /// 
+        ///
         /// Created lazily as we create hundreds of compiler scopes w/o merging scopes when compiling rules.
         /// </summary>
         internal HashSet<BlockExpression> MergedScopes;
@@ -96,10 +97,10 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            var variables = GetVariables(node);
+            IReadOnlyList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
-            foreach (var v in variables)
+            foreach (ParameterExpression v in variables)
             {
                 Definitions.Add(v, VariableStorageKind.Local);
             }
@@ -165,16 +166,16 @@ namespace System.Linq.Expressions.Compiler
             return parent;
         }
 
-        #region LocalScopeExpression support
+        #region RuntimeVariablesExpression support
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
-            if (NearestHoistedLocals != null)
+            if (NearestHoistedLocals != null && vars.Count > 0)
             {
                 // Find what array each variable is on & its index
-                var indexes = new List<long>(vars.Count);
+                var indexes = new ArrayBuilder<long>(vars.Count);
 
-                foreach (var variable in vars)
+                foreach (ParameterExpression variable in vars)
                 {
                     // For each variable, find what array it's defined on
                     ulong parents = 0;
@@ -190,21 +191,18 @@ namespace System.Linq.Expressions.Compiler
                     // real index of variable to get the index to emit.
                     ulong index = (parents << 32) | (uint)locals.Indexes[variable];
 
-                    indexes.Add((long)index);
+                    indexes.UncheckedAdd((long)index);
                 }
 
-                if (indexes.Count > 0)
-                {
-                    EmitGet(NearestHoistedLocals.SelfVariable);
-                    lc.EmitConstantArray(indexes.ToArray());
-                    lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
-                    return;
-                }
+                EmitGet(NearestHoistedLocals.SelfVariable);
+                lc.EmitConstantArray(indexes.ToArray());
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
             }
-
-            // No visible variables
-            lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
-            return;
+            else
+            {
+                // No visible variables
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
+            }
         }
 
         #endregion
@@ -241,7 +239,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Resolve a local variable in this scope or a closed over scope
-        /// Throws if the variable is defined
+        /// Throws if the variable is not defined
         /// </summary>
         private Storage ResolveVariable(ParameterExpression variable, HoistedLocals hoistedLocals)
         {
@@ -296,7 +294,7 @@ namespace System.Linq.Expressions.Compiler
                 _closureHoistedLocals = _parent.NearestHoistedLocals;
             }
 
-            var hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
 
             if (hoistedVars.Count > 0)
             {
@@ -314,7 +312,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // create the array
-            lc.IL.EmitInt(_hoistedLocals.Variables.Count);
+            lc.IL.EmitPrimitive(_hoistedLocals.Variables.Count);
             lc.IL.Emit(OpCodes.Newarr, typeof(object));
 
             // initialize all elements
@@ -323,13 +321,13 @@ namespace System.Linq.Expressions.Compiler
             {
                 // array[i] = new StrongBox<T>(...);
                 lc.IL.Emit(OpCodes.Dup);
-                lc.IL.EmitInt(i++);
+                lc.IL.EmitPrimitive(i++);
                 Type boxType = typeof(StrongBox<>).MakeGenericType(v.Type);
 
-                if (IsMethod && lc.Parameters.Contains(v))
+                int index;
+                if (IsMethod && (index = lc.Parameters.IndexOf(v)) >= 0)
                 {
                     // array[i] = new StrongBox<T>(argument);
-                    int index = lc.Parameters.IndexOf(v);
                     lc.EmitLambdaArgument(index);
                     lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
                 }
@@ -367,7 +365,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            foreach (var refCount in ReferenceCount)
+            foreach (KeyValuePair<ParameterExpression, int> refCount in ReferenceCount)
             {
                 if (ShouldCache(refCount.Key, refCount.Value))
                 {
@@ -420,7 +418,7 @@ namespace System.Linq.Expressions.Compiler
 
             while ((locals = locals.Parent) != null)
             {
-                var v = locals.SelfVariable;
+                ParameterExpression v = locals.SelfVariable;
                 var local = new LocalStorage(lc, v);
                 local.EmitStore(ResolveVariable(v));
                 _locals.Add(v, local);
@@ -473,7 +471,7 @@ namespace System.Linq.Expressions.Compiler
                 yield return param;
             }
 
-            foreach (var scope in MergedScopes)
+            foreach (BlockExpression scope in MergedScopes)
             {
                 foreach (ParameterExpression param in scope.Variables)
                 {
@@ -482,12 +480,12 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static IList<ParameterExpression> GetVariables(object scope)
+        private static IReadOnlyList<ParameterExpression> GetVariables(object scope)
         {
             var lambda = scope as LambdaExpression;
             if (lambda != null)
             {
-                return lambda.Parameters;
+                return new ParameterList(lambda);
             }
             var block = scope as BlockExpression;
             if (block != null)
@@ -514,5 +512,56 @@ namespace System.Linq.Expressions.Compiler
                 throw ContractUtils.Unreachable;
             }
         }
+    }
+
+    internal static class ParameterProviderExtensions
+    {
+        public static int IndexOf(this IParameterProvider provider, ParameterExpression parameter)
+        {
+            for (int i = 0, n = provider.ParameterCount; i < n; i++)
+            {
+                if (provider.GetParameter(i) == parameter)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static bool Contains(this IParameterProvider provider, ParameterExpression parameter)
+        {
+            return provider.IndexOf(parameter) >= 0;
+        }
+    }
+
+    internal sealed class ParameterList : IReadOnlyList<ParameterExpression>
+    {
+        private readonly IParameterProvider _provider;
+
+        public ParameterList(IParameterProvider provider)
+        {
+            _provider = provider;
+        }
+
+        public ParameterExpression this[int index]
+        {
+            get
+            {
+                return _provider.GetParameter(index);
+            }
+        }
+
+        public int Count => _provider.ParameterCount;
+
+        public IEnumerator<ParameterExpression> GetEnumerator()
+        {
+            for (int i = 0, n = _provider.ParameterCount; i < n; i++)
+            {
+                yield return _provider.GetParameter(i);
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

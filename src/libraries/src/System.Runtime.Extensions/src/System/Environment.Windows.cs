@@ -14,8 +14,8 @@ namespace System
         {
             get
             {
-                StringBuilder sb = StringBuilderCache.Acquire(Interop.mincore.MAX_PATH + 1);
-                if (Interop.mincore.GetCurrentDirectory(sb.Capacity, sb) == 0)
+                StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH + 1);
+                if (Interop.Kernel32.GetCurrentDirectory(sb.Capacity, sb) == 0)
                 {
                     StringBuilderCache.Release(sb);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -27,17 +27,17 @@ namespace System
                 // this will return a short file name.
                 if (currentDirectory.IndexOf('~') >= 0)
                 {
-                    int r = Interop.mincore.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                    if (r == 0 || r >= Interop.mincore.MAX_PATH)
+                    int r = Interop.Kernel32.GetLongPathName(currentDirectory, sb, sb.Capacity);
+                    if (r == 0 || r >= Interop.Kernel32.MAX_PATH)
                     {
-                        int errorCode = r >= Interop.mincore.MAX_PATH ?
-                            Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE :
+                        int errorCode = r >= Interop.Kernel32.MAX_PATH ?
+                            Interop.Errors.ERROR_FILENAME_EXCED_RANGE :
                             Marshal.GetLastWin32Error();
 
-                        if (errorCode != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND &&
-                            errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND &&
-                            errorCode != Interop.mincore.Errors.ERROR_INVALID_FUNCTION &&
-                            errorCode != Interop.mincore.Errors.ERROR_ACCESS_DENIED)
+                        if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
+                            errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
+                            errorCode != Interop.Errors.ERROR_INVALID_FUNCTION &&
+                            errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
                         {
                             StringBuilderCache.Release(sb);
                             throw Win32Marshal.GetExceptionForWin32Error(errorCode);
@@ -52,11 +52,11 @@ namespace System
             }
             set
             {
-                if (!Interop.mincore.SetCurrentDirectory(value))
+                if (!Interop.Kernel32.SetCurrentDirectory(value))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
                     throw Win32Marshal.GetExceptionForWin32Error(
-                        errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND ? Interop.mincore.Errors.ERROR_PATH_NOT_FOUND : errorCode, 
+                        errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ? Interop.Errors.ERROR_PATH_NOT_FOUND : errorCode,
                         value);
                 }
             }
@@ -70,8 +70,8 @@ namespace System
         {
             get
             {
-                var info = default(Interop.mincore.SYSTEM_INFO);
-                Interop.mincore.GetSystemInfo(out info);
+                var info = default(Interop.Kernel32.SYSTEM_INFO);
+                Interop.Kernel32.GetSystemInfo(out info);
                 return info.dwNumberOfProcessors;
             }
         }
@@ -80,8 +80,8 @@ namespace System
         {
             get
             {
-                var info = default(Interop.mincore.SYSTEM_INFO);
-                Interop.mincore.GetSystemInfo(out info);
+                var info = default(Interop.Kernel32.SYSTEM_INFO);
+                Interop.Kernel32.GetSystemInfo(out info);
                 return info.dwPageSize;
             }
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -18,24 +19,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines whether this editor will attempt to convert hex (0x or #) strings
         /// </summary>
-        internal override bool AllowHex
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal override bool AllowHex => false;
 
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
         /// </summary>
-        internal override Type TargetType
-        {
-            get
-            {
-                return typeof(Decimal);
-            }
-        }
+        internal override Type TargetType => typeof(decimal);
 
         /// <summary>
         ///    <para>
@@ -45,12 +34,10 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -67,7 +54,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
-#if FEATURE_INSTANCEDESCRIPTOR
+
             if (destinationType == typeof(InstanceDescriptor) && value is Decimal)
             {
 
@@ -84,7 +71,7 @@ namespace System.ComponentModel
                     return null;
                 }
             }
-#endif
+            
             return base.ConvertTo(context, culture, value, destinationType);
         }
 

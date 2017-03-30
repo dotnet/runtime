@@ -173,9 +173,9 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader(new StringReader(mnw.GetNodes()));
                     PositionOnElement(DataReader, "ELEMENT_1");
 
-                    TestLog.Compare(DataReader.ReadToDescendant("a"), true, "Couldnt go to Descendant");
+                    TestLog.Compare(DataReader.ReadToDescendant("a"), true, "Couldn't go to Descendant");
                     int depth = DataReader.Depth;
-                    TestLog.Compare(DataReader.ReadToNextSibling("b"), true, "Couldnt go to NextSibling");
+                    TestLog.Compare(DataReader.ReadToNextSibling("b"), true, "Couldn't go to NextSibling");
 
                     TestLog.Compare(DataReader.Depth, depth, "Depth is not correct");
                     TestLog.Compare(DataReader.NodeType, XmlNodeType.Element, "Nodetype is not correct");

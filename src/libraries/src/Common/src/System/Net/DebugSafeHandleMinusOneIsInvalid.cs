@@ -4,12 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
-
 namespace System.Net
 {
 #if DEBUG
@@ -29,10 +23,7 @@ namespace System.Net
         private void Trace()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Creating SafeHandle, type = " + this.GetType().FullName);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Creating SafeHandle");
 #if TRACE_VERBOSE
             string stacktrace = Environment.StackTrace;
             _trace += stacktrace;
@@ -41,11 +32,8 @@ namespace System.Net
 
         ~DebugSafeHandleMinusOneIsInvalid()
         {
-            GlobalLog.SetThreadSource(ThreadKinds.Finalization);
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print(_trace);
-            }
+            DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG

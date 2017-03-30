@@ -1,0 +1,32 @@
+{
+  "dependencies": {
+    "Microsoft.DotNet.PlatformAbstractions": "1.2.0-beta-001090",
+    "NETStandard.Library": "1.6.0",
+    "Newtonsoft.Json": "9.0.1"
+  },
+  "frameworks": {
+    "netstandard1.5": {
+      "dependencies": {
+        "Microsoft.Build": "0.1.0-preview-00022",
+        "Microsoft.Build.Framework": "0.1.0-preview-00022",
+        "Microsoft.Build.Tasks.Core": "0.1.0-preview-00022",
+        "Microsoft.Build.Utilities.Core": "0.1.0-preview-00022",
+        "Microsoft.Tpl.Dataflow": {
+          "version": "4.5.24",
+          "exclude": "all"
+        }
+      },
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8+wpa81"
+      ]
+    },
+    "net46": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
+        "System.Reflection.Metadata": "1.4.2",
+        "System.Collections.Immutable": "1.3.1"
+      }
+    }
+  }
+}

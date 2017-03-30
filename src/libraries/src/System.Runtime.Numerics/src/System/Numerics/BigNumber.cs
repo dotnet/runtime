@@ -307,7 +307,7 @@ namespace System.Numerics
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                e = new ArgumentException(SR.Format(SR.Argument_InvalidNumberStyles, "style"));
+                e = new ArgumentException(SR.Format(SR.Argument_InvalidNumberStyles, nameof(style)));
                 return false;
             }
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
@@ -371,7 +371,7 @@ namespace System.Numerics
             return result;
         }
 
-        private unsafe static bool HexNumberToBigInteger(ref BigNumberBuffer number, ref BigInteger value)
+        private static unsafe bool HexNumberToBigInteger(ref BigNumberBuffer number, ref BigInteger value)
         {
             if (number.digits == null || number.digits.Length == 0)
                 return false;
@@ -425,7 +425,7 @@ namespace System.Numerics
             return true;
         }
 
-        private unsafe static bool NumberToBigInteger(ref BigNumberBuffer number, ref BigInteger value)
+        private static unsafe bool NumberToBigInteger(ref BigNumberBuffer number, ref BigInteger value)
         {
             int i = number.scale;
             int cur = 0;

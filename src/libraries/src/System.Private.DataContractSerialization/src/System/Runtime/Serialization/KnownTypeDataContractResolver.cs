@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public sealed class KnownTypeDataContractResolver : DataContractResolver
 #else
     internal sealed class KnownTypeDataContractResolver : DataContractResolver
@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
                 typeNamespace = null;
                 return false;
             }
-            if (declaredType != null && declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType != null && declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 typeName = null;
                 typeNamespace = null;

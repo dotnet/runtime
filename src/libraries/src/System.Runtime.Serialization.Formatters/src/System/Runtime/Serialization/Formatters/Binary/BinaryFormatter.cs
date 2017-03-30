@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Collections.Generic;
-using System.Runtime.Remoting.Messaging;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.Serialization.Formatters.Binary
@@ -38,9 +37,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _context = context;
         }
 
-        public object Deserialize(Stream serializationStream) => Deserialize(serializationStream, null);
+        public object Deserialize(Stream serializationStream) => Deserialize(serializationStream, true);
 
-        internal object Deserialize(Stream serializationStream, HeaderHandler handler, bool check)
+        internal object Deserialize(Stream serializationStream, bool check)
         {
             if (serializationStream == null)
             {
@@ -64,23 +63,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _crossAppDomainArray = _crossAppDomainArray
             };
             var parser = new BinaryParser(serializationStream, reader);
-            return reader.Deserialize(handler, parser, check);
+            return reader.Deserialize(parser, check);
         }
-
-        public object Deserialize(Stream serializationStream, HeaderHandler handler) => 
-            Deserialize(serializationStream, handler, check: true);
-
-        [ComVisible(false)]
-        public object UnsafeDeserialize(Stream serializationStream, HeaderHandler handler) => 
-            Deserialize(serializationStream, handler, check: false);
-
         public void Serialize(Stream serializationStream, object graph) => 
-            Serialize(serializationStream, graph, headers: null);
+            Serialize(serializationStream, graph, true);
 
-        public void Serialize(Stream serializationStream, object graph, Header[] headers) => 
-            Serialize(serializationStream, graph, headers, check: true);
-
-        internal void Serialize(Stream serializationStream, object graph, Header[] headers, bool check)
+        internal void Serialize(Stream serializationStream, object graph, bool check)
         {
             if (serializationStream == null)
             {
@@ -96,9 +84,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);
             BinaryFormatterWriter binaryWriter = new BinaryFormatterWriter(serializationStream, sow, _typeFormat);
-            sow.Serialize(graph, headers, binaryWriter, check);
+            sow.Serialize(graph, binaryWriter, check);
             _crossAppDomainArray = sow._crossAppDomainArray;
         }
+
 
         internal static TypeInformation GetTypeInformation(Type type)
         {

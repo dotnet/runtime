@@ -24,7 +24,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;
@@ -47,7 +46,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;
@@ -70,7 +68,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_SingleSocketClientAPM_LocalHostServerAsync()
         {
             SocketImplementationType serverType = SocketImplementationType.Async;
@@ -93,7 +90,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_MultipleSocketClientAPM_LocalHostServerAsync()
         {
             SocketImplementationType serverType = SocketImplementationType.Async;
@@ -116,7 +112,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_SingleSocketClientAsync_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;
@@ -139,7 +134,6 @@ namespace System.Net.Sockets.Performance.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(3635)]
         public void SocketPerformance_MultipleSocketClientAsync_LocalHostServerAPM()
         {
             SocketImplementationType serverType = SocketImplementationType.APM;

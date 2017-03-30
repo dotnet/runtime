@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            return Interop.mincore.FreeLibrary(handle);
+            return Interop.Kernel32.FreeLibrary(handle);
         }
     }
 }

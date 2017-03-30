@@ -59,9 +59,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-#if !NETNATIVE
                 keyHandle = ECCng.ImportKeyBlob(format.Format, keyBlob, curveName, providerHandle);
-#endif //!NETNATIVE
             }
 
             CngKey key = new CngKey(providerHandle, keyHandle);

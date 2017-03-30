@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.XsltOld
         private static PrefixQName CreateAttributeQName(string name, string nsUri, InputScopeManager manager)
         {
             // if name == "xmlns" we don't need to generate this attribute.
-            // to avoid i'ts generation we can return false and not add AtributeCation to it's parent container action
+            // to avoid its generation we can return false and not add AttributeCreation to it's parent container action
             // for now not creating this.qname will do the trick at execution time
             if (name == "xmlns") return null;
             if (nsUri == XmlReservedNs.NsXmlNs)

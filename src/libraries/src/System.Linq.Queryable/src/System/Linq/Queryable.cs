@@ -14,1976 +14,1648 @@ namespace System.Linq
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             IQueryable queryable = source as IQueryable;
             if (queryable != null) return queryable;
             Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
-                throw Error.ArgumentNotIEnumerableGeneric("source");
-            return EnumerableQuery.Create(enumType.GetTypeInfo().GenericTypeArguments[0], source);
+                throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
+            return EnumerableQuery.Create(enumType.GenericTypeArguments[0], source);
         }
 
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Where(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Where_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Where(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Where_Index_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<TResult> OfType<TResult>(this IQueryable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.OfType<TResult>(
-                        default(IQueryable))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.OfType_TResult_1(typeof(TResult)), source.Expression));
         }
 
         public static IQueryable<TResult> Cast<TResult>(this IQueryable source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Cast<TResult>(
-                        default(IQueryable))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Cast_TResult_1(typeof(TResult)), source.Expression));
         }
 
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Select(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Select_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Select(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Select_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TResult>>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SelectMany(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, IEnumerable<TResult>>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.SelectMany_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TResult>>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SelectMany(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, IEnumerable<TResult>>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.SelectMany_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (collectionSelector == null)
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SelectMany(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, IEnumerable<TCollection>>>),
-                        default(Expression<Func<TSource, TCollection, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector) }
+                    CachedReflectionInfo.SelectMany_Index_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
                     ));
         }
 
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (collectionSelector == null)
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SelectMany(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, IEnumerable<TCollection>>>),
-                        default(Expression<Func<TSource, TCollection, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector) }
+                    CachedReflectionInfo.SelectMany_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
                     ));
         }
 
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
         {
             IQueryable<TSource> q = source as IQueryable<TSource>;
-            if (q != null) return q.Expression;
-            return Expression.Constant(source, typeof(IEnumerable<TSource>));
+            return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Join(
-                        default(IQueryable<TOuter>),
-                        default(IEnumerable<TInner>),
-                        default(Expression<Func<TOuter, TKey>>),
-                        default(Expression<Func<TInner, TKey>>),
-                        default(Expression<Func<TOuter, TInner, TResult>>))),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector)
-                        }
-                    ));
+                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Join(
-                        default(IQueryable<TOuter>),
-                        default(IEnumerable<TInner>),
-                        default(Expression<Func<TOuter, TKey>>),
-                        default(Expression<Func<TInner, TKey>>),
-                        default(Expression<Func<TOuter, TInner, TResult>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                        }
-                    ));
+                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupJoin(
-                        default(IQueryable<TOuter>),
-                        default(IEnumerable<TInner>),
-                        default(Expression<Func<TOuter, TKey>>),
-                        default(Expression<Func<TInner, TKey>>),
-                        default(Expression<Func<TOuter, IEnumerable<TInner>, TResult>>))),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector) }
-                    ));
+                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (outer == null)
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             if (inner == null)
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             if (outerKeySelector == null)
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             if (innerKeySelector == null)
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupJoin(
-                        default(IQueryable<TOuter>),
-                        default(IEnumerable<TInner>),
-                        default(Expression<Func<TOuter, TKey>>),
-                        default(Expression<Func<TInner, TKey>>),
-                        default(Expression<Func<TOuter, IEnumerable<TInner>, TResult>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] {
-                        outer.Expression,
-                        GetSourceExpression(inner),
-                        Expression.Quote(outerKeySelector),
-                        Expression.Quote(innerKeySelector),
-                        Expression.Quote(resultSelector),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.OrderBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    CachedReflectionInfo.OrderBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.OrderBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(IComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    CachedReflectionInfo.OrderBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.OrderByDescending(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    CachedReflectionInfo.OrderByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.OrderByDescending(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(IComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    CachedReflectionInfo.OrderByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ThenBy(
-                        default(IOrderedQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    CachedReflectionInfo.ThenBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ThenBy(
-                        default(IOrderedQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(IComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    CachedReflectionInfo.ThenBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ThenByDescending(
-                        default(IOrderedQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    CachedReflectionInfo.ThenByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ThenByDescending(
-                        default(IOrderedQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(IComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>)) }
+                    CachedReflectionInfo.ThenByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
                     ));
         }
 
         public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, int count)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Take(
-                        default(IQueryable<TSource>),
-                        default(int))),
-                    new Expression[] { source.Expression, Expression.Constant(count) }
+                    CachedReflectionInfo.Take_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
                     ));
         }
 
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.TakeWhile(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.TakeWhile_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.TakeWhile(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.TakeWhile_Index_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<TSource> Skip<TSource>(this IQueryable<TSource> source, int count)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Skip(
-                        default(IQueryable<TSource>),
-                        default(int))),
-                    new Expression[] { source.Expression, Expression.Constant(count) }
+                    CachedReflectionInfo.Skip_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
                     ));
         }
 
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SkipWhile(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.SkipWhile_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SkipWhile(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.SkipWhile_Index_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector) }
+                    CachedReflectionInfo.GroupBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector)
                     ));
         }
 
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TSource, TElement>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector) }
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_3(typeof(TSource), typeof(TKey), typeof(TElement)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector)
                     ));
         }
 
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
+                    CachedReflectionInfo.GroupBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
                     ));
         }
 
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TSource, TElement>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_4(typeof(TSource), typeof(TKey), typeof(TElement)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TSource, TElement>>),
-                        default(Expression<Func<TKey, IEnumerable<TElement>, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_4(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector)));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TKey, IEnumerable<TSource>, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector) }
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_3(typeof(TSource), typeof(TKey), typeof(TResult)),
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector)
                     ));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TKey, IEnumerable<TSource>, TResult>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_4(typeof(TSource), typeof(TKey), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (keySelector == null)
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             if (elementSelector == null)
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.GroupBy(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TKey>>),
-                        default(Expression<Func<TSource, TElement>>),
-                        default(Expression<Func<TKey, IEnumerable<TElement>, TResult>>),
-                        default(IEqualityComparer<TKey>))),
-                    new Expression[] { source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>)) }
-                    ));
+                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_5(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Distinct(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Distinct_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Distinct(
-                        default(IQueryable<TSource>),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] { source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>)) }
+                    CachedReflectionInfo.Distinct_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Concat(
-                        default(IQueryable<TSource>),
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    CachedReflectionInfo.Concat_TSource_2(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
         public static IQueryable<TResult> Zip<TFirst, TSecond, TResult>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, Expression<Func<TFirst, TSecond, TResult>> resultSelector)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             if (resultSelector == null)
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             return source1.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Zip(
-                        default(IQueryable<TFirst>),
-                        default(IEnumerable<TSecond>),
-                        default(Expression<Func<TFirst, TSecond, TResult>>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector) }
+                    CachedReflectionInfo.Zip_TFirst_TSecond_TResult_3(typeof(TFirst), typeof(TSecond), typeof(TResult)),
+                    source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector)
                     ));
         }
 
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Union(
-                        default(IQueryable<TSource>),
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    CachedReflectionInfo.Union_TSource_2(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Union(
-                        default(IQueryable<TSource>),
-                        default(IQueryable<TSource>),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    CachedReflectionInfo.Union_TSource_3(typeof(TSource)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Intersect(
-                        default(IQueryable<TSource>),
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    CachedReflectionInfo.Intersect_TSource_2(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Intersect(
-                        default(IQueryable<TSource>),
-                        default(IEnumerable<TSource>),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    CachedReflectionInfo.Intersect_TSource_3(typeof(TSource)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Except(
-                        default(IQueryable<TSource>),
-                        default(IEnumerable<TSource>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    CachedReflectionInfo.Except_TSource_2(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Except(
-                        default(IQueryable<TSource>),
-                        default(IEnumerable<TSource>),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    CachedReflectionInfo.Except_TSource_3(typeof(TSource)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static TSource First<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.First(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.First_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource First<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.First(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.First_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.FirstOrDefault(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.FirstOrDefault(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.FirstOrDefault_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource Last<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Last(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Last_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource Last<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Last(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Last_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.LastOrDefault(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.LastOrDefault(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.LastOrDefault_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource Single<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Single(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Single_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource Single<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Single(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Single_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SingleOrDefault(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SingleOrDefault(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.SingleOrDefault_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource ElementAt<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (index < 0)
-                throw Error.ArgumentOutOfRange("index");
+                throw Error.ArgumentOutOfRange(nameof(index));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ElementAt(
-                        default(IQueryable<TSource>),
-                        default(int))),
-                    new Expression[] { source.Expression, Expression.Constant(index) }
+                    CachedReflectionInfo.ElementAt_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
                     ));
         }
 
         public static TSource ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.ElementAtOrDefault(
-                        default(IQueryable<TSource>),
-                        default(int))),
-                    new Expression[] { source.Expression, Expression.Constant(index) }
+                    CachedReflectionInfo.ElementAtOrDefault_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
                     ));
         }
 
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.DefaultIfEmpty(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.DefaultIfEmpty_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.DefaultIfEmpty(
-                        default(IQueryable<TSource>),
-                        default(TSource))),
-                    new Expression[] { source.Expression, Expression.Constant(defaultValue, typeof(TSource)) }
+                    CachedReflectionInfo.DefaultIfEmpty_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(defaultValue, typeof(TSource))
                     ));
         }
 
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Contains(
-                        default(IQueryable<TSource>),
-                        default(TSource))),
-                    new Expression[] { source.Expression, Expression.Constant(item, typeof(TSource)) }
+                    CachedReflectionInfo.Contains_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(item, typeof(TSource))
                     ));
         }
 
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item, IEqualityComparer<TSource> comparer)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Contains(
-                        default(IQueryable<TSource>),
-                        default(TSource),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] { source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>)) }
+                    CachedReflectionInfo.Contains_TSource_3(typeof(TSource)),
+                    source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static IQueryable<TSource> Reverse<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Reverse(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Reverse_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SequenceEqual(
-                        default(IQueryable<TSource>),
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source1.Expression, GetSourceExpression(source2) }
+                    CachedReflectionInfo.SequenceEqual_TSource_2(typeof(TSource)),
+                    source1.Expression, GetSourceExpression(source2)
                     ));
         }
 
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
         {
             if (source1 == null)
-                throw Error.ArgumentNull("source1");
+                throw Error.ArgumentNull(nameof(source1));
             if (source2 == null)
-                throw Error.ArgumentNull("source2");
+                throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.SequenceEqual(
-                        default(IQueryable<TSource>),
-                        default(IEnumerable<TSource>),
-                        default(IEqualityComparer<TSource>))),
-                    new Expression[] {
-                        source1.Expression,
-                        GetSourceExpression(source2),
-                        Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                        }
+                    CachedReflectionInfo.SequenceEqual_TSource_3(typeof(TSource)),
+                    source1.Expression,
+                    GetSourceExpression(source2),
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
                     ));
         }
 
         public static bool Any<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Any(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Any_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static bool Any<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Any(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Any_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static bool All<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.All(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.All_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static int Count<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Count(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Count_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static int Count<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Count(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.Count_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static long LongCount<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.LongCount(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.LongCount_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static long LongCount<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (predicate == null)
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.LongCount(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, bool>>))),
-                    new Expression[] { source.Expression, Expression.Quote(predicate) }
+                    CachedReflectionInfo.LongCount_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(predicate)
                     ));
         }
 
         public static TSource Min<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Min(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TResult Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Min(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Min_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static TSource Max<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Max(
-                        default(IQueryable<TSource>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
         }
 
         public static TResult Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Max(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Max_TSource_TResult_2(typeof(TSource), typeof(TResult)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static int Sum(this IQueryable<int> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<int>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Int32_1, source.Expression));
         }
 
         public static int? Sum(this IQueryable<int?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<int?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableInt32_1, source.Expression));
         }
 
         public static long Sum(this IQueryable<long> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<long>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Int64_1, source.Expression));
         }
 
         public static long? Sum(this IQueryable<long?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<long?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableInt64_1, source.Expression));
         }
 
         public static float Sum(this IQueryable<float> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<float>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Single_1, source.Expression));
         }
 
         public static float? Sum(this IQueryable<float?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<float?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableSingle_1, source.Expression));
         }
 
         public static double Sum(this IQueryable<double> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<double>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Double_1, source.Expression));
         }
 
         public static double? Sum(this IQueryable<double?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<double?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableDouble_1, source.Expression));
         }
 
         public static decimal Sum(this IQueryable<decimal> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<decimal>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_Decimal_1, source.Expression));
         }
 
         public static decimal? Sum(this IQueryable<decimal?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<decimal?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Sum_NullableDecimal_1, source.Expression));
         }
 
         public static int Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static int? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_NullableInt32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static long Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, long>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_Int64_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static long? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, long?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_NullableInt64_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static float Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, float>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_Single_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static float? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, float?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_NullableSingle_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, double>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_Double_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, double?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_NullableDouble_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static decimal Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, decimal>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_Decimal_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static decimal? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Sum(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, decimal?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Sum_NullableDecimal_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double Average(this IQueryable<int> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<int>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Int32_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<int?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<int?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableInt32_1, source.Expression));
         }
 
         public static double Average(this IQueryable<long> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<long>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Int64_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<long?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<long?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableInt64_1, source.Expression));
         }
 
         public static float Average(this IQueryable<float> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<float>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Single_1, source.Expression));
         }
 
         public static float? Average(this IQueryable<float?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<float?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableSingle_1, source.Expression));
         }
 
         public static double Average(this IQueryable<double> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<double>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Double_1, source.Expression));
         }
 
         public static double? Average(this IQueryable<double?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<double?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableDouble_1, source.Expression));
         }
 
         public static decimal Average(this IQueryable<decimal> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<decimal>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_Decimal_1, source.Expression));
         }
 
         public static decimal? Average(this IQueryable<decimal?> source)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<decimal?>))),
-                    new Expression[] { source.Expression }
-                    ));
+                    CachedReflectionInfo.Average_NullableDecimal_1, source.Expression));
         }
 
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, int?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_NullableInt32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static float Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, float>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_Single_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static float? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, float?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_NullableSingle_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, long>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_Int64_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, long?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_NullableInt64_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, double>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_Double_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, double?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_NullableDouble_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static decimal Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, decimal>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_Decimal_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static decimal? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Average(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, decimal?>>))),
-                    new Expression[] { source.Expression, Expression.Quote(selector) }
+                    CachedReflectionInfo.Average_NullableDecimal_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(selector)
                     ));
         }
 
         public static TSource Aggregate<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, TSource, TSource>> func)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Aggregate(
-                        default(IQueryable<TSource>),
-                        default(Expression<Func<TSource, TSource, TSource>>))),
-                    new Expression[] { source.Expression, Expression.Quote(func) }
+                    CachedReflectionInfo.Aggregate_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Quote(func)
                     ));
         }
 
         public static TAccumulate Aggregate<TSource, TAccumulate>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TAccumulate>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Aggregate(
-                        default(IQueryable<TSource>),
-                        default(TAccumulate),
-                        default(Expression<Func<TAccumulate, TSource, TAccumulate>>))),
-                    new Expression[] { source.Expression, Expression.Constant(seed), Expression.Quote(func) }
+                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_3(typeof(TSource), typeof(TAccumulate)),
+                    source.Expression, Expression.Constant(seed), Expression.Quote(func)
                     ));
         }
 
         public static TResult Aggregate<TSource, TAccumulate, TResult>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func, Expression<Func<TAccumulate, TResult>> selector)
         {
             if (source == null)
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             if (func == null)
-                throw Error.ArgumentNull("func");
+                throw Error.ArgumentNull(nameof(func));
             if (selector == null)
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    GetMethodInfoOf(() => Queryable.Aggregate(
-                        default(IQueryable<TSource>),
-                        default(TAccumulate),
-                        default(Expression<Func<TAccumulate, TSource, TAccumulate>>),
-                        default(Expression<Func<TAccumulate, TResult>>))),
-                    new Expression[] { source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector) }
+                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_TResult_4(typeof(TSource), typeof(TAccumulate), typeof(TResult)), source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
+        }
+
+        public static IQueryable<TSource> SkipLast<TSource>(this IQueryable<TSource> source, int count)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.SkipLast_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
                     ));
         }
 
-        private static MethodInfo GetMethodInfoOf<T>(Expression<Func<T>> expression)
+        public static IQueryable<TSource> TakeLast<TSource>(this IQueryable<TSource> source, int count)
         {
-            var body = (MethodCallExpression)expression.Body;
-            return body.Method;
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.TakeLast_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
+                    ));
+        }
+
+        public static IQueryable<TSource> Append<TSource>(this IQueryable<TSource> source, TSource element)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Append_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(element)
+                    ));
+        }
+
+        public static IQueryable<TSource> Prepend<TSource>(this IQueryable<TSource> source, TSource element)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Prepend_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(element)
+                    ));
         }
     }
 }

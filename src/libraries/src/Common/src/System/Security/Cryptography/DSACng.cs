@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using Internal.Cryptography;
-using static Interop.NCrypt;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
@@ -18,7 +19,7 @@ namespace System.Security.Cryptography
             ///     Create a DSACng algorithm with a random 2048 bit key pair.
             /// </summary>
             public DSACng()
-                : this(keySize: 2048)
+                : this(keySize: s_defaultKeySize)
             {
             }
 
@@ -42,6 +43,9 @@ namespace System.Security.Cryptography
                     return base.LegalKeySizes;
                 }
             }
+
+            public override string SignatureAlgorithm => "DSA";
+            public override string KeyExchangeAlgorithm  => null;
 
             // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -69,7 +73,16 @@ namespace System.Security.Cryptography
                 KeySizeValue = newKeySize;
             }
 
+            private static bool Supports2048KeySize()
+            {
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                Version version = Environment.OSVersion.Version;
+                bool isAtLeastWindows8 = version.Major > 6 || (version.Major == 6 && version.Minor >= 2);
+                return isAtLeastWindows8;
+            }
+
             private static KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
+            private static readonly int s_defaultKeySize = Supports2048KeySize() ? 2048 : 1024;
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

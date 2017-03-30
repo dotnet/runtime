@@ -1,0 +1,26 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Reflection.Metadata.Ecma335", "src\System.Private.Reflection.Metadata.Ecma335.csproj", "{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.ActiveCfg = uapaot-Windows_NT-Debug|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.Build.0 = uapaot-Windows_NT-Debug|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.ActiveCfg = uapaot-Windows_NT-Release|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.Build.0 = uapaot-Windows_NT-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+EndGlobal

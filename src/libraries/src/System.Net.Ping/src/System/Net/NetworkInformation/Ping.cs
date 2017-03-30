@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    public partial class Ping : IDisposable
+    public partial class Ping : Component
     {
         private const int DefaultSendBufferSize = 32;  // Same as ping.exe on Windows.
         private const int DefaultTimeout = 5000;       // 5 seconds: same as ping.exe on Windows.
@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation
         // Thread safety:
         private const int Free = 0;
         private const int InProgress = 1;
-        private const int Disposed = 2;
+        private new const int Disposed = 2;
         private int _status = Free;
 
         public Ping()
@@ -39,11 +39,6 @@ namespace System.Net.NetworkInformation
             {
                 GC.SuppressFinalize(this);
             }
-        }
-
-        ~Ping()
-        {
-            Dispose(false);
         }
 
         private void CheckStart()
@@ -110,13 +105,7 @@ namespace System.Net.NetworkInformation
             InternalDisposeCore();
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -286,8 +275,11 @@ namespace System.Net.NetworkInformation
             // Need to snapshot the address here, so we're sure that it's not changed between now
             // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
             IPAddress addressSnapshot = (address.AddressFamily == AddressFamily.InterNetwork) ?
-                new IPAddress(address.GetAddressBytes()) :
+#pragma warning disable CS0618 // IPAddress.Address is obsoleted, but it's the most efficient way to get the Int32 IPv4 address
+                new IPAddress(address.Address) :
+#pragma warning restore CS0618
                 new IPAddress(address.GetAddressBytes(), address.ScopeId);
+
 
             CheckStart();
             try

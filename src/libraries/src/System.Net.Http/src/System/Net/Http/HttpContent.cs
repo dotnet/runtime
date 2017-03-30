@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if !NET46
+using System.Buffers;
+#endif
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
@@ -17,10 +20,10 @@ namespace System.Net.Http
         private HttpContentHeaders _headers;
         private MemoryStream _bufferedContent;
         private bool _disposed;
-        private Stream _contentReadStream;
+        private Task<Stream> _contentReadStream;
         private bool _canCalculateLength;
 
-        internal const long MaxBufferSize = Int32.MaxValue;
+        internal const int MaxBufferSize = int.MaxValue;
         internal static readonly Encoding DefaultStringEncoding = Encoding.UTF8;
 
         private const int UTF8CodePage = 65001;
@@ -30,7 +33,7 @@ namespace System.Net.Http
         private const byte UTF8PreambleByte2 = 0xBF;
         private const int UTF8PreambleFirst2Bytes = 0xEFBB;
 
-#if !NETNative
+#if !uap
         // UTF32 not supported on Phone
         private const int UTF32CodePage = 12000;
         private const int UTF32PreambleLength = 4;
@@ -61,7 +64,7 @@ namespace System.Net.Http
                 UTF8PreambleByte1,
                 UTF8PreambleByte2);
 
-#if !NETNative
+#if !uap
             // UTF32 not supported on Phone
             AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32PreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
                 UTF32PreambleByte0,
@@ -124,7 +127,7 @@ namespace System.Net.Http
             {
                 if (_headers == null)
                 {
-                    _headers = new HttpContentHeaders(GetComputedOrBufferLength);
+                    _headers = new HttpContentHeaders(this);
                 }
                 return _headers;
             }
@@ -151,12 +154,12 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync()
@@ -165,7 +168,7 @@ namespace System.Net.Http
             return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => s.ReadBufferedContentAsString());
         }
 
-        internal string ReadBufferedContentAsString()
+        private string ReadBufferedContentAsString()
         {
             Debug.Assert(IsBuffered);
 
@@ -174,6 +177,17 @@ namespace System.Net.Http
                 return string.Empty;
             }
 
+            ArraySegment<byte> buffer;
+            if (!TryGetBuffer(out buffer))
+            {
+                buffer = new ArraySegment<byte>(_bufferedContent.ToArray());
+            }
+
+            return ReadBufferAsString(buffer, Headers);
+        }
+
+        internal static string ReadBufferAsString(ArraySegment<byte> buffer, HttpContentHeaders headers)
+        {
             // We don't validate the Content-Encoding header: If the content was encoded, it's the caller's 
             // responsibility to make sure to only call ReadAsString() on already decoded content. E.g. if the 
             // Content-Encoding is 'gzip' the user should set HttpClientHandler.AutomaticDecompression to get a 
@@ -182,19 +196,13 @@ namespace System.Net.Http
             Encoding encoding = null;
             int bomLength = -1;
 
-            ArraySegment<byte> buffer;
-            if (!TryGetBuffer(out buffer))
-            {
-                buffer = new ArraySegment<byte>(_bufferedContent.ToArray());
-            }
-
             // If we do have encoding information in the 'Content-Type' header, use that information to convert
             // the content to a string.
-            if ((Headers.ContentType != null) && (Headers.ContentType.CharSet != null))
+            if ((headers.ContentType != null) && (headers.ContentType.CharSet != null))
             {
                 try
                 {
-                    encoding = Encoding.GetEncoding(Headers.ContentType.CharSet);
+                    encoding = Encoding.GetEncoding(headers.ContentType.CharSet);
 
                     // Byte-order-mark (BOM) characters may be present even if a charset was specified.
                     bomLength = GetPreambleLength(buffer, encoding);
@@ -244,17 +252,15 @@ namespace System.Net.Http
             ArraySegment<byte> buffer;
             if (_contentReadStream == null && TryGetBuffer(out buffer))
             {
-                _contentReadStream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false);
+                _contentReadStream = Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false));
             }
 
-            return _contentReadStream != null ?
-                Task.FromResult(_contentReadStream) :
-                ReadAsStreamAsyncCore(CreateContentReadStreamAsync());
-        }
+            if (_contentReadStream != null)
+            {
+                return _contentReadStream;
+            }
 
-        private async Task<Stream> ReadAsStreamAsyncCore(Task<Stream> createContentStreamTask)
-        {
-            _contentReadStream = await createContentStreamTask.ConfigureAwait(false);
+            _contentReadStream = CreateContentReadStreamAsync();
             return _contentReadStream;
         }
 
@@ -306,6 +312,15 @@ namespace System.Net.Http
         {
             return CopyToAsync(stream, null);
         }
+
+#if NET46
+        // Workaround for HttpWebRequest synchronous resubmit. This code is required because the underlying
+        // .NET Framework HttpWebRequest implementation cannot use CopyToAsync and only uses sync based CopyTo.
+        internal void CopyTo(Stream stream)
+        {
+            CopyToAsync(stream).Wait();
+        }
+#endif
 
         public Task LoadIntoBufferAsync()
         {
@@ -375,7 +390,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(LoadIntoBufferAsync), e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
         }
@@ -393,7 +408,7 @@ namespace System.Net.Http
         // that case (send chunked, buffer first, etc.).
         protected internal abstract bool TryComputeLength(out long length);
 
-        private long? GetComputedOrBufferLength()
+        internal long? GetComputedOrBufferLength()
         {
             CheckDisposed();
 
@@ -456,9 +471,11 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (_contentReadStream != null)
+                if (_contentReadStream != null &&
+                    _contentReadStream.Status == TaskStatus.RanToCompletion)
                 {
-                    _contentReadStream.Dispose();
+                    _contentReadStream.Result.Dispose();
+                    _contentReadStream = null;
                 }
 
                 if (IsBuffered)
@@ -490,8 +507,9 @@ namespace System.Net.Http
         {
             if (task == null)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
-                throw new InvalidOperationException(SR.net_http_content_no_task_returned);
+                var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                throw e;
             }
         }
 
@@ -529,7 +547,7 @@ namespace System.Net.Http
                         && data[offset + 0] == UTF8PreambleByte0
                         && data[offset + 1] == UTF8PreambleByte1
                         && data[offset + 2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
-#if !NETNative
+#if !uap
                 // UTF32 not supported on Phone
                 case UTF32CodePage:
                     return (dataLength >= UTF32PreambleLength
@@ -578,7 +596,7 @@ namespace System.Net.Http
                         break;
 
                     case UTF32OrUnicodePreambleFirst2Bytes:
-#if !NETNative
+#if !uap
                         // UTF32 not supported on Phone
                         if (dataLength >= UTF32PreambleLength && data[offset + 2] == UTF32PreambleByte2 && data[offset + 3] == UTF32PreambleByte3)
                         {
@@ -628,6 +646,11 @@ namespace System.Net.Http
             return returnFunc(state);
         }
 
+        private static Exception CreateOverCapacityException(int maxBufferSize)
+        {
+            return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
+        }
+
         internal sealed class LimitMemoryStream : MemoryStream
         {
             private readonly int _maxSize;
@@ -640,6 +663,14 @@ namespace System.Net.Http
             }
 
             public int MaxSize => _maxSize;
+
+            public byte[] GetSizedBuffer()
+            {
+                ArraySegment<byte> buffer;
+                return TryGetBuffer(out buffer) && buffer.Offset == 0 && buffer.Count == buffer.Array.Length ?
+                    buffer.Array :
+                    ToArray();
+            }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
@@ -659,13 +690,176 @@ namespace System.Net.Http
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            {
+                CheckSize(count);
+                return base.BeginWrite(buffer, offset, count, callback, state);
+            }
+
+            public override void EndWrite(IAsyncResult asyncResult)
+            {
+                base.EndWrite(asyncResult);
+            }
+
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                ArraySegment<byte> buffer;
+                if (TryGetBuffer(out buffer))
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+                    long pos = Position;
+                    long length = Length;
+                    Position = length;
+
+                    long bytesToWrite = length - pos;
+                    return destination.WriteAsync(buffer.Array, (int)(buffer.Offset + pos), (int)bytesToWrite, cancellationToken);
+                }
+
+                return base.CopyToAsync(destination, bufferSize, cancellationToken);
+            }
+
             private void CheckSize(int countToAdd)
             {
                 if (_maxSize - Length < countToAdd)
                 {
-                    throw new HttpRequestException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, _maxSize));
+                    throw CreateOverCapacityException(_maxSize);
                 }
             }
         }
+
+#if !NET46
+        internal sealed class LimitArrayPoolWriteStream : Stream
+        {
+            private const int MaxByteArrayLength = 0x7FFFFFC7;
+            private const int InitialLength = 256;
+
+            private readonly int _maxBufferSize;
+            private byte[] _buffer;
+            private int _length;
+
+            public LimitArrayPoolWriteStream(int maxBufferSize) : this(maxBufferSize, InitialLength) { }
+
+            public LimitArrayPoolWriteStream(int maxBufferSize, long capacity)
+            {
+                if (capacity < InitialLength)
+                {
+                    capacity = InitialLength;
+                }
+                else if (capacity > maxBufferSize)
+                {
+                    throw CreateOverCapacityException(maxBufferSize);
+                }
+
+                _maxBufferSize = maxBufferSize;
+                _buffer = ArrayPool<byte>.Shared.Rent((int)capacity);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                Debug.Assert(_buffer != null);
+
+                ArrayPool<byte>.Shared.Return(_buffer);
+                _buffer = null;
+
+                base.Dispose(disposing);
+            }
+
+            public ArraySegment<byte> GetBuffer() => new ArraySegment<byte>(_buffer, 0, _length);
+
+            public byte[] ToArray()
+            {
+                var arr = new byte[_length];
+                Buffer.BlockCopy(_buffer, 0, arr, 0, _length);
+                return arr;
+            }
+
+            private void EnsureCapacity(int value)
+            {
+                if (value > _buffer.Length)
+                {
+                    Grow(value);
+                }
+                else if (value < 0) // overflow
+                {
+                    throw CreateOverCapacityException(_maxBufferSize);
+                }
+            }
+
+            private void Grow(int value)
+            {
+                Debug.Assert(value > _buffer.Length);
+                if (value > _maxBufferSize)
+                {
+                    throw CreateOverCapacityException(_maxBufferSize);
+                }
+
+                // Extract the current buffer to be replaced.
+                byte[] currentBuffer = _buffer;
+                _buffer = null;
+
+                // Determine the capacity to request for the new buffer.  It should be
+                // at least twice as long as the current one, if not more if the requested
+                // value is more than that.  If the new value would put it longer than the max
+                // allowed byte array, than shrink to that (and if the required length is actually
+                // longer than that, we'll let the runtime throw).
+                uint twiceLength = 2 * (uint)currentBuffer.Length;
+                int newCapacity = twiceLength > MaxByteArrayLength ?
+                    (value > MaxByteArrayLength ? value : MaxByteArrayLength) :
+                    Math.Max(value, (int)twiceLength);
+
+                // Get a new buffer, copy the current one to it, return the current one, and
+                // set the new buffer as current.
+                byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
+                Buffer.BlockCopy(currentBuffer, 0, newBuffer, 0, _length);
+                ArrayPool<byte>.Shared.Return(currentBuffer);
+                _buffer = newBuffer;
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                Debug.Assert(buffer != null);
+                Debug.Assert(offset >= 0);
+                Debug.Assert(count >= 0);
+
+                EnsureCapacity(_buffer.Length + count);
+                Buffer.BlockCopy(buffer, offset, _buffer, _length, count);
+                _length += count;
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+                TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+            public override void EndWrite(IAsyncResult asyncResult) =>
+                TaskToApm.End(asyncResult);
+
+            public override void WriteByte(byte value)
+            {
+                int newLength = _buffer.Length + 1;
+                EnsureCapacity(newLength);
+                _buffer[_length] = value;
+                _length = newLength;
+            }
+
+            public override void Flush() { }
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override long Length => _length;
+            public override bool CanWrite => true;
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+
+            public override long Position { get { throw new NotSupportedException(); } set { throw new NotSupportedException(); } }
+            public override int Read(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
+            public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException(); }
+            public override void SetLength(long value) { throw new NotSupportedException(); }
+        }
+#endif        
     }
 }

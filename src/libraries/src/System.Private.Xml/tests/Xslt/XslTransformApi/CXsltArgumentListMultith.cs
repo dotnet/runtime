@@ -249,9 +249,9 @@ namespace System.Xml.Tests
             string _strXmlFile = ((object[])args)[2].ToString();
 
             if (_strXslFile.Substring(0, 5) != "http:")
-                _strXslFile = _strPath + _strXslFile;
+                _strXslFile = Path.Combine(_strPath, _strXslFile);
             if (_strXmlFile.Substring(0, 5) != "http:")
-                _strXmlFile = _strPath + _strXmlFile;
+                _strXmlFile = Path.Combine(_strPath, _strXmlFile);
 
 #pragma warning disable 0618
             XmlValidatingReader xrData = new XmlValidatingReader(new XmlTextReader(_strXmlFile));

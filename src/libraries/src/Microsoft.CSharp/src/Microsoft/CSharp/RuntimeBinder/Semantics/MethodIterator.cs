@@ -28,7 +28,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool _bIsCheckingInstanceMethods;
             private bool _bAtEnd;
             private bool _bAllowBogusAndInaccessible;
-            private bool _bAllowExtensionMethods;
             // Flags for the current sym.
             private bool _bCurrentSymIsBogus;
             private bool _bCurrentSymIsInaccessible;
@@ -54,7 +53,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pQualifyingType = qualifyingType;
                 _pContext = context;
                 _bAllowBogusAndInaccessible = allowBogusAndInaccessible;
-                _bAllowExtensionMethods = allowExtensionMethods;
                 _nArity = arity;
                 _flags = flags;
                 _mask = mask;
@@ -63,7 +61,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _bAtEnd = false;
                 _bCurrentSymIsBogus = false;
                 _bCurrentSymIsInaccessible = false;
-                _bcanIncludeExtensionsInResults = _bAllowExtensionMethods;
+                _bcanIncludeExtensionsInResults = allowExtensionMethods;
                 _bEndIterationAtCurrentExtensionList = false;
             }
             public MethodOrPropertySymbol GetCurrentSymbol()
@@ -100,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (_pCurrentType == null) // First guy.
                 {
-                    if (_pContainingTypes.size == 0)
+                    if (_pContainingTypes.Count == 0)
                     {
                         // No instance methods, only extensions.
                         _bIsCheckingInstanceMethods = false;
@@ -156,7 +154,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // If our arity is non-0, we must match arity with this symbol.
                 if (_nArity > 0)
                 {
-                    if (_mask == symbmask_t.MASK_MethodSymbol && _pCurrentSym.AsMethodSymbol().typeVars.size != _nArity)
+                    if (_mask == symbmask_t.MASK_MethodSymbol && _pCurrentSym.AsMethodSymbol().typeVars.Count != _nArity)
                     {
                         return false;
                     }
@@ -262,16 +260,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool FindNextTypeForInstanceMethods()
             {
                 // Otherwise, search through other types listed as well as our base class.
-                if (_pContainingTypes.size > 0)
+                if (_pContainingTypes.Count > 0)
                 {
-                    if (_nCurrentTypeCount >= _pContainingTypes.size)
+                    if (_nCurrentTypeCount >= _pContainingTypes.Count)
                     {
                         // No more types to check.
                         _pCurrentType = null;
                     }
                     else
                     {
-                        _pCurrentType = _pContainingTypes.Item(_nCurrentTypeCount++).AsAggregateType();
+                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++].AsAggregateType();
                     }
                 }
                 else

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -39,6 +37,7 @@ namespace System.Linq.Expressions.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 VerifyArithmeticUnaryPlusInt(values[i], useInterpreter);
+                VerifyArithmeticMakeUnaryPlusInt(values[i], useInterpreter);
             }
         }
 
@@ -105,7 +104,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.UnaryPlus(Expression.Parameter(typeof(int), "x"));
+            UnaryExpression e = Expression.UnaryPlus(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("+x", e.ToString());
         }
 
@@ -138,6 +137,16 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.UnaryPlus(Expression.Constant(value, typeof(int))),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile(useInterpreter);
+            Assert.Equal((int)(+value), f());
+        }
+
+        private static void VerifyArithmeticMakeUnaryPlusInt(int value, bool useInterpreter)
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.MakeUnary(ExpressionType.UnaryPlus, Expression.Constant(value), null),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
             Assert.Equal((int)(+value), f());

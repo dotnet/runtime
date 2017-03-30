@@ -54,19 +54,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Lim
     }
 
-    // The pseudo-methods uses for accessing arrays (except in
-    // the optimized 1-d case.
-    internal enum ARRAYMETHOD
-    {
-        ARRAYMETH_LOAD,
-        ARRAYMETH_LOADADDR,
-        ARRAYMETH_STORE,
-        ARRAYMETH_CTOR,
-        ARRAYMETH_GETAT,   // Keep these in this order!!!
-
-        ARRAYMETH_COUNT
-    };
-
     /////////////////////////////////////////////////////////////////////////////////
 
     // Special constraints.
@@ -85,7 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class Symbol
+    internal abstract class Symbol
     {
         private SYMKIND _kind;     // the symbol kind
         private bool _isBogus;     // can't be used in our language -- unsupported type(s)
@@ -156,14 +143,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool computeCurrentBogusState()
         {
-            if (this.hasBogus())
+            if (hasBogus())
             {
-                return this.checkBogus();
+                return checkBogus();
             }
 
             bool fBogus = false;
 
-            switch (this.getKind())
+            switch (getKind())
             {
                 case SYMKIND.SK_PropertySymbol:
                 case SYMKIND.SK_MethodSymbol:
@@ -176,9 +163,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         if (meth.Params != null)
                         {
-                            for (int i = 0; !fBogus && i < meth.Params.Size; i++)
+                            for (int i = 0; !fBogus && i < meth.Params.Count; i++)
                             {
-                                fBogus |= meth.Params.Item(i).computeCurrentBogusState();
+                                fBogus |= meth.Params[i].computeCurrentBogusState();
                             }
                         }
                     }
@@ -221,7 +208,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     fBogus = this.AsAggregateType().getAggregate().computeCurrentBogusState();
                     for (int i = 0; !fBogus && i < this.AsAggregateType().GetTypeArgsAll().size; i++)
                     {
-                        fBogus |= this.AsAggregateType().GetTypeArgsAll().Item(i).computeCurrentBogusState();
+                        fBogus |= this.AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
                     }
                     break;
                  */
@@ -236,11 +223,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             case SYMKIND.SK_NaturalIntegerType:
                  */
                 case SYMKIND.SK_LocalVariableSymbol:
-                    this.setBogus(false);
+                    setBogus(false);
                     break;
 
                 case SYMKIND.SK_AggregateSymbol:
-                    fBogus = this.hasBogus() && this.checkBogus();
+                    fBogus = hasBogus() && checkBogus();
                     break;
 
                 case SYMKIND.SK_Scope:
@@ -249,17 +236,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_NamespaceDeclaration:
                 default:
                     Debug.Assert(false, "CheckBogus with invalid Symbol kind");
-                    this.setBogus(false);
+                    setBogus(false);
                     break;
             }
 
             if (fBogus)
             {
                 // Only set this if at least 1 declared thing is bogus
-                this.setBogus(fBogus);
+                setBogus(fBogus);
             }
 
-            return this.hasBogus() && this.checkBogus();
+            return hasBogus() && checkBogus();
         }
 
         public bool IsNamespaceSymbol() { return _kind == SYMKIND.SK_NamespaceSymbol; }
@@ -275,12 +262,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsMethodOrPropertySymbol()
         {
-            return this.IsMethodSymbol() || this.IsPropertySymbol();
+            return IsMethodSymbol() || IsPropertySymbol();
         }
 
         public bool IsFMETHSYM()
         {
-            return this.IsMethodSymbol();
+            return IsMethodSymbol();
         }
 
         public CType getType()
@@ -326,7 +313,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public Assembly GetAssembly()
+        private Assembly GetAssembly()
         {
             switch (_kind)
             {
@@ -354,7 +341,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
          * returns the assembly id for the declaration of this symbol
          */
-        public bool InternalsVisibleTo(Assembly assembly)
+        private bool InternalsVisibleTo(Assembly assembly)
         {
             switch (_kind)
             {
@@ -442,15 +429,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                  */
                 case SYMKIND.SK_TypeParameterSymbol:
-                    if (this.parent.IsAggregateSymbol())
+                    if (parent.IsAggregateSymbol())
                     {
                         // Because an AggregateSymbol that isn't metadata can be defined across multiple
                         // files, getInputFile isn't a reasonable operation.
                         Debug.Assert(false);
                         return null;
                     }
-                    else if (this.parent.IsMethodSymbol())
-                        return this.parent.AsMethodSymbol().getInputFile();
+                    else if (parent.IsMethodSymbol())
+                        return parent.AsMethodSymbol().getInputFile();
                     Debug.Assert(false);
                     break;
 

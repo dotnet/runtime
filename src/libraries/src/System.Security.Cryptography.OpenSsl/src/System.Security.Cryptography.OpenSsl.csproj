@@ -1,33 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Unix_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6'">4.0.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.OpenSsl.depproj</ContractProject>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime>
     </PackageTargetRuntime>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <!-- ApiCompat requires an object reference to determine the core assembly. -->
+    <AssemblyInfoSource Include="internal class ObjectMarker { }" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
-      <Link>Common\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs</Link>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -41,6 +42,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs</Link>
     </Compile>
@@ -53,17 +57,20 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs</Link>
@@ -73,6 +80,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
@@ -89,6 +99,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.cs</Link>
     </Compile>
@@ -99,23 +112,20 @@
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7')">
-    <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
-      <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

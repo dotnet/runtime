@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
 
             if (data == null)
             {
-                return !targetType.GetTypeInfo().IsValueType;
+                return !targetType.IsValueType;
             }
 
             Type sourceType = data.GetType();

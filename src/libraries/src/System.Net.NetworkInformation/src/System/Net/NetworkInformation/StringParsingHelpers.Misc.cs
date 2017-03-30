@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation
         internal static int ParseNumRoutesFromRouteFile(string filePath)
         {
             string routeFile = File.ReadAllText(filePath);
-            return CountOccurences(Environment.NewLine, routeFile) - 1; // File includes one-line header
+            return CountOccurrences(Environment.NewLine, routeFile) - 1; // File includes one-line header
         }
 
         internal static int ParseNumIPInterfaces(string folderPath)
@@ -74,9 +74,9 @@ namespace System.Net.NetworkInformation
             return Convert.ToInt32(File.ReadAllText(filePath).Trim(), 16);
         }
 
-        private static int CountOccurences(string value, string candidate)
+        private static int CountOccurrences(string value, string candidate)
         {
-            Debug.Assert(candidate != null, "CountOcurrences: Candidate string was null.");
+            Debug.Assert(candidate != null, "CountOccurrences: Candidate string was null.");
             int index = 0;
             int occurrences = 0;
             while (index != -1)

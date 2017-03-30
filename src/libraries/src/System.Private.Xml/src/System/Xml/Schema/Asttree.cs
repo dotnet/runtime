@@ -260,7 +260,7 @@ namespace System.Xml.Schema
 
             bool result = false;
 
-            // no stack element for single attribute, so dealing with it seperately
+            // no stack element for single attribute, so dealing with it separately
             if (_subtree.TopNode.Input == null)
             {
                 return (_subtree.IsDss || (depth == 1));
@@ -514,8 +514,8 @@ namespace System.Xml.Schema
         // only for debug
 #if DEBUG
         public void PrintTree (StreamWriter msw) {
-            for (int i = 0; i < fAxisArray.Count; ++i) {
-                ForwardAxis axis = (ForwardAxis)fAxisArray[i];
+            for (int i = 0; i < _fAxisArray.Count; ++i) {
+                ForwardAxis axis = (ForwardAxis)_fAxisArray[i];
                 msw.WriteLine("<Tree IsDss=\"{0}\" IsAttribute=\"{1}\">", axis.IsDss, axis.IsAttribute);
                 DoubleLinkAxis printaxis = axis.TopNode;
                 while ( printaxis != null ) {

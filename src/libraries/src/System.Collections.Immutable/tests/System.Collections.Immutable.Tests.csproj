@@ -1,31 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Collections.Immutable.Test</RootNamespace>
-    <AssemblyName>System.Collections.Immutable.Tests</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NoWarn>0436</NoWarn>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="ImmutableArrayBuilderTest.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTestBase.cs" />
-    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests .cs" />
+    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests.cs" />
     <Compile Include="ImmutableDictionaryBuilderTestBase.cs" />
     <Compile Include="GenericParameterHelper.cs" />
     <Compile Include="ImmutableDictionaryBuilderTest.cs" />
@@ -49,6 +47,9 @@
     <Compile Include="RequiresTests.cs" />
     <Compile Include="SimpleElementImmutablesTestBase.cs" />
     <Compile Include="TestExtensionsMethods.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
@@ -58,6 +59,9 @@
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DelegateEqualityComparer.cs">
+      <Link>Common\System\Collections\DelegateEqualityComparer.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
@@ -108,17 +112,6 @@
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
     <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Collections.Immutable.pkgproj">
-      <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
-      <Name>System.Collections.Immutable</Name>
-      <Private>true</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

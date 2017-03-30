@@ -1,4 +1,4 @@
-@if "%_echo%" neq "on" echo off
+@if not defined _echo @echo off
 setlocal
 
 if /I [%1] == [-?] goto Usage
@@ -6,7 +6,7 @@ if /I [%1] == [-?] goto Usage
 :Build
 call %~dp0build-native.cmd %*
 if NOT [%ERRORLEVEL%]==[0] exit /b 1
-call %~dp0build-managed.cmd %*
+call %~dp0build-managed.cmd -BuildPackages=true %*
 exit /b %ERRORLEVEL%
 
 :Usage

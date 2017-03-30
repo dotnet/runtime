@@ -16,6 +16,7 @@ namespace System.ComponentModel
     /// </summary>
     public class EnumConverter : TypeConverter
     {
+        private static readonly char[] s_separators = {','};
         /// <summary>
         ///    <para>
         ///       Provides a <see cref='System.ComponentModel.TypeConverter.StandardValuesCollection'/> that specifies the
@@ -26,35 +27,19 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Specifies
-        ///       the
-        ///       type of the enumerator this converter is
-        ///       associated with.
-        ///    </para>
-        /// </summary>
-        private readonly Type _type;
-
-        /// <summary>
-        ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         ///       type.
         ///    </para>
         /// </summary>
         public EnumConverter(Type type)
         {
-            _type = type;
+            EnumType = type;
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        protected Type EnumType
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        protected Type EnumType { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -99,21 +84,13 @@ namespace System.ComponentModel
             return base.CanConvertTo(context, destinationType);
         }
 
-#if !NETSTANDARD10
         /// <summary>
         ///     <para>
         ///         Gets an <see cref='System.Collections.IComparer'/> interface that can
         ///         be used to sort the values of the enumerator.
         ///     </para>
         /// </summary>
-        protected virtual IComparer Comparer
-        {
-            get
-            {
-                return InvariantComparer.Default;
-            }
-        }
-#endif // !NETSTANDARD10
+        protected virtual IComparer Comparer => InvariantComparer.Default;
 
         /// <internalonly/>
         /// <summary>
@@ -129,21 +106,21 @@ namespace System.ComponentModel
                     if (strValue.IndexOf(',') != -1)
                     {
                         long convertedValue = 0;
-                        string[] values = strValue.Split(new char[] { ',' });
+                        string[] values = strValue.Split(s_separators);
                         foreach (string v in values)
                         {
-                            convertedValue |= Convert.ToInt64((Enum)Enum.Parse(_type, v, true), culture);
+                            convertedValue |= Convert.ToInt64((Enum)Enum.Parse(EnumType, v, true), culture);
                         }
-                        return Enum.ToObject(_type, convertedValue);
+                        return Enum.ToObject(EnumType, convertedValue);
                     }
                     else
                     {
-                        return Enum.Parse(_type, strValue, true);
+                        return Enum.Parse(EnumType, strValue, true);
                     }
                 }
                 catch (Exception e)
                 {
-                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, _type.Name), e);
+                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, EnumType.Name), e);
                 }
             }
             else if (value is Enum[])
@@ -153,7 +130,7 @@ namespace System.ComponentModel
                 {
                     finalValue |= Convert.ToInt64(e, culture);
                 }
-                return Enum.ToObject(_type, finalValue);
+                return Enum.ToObject(EnumType, finalValue);
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -176,21 +153,21 @@ namespace System.ComponentModel
                 // Raise an argument exception if the value isn't defined and if
                 // the enum isn't a flags style.
                 //
-                if (!_type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(_type, value))
+                if (!EnumType.IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(EnumType, value))
                 {
-                    throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), _type.Name));
+                    throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), EnumType.Name));
                 }
 
-                return Enum.Format(_type, value, "G");
+                return Enum.Format(EnumType, value, "G");
             }
 
             if (destinationType == typeof(Enum[]) && value != null)
             {
-                if (_type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false))
+                if (EnumType.IsDefined(typeof(FlagsAttribute), false))
                 {
                     List<Enum> flagValues = new List<Enum>();
 
-                    Array objValues = Enum.GetValues(_type);
+                    Array objValues = Enum.GetValues(EnumType);
                     long[] ulValues = new long[objValues.Length];
                     for (int idx = 0; idx < objValues.Length; idx++)
                     {
@@ -206,7 +183,7 @@ namespace System.ComponentModel
                         {
                             if ((ul != 0 && (ul & longValue) == ul) || ul == longValue)
                             {
-                                flagValues.Add((Enum)Enum.ToObject(_type, ul));
+                                flagValues.Add((Enum)Enum.ToObject(EnumType, ul));
                                 valueFound = true;
                                 longValue &= ~ul;
                                 break;
@@ -221,21 +198,20 @@ namespace System.ComponentModel
 
                     if (!valueFound && longValue != 0)
                     {
-                        flagValues.Add((Enum)Enum.ToObject(_type, longValue));
+                        flagValues.Add((Enum)Enum.ToObject(EnumType, longValue));
                     }
 
                     return flagValues.ToArray();
                 }
                 else
                 {
-                    return new Enum[] { (Enum)Enum.ToObject(_type, value) };
+                    return new Enum[] { (Enum)Enum.ToObject(EnumType, value) };
                 }
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-#if !NETSTANDARD10
         /// <internalonly/>
         /// <summary>
         ///    <para>Gets a collection of standard values for the data type this validator is
@@ -249,18 +225,14 @@ namespace System.ComponentModel
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
                 // the behavior is undefined, since what we return are just enum values, not names.
 
-                Type reflectType = TypeDescriptor.GetReflectionType(_type);
-                if (reflectType == null)
-                {
-                    reflectType = _type;
-                }
+                Type reflectType = TypeDescriptor.GetReflectionType(EnumType) ?? EnumType;
 
                 FieldInfo[] fields = reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
-                ArrayList objValues = null;
+                List<object> objValues = null;
 
                 if (fields != null && fields.Length > 0)
                 {
-                    objValues = new ArrayList(fields.Length);
+                    objValues = new List<object>(fields.Length);
                 }
 
                 if (objValues != null)
@@ -281,7 +253,7 @@ namespace System.ComponentModel
                             {
                                 if (field.Name != null)
                                 {
-                                    value = Enum.Parse(_type, field.Name);
+                                    value = Enum.Parse(EnumType, field.Name);
                                 }
                             }
                             catch (ArgumentException)
@@ -299,11 +271,11 @@ namespace System.ComponentModel
                     IComparer comparer = Comparer;
                     if (comparer != null)
                     {
-                        objValues.Sort(comparer);
+                        objValues.Sort((IComparer<object>) comparer);
                     }
                 }
 
-                Array arr = (objValues != null) ? objValues.ToArray() : null;
+                Array arr = objValues?.ToArray();
                 _values = new StandardValuesCollection(arr);
             }
             return _values;
@@ -317,7 +289,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
-            return !_type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false);
+            return !EnumType.IsDefined(typeof(FlagsAttribute), false);
         }
 
         /// <internalonly/>
@@ -338,8 +310,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {
-            return Enum.IsDefined(_type, value);
+            return Enum.IsDefined(EnumType, value);
         }
-#endif // !NETSTANDARD10
     }
 }

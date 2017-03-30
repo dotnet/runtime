@@ -15,12 +15,19 @@ namespace System
 
         // These values are specific to Windows and are known to SHGetFolderPath, however they are
         // also the values used in the SpecialFolderOption enum.  As such, we keep them as constants
-        // with their Win32 names, but keep them here rather than in Interop.mincore as they're
+        // with their Win32 names, but keep them here rather than in Interop.Kernel32 as they're
         // used on all platforms.
         private static class SpecialFolderOptionValues
         {
-            internal const int CSIDL_FLAG_CREATE = 0x8000; // force folder creation in SHGetFolderPath
-            internal const int CSIDL_FLAG_DONT_VERIFY = 0x4000; // return an unverified folder path
+            /// <summary>
+            /// Force folder creation in SHGetFolderPath. Equivalent of KF_FLAG_CREATE (0x00008000).
+            /// </summary>
+            internal const int CSIDL_FLAG_CREATE = 0x8000;
+
+            /// <summary>
+            /// Return an unverified folder path. Equivalent of KF_FLAG_DONT_VERIFY (0x00004000).
+            /// </summary>
+            internal const int CSIDL_FLAG_DONT_VERIFY = 0x4000;
         }
     }
 }

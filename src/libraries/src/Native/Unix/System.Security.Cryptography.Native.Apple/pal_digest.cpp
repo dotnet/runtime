@@ -37,6 +37,9 @@ extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm
         return nullptr;
 
     DigestCtx* digestCtx = reinterpret_cast<DigestCtx*>(malloc(sizeof(DigestCtx)));
+    if (digestCtx == nullptr)
+        return nullptr;
+
     digestCtx->algorithm = algorithm;
 
     switch (algorithm)
@@ -71,7 +74,7 @@ extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm
     return digestCtx;
 }
 
-extern "C" int AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf)
+extern "C" int32_t AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf)
 {
     if (cbBuf == 0)
         return 1;
@@ -97,12 +100,12 @@ extern "C" int AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int
     }
 }
 
-extern "C" int AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
+extern "C" int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
 {
     if (ctx == nullptr || pOutput == nullptr || cbOutput < ctx->cbDigest)
         return -1;
 
-    int ret = 0;
+    int32_t ret = 0;
 
     switch (ctx->algorithm)
     {

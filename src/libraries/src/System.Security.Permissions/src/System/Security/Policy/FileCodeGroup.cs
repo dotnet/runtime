@@ -4,18 +4,19 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class FileCodeGroup : System.Security.Policy.CodeGroup
+    [Serializable]
+    public sealed partial class FileCodeGroup : CodeGroup
     {
-        public FileCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Permissions.FileIOPermissionAccess access) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
+        public FileCodeGroup(IMembershipCondition membershipCondition, Permissions.FileIOPermissionAccess access) : base(default(IMembershipCondition), default(PolicyStatement)) { }
         public override string AttributeString { get { return null; } }
         public override string MergeLogic { get { return null; } }
         public override string PermissionSetName { get { return null; } }
-        public override System.Security.Policy.CodeGroup Copy() { return default(System.Security.Policy.CodeGroup); }
-        protected override void CreateXml(SecurityElement element, System.Security.Policy.PolicyLevel level) { }
+        public override CodeGroup Copy() { return default(CodeGroup); }
+        protected override void CreateXml(SecurityElement element, PolicyLevel level) { }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
-        protected override void ParseXml(SecurityElement e, System.Security.Policy.PolicyLevel level) { }
-        public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.PolicyStatement); }
-        public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { return default(System.Security.Policy.CodeGroup); }
+        protected override void ParseXml(SecurityElement e, PolicyLevel level) { }
+        public override PolicyStatement Resolve(Evidence evidence) { return default(PolicyStatement); }
+        public override CodeGroup ResolveMatchingCodeGroups(Evidence evidence) { return default(CodeGroup); }
     }
 }

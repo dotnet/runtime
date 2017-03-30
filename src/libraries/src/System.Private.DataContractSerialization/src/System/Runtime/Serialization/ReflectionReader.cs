@@ -20,12 +20,12 @@ namespace System.Runtime.Serialization
         private delegate object CollectionReadItemDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs);
         private delegate object CollectionSetItemDelegate(object resultCollection, object collectionItem, int itemIndex);
 
-        private readonly static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        private readonly static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private readonly static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+        private static readonly MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
-        private readonly static Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
-        private readonly static object[] s_arrayConstructorArguments = new object[] { 32 };
+        private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
+        private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, ClassDataContract classContract)
         {
@@ -33,9 +33,17 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             InvokeOnDeserializing(context, classContract, obj);
 
-            ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
-            obj = ResolveAdapterObject(obj, classContract);
+            if (classContract.IsISerializable)
+            {
+                obj = ReadISerializable(xmlReader, context, classContract);
+            }
+            else
+            {
+                ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
+            }
 
+            obj = ResolveAdapterObject(obj, classContract);
+            InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
 
             return obj;
@@ -204,7 +212,7 @@ namespace System.Runtime.Serialization
         {
             object value = null;
             int nullables = 0;
-            while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {
                 nullables++;
                 type = type.GetGenericArguments()[0];
@@ -214,7 +222,7 @@ namespace System.Runtime.Serialization
                 PrimitiveDataContract.GetPrimitiveDataContract(type)
                 : (primitiveContractForOriginalType ?? PrimitiveDataContract.GetPrimitiveDataContract(type));
 
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
+            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
             {
                 value = ReadItemOfPrimitiveType(xmlReader, context, type, name, ns, primitiveContract, nullables);
             }
@@ -231,7 +239,7 @@ namespace System.Runtime.Serialization
             object value;
             context.ReadAttributes(xmlReader);
             string objectId = context.ReadIfNullOrRef(xmlReader, type, DataContract.IsTypeSerializable(type));
-            bool typeIsValueType = type.GetTypeInfo().IsValueType;
+            bool typeIsValueType = type.IsValueType;
             if (objectId != null)
             {
                 if (objectId.Length == 0)
@@ -279,11 +287,21 @@ namespace System.Runtime.Serialization
             return value;
         }
 
+        private static object ReadISerializable(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        {
+            object obj;
+            SerializationInfo serializationInfo = context.ReadSerializationInfo(xmlReader, classContract.UnderlyingType);
+            StreamingContext streamingContext = context.GetStreamingContext();
+            ConstructorInfo iSerializableConstructor = classContract.GetISerializableConstructor();
+            obj = iSerializableConstructor.Invoke(new object[] { serializationInfo, streamingContext });
+            return obj;
+        }
+
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
         private CollectionReadItemDelegate GetReflectionReadValueDelegate(Type type)
         {
             int nullables = 0;
-            while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {
                 nullables++;
                 type = type.GetGenericArguments()[0];
@@ -291,7 +309,7 @@ namespace System.Runtime.Serialization
 
             PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
             bool hasValidPrimitiveContract = primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject;
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
+            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
             {
                 return (xmlReaderArg, contextArg, collectionContract, typeArg, nameArg, nsArg) =>
                 {
@@ -349,6 +367,12 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private void InvokeDeserializationCallback(object obj)
+        {
+            var deserializationCallbackObject = obj as IDeserializationCallback;
+            deserializationCallbackObject?.OnDeserialization(null);
+        }
+
         private static object CreateObject(ClassDataContract classContract)
         {
             object obj;
@@ -378,7 +402,7 @@ namespace System.Runtime.Serialization
 
         private bool IsArrayLikeInterface(CollectionDataContract collectionContract)
         {
-            if (collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
+            if (collectionContract.UnderlyingType.IsInterface)
             {
                 switch (collectionContract.Kind)
                 {
@@ -408,7 +432,7 @@ namespace System.Runtime.Serialization
                 var newArray = ci.Invoke(s_arrayConstructorArguments);
                 return newArray;
             }
-            else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
+            else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.IsInterface)
             {
                 Type type = Globals.TypeOfDictionaryGeneric.MakeGenericType(collectionContract.ItemType.GetGenericArguments());
                 ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
@@ -417,7 +441,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                if (collectionContract.UnderlyingType.GetTypeInfo().IsValueType)
+                if (collectionContract.UnderlyingType.IsValueType)
                 {
                     object newValueObject = Activator.CreateInstance(collectionContract.UnderlyingType);
                     return newValueObject;

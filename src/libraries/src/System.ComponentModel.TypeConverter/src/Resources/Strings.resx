@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -150,17 +91,8 @@
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
   </data>
-  <data name="ErrorPropertyAccessorException" xml:space="preserve">
-    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
-  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
-  </data>
-  <data name="InvalidNullArgument" xml:space="preserve">
-   <value>Null is not a valid value for {0}.</value> 
-  </data>
-  <data name="MetaExtenderName" xml:space="preserve">
-   <value>{0} on {1}</value> 
   </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
@@ -191,5 +123,137 @@
   </data>
   <data name="TypeDescriptorSameAssociation" xml:space="preserve">
     <value>Cannot create an association when the primary and secondary objects are the same.</value>
+  </data>
+  <data name="InvalidColor" xml:space="preserve">
+    <value>Color '{0}' is not valid.</value>
+  </data>
+  <data name="TextParseFailedFormat" xml:space="preserve">
+    <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
+  </data>
+  <data name="PropertyValueInvalidEntry" xml:space="preserve">
+    <value>IDictionary parameter contains at least one entry that is not valid. Ensure all values are consistent with the object's properties.</value>
+  </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
+  </data>
+  <data name="TimerAutoReset" xml:space="preserve">
+    <value>Indicates whether the timer will be restarted when it is enabled.</value>
+  </data>
+  <data name="TimerEnabled" xml:space="preserve">
+    <value>Indicates whether the timer is enabled to fire events at a defined interval.</value>
+  </data>
+  <data name="TimerInterval" xml:space="preserve">
+    <value>The number of milliseconds between timer events.</value>
+  </data>
+  <data name="TimerIntervalElapsed" xml:space="preserve">
+    <value>Occurs when the Interval has elapsed.</value>
+  </data>
+  <data name="TimerInvalidInterval" xml:space="preserve">
+    <value>'{0}' is not a valid value for 'Interval'. 'Interval' must be greater than {1}.</value>
+  </data>
+  <data name="TimerSynchronizingObject" xml:space="preserve">
+    <value>The object used to marshal the event handler calls issued when an interval has elapsed.</value>
+  </data>
+  <data name="ToolboxItemAttributeFailedGetType" xml:space="preserve">
+    <value>Failed to create ToolboxItem of type: {0}</value>
+  </data>
+  <data name="PropertyTabAttributeBadPropertyTabScope" xml:space="preserve">
+    <value>Scope must be PropertyTabScope.Document or PropertyTabScope.Component</value>
+  </data>
+  <data name="PropertyTabAttributeTypeLoadException" xml:space="preserve">
+    <value>Couldn't find type {0}</value>
+  </data>
+  <data name="PropertyTabAttributeArrayLengthMismatch" xml:space="preserve">
+    <value>tabClasses must have the same number of items as tabScopes</value>
+  </data>
+  <data name="PropertyTabAttributeParamsBothNull" xml:space="preserve">
+    <value>An array of tab type names or tab types must be specified</value>
+  </data>
+  <data name="CultureInfoConverterDefaultCultureString" xml:space="preserve">
+    <value>(Default)</value>
+  </data>
+  <data name="CultureInfoConverterInvalidCulture" xml:space="preserve">
+    <value>The {0} culture cannot be converted to a CultureInfo object on this computer.</value>
+  </data> 
+  <data name="ErrorInvalidServiceInstance" xml:space="preserve">
+    <value>The service instance must derive from or implement {0}.</value>
+  </data>
+  <data name="ErrorServiceExists" xml:space="preserve">
+    <value>The service {0} already exists in the service container.</value>
+  </data>
+  <data name="InvalidArgument" xml:space="preserve">
+    <value>'{1}' is not a valid value for '{0}'.</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+    <value>Null is not a valid value for {0}.</value>
+  </data>
+  <data name="DuplicateComponentName" xml:space="preserve">
+    <value>Duplicate component name '{0}'.  Component names must be unique and case-insensitive.</value>
+  </data>
+  <data name="MaskedTextProviderPasswordAndPromptCharError" xml:space="preserve">
+    <value>The PasswordChar and PromptChar values cannot be the same.</value>
+  </data>
+  <data name="MaskedTextProviderInvalidCharError" xml:space="preserve">
+    <value>The specified character value is not allowed for this property.</value>
+  </data>
+  <data name="MaskedTextProviderMaskNullOrEmpty" xml:space="preserve">
+    <value>The Mask value cannot be null or empty.</value>
+  </data>
+  <data name="MaskedTextProviderMaskInvalidChar" xml:space="preserve">
+    <value>The specified mask contains invalid characters.</value>
+  </data>
+  <data name="InstanceDescriptorCannotBeStatic" xml:space="preserve">
+    <value>Parameter cannot be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeStatic" xml:space="preserve">
+    <value>Parameter must be static.</value>
+  </data>
+  <data name="InstanceDescriptorMustBeReadable" xml:space="preserve">
+    <value>Parameter must be readable.</value>
+  </data>
+  <data name="InstanceDescriptorLengthMismatch" xml:space="preserve">
+    <value>Length mismatch.</value>
+  </data>
+  <data name="MetaExtenderName" xml:space="preserve">
+    <value>{0} on {1}</value>
+  </data>
+  <data name="CantModifyListSortDescriptionCollection" xml:space="preserve">
+    <value>Once a ListSortDescriptionCollection has been created it can't be modified.</value>
+  </data>
+  <data name="LicExceptionTypeOnly" xml:space="preserve">
+    <value>A valid license cannot be granted for the type {0}. Contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicExceptionTypeAndInstance" xml:space="preserve">
+    <value>An instance of type '{1}' was being created, and a valid license could not be granted for the type '{0}'. Please,  contact the manufacturer of the component for more information.</value>
+  </data>
+  <data name="LicMgrContextCannotBeChanged" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is currently locked and cannot be changed.</value>
+  </data>
+  <data name="LicMgrAlreadyLocked" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager is already locked by another user.</value>
+  </data>
+  <data name="LicMgrDifferentUser" xml:space="preserve">
+    <value>The CurrentContext property of the LicenseManager can only be unlocked with the same contextUser.</value>
+  </data>
+  <data name="CollectionConverterText" xml:space="preserve">
+    <value>(Collection)</value>
+  </data>
+  <data name="InstanceCreationEditorDefaultText" xml:space="preserve">
+    <value>(New...)</value>
+  </data>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data> 
+  <data name="ErrorPropertyAccessorException" xml:space="preserve">
+    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
+  </data>
+  <data name="CHECKOUTCanceled" xml:space="preserve">
+    <value>The checkout was canceled by the user.</value>
+  </data> 
+   <data name="toStringNone" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+   <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
+    <value>Relationships between {0}.{1} and {2}.{3} are not supported.</value>
   </data>
 </root>

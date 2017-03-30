@@ -307,9 +307,9 @@ namespace System
 
                 if (escape)
                 {
-                    const int maxNumberOfBytesEncoded = 4;
+                    const int MaxNumberOfBytesEncoded = 4;
 
-                    if (bufferRemaining < maxNumberOfBytesEncoded * percentEncodingLen)
+                    if (bufferRemaining < MaxNumberOfBytesEncoded * percentEncodingLen)
                     {
                         int newBufferLength = 0;
 
@@ -339,11 +339,11 @@ namespace System
                         pDest = (char*)destHandle.AddrOfPinnedObject();
                     }
 
-                    byte[] encodedBytes = new byte[maxNumberOfBytesEncoded];
-                    fixed (byte* pEncodedBytes = encodedBytes)
+                    byte[] encodedBytes = new byte[MaxNumberOfBytesEncoded];
+                    fixed (byte* pEncodedBytes = &encodedBytes[0])
                     {
-                        int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, maxNumberOfBytesEncoded);
-                        Debug.Assert(encodedBytesCount <= maxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
+                        int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
+                        Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
 
                         bufferRemaining -= encodedBytesCount * percentEncodingLen;
 

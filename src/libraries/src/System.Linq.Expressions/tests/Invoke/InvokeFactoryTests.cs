@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -48,23 +47,23 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertInvokeIsOptimized(int n)
         {
-            var genArgs = Enumerable.Repeat(typeof(int), n + 1).ToArray();
-            var delegateType = Expression.GetFuncType(genArgs);
+            Type[] genArgs = Enumerable.Repeat(typeof(int), n + 1).ToArray();
+            Type delegateType = Expression.GetFuncType(genArgs);
 
-            var instance = Expression.Parameter(delegateType);
+            ParameterExpression instance = Expression.Parameter(delegateType);
 
             // Expression[] overload
             {
-                var args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToArray();
-                var expr = Expression.Invoke(instance, args);
+                ConstantExpression[] args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToArray();
+                InvocationExpression expr = Expression.Invoke(instance, args);
 
                 AssertInvokeIsOptimized(expr, instance, args);
             }
 
             // IEnumerable<Expression> overload
             {
-                var args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToList();
-                var expr = Expression.Invoke(instance, args);
+                List<ConstantExpression> args = Enumerable.Range(0, n).Select(i => Expression.Constant(i)).ToList();
+                InvocationExpression expr = Expression.Invoke(instance, args);
 
                 AssertInvokeIsOptimized(expr, instance, args);
             }
@@ -72,10 +71,10 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertInvokeIsOptimized(InvocationExpression expr, Expression expression, IReadOnlyList<Expression> args)
         {
-            var n = args.Count;
+            int n = args.Count;
 
-            var updated = Update(expr);
-            var visited = Visit(expr);
+            InvocationExpression updated = Update(expr);
+            InvocationExpression visited = Visit(expr);
 
             foreach (var node in new[] { expr, updated, visited })
             {
@@ -113,9 +112,9 @@ namespace System.Linq.Expressions.Tests
         {
             // Tests the call of Update to Expression.Invoke factories.
 
-            var res = node.Update(node.Expression, node.Arguments.ToArray());
+            InvocationExpression res = node.Update(node.Expression, node.Arguments.ToArray());
 
-            Assert.NotSame(node, res);
+            Assert.Same(node, res);
 
             return res;
         }

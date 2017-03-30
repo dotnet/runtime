@@ -11,23 +11,45 @@ using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Text; // StringBuilder
 
 namespace System.Data.SqlClient
 {
+    [Serializable]
     public sealed class SqlException : System.Data.Common.DbException
     {
         private const string OriginalClientConnectionIdKey = "OriginalClientConnectionId";
         private const string RoutingDestinationKey = "RoutingDestination";
+        private const int SqlExceptionHResult = unchecked((int)0x80131904);
 
         private SqlErrorCollection _errors;
         private Guid _clientConnectionId = Guid.Empty;
 
         private SqlException(string message, SqlErrorCollection errorCollection, Exception innerException, Guid conId) : base(message, innerException)
         {
-            HResult = unchecked((int)0x80131904);
+            HResult = SqlExceptionHResult;
             _errors = errorCollection;
             _clientConnectionId = conId;
+        }
+
+        private SqlException(SerializationInfo si, StreamingContext sc) : base(si, sc)
+        {
+            HResult = SqlExceptionHResult;
+            _errors = (SqlErrorCollection)si.GetValue("Errors", typeof(SqlErrorCollection));
+            _clientConnectionId = (Guid)si.GetValue("ClientConnectionId", typeof(Guid));
+        }
+
+        public override void GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            if (null == si)
+            {
+                throw new ArgumentNullException(nameof(si));
+            }
+
+            si.AddValue("Errors", _errors, typeof(SqlErrorCollection));
+            si.AddValue("ClientConnectionId", _clientConnectionId, typeof(Guid));
+            base.GetObjectData(si, context);
         }
 
         // runtime will call even if private...
@@ -117,12 +139,12 @@ namespace System.Data.SqlClient
             return sb.ToString();
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion)
         {
             return CreateException(errorCollection, serverVersion, Guid.Empty);
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, SqlInternalConnectionTds internalConnection, Exception innerException = null)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, SqlInternalConnectionTds internalConnection, Exception innerException = null)
         {
             Guid connectionId = (internalConnection == null) ? Guid.Empty : internalConnection._clientConnectionId;
             var exception = CreateException(errorCollection, serverVersion, connectionId, innerException);
@@ -143,7 +165,7 @@ namespace System.Data.SqlClient
             return exception;
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, Guid conId, Exception innerException = null)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, Guid conId, Exception innerException = null)
         {
             Debug.Assert(null != errorCollection && errorCollection.Count > 0, "no errorCollection?");
 

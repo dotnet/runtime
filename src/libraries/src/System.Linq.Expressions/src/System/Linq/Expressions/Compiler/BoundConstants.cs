@@ -71,10 +71,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private readonly Dictionary<TypedConstant, LocalBuilder> _cache = new Dictionary<TypedConstant, LocalBuilder>();
 
-        internal int Count
-        {
-            get { return _values.Count; }
-        }
+        internal int Count => _values.Count;
 
         internal object[] ToArray()
         {
@@ -87,9 +84,8 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal void AddReference(object value, Type type)
         {
-            if (!_indexes.ContainsKey(value))
+            if (_indexes.TryAdd(value, _values.Count))
             {
-                _indexes.Add(value, _values.Count);
                 _values.Add(value);
             }
             Helpers.IncrementCount(new TypedConstant(value, type), _references);
@@ -126,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
         internal void EmitCacheConstants(LambdaCompiler lc)
         {
             int count = 0;
-            foreach (var reference in _references)
+            foreach (KeyValuePair<TypedConstant, int> reference in _references)
             {
 #if FEATURE_COMPILE_TO_METHODBUILDER
                 if (!lc.CanEmitBoundConstants)
@@ -150,7 +146,7 @@ namespace System.Linq.Expressions.Compiler
             // need to clear any locals from last time.
             _cache.Clear();
 
-            foreach (var reference in _references)
+            foreach (KeyValuePair<TypedConstant, int> reference in _references)
             {
                 if (ShouldCache(reference.Value))
                 {
@@ -194,9 +190,9 @@ namespace System.Linq.Expressions.Compiler
                 _values.Add(value);
             }
 
-            lc.IL.EmitInt(index);
+            lc.IL.EmitPrimitive(index);
             lc.IL.Emit(OpCodes.Ldelem_Ref);
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 lc.IL.Emit(OpCodes.Unbox_Any, type);
             }

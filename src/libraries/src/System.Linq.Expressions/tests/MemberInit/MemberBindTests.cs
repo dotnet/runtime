@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -54,8 +55,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullBindings()
         {
-            var mem = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
-            var meth = mem.GetGetMethod();
+            PropertyInfo mem = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
+            MethodInfo meth = mem.GetGetMethod();
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(mem, default(MemberBinding[])));
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(mem, default(IEnumerable<MemberBinding>)));
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(meth, default(MemberBinding[])));
@@ -65,8 +66,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullBindingInBindings()
         {
-            var mem = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
-            var meth = mem.GetGetMethod();
+            PropertyInfo mem = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
+            MethodInfo meth = mem.GetGetMethod();
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(mem, default(MemberBinding)));
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(mem, Enumerable.Repeat<MemberBinding>(null, 1)));
             Assert.Throws<ArgumentNullException>("bindings", () => Expression.MemberBind(meth, default(MemberBinding)));
@@ -87,18 +88,52 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void MemberBindingMustBeMemberOfType()
         {
-            var bind = Expression.MemberBind(
+            MemberMemberBinding bind = Expression.MemberBind(
                 typeof(Outer).GetProperty(nameof(Outer.InnerProperty)),
                 Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))
                 );
-            var newExp = Expression.New(typeof(PropertyAndFields));
+            NewExpression newExp = Expression.New(typeof(PropertyAndFields));
             Assert.Throws<ArgumentException>(() => Expression.MemberInit(newExp, bind));
+        }
+
+        [Fact]
+        public void UpdateSameReturnsSame()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.Same(memberBind, memberBind.Update(Enumerable.Repeat(bind, 1)));
+        }
+
+
+        [Fact]
+        public void UpdateDifferentReturnsDifferent()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.NotSame(memberBind, memberBind.Update(new[] {Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))}));
+            Assert.NotSame(memberBind, memberBind.Update(Enumerable.Empty<MemberBinding>()));
+        }
+
+        [Fact]
+        public void UpdateNullThrows()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.Throws<ArgumentNullException>("bindings", () => memberBind.Update(null));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3));
+            MemberMemberBinding memberBind = Expression.MemberBind(typeof(Outer).GetProperty(nameof(Outer.InnerProperty)), bind);
+            Assert.NotSame(memberBind, memberBind.Update(new RunOnceEnumerable<MemberBinding>(new[] { Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3)) })));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void InnerProperty(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -107,14 +142,14 @@ namespace System.Linq.Expressions.Tests
                         )
                     )
                 );
-            var func = exp.Compile(useInterpreter);
+            Func<Outer> func = exp.Compile(useInterpreter);
             Assert.Equal(3, func().InnerProperty.Value);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void InnerField(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -123,14 +158,14 @@ namespace System.Linq.Expressions.Tests
                         )
                     )
                 );
-            var func = exp.Compile(useInterpreter);
+            Func<Outer> func = exp.Compile(useInterpreter);
             Assert.Equal(4, func().InnerField.Value);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticInnerProperty(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -145,7 +180,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticInnerField(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -160,7 +195,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void ReadonlyInnerProperty(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -169,14 +204,14 @@ namespace System.Linq.Expressions.Tests
                         )
                     )
                 );
-            var func = exp.Compile(useInterpreter);
+            Func<Outer> func = exp.Compile(useInterpreter);
             Assert.Equal(7, func().ReadonlyInnerProperty.Value);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void ReadonlyInnerField(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -185,14 +220,14 @@ namespace System.Linq.Expressions.Tests
                         )
                     )
                 );
-            var func = exp.Compile(useInterpreter);
+            Func<Outer> func = exp.Compile(useInterpreter);
             Assert.Equal(8, func().ReadonlyInnerField.Value);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticReadonlyInnerProperty(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -207,7 +242,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void StaticReadonlyInnerField(bool useInterpreter)
         {
-            var exp = Expression.Lambda<Func<Outer>>(
+            Expression<Func<Outer>> exp = Expression.Lambda<Func<Outer>>(
                 Expression.MemberInit(
                     Expression.New(typeof(Outer)),
                     Expression.MemberBind(
@@ -219,17 +254,30 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
+#if FEATURE_COMPILE
+        [Fact]
+        public void GlobalMethod()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.MemberBind(globalMethodInfo));
+        }
+#endif
+
         public void WriteOnlyInnerProperty()
         {
-            var bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
-            var property = typeof(Outer).GetProperty(nameof(Outer.WriteonlyInnerProperty));
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
+            PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.WriteonlyInnerProperty));
             Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
         }
 
         public void StaticWriteOnlyInnerProperty()
         {
-            var bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
-            var property = typeof(Outer).GetProperty(nameof(Outer.StaticWriteonlyInnerProperty));
+            MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
+            PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.StaticWriteonlyInnerProperty));
             Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
         }
     }

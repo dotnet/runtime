@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
 using System.Runtime.WindowsRuntime.Internal;
@@ -437,7 +438,7 @@ namespace System.IO
         // Cloning can be added in future, however, it would be quite complex
         // to support it correctly for generic streams.
 
-        private static void ThrowCloningNotSuported(String methodName)
+        private static void ThrowCloningNotSupported(String methodName)
         {
             NotSupportedException nse = new NotSupportedException(SR.Format(SR.NotSupported_CloningNotSupported, methodName));
             nse.SetErrorCode(HResults.E_NOTIMPL);
@@ -447,21 +448,21 @@ namespace System.IO
 
         public IRandomAccessStream CloneStream()
         {
-            ThrowCloningNotSuported("CloneStream");
+            ThrowCloningNotSupported("CloneStream");
             return null;
         }
 
 
         public IInputStream GetInputStreamAt(UInt64 position)
         {
-            ThrowCloningNotSuported("GetInputStreamAt");
+            ThrowCloningNotSupported("GetInputStreamAt");
             return null;
         }
 
 
         public IOutputStream GetOutputStreamAt(UInt64 position)
         {
-            ThrowCloningNotSuported("GetOutputStreamAt");
+            ThrowCloningNotSupported("GetOutputStreamAt");
             return null;
         }
         #endregion IRandomAccessStream public interface: Cloning related

@@ -14,6 +14,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_SslProtocols_Test
     {
         [Fact]
@@ -104,29 +106,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object [][] SupportedSSLVersionServers =
+        public static readonly object [][] SupportedSSLVersionServers =
         {
-            new object[] {"TLSv1.0", Configuration.Http.TLSv10RemoteServer},
-            new object[] {"TLSv1.1", Configuration.Http.TLSv11RemoteServer},
-            new object[] {"TLSv1.2", Configuration.Http.TLSv12RemoteServer},
+            new object[] {SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer},
+            new object[] {SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer},
+            new object[] {SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer},
         };
 
         // This test is logically the same as the above test, albeit using remote servers
         // instead of local ones.  We're keeping it for now (as outerloop) because it helps
         // to validate against another SSL implementation that what we mean by a particular
         // TLS version matches that other implementation.
-        [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
+        [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(SupportedSSLVersionServers))]
-        public async Task GetAsync_SupportedSSLVersion_Succeeds(string name, string url)
+        public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
-            using (var client = new HttpClient())
+            using (HttpClientHandler handler = new HttpClientHandler())
             {
-                (await client.GetAsync(url)).Dispose();
+                if (PlatformDetection.IsCentos7)
+                {
+                    // Default protocol selection is always TLSv1 on Centos7 libcurl 7.29.0
+                    // Hence, set the specific protocol on HttpClient that is required by test
+                    handler.SslProtocols = sslProtocols;
+                }
+                using (var client = new HttpClient(handler))
+                {
+                    (await client.GetAsync(url)).Dispose();
+                }
             }
         }
 
-        public readonly static object[][] NotSupportedSSLVersionServers =
+        public static readonly object[][] NotSupportedSSLVersionServers =
         {
             new object[] {"SSLv2", Configuration.Http.SSLv2RemoteServer},
             new object[] {"SSLv3", Configuration.Http.SSLv3RemoteServer},
@@ -136,8 +147,8 @@ namespace System.Net.Http.Functional.Tests
         // explicitly disallow creating SslStream with SSLv2/3.  Since we explicitly throw
         // when trying to use such an SslStream, we can't stand up a localhost server that
         // only speaks those protocols.
-        [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
-        [Theory]
+        [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
+        [ConditionalTheory(nameof(SSLv3DisabledByDefault))]
         [MemberData(nameof(NotSupportedSSLVersionServers))]
         public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
         {
@@ -191,7 +202,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(8538, PlatformID.Windows)]
+        [ActiveIssue(8538, TestPlatforms.Windows)]
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {
@@ -235,6 +246,13 @@ namespace System.Net.Http.Functional.Tests
         private static bool BackendSupportsSslConfiguration =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
             (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+
+        private static bool SSLv3DisabledByDefault =>
+            BackendSupportsSslConfiguration ||
+            Version.Parse(CurlVersionDescription()) >= new Version(7, 39); // libcurl disables SSLv3 by default starting in v7.39
+
+        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetVersionDescription")]
+        private static extern string CurlVersionDescription();
 
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();

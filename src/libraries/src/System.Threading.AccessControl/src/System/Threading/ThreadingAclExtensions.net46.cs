@@ -9,32 +9,32 @@ namespace System.Threading
 {
     public static class ThreadingAclExtensions
     {
-        public static EventWaitHandleSecurity GetAccessControl(EventWaitHandle handle)
+        public static EventWaitHandleSecurity GetAccessControl(this EventWaitHandle handle)
         {
             return handle.GetAccessControl();
         }
 
-        public static void SetAccessControl(EventWaitHandle handle, EventWaitHandleSecurity eventSecurity)
+        public static void SetAccessControl(this EventWaitHandle handle, EventWaitHandleSecurity eventSecurity)
         {
             handle.SetAccessControl(eventSecurity);
         }
 
-        public static MutexSecurity GetAccessControl(Mutex mutex)
+        public static MutexSecurity GetAccessControl(this Mutex mutex)
         {
             return mutex.GetAccessControl();
         }
 
-        public static void SetAccessControl(Mutex mutex, MutexSecurity mutexSecurity)
+        public static void SetAccessControl(this Mutex mutex, MutexSecurity mutexSecurity)
         {
             mutex.SetAccessControl(mutexSecurity);
         }
 
-        public static SemaphoreSecurity GetAccessControl(Semaphore semaphore)
+        public static SemaphoreSecurity GetAccessControl(this Semaphore semaphore)
         {
             return semaphore.GetAccessControl();
         }
 
-        public static void SetAccessControl(Semaphore semaphore, SemaphoreSecurity semaphoreSecurity)
+        public static void SetAccessControl(this Semaphore semaphore, SemaphoreSecurity semaphoreSecurity)
         {
             semaphore.SetAccessControl(semaphoreSecurity);
         }

@@ -4,42 +4,55 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
+using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
-        public CSharpCallFlags Flags { get { return _flags; } }
-        private CSharpCallFlags _flags;
+        public BindingFlag BindingFlags => 0;
 
-        public Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
+            => runtimeBinder.DispatchPayload(this, arguments, locals);
 
-        public IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
+            => RuntimeBinder.PopulateSymbolTableWithPayloadInformation(symbolTable, this, callingType, arguments);
 
-        public bool StaticCall { get { return true; } }
-        public IList<Type> TypeArguments { get { return Array.Empty<Type>(); } }
-        public string Name { get { return ".ctor"; } }
+        public bool IsBinderThatCanHaveRefReceiver => true;
 
-        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return false; } }
+        public CSharpCallFlags Flags { get; }
 
-        private RuntimeBinder _binder;
+        public Type CallingContext { get; }
+
+        public bool IsChecked => false;
+
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
+
+        CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
+
+        public bool StaticCall => true;
+
+        public IList<Type> TypeArguments => Array.Empty<Type>();
+
+        public string Name => ".ctor";
+
+        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded => false;
+
+        private readonly RuntimeBinder _binder;
 
         public CSharpInvokeConstructorBinder(
             CSharpCallFlags flags,
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo)
         {
-            _flags = flags;
-            _callingContext = callingContext;
+            Flags = flags;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
 
-        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, args), _argumentInfo, null);
         }

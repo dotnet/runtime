@@ -10,12 +10,7 @@ namespace System.Dynamic.Utils
     {
         public static bool AreEquivalent(Type t1, Type t2)
         {
-            return t1.IsEquivalentTo(t2);
-        }
-
-        public static bool IsEquivalentTo(this Type t1, Type t2)
-        {
-            return t1 == t2;
+            return t1 != null && t1.IsEquivalentTo(t2);
         }
 
         public static bool AreReferenceAssignable(Type dest, Type src)
@@ -25,7 +20,7 @@ namespace System.Dynamic.Utils
             {
                 return true;
             }
-            if (!dest.GetTypeInfo().IsValueType && !src.GetTypeInfo().IsValueType && dest.GetTypeInfo().IsAssignableFrom(src.GetTypeInfo()))
+            if (!dest.IsValueType && !src.IsValueType && dest.IsAssignableFrom(src))
             {
                 return true;
             }
@@ -34,7 +29,7 @@ namespace System.Dynamic.Utils
 
         public static bool IsSameOrSubclass(Type type, Type subType)
         {
-            return AreEquivalent(type, subType) || subType.GetTypeInfo().IsSubclassOf(type);
+            return AreEquivalent(type, subType) || subType.IsSubclassOf(type);
         }
 
         public static void ValidateType(Type type, string paramName)
@@ -47,9 +42,9 @@ namespace System.Dynamic.Utils
             if (type != typeof(void))
             {
                 // A check to avoid a bunch of reflection (currently not supported) during cctor
-                if (type.GetTypeInfo().ContainsGenericParameters)
+                if (type.ContainsGenericParameters)
                 {
-                    throw type.GetTypeInfo().IsGenericTypeDefinition ? Error.TypeIsGeneric(type, paramName, index) : Error.TypeContainsGenericParameters(type, paramName, index);
+                    throw type.IsGenericTypeDefinition ? Error.TypeIsGeneric(type, paramName, index) : Error.TypeContainsGenericParameters(type, paramName, index);
                 }
             }
         }
@@ -62,7 +57,7 @@ namespace System.Dynamic.Utils
             {
                 if (s_mscorlib == null)
                 {
-                    s_mscorlib = typeof(object).GetTypeInfo().Assembly;
+                    s_mscorlib = typeof(object).Assembly;
                 }
 
                 return s_mscorlib;
@@ -84,18 +79,18 @@ namespace System.Dynamic.Utils
             // that allows mscorlib types to be specialized by types in other
             // assemblies.
 
-            var asm = t.GetTypeInfo().Assembly;
+            Assembly asm = t.Assembly;
             if (asm != _mscorlib)
             {
                 // Not in mscorlib or our assembly
                 return false;
             }
 
-            if (t.GetTypeInfo().IsGenericType)
+            if (t.IsGenericType)
             {
                 foreach (Type g in t.GetGenericArguments())
                 {
-                    if (!CanCache(g))
+                    if (!g.CanCache())
                     {
                         return false;
                     }

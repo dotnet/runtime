@@ -239,7 +239,6 @@ namespace System.Reflection.Emit
         // If you add more opcodes here, modify OpCode.Name to handle them correctly
     };
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class OpCodes
     {
         /// <summary>
@@ -1409,7 +1408,6 @@ namespace System.Reflection.Emit
             (1 << OpCode.StackChangeShift)
         );
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static readonly OpCode Castclass = new OpCode(OpCodeValues.Castclass,
             ((int)OperandType.InlineType) |
             ((int)FlowControl.Next << OpCode.FlowControlShift) |

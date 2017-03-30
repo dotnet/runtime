@@ -34,6 +34,7 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
     PAL_CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
     PAL_CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
+    PAL_CURLOPT_TCP_NODELAY = CurlOptionLongBase + 121,
     PAL_CURLOPT_CONNECTTIMEOUT_MS = CurlOptionLongBase + 156,
     PAL_CURLOPT_ADDRESS_SCOPE = CurlOptionLongBase + 171,
     PAL_CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
@@ -73,6 +74,7 @@ enum PAL_CURLcode : int32_t
     PAL_CURLE_OPERATION_TIMEDOUT = 28,
     PAL_CURLE_ABORTED_BY_CALLBACK = 42,
     PAL_CURLE_UNKNOWN_OPTION = 48,
+    PAL_CURLE_RECV_ERROR = 56,
     PAL_CURLE_SEND_FAIL_REWIND = 65,
 };
 

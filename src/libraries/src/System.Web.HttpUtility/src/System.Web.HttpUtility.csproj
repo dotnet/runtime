@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{CE959FC9-5E04-4F29-96B5-454BF3E76306}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Web\HttpUtility.cs" />
+    <Compile Include="System\Web\Util\HttpEncoder.cs" />
+    <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
+    <Compile Include="System\Web\Util\UriUtil.cs" />
+    <Compile Include="System\Web\Util\Utf16StringValidator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Text.Encoding" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

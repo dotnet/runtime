@@ -4,13 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Net;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_XmlResolver", Desc = "")]
-    public class TC_SchemaSet_XmlResolver
+    public class TC_SchemaSet_XmlResolver : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -58,7 +58,7 @@ namespace System.Xml.Tests
                 XmlSchemaSet sc = new XmlSchemaSet();
                 sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
                 sc.XmlResolver = null;
-                XmlSchema Schema = sc.Add(null, TestData._Root + @"XmlResolver/File/simpledtd.xml");
+                XmlSchema Schema = sc.Add(null, Path.Combine(TestData._Root, "XmlResolver", "File", "simpledtd.xml"));
             }
             catch (Exception)
             {
@@ -76,7 +76,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             sc.XmlResolver = null;
-            sc.Add(null, TestData._Root + "xmlresolver_v2.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v2.xsd"));
             CError.Compare(sc.Count, 1, "SchemaSet count");
             return;
         }
@@ -88,61 +88,56 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            sc.Add(null, TestData._Root + "xmlresolver_v2.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v2.xsd"));
             CError.Compare(sc.Count, 1, "SchemaSet count");
             return;
         }
 
-        // TODO: Fix
-        ////[Variation(Desc = "v4 - schema(Internet)->schema(Local)", Priority = 1)]
-        //[InlineData()]
-        //public int v4()
-        //{
-        //    Initialize();
-        //    XmlSchemaSet sc = new XmlSchemaSet();
-        //    sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-        //    sc.Add(null, FilePathUtil.GetHttpTestDataPath() + @"/XmlSchemaCollection/xmlresolver_v4.xsd");
-        //    CError.Compare(sc.Count, 2, "SchemaSet count");
-        //    CError.Compare(bWarningCallback, false, "Warning thrown");
-        //    return;
-        //}
-        //todo: add these tests for local
-        ////[Variation(Desc = "v5 - schema(Intranet)->schema(Internet)->schema(Intranet)", Priority = 1)]
-        //[InlineData()]
-        //public int v5()
-        //{
-        //    Initialize();
-        //    XmlSchemaSet sc = new XmlSchemaSet();
-        //    sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-        //    sc.Add(null, TestData._Root + "xmlresolver_v5.xsd");
-        //    CError.Compare(sc.Count, 3, "SchemaSet count");
-        //    CError.Compare(bWarningCallback, false, "Warning not thrown");
-        //    return;
-        //}
-        ////[Variation(Desc = "v6 - schema(Intranet)->schema(Internet)->schema(Internet)", Priority = 1)]
-        //[InlineData()]
-        //public int v6()
-        //{
-        //    Initialize();
-        //    XmlSchemaSet sc = new XmlSchemaSet();
-        //    sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-        //    sc.Add(null, TestData._Root + "xmlresolver_v6_a.xsd");
-        //    CError.Compare(sc.Count, 3, "SchemaSet count");
-        //    CError.Compare(bWarningCallback, false, "Warning not thrown");
-        //    return;
-        //}
-        ////[Variation(Desc = "v7 - schema(Local)->schema(Internet)[->schema(Internet)][schema(Local)]", Priority = 1)]
-        //[InlineData()]
-        //public int v7()
-        //{
-        //    Initialize();
-        //    XmlSchemaSet sc = new XmlSchemaSet();
-        //    sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-        //    sc.Add(null, TestData._Root + "xmlresolver_v7_a.xsd");
-        //    CError.Compare(sc.Count, 3, "SchemaSet count");
-        //    CError.Compare(bWarningCallback, false, "Warning not thrown");
-        //    return;
-        //}
+        //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
+        [Fact]
+        public void v4()
+        {
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+
+            Initialize();
+            XmlSchemaSet sc = new XmlSchemaSet();
+            sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v4.xsd"));
+            CError.Compare(sc.Count, 2, "SchemaSet count");
+            CError.Compare(bWarningCallback, false, "Warning thrown");
+            return;
+        }
+
+        //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
+        [Fact]
+        public void v5()
+        {
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+
+            Initialize();
+            XmlSchemaSet sc = new XmlSchemaSet();
+            sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v5.xsd"));
+            CError.Compare(sc.Count, 3, "SchemaSet count");
+            CError.Compare(bWarningCallback, false, "Warning not thrown");
+            return;
+        }
+
+        //[Variation(Desc = "v6 - schema(Local)->schema(Local), but resolving external URI is not allowed", Priority = 1)]
+        [Fact]
+        public void v6()
+        {
+            // Make sure the switch has its default value
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", false);
+
+            Initialize();
+            XmlSchemaSet sc = new XmlSchemaSet();
+            sc.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
+            sc.Add(null, Path.Combine(TestData._Root, "xmlresolver_v4.xsd"));
+            CError.Compare(sc.Count, 1, "SchemaSet count");
+            CError.Compare(bWarningCallback, false, "Warning thrown");
+            return;
+        }
     }
 }
 

@@ -51,11 +51,7 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (s_values == null)
-            {
-                s_values = new StandardValuesCollection(new object[] { true, false });
-            }
-            return s_values;
+            return s_values ?? (s_values = new StandardValuesCollection(new object[] {true, false}));
         }
 
         /// <summary>

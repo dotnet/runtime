@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <ProjectGuid>{2525E37E-0EC1-4374-92FD-D2752BEED978}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="Base64EncodingTest.cs" />
+    <Compile Include="ByteEncodingTest.cs" />
+    <Compile Include="EightBitStreamTest.cs" />
+    <Compile Include="EncodedStreamFactoryTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressDisplayNameTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressEncodeTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressParserTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressParsingTest.cs" />
+    <Compile Include="MessageTests\MessageEncodeHeadersTest.cs" />
+    <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
+    <Compile Include="MessageTests\ReplyToListTest.cs" />
+    <Compile Include="NTAuthenticationStub.cs" />
+    <Compile Include="NTAuthenticationStubTests.cs" />
+    <Compile Include="QuotedPrintableStreamTest.cs" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
+    <Compile Include="SmtpDateTimeTest.cs" />
+    <Compile Include="WriteStateInfoTest.cs" />
+  </ItemGroup>
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <TargetingPackExclusions Include="System.Net.Mail" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Net\Base64Stream.cs">
+      <Link>ProductionCode\Base64Stream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpException.cs">
+      <Link>ProductionCode\SmtpException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpStatusCode.cs">
+      <Link>ProductionCode\SmtpStatusCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\DelegatedStream.cs">
+      <Link>ProductionCode\DelegatedStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailAddress.cs">
+      <Link>ProductionCode\MailAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\NetEventSource.Mail.cs">
+      <Link>ProductionCode\NetEventSource.Mail.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs">
+      <Link>ProductionCode\SmtpConnection.Auth.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\ISmtpAuthenticationModule.cs">
+      <Link>ProductionCode\ISmtpAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpLoginAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpNegotiateAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpNtlmAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs">
+      <Link>ProductionCode\MailAddressCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailPriority.cs">
+      <Link>ProductionCode\MailPriority.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MimePart.cs">
+      <Link>ProductionCode\MimePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\Base64WriteStateInfo.cs">
+      <Link>ProductionCode\Base64WriteStateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\QuotedPrintableStream.cs">
+      <Link>ProductionCode\QuotedPrintableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\CloseableStream.cs">
+      <Link>ProductionCode\CloseableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\EightBitStream.cs">
+      <Link>ProductionCode\EightBitStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\EncodedStreamFactory.cs">
+      <Link>ProductionCode\EncodedStreamFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\IEncodableStream.cs">
+      <Link>ProductionCode\IEncodableStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\QEncodedStream.cs">
+      <Link>ProductionCode\QEncodedStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\WriteStateInfoBase.cs">
+      <Link>ProductionCode\WriteStateInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\BaseWriter.cs">
+      <Link>ProductionCode\BaseWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\TransferEncoding.cs">
+      <Link>ProductionCode\TransferEncoding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\ContentDisposition.cs">
+      <Link>ProductionCode\ContentDisposition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\ContentType.cs">
+      <Link>ProductionCode\ContentType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\DispositionTypeNames.cs">
+      <Link>ProductionCode\DispositionTypeNames.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\HeaderCollection.cs">
+      <Link>ProductionCode\HeaderCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MediaTypeNames.cs">
+      <Link>ProductionCode\MediaTypeNames.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MimeBasePart.cs">
+      <Link>ProductionCode\MimeBasePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\SmtpDateTime.cs">
+      <Link>ProductionCode\SmtpDateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs">
+      <Link>ProductionCode\MultiAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs">
+      <Link>ProductionCode\TrackingStringDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs">
+      <Link>ProductionCode\TrackingValidationObjectDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderID.cs">
+      <Link>ProductionCode\MailHeaderID.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailHeaderInfo.cs">
+      <Link>ProductionCode\MailHeaderInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\BufferBuilder.cs">
+      <Link>ProductionCode\BufferBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>ProductionCode\Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\MailBnfHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common..cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\WhitespaceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\MailAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\DotAtomReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\QuotedPairReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

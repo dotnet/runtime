@@ -219,6 +219,79 @@ namespace System.Xml.Xsl.Runtime
     }
 
     /// <summary>
+    /// Sort key for xs:string values.  Strings are sorted according to a byte-wise sort key calculated by caller.
+    /// </summary>
+    internal class XmlStringSortKey : XmlSortKey
+    {
+        private readonly SortKey _sortKey;
+        private readonly  byte[] _sortKeyBytes;
+        private readonly  bool _descendingOrder;
+
+        public XmlStringSortKey(SortKey sortKey, bool descendingOrder)
+        {
+            _sortKey = sortKey;
+            _descendingOrder = descendingOrder;
+        }
+
+        public XmlStringSortKey(byte[] sortKey, bool descendingOrder)
+        {
+            _sortKeyBytes = sortKey;
+            _descendingOrder = descendingOrder;
+        }
+
+        public override int CompareTo(object obj)
+        {
+            XmlStringSortKey that = obj as XmlStringSortKey;
+            int idx, cntCmp, result;
+
+            if (that == null)
+                return CompareToEmpty(obj);
+
+            // Compare either using SortKey.Compare or byte arrays
+            if (_sortKey != null)
+            {
+                Debug.Assert(that._sortKey != null, "Both keys must have non-null sortKey field");
+                result = SortKey.Compare(_sortKey, that._sortKey);
+            }
+            else
+            {
+                Debug.Assert(_sortKeyBytes != null && that._sortKeyBytes != null, "Both keys must have non-null sortKeyBytes field");
+
+                cntCmp = (_sortKeyBytes.Length < that._sortKeyBytes.Length) ? _sortKeyBytes.Length : that._sortKeyBytes.Length;
+                for (idx = 0; idx < cntCmp; idx++)
+                {
+                    if (_sortKeyBytes[idx] < that._sortKeyBytes[idx])
+                    {
+                        result = -1;
+                        goto Done;
+                    }
+
+                    if (_sortKeyBytes[idx] > that._sortKeyBytes[idx])
+                    {
+                        result = 1;
+                        goto Done;
+                    }
+                }
+
+                // So far, keys are equal, so now test length of each key
+                if (_sortKeyBytes.Length < that._sortKeyBytes.Length)
+                    result = -1;
+                else if (_sortKeyBytes.Length > that._sortKeyBytes.Length)
+                    result = 1;
+                else
+                    result = 0;
+            }
+
+        Done:
+            // Use document order to break sorting tie
+            if (result == 0)
+                return BreakSortingTie(that);
+
+            return _descendingOrder ? -result : result;
+        }
+    }
+
+    /// <summary>
     /// Sort key for Double values.
     /// </summary>
     internal class XmlDoubleSortKey : XmlSortKey

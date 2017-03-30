@@ -9,25 +9,24 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public static class CompilerMarshalOverride
+    {
+    }
     public partial class CallConvCdecl
     {
-        internal CallConvCdecl() { }
+        public CallConvCdecl() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvFastcall
     {
-        internal CallConvFastcall() { }
+        public CallConvFastcall() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvStdcall
     {
-        internal CallConvStdcall() { }
+        public CallConvStdcall() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvThiscall
     {
-        internal CallConvThiscall() { }
+        public CallConvThiscall() { }
     }
     public static partial class IsBoxed
     {
@@ -35,7 +34,6 @@ namespace System.Runtime.CompilerServices
     public static partial class IsByValue
     {
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class IsCopyConstructed
     {
     }
@@ -58,16 +56,29 @@ namespace System.Runtime.CompilerServices
     {
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(8), Inherited = true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class NativeCppClassAttribute : System.Attribute
     {
         public NativeCppClassAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1052), AllowMultiple = true, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class RequiredAttributeAttribute : System.Attribute
     {
         public RequiredAttributeAttribute(System.Type requiredContract) { }
-        public System.Type RequiredContract { get { return default(System.Type); } }
+        public System.Type RequiredContract { get { throw null; } }
     }
+    public static partial class IsPinned
+    {
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(8))]
+    public sealed partial class HasCopySemanticsAttribute : System.Attribute
+    {
+        public HasCopySemanticsAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(16))]
+    public sealed partial class ScopelessEnumAttribute : System.Attribute
+    {
+        public ScopelessEnumAttribute() { }
+    }
+    
+    
 }

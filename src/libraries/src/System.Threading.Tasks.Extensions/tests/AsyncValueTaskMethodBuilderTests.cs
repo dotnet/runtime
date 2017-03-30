@@ -23,7 +23,7 @@ namespace System.Threading.Tasks.Tests
             b.SetResult(42);
             ValueTask<int> vt = b.Task;
             Assert.True(vt.IsCompletedSuccessfully);
-            Assert.NotSame(vt.AsTask(), vt.AsTask()); // will be different if completed synchronously
+            Assert.False(WrapsTask(vt));
             Assert.Equal(42, vt.Result);
         }
 
@@ -34,7 +34,7 @@ namespace System.Threading.Tasks.Tests
             ValueTask<int> vt = b.Task;
             b.SetResult(42);
             Assert.True(vt.IsCompletedSuccessfully);
-            Assert.Same(vt.AsTask(), vt.AsTask()); // will be safe if completed asynchronously
+            Assert.True(WrapsTask(vt));
             Assert.Equal(42, vt.Result);
         }
 
@@ -111,6 +111,37 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(dsm, foundSm);
         }
 
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(2, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        public void AwaitOnCompleted_ForcesTaskCreation(int numAwaits, bool awaitUnsafe)
+        {
+            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+
+            var dsm = new DelegateStateMachine();
+            TaskAwaiter<int> t = new TaskCompletionSource<int>().Task.GetAwaiter();
+
+            Assert.InRange(numAwaits, 1, int.MaxValue);
+            for (int i = 1; i <= numAwaits; i++)
+            {
+                if (awaitUnsafe)
+                {
+                    b.AwaitUnsafeOnCompleted(ref t, ref dsm);
+                }
+                else
+                {
+                    b.AwaitOnCompleted(ref t, ref dsm);
+                }
+            }
+
+            b.SetResult(42);
+
+            Assert.True(WrapsTask(b.Task));
+            Assert.Equal(42, b.Task.Result);
+        }
+
         [Fact]
         public void SetStateMachine_InvalidArgument_ThrowsException()
         {
@@ -150,8 +181,31 @@ namespace System.Threading.Tasks.Tests
             // Make sure we've not caused the Task to be allocated
             b.SetResult(42);
             ValueTask<int> vt = b.Task;
-            Assert.NotSame(vt.AsTask(), vt.AsTask());
+            Assert.False(WrapsTask(vt));
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(10)]
+        public static async Task UsedWithAsyncMethod_CompletesSuccessfully(int yields)
+        {
+            Assert.Equal(42, await ValueTaskReturningAsyncMethod(42));
+
+            ValueTask<int> vt = ValueTaskReturningAsyncMethod(84);
+            Assert.Equal(yields > 0, WrapsTask(vt));
+            Assert.Equal(84, await vt);
+
+            async ValueTask<int> ValueTaskReturningAsyncMethod(int result)
+            {
+                for (int i = 0; i < yields; i++) await Task.Yield();
+                return result;
+            }
+        }
+
+        /// <summary>Gets whether the ValueTask has a non-null Task.</summary>
+        private static bool WrapsTask<T>(ValueTask<T> vt) => ReferenceEquals(vt.AsTask(), vt.AsTask());
 
         private struct DelegateStateMachine : IAsyncStateMachine
         {

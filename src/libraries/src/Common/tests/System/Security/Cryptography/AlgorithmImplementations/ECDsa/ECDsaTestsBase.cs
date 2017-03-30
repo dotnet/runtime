@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     /// </summary>
     public abstract class ECDsaTestsBase
     {
+#if netcoreapp
         internal const string ECDSA_P224_OID_VALUE = "1.3.132.0.33"; // Also called nistP224 or secP224r1
         internal const string ECDSA_P256_OID_VALUE = "1.2.840.10045.3.1.7"; // Also called nistP256, secP256r1 or prime256v1(OpenSsl)
         internal const string ECDSA_P384_OID_VALUE = "1.3.132.0.34"; // Also called nistP384 or secP384r1
@@ -232,7 +233,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         // On CentOS, secp224r1 (also called nistP224) appears to be disabled. To prevent test failures on that platform, 
         // probe for this capability before depending on it. 
-        static internal bool ECDsa224Available
+        internal static bool ECDsa224Available
         {
             get
             {
@@ -240,13 +241,14 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        static internal bool ECExplicitCurvesSupported
+        internal static bool ECExplicitCurvesSupported
         {
             get
             {
                 return ECDsaFactory.ExplicitCurvesSupported;
             }
         }
+#endif // netcoreapp
     }
 
     internal static class EcDsaTestExtensions

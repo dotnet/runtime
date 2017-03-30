@@ -19,10 +19,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             safeHandle.DangerousAddRef(ref success);
             Assert.True(success, "DangerousAddRef");
             safeHandle.Dispose();
-            
+
             Assert.False(safeHandle.IsClosed, "closed");
-            Assert.Equal(1, FakeSafeWinHttpHandle.HandlesOpen);
-            
+
             // Clean up safeHandle to keep outstanding handles at zero.
             safeHandle.DangerousRelease();
         }
@@ -36,10 +35,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(success, "DangerousAddRef");
             safeHandle.Dispose();
             safeHandle.Dispose();
-            
+
             Assert.False(safeHandle.IsClosed, "closed");
-            Assert.Equal(1, FakeSafeWinHttpHandle.HandlesOpen);
-            
+
             // Clean up safeHandle to keep outstanding handles at zero.
             safeHandle.DangerousRelease();
         }
@@ -53,9 +51,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(success, "DangerousAddRef");
             safeHandle.Dispose();
             safeHandle.DangerousRelease();
-            
+
             Assert.True(safeHandle.IsClosed, "closed");
-            Assert.Equal(0, FakeSafeWinHttpHandle.HandlesOpen);
         }
 
         [Fact]
@@ -66,10 +63,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             safeHandle.DangerousAddRef(ref success);
             Assert.True(success, "DangerousAddRef");
             safeHandle.DangerousRelease();
-            
+
             Assert.False(safeHandle.IsClosed, "closed");
-            Assert.Equal(1, FakeSafeWinHttpHandle.HandlesOpen);
-            
+
             // Clean up safeHandle to keep outstanding handles at zero.
             safeHandle.Dispose();
         }
@@ -83,9 +79,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.True(success, "DangerousAddRef");
             safeHandle.DangerousRelease();
             safeHandle.Dispose();
-            
+
             Assert.True(safeHandle.IsClosed, "closed");
-            Assert.Equal(0, FakeSafeWinHttpHandle.HandlesOpen);
         }
 
         [Fact]
@@ -93,7 +88,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var safeHandle = new FakeSafeWinHttpHandle(true);
             safeHandle.Dispose();
-            
+
             Assert.True(safeHandle.IsClosed, "closed");
         }
 
@@ -111,7 +106,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var safeHandle = new FakeSafeWinHttpHandle(true);
             safeHandle.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => 
+            Assert.Throws<ObjectDisposedException>(() =>
                 { bool ignore = false; safeHandle.DangerousAddRef(ref ignore); });
         }
 
@@ -130,10 +125,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var childHandle = new FakeSafeWinHttpHandle(true);
             childHandle.SetParentHandle(parentHandle);
             parentHandle.Dispose();
-            
+
             Assert.False(parentHandle.IsClosed, "closed");
-            Assert.Equal(2, FakeSafeWinHttpHandle.HandlesOpen);
-            
+
             // Clean up safeHandles to keep outstanding handles at zero.
             childHandle.Dispose();
         }
@@ -146,7 +140,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             childHandle.SetParentHandle(parentHandle);
             parentHandle.Dispose();
             childHandle.Dispose();
-            
+
             Assert.True(parentHandle.IsClosed, "closed");
             Assert.True(childHandle.IsClosed, "closed");
         }
@@ -159,7 +153,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             childHandle.SetParentHandle(parentHandle);
             childHandle.Dispose();
             parentHandle.Dispose();
-            
+
             Assert.True(parentHandle.IsClosed, "closed");
             Assert.True(childHandle.IsClosed, "closed");
         }

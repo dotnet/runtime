@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class InterlockedTests
+    public partial class InterlockedTests
     {
         [Fact]
         public void IncrementDecrement_int()

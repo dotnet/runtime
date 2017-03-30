@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
 
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
-            if (oid.Value == Oids.Ecc)
+            if (oid.Value == Oids.Ecc && certificatePal != null)
             {
                 return DecodeECDsaPublicKey((CertificatePal)certificatePal);
             }
@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
                         return new RSACng(cngKey);
                     }
 
-#if !NETNATIVE
+#if !uap
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
@@ -65,7 +65,7 @@ namespace Internal.Cryptography.Pal
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
-#if NETNATIVE
+#if uap
                 blobFormat = CngKeyBlobFormat.EccPublicBlob;
                 keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                 using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
@@ -110,7 +110,7 @@ namespace Internal.Cryptography.Pal
 
         private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
         {
-#if NETNATIVE
+#if uap
             // CryptImportPublicKeyInfoEx2() not in the UWP api list.
             throw new PlatformNotSupportedException();
 #else
@@ -135,12 +135,12 @@ namespace Internal.Cryptography.Pal
                         certContext.DangerousRelease();
                 }
             }
-#endif //NETNATIVE
+#endif // uap
         }
 
         private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
-#if NETNATIVE
+#if uap
             // BCryptExportKey() not in the UWP api list.
             throw new PlatformNotSupportedException();
 #else
@@ -149,19 +149,19 @@ namespace Internal.Cryptography.Pal
             int numBytesNeeded = 0;
             NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
 
             byte[] keyBlob = new byte[numBytesNeeded];
             ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, keyBlob, keyBlob.Length, out numBytesNeeded, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
 
             Array.Resize(ref keyBlob, numBytesNeeded);
             return keyBlob;
-#endif //NETNATIVE
+#endif // uap
         }
 
-#if !NETNATIVE
+#if !uap
         private static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
         {
             // We now have a buffer laid out as follows:
@@ -175,7 +175,7 @@ namespace Internal.Cryptography.Pal
             {
                 Debug.Assert(ecBlob.Length >= sizeof(Interop.BCrypt.BCRYPT_ECCKEY_BLOB));
 
-                fixed (byte* pEcBlob = ecBlob)
+                fixed (byte* pEcBlob = &ecBlob[0])
                 {
                     Interop.BCrypt.BCRYPT_ECCKEY_BLOB* pBcryptBlob = (Interop.BCrypt.BCRYPT_ECCKEY_BLOB*)pEcBlob;
 
@@ -341,7 +341,7 @@ namespace Internal.Cryptography.Pal
 
             unsafe
             {
-                fixed (byte* pValue = value)
+                fixed (byte* pValue = &value[0])
                 {
                     string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
                     return valueAsString;

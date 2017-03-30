@@ -200,7 +200,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Abs(Vector4 value)
         {
-            return new Vector4(Math.Abs(value.X), Math.Abs(value.Y), Math.Abs(value.Z), Math.Abs(value.W));
+            return new Vector4(MathF.Abs(value.X), MathF.Abs(value.Y), MathF.Abs(value.Z), MathF.Abs(value.W));
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 SquareRoot(Vector4 value)
         {
-            return new Vector4((Single)Math.Sqrt(value.X), (Single)Math.Sqrt(value.Y), (Single)Math.Sqrt(value.Z), (Single)Math.Sqrt(value.W));
+            return new Vector4(MathF.Sqrt(value.X), MathF.Sqrt(value.Y), MathF.Sqrt(value.Z), MathF.Sqrt(value.W));
         }
         #endregion Public Static Methods
 

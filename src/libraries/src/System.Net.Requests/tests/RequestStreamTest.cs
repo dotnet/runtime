@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
     public class RequestStreamTest
     {
         readonly byte[] buffer = new byte[1];
@@ -106,7 +107,7 @@ namespace System.Net.Tests
 
         private Stream GetRequestStream()
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
             request.Method = "POST";
             return request.GetRequestStreamAsync().GetAwaiter().GetResult();
         }

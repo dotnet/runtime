@@ -16,6 +16,8 @@ namespace System.IO
 
         internal static readonly int MaxComponentLength = Interop.Sys.MaxName;
 
+        internal const string ParentDirectoryPrefix = @"../";
+
         /// <summary>Returns a value indicating if the given path contains invalid characters.</summary>
         internal static bool HasIllegalCharacters(string path)
         {
@@ -25,7 +27,6 @@ namespace System.IO
 
         internal static int GetRootLength(string path)
         {
-            PathInternal.CheckInvalidPathChars(path);
             return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 

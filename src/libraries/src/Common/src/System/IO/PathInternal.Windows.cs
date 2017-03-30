@@ -45,10 +45,17 @@ namespace System.IO
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
+        internal const string ParentDirectoryPrefix = @"..\";
+
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
         internal const int MaxLongPath = short.MaxValue;
+        // \\?\, \\.\, \??\
         internal const int DevicePrefixLength = 4;
+        // \\
+        internal const int UncPrefixLength = 2;
+        // \\?\UNC\, \\.\UNC\
+        internal const int UncExtendedPrefixLength = 8;
         internal static readonly int MaxComponentLength = 255;
 
         internal static char[] GetInvalidPathChars() => new char[]
@@ -200,7 +207,7 @@ namespace System.IO
         /// Check for known wildcard characters. '*' and '?' are the most common ones.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool HasWildCardCharacters(string path)
+        internal static unsafe bool HasWildCardCharacters(string path)
         {
             // Question mark is part of dos device syntax so we have to skip if we are
             int startIndex = PathInternal.IsDevice(path) ? ExtendedPathPrefix.Length : 0;
@@ -211,7 +218,7 @@ namespace System.IO
         /// <summary>
         /// Gets the length of the root of the path (drive, share, etc.).
         /// </summary>
-        internal unsafe static int GetRootLength(string path)
+        internal static unsafe int GetRootLength(string path)
         {
             fixed(char* value = path)
             {
@@ -219,7 +226,7 @@ namespace System.IO
             }
         }
 
-        private unsafe static uint GetRootLength(char* path, uint pathLength)
+        private static unsafe uint GetRootLength(char* path, uint pathLength)
         {
             uint i = 0;
             uint volumeSeparatorLength = 2;  // Length to the colon "C:"
@@ -266,7 +273,7 @@ namespace System.IO
             return i;
         }
 
-        private unsafe static bool StartsWithOrdinal(char* source, uint sourceLength, string value)
+        private static unsafe bool StartsWithOrdinal(char* source, uint sourceLength, string value)
         {
             if (sourceLength < (uint)value.Length) return false;
             for (int i = 0; i < value.Length; i++)

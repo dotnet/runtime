@@ -1,20 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{ACF79A18-2655-452C-B4AC-10125F0AD7A8}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.Xsl.XslTransformApi.Tests</AssemblyName>
-    <RootNamespace>System.Xml.Tests</RootNamespace>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="cthread.cs" />
     <Compile Include="CThreads.cs" />
@@ -30,20 +22,15 @@
     <Compile Include="ThreadFunc.cs" />
     <Compile Include="XSLTransform.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Content Include="..\TestFiles\**\*.*">
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
-    <ProjectReference Include="$(CommonTestPath)\System\Xml\xmlDiff\XmlDiff.csproj" />
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

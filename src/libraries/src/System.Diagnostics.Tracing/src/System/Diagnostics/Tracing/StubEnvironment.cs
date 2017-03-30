@@ -366,7 +366,7 @@ namespace System
     {
         public static int GetCurrentThreadId()
         {
-            return (int)Interop.mincore.GetCurrentThreadId();
+            return (int)Interop.Kernel32.GetCurrentThreadId();
         }
     }    
 }

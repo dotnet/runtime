@@ -3,14 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -27,7 +19,8 @@ namespace System.Net.Sockets
         internal int _offset;
 
         // BufferList property variables.
-        internal IList<ArraySegment<byte>> _bufferList;
+        private IList<ArraySegment<byte>> _bufferList;
+        private List<ArraySegment<byte>> _bufferListInternal;
 
         // BytesTransferred property variables.
         private int _bytesTransferred;
@@ -35,6 +28,9 @@ namespace System.Net.Sockets
         // Completed event property variables.
         private event EventHandler<SocketAsyncEventArgs> _completed;
         private bool _completedChanged;
+
+        // DisconnectReuseSocket propery variables.
+        private bool _disconnectReuseSocket;
 
         // LastOperation property variables.
         private SocketAsyncOperation _completedOperation;
@@ -50,6 +46,9 @@ namespace System.Net.Sockets
 
         // SendPacketsElements property variables.
         internal SendPacketsElement[] _sendPacketsElements;
+
+        // SendPacketsFlags property variable.
+        internal TransmitFileOptions _sendPacketsFlags;
 
         // SocketError property variables.
         private SocketError _socketError;
@@ -83,8 +82,6 @@ namespace System.Net.Sockets
 
         private MultipleConnectAsync _multipleConnect;
 
-        private static bool s_loggingEnabled = SocketsEventSource.Log.IsEnabled();
-
         public SocketAsyncEventArgs()
         {
             InitializeInternals();
@@ -116,6 +113,13 @@ namespace System.Net.Sockets
             get { return _count; }
         }
 
+        // SendPacketsFlags property.
+        public TransmitFileOptions SendPacketsFlags
+        {
+            get { return _sendPacketsFlags; }
+            set { _sendPacketsFlags = value; }
+        }
+
         // NOTE: this property is mutually exclusive with Buffer.
         // Setting this property with an existing non-null Buffer will throw.    
         public IList<ArraySegment<byte>> BufferList
@@ -126,11 +130,41 @@ namespace System.Net.Sockets
                 StartConfiguring();
                 try
                 {
-                    if (value != null && _buffer != null)
+                    if (value != null)
                     {
-                        throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, "Buffer"));
+                        if (_buffer != null)
+                        {
+                            // Can't have both set
+                            throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, "Buffer"));
+                        }
+
+                        // Copy the user-provided list into our internal buffer list,
+                        // so that we are not affected by subsequent changes to the list.
+                        // We reuse the existing list so that we can avoid reallocation when possible.
+                        int bufferCount = value.Count;
+                        if (_bufferListInternal == null)
+                        {
+                            _bufferListInternal = new List<ArraySegment<byte>>(bufferCount);
+                        }
+                        else
+                        {
+                            _bufferListInternal.Clear();
+                        }
+
+                        for (int i = 0; i < bufferCount; i++)
+                        {
+                            ArraySegment<byte> buffer = value[i];
+                            RangeValidationHelpers.ValidateSegment(buffer);
+                            _bufferListInternal.Add(buffer);
+                        }
                     }
+                    else
+                    {
+                        _bufferListInternal?.Clear();
+                    }
+                    
                     _bufferList = value;
+
                     SetupMultipleBuffers();
                 }
                 finally
@@ -166,6 +200,13 @@ namespace System.Net.Sockets
             {
                 handler(e._currentSocket, e);
             }
+        }
+
+        // DisconnectResuseSocket property.
+        public bool DisconnectReuseSocket
+        {
+            get { return _disconnectReuseSocket; }
+            set { _disconnectReuseSocket = value; }
         }
 
         public SocketAsyncOperation LastOperation
@@ -239,6 +280,11 @@ namespace System.Net.Sockets
         public void SetBuffer(int offset, int count)
         {
             SetBufferInternal(_buffer, offset, count);
+        }
+
+        internal bool HasMultipleBuffers
+        {
+            get { return _bufferList != null; }
         }
 
         private void SetBufferInternal(byte[] buffer, int offset, int count)
@@ -331,8 +377,6 @@ namespace System.Net.Sockets
             // Mark as not in-use.
             _operating = Free;
 
-            InnerComplete();
-
             // Check for deferred Dispose().
             // The deferred Dispose is not guaranteed if Dispose is called while an operation is in progress. 
             // The _disposeCalled variable is not managed in a thread-safe manner on purpose for performance.
@@ -356,7 +400,7 @@ namespace System.Net.Sockets
             }
 
             // OK to dispose now.
-            FreeInternals(false);
+            FreeInternals();
 
             // Don't bother finalizing later.
             GC.SuppressFinalize(this);
@@ -364,7 +408,10 @@ namespace System.Net.Sockets
 
         ~SocketAsyncEventArgs()
         {
-            FreeInternals(true);
+            if (!Environment.HasShutdownStarted)
+            {
+                FreeInternals();
+            }
         }
 
         // NOTE: Use a try/finally to make sure Complete is called when you're done
@@ -423,14 +470,10 @@ namespace System.Net.Sockets
             // Remember the operation type.
             _completedOperation = SocketAsyncOperation.Accept;
 
-            // AcceptEx needs a single buffer with room for two special sockaddr data structures.
-            // It can also take additional buffer space in front of those special sockaddr 
-            // structures that can be filled in with initial data coming in on a connection.
-
-            // First calculate the special AcceptEx address buffer size.
-            // It is the size of two native sockaddr buffers with 16 extra bytes each.
-            // The native sockaddr buffers vary by address family so must reference the current socket.
-            _acceptAddressBufferCount = 2 * (_currentSocket._rightEndPoint.Serialize().Size + 16);
+            // AcceptEx needs a single buffer that's the size of two native sockaddr buffers with 16
+            // extra bytes each. It can also take additional buffer space in front of those special
+            // sockaddr structures that can be filled in with initial data coming in on a connection.
+            _acceptAddressBufferCount = 2 * (Socket.GetAddressSize(_currentSocket._rightEndPoint) + 16);
 
             // If our caller specified a buffer (willing to get received data with the Accept) then
             // it needs to be large enough for the two special sockaddr buffers that AcceptEx requires.
@@ -491,16 +534,20 @@ namespace System.Net.Sockets
                     // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
                     if (_currentSocket == null)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Assert("SocketAsyncEventArgs::CancelConnectAsync - CurrentSocket and MultipleConnect both null!");
-                        }
-                        Debug.Fail("SocketAsyncEventArgs::CancelConnectAsync - CurrentSocket and MultipleConnect both null!");
+                        NetEventSource.Fail(this, "CurrentSocket and MultipleConnect both null!");
                     }
                     _currentSocket.Dispose();
                 }
             }
         }
+
+        internal void StartOperationDisconnect()
+        {
+            // Remember the operation type.
+            _completedOperation = SocketAsyncOperation.Disconnect;
+            InnerStartOperationDisconnect();
+        }
+
         internal void StartOperationReceive()
         {
             // Remember the operation type.
@@ -569,10 +616,7 @@ namespace System.Net.Sockets
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(socketError);
 
             Complete();
         }
@@ -581,10 +625,7 @@ namespace System.Net.Sockets
         {
             SetResults(exception, bytesTransferred, flags);
 
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(_socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
 
             Complete();
         }
@@ -595,10 +636,7 @@ namespace System.Net.Sockets
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(socketError);
 
             Complete();
             if (_context == null)
@@ -615,10 +653,7 @@ namespace System.Net.Sockets
         {
             SetResults(exception, bytesTransferred, flags);
 
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(_socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
 
             Complete();
             if (_context == null)
@@ -649,17 +684,18 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishOperationSuccess(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        internal void FinishOperationSyncSuccess(int bytesTransferred, SocketFlags flags)
         {
-            SetResults(socketError, bytesTransferred, flags);
+            SetResults(SocketError.Success, bytesTransferred, flags);
 
+            SocketError socketError = SocketError.Success;
             switch (_completedOperation)
             {
                 case SocketAsyncOperation.Accept:
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -678,8 +714,7 @@ namespace System.Net.Sockets
                     {
                         _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket, _currentSocket._rightEndPoint.Create(remoteSocketAddress));
 
-                        if (s_loggingEnabled)
-                            SocketsEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
+                        if (NetEventSource.IsEnabled) NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
                     }
                     else
                     {
@@ -692,7 +727,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -707,8 +742,7 @@ namespace System.Net.Sockets
                     // Mark socket connected.
                     if (socketError == SocketError.Success)
                     {
-                        if (s_loggingEnabled)
-                            SocketsEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
+                        if (NetEventSource.IsEnabled) NetEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
 
                         _currentSocket.SetToConnected();
                         _connectSocket = _currentSocket;
@@ -725,7 +759,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -740,7 +774,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -769,7 +803,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -800,7 +834,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -815,7 +849,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogSendPacketsBuffers(bytesTransferred);
                         }
@@ -832,7 +866,7 @@ namespace System.Net.Sockets
                     if (bytesTransferred > 0)
                     {
                         // Log and Perf counters.
-                        if (s_loggingEnabled)
+                        if (NetEventSource.IsEnabled)
                         {
                             LogBuffer(bytesTransferred);
                         }
@@ -851,8 +885,15 @@ namespace System.Net.Sockets
                 _currentSocket.UpdateStatusAfterSocketError(socketError);
             }
 
-            // Complete the operation and raise completion event.
+            // Complete the operation.
             Complete();
+        }
+
+        internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
+        {
+            FinishOperationSyncSuccess(bytesTransferred, flags);
+
+            // Raise completion event.
             if (_context == null)
             {
                 OnCompleted(this);

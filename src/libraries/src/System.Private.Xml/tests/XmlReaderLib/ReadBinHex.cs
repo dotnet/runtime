@@ -375,7 +375,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadBinHex with whitespaces")]
+        [Variation("ReadBinHex with whitespace")]
         public int TestTextReadBinHex_21()
         {
             byte[] buffer = new byte[1];
@@ -802,7 +802,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadBinHex with whitespaces")]
+        [Variation("ReadBinHex with whitespace")]
         public int TestTextReadBinHex_21()
         {
             byte[] buffer = new byte[1];

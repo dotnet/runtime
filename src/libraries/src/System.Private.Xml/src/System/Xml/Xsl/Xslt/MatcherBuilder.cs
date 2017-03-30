@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Xslt
      *              if ($pe > -1)          then $pe else
      *              -1
      *
-     *      (: In the general case check all other node types ocurred in patterns :)
+     *      (: In the general case check all other node types occurred in patterns :)
      *      (: case attribute()...              :)
      *      (: case text()...                   :)
      *      (: case document-node()...          :)
@@ -88,7 +88,7 @@ namespace System.Xml.Xsl.Xslt
 
     internal class TemplateMatch
     {
-        public readonly static TemplateMatchComparer Comparer = new TemplateMatchComparer();
+        public static readonly TemplateMatchComparer Comparer = new TemplateMatchComparer();
 
         private Template _template;
         private double _priority;

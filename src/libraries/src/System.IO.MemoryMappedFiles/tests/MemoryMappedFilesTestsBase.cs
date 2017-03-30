@@ -328,7 +328,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         private const uint HANDLE_FLAG_INHERIT = 0x00000001;
 
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         private static extern void GetSystemInfo(out SYSTEM_INFO input);
 
         [StructLayout(LayoutKind.Sequential)]

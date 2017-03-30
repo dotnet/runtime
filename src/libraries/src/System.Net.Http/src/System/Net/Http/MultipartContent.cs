@@ -196,10 +196,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(SerializeToStreamAsync), ex);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -240,10 +237,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(CreateContentReadStreamAsync), ex);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -428,6 +422,12 @@ namespace System.Net.Http
                 ValidateReadArgs(buffer, offset, count);
                 return ReadAsyncPrivate(buffer, offset, count, cancellationToken);
             }
+
+            public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+                TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+            public override int EndRead(IAsyncResult asyncResult) =>
+                TaskToApm.End<int>(asyncResult);
 
             public async Task<int> ReadAsyncPrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {

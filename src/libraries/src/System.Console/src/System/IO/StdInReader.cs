@@ -162,7 +162,7 @@ namespace System.IO
                             Console.Clear();
                         }
                     }
-                    else
+                    else if (keyInfo.KeyChar != '\0')
                     {
                         _readLineSB.Append(keyInfo.KeyChar);
                         if (!previouslyProcessed)

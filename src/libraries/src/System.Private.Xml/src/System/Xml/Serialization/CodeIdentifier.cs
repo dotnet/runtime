@@ -8,22 +8,16 @@ using System.Collections;
 using System.IO;
 using System.Globalization;
 using System.Diagnostics;
-using System.CodeDom;
-using System.CodeDom.Compiler;
 using System.Reflection;
-using Microsoft.CSharp;
-
 
 namespace System.Xml.Serialization
 {
-    /// <include file='doc\CodeIdentifier.uex' path='docs/doc[@for="CodeIdentifier"]/*' />
     ///<internalonly/>
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
     public class CodeIdentifier
     {
-        internal static CodeDomProvider csharp = new CSharpCodeProvider();
         internal const int MaxIdentifierLength = 511;
 
         [Obsolete("This class should never get constructed as it contains only static methods.")]
@@ -31,7 +25,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        /// <include file='doc\CodeIdentifier.uex' path='docs/doc[@for="CodeIdentifier.MakePascal"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -46,7 +39,6 @@ namespace System.Xml.Serialization
                 return identifier;
         }
 
-        /// <include file='doc\CodeIdentifier.uex' path='docs/doc[@for="CodeIdentifier.MakeCamel"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -61,7 +53,6 @@ namespace System.Xml.Serialization
                 return identifier;
         }
 
-        /// <include file='doc\CodeIdentifier.uex' path='docs/doc[@for="CodeIdentifier.MakeValid"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -159,13 +150,13 @@ namespace System.Xml.Serialization
 
         internal static void CheckValidIdentifier(string ident)
         {
-            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(ident))
-                throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), "ident");
+            if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(ident))
+                throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), nameof(ident));
         }
 
         internal static string GetCSharpName(string name)
         {
-            return EscapeKeywords(name.Replace('+', '.'), csharp);
+            return EscapeKeywords(name.Replace('+', '.'));
         }
 
         private static int GetCSharpName(Type t, Type[] parameters, int index, StringBuilder sb)
@@ -183,7 +174,7 @@ namespace System.Xml.Serialization
             }
             if (nameEnd > 0)
             {
-                EscapeKeywords(name.Substring(0, nameEnd), csharp, sb);
+                EscapeKeywords(name.Substring(0, nameEnd), sb);
                 sb.Append("<");
                 int arguments = Int32.Parse(name.Substring(nameEnd + 1), CultureInfo.InvariantCulture) + index;
                 for (; index < arguments; index++)
@@ -198,7 +189,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                EscapeKeywords(name, csharp, sb);
+                EscapeKeywords(name, sb);
             }
             return index;
         }
@@ -219,12 +210,12 @@ namespace System.Xml.Serialization
                 string[] parts = ns.Split(new char[] { '.' });
                 for (int i = 0; i < parts.Length; i++)
                 {
-                    EscapeKeywords(parts[i], csharp, sb);
+                    EscapeKeywords(parts[i], sb);
                     sb.Append(".");
                 }
             }
 
-            Type[] arguments = t.GetTypeInfo().IsGenericType || t.GetTypeInfo().ContainsGenericParameters ? t.GetGenericArguments() : Array.Empty<Type>();
+            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Array.Empty<Type>();
             GetCSharpName(t, arguments, 0, sb);
             for (int i = 0; i < rank; i++)
             {
@@ -239,7 +230,7 @@ namespace System.Xml.Serialization
         }
         */
 
-        private static void EscapeKeywords(string identifier, CodeDomProvider codeProvider, StringBuilder sb)
+        private static void EscapeKeywords(string identifier, StringBuilder sb)
         {
             if (identifier == null || identifier.Length == 0)
                 return;
@@ -252,7 +243,7 @@ namespace System.Xml.Serialization
             if (identifier.Length > 0)
             {
                 CheckValidIdentifier(identifier);
-                identifier = codeProvider.CreateEscapedIdentifier(identifier);
+                identifier = CSharpHelpers.CreateEscapedIdentifier(identifier);
                 sb.Append(identifier);
             }
             for (int i = 0; i < arrayCount; i++)
@@ -261,7 +252,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static string EscapeKeywords(string identifier, CodeDomProvider codeProvider)
+        private static string EscapeKeywords(string identifier)
         {
             if (identifier == null || identifier.Length == 0) return identifier;
             string originalIdentifier = identifier;
@@ -277,7 +268,7 @@ namespace System.Xml.Serialization
                 separator++;
                 separator += names[i].Length;
                 string escapedName = names[i].Trim();
-                EscapeKeywords(escapedName, codeProvider, sb);
+                EscapeKeywords(escapedName, sb);
             }
             if (sb.Length != originalIdentifier.Length)
                 return sb.ToString();

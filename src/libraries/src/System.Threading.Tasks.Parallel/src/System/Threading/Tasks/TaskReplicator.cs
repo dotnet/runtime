@@ -79,7 +79,7 @@ namespace System.Threading.Tasks
 
                     if (userActionYieldedBeforeCompletion)
                     {
-                        _pendingTask = new Task(s => ((Replica)s).Execute(), this, CancellationToken.None, TaskCreationOptions.PreferFairness);
+                        _pendingTask = new Task(s => ((Replica)s).Execute(), this, CancellationToken.None, TaskCreationOptions.None);
                         _pendingTask.Start(_replicator._scheduler);
                     }
                     else

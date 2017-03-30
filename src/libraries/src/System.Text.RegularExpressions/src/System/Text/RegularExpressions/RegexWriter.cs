@@ -12,6 +12,7 @@
 // sequences of codes.
 //
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -24,11 +25,11 @@ namespace System.Text.RegularExpressions
         private int[] _emitted;
         private int _curpos;
         private readonly Dictionary<string, int> _stringhash;
-        private readonly List<String> _stringtable;
+        private readonly List<string> _stringtable;
         private bool _counting;
         private int _count;
         private int _trackcount;
-        private Dictionary<Int32, Int32> _caps;
+        private Hashtable _caps;
 
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
@@ -57,7 +58,7 @@ namespace System.Text.RegularExpressions
             _intStack = new int[32];
             _emitted = new int[32];
             _stringhash = new Dictionary<string, int>();
-            _stringtable = new List<String>();
+            _stringtable = new List<string>();
         }
 
         /// <summary>
@@ -165,15 +166,15 @@ namespace System.Text.RegularExpressions
         /// Returns an index in the string table for a string;
         /// uses a hashtable to eliminate duplicates.
         /// </summary>
-        private int StringCode(String str)
+        private int StringCode(string str)
         {
             if (_counting)
                 return 0;
 
             if (str == null)
-                str = String.Empty;
+                str = string.Empty;
 
-            Int32 i;
+            int i;
             if (!_stringhash.TryGetValue(str, out i))
             {
                 i = _stringtable.Count;
@@ -196,7 +197,7 @@ namespace System.Text.RegularExpressions
                 return -1;
 
             if (_caps != null)
-                return _caps[capnum];
+                return (int)_caps[capnum];
             else
                 return capnum;
         }
@@ -260,7 +261,7 @@ namespace System.Text.RegularExpressions
                     {
                         EmitFragment(curNode._type | BeforeChild, curNode, curChild);
 
-                        curNode = (RegexNode)curNode._children[curChild];
+                        curNode = curNode._children[curChild];
                         PushInt(curChild);
                         curChild = 0;
                         continue;
@@ -427,7 +428,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Loop | BeforeChild:
                 case RegexNode.Lazyloop | BeforeChild:
 
-                    if (node._n < Int32.MaxValue || node._m > 1)
+                    if (node._n < int.MaxValue || node._m > 1)
                         Emit(node._m == 0 ? RegexCode.Nullcount : RegexCode.Setcount, node._m == 0 ? 0 : 1 - node._m);
                     else
                         Emit(node._m == 0 ? RegexCode.Nullmark : RegexCode.Setmark);
@@ -446,8 +447,8 @@ namespace System.Text.RegularExpressions
                         int StartJumpPos = CurPos();
                         int Lazy = (nodetype - (RegexNode.Loop | AfterChild));
 
-                        if (node._n < Int32.MaxValue || node._m > 1)
-                            Emit(RegexCode.Branchcount + Lazy, PopInt(), node._n == Int32.MaxValue ? Int32.MaxValue : node._n - node._m);
+                        if (node._n < int.MaxValue || node._m > 1)
+                            Emit(RegexCode.Branchcount + Lazy, PopInt(), node._n == int.MaxValue ? int.MaxValue : node._n - node._m);
                         else
                             Emit(RegexCode.Branchmark + Lazy, PopInt());
 
@@ -508,7 +509,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.One:
                 case RegexNode.Notone:
-                    Emit(node._type | bits, (int)node._ch);
+                    Emit(node._type | bits, node._ch);
                     break;
 
                 case RegexNode.Notoneloop:
@@ -517,10 +518,10 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Onelazy:
                     if (node._m > 0)
                         Emit(((node._type == RegexNode.Oneloop || node._type == RegexNode.Onelazy) ?
-                              RegexCode.Onerep : RegexCode.Notonerep) | bits, (int)node._ch, node._m);
+                              RegexCode.Onerep : RegexCode.Notonerep) | bits, node._ch, node._m);
                     if (node._n > node._m)
-                        Emit(node._type | bits, (int)node._ch, node._n == Int32.MaxValue ?
-                             Int32.MaxValue : node._n - node._m);
+                        Emit(node._type | bits, node._ch, node._n == int.MaxValue ?
+                             int.MaxValue : node._n - node._m);
                     break;
 
                 case RegexNode.Setloop:
@@ -529,7 +530,7 @@ namespace System.Text.RegularExpressions
                         Emit(RegexCode.Setrep | bits, StringCode(node._str), node._m);
                     if (node._n > node._m)
                         Emit(node._type | bits, StringCode(node._str),
-                             (node._n == Int32.MaxValue) ? Int32.MaxValue : node._n - node._m);
+                             (node._n == int.MaxValue) ? int.MaxValue : node._n - node._m);
                     break;
 
                 case RegexNode.Multi:

@@ -17,7 +17,7 @@ internal static partial class Interop
         }
         
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNameInfo")]
-        internal static unsafe extern int GetNameInfo(
+        internal static extern unsafe int GetNameInfo(
             byte* address, 
             uint addressLength,
             bool isIpv6,

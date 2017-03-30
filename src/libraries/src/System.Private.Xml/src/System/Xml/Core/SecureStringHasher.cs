@@ -2,6 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Warning: Do not port this code to Desktop!
+
+// Desktop has its own implementation.
+// The difference between those implementations is caused by randomized hashing feature.
+// On Desktop randomized hashing for strings is disabled by default (it is on only for collections)
+// On CoreClr platforms randomized hashing is enabled by default meaning that we can use standard
+// string.GetHashCode implementation.
+
 using System;
 using System.Collections.Generic;
 
@@ -17,7 +25,6 @@ namespace System.Xml
 
         public int GetHashCode(String key)
         {
-            // TODO: Check if randomized hashing is enabled by default
             return key.GetHashCode();
         }
     }

@@ -23,9 +23,9 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        internal static ModuleInfo[] GetModuleInfos(int processId)
+        internal static ProcessModuleCollection GetModules(int processId)
         {
-            return Array.Empty<ModuleInfo>();
+            return new ProcessModuleCollection(0);
         }
 
         private static ProcessInfo CreateProcessInfo(int pid)

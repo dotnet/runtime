@@ -33,7 +33,7 @@ namespace System.Net
 
         public static string HtmlEncode(string value)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
@@ -50,8 +50,14 @@ namespace System.Net
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
+        public static void HtmlEncode(string value, TextWriter output)
+        {
+            output.Write(HtmlEncode(value));
+        }
+
         private static unsafe void HtmlEncode(string value, int index, StringBuilder output)
         {
+            Debug.Assert(value != null);
             Debug.Assert(output != null);
             Debug.Assert(0 <= index && index <= value.Length, "0 <= index && index <= value.Length");
 
@@ -137,7 +143,7 @@ namespace System.Net
 
         public static string HtmlDecode(string value)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
@@ -151,6 +157,11 @@ namespace System.Net
             StringBuilder sb = StringBuilderCache.Acquire(value.Length);
             HtmlDecode(value, sb);
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static void HtmlDecode(string value, TextWriter output)
+        {
+            output.Write(HtmlDecode(value));
         }
 
         [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.UInt16.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16@)", Justification = "UInt16.TryParse guarantees that result is zero if the parse fails.")]
@@ -633,10 +644,13 @@ namespace System.Net
                 1 << ((int)'-' - 0x20) | // 0x2D
                 1 << ((int)'.' - 0x20); // 0x2E
 
-            return ((uint)(code - 'a') <= (uint)('z' - 'a')) ||
-                   ((uint)(code - 'A') <= (uint)('Z' - 'A')) ||
-                   ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
-                   (code == (int)'_');
+            unchecked
+            {
+                return ((uint)(code - 'a') <= (uint)('z' - 'a')) ||
+                       ((uint)(code - 'A') <= (uint)('Z' - 'A')) ||
+                       ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
+                       (code == (int)'_');
+            }
         }
 
         private static bool ValidateUrlEncodingParameters(byte[] bytes, int offset, int count)

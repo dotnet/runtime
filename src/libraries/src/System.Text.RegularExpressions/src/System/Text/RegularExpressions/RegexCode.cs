@@ -15,6 +15,7 @@
 //
 // Strings and sets are indices into a string table.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -89,17 +90,17 @@ namespace System.Text.RegularExpressions
         internal const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
         internal readonly int[] _codes;                     // the code
-        internal readonly String[] _strings;                // the string/set table
+        internal readonly string[] _strings;                // the string/set table
         internal readonly int _trackcount;                  // how many instructions use backtracking
-        internal readonly Dictionary<Int32, Int32> _caps;   // mapping of user group numbers -> impl group slots
+        internal readonly Hashtable _caps;                  // mapping of user group numbers -> impl group slots
         internal readonly int _capsize;                     // number of impl group slots
         internal readonly RegexPrefix _fcPrefix;            // the set of candidate first characters (may be null)
         internal readonly RegexBoyerMoore _bmPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
         internal readonly int _anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         internal readonly bool _rightToLeft;                // true if right to left
 
-        internal RegexCode(int[] codes, List<String> stringlist, int trackcount,
-                           Dictionary<Int32, Int32> caps, int capsize,
+        internal RegexCode(int[] codes, List<string> stringlist, int trackcount,
+                           Hashtable caps, int capsize,
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
                            int anchors, bool rightToLeft)
         {
@@ -211,7 +212,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static readonly String[] CodeStr = new String[]
+        private static readonly string[] CodeStr = new string[]
         {
             "Onerep", "Notonerep", "Setrep",
             "Oneloop", "Notoneloop", "Setloop",
@@ -230,7 +231,7 @@ namespace System.Text.RegularExpressions
 #endif
         };
 
-        internal static String OperatorDescription(int Opcode)
+        internal static string OperatorDescription(int Opcode)
         {
             bool isCi = ((Opcode & Ci) != 0);
             bool isRtl = ((Opcode & Rtl) != 0);
@@ -241,7 +242,7 @@ namespace System.Text.RegularExpressions
             (isCi ? "-Ci" : "") + (isRtl ? "-Rtl" : "") + (isBack ? "-Back" : "") + (isBack2 ? "-Back2" : "");
         }
 
-        internal String OpcodeDescription(int offset)
+        internal string OpcodeDescription(int offset)
         {
             StringBuilder sb = new StringBuilder();
             int opcode = _codes[offset];
@@ -325,7 +326,7 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setlazy:
                     sb.Append(", Rep = ");
-                    if (_codes[offset + 2] == Int32.MaxValue)
+                    if (_codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
                         sb.Append(_codes[offset + 2]);
@@ -334,7 +335,7 @@ namespace System.Text.RegularExpressions
                 case Branchcount:
                 case Lazybranchcount:
                     sb.Append(", Limit = ");
-                    if (_codes[offset + 2] == Int32.MaxValue)
+                    if (_codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
                         sb.Append(_codes[offset + 2]);

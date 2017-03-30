@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{AD68DD5E-DEBF-48A0-B619-FBF65F502BC3}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Net\BindIPEndPoint.cs" />
+    <Compile Include="System\Net\ServicePoint.cs" />
+    <Compile Include="System\Net\ServicePointManager.cs" />
+    <Compile Include="System\Net\SecurityProtocolType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Security" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

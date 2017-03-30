@@ -860,29 +860,35 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ToString_SingleValue_Success()
         {
-            HttpResponseMessage response = new HttpResponseMessage();
-            string input = "Basic";
-            response.Headers.Add(HttpKnownHeaderNames.WWWAuthenticate, input);
-            string result = response.Headers.WwwAuthenticate.ToString();
-            Assert.Equal(input, result);
+            using (var response = new HttpResponseMessage())
+            {
+                string input = "Basic";
+                response.Headers.Add(HttpKnownHeaderNames.WWWAuthenticate, input);
+                string result = response.Headers.WwwAuthenticate.ToString();
+                Assert.Equal(input, result);
+            }
         }
 
         [Fact]
         public void ToString_MultipleValue_Success()
         {
-            HttpResponseMessage response = new HttpResponseMessage();
-            string input = "Basic, NTLM, Negotiate, Custom";
-            response.Headers.Add(HttpKnownHeaderNames.WWWAuthenticate, input);
-            string result = response.Headers.WwwAuthenticate.ToString();
-            Assert.Equal(input, result);
+            using (var response = new HttpResponseMessage())
+            {
+                string input = "Basic, NTLM, Negotiate, Custom";
+                response.Headers.Add(HttpKnownHeaderNames.WWWAuthenticate, input);
+                string result = response.Headers.WwwAuthenticate.ToString();
+                Assert.Equal(input, result);
+            }
         }
 
         [Fact]
         public void ToString_EmptyValue_Success()
         {
-            HttpResponseMessage response = new HttpResponseMessage();
-            string result = response.Headers.WwwAuthenticate.ToString();
-            Assert.Equal(string.Empty, result);
+            using (var response = new HttpResponseMessage())
+            {
+                string result = response.Headers.WwwAuthenticate.ToString();
+                Assert.Equal(string.Empty, result);
+            }
         }
 
         #region Helper methods

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static RSA Create()
+        public static new RSA Create()
         {
             return new RSAImplementation.RSAOpenSsl();
         }
@@ -352,12 +352,12 @@ namespace System.Security.Cryptography
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+            return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+            return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
         }
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)

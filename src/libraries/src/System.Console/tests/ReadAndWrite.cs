@@ -198,8 +198,6 @@ public class ReadAndWrite
     public static unsafe void ValidateConsoleEncoding(Encoding encoding)
     {
         Assert.NotNull(encoding);
-        // The primary purpose of ConsoleEncoding is to return an empty preamble.
-        Assert.Equal(Array.Empty<byte>(), encoding.GetPreamble());
 
         // There's not much validation we can do, but we can at least invoke members
         // to ensure they don't throw exceptions as they delegate to the underlying
@@ -257,6 +255,30 @@ public class ReadAndWrite
                 Assert.Equal(strAsBytes.Length, encoding.GetBytes(charsPtr, strAsChars.Length, bytesPtr, outputArr.Length));
             }
             Assert.Equal(strAsBytes.Length, encoding.GetBytes(str, 0, str.Length, outputArr, 0));
+        }
+    }
+
+    [Fact]
+    // On the full framework it is not guaranteed to eat the preamble bytes
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    public static unsafe void OutputEncodingPreamble()
+    {
+        Encoding curEncoding = Console.OutputEncoding;
+
+        try
+        {
+            Encoding encoding = Console.Out.Encoding;
+            // The primary purpose of ConsoleEncoding is to return an empty preamble.
+            Assert.Equal(Array.Empty<byte>(), encoding.GetPreamble());
+
+            // Try setting the ConsoleEncoding to something else and see if it works.
+            Console.OutputEncoding = Encoding.Unicode;
+            // The primary purpose of ConsoleEncoding is to return an empty preamble.
+            Assert.Equal(Array.Empty<byte>(), Console.Out.Encoding.GetPreamble());
+        }
+        finally
+        {
+            Console.OutputEncoding = curEncoding;
         }
     }
 

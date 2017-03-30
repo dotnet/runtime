@@ -13,6 +13,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class SchSendAuxRecordHttpTest
     {
         readonly ITestOutputHelper _output;
@@ -21,16 +23,17 @@ namespace System.Net.Http.Functional.Tests
         {
             _output = output;
         }
-        
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task HttpClient_ClientUsesAuxRecord_Ok()
         {
             X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();
 
-            var server = new SchSendAuxRecordTestServer(serverCert);
-            int port = server.StartServer();
+            var server = new HttpsTestServer(serverCert);
+            server.StartServer();
+            int port = server.Port;
 
             string requestString = "https://localhost:" + port.ToString();
             
@@ -43,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
             
                 await Task.WhenAll(tasks).TimeoutAfter(15 * 1000);
             
-                if (server.IsInconclusive)
+                if (server.AuxRecordDetected)
                 {
                     _output.WriteLine("Test inconclusive: The Operating system preferred a non-CBC or Null cipher.");
                 }

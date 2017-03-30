@@ -2,25 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Chain : IDisposable
     {
-        public X509Chain()
+        private X509ChainPolicy _chainPolicy;
+        private volatile X509ChainStatus[] _lazyChainStatus;
+        private X509ChainElementCollection _chainElements;
+        private IChainPal _pal;
+        private bool _useMachineContext;
+        private readonly object _syncRoot = new object();
+
+        public X509Chain() { }
+
+        public X509Chain(bool useMachineContext)
         {
-            Reset();
+            _useMachineContext = useMachineContext;
+        }
+
+        public X509Chain(IntPtr chainContext)
+        {
+            _pal = ChainPal.FromHandle(chainContext);
+            Debug.Assert(_pal != null);
+            _chainElements = new X509ChainElementCollection(_pal.ChainElements);
+        }
+
+        public static X509Chain Create() {
+            return new X509Chain();
         }
 
         public X509ChainElementCollection ChainElements
@@ -61,6 +73,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public IntPtr ChainContext
+        {
+            get
+            {
+                SafeX509ChainHandle handle = SafeHandle;
+                if (handle == null)
+                {
+                    // This case will only exist for Unix
+                    return IntPtr.Zero;
+                }
+
+                // For desktop compat, we may return an invalid handle here (IntPtr.Zero)
+                return handle.DangerousGetHandle();
+            }
+        }
+
         public SafeX509ChainHandle SafeHandle
         {
             get
@@ -74,6 +102,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool Build(X509Certificate2 certificate)
         {
+            return Build(certificate, true);
+        }
+
+        internal bool Build(X509Certificate2 certificate, bool throwOnException)
+        {
             lock (_syncRoot)
             {
                 if (certificate == null)
@@ -83,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 X509ChainPolicy chainPolicy = ChainPolicy;
                 _pal = ChainPal.BuildChain(
-                    false,
+                    _useMachineContext,
                     certificate.Pal,
                     chainPolicy.ExtraStore,
                     chainPolicy.ApplicationPolicy,
@@ -101,7 +134,17 @@ namespace System.Security.Cryptography.X509Certificates
                 Exception verificationException;
                 bool? verified = _pal.Verify(chainPolicy.VerificationFlags, out verificationException);
                 if (!verified.HasValue)
-                    throw verificationException;
+                {
+                    if (throwOnException)
+                    {
+                        throw verificationException;
+                    }
+                    else
+                    {
+                        verified = false;
+                    }
+                }
+
                 return verified.Value;
             }
         }
@@ -120,21 +163,17 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private void Reset()
+        public void Reset()
         {
+            // _chainPolicy is not reset for desktop compat
             _lazyChainStatus = null;
             _chainElements = null;
+            _useMachineContext = false;
 
             IChainPal pal = _pal;
             _pal = null;
             if (pal != null)
                 pal.Dispose();
         }
-
-        private X509ChainPolicy _chainPolicy;
-        private volatile X509ChainStatus[] _lazyChainStatus;
-        private X509ChainElementCollection _chainElements;
-        private IChainPal _pal;
-        private readonly object _syncRoot = new object();
     }
 }

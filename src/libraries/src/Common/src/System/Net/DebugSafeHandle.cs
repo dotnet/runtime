@@ -43,11 +43,7 @@ namespace System.Net
 
         ~DebugSafeHandle()
         {
-            GlobalLog.SetThreadSource(ThreadKinds.Finalization);
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print(_trace);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG

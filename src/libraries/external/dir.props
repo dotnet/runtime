@@ -1,0 +1,10 @@
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+  <PropertyGroup>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(OSGroup)-$(ArchGroup)/</IntermediateOutputPath>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Windows_NT'">win</RuntimeOS>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'OSX'">osx</RuntimeOS>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Linux'">linux</RuntimeOS>
+    <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
+  </PropertyGroup>
+</Project>

@@ -351,7 +351,7 @@ namespace System.Threading.Tasks.Tests
             int expectCounter = 0;
             for (int i = 0; i < count; i++)
             {
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -463,7 +463,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = i;
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -523,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = i;
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -557,7 +557,7 @@ namespace System.Threading.Tasks.Tests
                         0,
                         count,
                         () => 0,
-                        (i, state, local) => local += i,
+                        (i, state, local) => unchecked(local += i),
                         (local) => Interlocked.Add(ref sum, local)
                     );
                 });
@@ -566,7 +566,7 @@ namespace System.Threading.Tasks.Tests
             // check that the average is correct.  (if the totals are correct, the avgs will also be correct.)
             int expectedTotal = 0;
             for (int i = 0; i < count; i++)
-                expectedTotal += i;
+                expectedTotal = unchecked(expectedTotal + i);
             Assert.Equal(expectedTotal, sum);
         }
 
@@ -898,7 +898,7 @@ namespace System.Threading.Tasks.Tests
                 {
                     //
                     // Parallel.For() testing.
-                    // Not, for now, testing all flavors (For(int), For(long), ForEach(), Partioner ForEach()).
+                    // Not, for now, testing all flavors (For(int), For(long), ForEach(), Partitioner ForEach()).
                     // Assuming that all use ParallelOptions in the same fashion.
                     //
 
@@ -1028,7 +1028,7 @@ namespace System.Threading.Tasks.Tests
             counter = 0;
             Action a2 = delegate
             {
-                // Return value isn't guaranteed to be lock'ed... so store it off to prevent other thread 
+                // Return value isn't guaranteed to be locked... so store it off to prevent other thread 
                 // from incrementing it while we check the value.  Otherwise it's entirely possible to skip this entirely
                 // since with 2 DOP it's entirely possible for the returned value to be 1 or 2.
                 // the expected value leaving should always be 2 with 2 DOP though.

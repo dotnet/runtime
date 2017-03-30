@@ -35,14 +35,14 @@ namespace System.Xml
             _key = key;
         }
 
-        static internal string GetString(XmlDictionaryString s)
+        internal static string GetString(XmlDictionaryString s)
         {
             if (s == null)
                 return null;
             return s.Value;
         }
 
-        static public XmlDictionaryString Empty
+        public static XmlDictionaryString Empty
         {
             get
             {
@@ -106,7 +106,7 @@ namespace System.Xml
             public bool TryLookup(string value, out XmlDictionaryString result)
             {
                 if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
                 if (value.Length == 0)
                 {
                     result = _empty;

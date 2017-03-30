@@ -314,7 +314,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await t;
                     Assert.Equal(WebSocketState.Closed, cws.State);
                 }
-                catch (WebSocketException)
+                catch (OperationCanceledException)
                 {
                     Assert.Equal(WebSocketState.Aborted, cws.State);
                 }

@@ -10,6 +10,6 @@ namespace System.Net.Http
 {
     public static partial class RtcRequestFactory
     {
-        public static System.Net.Http.HttpRequestMessage Create(System.Net.Http.HttpMethod method, System.Uri uri) { return default(System.Net.Http.HttpRequestMessage); }
+        public static System.Net.Http.HttpRequestMessage Create(System.Net.Http.HttpMethod method, System.Uri uri) { throw null; }
     }
 }

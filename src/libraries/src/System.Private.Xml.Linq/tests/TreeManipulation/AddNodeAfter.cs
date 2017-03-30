@@ -46,7 +46,7 @@ namespace XLinqTests
 
         // add valid:
         //  - first, in the middle, last
-        //  - elem, text/XText (concatenation), PI, Commnent - for XE
+        //  - elem, text/XText (concatenation), PI, Comment - for XE
         //  - elem (just root), PI, Comment, XDecl/XDocType (order!)
         //  - on other node types
         //[Variation(Priority = 1, Desc = "Adding multiple (4) objects into XElement - not connected", Params = new object[] { false, 4 })]

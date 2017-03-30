@@ -2,149 +2,125 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
-using System;
 using System.Collections;
-using System.Data;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Data.Common
 {
-    public abstract class DbDataReader :
-        IDataReader,
-        IDisposable,
-        IEnumerable
+    public abstract class DbDataReader : MarshalByRefObject, IDataReader, IEnumerable
     {
-        protected DbDataReader() : base()
-        {
-        }
+        protected DbDataReader() : base() { }
 
-        abstract public int Depth
-        {
-            get;
-        }
+        public abstract int Depth { get; }
 
-        abstract public int FieldCount
-        {
-            get;
-        }
+        public abstract int FieldCount { get; }
 
-        abstract public bool HasRows
-        {
-            get;
-        }
+        public abstract bool HasRows { get; }
 
-        abstract public bool IsClosed
-        {
-            get;
-        }
+        public abstract bool IsClosed { get; }
 
-        abstract public int RecordsAffected
-        {
-            get;
-        }
+        public abstract int RecordsAffected { get; }
 
-        virtual public int VisibleFieldCount
-        {
-            get
-            {
-                return FieldCount;
-            }
-        }
+        public virtual int VisibleFieldCount => FieldCount;
 
-        abstract public object this[int ordinal]
-        {
-            get;
-        }
+        public abstract object this[int ordinal] { get; }
 
-        abstract public object this[string name]
-        {
-            get;
-        }
+        public abstract object this[string name] { get; }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public virtual void Close() { }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Dispose() => Dispose(true);
 
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
+                Close();
             }
         }
 
-        abstract public string GetDataTypeName(int ordinal);
+        public abstract string GetDataTypeName(int ordinal);
 
-        abstract public IEnumerator GetEnumerator();
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public abstract IEnumerator GetEnumerator();
 
-        abstract public Type GetFieldType(int ordinal);
+        public abstract Type GetFieldType(int ordinal);
 
-        abstract public string GetName(int ordinal);
+        public abstract string GetName(int ordinal);
 
-        abstract public int GetOrdinal(string name);
+        public abstract int GetOrdinal(string name);
 
-
-        abstract public bool GetBoolean(int ordinal);
-
-        abstract public byte GetByte(int ordinal);
-
-        abstract public long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
-
-        abstract public char GetChar(int ordinal);
-
-        abstract public long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
-
-        public DbDataReader GetData(int ordinal)
+        public virtual DataTable GetSchemaTable()
         {
-            return GetDbDataReader(ordinal);
+            throw new NotSupportedException();
         }
 
+        public abstract bool GetBoolean(int ordinal);
 
-        virtual protected DbDataReader GetDbDataReader(int ordinal)
+        public abstract byte GetByte(int ordinal);
+
+        public abstract long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
+
+        public abstract char GetChar(int ordinal);
+
+        public abstract long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public DbDataReader GetData(int ordinal) => GetDbDataReader(ordinal);
+
+        IDataReader IDataRecord.GetData(int ordinal) => GetDbDataReader(ordinal);
+
+        protected virtual DbDataReader GetDbDataReader(int ordinal)
         {
             throw ADP.NotSupported();
         }
 
-        abstract public DateTime GetDateTime(int ordinal);
+        public abstract DateTime GetDateTime(int ordinal);
 
-        abstract public Decimal GetDecimal(int ordinal);
+        public abstract decimal GetDecimal(int ordinal);
 
-        abstract public double GetDouble(int ordinal);
+        public abstract double GetDouble(int ordinal);
 
-        abstract public float GetFloat(int ordinal);
+        public abstract float GetFloat(int ordinal);
 
-        abstract public Guid GetGuid(int ordinal);
+        public abstract Guid GetGuid(int ordinal);
 
-        abstract public Int16 GetInt16(int ordinal);
+        public abstract short GetInt16(int ordinal);
 
-        abstract public Int32 GetInt32(int ordinal);
+        public abstract int GetInt32(int ordinal);
 
-        abstract public Int64 GetInt64(int ordinal);
+        public abstract long GetInt64(int ordinal);
 
-        virtual public Type GetProviderSpecificFieldType(int ordinal)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public virtual Type GetProviderSpecificFieldType(int ordinal)
         {
+            // NOTE: This is virtual because not all providers may choose to support
+            //       this method, since it was added in Whidbey.
             return GetFieldType(ordinal);
         }
 
-        virtual public Object GetProviderSpecificValue(int ordinal)
+        [
+        EditorBrowsable(EditorBrowsableState.Never)
+        ]
+        public virtual object GetProviderSpecificValue(int ordinal)
         {
+            // NOTE: This is virtual because not all providers may choose to support
+            //       this method, since it was added in Whidbey
             return GetValue(ordinal);
         }
 
-        virtual public int GetProviderSpecificValues(object[] values)
-        {
-            return GetValues(values);
-        }
+        [
+        EditorBrowsable(EditorBrowsableState.Never)
+        ]
+        public virtual int GetProviderSpecificValues(object[] values) => GetValues(values);
 
-        abstract public String GetString(int ordinal);
+        public abstract string GetString(int ordinal);
 
-        virtual public Stream GetStream(int ordinal)
+        public virtual Stream GetStream(int ordinal)
         {
             using (MemoryStream bufferStream = new MemoryStream())
             {
@@ -156,17 +132,18 @@ namespace System.Data.Common
                     bytesRead = GetBytes(ordinal, bytesReadTotal, buffer, 0, buffer.Length);
                     bufferStream.Write(buffer, 0, (int)bytesRead);
                     bytesReadTotal += bytesRead;
-                } while (bytesRead > 0);
+                }
+                while (bytesRead > 0);
 
                 return new MemoryStream(bufferStream.ToArray(), false);
             }
         }
 
-        virtual public TextReader GetTextReader(int ordinal)
+        public virtual TextReader GetTextReader(int ordinal)
         {
             if (IsDBNull(ordinal))
             {
-                return new StringReader(String.Empty);
+                return new StringReader(string.Empty);
             }
             else
             {
@@ -174,23 +151,18 @@ namespace System.Data.Common
             }
         }
 
-        abstract public Object GetValue(int ordinal);
+        public abstract object GetValue(int ordinal);
 
-        virtual public T GetFieldValue<T>(int ordinal)
-        {
-            return (T)GetValue(ordinal);
-        }
+        public virtual T GetFieldValue<T>(int ordinal) => (T)GetValue(ordinal);
 
-        public Task<T> GetFieldValueAsync<T>(int ordinal)
-        {
-            return GetFieldValueAsync<T>(ordinal, CancellationToken.None);
-        }
+        public Task<T> GetFieldValueAsync<T>(int ordinal) =>
+            GetFieldValueAsync<T>(ordinal, CancellationToken.None);
 
-        virtual public Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken)
+        public virtual Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<T>(cancellationToken);
+                return ADP.CreatedTaskWithCancellation<T>();
             }
             else
             {
@@ -200,103 +172,80 @@ namespace System.Data.Common
                 }
                 catch (Exception e)
                 {
-                    return TaskHelpers.FromException<T>(e);
+                    return Task.FromException<T>(e);
                 }
             }
         }
 
-        abstract public int GetValues(object[] values);
+        public abstract int GetValues(object[] values);
 
-        abstract public bool IsDBNull(int ordinal);
+        public abstract bool IsDBNull(int ordinal);
 
-        public Task<bool> IsDBNullAsync(int ordinal)
-        {
-            return IsDBNullAsync(ordinal, CancellationToken.None);
-        }
+        public Task<bool> IsDBNullAsync(int ordinal) => IsDBNullAsync(ordinal, CancellationToken.None);
 
-        virtual public Task<bool> IsDBNullAsync(int ordinal, CancellationToken cancellationToken)
+        public virtual Task<bool> IsDBNullAsync(int ordinal, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<bool>(cancellationToken);
+                return ADP.CreatedTaskWithCancellation<bool>();
             }
             else
             {
                 try
                 {
-                    return IsDBNull(ordinal) ? ADP.TrueTask : ADP.FalseTask;
+                    return IsDBNull(ordinal) ? ADP.s_trueTask : ADP.s_falseTask;
                 }
                 catch (Exception e)
                 {
-                    return TaskHelpers.FromException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
         }
 
-        abstract public bool NextResult();
+        public abstract bool NextResult();
 
-        abstract public bool Read();
+        public abstract bool Read();
 
-        public Task<bool> ReadAsync()
-        {
-            return ReadAsync(CancellationToken.None);
-        }
+        public Task<bool> ReadAsync() => ReadAsync(CancellationToken.None);
 
-        virtual public Task<bool> ReadAsync(CancellationToken cancellationToken)
+        public virtual Task<bool> ReadAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<bool>(cancellationToken);
+                return ADP.CreatedTaskWithCancellation<bool>();
             }
             else
             {
                 try
                 {
-                    return Read() ? ADP.TrueTask : ADP.FalseTask;
+                    return Read() ? ADP.s_trueTask : ADP.s_falseTask;
                 }
                 catch (Exception e)
                 {
-                    return TaskHelpers.FromException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
         }
 
-        public Task<bool> NextResultAsync()
-        {
-            return NextResultAsync(CancellationToken.None);
-        }
+        public Task<bool> NextResultAsync() => NextResultAsync(CancellationToken.None);
 
-        virtual public Task<bool> NextResultAsync(CancellationToken cancellationToken)
+        public virtual Task<bool> NextResultAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<bool>(cancellationToken);
+                return ADP.CreatedTaskWithCancellation<bool>();
             }
             else
             {
                 try
                 {
-                    return NextResult() ? ADP.TrueTask : ADP.FalseTask;
+                    return NextResult() ? ADP.s_trueTask : ADP.s_falseTask;
                 }
                 catch (Exception e)
                 {
-                    return TaskHelpers.FromException<bool>(e);
+                    return Task.FromException<bool>(e);
                 }
             }
-        }
-
-        public virtual void Close()
-        {
-        }
-
-        virtual public DataTable GetSchemaTable()
-        {
-            throw new NotSupportedException();
-        }
-
-        IDataReader IDataRecord.GetData(int ordinal)
-        {
-            return GetDbDataReader(ordinal);
         }
     }
 }

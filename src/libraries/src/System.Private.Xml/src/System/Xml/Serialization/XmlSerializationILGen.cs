@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     using System;
@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
         private static Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
-        static internal Regex NewRegex(string pattern)
+        internal static Regex NewRegex(string pattern)
         {
             Regex regex;
             lock (s_regexs)
@@ -246,12 +246,12 @@ namespace System.Xml.Serialization
 
                 if (type == null)
                     continue;
-                if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
+                if (!type.IsPublic && !type.IsNestedPublic)
                     continue;
                 if (!uniqueTypes.Add(type))
                     continue;
                 // DDB172141: Wrong generated CS for serializer of List<string> type
-                if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters)
+                if (type.IsGenericType || type.ContainsGenericParameters)
                     continue;
                 ilg.Ldarg("type");
                 ilg.Ldc(type);
@@ -451,10 +451,10 @@ namespace System.Xml.Serialization
                     Type type = xmlMappings[i].Accessor.Mapping.TypeDesc.Type;
                     if (type == null)
                         continue;
-                    if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
+                    if (!type.IsPublic && !type.IsNestedPublic)
                         continue;
                     // DDB172141: Wrong generated CS for serializer of List<string> type
-                    if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters)
+                    if (type.IsGenericType || type.ContainsGenericParameters)
                         continue;
                     ilg.Ldarg("type");
                     ilg.Ldc(type);
@@ -529,7 +529,7 @@ namespace System.Xml.Serialization
             ilg.New(ctor);
             ilg.EndMethod();
 
-            FieldBuilder readMethodsField = GeneratePublicMethods("readMethods", "ReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
+            FieldBuilder readMethodsField = GeneratePublicMethods(nameof(readMethods), "ReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
             FieldBuilder writeMethodsField = GeneratePublicMethods("writeMethods", "WriteMethods", writerMethods, xmlMappings, serializerContractTypeBuilder);
             FieldBuilder typedSerializersField = GenerateTypedSerializers(serializers, serializerContractTypeBuilder);
             GenerateSupportedTypes(types, serializerContractTypeBuilder);
@@ -597,4 +597,3 @@ namespace System.Xml.Serialization
     }
 }
 #endif
-

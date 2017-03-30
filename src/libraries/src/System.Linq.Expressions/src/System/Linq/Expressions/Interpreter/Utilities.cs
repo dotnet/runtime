@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
-
-using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -31,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
             // the arity is small enough to fit in Func<...> or Action<...>
             if (types.Length > MaximumArity || types.Any(t => t.IsByRef))
             {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
 
             Type returnType = types[types.Length - 1];
@@ -83,95 +79,82 @@ namespace System.Linq.Expressions.Interpreter
                     case 17: return typeof(Func<,,,,,,,,,,,,,,,,>).MakeGenericType(types);
                 }
             }
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
     }
 #endif
 
-    internal class ScriptingRuntimeHelpers
+    internal static class ScriptingRuntimeHelpers
     {
         public static object Int32ToObject(int i)
         {
             switch (i)
             {
                 case -1:
-                    return Int32_m;
+                    return Utils.BoxedIntM1;
                 case 0:
-                    return Int32_0;
+                    return Utils.BoxedInt0;
                 case 1:
-                    return Int32_1;
+                    return Utils.BoxedInt1;
                 case 2:
-                    return Int32_2;
+                    return Utils.BoxedInt2;
+                case 3:
+                    return Utils.BoxedInt3;
             }
 
             return i;
         }
 
-        private static readonly object Int32_m = -1;
-        private static readonly object Int32_0 = 0;
-        private static readonly object Int32_1 = 1;
-        private static readonly object Int32_2 = 2;
-
-        public static object BooleanToObject(bool b)
-        {
-            return b ? True : False;
-        }
-
-        internal static readonly object True = true;
-        internal static readonly object False = false;
-
         internal static object GetPrimitiveDefaultValue(Type type)
         {
             object result;
 
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type))
+            switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = ScriptingRuntimeHelpers.False;
+                    result = Utils.BoxedFalse;
                     break;
                 case TypeCode.SByte:
-                    result = default(SByte);
+                    result = Utils.BoxedDefaultSByte;
                     break;
                 case TypeCode.Byte:
-                    result = default(Byte);
+                    result = Utils.BoxedDefaultByte;
                     break;
                 case TypeCode.Char:
-                    result = default(Char);
+                    result = Utils.BoxedDefaultChar;
                     break;
                 case TypeCode.Int16:
-                    result = default(Int16);
+                    result = Utils.BoxedDefaultInt16;
                     break;
                 case TypeCode.Int32:
-                    result = ScriptingRuntimeHelpers.Int32_0;
+                    result = Utils.BoxedInt0;
                     break;
                 case TypeCode.Int64:
-                    result = default(Int64);
+                    result = Utils.BoxedDefaultInt64;
                     break;
                 case TypeCode.UInt16:
-                    result = default(UInt16);
+                    result = Utils.BoxedDefaultUInt16;
                     break;
                 case TypeCode.UInt32:
-                    result = default(UInt32);
+                    result = Utils.BoxedDefaultUInt32;
                     break;
                 case TypeCode.UInt64:
-                    result = default(UInt64);
+                    result = Utils.BoxedDefaultUInt64;
                     break;
-
                 case TypeCode.Single:
-                    return default(Single);
+                    return Utils.BoxedDefaultSingle;
                 case TypeCode.Double:
-                    return default(Double);
-                //            case TypeCode.DBNull: 
-                //                  return default(DBNull); 
+                    return Utils.BoxedDefaultDouble;
                 case TypeCode.DateTime:
-                    return default(DateTime);
+                    return Utils.BoxedDefaultDateTime;
                 case TypeCode.Decimal:
-                    return default(Decimal);
+                    return Utils.BoxedDefaultDecimal;
                 default:
+                    // Also covers DBNull which is a class.
                     return null;
             }
 
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 result = Enum.ToObject(type, result);
             }
@@ -182,55 +165,14 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ExceptionHelpers
     {
-#if FEATURE_STACK_TRACES
-        private const string prevStackTraces = "PreviousStackTraces";
-#endif
-
         /// <summary>
         /// Updates an exception before it's getting re-thrown so
         /// we can present a reasonable stack trace to the user.
         /// </summary>
-        public static Exception UpdateForRethrow(Exception rethrow)
+        public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-#if FEATURE_STACK_TRACES
-            List<StackTrace> prev;
-
-            // we don't have any dynamic stack trace data, capture the data we can
-            // from the raw exception object.
-            StackTrace st = new StackTrace(rethrow, true);
-
-            if (!TryGetAssociatedStackTraces(rethrow, out prev))
-            {
-                prev = new List<StackTrace>();
-                AssociateStackTraces(rethrow, prev);
-            }
-
-            prev.Add(st);
-
-#endif // FEATURE_STACK_TRACES
-            return rethrow;
+            ExceptionDispatchInfo.Throw(exception.InnerException);
         }
-#if FEATURE_STACK_TRACES
-        /// <summary>
-        /// Returns all the stack traces associates with an exception
-        /// </summary>
-        public static IList<StackTrace> GetExceptionStackTraces(Exception rethrow)
-        {
-            List<StackTrace> result;
-            return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
-        }
-
-        private static void AssociateStackTraces(Exception e, List<StackTrace> traces)
-        {
-            e.Data[prevStackTraces] = traces;
-        }
-
-        private static bool TryGetAssociatedStackTraces(Exception e, out List<StackTrace> traces)
-        {
-            traces = e.Data[prevStackTraces] as List<StackTrace>;
-            return traces != null;
-        }
-#endif // FEATURE_STACK_TRACES
     }
 
     /// <summary>
@@ -241,22 +183,10 @@ namespace System.Linq.Expressions.Interpreter
         private KeyValuePair<TKey, TValue>[] _keysAndValues;
         private Dictionary<TKey, TValue> _dict;
         private int _count;
-        private const int _arraySize = 10;
+        private const int ArraySize = 10;
 
         public HybridReferenceDictionary()
         {
-        }
-
-        public HybridReferenceDictionary(int initialCapicity)
-        {
-            if (initialCapicity > _arraySize)
-            {
-                _dict = new Dictionary<TKey, TValue>(initialCapicity);
-            }
-            else
-            {
-                _keysAndValues = new KeyValuePair<TKey, TValue>[initialCapicity];
-            }
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -407,7 +337,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        _keysAndValues = new KeyValuePair<TKey, TValue>[_arraySize];
+                        _keysAndValues = new KeyValuePair<TKey, TValue>[ArraySize];
                         index = 0;
                     }
 

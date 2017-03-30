@@ -181,11 +181,19 @@ namespace System.Numerics.Tests
 
         private static void VerifyDivRemString(string opstring)
         {
-            StackCalc sc = new StackCalc(opstring);
-            while (sc.DoNextOperation())
+            try
             {
-                Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
-                sc.VerifyOutParameter();
+                StackCalc sc = new StackCalc(opstring);
+                while (sc.DoNextOperation())
+                {
+                    Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
+                    sc.VerifyOutParameter();
+                }
+            }
+            catch(Exception e) when (!(e is DivideByZeroException))
+            {
+                // Log the original parameters, so we can reproduce any failure given the log
+                throw new Exception($"VerifyDivRemString failed: {opstring} {e.ToString()}", e);
             }
         }
 

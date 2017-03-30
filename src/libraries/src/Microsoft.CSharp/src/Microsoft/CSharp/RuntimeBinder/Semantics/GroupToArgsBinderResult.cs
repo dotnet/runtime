@@ -6,24 +6,24 @@ using System.Collections.Generic;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // This class takes an EXPRMEMGRP and a set of arguments and binds the arguments
         // to the best applicable method in the group.
         // ----------------------------------------------------------------------------
 
-        internal class GroupToArgsBinderResult
+        internal sealed class GroupToArgsBinderResult
         {
             public MethPropWithInst BestResult;
             public MethPropWithInst GetBestResult() { return BestResult; }
             public MethPropWithInst AmbiguousResult;
             public MethPropWithInst GetAmbiguousResult() { return AmbiguousResult; }
-            public MethPropWithInst InaccessibleResult;
+            private MethPropWithInst InaccessibleResult;
             public MethPropWithInst GetInaccessibleResult() { return InaccessibleResult; }
-            public MethPropWithInst UninferableResult;
+            private MethPropWithInst UninferableResult;
             public MethPropWithInst GetUninferableResult() { return UninferableResult; }
-            public MethPropWithInst InconvertibleResult;
+            private MethPropWithInst InconvertibleResult;
             public GroupToArgsBinderResult()
             {
                 BestResult = new MethPropWithInst();
@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _inconvertibleResults = new List<MethPropWithInst>();
             }
 
-            private List<MethPropWithInst> _inconvertibleResults;
+            private readonly List<MethPropWithInst> _inconvertibleResults;
 
             /////////////////////////////////////////////////////////////////////////////////
 
@@ -56,9 +56,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private static int NumberOfErrorTypes(TypeArray pTypeArgs)
             {
                 int nCount = 0;
-                for (int i = 0; i < pTypeArgs.Size; i++)
+                for (int i = 0; i < pTypeArgs.Count; i++)
                 {
-                    if (pTypeArgs.Item(i).IsErrorType())
+                    if (pTypeArgs[i].IsErrorType())
                     {
                         nCount++;
                     }
@@ -73,18 +73,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (leftErrors == rightErrors)
                 {
-                    int max = pTypeArgs1.Size > pTypeArgs2.Size ? pTypeArgs2.Size : pTypeArgs1.Size;
+                    int max = pTypeArgs1.Count > pTypeArgs2.Count ? pTypeArgs2.Count : pTypeArgs1.Count;
 
                     // If we don't have a winner yet, go through each element's type args.
                     for (int i = 0; i < max; i++)
                     {
-                        if (pTypeArgs1.Item(i).IsAggregateType())
+                        if (pTypeArgs1[i].IsAggregateType())
                         {
-                            leftErrors += NumberOfErrorTypes(pTypeArgs1.Item(i).AsAggregateType().GetTypeArgsAll());
+                            leftErrors += NumberOfErrorTypes(pTypeArgs1[i].AsAggregateType().GetTypeArgsAll());
                         }
-                        if (pTypeArgs2.Item(i).IsAggregateType())
+                        if (pTypeArgs2[i].IsAggregateType())
                         {
-                            rightErrors += NumberOfErrorTypes(pTypeArgs2.Item(i).AsAggregateType().GetTypeArgsAll());
+                            rightErrors += NumberOfErrorTypes(pTypeArgs2[i].AsAggregateType().GetTypeArgsAll());
                         }
                     }
                 }

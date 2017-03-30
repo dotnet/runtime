@@ -13,9 +13,12 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
             yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
-            
-            if (!PlatformDetection.IsWindows7)
+
+            if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsUbuntu1604 && !PlatformDetection.IsUbuntu1610
+                && !PlatformDetection.IsWindows7 && !PlatformDetection.IsWindows8x && !PlatformDetection.IsFedora)
+            {
                 yield return new object[] { new CultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
+            }
         }
 
         [Theory]

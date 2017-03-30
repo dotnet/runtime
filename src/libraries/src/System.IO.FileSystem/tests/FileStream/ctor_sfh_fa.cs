@@ -130,4 +130,55 @@ namespace System.IO.Tests
             }
         }
     }
+
+    public class DerivedFileStream_ctor_sfh_fa : FileSystemTest
+    {
+        [Fact]
+        public void VirtualCanReadWrite_ShouldNotBeCalledDuringCtor()
+        {
+            using (var fs = File.Create(GetTestFilePath()))
+            using (var dfs = new DerivedFileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
+            {
+                Assert.False(dfs.CanReadCalled);
+                Assert.False(dfs.CanWriteCalled);
+                Assert.False(dfs.CanSeekCalled);
+            }
+        }
+
+        private sealed class DerivedFileStream : FileStream
+        {
+            public DerivedFileStream(SafeFileHandle handle, FileAccess access) : base(handle, access) { }
+
+            public bool CanReadCalled { get; set; }
+            public bool CanWriteCalled { get; set; }
+            public bool CanSeekCalled { get; set; }
+
+            public override bool CanRead
+            {
+                get
+                {
+                    CanReadCalled = true;
+                    return base.CanRead;
+                }
+            }
+
+            public override bool CanWrite
+            {
+                get
+                {
+                    CanWriteCalled = true;
+                    return base.CanWrite;
+                }
+            }
+
+            public override bool CanSeek
+            {
+                get
+                {
+                    CanSeekCalled = true;
+                    return base.CanSeek;
+                }
+            }
+        }
+    }
 }

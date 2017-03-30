@@ -12,7 +12,7 @@ namespace System.IO.IsolatedStorage
         object Normalize();
     }
 
-    public abstract partial class IsolatedStorage // : System.MarshalByRefObject
+    public abstract partial class IsolatedStorage : System.MarshalByRefObject
     {
         protected IsolatedStorage() { }
         public object ApplicationIdentity { get { throw null; } }
@@ -112,31 +112,27 @@ namespace System.IO.IsolatedStorage
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
-        // https://github.com/dotnet/corefx/issues/11127
-        // [System.ObsoleteAttribute("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        // public override System.IntPtr Handle { get { throw null; } }
+        [System.ObsoleteAttribute("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public override System.IntPtr Handle { get { throw null; } }
         public override bool IsAsync { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public override Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
 
-        // https://github.com/dotnet/corefx/issues/11126
-        // public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
-        // public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int numBytes, System.AsyncCallback userCallback, object stateObject) { throw null; }
+
         protected override void Dispose(bool disposing) { }
-        // https://github.com/dotnet/corefx/issues/11126
-        // public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
-        // public override void EndWrite(System.IAsyncResult asyncResult) { }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override void Flush(bool flushToDisk) { }
-        // https://github.com/dotnet/corefx/issues/11128
-        // public override void Lock(long position, long length) { }
+        public override void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
-        // https://github.com/dotnet/corefx/issues/11128
-        // public override void Unlock(long position, long length) { }
+        public override void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void WriteByte(byte value) { }
     }
@@ -151,20 +147,6 @@ namespace System.IO.IsolatedStorage
         None = 0,
         Roaming = 8,
         User = 1,
-    }
-
-    public enum IsolatedStorageSecurityOptions
-    {
-        IncreaseQuotaForApplication = 4,
-    }
-
-    public partial class IsolatedStorageSecurityState // : System.Security.SecurityState
-    {
-        internal IsolatedStorageSecurityState() { }
-        public System.IO.IsolatedStorage.IsolatedStorageSecurityOptions Options { get { throw null; } }
-        public long Quota { get { throw null; } set { } }
-        public long UsedSize { get { throw null; } }
-        public virtual void EnsureState() { }
     }
 }
 

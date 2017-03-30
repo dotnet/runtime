@@ -148,7 +148,7 @@ namespace System.Xml.Tests
 
             // for function EOF_Handling_16
             {
-                this.AddChild(new CVariation(EOF_Handling_16) { Attribute = new Variation("NewLine handling betwwen attributes when NewLineOnAttributes=true; Replace, '\\r\\n'") { Params = new object[] { NewLineHandling.Replace, "\r\n" }, id = 57, Pri = 1 } });
+                this.AddChild(new CVariation(EOF_Handling_16) { Attribute = new Variation("NewLine handling between attributes when NewLineOnAttributes=true; Replace, '\\r\\n'") { Params = new object[] { NewLineHandling.Replace, "\r\n" }, id = 57, Pri = 1 } });
                 this.AddChild(new CVariation(EOF_Handling_16) { Attribute = new Variation("NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r\\n'") { Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 56, Pri = 1 } });
                 this.AddChild(new CVariation(EOF_Handling_16) { Attribute = new Variation("NewLine handling between attributes when NewLineOnAttributes=true; None, '\\r\\n'") { Params = new object[] { NewLineHandling.None, "\r\n" }, id = 58, Pri = 1 } });
                 this.AddChild(new CVariation(EOF_Handling_16) { Attribute = new Variation("NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r'") { Params = new object[] { NewLineHandling.Entitize, "\r" }, id = 59, Pri = 2 } });

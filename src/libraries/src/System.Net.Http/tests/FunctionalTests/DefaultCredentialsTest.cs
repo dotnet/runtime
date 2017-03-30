@@ -11,6 +11,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     public class DefaultCredentialsTest
     {

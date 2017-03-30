@@ -148,7 +148,7 @@ namespace System.Xml.Schema
             int h = 1234;
             for (int i = _bits.Length; --i >= 0;)
             {
-                h ^= (int)_bits[i] * (i + 1);
+                h ^= unchecked((int)_bits[i] * (i + 1));
             }
             return (int)((h >> 32) ^ h);
         }
@@ -257,7 +257,7 @@ namespace System.Xml.Schema
 
 #if DEBUG
         public void Dump(StringBuilder bb) {
-            for (int i = 0; i < count; i ++) {
+            for (int i = 0; i < _count; i ++) {
                 bb.Append( Get(i) ? "1" : "0");
             }
         }

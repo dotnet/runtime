@@ -389,7 +389,7 @@ namespace System.IO.Packaging
                 else
                     length = semicolonIndex;
 
-                //If there is no linear white space found we treat the entire remaining string as 
+                //If there is no linear whitespace found we treat the entire remaining string as 
                 //parameter value.
                 if (length == -1)
                     length = s.Length;

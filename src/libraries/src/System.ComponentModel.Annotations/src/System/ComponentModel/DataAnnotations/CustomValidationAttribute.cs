@@ -233,7 +233,7 @@ namespace System.ComponentModel.DataAnnotations
                 return SR.CustomValidationAttribute_ValidatorType_Required;
             }
 
-            if (!_validatorType.GetTypeInfo().IsVisible)
+            if (!_validatorType.IsVisible)
             {
                 return string.Format(CultureInfo.CurrentCulture,
                     SR.CustomValidationAttribute_Type_Must_Be_Public, _validatorType.Name);
@@ -327,8 +327,8 @@ namespace System.ComponentModel.DataAnnotations
             // Null is permitted for reference types or for Nullable<>'s only
             if (value == null)
             {
-                if (expectedValueType.GetTypeInfo().IsValueType
-                    && (!expectedValueType.GetTypeInfo().IsGenericType
+                if (expectedValueType.IsValueType
+                    && (!expectedValueType.IsGenericType
                         || expectedValueType.GetGenericTypeDefinition() != typeof(Nullable<>)))
                 {
                     return false;
@@ -338,7 +338,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             // If the type is already legally assignable, we're good
-            if (expectedValueType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
+            if (expectedValueType.IsInstanceOfType(value))
             {
                 convertedValue = value;
                 return true;

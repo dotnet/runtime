@@ -1,29 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Xml</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <ProjectGuid>{9D747A18-C8FD-4D7A-8913-4ED7911683B4}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Runtime.Serialization" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Runtime.Serialization" />
+    <ProjectReference Include="$(SourceDir)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
     <Compile Include="$(SourceDir)System.Private.DataContractSerialization\src\System\Runtime\Serialization\DataContractSerializerExtensions.Desktop.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Serialization.Primitives" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

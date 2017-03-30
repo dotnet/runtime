@@ -13,13 +13,16 @@ namespace System.Net.Sockets.Performance.Tests
         private SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private SocketAsyncEventArgs _recvEventArgs = new SocketAsyncEventArgs();
 
+        // Random isn't thread safe, so need 2 of these
+        private Random _recvRandom = new Random();
+        private Random _sendRandom = new Random();
+
         public SocketTestClientAsync(
             ITestOutputHelper log,
-            string server,
-            int port,
+            EndPoint endpoint,
             int iterations,
             string message,
-            Stopwatch timeProgramStart) : base(log, server, port, iterations, message, timeProgramStart)
+            Stopwatch timeProgramStart) : base(log, endpoint, iterations, message, timeProgramStart)
         {
             _sendEventArgs.Completed += IO_Complete;
             _recvEventArgs.Completed += IO_Complete;
@@ -32,7 +35,7 @@ namespace System.Net.Sockets.Performance.Tests
             connectEventArgs.UserToken = onConnectCallback;
             connectEventArgs.Completed += OnConnect;
 
-            bool willRaiseEvent = _s.ConnectAsync(connectEventArgs);
+            bool willRaiseEvent = Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectEventArgs);
             if (!willRaiseEvent)
             {
                 ProcessConnect(connectEventArgs);
@@ -46,32 +49,82 @@ namespace System.Net.Sockets.Performance.Tests
 
         private void ProcessConnect(SocketAsyncEventArgs e)
         {
+            _s = e.ConnectSocket;
             Action<SocketError> callback = (Action<SocketError>)e.UserToken;
             callback(e.SocketError);
         }
 
-        public override void Send(Action<int, SocketError> onSendCallback)
+        private void RandomizeBufferConfiguration(Random rnd, SocketAsyncEventArgs args, byte[] buffer, int offset, int count)
         {
-            _sendEventArgs.SetBuffer(_sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
-            _sendEventArgs.UserToken = onSendCallback;
+            // Randomize the way that we configure the buffers to the SocketAsyncEventArgs,
+            // so that sometimes we use single-buffer, sometimes we use multi-buffer. 
+            // The actual buffer layout is still contiguous.
 
-            bool willRaiseEvent = _s.SendAsync(_sendEventArgs);
-            if (!willRaiseEvent)
+            int r = rnd.Next(4);
+
+            // Can't split more ways than we have bytes in the buffer            
+            r = (r > count ? count : r);
+
+            // Need to clear these both, or it will complain if we switch from one to the other
+            args.SetBuffer(null, 0, 0);
+            args.BufferList = null;
+
+            if (r == 0)
             {
-                IO_Complete(this, _sendEventArgs);
+                args.SetBuffer(buffer, offset, count);
+            }
+            else 
+            {
+                // Note this intentionally includes bufferLists with only a single buffer
+                var bufferList = new ArraySegment<byte>[r];
+                for (int i = 0; i < r; i++)
+                {
+                    var start = offset + ((i * count) / r);
+                    var end = offset + (((i + 1) * count) / r);
+
+                    bufferList[i] = new ArraySegment<byte>(buffer, start, end - start);
+                }
+
+                args.BufferList = bufferList;
             }
         }
 
-        public override void Receive(Action<int, SocketError> onReceiveCallback)
+        public override bool Send(out int bytesSent, out SocketError socketError, Action<int, SocketError> onSendCallback)
         {
-            _recvEventArgs.SetBuffer(_recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
+            bytesSent = 0;
+            socketError = SocketError.Success;
+
+            RandomizeBufferConfiguration(_sendRandom, _sendEventArgs, _sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
+
+            _sendEventArgs.UserToken = onSendCallback;
+
+            bool pending = _s.SendAsync(_sendEventArgs);
+            if (!pending)
+            {
+                bytesSent = _sendEventArgs.BytesTransferred;
+                socketError = _sendEventArgs.SocketError;
+            }
+
+            return pending;
+        }
+
+        public override bool Receive(out int bytesReceived, out SocketError socketError, Action<int, SocketError> onReceiveCallback)
+        {
+            bytesReceived = 0;
+            socketError = SocketError.Success;
+
+            RandomizeBufferConfiguration(_recvRandom, _recvEventArgs, _recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
+
             _recvEventArgs.UserToken = onReceiveCallback;
 
-            bool willRaiseEvent = _s.ReceiveAsync(_recvEventArgs);
-            if (!willRaiseEvent)
+            bool pending = _s.ReceiveAsync(_recvEventArgs);
+            if (!pending)
             {
-                IO_Complete(this, _recvEventArgs);
+                bytesReceived = _recvEventArgs.BytesTransferred;
+                socketError = _recvEventArgs.SocketError;
             }
+
+            return pending;
         }
 
         private void IO_Complete(object sender, SocketAsyncEventArgs e)
@@ -82,7 +135,7 @@ namespace System.Net.Sockets.Performance.Tests
 
         public override void Close(Action onCloseCallback)
         {
-            _s.Dispose();
+            _s?.Dispose();
             onCloseCallback();
         }
 

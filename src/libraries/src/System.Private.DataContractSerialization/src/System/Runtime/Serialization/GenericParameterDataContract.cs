@@ -4,16 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Security;
 
 namespace System.Runtime.Serialization
 {
     internal sealed class GenericParameterDataContract : DataContract
     {
-        [SecurityCritical]
         private GenericParameterDataContractCriticalHelper _helper;
 
-        [SecuritySafeCritical]
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
@@ -22,7 +19,6 @@ namespace System.Runtime.Serialization
 
         internal int ParameterPosition
         {
-            [SecuritySafeCritical]
             get
             { return _helper.ParameterPosition; }
         }

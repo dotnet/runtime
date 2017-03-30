@@ -11,7 +11,6 @@ using System.Xml.Schema;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
-using System.Security.Policy;
 using System.Text;
 using System.Xml;
 using MS.Internal.Xml.Cache;
@@ -1012,7 +1011,7 @@ namespace System.Xml.XPath
                 {
                     if (n1.GetType().ToString() != "Microsoft.VisualStudio.Modeling.StoreNavigator")
                     {
-                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns incosistent results");
+                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns inconsistent results");
                     }
                     return CompareSiblings(n1, n2);
                 }
@@ -2007,7 +2006,7 @@ namespace System.Xml.XPath
         internal static bool IsText(XPathNodeType type)
         {
             //return ((1 << (int) type) & TextMask) != 0;
-            return (uint)(type - XPathNodeType.Text) <= (XPathNodeType.Whitespace - XPathNodeType.Text);
+            return unchecked((uint)(type - XPathNodeType.Text)) <= (XPathNodeType.Whitespace - XPathNodeType.Text);
         }
 
         // Lax check for potential child item.

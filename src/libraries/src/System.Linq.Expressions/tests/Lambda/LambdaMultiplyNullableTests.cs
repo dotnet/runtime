@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -468,7 +467,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableInt(int? a, int? b, bool useInterpreter)
         {
-            int? expected = a * b;
+            int? expected = unchecked(a * b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(int?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(int?), "p1");
@@ -561,7 +560,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableLong(long? a, long? b, bool useInterpreter)
         {
-            long? expected = a * b;
+            long? expected = unchecked(a * b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(long?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(long?), "p1");
@@ -654,7 +653,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableShort(short? a, short? b, bool useInterpreter)
         {
-            short? expected = (short?)(a * b);
+            short? expected = unchecked((short?)(a * b));
             ParameterExpression p0 = Expression.Parameter(typeof(short?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(short?), "p1");
 
@@ -746,7 +745,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableUInt(uint? a, uint? b, bool useInterpreter)
         {
-            uint? expected = a * b;
+            uint? expected = unchecked(a * b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(uint?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(uint?), "p1");
@@ -839,7 +838,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableULong(ulong? a, ulong? b, bool useInterpreter)
         {
-            ulong? expected = a * b;
+            ulong? expected = unchecked(a * b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(ulong?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ulong?), "p1");
@@ -932,7 +931,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyMultiplyNullableUShort(ushort? a, ushort? b, bool useInterpreter)
         {
-            ushort? expected = (ushort?)(a * b);
+            ushort? expected = unchecked((ushort?)(a * b));
 
             ParameterExpression p0 = Expression.Parameter(typeof(ushort?), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ushort?), "p1");

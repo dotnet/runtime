@@ -4,7 +4,9 @@
 
 #include "pal_config.h"
 #include "pal_networking.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -29,9 +31,18 @@
 #if defined(__APPLE__) && __APPLE__
 #include <sys/socketvar.h>
 #endif
+#if !HAVE_GETDOMAINNAME && HAVE_UNAME
+#include <sys/utsname.h>
+#include <stdio.h>
+#endif
 #include <unistd.h>
 #include <vector>
 #include <pwd.h>
+#if HAVE_SENDFILE_4
+#include <sys/sendfile.h>
+#elif HAVE_SENDFILE_6
+#include <sys/uio.h>
+#endif
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -156,30 +167,14 @@ constexpr T Max(T left, T right)
 
 static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int32_t bufferLength)
 {
-#if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
-#elif HAVE_U6_ADDR
-    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
-#else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(addr.s6_addr, buffer, UnsignedCast(bufferLength));
-#endif
+    memcpy_s(addr.s6_addr, ARRAY_SIZE(addr.s6_addr), buffer, UnsignedCast(bufferLength));
 }
 
 static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in6_addr& addr)
 {
-#if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
-#elif HAVE_U6_ADDR
-    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
-#else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(buffer, addr.s6_addr, UnsignedCast(bufferLength));
-#endif
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.s6_addr, ARRAY_SIZE(addr.s6_addr));
 }
 
 static void ConvertByteArrayToSockAddrIn6(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
@@ -548,8 +543,10 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
 
     for (;;)
     {
-        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-        if (buffer == nullptr)
+        size_t bufferSize;
+        uint8_t* buffer;
+        if (!add_s(sizeof(hostent), scratchLen, &bufferSize) ||
+            (buffer = reinterpret_cast<uint8_t*>(malloc(bufferSize))) == nullptr)
         {
             return PAL_NO_MEM;
         }
@@ -558,23 +555,28 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
         char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
 
         int getHostErrno;
-        int err =
-            gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
-        switch (err)
+        int err = gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
+        if (!err && *entry != nullptr)
         {
-            case 0:
-                *entry = result;
-                return 0;
-
-            case ERANGE:
-                free(buffer);
-                scratchLen *= 2;
-                break;
-
-            default:
-                free(buffer);
+            assert(*entry == result);
+            return 0;
+        }
+        else if (err == ERANGE)
+        {
+            free(buffer);
+            size_t tmpScratchLen;
+            if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+            {
                 *entry = nullptr;
-                return getHostErrno;
+                return PAL_NO_MEM;
+            }
+            scratchLen = tmpScratchLen;
+        }
+        else
+        {
+            free(buffer);
+            *entry = nullptr;
+            return err ? err : HOST_NOT_FOUND;
         }
     }
 }
@@ -620,8 +622,10 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
     for (;;)
     {
-        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-        if (buffer == nullptr)
+        size_t bufferSize;
+        uint8_t* buffer;
+        if (!add_s(sizeof(hostent), scratchLen, &bufferSize) ||
+            (buffer = reinterpret_cast<uint8_t*>(malloc(bufferSize))) == nullptr)
         {
             return PAL_NO_MEM;
         }
@@ -631,21 +635,27 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
         int getHostErrno;
         int err = gethostbyaddr_r(addr, addrLen, type, result, scratch, scratchLen, entry, &getHostErrno);
-        switch (err)
+        if (!err && *entry != nullptr)
         {
-            case 0:
-                *entry = result;
-                return 0;
-
-            case ERANGE:
-                free(buffer);
-                scratchLen *= 2;
-                break;
-
-            default:
-                free(buffer);
+            assert(*entry == result);
+            return 0;
+        }
+        else if (err == ERANGE)
+        {
+            free(buffer);
+            size_t tmpScratchLen;
+            if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+            {
                 *entry = nullptr;
-                return getHostErrno;
+                return PAL_NO_MEM;
+            }
+            scratchLen = tmpScratchLen;
+        }
+        else
+        {
+            free(buffer);
+            *entry = nullptr;
+            return err ? err : HOST_NOT_FOUND;
         }
     }
 }
@@ -893,6 +903,7 @@ extern "C" int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     assert(name != nullptr);
     assert(nameLength > 0);
 
+#if HAVE_GETDOMAINNAME
 #if HAVE_GETDOMAINNAME_SIZET
     size_t namelen = UnsignedCast(nameLength);
 #else
@@ -900,6 +911,33 @@ extern "C" int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
 #endif
 
     return getdomainname(reinterpret_cast<char*>(name), namelen);
+#elif HAVE_UNAME
+    // On Android, there's no getdomainname but we can use uname to fetch the domain name
+    // of the current device
+    size_t namelen = UnsignedCast(nameLength);
+    utsname  uts;
+
+    // If uname returns an error, bail out.
+    if (uname(&uts) == -1)
+    {
+        return -1;
+    }
+
+    // If we don't have enough space to copy the name, bail out.
+    if (strlen(uts.domainname) >= namelen)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // Copy the domain name
+    SafeStringCopy(reinterpret_cast<char*>(name), nameLength, uts.domainname);
+    return 0;
+#else
+    // GetDomainName is not supported on this platform.
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 extern "C" int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
@@ -1285,8 +1323,12 @@ cmsghdr* GET_CMSG_NXTHDR(msghdr* mhdr, cmsghdr* cmsg)
 // In musl-libc, CMSG_NXTHDR typecasts char* to cmsghdr* which causes
 // clang to throw cast-align warning. This is to suppress the warning
 // inline.
+// There is also a problem in the CMSG_NXTHDR macro in musl-libc.
+// It compares signed and unsigned value and clang warns about that.
+// So we suppress the warning inline too.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wsign-compare"
 #endif
     return CMSG_NXTHDR(mhdr, cmsg);
 #ifndef __GLIBC__
@@ -1467,8 +1509,14 @@ extern "C" Error SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t mu
 
     ipv6_mreq opt;
     memset(&opt, 0, sizeof(ipv6_mreq));
-    opt.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex);
-    
+
+    opt.ipv6mr_interface =
+#if IPV6MR_INTERFACE_UNSIGNED
+        static_cast<unsigned int>(option->InterfaceIndex);
+#else
+        option->InterfaceIndex;
+#endif
+
     ConvertByteArrayToIn6Addr(opt.ipv6mr_multiaddr, &option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS);
 
     int err = setsockopt(fd, IPPROTO_IP, optionName, &opt, sizeof(opt));
@@ -1641,13 +1689,14 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
 
+    assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
+    assert(header.msg_control == messageHeader->ControlBuffer);
+
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
-    memcpy(messageHeader->SocketAddress, header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
-
+    
     assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
-    memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
@@ -1703,7 +1752,11 @@ extern "C" Error SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, in
 
     socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
     int accepted;
+#if defined(HAVE_ACCEPT_4) && defined(SOCK_CLOEXEC)
+    while (CheckInterrupted(accepted = accept4(fd, reinterpret_cast<sockaddr*>(socketAddress), &addrLen, SOCK_CLOEXEC)));
+#else
     while (CheckInterrupted(accepted = accept(fd, reinterpret_cast<sockaddr*>(socketAddress), &addrLen)));
+#endif
     if (accepted == -1)
     {
         *acceptedSocket = -1;
@@ -1725,7 +1778,15 @@ extern "C" Error SystemNative_Bind(intptr_t socket, uint8_t* socketAddress, int3
 
     int fd = ToFileDescriptor(socket);
 
-    int err = bind(fd, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    int err = bind(
+        fd,
+        reinterpret_cast<sockaddr*>(socketAddress),
+#if BIND_ADDRLEN_UNSIGNED
+        static_cast<socklen_t>(socketAddressLen));
+#else
+        socketAddressLen);
+#endif
+
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -1967,7 +2028,11 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
                     optName = IP_DROP_MEMBERSHIP;
                     return true;
 
-                // case PAL_SO_IP_DONTFRAGMENT:
+#ifdef IP_MTU_DISCOVER
+                case PAL_SO_IP_DONTFRAGMENT:
+                    optName = IP_MTU_DISCOVER; // option values will also need to be translated
+                    return true;
+#endif
 
 #ifdef IP_ADD_SOURCE_MEMBERSHIP
                 case PAL_SO_IP_ADD_SOURCE_MEMBERSHIP:
@@ -2071,6 +2136,51 @@ extern "C" Error SystemNative_GetSockOpt(
 
     int fd = ToFileDescriptor(socket);
 
+    //
+    // Handle some special cases for compatibility with Windows
+    //
+    if (socketOptionLevel == PAL_SOL_SOCKET)
+    {
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        {
+            //
+            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
+            // So, for non-Windows platforms, we act as if SO_EXCLUSIVEADDRUSE is always enabled.
+            //
+            if (*optionLen != sizeof(int32_t))
+            {
+                return PAL_EINVAL;
+            }
+
+            *reinterpret_cast<int32_t*>(optionValue) = 1;
+            return PAL_SUCCESS;
+        }
+        else if (socketOptionName == PAL_SO_REUSEADDR)
+        {
+            //
+            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
+            // SO_REUSEADDR + SO_REUSEPORT other systems.  Se we only return "true" if both of those options are true.
+            //
+            auto optLen = static_cast<socklen_t>(*optionLen);
+
+            int err = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, &optLen);
+
+            if (err == 0 && *reinterpret_cast<uint32_t*>(optionValue) != 0)
+            {
+                err = getsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, &optLen);
+            }
+
+            if (err != 0)
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+
+            assert(optLen <= static_cast<socklen_t>(*optionLen));
+            *optionLen = static_cast<int32_t>(optLen);
+            return PAL_SUCCESS;
+        }
+    }
+
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
     {
@@ -2084,6 +2194,17 @@ extern "C" Error SystemNative_GetSockOpt(
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
+#ifdef IP_MTU_DISCOVER
+    // Handle some special cases for compatibility with Windows
+    if (socketOptionLevel == PAL_SOL_IP)
+    {
+        if (socketOptionName == PAL_SO_IP_DONTFRAGMENT)
+        {
+            *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+        }
+    }
+#endif
+
     assert(optLen <= static_cast<socklen_t>(*optionLen));
     *optionLen = static_cast<int32_t>(optLen);
     return PAL_SUCCESS;
@@ -2092,12 +2213,62 @@ extern "C" Error SystemNative_GetSockOpt(
 extern "C" Error
 SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
-    if (optionLen < 0)
+    if (optionLen < 0 || optionValue == nullptr)
     {
         return PAL_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
+
+    //
+    // Handle some special cases for compatibility with Windows
+    //
+    if (socketOptionLevel == PAL_SOL_SOCKET)
+    {
+        if (socketOptionName == PAL_SO_EXCLUSIVEADDRUSE)
+        {
+            //
+            // SO_EXCLUSIVEADDRUSE makes Windows behave like Unix platforms do WRT the SO_REUSEADDR option.
+            // So, on Unix platforms, we consider SO_EXCLUSIVEADDRUSE to always be set.  We allow manually setting this
+            // to "true", but not "false."
+            //
+            if (optionLen != sizeof(int32_t))
+            {
+                return PAL_EINVAL;
+            }
+
+            if (*reinterpret_cast<int32_t*>(optionValue) == 0)
+            {
+                return PAL_ENOTSUP;
+            }
+            else
+            {
+                return PAL_SUCCESS;
+            }
+        }
+        else if (socketOptionName == PAL_SO_REUSEADDR)
+        {
+            //
+            // On Windows, SO_REUSEADDR allows the address *and* port to be reused.  It's equivalent to 
+            // SO_REUSEADDR + SO_REUSEPORT other systems. 
+            //
+            int err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, optionValue, static_cast<socklen_t>(optionLen));
+            if (err == 0)
+            {
+                err = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, optionValue, static_cast<socklen_t>(optionLen));
+            }
+            return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+        }
+    }
+#ifdef IP_MTU_DISCOVER
+    else if (socketOptionLevel == PAL_SOL_IP)
+    {
+        if (socketOptionName == PAL_SO_IP_DONTFRAGMENT)
+        {
+            *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+        }
+    }
+#endif
 
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
@@ -2201,6 +2372,9 @@ extern "C" Error SystemNative_Socket(int32_t addressFamily, int32_t socketType, 
         return PAL_EPROTONOSUPPORT;
     }
 
+#ifdef SOCK_CLOEXEC
+    platformSocketType |= SOCK_CLOEXEC;
+#endif
     *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
     return *createdSocket != -1 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
@@ -2325,7 +2499,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     if (sizeof(epoll_event) < sizeof(SocketEvent))
     {
@@ -2484,7 +2658,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     for (int i = 0; i < numEvents; i++)
     {
@@ -2526,8 +2700,10 @@ extern "C" Error SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent
         return PAL_EFAULT;
     }
 
-    void* b = malloc(SocketEventBufferElementSize * static_cast<size_t>(count));
-    if (b == nullptr)
+    void* b;
+    size_t bufferSize;
+    if (!multiply_s(SocketEventBufferElementSize, static_cast<size_t>(count), &bufferSize) ||
+        (b = malloc(bufferSize)) == nullptr)
     {
         *buffer = nullptr;
         return PAL_ENOMEM;
@@ -2614,36 +2790,21 @@ static char* GetNameFromUid(uid_t uid)
         }
 
         free(buffer);
-        if (errno == ERANGE)
-        {
-            bufferLength *= 2;
-        }
-        else
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, static_cast<size_t>(2), &tmpBufferLength))
         {
             return nullptr;
         }
+        bufferLength = tmpBufferLength;
     }
 }
 
 extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
 {
-    int fd = ToFileDescriptor(socket);
-#ifdef SO_PEERCRED
-    struct ucred creds;
-    socklen_t len = sizeof(creds);
-    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0 ?
-        GetNameFromUid(creds.uid) :
-        nullptr;
-#elif HAVE_GETPEEREID
-    uid_t euid, egid;
-    return getpeereid(fd, &euid, &egid) == 0 ?
+    uid_t euid;
+    return SystemNative_GetPeerID(socket, &euid) == 0 ?
         GetNameFromUid(euid) :
         nullptr;
-#else
-    (void)fd;
-    errno = ENOTSUP;
-    return nullptr;
-#endif
 }
 
 extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
@@ -2657,4 +2818,55 @@ extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* 
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)
+{
+    assert(sent != nullptr);
+
+    int outfd = ToFileDescriptor(out_fd);
+    int infd = ToFileDescriptor(in_fd);
+
+#if HAVE_SENDFILE_4
+    off_t offtOffset = static_cast<off_t>(offset);
+
+    ssize_t res;
+    while (CheckInterrupted(res = sendfile(outfd, infd, &offtOffset, static_cast<size_t>(count))));
+    if (res != -1)
+    {
+        *sent = res;
+        return PAL_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#elif HAVE_SENDFILE_6
+    off_t len = count;
+    ssize_t res;
+    while (CheckInterrupted(res = sendfile(infd, outfd, static_cast<off_t>(offset), &len, nullptr, 0)));
+    if (res != -1)
+    {
+        if (len == 0)
+        {
+            // This indicates EOF
+            *sent = count;
+        }
+        else
+        {
+            *sent = len;
+        }
+        return PAL_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#else
+    (void)outfd;
+    (void)infd;
+    (void)offset;
+    (void)count;
+    *sent = 0;
+    errno = ENOTSUP;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#endif
 }

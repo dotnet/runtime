@@ -37,7 +37,7 @@ namespace System.Linq.Tests
             
             Assert.IsAssignableFrom<IList<T>>(source);
             
-            Assert.Equal(expected, source.LastOrDefault());
+            Assert.Equal(expected, source.RunOnce().LastOrDefault());
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace System.Linq.Tests
             
             Assert.Null(source as IList<T>);
             
-            Assert.Equal(expected, source.LastOrDefault());
+            Assert.Equal(expected, source.RunOnce().LastOrDefault());
         }
 
         [Fact]
@@ -179,6 +179,16 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void IListPredicateTrueForSomeRunOnce()
+        {
+            int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
+            Func<int, bool> predicate = IsEven;
+            int expected = 18;
+
+            Assert.Equal(expected, source.RunOnce().LastOrDefault(predicate));
+        }
+
+        [Fact]
         public void EmptyNotIListSource()
         {
             IEnumerable<int?> source = Enumerable.Repeat((int?)4, 0);
@@ -225,6 +235,16 @@ namespace System.Linq.Tests
             int expected = 18;
 
             Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void NotIListPredicateTrueForSomeRunOnce()
+        {
+            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
+            Func<int, bool> predicate = IsEven;
+            int expected = 18;
+
+            Assert.Equal(expected, source.RunOnce().LastOrDefault(predicate));
         }
 
         [Fact]

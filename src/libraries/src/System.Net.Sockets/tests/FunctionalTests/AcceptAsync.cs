@@ -4,7 +4,7 @@
 
 using System.Net.Test.Common;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -117,8 +117,112 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        public async Task AcceptAsync_ConcurrentAcceptsBeforeConnects_Success(int numberAccepts)
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(numberAccepts);
+
+                var clients = new Socket[numberAccepts];
+                var servers = new Task<Socket>[numberAccepts];
+
+                try
+                {
+                    for (int i = 0; i < numberAccepts; i++)
+                    {
+                        clients[i] = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        servers[i] = listener.AcceptAsync();
+                    }
+
+                    foreach (Socket client in clients)
+                    {
+                        client.Connect(listener.LocalEndPoint);
+                    }
+
+                    await Task.WhenAll(servers);
+                    Assert.All(servers, s => Assert.Equal(TaskStatus.RanToCompletion, s.Status));
+                    Assert.All(servers, s => Assert.NotNull(s.Result));
+                    Assert.All(servers, s => Assert.True(s.Result.Connected));
+                }
+                finally
+                {
+                    foreach (Socket client in clients)
+                    {
+                        client?.Dispose();
+                    }
+
+                    foreach (Task<Socket> server in servers)
+                    {
+                        if (server?.Status == TaskStatus.RanToCompletion)
+                        {
+                            server.Result.Dispose();
+                        }
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        public async Task AcceptAsync_ConcurrentAcceptsAfterConnects_Success(int numberAccepts)
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(numberAccepts);
+
+                var clients = new Socket[numberAccepts];
+                var clientConnects = new Task[numberAccepts];
+                var servers = new Task<Socket>[numberAccepts];
+
+                try
+                {
+                    for (int i = 0; i < numberAccepts; i++)
+                    {
+                        clients[i] = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        clientConnects[i] = clients[i].ConnectAsync(listener.LocalEndPoint);
+                    }
+
+                    for (int i = 0; i < numberAccepts; i++)
+                    {
+                        servers[i] = listener.AcceptAsync();
+                    }
+
+                    await Task.WhenAll(clientConnects);
+                    Assert.All(clientConnects, c => Assert.Equal(TaskStatus.RanToCompletion, c.Status));
+
+                    await Task.WhenAll(servers);
+                    Assert.All(servers, s => Assert.Equal(TaskStatus.RanToCompletion, s.Status));
+                    Assert.All(servers, s => Assert.NotNull(s.Result));
+                    Assert.All(servers, s => Assert.True(s.Result.Connected));
+                }
+                finally
+                {
+                    foreach (Socket client in clients)
+                    {
+                        client?.Dispose();
+                    }
+
+                    foreach (Task<Socket> server in servers)
+                    {
+                        if (server?.Status == TaskStatus.RanToCompletion)
+                        {
+                            server.Result.Dispose();
+                        }
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Success()
         {
             Assert.True(Capability.IPv4Support());
@@ -169,7 +273,116 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
+        public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
+        {
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
+                acceptArgs.Completed += OnAcceptCompleted;
+                acceptArgs.UserToken = new ManualResetEvent(false);
+
+                byte[] buffer = new byte[1];
+                acceptArgs.SetBuffer(buffer, 0, buffer.Length);
+
+                Assert.Throws<ArgumentException>(() => server.AcceptAsync(acceptArgs));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        public void AcceptAsync_WithTargetSocket_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = listener.AcceptAsync(server);
+                client.Connect(IPAddress.Loopback, port);
+                Assert.Same(server, acceptTask.Result);
+            }
+        }
+
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AcceptAsync_WithTargetSocket_ReuseAfterDisconnect_Success(bool reuseSocket)
+        {
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var saea = new SocketAsyncEventArgs())
+            {
+                int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                var are = new AutoResetEvent(false);
+                saea.Completed += delegate { are.Set(); };
+                saea.AcceptSocket = server;
+
+                using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Assert.True(listener.AcceptAsync(saea));
+                    client.Connect(IPAddress.Loopback, port);
+                    are.WaitOne();
+                    Assert.Same(server, saea.AcceptSocket);
+                    Assert.True(server.Connected);
+                }
+
+                server.Disconnect(reuseSocket);
+                Assert.False(server.Connected);
+
+                if (reuseSocket)
+                {
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        Assert.True(listener.AcceptAsync(saea));
+                        client.Connect(IPAddress.Loopback, port);
+                        are.WaitOne();
+                        Assert.Same(server, saea.AcceptSocket);
+                        Assert.True(server.Connected);
+                    }
+                }
+                else
+                {
+                    if (listener.AcceptAsync(saea))
+                    {
+                        are.WaitOne();
+                    }
+                    Assert.Equal(SocketError.InvalidArgument, saea.SocketError);
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        public void AcceptAsync_WithAlreadyBoundTargetSocket_Failed()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                server.BindToAnonymousPort(IPAddress.Loopback);
+
+                Assert.Throws<InvalidOperationException>(() => { listener.AcceptAsync(server); });
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Failure()
         {
             //
@@ -193,21 +406,5 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => server.AcceptAsync(acceptArgs));
             }
         }
-
-        #region GC Finalizer test
-        // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets. 
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void TestFinalizers()
-        {
-            // Making several passes through the FReachable list.
-            for (int i = 0; i < 3; i++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-        #endregion 
     }
 }

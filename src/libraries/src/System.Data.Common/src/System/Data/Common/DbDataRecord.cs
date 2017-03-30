@@ -2,29 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 
 namespace System.Data.Common
 {
-    public abstract class DbDataRecord : IDataRecord
+    public abstract class DbDataRecord : ICustomTypeDescriptor, IDataRecord
     {
-        protected DbDataRecord()
-        {
-        }
+        protected DbDataRecord() : base() { }
 
-        public abstract int FieldCount
-        {
-            get;
-        }
+        public abstract int FieldCount { get; }
 
-        public abstract object this[int i]
-        {
-            get;
-        }
+        public abstract object this[int i] { get; }
 
-        public abstract object this[string name]
-        {
-            get;
-        }
+        public abstract object this[string name] { get; }
 
         public abstract bool GetBoolean(int i);
 
@@ -36,12 +26,10 @@ namespace System.Data.Common
 
         public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
 
+        public IDataReader GetData(int i) => GetDbDataReader(i);
 
-        virtual protected DbDataReader GetDbDataReader(int i)
+        protected virtual DbDataReader GetDbDataReader(int i)
         {
-            // NOTE: This method is virtual because we're required to implement
-            //       it however most providers won't support it. Only the OLE DB 
-            //       provider supports it right now, and they can override it.
             throw ADP.NotSupported();
         }
 
@@ -49,7 +37,7 @@ namespace System.Data.Common
 
         public abstract DateTime GetDateTime(int i);
 
-        public abstract Decimal GetDecimal(int i);
+        public abstract decimal GetDecimal(int i);
 
         public abstract double GetDouble(int i);
 
@@ -59,11 +47,11 @@ namespace System.Data.Common
 
         public abstract Guid GetGuid(int i);
 
-        public abstract Int16 GetInt16(int i);
+        public abstract short GetInt16(int i);
 
-        public abstract Int32 GetInt32(int i);
+        public abstract int GetInt32(int i);
 
-        public abstract Int64 GetInt64(int i);
+        public abstract long GetInt64(int i);
 
         public abstract string GetName(int i);
 
@@ -77,9 +65,34 @@ namespace System.Data.Common
 
         public abstract bool IsDBNull(int i);
 
-        public IDataReader GetData(int i)
-        {
-            return GetDbDataReader(i);
-        }
+        //
+        // ICustomTypeDescriptor
+        //
+
+        AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
+
+        string ICustomTypeDescriptor.GetClassName() => null;
+
+        string ICustomTypeDescriptor.GetComponentName() => null;
+
+        TypeConverter ICustomTypeDescriptor.GetConverter() => null;
+
+        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
+
+        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
+
+        object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) => new EventDescriptorCollection(null);
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() =>
+            ((ICustomTypeDescriptor)this).GetProperties(null);
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
+            new PropertyDescriptorCollection(null);
+
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
     }
 }

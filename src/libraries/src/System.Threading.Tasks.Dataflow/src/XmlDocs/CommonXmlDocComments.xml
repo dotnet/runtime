@@ -88,7 +88,7 @@
       <param name="consumeToAccept">
         true if the target must call ConsumeMessage synchronously during the call to OfferMessage, prior to returning
         <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted"/>, in order to consume the message.
-        false if the target wanting to accept the message should not call ConsumeMessage, and should isntead simply return DataflowMessageStatus.Accepted.
+        false if the target wanting to accept the message should not call ConsumeMessage, and should instead simply return DataflowMessageStatus.Accepted.
       </param>
       <returns>
         The status of the offered message. If the message was accepted by the target, <see cref="F:System.Threading.Tasks.Dataflow.DataflowMessageStatus.Accepted"/> is returned, and the source should

@@ -28,13 +28,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     
         /// </summary>
-        internal TypeDescriptionProvider Provider
-        {
-            get
-            {
-                return TypeDescriptor.GetProviderRecursive(_type);
-            }
-        }
+        internal TypeDescriptionProvider Provider => TypeDescriptor.GetProviderRecursive(_type);
 
         /// <summary>
         ///     This method is used to create an instance that can substitute for another 

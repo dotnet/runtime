@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
     ///     which parameters are expected to be algorithms.  We also provide a list of well known algorithm
     ///     names, which helps Intellisense users find a set of good algorithm names to use.
     /// </summary>
+    [Serializable]
     public sealed class CngAlgorithm : IEquatable<CngAlgorithm>
     {
         public CngAlgorithm(string algorithm)

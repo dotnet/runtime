@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System.IO.IsolatedStorage
 {
-    public abstract class IsolatedStorage
+    public abstract class IsolatedStorage : MarshalByRefObject
     {
         private ulong _quota;
         private bool _validQuota;
@@ -140,11 +140,12 @@ namespace System.IO.IsolatedStorage
 
         protected void InitStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
         {
+            VerifyScope(scope);
             Scope = scope;
 
-            object identity = null;
-            string hash = null;
-            Helper.GetDefaultIdentityAndHash(ref identity, ref hash, SeparatorInternal);
+            object identity;
+            string hash;
+            Helper.GetDefaultIdentityAndHash(out identity, out hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {
@@ -158,10 +159,31 @@ namespace System.IO.IsolatedStorage
                     hash = $"{hash}{SeparatorExternal}{hash}";
                 }
 
-                _applicationIdentity = identity;
+                _assemblyIdentity = identity;
             }
 
             IdentityHash = hash;
+        }
+
+        private static void VerifyScope(IsolatedStorageScope scope)
+        {
+            // The only valid ones are the ones that have a helper constant defined above (c_*)
+
+            switch (scope)
+            {
+                case IsolatedStorageScope.User | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.User:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.Machine:
+                    break;
+                default:
+                    throw new ArgumentException(SR.IsolatedStorage_Scope_Invalid);
+            }
         }
     }
 }

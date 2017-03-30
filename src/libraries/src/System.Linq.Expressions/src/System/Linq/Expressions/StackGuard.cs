@@ -16,16 +16,17 @@ namespace System.Linq.Expressions
 
         public bool TryEnterOnCurrentStack()
         {
-            try
+            if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
-                RuntimeHelpers.EnsureSufficientExecutionStack();
+                return true;
             }
-            catch (InsufficientExecutionStackException) when (_executionStackCount < MaxExecutionStackCount)
+
+            if (_executionStackCount < MaxExecutionStackCount)
             {
                 return false;
             }
 
-            return true;
+            throw new InsufficientExecutionStackException();
         }
 
         public void RunOnEmptyStack<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2)
@@ -73,9 +74,9 @@ namespace System.Linq.Expressions
             try
             {
                 // Using default scheduler rather than picking up the current scheduler.
-                var task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                Task<R> task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-                var awaiter = task.GetAwaiter();
+                TaskAwaiter<R> awaiter = task.GetAwaiter();
 
                 // Avoid AsyncWaitHandle lazy allocation of ManualResetEvent in the rare case we finish quickly.
                 if (!awaiter.IsCompleted)

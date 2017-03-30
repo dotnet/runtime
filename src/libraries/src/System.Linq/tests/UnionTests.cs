@@ -102,6 +102,17 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
+            string[] second = { "ttaM", "Charlie", "Bbo" };
+            string[] expected = { "Bob", "Robert", "Tim", "Matt", "Charlie" };
+
+            var comparer = new AnagramEqualityComparer();
+            Assert.Equal(expected, first.RunOnce().Union(second.RunOnce(), comparer), comparer);
+        }
+
+        [Fact]
         public void FirstNullCustomComparer()
         {
             string[] first = null;
@@ -384,6 +395,23 @@ namespace System.Linq.Tests
             var result = first.Union(second).Union(third);
 
             Assert.Equal(result, result);
+        }
+
+        [Fact]
+        public void HashSetWithBuiltInComparer_HashSetContainsNotUsed()
+        {
+            IEnumerable<string> input1 = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+            IEnumerable<string> input2 = new[] { "A" };
+
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2));
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2, null));
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "a" }, input1.Union(input2, StringComparer.OrdinalIgnoreCase));
+
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1));
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1, null));
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "A" }, input2.Union(input1, StringComparer.OrdinalIgnoreCase));
         }
     }
 }

@@ -43,13 +43,12 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46, "dotnet/corefx#11324")]
         public void IDictionary_NonGeneric_ItemSet_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedList<string, string>();
-                Assert.Throws<ArgumentException>("key", () => dictionary[23] = CreateTValue(12345));
+                Assert.Throws<ArgumentNullException>("key", () => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }
@@ -118,7 +117,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46, "dotnet/corefx#7019")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx#7019")]
         public void CantAcceptDuplicateKeysFromSourceDictionary()
         {
             Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };

@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 
 namespace System.Xml.Tests
 {
-    public class TC_SchemaSet_Add_Reader
+    public class TC_SchemaSet_Add_Reader : TC_SchemaSetBase
     {
         [Fact]
         public void NullNamespaceAndNullReader()

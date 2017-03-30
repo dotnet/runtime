@@ -148,7 +148,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ecms = new EnvelopedCms();
             ecms.Decode(encodedMessage);
 
-            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            // In order to actually use the CAPI version of the key, perphemeral loading must be specified.
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.CloneAsPerphemeralLoader().TryGetCertificateWithPrivateKey())
             {
                 if (cert == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.
@@ -278,9 +279,10 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        // On the desktop, this throws up a UI for the user to select a recipient. We don't support that.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void EnvelopedCmsEncryptWithZeroRecipients()
         {
-            // On the desktop, this throws up a UI for the user to select a recipient. We don't support that.
             EnvelopedCms ecms = new EnvelopedCms(new ContentInfo(new byte[3]));
             Assert.Throws<PlatformNotSupportedException>(() => ecms.Encrypt(new CmsRecipientCollection()));
         }

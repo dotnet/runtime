@@ -12,11 +12,10 @@ namespace System.Net.Sockets.Performance.Tests
     {
         public SocketTestClientAPM(
             ITestOutputHelper log,
-            string server,
-            int port,
+            EndPoint endpoint,
             int iterations,
             string message,
-            Stopwatch timeProgramStart) : base(log, server, port, iterations, message, timeProgramStart)
+            Stopwatch timeProgramStart) : base(log, endpoint, iterations, message, timeProgramStart)
         {
         }
 
@@ -30,12 +29,12 @@ namespace System.Net.Sockets.Performance.Tests
             throw new NotSupportedException();
         }
 
-        public override void Receive(Action<int, SocketError> onReceiveCallback)
+        public override bool Receive(out int bytesReceived, out SocketError socketError, Action<int, SocketError> onReceiveCallback)
         {
             throw new NotSupportedException();
         }
 
-        public override void Send(Action<int, SocketError> onSendCallback)
+        public override bool Send(out int bytesSent, out SocketError socketError, Action<int, SocketError> onSendCallback)
         {
             throw new NotSupportedException();
         }

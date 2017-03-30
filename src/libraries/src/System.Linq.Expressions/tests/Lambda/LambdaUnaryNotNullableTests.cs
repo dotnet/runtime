@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -133,7 +132,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<Func<byte?, byte?>> f4 = e4.Compile(useInterpreter);
 
-            byte? expected = (byte?)~value;
+            byte? expected = unchecked((byte?)~value);
 
             Assert.Equal(expected, f1());
             Assert.Equal(expected, f2(value)());
@@ -511,7 +510,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<Func<ushort?, ushort?>> f4 = e4.Compile(useInterpreter);
 
-            ushort? expected = (ushort?)~value;
+            ushort? expected = unchecked((ushort?)~value);
 
             Assert.Equal(expected, f1());
             Assert.Equal(expected, f2(value)());

@@ -21,7 +21,7 @@ namespace System.Linq
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            Expression obj = this.Visit(m.Object);
+            Expression obj = Visit(m.Object);
             ReadOnlyCollection<Expression> args = Visit(m.Arguments);
 
             // check for args changed
@@ -40,14 +40,14 @@ namespace System.Linq
                 {
                     // convert Queryable method to Enumerable method
                     MethodInfo seqMethod = FindEnumerableMethod(mInfo.Name, args, typeArgs);
-                    args = this.FixupQuotedArgs(seqMethod, args);
+                    args = FixupQuotedArgs(seqMethod, args);
                     return Expression.Call(obj, seqMethod, args);
                 }
                 else
                 {
                     // rebind to new method
                     MethodInfo method = FindMethod(mInfo.DeclaringType, mInfo.Name, args, typeArgs);
-                    args = this.FixupQuotedArgs(method, args);
+                    args = FixupQuotedArgs(method, args);
                     return Expression.Call(obj, method, args);
                 }
             }
@@ -73,10 +73,8 @@ namespace System.Linq
                             newArgs.Add(argList[j]);
                         }
                     }
-                    if (newArgs != null)
-                    {
-                        newArgs.Add(arg);
-                    }
+
+                    newArgs?.Add(arg);
                 }
                 if (newArgs != null)
                     argList = newArgs.AsReadOnly();
@@ -105,7 +103,7 @@ namespace System.Linq
                     List<Expression> exprs = new List<Expression>(na.Expressions.Count);
                     for (int i = 0, n = na.Expressions.Count; i < n; i++)
                     {
-                        exprs.Add(this.FixupQuotedExpression(elementType, na.Expressions[i]));
+                        exprs.Add(FixupQuotedExpression(elementType, na.Expressions[i]));
                     }
                     expression = Expression.NewArrayInit(elementType, exprs);
                 }
@@ -113,10 +111,7 @@ namespace System.Linq
             return expression;
         }
 
-        protected override Expression VisitLambda<T>(Expression<T> node)
-        {
-            return node;
-        }
+        protected override Expression VisitLambda<T>(Expression<T> node) => node;
 
         private static Type GetPublicType(Type t)
         {
@@ -125,15 +120,13 @@ namespace System.Linq
             // we cannot use the expression tree in a context which has only execution
             // permissions.  We should endeavour to translate constants into 
             // new constants which have public types.
-            TypeInfo typeInfo = t.GetTypeInfo();
-            if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition().GetTypeInfo().ImplementedInterfaces.Contains(typeof(IGrouping<,>)))
+            if (t.IsGenericType && t.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>)))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
-            if (!typeInfo.IsNestedPrivate)
+            if (!t.IsNestedPrivate)
                 return t;
-            foreach (Type iType in typeInfo.ImplementedInterfaces)
+            foreach (Type iType in t.GetInterfaces())
             {
-                TypeInfo iTypeInfo = iType.GetTypeInfo();
-                if (iTypeInfo.IsGenericType && iTypeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return iType;
             }
             if (typeof(IEnumerable).IsAssignableFrom(t))
@@ -158,31 +151,39 @@ namespace System.Linq
             if (!_equivalentTypeCache.TryGetValue(type, out equiv))
             {
                 Type pubType = GetPublicType(type);
-                TypeInfo info = pubType.GetTypeInfo();
-                if (info.IsInterface && info.IsGenericType)
+                if (pubType.IsInterface && pubType.IsGenericType)
                 {
-                    Type genericType = info.GetGenericTypeDefinition();
+                    Type genericType = pubType.GetGenericTypeDefinition();
                     if (genericType == typeof(IOrderedEnumerable<>))
                         equiv = pubType;
                     else if (genericType == typeof(IOrderedQueryable<>))
-                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(pubType.GenericTypeArguments[0]);
                     else if (genericType == typeof(IEnumerable<>))
                         equiv = pubType;
                     else if (genericType == typeof(IQueryable<>))
-                        equiv = typeof(IEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                        equiv = typeof(IEnumerable<>).MakeGenericType(pubType.GenericTypeArguments[0]);
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = info.ImplementedInterfaces.Select(i => new { Type = i, Info = i.GetTypeInfo() }).ToArray();
+                    var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
-                        .Where(i => i.Info.IsGenericType && i.Info.GenericTypeArguments.Length == 1)
-                        .Select(i => new { Type = i.Type, Info = i.Info, GenType = i.Info.GetGenericTypeDefinition() });
-                    Type typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().SingleOrDefault();
+                        .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
+                        .Select(i => new {Info = i, GenType = i.GetGenericTypeDefinition() })
+                        .ToArray();
+                    Type typeArg = singleTypeGenInterfacesWithGetType
+                        .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
+                        .Select(i => i.Info.GenericTypeArguments[0])
+                        .Distinct()
+                        .SingleOrDefault();
                     if (typeArg != null)
                         equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
                     else
                     {
-                        typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().Single();
+                        typeArg = singleTypeGenInterfacesWithGetType
+                            .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
+                            .Select(i => i.Info.GenericTypeArguments[0])
+                            .Distinct()
+                            .Single();
                         equiv = typeof(IEnumerable<>).MakeGenericType(typeArg);
                     }
                 }
@@ -210,7 +211,7 @@ namespace System.Linq
 
 
 
-        private static volatile ILookup<string, MethodInfo> s_seqMethods;
+        private static ILookup<string, MethodInfo> s_seqMethods;
         private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[] typeArgs)
         {
             if (s_seqMethods == null)
@@ -315,7 +316,6 @@ namespace System.Linq
                 return Expression.Condition(test, ifTrue, ifFalse, trueType);
             if (falseType.IsAssignableFrom(trueType))
                 return Expression.Condition(test, ifTrue, ifFalse, falseType);
-            TypeInfo info = type.GetTypeInfo();
             return Expression.Condition(test, ifTrue, ifFalse, GetEquivalentType(type));
         }
 

@@ -434,7 +434,7 @@ namespace System.Xml.Linq.Tests
         private static void ValidateAnnotations<T>(XObject xo, T[] values) where T : class
         {
             //
-            // use inefficent n^2 algorithm, which is OK for our testing purposes
+            // use inefficient n^2 algorithm, which is OK for our testing purposes
             // assumes that all items are unique
             //
 

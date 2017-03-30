@@ -554,7 +554,7 @@ namespace System.Threading.Tasks.Dataflow
                             if (exceptions != null)
                             {
                                 // It is important to migrate these exceptions to the source part of the owning batch,
-                                // because that is the completion task that is publically exposed.
+                                // because that is the completion task that is publicly exposed.
                                 targetCore._owningBatch._source.AddExceptions(exceptions);
                             }
 
@@ -1025,7 +1025,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Increment the bounding count with the number of consumed messages 
                     if (_boundingState != null) _boundingState.CurrentCount += reserved.Count;
 
-                    // Enqueue the consumed mesasages
+                    // Enqueue the consumed messages
                     foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
                     {
                         _messages.Enqueue(sourceAndMessage.Value.Value);
@@ -1074,7 +1074,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Increment the bounding count with the number of consumed messages 
                     if (_boundingState != null) _boundingState.CurrentCount += consumedCount;
 
-                    // Enqueue the consumed mesasages
+                    // Enqueue the consumed messages
                     foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
                     {
                         // If we didn't consume this message, the KeyValuePai will be default, i.e. the source will be null

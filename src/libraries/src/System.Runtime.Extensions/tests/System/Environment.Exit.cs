@@ -34,12 +34,11 @@ namespace System.Tests
                 }
                 else
                 {
-                    Assert.Equal((sbyte)expectedExitCode, (sbyte)p.ExitCode);
+                    Assert.Equal(unchecked((sbyte)expectedExitCode), unchecked((sbyte)p.ExitCode));
                 }
             }
         }
 
-#if netstandard17
         [Theory]
         [MemberData(nameof(ExitCodeValues))]
         public static void ExitCode_Roundtrips(int exitCode)
@@ -49,7 +48,6 @@ namespace System.Tests
 
             Environment.ExitCode = 0; // in case the test host has a void returning Main
         }
-#endif //netstandard17
 
         [ActiveIssue("https://github.com/dotnet/coreclr/issues/6206")]
         [Theory]

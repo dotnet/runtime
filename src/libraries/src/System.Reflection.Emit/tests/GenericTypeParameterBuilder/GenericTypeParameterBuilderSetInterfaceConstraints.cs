@@ -15,12 +15,12 @@ namespace System.Reflection.Emit.Tests
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
             
-            typeParams[0].SetInterfaceConstraints(typeof(EmptyInterface1));
+            typeParams[0].SetInterfaceConstraints(typeof(EmptyNonGenericInterface1));
             Type resultType = type.CreateTypeInfo().AsType();
             Type[] genericTypeParams = resultType.GetGenericArguments();
 
             Assert.Equal(1, genericTypeParams.Length);
-            Assert.Equal(new Type[] { typeof(EmptyInterface1) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
+            Assert.Equal(new Type[] { typeof(EmptyNonGenericInterface1) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
 
         [Fact]
@@ -45,15 +45,12 @@ namespace System.Reflection.Emit.Tests
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
             
-            typeParams[0].SetInterfaceConstraints(new Type[] { typeof(EmptyInterface1), typeof(EmptyInterface2) });
+            typeParams[0].SetInterfaceConstraints(new Type[] { typeof(EmptyNonGenericInterface1), typeof(EmptyNonGenericInterface2) });
             Type resultType = type.CreateTypeInfo().AsType();
             Type[] genericTypeParams = resultType.GetGenericArguments();
 
             Assert.Equal(1, genericTypeParams.Length);
-            Assert.Equal(new Type[] { typeof(EmptyInterface1), typeof(EmptyInterface2) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
+            Assert.Equal(new Type[] { typeof(EmptyNonGenericInterface1), typeof(EmptyNonGenericInterface2) }, genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints());
         }
     }
-
-    public interface EmptyInterface1 { }
-    public interface EmptyInterface2 { }
 }

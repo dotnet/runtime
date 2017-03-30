@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal static partial class PathHelpers
     {
-        // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
+        // Trim trailing whitespace, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
         // String.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).    
         internal static readonly char[] TrimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
         internal static readonly char[] TrimStartChars = { ' ' };

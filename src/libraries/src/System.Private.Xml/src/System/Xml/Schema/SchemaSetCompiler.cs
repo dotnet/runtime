@@ -1698,7 +1698,7 @@ namespace System.Xml.Schema
                 _restrictionErrorMsg = SR.Format(SR.Sch_GroupBaseFromAny2, derivedGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseAny.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseAny.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
                 return false;
             }
-            // eliminate occurrance range check
+            // eliminate occurrence range check
             string minOccursAny = baseAny.MinOccursString;
             baseAny.MinOccurs = decimal.Zero;
             for (int i = 0; i < derivedGroupBase.Items.Count; ++i)

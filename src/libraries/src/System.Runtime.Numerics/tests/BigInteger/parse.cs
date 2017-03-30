@@ -4,63 +4,89 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class parseTest
     {
-        private static int s_samples = 10;
-        private static Random s_random = new Random(100);
+        private readonly static int s_samples = 10;
+        private readonly static Random s_random = new Random(100);
 
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue(1642)]
-        public static void RunParseToStringTests()
+        // Invariant culture is commonly used for (de-)serialization and similar to en-US
+        // Ukrainian (Ukraine) added to catch regressions (issue #1642)
+        // Current cultue to get additional value out of glob/loc test runs
+        public static IEnumerable<object[]> Cultures
         {
-            byte[] tempByteArray1 = new byte[0];
-
-            //default style
-
-            VerifyDefaultParse(s_random);
-
-            //single NumberStyles
-            VerifyNumberStyles(NumberStyles.None, s_random);
-            VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
-            VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
-            VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
-            VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
-            VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
-            VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
-            VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
-            VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
-            VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
-            VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
-
-            //composite NumberStyles
-            VerifyNumberStyles(NumberStyles.Integer, s_random);
-            VerifyNumberStyles(NumberStyles.HexNumber, s_random);
-            VerifyNumberStyles(NumberStyles.Number, s_random);
-            VerifyNumberStyles(NumberStyles.Float, s_random);
-            VerifyNumberStyles(NumberStyles.Currency, s_random);
-            VerifyNumberStyles(NumberStyles.Any, s_random);
-
-            //invalid number style
-            // ******InvalidNumberStyles
-            NumberStyles invalid = (NumberStyles)0x7c00;
-            Assert.Throws<ArgumentException>(() =>
+            get
             {
-                BigInteger.Parse("1", invalid).ToString("d");
-            });
-            Assert.Throws<ArgumentException>(() =>
-            {
-                BigInteger junk;
-                BigInteger.TryParse("1", invalid, null, out junk);
-                Assert.Equal(junk.ToString("d"), "1");
-            });
+                yield return new object[] { CultureInfo.InvariantCulture };
+                yield return new object[] { new CultureInfo("uk-UA") };
 
-            //FormatProvider tests
-            RunFormatProviderParseStrings();
+                if (CultureInfo.CurrentCulture.ToString() != "uk-UA")
+                    yield return new object[] { CultureInfo.CurrentCulture };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Cultures))]
+        [OuterLoop]
+        public static void RunParseToStringTests(CultureInfo culture)
+        {
+            CultureInfo originalCulture = Thread.CurrentThread.CurrentCulture;
+
+            try
+            {
+                byte[] tempByteArray1 = new byte[0];
+
+                Thread.CurrentThread.CurrentCulture = culture;
+
+                //default style
+                VerifyDefaultParse(s_random);
+
+                //single NumberStyles
+                VerifyNumberStyles(NumberStyles.None, s_random);
+                VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
+                VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
+                VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
+                VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
+                VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
+                VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
+                VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
+                VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
+                VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
+                VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
+
+                //composite NumberStyles
+                VerifyNumberStyles(NumberStyles.Integer, s_random);
+                VerifyNumberStyles(NumberStyles.HexNumber, s_random);
+                VerifyNumberStyles(NumberStyles.Number, s_random);
+                VerifyNumberStyles(NumberStyles.Float, s_random);
+                VerifyNumberStyles(NumberStyles.Currency, s_random);
+                VerifyNumberStyles(NumberStyles.Any, s_random);
+
+                //invalid number style
+                // ******InvalidNumberStyles
+                NumberStyles invalid = (NumberStyles)0x7c00;
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    BigInteger.Parse("1", invalid).ToString("d");
+                });
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    BigInteger junk;
+                    BigInteger.TryParse("1", invalid, null, out junk);
+                    Assert.Equal(junk.ToString("d"), "1");
+                });
+
+                //FormatProvider tests
+                RunFormatProviderParseStrings();
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = originalCulture;
+            }
         }
 
         private static void RunFormatProviderParseStrings()
@@ -241,12 +267,12 @@ namespace System.Numerics.Tests
             // Trailing White
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u0009\u0009\u0009", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000A\u000A\u000A", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000B\u000B\u000B", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000C\u000C\u000C", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000D\u000D\u000D", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u0020\u0020\u0020", ns, ((ns & NumberStyles.AllowTrailingWhite) != 0));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u0009\u0009\u0009", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000A\u000A\u000A", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000B\u000B\u000B", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000C\u000C\u000C", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u000D\u000D\u000D", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + "\u0020\u0020\u0020", ns, FailureNotExpectedForTrailingWhite(ns, true));
             }
 
             // Leading Sign
@@ -485,7 +511,7 @@ namespace System.Numerics.Tests
             Char result = '5';
             while (result == '5')
             {
-                result = (Char)random.Next();
+                result = unchecked((Char)random.Next());
                 for (int i = 0; i < digits.Length; i++)
                 {
                     if (result == (char)digits[i])
@@ -692,6 +718,31 @@ namespace System.Numerics.Tests
             nfi.PositiveSign = ">";
 
             return nfi;
+        }
+
+        // We need to account for cultures like fr-FR and uk-UA that use the no-break space (NBSP, 0xA0)
+        // character as the group separator. Because NBSP cannot be (easily) entered by the end user we
+        // accept regular spaces (SP, 0x20) as group separators for those cultures which means that
+        // trailing SP characters will be interpreted as group separators rather than whitespace.
+        //
+        // See also System.Globalization.FormatProvider+Number.MatchChars(char*, char*)
+        private static bool FailureNotExpectedForTrailingWhite(NumberStyles ns, bool spaceOnlyTrail)
+        {
+            if (spaceOnlyTrail && (ns & NumberStyles.AllowThousands) != 0)
+            {
+                if ((ns & NumberStyles.AllowCurrencySymbol) != 0)
+                {
+                    if (CultureInfo.CurrentCulture.NumberFormat.CurrencyGroupSeparator == "\u00A0")
+                        return true;
+                }
+                else
+                {
+                    if (CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator == "\u00A0")
+                        return true;
+                }
+            }
+
+            return (ns & NumberStyles.AllowTrailingWhite) != 0;
         }
 
         public static void Eval(BigInteger x, String expected)
