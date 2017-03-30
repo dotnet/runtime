@@ -176,7 +176,7 @@ void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 
 void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
 void genAlignStackBeforeCall(GenTreeCall* call);
-void genRemoveAlignmentAfterCall(GenTreeCall* call);
+void genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias = 0);
 
 #if defined(UNIX_X86_ABI)
 
