@@ -40,19 +40,28 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [InlineData("INVALIDHASHVALUE")]
         [InlineData("INVALIDHASHVALUE-")]
         [InlineData("-INVALIDHASHVALUE")]
-        public void FailsOnInvalidHash(string hash)
+        public void IgnoresInvalidHash(string hash)
         {
-            var resolver = new PackageCacheCompilationAssemblyResolver(FileSystemMockBuilder.Empty, CachePath);
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
+            var fileSystem = FileSystemMockBuilder.Create()
+                .AddFile(
+                    GetHashFilePath(packagePath),
+                    F.DefaultHashValue
+                )
+                .AddFiles(packagePath, F.DefaultAssemblies)
+                .Build();
+
+            var resolver = new PackageCacheCompilationAssemblyResolver(fileSystem, CachePath);
+            var assemblies = new List<string>();
             var library = F.Create(hash: hash);
 
-            var exception = Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, null));
-            exception.Message.Should()
-                .Contain(library.Hash)
-                .And.Contain(library.Name);
+            resolver.TryResolveAssemblyPaths(library, assemblies)
+                .Should().BeTrue();
+            assemblies.Should().NotBeEmpty();
         }
 
         [Fact]
-        public void ChecksHashFile()
+        public void IgnoresHashFile()
         {
             var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
             var fileSystem = FileSystemMockBuilder.Create()
@@ -67,7 +76,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(F.Create(), assemblies);
-            result.Should().BeFalse();
+            result.Should().BeTrue();
+            assemblies.Should().NotBeEmpty();
         }
 
         [Fact]
@@ -171,7 +181,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private IEnvironment GetDefaultEnvironment()
         {
             return EnvironmentMockBuilder.Create()
-                .AddVariable("DOTNET_PACKAGES_CACHE", CachePath)
+                .AddVariable("DOTNET_HOSTING_OPTIMIZATION_CACHE", CachePath)
                 .Build();
         }
 
