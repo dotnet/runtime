@@ -336,12 +336,23 @@ private:
     COUNT_T                     m_cRawProfileData;
     CorProfileData *            m_pCorProfileData;
 
-    // ProfileData hash table
+public:
+    enum CompileStatus {
+        LOOKUP_FAILED   = -2,  COMPILE_FAILED   = -1,      // Failure
+        NOT_COMPILED    =  0,  COMPILE_EXCLUDED =  1,      // Info
+        COMPILE_SUCCEED = 10,  ALREADY_COMPILED = 11
+    };      // Success
+
+private:
+    // A hash table entry that contains the profile infomation and the CompileStatus for a given method
     struct ProfileDataHashEntry
     {
-        mdMethodDef md;       // A copy of the method.token of the profile data
-        DWORD       size;     // A copy of the size of the profile data
-        ULONG       pos;
+        mdMethodDef   md;       // The method.token, also used as the key for the ProfileDataHashTable
+        DWORD         size;     // The size of the CORBBTPROF_BLOCK_DATA region, set by ZapImage::hashBBProfileData()
+        ULONG         pos;      // the offset to the CORBBTPROF_BLOCK_DATA region, set by ZapImage::hashBBProfileData()
+
+        unsigned      flags;    // The methodProfilingDataFlags, set by ZapImage::CompileHotRegion()
+        CompileStatus status;   // The compileResult, set by ZapImage::CompileHotRegion()
     };
 
     class ProfileDataHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<ProfileDataHashEntry> >
@@ -653,11 +664,6 @@ public:
         return m_CompiledMethods.Lookup(handle);
     }
 
-
-    enum CompileStatus { LOOKUP_FAILED   = -2, COMPILE_FAILED   = -1,       // Failure
-                         NOT_COMPILED    =  0, COMPILE_EXCLUDED =  1,       // Info
-                         COMPILE_SUCCEED = 10, ALREADY_COMPILED = 11};      // Success
-
     static void __stdcall TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub, CORJIT_FLAGS jitFlags);
 
     BOOL IsVTableGapMethod(mdMethodDef md);
@@ -813,6 +819,7 @@ public:
     void RehydrateBlobStream();
     HRESULT RehydrateProfileData();
     HRESULT hashBBProfileData ();
+    void hashBBUpdateFlagsAndCompileResult(mdToken token, unsigned methodProfilingDataFlags, CompileStatus compileResult);
 
     void              LoadProfileData();
     CorProfileData *  NewProfileData();
@@ -820,7 +827,11 @@ public:
     bool              CanConvertIbcData();
 
     CompileStatus     CompileProfileDataWorker(mdToken token, unsigned methodProfilingDataFlags);
-    void              CompileProfileData();
+
+    void              ProfileDisableInlining();
+    void              CompileHotRegion();
+    void              CompileColdRegion();
+    void              PlaceMethodIL();
 };
 
 class BinaryWriter
