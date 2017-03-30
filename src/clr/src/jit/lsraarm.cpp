@@ -991,9 +991,27 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->srcCount = 2;
             }
 
-            if (tree->gtOverflow())
+            CastInfo castInfo;
+
+            // Get information about the cast.
+            getCastDescription(tree, &castInfo);
+
+            if (castInfo.requiresOverflowCheck)
             {
-                NYI_ARM("overflow checks");
+                var_types srcType = castOp->TypeGet();
+                emitAttr  cmpSize = EA_ATTR(genTypeSize(srcType));
+
+                // If we cannot store the comparisons in an immediate for either
+                // comparing against the max or min value, then we will need to
+                // reserve a temporary register.
+
+                bool canStoreMaxValue = emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, INS_FLAGS_DONT_CARE);
+                bool canStoreMinValue = emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, INS_FLAGS_DONT_CARE);
+
+                if (!canStoreMaxValue || !canStoreMinValue)
+                {
+                    info->internalIntCount = 1;
+                }
             }
         }
         break;
