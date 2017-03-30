@@ -562,7 +562,7 @@ LEAF_ENTRY JIT_Dbl2LngP4x87, _TEXT
     // restore stack
     add     esp, 8
 
-    ret     8
+    ret
 LEAF_END JIT_Dbl2LngP4x87, _TEXT
 
 // *********************************************************************/
@@ -588,7 +588,7 @@ LEAF_ENTRY JIT_Dbl2LngSSE3, _TEXT
     // restore stack
     add     esp, 8
 
-    ret     8
+    ret
 LEAF_END JIT_Dbl2LngSSE3, _TEXT
 
 // *********************************************************************/
@@ -605,7 +605,7 @@ LEAF_END JIT_Dbl2LngSSE3, _TEXT
 LEAF_ENTRY JIT_Dbl2IntSSE2, _TEXT
     movsd     xmm0, [esp + 4]
     cvttsd2si eax, xmm0
-    ret       8
+    ret
 LEAF_END JIT_Dbl2IntSSE2, _TEXT
 
 // *********************************************************************/
