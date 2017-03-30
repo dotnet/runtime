@@ -43,6 +43,11 @@
 
 #include "appxutil.h"
 
+#ifdef FEATURE_TIERED_COMPILATION
+#include "tieredcompilation.h"
+#include "callcounter.h"
+#endif
+
 class BaseDomain;
 class SystemDomain;
 class SharedDomain;
@@ -3821,6 +3826,29 @@ public:
         return m_MulticoreJitManager;
     }
 
+#endif
+
+#if defined(FEATURE_TIERED_COMPILATION)
+
+public:
+    TieredCompilationManager * GetTieredCompilationManager()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_tieredCompilationManager;
+    }
+
+private:
+    TieredCompilationManager m_tieredCompilationManager;
+
+public:
+    CallCounter * GetCallCounter()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_callCounter;
+    }
+
+private:
+    CallCounter m_callCounter;
 #endif
 
 #ifdef FEATURE_COMINTEROP

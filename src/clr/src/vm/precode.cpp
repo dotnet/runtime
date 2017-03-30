@@ -421,14 +421,14 @@ void Precode::Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAlloc
     _ASSERTE(IsValidType(GetType()));
 }
 
-BOOL Precode::SetTargetInterlocked(PCODE target)
+BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 {
     WRAPPER_NO_CONTRACT;
 
     PCODE expected = GetTarget();
     BOOL ret = FALSE;
 
-    if (!IsPointingToPrestub(expected))
+    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
         return FALSE;
 
     g_IBCLogger.LogMethodPrecodeWriteAccess(GetMethodDesc());

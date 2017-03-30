@@ -48,6 +48,10 @@
 #include "perfmap.h"
 #endif
 
+#ifdef FEATURE_TIERED_COMPILATION
+#include "callcounter.h"
+#endif
+
 #ifndef DACCESS_COMPILE 
 
 EXTERN_C void STDCALL ThePreStub();
@@ -267,16 +271,32 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
 
     PCODE pCode = NULL;
     ULONG sizeOfCode = 0;
+#if defined(FEATURE_INTERPRETER) || defined(FEATURE_TIERED_COMPILATION)
+    BOOL fStable = TRUE;  // True iff the new code address (to be stored in pCode), is a stable entry point.
+#endif
 #ifdef FEATURE_INTERPRETER
     PCODE pPreviousInterpStub = NULL;
     BOOL fInterpreted = FALSE;
-    BOOL fStable = TRUE;  // True iff the new code address (to be stored in pCode), is a stable entry point.
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
     MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
 
     bool fBackgroundThread = flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND);
+#endif
+
+    // If this is the first stage of a tiered compilation progression, use min-opt, otherwise
+    // use default compilation options
+#ifdef FEATURE_TIERED_COMPILATION
+    if (!IsEligibleForTieredCompilation())
+    {
+        fStable = TRUE;
+    }
+    else
+    {
+        fStable = FALSE;
+        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT));
+    }
 #endif
 
     {
@@ -1283,6 +1303,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     if (!IsPointingToPrestub())
 #endif
     {
+        // If we are counting calls for tiered compilation, leave the prestub
+        // in place so that we can continue intercepting method invocations.
+        // When the TieredCompilationManager has received enough call notifications
+        // for this method only then do we back-patch it.
+#ifdef FEATURE_TIERED_COMPILATION
+        PCODE pNativeCode = GetNativeCode();
+        if (pNativeCode && IsEligibleForTieredCompilation())
+        {
+            CallCounter * pCallCounter = GetAppDomain()->GetCallCounter();
+            BOOL doBackPatch = pCallCounter->OnMethodCalled(this);
+            if (!doBackPatch)
+            {
+                return pNativeCode;
+            }
+        }
+#endif
         LOG((LF_CLASSLOADER, LL_INFO10000,
                 "    In PreStubWorker, method already jitted, backpatching call point\n"));
 
@@ -1308,8 +1344,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     else if (IsIL() || IsNoMetadata())
     {
         // remember if we need to backpatch the MethodTable slot
-        BOOL  fBackpatch           = !fRemotingIntercepted
-                                    && !IsEnCMethod();
+        BOOL  fBackpatch = !fRemotingIntercepted
+                            && IsNativeCodeStableAfterInit();
 
 #ifdef FEATURE_PREJIT 
         //
@@ -1583,6 +1619,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     MemoryBarrier();
 #endif
 
+    // If we are counting calls for tiered compilation, leave the prestub
+    // in place so that we can continue intercepting method invocations.
+    // When the TieredCompilationManager has received enough call notifications
+    // for this method only then do we back-patch it.
+#ifdef FEATURE_TIERED_COMPILATION
+    if (pCode && IsEligibleForTieredCompilation())
+    {
+        CallCounter * pCallCounter = GetAppDomain()->GetCallCounter();
+        BOOL doBackPatch = pCallCounter->OnMethodCalled(this);
+        if (!doBackPatch)
+        {
+            return pCode;
+        }
+    }
+#endif
+
     if (pCode != NULL)
     {
         if (HasPrecode())
@@ -1712,7 +1764,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     //
 #ifdef HAS_FIXUP_PRECODE
     if (pMD->HasPrecode() && pMD->GetPrecode()->GetType() == PRECODE_FIXUP
-        && !pMD->IsEnCMethod()
+        && pMD->IsNativeCodeStableAfterInit()
 #ifndef HAS_REMOTING_PRECODE
         && !pMD->IsRemotingInterceptedViaPrestub()
 #endif
