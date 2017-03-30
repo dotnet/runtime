@@ -1251,7 +1251,7 @@ VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(UNIX_X86_ABI)
         PRECONDITION(wArgBytes == 0);
 #endif
 
@@ -3268,7 +3268,7 @@ VOID StubLinkerCPU::EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOf
     X86EmitPopReg(kR15);
 #endif
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(UNIX_X86_ABI)
     // Caller deallocates argument space.  (Bypasses ASSERT in
     // X86EmitReturn.)
     numArgBytes = 0;
@@ -4222,6 +4222,10 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
     if (haveMemMemMove)
         X86EmitPopReg(SCRATCH_REGISTER_X86REG);
+
+#ifdef UNIX_X86_ABI
+    _ASSERTE(pWalk->stacksizedelta == 0);
+#endif
 
     if (pWalk->stacksizedelta)
         X86EmitAddEsp(pWalk->stacksizedelta);
@@ -5717,8 +5721,12 @@ COPY_VALUE_CLASS:
     X86EmitPopReg(kFactorReg);
     X86EmitPopReg(kTotalReg);
 
+#ifndef UNIX_X86_ABI
     // ret N
     X86EmitReturn(pArrayOpScript->m_cbretpop);
+#else
+    X86EmitReturn(0);
+#endif
 #endif // !_TARGET_AMD64_
 
     // Exception points must clean up the stack for all those extra args.

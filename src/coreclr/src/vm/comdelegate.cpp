@@ -277,7 +277,14 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         COMPlusThrow(kVerificationException);
     }
 
-    UINT stackSizeDelta = stackSizeSrc - stackSizeDst;
+    UINT stackSizeDelta;
+
+#ifdef UNIX_X86_ABI
+    // Stack does not shrink as UNIX_X86_ABI uses CDECL (instead of STDCALL).
+    stackSizeDelta = 0;
+#else
+    stackSizeDelta = stackSizeSrc - stackSizeDst;
+#endif
 
     INT ofsSrc, ofsDst;
 

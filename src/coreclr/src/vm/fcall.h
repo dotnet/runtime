@@ -377,7 +377,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 // Choose the appropriate calling convention for FCALL helpers on the basis of the JIT calling convention
 #ifdef __GNUC__
-#define F_CALL_CONV __attribute__((stdcall, regparm(3)))
+#define F_CALL_CONV __attribute__((cdecl, regparm(3)))
 
 // GCC fastcall convention (simulated via stdcall) is different from MSVC fastcall convention. GCC can use up
 // to 3 registers to store parameters. The registers used are EAX, EDX, ECX. Dummy parameters and reordering
