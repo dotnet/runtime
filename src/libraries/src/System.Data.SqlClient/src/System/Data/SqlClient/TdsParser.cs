@@ -676,9 +676,9 @@ namespace System.Data.SqlClient
 
             if (!_physicalStateObj.TryProcessHeader()) { throw SQL.SynchronousCallMayNotPend(); }
 
-            if (_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket < 0)
+            if (_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket <= 0)
             {
-                throw SQL.InvalidPacketSize();
+                throw SQL.ParsingError();
             }
             byte[] payload = new byte[_physicalStateObj._inBytesPacket];
 
