@@ -11,6 +11,9 @@ project(CoreCLR)
 # Include cmake functions
 include(functions.cmake)
 
+# Include global configure settings
+include(configure.cmake)
+
 if (WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
