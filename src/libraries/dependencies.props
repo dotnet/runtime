@@ -18,7 +18,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>1f6532b32fa97b7810ae57ccbc28ab4db50f9c1a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>1513a5bdd0c90315123f362c1e6a18121d725af8</CoreClrCurrentRef>
+    <CoreClrCurrentRef>1c85d98be6efa8cf210d8f7ce4a24261a9011e78</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>2e21bfd4e7556b77af80268812a802d5f7bd701f</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
@@ -28,7 +28,7 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-25129-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>preview1-25130-01</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>preview1-25130-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25129-00</ProjectNTfsExpectedPrerelease>
     <NETStandardPackageVersion>2.0.0-beta-25129-01</NETStandardPackageVersion>
