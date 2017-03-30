@@ -97,6 +97,7 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             {
                 // Same as .NET Framework (Desktop).
+                Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
                 Assert.True(handler.AllowAutoRedirect);
                 Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
                 CookieContainer cookies = handler.CookieContainer;
@@ -114,7 +115,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
 
                 // Changes from .NET Framework (Desktop).
-                Assert.Equal(DecompressionMethods.GZip | DecompressionMethods.Deflate, handler.AutomaticDecompression);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.NotNull(handler.Properties);
             }
@@ -278,10 +278,11 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CompressedServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
-        public async Task GetAsync_DefaultAutomaticDecompression_ContentDecompressed(Uri server)
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(Uri server)
         {
-            using (var client = new HttpClient())
+            var handler = new HttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (var client = new HttpClient(handler))
             {
                 using (HttpResponseMessage response = await client.GetAsync(server))
                 {
@@ -299,9 +300,11 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CompressedServers))]
-        public async Task GetAsync_DefaultAutomaticDecompression_HeadersRemoved(Uri server)
+        public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Uri server)
         {
-            using (var client = new HttpClient())
+            var handler = new HttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(server, HttpCompletionOption.ResponseHeadersRead))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
