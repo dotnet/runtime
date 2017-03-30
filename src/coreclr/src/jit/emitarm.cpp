@@ -1380,13 +1380,27 @@ DONE:
 
 /*****************************************************************************
  *
- *  emitIns_valid_imm_for_add() returns true when the immediate 'imm'
+ *  emitins_valid_imm_for_add() returns true when the immediate 'imm'
  *   can be encoded using a single add or sub instruction.
  */
 /*static*/ bool emitter::emitIns_valid_imm_for_add(int imm, insFlags flags)
 {
     if ((unsigned_abs(imm) <= 0x00000fff) && (flags != INS_FLAGS_SET)) // 12-bit immediate via add/sub
         return true;
+    if (isModImmConst(imm)) // funky arm immediate
+        return true;
+    if (isModImmConst(-imm)) // funky arm immediate via sub
+        return true;
+    return false;
+}
+
+/*****************************************************************************
+ *
+ *  emitins_valid_imm_for_cmp() returns true if this 'imm'
+ *   can be encoded as a input operand to an cmp instruction.
+ */
+/*static*/ bool emitter::emitIns_valid_imm_for_cmp(int imm, insFlags flags)
+{
     if (isModImmConst(imm)) // funky arm immediate
         return true;
     if (isModImmConst(-imm)) // funky arm immediate via sub
