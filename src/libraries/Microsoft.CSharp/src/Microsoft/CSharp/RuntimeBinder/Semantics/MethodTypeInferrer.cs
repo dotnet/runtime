@@ -1974,17 +1974,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 foreach (CType pCurrent in _pLowerBounds[iParam])
                 {
-                    if (!typeSet.Contains(pCurrent))
+                    if (typeSet.Add(pCurrent))
                     {
-                        typeSet.Add(pCurrent);
                         initialCandidates.Add(pCurrent);
                     }
                 }
+
                 foreach (CType pCurrent in _pUpperBounds[iParam])
                 {
-                    if (!typeSet.Contains(pCurrent))
+                    if (typeSet.Add(pCurrent))
                     {
-                        typeSet.Add(pCurrent);
                         initialCandidates.Add(pCurrent);
                     }
                 }
