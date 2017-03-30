@@ -1,6 +1,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PreReleaseLabel>beta</PreReleaseLabel>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)pkg/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)pkg/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
@@ -61,7 +61,7 @@
           Include="$(SyncInfoFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
-    
+
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <File Condition="'$(IncludeDesignerMarker)' != 'false'"
           Include="$(ProjectDir)pkg/useSharedDesignerContext.txt">
