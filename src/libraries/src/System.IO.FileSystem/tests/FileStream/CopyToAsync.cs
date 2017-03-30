@@ -42,7 +42,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This fails on netcoreapp because the Stream CopyToAsync calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The Stream CopyToAsync fails on netcoreapp because it calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
         public void DisposeHandleThenUseFileStream_CopyToAsync(bool useAsync)
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
@@ -62,7 +62,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "This fails on netcoreapp because the Stream CopyToAsync calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The Stream CopyToAsync fails on netcoreapp because it calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
         public void DisposeHandleThenUseFileStream_CopyToAsync_netfx(bool useAsync)
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
