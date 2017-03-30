@@ -4,7 +4,10 @@
 
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
-      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" />
+      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')">
+        <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' == ''">StrongName</StrongNameSig>
+        <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' != ''">%(NetfxReference.StrongNameSig)</StrongNameSig>
+      </NetFxContracts>
       <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
       <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
       <GenFacadesSeeds Include="$(RefPath)*.dll" Exclude="$(RefPath)System.Private.CoreLib.dll" />
@@ -47,7 +50,7 @@
     <WriteSigningRequired
         Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
         AuthenticodeSig="Microsoft"
-        StrongNameSig="StrongName"
+        StrongNameSig="%(NetFxContracts.StrongNameSig)"
         MarkerFile="$(GenFacadesOutputPath)%(NetFxContracts.Filename)%(NetFxContracts.Extension).requires_signing" />
 
     <!--
