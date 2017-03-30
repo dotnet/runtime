@@ -45,7 +45,7 @@ mono_unicode_from_external (const gchar *in, gsize *bytes)
 {
 	gchar *res=NULL;
 	gchar **encodings;
-	const gchar *encoding_list;
+	gchar *encoding_list;
 	int i;
 	glong lbytes;
 	
@@ -55,10 +55,11 @@ mono_unicode_from_external (const gchar *in, gsize *bytes)
 	
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
-		encoding_list = "";
+		encoding_list = g_strdup("");
 	}
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
+	g_free (encoding_list);
 	for(i=0;encodings[i]!=NULL; i++) {
 		/* "default_locale" is a special case encoding */
 		if(!strcmp (encodings[i], "default_locale")) {
@@ -118,7 +119,7 @@ gchar *mono_utf8_from_external (const gchar *in)
 {
 	gchar *res=NULL;
 	gchar **encodings;
-	const gchar *encoding_list;
+	gchar *encoding_list;
 	int i;
 	
 	if(in==NULL) {
@@ -127,10 +128,11 @@ gchar *mono_utf8_from_external (const gchar *in)
 	
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
-		encoding_list = "";
+		encoding_list = g_strdup("");
 	}
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
+	g_free (encoding_list);
 	for(i=0;encodings[i]!=NULL; i++) {
 		
 		/* "default_locale" is a special case encoding */
@@ -171,7 +173,7 @@ gchar *mono_utf8_from_external (const gchar *in)
 gchar *mono_unicode_to_external (const gunichar2 *uni)
 {
 	gchar *utf8;
-	const gchar *encoding_list;
+	gchar *encoding_list;
 	
 	/* Turn the unicode into utf8 to start with, because its
 	 * easier to work with gchar * than gunichar2 *
@@ -188,6 +190,7 @@ gchar *mono_unicode_to_external (const gunichar2 *uni)
 		int i;
 		
 		encodings=g_strsplit (encoding_list, ":", 0);
+		g_free (encoding_list);
 		for(i=0; encodings[i]!=NULL; i++) {
 			if(!strcmp (encodings[i], "default_locale")) {
 				res=g_locale_from_utf8 (utf8, -1, NULL, NULL,

@@ -3687,7 +3687,7 @@ is_wcf_hack_disabled (void)
 	static gboolean disabled;
 	static gboolean inited = FALSE;
 	if (!inited) {
-		disabled = g_getenv ("MONO_DISABLE_WCF_HACK") != NULL;
+		disabled = g_hasenv ("MONO_DISABLE_WCF_HACK");
 		inited = TRUE;
 	}
 	return disabled;

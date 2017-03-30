@@ -530,7 +530,11 @@ static void
 force_pass_linking (void)
 {
 	// Make sure the rest is linked in, but never executed
-	if (g_getenv ("FOO") != (char*)-1)
+	char *foo = g_getenv ("FOO");
+	gboolean ret = (foo != (char*)-1);
+	g_free (foo);
+
+	if (ret) 
 		return;
 
 	// This is a subset of the passes in LinkAllPasses.h

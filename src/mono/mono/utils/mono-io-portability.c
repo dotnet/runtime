@@ -23,7 +23,7 @@ static inline gchar *mono_portability_find_file_internal (GString **report, cons
 
 void mono_portability_helpers_init (void)
 {
-        const gchar *env;
+        gchar *env;
 
 	if (mono_io_portability_helpers != PORTABILITY_UNKNOWN)
 		return;
@@ -56,6 +56,7 @@ void mono_portability_helpers_init (void)
                                 mono_io_portability_helpers |= (PORTABILITY_DRIVE | PORTABILITY_CASE);
 			}
                 }
+		g_free (env);
 	}
 }
 

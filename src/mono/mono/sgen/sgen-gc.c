@@ -2924,7 +2924,7 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 void
 sgen_gc_init (void)
 {
-	const char *env;
+	char *env;
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
 	char *minor_collector_opt = NULL;
@@ -2969,6 +2969,7 @@ sgen_gc_init (void)
 
 	if ((env = g_getenv (MONO_GC_PARAMS_NAME)) || gc_params_options) {
 		params_opts = g_strdup_printf ("%s,%s", gc_params_options ? gc_params_options : "", env ? env : "");
+		g_free (env);
 	}
 
 	if (params_opts) {
@@ -3186,6 +3187,7 @@ sgen_gc_init (void)
 
 	if ((env = g_getenv (MONO_GC_DEBUG_NAME)) || gc_debug_options) {
 		debug_opts = g_strdup_printf ("%s,%s", gc_debug_options ? gc_debug_options  : "", env ? env : "");
+		g_free (env);
 	}
 
 	if (debug_opts) {

@@ -681,7 +681,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	gboolean res;
 	threads_callbacks = *callbacks;
 	thread_info_size = info_size;
-	const char *sleepLimit;
+	char *sleepLimit;
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
 	res = mono_native_tls_alloc (&thread_exited_key, NULL);
@@ -705,6 +705,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 			sleepWarnDuration = threshold / 20;
 		} else
 			g_warning("MONO_SLEEP_ABORT_LIMIT must be a number >= 40");
+		g_free (sleepLimit);
 	}
 
 	mono_os_sem_init (&global_suspend_semaphore, 1);

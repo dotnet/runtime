@@ -163,8 +163,7 @@ mono_parser = {
 
 static GHashTable *config_handlers;
 
-static const char *mono_cfg_dir = NULL;
-static char *mono_cfg_dir_allocated = NULL;
+static char *mono_cfg_dir = NULL;
 
 /* when this interface is stable, export it. */
 typedef struct MonoParseHandler MonoParseHandler;
@@ -473,7 +472,7 @@ mono_config_cleanup (void)
 {
 	if (config_handlers)
 		g_hash_table_destroy (config_handlers);
-	g_free (mono_cfg_dir_allocated);
+	g_free (mono_cfg_dir);
 }
 
 /* FIXME: error handling */
@@ -661,9 +660,10 @@ mono_config_parse (const char *filename) {
 		return;
 	}
 
-	home = g_getenv ("MONO_CONFIG");
-	if (home) {
-		mono_config_parse_file (home);
+	// FIXME: leak, do we store any references to home
+	char *env_home = g_getenv ("MONO_CONFIG");
+	if (env_home) {
+		mono_config_parse_file (env_home);
 		return;
 	}
 
@@ -686,10 +686,12 @@ mono_config_parse (const char *filename) {
 void
 mono_set_config_dir (const char *dir)
 {
-	/* If this variable is set, overrides the directory computed */
-	mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
-	if (mono_cfg_dir == NULL)
-		mono_cfg_dir = mono_cfg_dir_allocated = g_strdup (dir);
+	/* If this environment variable is set, overrides the directory computed */
+	char *env_mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
+	if (env_mono_cfg_dir == NULL && dir != NULL)
+		env_mono_cfg_dir = strdup (dir);
+
+	mono_cfg_dir = env_mono_cfg_dir;
 }
 
 /**

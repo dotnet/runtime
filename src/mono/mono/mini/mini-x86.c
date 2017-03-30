@@ -5505,13 +5505,16 @@ mono_arch_is_inst_imm (gint64 imm)
 void
 mono_arch_finish_init (void)
 {
-	if (!g_getenv ("MONO_NO_TLS")) {
+	char *mono_no_tls = g_getenv ("MONO_NO_TLS");
+	if (!mono_no_tls) {
 #ifndef TARGET_WIN32
 #if MONO_XEN_OPT
 		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
 #endif
-	}		
+	} else {
+		g_free (mono_no_tls);
+	}
 }
 
 void

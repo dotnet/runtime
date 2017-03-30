@@ -4932,7 +4932,7 @@ mono_profiler_startup (const char *desc)
 		if ((opt = match_option (p, "coverage", NULL)) != p) {
 			do_coverage = 1;
 			events |= MONO_PROFILE_ENTER_LEAVE;
-			debug_coverage = (g_getenv ("MONO_PROFILER_DEBUG_COVERAGE") != NULL);
+			debug_coverage = g_hasenv ("MONO_PROFILER_DEBUG_COVERAGE");
 			continue;
 		}
 		if ((opt = match_option (p, "onlycoverage", NULL)) != p) {

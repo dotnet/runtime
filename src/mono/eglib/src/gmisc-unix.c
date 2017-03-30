@@ -39,23 +39,69 @@
 #include <unistd.h>
 #endif
 
+static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
 
-const gchar *
-g_getenv(const gchar *variable)
+/* MONO Comment
+ * 
+ * As per the UNIX spec, 
+ * "The return value from getenv() may point to static data which may be overwritten by subsequent calls to getenv(), setenv(), or unsetenv()."
+ * Source: Unix Manual Pages for getenv, IEEE Std 1003.1
+ *
+ * This means that using pointers returned from getenv may (and does) lead to many
+ * pointers which refer to the same piece of memory. When one is freed, all will be freed.
+ *
+ * This is unsafe and an ergonomics risk to fix in the callers. While the caller could lock,
+ * this introduces the risk for looping or exiting while inside of a lock. For this reason,
+ * g_getenv does not mimic the behavior of POSIX getenv anymore.
+ *
+ * The memory address returned will be unique to the invocaton, and must be freed.
+ * */ 
+gchar *
+g_getenv (const gchar *variable)
 {
-	return getenv(variable);
+	gchar *ret = NULL;
+	pthread_mutex_lock (&env_lock);
+	gchar *res = getenv(variable);
+	if (res)
+		ret = g_strdup(res);
+	pthread_mutex_unlock (&env_lock);
+
+	return ret;
+}
+
+/*
+ * This function checks if the given variable is non-NULL
+ * in the environment. It's useful because it removes memory
+ * freeing requirements.
+ *
+ */
+gboolean
+g_hasenv (const gchar *variable)
+{
+	pthread_mutex_lock (&env_lock);
+	gchar *res = getenv(variable);
+	gboolean not_null = (res != NULL);
+	pthread_mutex_unlock (&env_lock);
+
+	return not_null;
 }
 
 gboolean
 g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 {
-	return setenv(variable, value, overwrite) == 0;
+	gboolean res;
+	pthread_mutex_lock (&env_lock);
+	res = (setenv(variable, value, overwrite) == 0);
+	pthread_mutex_unlock (&env_lock);
+	return res;
 }
 
 void
 g_unsetenv(const gchar *variable)
 {
+	pthread_mutex_lock (&env_lock);
 	unsetenv(variable);
+	pthread_mutex_unlock (&env_lock);
 }
 
 gchar*

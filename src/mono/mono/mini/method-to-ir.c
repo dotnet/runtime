@@ -4585,9 +4585,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	/* also consider num_locals? */
 	/* Do the size check early to avoid creating vtables */
 	if (!inline_limit_inited) {
-		if (g_getenv ("MONO_INLINELIMIT"))
-			inline_limit = atoi (g_getenv ("MONO_INLINELIMIT"));
-		else
+		char *inlinelimit;
+		if ((inlinelimit = g_getenv ("MONO_INLINELIMIT"))) {
+			inline_limit = atoi (inlinelimit);
+			g_free (inlinelimit);
+		} else
 			inline_limit = INLINE_LENGTH_LIMIT;
 		inline_limit_inited = TRUE;
 	}
