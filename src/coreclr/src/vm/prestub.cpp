@@ -285,7 +285,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
     bool fBackgroundThread = flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND);
 #endif
 
-    // If this is the first stage of a tiered compilation progression, use min-opt, otherwise
+    // If this is the first stage of a tiered compilation progression, use tier0, otherwise
     // use default compilation options
 #ifdef FEATURE_TIERED_COMPILATION
     if (!IsEligibleForTieredCompilation())
@@ -295,7 +295,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
     else
     {
         fStable = FALSE;
-        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT));
+        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_TIER0));
     }
 #endif
 

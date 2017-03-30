@@ -300,7 +300,7 @@ PCODE TieredCompilationManager::CompileMethod(MethodDesc* pMethod)
     EX_TRY
     {
         CORJIT_FLAGS flags = CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND);
-        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT));
+        flags.Add(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_TIER1));
 
         if (pMethod->IsDynamicMethod())
         {
