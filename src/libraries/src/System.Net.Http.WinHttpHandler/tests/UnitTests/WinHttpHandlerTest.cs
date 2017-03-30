@@ -42,7 +42,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(SslProtocols.None, handler.SslProtocols);
             Assert.Equal(true, handler.AutomaticRedirection);
             Assert.Equal(50, handler.MaxAutomaticRedirections);
-            Assert.Equal(DecompressionMethods.Deflate | DecompressionMethods.GZip, handler.AutomaticDecompression);
+            Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
             Assert.Equal(CookieUsePolicy.UseInternalCookieStoreOnly, handler.CookieUsePolicy);
             Assert.Equal(null, handler.CookieContainer);
             Assert.Equal(null, handler.ServerCertificateValidationCallback);
