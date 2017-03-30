@@ -12,9 +12,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    // Simplified implementation of MSDN sample:
-    // https://msdn.microsoft.com/en-us/library/ms229746(v=vs.110).aspx
-    public class EncryptingAndDecryptingAsymmetric
+    public class EncryptingDecryptingSymmetricKeyWrap
     {
         private static XmlDocument LoadXmlFromString(string xml)
         {
@@ -24,19 +22,17 @@ namespace System.Security.Cryptography.Xml.Tests
             return doc;
         }
 
-        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, RSA rsaKey, string keyName, bool useOAEP)
+        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, SymmetricAlgorithm key, string keyName, SymmetricAlgorithmFactory innerKeyFactory)
         {
             var elementToEncrypt = (XmlElement)doc.GetElementsByTagName(elementName)[0];
 
-            using (var sessionKey = Aes.Create())
+            using (SymmetricAlgorithm innerKey = innerKeyFactory.Create())
             {
-                sessionKey.KeySize = 256;
-
-                // Encrypt the session key and add it to an EncryptedKey element.
+                // Encrypt the key with another key
                 var encryptedKey = new EncryptedKey()
                 {
-                    CipherData = new CipherData(EncryptedXml.EncryptKey(sessionKey.Key, rsaKey, useOAEP)),
-                    EncryptionMethod = new EncryptionMethod(useOAEP ? EncryptedXml.XmlEncRSAOAEPUrl : EncryptedXml.XmlEncRSA15Url)
+                    CipherData = new CipherData(EncryptedXml.EncryptKey(innerKey.Key, key)),
+                    EncryptionMethod = new EncryptionMethod(TestHelpers.GetEncryptionMethodName(key, keyWrap: true))
                 };
 
                 // Specify which EncryptedData
@@ -55,7 +51,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
                     // Create an EncryptionMethod element so that the
                     // receiver knows which algorithm to use for decryption.
-                    EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url)
+                    EncryptionMethod = new EncryptionMethod(TestHelpers.GetEncryptionMethodName(innerKey))
                 };
 
                 encryptedData.KeyInfo.AddClause(new KeyInfoEncryptedKey(encryptedKey));
@@ -65,23 +61,33 @@ namespace System.Security.Cryptography.Xml.Tests
                 });
 
                 var encryptedXml = new EncryptedXml();
-                encryptedData.CipherData.CipherValue = encryptedXml.EncryptData(elementToEncrypt, sessionKey, false);
+                encryptedData.CipherData.CipherValue = encryptedXml.EncryptData(elementToEncrypt, innerKey, false);
 
                 EncryptedXml.ReplaceElement(elementToEncrypt, encryptedData, false);
             }
         }
 
-        public static void Decrypt(XmlDocument doc, RSA rsaKey, string keyName)
+        public static void Decrypt(XmlDocument doc, SymmetricAlgorithm key, string keyName)
         {
             var encrypted = new EncryptedXml(doc);
-            encrypted.AddKeyNameMapping(keyName, rsaKey);
+            encrypted.AddKeyNameMapping(keyName, key);
             encrypted.DecryptDocument();
         }
 
-        [Theory]
-        [InlineData(true)] // OAEP is recommended
-        [InlineData(false)]
-        public void AsymmetricEncryptionRoundtrip(bool useOAEP)
+        public static IEnumerable<object[]> GetSymmetricAlgorithmsPairs()
+        {
+            // DES is not supported in keywrap scenario, there is no specification string for it either
+            foreach (var first in TestHelpers.GetSymmetricAlgorithms(skipDes: true))
+            {
+                foreach (var second in TestHelpers.GetSymmetricAlgorithms(skipDes: true))
+                {
+                    yield return new object[] { first, second };
+                }
+            }
+        }
+
+        [Theory, MemberData(nameof(GetSymmetricAlgorithmsPairs))]
+        public void SymmetricKeyWrapEncryptionRoundtrip(SymmetricAlgorithmFactory keyFactory, SymmetricAlgorithmFactory innerKeyFactory)
         {
             const string testString = "some text node";
             const string exampleXmlRootElement = "example";
@@ -89,16 +95,17 @@ namespace System.Security.Cryptography.Xml.Tests
 <example>
 <test>some text node</test>
 </example>";
+            const string keyName = "mytestkey";
 
-            using (RSA key = RSA.Create())
+            using (SymmetricAlgorithm key = keyFactory.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(exampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
-                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, "rsaKey", useOAEP);
+                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, keyName, innerKeyFactory);
 
                 Assert.DoesNotContain(testString, xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
-                Decrypt(xmlDocToDecrypt, key, "rsaKey");
+                Decrypt(xmlDocToDecrypt, key, keyName);
 
                 Assert.Equal(exampleXml.Replace("\r\n", "\n"), xmlDocToDecrypt.OuterXml.Replace("\r\n", "\n"));
             }
