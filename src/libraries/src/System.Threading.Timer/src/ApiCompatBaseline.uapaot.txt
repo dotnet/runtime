@@ -1,9 +1,0 @@
-Compat issues with assembly System.Threading.Timer:
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Timer' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCallback)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCallback, System.Object, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCallback, System.Object, System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Timer.Change(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Timer.Change(System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Timer.Dispose(System.Threading.WaitHandle)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 7
