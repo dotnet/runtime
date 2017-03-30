@@ -95,4 +95,22 @@ public partial class TimerChangeTests
             Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(TimerFiringTests.MaxPositiveTimeoutInMs)), "Should have received a timer event after this new duration");
         }
     }
+
+    [Fact]
+    public void Timer_Change_Int64_Negative()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-2, (long)-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-1, (long)-2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)0xffffffff, (long)-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-1, (long)0xffffffff));
+    }
+
+    [Fact]
+    public void Timer_Change_UInt32_Int64_AfterDispose_Throws()
+    {
+        var t = new Timer(EmptyTimerTarget);
+        t.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => t.Change(0u, 0u));
+        Assert.Throws<ObjectDisposedException>(() => t.Change(0L, 0L));
+    }
 }

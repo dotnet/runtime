@@ -729,5 +729,12 @@ namespace System.Tests
 
             Assert.Equal(timeSpan, +timeSpan);
         }
+
+        [Theory]
+        [MemberData(nameof(CompareTo_TestData))]
+        public static void CompareTo_Object(TimeSpan timeSpan1, object obj, int expected)
+        {
+            Assert.Equal(expected, Math.Sign(timeSpan1.CompareTo(obj)));
+        }
     }
 }

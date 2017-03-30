@@ -11,13 +11,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="FileSystemWatcher.netstandard.cs" />
+    <Compile Include="FileSystemWatcher.cs" />
     <Compile Include="InternalBufferOverflowException.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Args.ErrorEventArgs.cs" />
     <Compile Include="Args.FileSystemEventArgs.cs" />
     <Compile Include="Args.RenamedEventArgs.cs" />

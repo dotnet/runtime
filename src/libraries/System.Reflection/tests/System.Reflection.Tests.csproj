@@ -24,7 +24,6 @@
     <Compile Include="ReflectionContextTests.cs" />
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
-    <Compile Include="FieldInfoTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">

@@ -707,5 +707,22 @@ namespace System.Linq.Expressions
             // Otherwise, it's an invalid type change.
             throw Error.MustRewriteChildToSameType(before, after, methodName);
         }
+
+        /// <summary>
+        /// Visits the children of the <see cref="DynamicExpression" />.
+        /// </summary>
+        /// <param name="node">The expression to visit.</param>
+        /// <returns>The modified expression, if it or any subexpression was modified;
+        /// otherwise, returns the original expression.</returns>
+        protected internal virtual Expression VisitDynamic(DynamicExpression node)
+        {
+            Expression[] a = VisitArguments((IArgumentProvider)node);
+            if (a == null)
+            {
+                return node;
+            }
+
+            return node.Rewrite(a);
+        }
     }
 }

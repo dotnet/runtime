@@ -1023,5 +1023,12 @@ namespace System.Tests
             public long UnixTimeMilliseconds { get; private set; }
             public long UnixTimeSeconds { get; private set; }
         }
+
+        [Fact]
+        public static void Ctor_Calendar_TimeSpan()
+        {
+            var dateTimeOffset = new DateTimeOffset(1, 1, 1, 0, 0, 0, 0, new GregorianCalendar(),TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+        }
     }
 }
