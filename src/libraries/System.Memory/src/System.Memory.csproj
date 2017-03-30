@@ -28,6 +28,7 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />
+    <Compile Include="System\SpanExtensions.Portable.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
     <Compile Include="System\ThrowHelper.cs" />
@@ -41,6 +42,9 @@
     <Reference Condition="'$(TargetGroup)' != 'netstandard1.0'" Include="System.Numerics.Vectors" />
     <Reference Condition="'$(TargetGroup)' != 'netstandard1.0'" Include="System.Runtime.CompilerServices.Unsafe" />
     <ProjectReference Condition="'$(TargetGroup)' == 'netstandard1.0'" Include="..\..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+    <Compile Include="System\SpanExtensions.Fast.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
