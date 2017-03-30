@@ -1106,14 +1106,16 @@ namespace System.Threading
             {
                 RuntimeThread.SpinWait(LockSpinCycles * SpinCount);
             }
-            else if (SpinCount < MaxSpinCount - 3)
+            else
             {
                 RuntimeThread.Sleep(0);
             }
-            else
-            {
-                RuntimeThread.Sleep(1);
-            }
+
+            // Don't want to Sleep(1) in this spin wait:
+            //   - Don't want to spin for that long, since a proper wait will follow when the spin wait fails. The artifical
+            //     delay introduced by Sleep(1) will in some cases be much longer than desired.
+            //   - Sleep(1) would put the thread into a wait state, and a proper wait will follow when the spin wait fails
+            //     anyway, so it's preferable to put the thread into the proper wait state
         }
 
         public void Dispose()
