@@ -99,7 +99,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
+    <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -13,9 +13,15 @@
   <PropertyGroup Condition="!$(NuGetTargetMoniker.StartsWith('.NETFramework'))">
     <!-- For things not .NETFramework we need the net461 targeting pack to generate facades -->
     <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
     <ForShims>true</ForShims>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="$(TargetingPackNugetPackageId)">
+      <Version>1.0.1</Version>
+    </PackageReference>
+  </ItemGroup>
   <ItemGroup>
     <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath Condition="'$(ForShims)' != 'true'">$(RefPath)</RefPath>

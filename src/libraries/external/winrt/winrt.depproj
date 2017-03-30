@@ -8,5 +8,10 @@
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

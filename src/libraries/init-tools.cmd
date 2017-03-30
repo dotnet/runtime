@@ -10,8 +10,8 @@ if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/do
 set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set PROJECT_JSON_PATH=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
-set PROJECT_JSON_FILE=%PROJECT_JSON_PATH%\project.json
-set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%BUILDTOOLS_VERSION%" }, "frameworks": { "netcoreapp1.0": { } } }
+set PROJECT_JSON_FILE=%PROJECT_JSON_PATH%\project.csproj
+set PROJECT_JSON_CONTENTS=^^^<Project Sdk=^^^"Microsoft.NET.Sdk^^^"^^^>^^^<PropertyGroup^^^>^^^<TargetFramework^^^>netcoreapp1.0^^^</TargetFramework^^^>^^^<DisableImplicitFrameworkReferences^^^>true^^^</DisableImplicitFrameworkReferences^^^>^^^</PropertyGroup^^^>^^^<ItemGroup^^^>^^^<PackageReference Include=^^^"Microsoft.DotNet.BuildTools^^^" Version=^^^"%BUILDTOOLS_VERSION%^^^" /^^^>^^^</ItemGroup^^^>^^^</Project^^^>
 set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
@@ -38,7 +38,7 @@ if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 echo Installing dotnet cli...
 if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
 set DOTNET_ZIP_NAME=dotnet-dev-win-x64.%DOTNET_VERSION%.zip
-set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
+set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
 echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> "%INIT_TOOLS_LOG%"
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { (New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%') } else { (New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_LOCAL_PATH%').Items(),16) }" >> "%INIT_TOOLS_LOG%"
@@ -67,14 +67,6 @@ set INIT_TOOLS_ERRORLEVEL=%ERRORLEVEL%
 if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
   echo ERROR: An error occured when trying to initialize the tools. Please check '%INIT_TOOLS_LOG%' for more details. 1>&2
   exit /b %INIT_TOOLS_ERRORLEVEL%
-)
-
-echo Updating CLI NuGet Frameworks map...
-robocopy "%TOOLRUNTIME_DIR%" "%TOOLRUNTIME_DIR%\dotnetcli\sdk\%DOTNET_VERSION%" NuGet.Frameworks.dll /XO >> "%INIT_TOOLS_LOG%"
-set UPDATE_CLI_ERRORLEVEL=%ERRORLEVEL%
-if %UPDATE_CLI_ERRORLEVEL% GTR 1 (
-  echo ERROR: Failed to update Nuget for CLI {Error level %UPDATE_CLI_ERRORLEVEL%}. Please check '%INIT_TOOLS_LOG%' for more details. 1>&2
-  exit /b %UPDATE_CLI_ERRORLEVEL%
 )
 
 :: Create sempahore file
