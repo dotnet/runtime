@@ -1639,7 +1639,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 
 void CodeGen::genAdjustSP(ssize_t delta)
 {
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
     if (delta == sizeof(int))
         inst_RV(INS_pop, REG_ECX, TYP_INT);
     else
@@ -9720,17 +9720,25 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         unsigned stkArgSize = 0; // Zero on all platforms except x86
 
 #if defined(_TARGET_X86_)
-
-        noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgCount * sizeof(void*));
-        stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * sizeof(void*);
-
-        noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
+        bool     fCalleePop = true;
 
         // varargs has caller pop
         if (compiler->info.compIsVarArgs)
-            stkArgSize = 0;
+            fCalleePop = false;
 
-#endif // defined(_TARGET_X86_)
+#ifdef UNIX_X86_ABI
+        if (IsCallerPop(compiler->info.compMethodInfo->args.callConv))
+            fCalleePop = false;
+#endif // UNIX_X86_ABI
+
+        if (fCalleePop)
+        {
+            noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgCount * sizeof(void*));
+            stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * sizeof(void*);
+
+            noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
+        }
+#endif // _TARGET_X86_
 
         /* Return, popping our arguments (if any) */
         instGen_Return(stkArgSize);

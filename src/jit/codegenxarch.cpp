@@ -5005,16 +5005,30 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
 #if defined(_TARGET_X86_)
+    bool fCallerPop = (call->gtFlags & GTF_CALL_POP_ARGS) != 0;
+
+#ifdef UNIX_X86_ABI
+    {
+        CorInfoCallConv callConv = CORINFO_CALLCONV_DEFAULT;
+
+        if ((callType != CT_HELPER) && call->callSig)
+        {
+            callConv = call->callSig->callConv;
+        }
+
+        fCallerPop |= IsCallerPop(callConv);
+    }
+#endif // UNIX_X86_ABI
+
     // If the callee pops the arguments, we pass a positive value as the argSize, and the emitter will
     // adjust its stack level accordingly.
     // If the caller needs to explicitly pop its arguments, we must pass a negative value, and then do the
     // pop when we're done.
     ssize_t argSizeForEmitter = stackArgBytes;
-    if ((call->gtFlags & GTF_CALL_POP_ARGS) != 0)
+    if (fCallerPop)
     {
         argSizeForEmitter = -stackArgBytes;
     }
-
 #endif // defined(_TARGET_X86_)
 
 #ifdef FEATURE_AVX_SUPPORT
@@ -5187,8 +5201,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // clang-format on
     }
 
-    genRemoveAlignmentAfterCall(call);
-
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
     {
@@ -5196,11 +5208,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         genDefineTempLabel(genPendingCallLabel);
         genPendingCallLabel = nullptr;
     }
-
-#if defined(_TARGET_X86_)
-    // The call will pop its arguments.
-    SubtractStackLevel(stackArgBytes);
-#endif // defined(_TARGET_X86_)
 
     // Update GC info:
     // All Callee arg registers are trashed and no longer contain any GC pointers.
@@ -5302,6 +5309,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         gcInfo.gcMarkRegSetNpt(RBM_INTRET);
     }
 
+    unsigned stackAdjustBias = 0;
+
 #if defined(_TARGET_X86_)
     //-------------------------------------------------------------------------
     // Create a label for tracking of region protected by the monitor in synchronized methods.
@@ -5332,11 +5341,15 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     // Is the caller supposed to pop the arguments?
-    if (((call->gtFlags & GTF_CALL_POP_ARGS) != 0) && (stackArgBytes != 0))
+    if (fCallerPop && (stackArgBytes != 0))
     {
-        genAdjustSP(stackArgBytes);
+        stackAdjustBias = stackArgBytes;
     }
+
+    SubtractStackLevel(stackArgBytes);
 #endif // _TARGET_X86_
+
+    genRemoveAlignmentAfterCall(call, stackAdjustBias);
 }
 
 // Produce code for a GT_JMP node.
@@ -7566,19 +7579,35 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
 //
 // Arguments:
 //    call - the call node.
+//    bias - additional stack adjustment
 //
-void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call)
+// Note:
+//    When bias > 0, caller should adjust stack level appropriately as
+//    bias is not considered when adjusting stack level.
+//
+void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 {
+#if defined(_TARGET_X86_)
 #if defined(UNIX_X86_ABI)
     // Put back the stack pointer if there was any padding for stack alignment
-    unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
-    if (padStkAlign != 0)
+    unsigned padStkAlign  = call->fgArgInfo->GetStkAlign();
+    unsigned padStkAdjust = padStkAlign + bias;
+
+    if (padStkAdjust != 0)
     {
-        inst_RV_IV(INS_add, REG_SPBASE, padStkAlign, EA_PTRSIZE);
+        inst_RV_IV(INS_add, REG_SPBASE, padStkAdjust, EA_PTRSIZE);
         SubtractStackLevel(padStkAlign);
         SubtractNestedAlignment(padStkAlign);
     }
-#endif // UNIX_X86_ABI
+#else  // UNIX_X86_ABI
+    if (bias != 0)
+    {
+        genAdjustSP(bias);
+    }
+#endif // !UNIX_X86_ABI_
+#else  // _TARGET_X86_
+    assert(bias == 0);
+#endif // !_TARGET_X86
 }
 
 #ifdef _TARGET_X86_

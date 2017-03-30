@@ -747,6 +747,17 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
 };
 
+#ifdef UNIX_X86_ABI
+inline bool IsCallerPop(CorInfoCallConv callConv)
+{
+    unsigned int umask = CORINFO_CALLCONV_STDCALL
+                       | CORINFO_CALLCONV_THISCALL
+                       | CORINFO_CALLCONV_FASTCALL;
+
+    return !(callConv & umask);
+}
+#endif // UNIX_X86_ABI
+
 enum CorInfoUnmanagedCallConv
 {
     // These correspond to CorUnmanagedCallingConvention
