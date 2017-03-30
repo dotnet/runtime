@@ -48,6 +48,26 @@ namespace System
             return -1;
         }
 
+        public static int IndexOfAny(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)
+        {
+            Debug.Assert(searchSpaceLength >= 0);
+            Debug.Assert(valueLength >= 0);
+
+            if (valueLength == 0)
+                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+
+            int index = -1;
+            for (int i = 0; i < valueLength; i++)
+            {
+                var tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
+                if (tempIndex != -1)
+                {
+                    index = (index == -1 || index > tempIndex) ? tempIndex : index;
+                }
+            }
+            return index;
+        }
+
         public static unsafe int IndexOf(ref byte searchSpace, byte value, int length)
         {
             Debug.Assert(length >= 0);
@@ -173,6 +193,307 @@ namespace System
         Found6:
             return (int)(byte*)(index + 6);
         Found7:
+            return (int)(byte*)(index + 7);
+        }
+
+        public static unsafe int IndexOfAny(ref byte searchSpace, byte value0, byte value1, int length)
+        {
+            Debug.Assert(length >= 0);
+
+            uint uValue0 = value0; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue1 = value1; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            IntPtr nLength = (IntPtr)(uint)length;
+#if !netstandard10
+            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
+            {
+                unchecked
+                {
+                    int unaligned = (int)(byte*)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
+                    nLength = (IntPtr)(uint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
+                }
+            }
+            SequentialScan:
+#endif
+            uint lookUp;
+            while ((byte*)nLength >= (byte*)8)
+            {
+                nLength -= 8;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found3;
+                lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found4;
+                lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found5;
+                lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found6;
+                lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found7;
+
+                index += 8;
+            }
+
+            if ((byte*)nLength >= (byte*)4)
+            {
+                nLength -= 4;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found3;
+
+                index += 4;
+            }
+
+            while ((byte*)nLength > (byte*)0)
+            {
+                nLength -= 1;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp)
+                    goto Found;
+
+                index += 1;
+            }
+#if !netstandard10
+            if (Vector.IsHardwareAccelerated)
+            {
+                if ((int)(byte*)index >= length - 1)
+                {
+                    goto NotFound;
+                }
+                nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
+                // Get comparision Vector
+                Vector<byte> values0 = GetVector(value0);
+                Vector<byte> values1 = GetVector(value1);
+                do
+                {
+                    var vData = Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index));
+                    var vMatches = Vector.BitwiseOr(
+                                    Vector.Equals(vData, values0),
+                                    Vector.Equals(vData, values1));
+
+                    if (!vMatches.Equals(Vector<byte>.Zero))
+                    {
+                        // Found match, reuse Vector values0 to keep register pressure low
+                        values0 = vMatches;
+                        break;
+                    }
+                    index += Vector<byte>.Count;
+                } while ((byte*)nLength > (byte*)index);
+
+                // Found match? Perform secondary search outside out of loop, so above loop body is small
+                if ((byte*)nLength > (byte*)index)
+                {
+                    // Find offset of first match
+                    index += LocateFirstFoundByte(values0);
+                    // goto rather than inline return to keep function smaller
+                    goto Found;
+                }
+
+                if ((int)(byte*)index <= length - 1)
+                {
+                    unchecked
+                    {
+                        nLength = (IntPtr)(length - (int)(byte*)index);
+                    }
+                    goto SequentialScan;
+                }
+            }
+            NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+#endif
+            return -1;
+            Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+            return (int)(byte*)index;
+            Found1:
+            return (int)(byte*)(index + 1);
+            Found2:
+            return (int)(byte*)(index + 2);
+            Found3:
+            return (int)(byte*)(index + 3);
+            Found4:
+            return (int)(byte*)(index + 4);
+            Found5:
+            return (int)(byte*)(index + 5);
+            Found6:
+            return (int)(byte*)(index + 6);
+            Found7:
+            return (int)(byte*)(index + 7);
+        }
+
+        public static unsafe int IndexOfAny(ref byte searchSpace, byte value0, byte value1, byte value2, int length)
+        {
+            Debug.Assert(length >= 0);
+
+            uint uValue0 = value0; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue1 = value1; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue2 = value2; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            IntPtr nLength = (IntPtr)(uint)length;
+#if !netstandard10
+            if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
+            {
+                unchecked
+                {
+                    int unaligned = (int)(byte*)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
+                    nLength = (IntPtr)(uint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
+                }
+            }
+            SequentialScan:
+#endif
+            uint lookUp;
+            while ((byte*)nLength >= (byte*)8)
+            {
+                nLength -= 8;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found3;
+                lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found4;
+                lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found5;
+                lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found6;
+                lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found7;
+
+                index += 8;
+            }
+
+            if ((byte*)nLength >= (byte*)4)
+            {
+                nLength -= 4;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found;
+                lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found1;
+                lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found2;
+                lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found3;
+
+                index += 4;
+            }
+
+            while ((byte*)nLength > (byte*)0)
+            {
+                nLength -= 1;
+
+                lookUp = Unsafe.Add(ref searchSpace, index);
+                if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
+                    goto Found;
+
+                index += 1;
+            }
+#if !netstandard10
+            if (Vector.IsHardwareAccelerated)
+            {
+                if ((int)(byte*)index >= length - 2)
+                {
+                    goto NotFound;
+                }
+                nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
+                // Get comparision Vector
+                Vector<byte> values0 = GetVector(value0);
+                Vector<byte> values1 = GetVector(value1);
+                Vector<byte> values2 = GetVector(value2);
+                do
+                {
+                    var vData = Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index));
+
+                    var vMatches = Vector.BitwiseOr(
+                                    Vector.BitwiseAnd(
+                                        Vector.Equals(vData, values0),
+                                        Vector.Equals(vData, values1)),
+                                    Vector.Equals(vData, values2));
+
+                    if (!vMatches.Equals(Vector<byte>.Zero))
+                    {
+                        // Found match, reuse Vector values0 to keep register pressure low
+                        values0 = vMatches;
+                        break;
+                    }
+                    index += Vector<byte>.Count;
+                } while ((byte*)nLength > (byte*)index);
+
+                // Found match? Perform secondary search outside out of loop, so above loop body is small
+                if ((byte*)nLength > (byte*)index)
+                {
+                    // Find offset of first match
+                    index += LocateFirstFoundByte(values0);
+                    // goto rather than inline return to keep function smaller
+                    goto Found;
+                }
+
+                if ((int)(byte*)index <= length - 2)
+                {
+                    unchecked
+                    {
+                        nLength = (IntPtr)(length - (int)(byte*)index);
+                    }
+                    goto SequentialScan;
+                }
+            }
+            NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+#endif
+            return -1;
+            Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+            return (int)(byte*)index;
+            Found1:
+            return (int)(byte*)(index + 1);
+            Found2:
+            return (int)(byte*)(index + 2);
+            Found3:
+            return (int)(byte*)(index + 3);
+            Found4:
+            return (int)(byte*)(index + 4);
+            Found5:
+            return (int)(byte*)(index + 5);
+            Found6:
+            return (int)(byte*)(index + 6);
+            Found7:
             return (int)(byte*)(index + 7);
         }
 
