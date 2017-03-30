@@ -32,12 +32,14 @@
     <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
       <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
     </ReadSigningRequired>
+    <Message Text="Attempting to sign %(FilesToSign.Identity) with authenticode %(FilesToSign.Authenticode) and strongname %(FilesToSign.StrongName)" />
   </Target>
 
   <Target Name="Build"
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
           DependsOnTargets="GetFilesToSignItems">
-    <CallTarget Targets="SignFiles" />
+    <!--ToDo: Remove ContinueOnError once we verify that signing is succeeding-->
+    <CallTarget Targets="SignFiles" ContinueOnError="true" />
     <!-- now that the files have been signed delete the marker files -->
     <Delete Files="@(SignMarkerFile)" />
   </Target>
