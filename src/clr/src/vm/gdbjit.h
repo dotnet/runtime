@@ -123,6 +123,8 @@ public:
     virtual void DumpStrings(char* ptr, int& offset) = 0;
 
     virtual void DumpDebugInfo(char* ptr, int& offset) = 0;
+
+    virtual ~DwarfDumpable() {}
 };
 
 class LocalsInfo
@@ -154,41 +156,19 @@ public:
     {
     }
 
-    virtual ~TypeInfoBase()
-    {
-        if (m_type_name != nullptr)
-        {
-            delete[] m_type_name;
-        }
-    }
-
     virtual void DumpStrings(char* ptr, int& offset) override;
     void CalculateName();
     void SetTypeHandle(TypeHandle handle);
     TypeHandle GetTypeHandle();
     TypeKey* GetTypeKey();
 
-    char* m_type_name;
+    NewArrayHolder<char> m_type_name;
     int m_type_name_offset;
     ULONG m_type_size;
     int m_type_offset;
 private:
     TypeHandle typeHandle;
     TypeKey typeKey;
-};
-
-class PrimitiveTypeInfo: public TypeInfoBase
-{
-public:
-    PrimitiveTypeInfo(TypeHandle typeHandle, int encoding)
-        : TypeInfoBase(typeHandle),
-          m_type_encoding(encoding)
-    {
-    }
-
-    void DumpDebugInfo(char* ptr, int& offset) override;
-
-    int m_type_encoding;
 };
 
 class TypeDefInfo : public DwarfDumpable
@@ -198,34 +178,23 @@ public:
     m_typedef_name(typedef_name), m_typedef_type(typedef_type), m_typedef_type_offset(0) {}
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
-    virtual ~TypeDefInfo()
-    {
-        if (m_typedef_name != nullptr)
-        {
-            delete [] m_typedef_name;
-        }
-    }
-    char *m_typedef_name;
+
+    NewArrayHolder<char> m_typedef_name;
     int m_typedef_type;
     int m_typedef_type_offset;
     int m_typedef_name_offset;
 };
 
-class ByteTypeInfo : public PrimitiveTypeInfo
+class PrimitiveTypeInfo: public TypeInfoBase
 {
 public:
-    ByteTypeInfo(TypeHandle typeHandle, int encoding) : PrimitiveTypeInfo(typeHandle, encoding)
-    {
-        m_typedef_info = new (nothrow) TypeDefInfo(nullptr, 0);
-    }
-    virtual ~ByteTypeInfo()
-    {
-        delete m_typedef_info;
-    }
+    PrimitiveTypeInfo(TypeHandle typeHandle);
+
     void DumpDebugInfo(char* ptr, int& offset) override;
     void DumpStrings(char* ptr, int& offset) override;
 
-    TypeDefInfo* m_typedef_info;
+    int m_type_encoding;
+    NewHolder<TypeDefInfo> m_typedef_info;
 };
 
 class RefTypeInfo: public TypeInfoBase
@@ -235,6 +204,8 @@ public:
         : TypeInfoBase(typeHandle),
           m_value_type(value_type)
     {
+        m_type_size = sizeof(TADDR);
+        CalculateName();
     }
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
@@ -245,27 +216,32 @@ class NamedRefTypeInfo: public RefTypeInfo
 {
 public:
     NamedRefTypeInfo(TypeHandle typeHandle, TypeInfoBase *value_type)
-        : RefTypeInfo(typeHandle, value_type)
+        : RefTypeInfo(typeHandle, value_type), m_value_type_storage(value_type)
     {
     }
+
     void DumpDebugInfo(char* ptr, int& offset) override;
+
+    NewHolder<TypeInfoBase> m_value_type_storage;
 };
 
 class FunctionMemberPtrArrayHolder;
+class ArrayTypeInfo;
 
 class ClassTypeInfo: public TypeInfoBase
 {
 public:
     ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMemberPtrArrayHolder &method);
-    ~ClassTypeInfo();
 
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
 
     int m_num_members;
-    TypeMember* members;
+    NewArrayHolder<TypeMember> members;
     TypeInfoBase* m_parent;
     FunctionMemberPtrArrayHolder &m_method;
+    NewHolder<ArrayTypeInfo> m_array_type;
+    NewHolder<ArrayTypeInfo> m_array_bounds_type;
 };
 
 class TypeMember: public DwarfDumpable
@@ -280,19 +256,11 @@ public:
     {
     }
 
-    ~TypeMember()
-    {
-        if (m_member_name != nullptr)
-        {
-            delete[] m_member_name;
-        }
-    }
-
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
     void DumpStaticDebugInfo(char* ptr, int& offset);
 
-    char* m_member_name;
+    NewArrayHolder<char> m_member_name;
     int m_member_name_offset;
     int m_member_offset;
     TADDR m_static_member_address;
@@ -307,14 +275,6 @@ public:
           m_count(count),
           m_elem_type(elemType)
     {
-    }
-
-    ~ArrayTypeInfo()
-    {
-        if (m_elem_type != nullptr)
-        {
-            delete m_elem_type;
-        }
     }
 
     void DumpDebugInfo(char* ptr, int& offset) override;
@@ -350,15 +310,10 @@ public:
     {
     }
 
-    virtual ~VarDebugInfo()
-    {
-        delete[] m_var_name;
-    }
-
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
 
-    char* m_var_name;
+    NewArrayHolder<char> m_var_name;
     int m_var_abbrev;
     int m_var_name_offset;
     int m_il_index;
@@ -373,8 +328,8 @@ struct Elf_Symbol;
 class NotifyGdb
 {
 public:
-    static void MethodCompiled(MethodDesc* MethodDescPtr);
-    static void MethodDropped(MethodDesc* MethodDescPtr);
+    static void MethodCompiled(MethodDesc* methodDescPtr);
+    static void MethodDropped(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {
@@ -432,27 +387,26 @@ private:
         unsigned MemSize;
         MemBuf() : MemPtr(0), MemSize(0)
         {}
-        bool Resize(unsigned newSize)
+        void Resize(unsigned newSize)
         {
             if (newSize == 0)
             {
                 MemPtr = nullptr;
                 MemSize = 0;
-                return true;
+                return;
             }
-            char *tmp = new (nothrow) char [newSize];
-            if (tmp == nullptr)
-                return false;
+            char *tmp = new char [newSize];
             memmove(tmp, MemPtr.GetValue(), newSize < MemSize ? newSize : MemSize);
             MemPtr = tmp;
             MemSize = newSize;
-            return true;
         }
     };
 
+    static void OnMethodCompiled(MethodDesc* methodDescPtr);
+
     static int GetSectionIndex(const char *sectName);
     static bool BuildELFHeader(MemBuf& buf);
-    static bool BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
+    static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
                                    int symbolCount);
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
                                         NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
@@ -511,11 +465,6 @@ public:
 #endif
     }
 
-    virtual ~FunctionMember()
-    {
-        delete[] vars;
-    }
-
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
     void DumpTryCatchDebugInfo(char* ptr, int& offset);
@@ -536,7 +485,7 @@ public:
     uint8_t m_num_locals;
     uint16_t m_num_vars;
     int m_entry_offset;
-    VarDebugInfo* vars;
+    NewArrayHolder<VarDebugInfo> vars;
     SymbolsInfo* lines;
     unsigned nlines;
     int m_linkage_name_offset;
