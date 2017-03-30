@@ -22,11 +22,11 @@ namespace System.Security.Cryptography.Xml.Tests
             return doc;
         }
 
-        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, SymmetricAlgorithm key, string keyName, Func<SymmetricAlgorithm> innerKeyCtor)
+        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, SymmetricAlgorithm key, string keyName, SymmetricAlgorithmFactory innerKeyFactory)
         {
             var elementToEncrypt = (XmlElement)doc.GetElementsByTagName(elementName)[0];
 
-            using (SymmetricAlgorithm innerKey = innerKeyCtor())
+            using (SymmetricAlgorithm innerKey = innerKeyFactory.Create())
             {
                 // Encrypt the key with another key
                 var encryptedKey = new EncryptedKey()
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Theory, MemberData(nameof(GetSymmetricAlgorithmsPairs))]
-        public void SymmetricKeyWrapEncryptionRoundtrip(Func<SymmetricAlgorithm> keyCtor, Func<SymmetricAlgorithm> innerKeyCtor)
+        public void SymmetricKeyWrapEncryptionRoundtrip(SymmetricAlgorithmFactory keyFactory, SymmetricAlgorithmFactory innerKeyFactory)
         {
             const string testString = "some text node";
             const string exampleXmlRootElement = "example";
@@ -96,11 +96,11 @@ namespace System.Security.Cryptography.Xml.Tests
 </example>";
             const string keyName = "mytestkey";
 
-            using (SymmetricAlgorithm key = keyCtor())
+            using (SymmetricAlgorithm key = keyFactory.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(exampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
-                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, keyName, innerKeyCtor);
+                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, keyName, innerKeyFactory);
 
                 Assert.DoesNotContain(testString, xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
