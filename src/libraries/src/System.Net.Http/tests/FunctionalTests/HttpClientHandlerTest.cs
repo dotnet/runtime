@@ -278,6 +278,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CompressedServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         public async Task GetAsync_DefaultAutomaticDecompression_ContentDecompressed(Uri server)
         {
             using (var client = new HttpClient())
