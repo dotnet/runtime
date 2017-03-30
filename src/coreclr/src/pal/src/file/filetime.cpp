@@ -81,8 +81,8 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE);
    Both epochs are Gregorian. 1970 - 1601 = 369. Assuming a leap
    year every four years, 369 / 4 = 92. However, 1700, 1800, and 1900
    were NOT leap years, so 89 leap years, 280 non-leap years.
-   89 * 366 + 280 * 365 = 134744 days between epochs. Of course
-   60 * 60 * 24 = 86400 seconds per day, so 134744 * 86400 =
+   89 * 366 + 280 * 365 = 134774 days between epochs. Of course
+   60 * 60 * 24 = 86400 seconds per day, so 134774 * 86400 =
    11644473600 = SECS_BETWEEN_1601_AND_1970_EPOCHS.
    
    To 2001:
