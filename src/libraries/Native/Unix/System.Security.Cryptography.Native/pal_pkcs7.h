@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_crypto_types.h"
-
-#include <openssl/pkcs7.h>
+#include "opensslshim.h"
 
 /*
 Reads a PKCS7 instance in PEM format from a BIO.

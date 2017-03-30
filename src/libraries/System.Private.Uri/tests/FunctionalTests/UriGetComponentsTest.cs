@@ -53,9 +53,9 @@ namespace System.PrivateUri.Tests
             // IP Address containing 0, 00 and 000
             testUri = new Uri("abcd://123.0.10.100/dir");
             Assert.Equal("123.0.10.100", testUri.Authority);
-            testUri = new Uri("efgh://123.00.10.100/dir");
+            testUri = new Uri("efghi://123.00.10.100/dir");
             Assert.Equal("123.00.10.100", testUri.Authority);
-            testUri = new Uri("ijkl://123.000.10.100/dir");
+            testUri = new Uri("ijklmn://123.000.10.100/dir");
             Assert.Equal("123.000.10.100", testUri.Authority);
 
             // Known limitation: port will always be canonicalized since it is exposed as an int.

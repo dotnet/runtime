@@ -12,9 +12,9 @@ internal partial class Interop
 {
     public static unsafe void CheckForAvailableVirtualMemory(ulong nativeSize)
     {
-        Interop.mincore.MEMORYSTATUSEX memStatus;
-        memStatus.dwLength = (uint)sizeof(Interop.mincore.MEMORYSTATUSEX);
-        Interop.mincore.GlobalMemoryStatusEx(out memStatus);
+        Interop.Kernel32.MEMORYSTATUSEX memStatus;
+        memStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
+        Interop.Kernel32.GlobalMemoryStatusEx(out memStatus);
         ulong totalVirtual = memStatus.ullTotalVirtual;
         if (nativeSize >= totalVirtual)
         {
@@ -24,7 +24,7 @@ internal partial class Interop
 
     public static SafeMemoryMappedFileHandle CreateFileMapping(
             SafeFileHandle hFile,
-            ref mincore.SECURITY_ATTRIBUTES securityAttributes,
+            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
             string name)
@@ -33,12 +33,12 @@ internal partial class Interop
         int capacityHigh, capacityLow;
         SplitLong(maximumSize, out capacityHigh, out capacityLow);
 
-        return Interop.mincore.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
+        return Interop.Kernel32.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
     }
 
     public static SafeMemoryMappedFileHandle CreateFileMapping(
             IntPtr hFile,
-            ref mincore.SECURITY_ATTRIBUTES securityAttributes,
+            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
             string name)
@@ -47,7 +47,7 @@ internal partial class Interop
         int capacityHigh, capacityLow;
         SplitLong(maximumSize, out capacityHigh, out capacityLow);
 
-        return Interop.mincore.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
+        return Interop.Kernel32.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
     }
 
     public static SafeMemoryMappedViewHandle MapViewOfFile(
@@ -60,7 +60,7 @@ internal partial class Interop
         int offsetHigh, offsetLow;
         SplitLong(fileOffset, out offsetHigh, out offsetLow);
 
-        return Interop.mincore.MapViewOfFile(hFileMappingObject, desiredAccess, offsetHigh, offsetLow, numberOfBytesToMap);
+        return Interop.Kernel32.MapViewOfFile(hFileMappingObject, desiredAccess, offsetHigh, offsetLow, numberOfBytesToMap);
     }
 
     public static SafeMemoryMappedFileHandle OpenFileMapping(
@@ -68,7 +68,7 @@ internal partial class Interop
             bool inheritHandle,
             string name)
     {
-        return Interop.mincore.OpenFileMapping(desiredAccess, inheritHandle, name);
+        return Interop.Kernel32.OpenFileMapping(desiredAccess, inheritHandle, name);
     }
 
     public static IntPtr VirtualAlloc(
@@ -77,7 +77,7 @@ internal partial class Interop
             int allocationType,
             int protection)
     {
-        return Interop.mincore.VirtualAlloc(baseAddress, size, allocationType, protection);
+        return Interop.Kernel32.VirtualAlloc(baseAddress, size, allocationType, protection);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

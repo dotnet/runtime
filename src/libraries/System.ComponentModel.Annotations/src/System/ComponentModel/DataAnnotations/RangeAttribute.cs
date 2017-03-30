@@ -187,7 +187,7 @@ namespace System.ComponentModel.DataAnnotations
                             SR.RangeAttribute_Must_Set_Operand_Type);
                     }
                     Type comparableType = typeof(IComparable);
-                    if (!comparableType.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()))
+                    if (!comparableType.IsAssignableFrom(type))
                     {
                         throw new InvalidOperationException(
                             string.Format(

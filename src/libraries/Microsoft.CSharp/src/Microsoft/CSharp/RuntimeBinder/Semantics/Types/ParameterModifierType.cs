@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class ParameterModifierType : CType
+    internal sealed class ParameterModifierType : CType
     {
         public bool isOut;            // True for out parameter, false for ref parameter.
 

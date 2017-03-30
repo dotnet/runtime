@@ -23,7 +23,7 @@ namespace System.Data.SqlClient
         private UpdateRowSource _updatedRowSource = UpdateRowSource.Both;
         private bool _designTimeInvisible;
 
-        private readonly static DiagnosticListener _diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
+        private static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
         private bool _parentOperationStarted = false;
 
         // Prepare
@@ -67,7 +67,7 @@ namespace System.Data.SqlClient
         private TaskCompletionSource<object> _reconnectionCompletionSource = null;
 
 #if DEBUG
-        static internal int DebugForceAsyncWriteDelay { get; set; }
+        internal static int DebugForceAsyncWriteDelay { get; set; }
 #endif
         internal bool InPrepare
         {
@@ -136,7 +136,7 @@ namespace System.Data.SqlClient
             internal void SetActiveConnectionAndResult(TaskCompletionSource<object> completion, string endMethod, SqlConnection activeConnection)
             {
                 Debug.Assert(activeConnection != null, "Unexpected null connection argument on SetActiveConnectionAndResult!");
-                TdsParser parser = activeConnection.Parser;
+                TdsParser parser = activeConnection?.Parser;
                 if ((parser == null) || (parser.State == TdsParserState.Closed) || (parser.State == TdsParserState.Broken))
                 {
                     throw ADP.ClosedConnectionError();
@@ -144,7 +144,7 @@ namespace System.Data.SqlClient
 
                 _cachedAsyncCloseCount = activeConnection.CloseCount;
                 _cachedAsyncResult = completion;
-                if (null != activeConnection && !parser.MARSOn)
+                if (!parser.MARSOn)
                 {
                     if (activeConnection.AsyncCommandInProgress)
                         throw SQL.MARSUnspportedOnConnection();
@@ -1592,7 +1592,7 @@ namespace System.Data.SqlClient
 
         new public Task<SqlDataReader> ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
         {
-            Guid operationId;
+            Guid operationId = default(Guid);
             if (!_parentOperationStarted)
                 operationId = _diagnosticListener.WriteCommandBefore(this);
 
@@ -1792,7 +1792,7 @@ namespace System.Data.SqlClient
         }
 
         // Yukon- column ordinals (this array indexed by ProcParamsColIndex
-        static readonly internal string[] PreKatmaiProcParamsNames = new string[] {
+        internal static readonly string[] PreKatmaiProcParamsNames = new string[] {
             "PARAMETER_NAME",           // ParameterName,
             "PARAMETER_TYPE",           // ParameterType,
             "DATA_TYPE",                // DataType
@@ -1811,7 +1811,7 @@ namespace System.Data.SqlClient
         };
 
         // Katmai+ column ordinals (this array indexed by ProcParamsColIndex
-        static readonly internal string[] KatmaiProcParamsNames = new string[] {
+        internal static readonly string[] KatmaiProcParamsNames = new string[] {
             "PARAMETER_NAME",           // ParameterName,
             "PARAMETER_TYPE",           // ParameterType,
             null,                       // DataType, removed from Katmai+

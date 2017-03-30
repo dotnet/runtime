@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{1FF891B4-D3DE-4CCE-887C-CB48F5351A45}</ProjectGuid>
+    <RootNamespace>Microsoft.SqlServer.TDS.EndPoint</RootNamespace>
+    <AssemblyName>Microsoft.SqlServer.TDS.EndPoint</AssemblyName>
+    <ClsCompliant>false</ClsCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FederatedAuthentication\FederatedAuthenticationTicketService.cs" />
+    <Compile Include="FederatedAuthentication\IFederatedAuthenticationTicket.cs" />
+    <Compile Include="FederatedAuthentication\Rps.cs" />
+    <Compile Include="FederatedAuthentication\RpsTicket.cs" />
+    <Compile Include="ITDSClientContext.cs" />
+    <Compile Include="ITDSServerSession.cs" />
+    <Compile Include="SSPI\SecBuffer.cs" />
+    <Compile Include="SSPI\SecBufferDescType.cs" />
+    <Compile Include="SSPI\SecConstants.cs" />
+    <Compile Include="SSPI\SecBufferDesc.cs" />
+    <Compile Include="SSPI\SecBufferType.cs" />
+    <Compile Include="SSPI\SecContextRequirements.cs" />
+    <Compile Include="SSPI\SecDataRepresentation.cs" />
+    <Compile Include="SSPI\SecPgkCredentials.cs" />
+    <Compile Include="SSPI\SecPkgInfo.cs" />
+    <Compile Include="SSPI\SecResult.cs" />
+    <Compile Include="SSPI\SecurityHandle.cs" />
+    <Compile Include="SSPI\SecurityInteger.cs" />
+    <Compile Include="PlaceholderStream.cs" />
+    <Compile Include="SSPI\SSPIResponse.cs" />
+    <Compile Include="TDSClientEndPoint.cs" />
+    <Compile Include="ITDSClient.cs" />
+    <Compile Include="ITDSServer.cs" />
+    <Compile Include="TDSClientParser.cs" />
+    <Compile Include="TDSEndPointInfo.cs" />
+    <Compile Include="TDSEndPointTransportType.cs" />
+    <Compile Include="TDSParser.cs" />
+    <Compile Include="TDSServerEndPoint.cs" />
+    <Compile Include="TDSServerEndPointConnection.cs" />
+    <Compile Include="TDSServerParser.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="SSPI\SSPIContext.Windows.cs" />
+    <Compile Include="SSPI\SecurityWrapper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <Compile Include="SSPI\SSPIContext.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TDS\TDS.csproj">
+      <Name>TDS</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

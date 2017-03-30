@@ -6,8 +6,6 @@
 
 //------------------------------------------------------------------------------
 
-using Res = System.SR;
-
 
 namespace System.Data
 {
@@ -29,22 +27,22 @@ namespace System.Data
         // The resource Data.txt will ensure proper string text based on the appropriate
         // locale.
 
-        static internal void TraceExceptionAsReturnValue(Exception e)
+        internal static void TraceExceptionAsReturnValue(Exception e)
         {
         }
 
         //
         // COM+ exceptions
         //
-        static internal ArgumentException _Argument(string error)
+        internal static ArgumentException _Argument(string error)
         {
             ArgumentException e = new ArgumentException(error);
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
             return e;
         }
-        static public Exception InvalidOffsetLength()
+        public static Exception InvalidOffsetLength()
         {
-            return _Argument(Res.GetString(Res.Data_InvalidOffsetLength));
+            return _Argument(SR.GetString(SR.Data_InvalidOffsetLength));
         }
     }// ExceptionBuilder
 }

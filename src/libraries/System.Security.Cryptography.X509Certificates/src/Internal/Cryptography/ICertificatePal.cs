@@ -32,6 +32,7 @@ namespace Internal.Cryptography
         X500DistinguishedName IssuerName { get; }
         IEnumerable<X509Extension> Extensions { get; }
         RSA GetRSAPrivateKey();
+        DSA GetDSAPrivateKey();
         ECDsa GetECDsaPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);

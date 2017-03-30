@@ -9,6 +9,7 @@ namespace System.Reflection.Context
     public class CustomReflectionContextTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InstantiateContext_Throws()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new DerivedContext());

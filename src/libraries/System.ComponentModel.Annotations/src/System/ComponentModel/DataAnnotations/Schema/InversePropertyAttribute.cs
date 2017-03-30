@@ -23,7 +23,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             if (string.IsNullOrWhiteSpace(property))
             {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                    SR.ArgumentIsNullOrWhitespace, "property"));
+                    SR.ArgumentIsNullOrWhitespace, nameof(property)));
             }
             _property = property;
         }

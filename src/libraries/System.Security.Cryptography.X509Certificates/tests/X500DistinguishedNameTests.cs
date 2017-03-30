@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3892, PlatformID.AnyUnix)]
+        [ActiveIssue(3892, TestPlatforms.AnyUnix)]
         public static void PrintMultiComponentRdn()
         {
             byte[] encoded = (

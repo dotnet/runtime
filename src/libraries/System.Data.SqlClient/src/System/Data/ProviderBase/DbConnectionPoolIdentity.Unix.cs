@@ -12,10 +12,13 @@ namespace System.Data.ProviderBase
 {
     partial class DbConnectionPoolIdentity
     {
-        static internal DbConnectionPoolIdentity GetCurrent()
+        internal static DbConnectionPoolIdentity GetCurrent()
         {
-            throw new PlatformNotSupportedException();
+            string sidString = (!string.IsNullOrWhiteSpace(System.Environment.UserDomainName) ? System.Environment.UserDomainName + "\\" : "")
+                                + System.Environment.UserName;
+            bool isNetwork = false;
+            bool isRestricted = false;
+            return new DbConnectionPoolIdentity(sidString, isRestricted, isNetwork);
         }
     }
 }
-

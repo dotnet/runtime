@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -15,39 +13,20 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get { throw new PlatformNotSupportedException(); }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
         /// Returns the amount of time the thread has spent running code inside the operating
         /// system core.
         /// </summary>
-        public TimeSpan PrivilegedProcessorTime
-        {
-            get
-            {
-                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById(_processId, (ulong)_threadInfo._threadId);
-                if (info.HasValue)
-                    return new TimeSpan((long)info.Value.pth_system_time);
-                else
-                    throw new System.ComponentModel.Win32Exception();
-            }
-        }
+        public TimeSpan PrivilegedProcessorTime => new TimeSpan((long)GetThreadInfo().pth_system_time);
 
         /// <summary>Returns the time the associated thread was started.</summary>
         public DateTime StartTime
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -59,11 +38,8 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById(_processId, (ulong)_threadInfo._threadId);
-                if (info.HasValue)
-                    return new TimeSpan((long)(info.Value.pth_user_time + info.Value.pth_system_time));
-                else
-                    throw new System.ComponentModel.Win32Exception();
+                Interop.libproc.proc_threadinfo info = GetThreadInfo();
+                return new TimeSpan((long)(info.pth_user_time + info.pth_system_time));
             }
         }
 
@@ -71,21 +47,20 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
-        public TimeSpan UserProcessorTime
-        {
-            get
-            {
-                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById(_processId, (ulong)_threadInfo._threadId);
-                if (info.HasValue)
-                    return new TimeSpan((long)info.Value.pth_user_time);
-                else
-                    throw new System.ComponentModel.Win32Exception();
-            }
-        }
+        public TimeSpan UserProcessorTime => new TimeSpan((long)GetThreadInfo().pth_user_time);
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        private Interop.libproc.proc_threadinfo GetThreadInfo()
+        {
+            Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById(_processId, _threadInfo._threadId);
+            if (!info.HasValue)
+            {
+                throw new InvalidOperationException(SR.Format(SR.ThreadExited, Id));
+            }
+            return info.GetValueOrDefault();
+        }
     }
 }

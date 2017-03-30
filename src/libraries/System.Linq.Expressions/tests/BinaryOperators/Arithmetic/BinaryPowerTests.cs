@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -354,7 +353,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Power(Expression.Parameter(typeof(double), "a"), Expression.Parameter(typeof(double), "b"));
+            BinaryExpression e = Expression.Power(Expression.Parameter(typeof(double), "a"), Expression.Parameter(typeof(double), "b"));
             Assert.Equal("(a ** b)", e.ToString());
         }
 
@@ -364,42 +363,42 @@ namespace System.Linq.Expressions.Tests
 
         public static byte PowerByte(byte a, byte b)
         {
-            return (byte)Math.Pow(a, b);
+            return unchecked((byte)Math.Pow(a, b));
         }
 
         public static sbyte PowerSByte(sbyte a, sbyte b)
         {
-            return (sbyte)Math.Pow(a, b);
+            return unchecked((sbyte)Math.Pow(a, b));
         }
 
         public static ushort PowerUShort(ushort a, ushort b)
         {
-            return (ushort)Math.Pow(a, b);
+            return unchecked((ushort)Math.Pow(a, b));
         }
 
         public static short PowerShort(short a, short b)
         {
-            return (short)Math.Pow(a, b);
+            return unchecked((short)Math.Pow(a, b));
         }
 
         public static uint PowerUInt(uint a, uint b)
         {
-            return (uint)Math.Pow(a, b);
+            return unchecked((uint)Math.Pow(a, b));
         }
 
         public static int PowerInt(int a, int b)
         {
-            return (int)Math.Pow(a, b);
+            return unchecked((int)Math.Pow(a, b));
         }
 
         public static ulong PowerULong(ulong a, ulong b)
         {
-            return (ulong)Math.Pow(a, b);
+            return unchecked((ulong)Math.Pow(a, b));
         }
 
         public static long PowerLong(long a, long b)
         {
-            return (long)Math.Pow(a, b);
+            return unchecked((long)Math.Pow(a, b));
         }
 
         public static float PowerFloat(float a, float b)
@@ -419,7 +418,7 @@ namespace System.Linq.Expressions.Tests
 
         public static char PowerChar(char a, char b)
         {
-            return (char)Math.Pow(a, b);
+            return unchecked((char)Math.Pow(a, b));
         }
 
         #endregion

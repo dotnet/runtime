@@ -65,7 +65,7 @@ namespace System.Net.Http
     // time still allowing the native code to continue using its GCHandle and lookup the associated state as long as it's alive.
     // Yet then when an async read is made on the response message, we want to postpone such finalization and ensure that the async
     // read can be appropriately completed with control and reference ownership given back to the reader. As such, we do two things:
-    // we make the response stream finalizable, and we make the GCHandle be to a wrapper object for the EasyRequest rather than to 
+    // we make the response stream finalizable, and we make the GCHandle be to a wrapper object for the EasyRequest rather than to
     // the EasyRequest itself.  That wrapper object maintains a weak reference to the EasyRequest as well as sometimes maintaining
     // a strong reference.  When the request starts out, the GCHandle is created to the wrapper, which has a strong reference to
     // the EasyRequest (which also back references to the wrapper so that the wrapper can be accessed via it).  The GCHandle is
@@ -97,7 +97,7 @@ namespace System.Net.Http
         private const string UriSchemeHttps = "https";
         private const string EncodingNameGzip = "gzip";
         private const string EncodingNameDeflate = "deflate";
-        
+
         private const int MaxRequestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
         private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
@@ -127,8 +127,6 @@ namespace System.Net.Http
         private static string s_curlVersionDescription;
         private static string s_curlSslVersionDescription;
 
-        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
-
         private readonly MultiAgent _agent;
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
@@ -156,7 +154,7 @@ namespace System.Net.Http
 
         private object LockObject { get { return _agent; } }
 
-        #endregion        
+        #endregion
 
         static CurlHandler()
         {
@@ -167,7 +165,7 @@ namespace System.Net.Http
             s_supportsAutomaticDecompression = (features & Interop.Http.CurlFeatures.CURL_VERSION_LIBZ) != 0;
             s_supportsHttp2Multiplexing = (features & Interop.Http.CurlFeatures.CURL_VERSION_HTTP2) != 0 && Interop.Http.GetSupportsHttp2Multiplexing();
 
-            if (HttpEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTrace($"libcurl: {CurlVersionDescription} {CurlSslVersionDescription} {features}");
             }
@@ -249,7 +247,23 @@ namespace System.Net.Http
             }
         }
 
-        internal X509Certificate2Collection ClientCertificates => _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection());
+        internal X509Certificate2Collection ClientCertificates
+        {
+            get
+            {
+                if (_clientCertificateOption != ClientCertificateOption.Manual)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
+                }
+
+                if (_clientCertificates == null)
+                {
+                    _clientCertificates = new X509Certificate2Collection();
+                }
+
+                return _clientCertificates;
+            }
+        }
 
         internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
         {
@@ -282,8 +296,6 @@ namespace System.Net.Http
             }
         }
 
-        private SslProtocols ActualSslProtocols => this.SslProtocols != SslProtocols.None ? this.SslProtocols : SecurityProtocol.DefaultSecurityProtocols;
-
         internal bool SupportsAutomaticDecompression => s_supportsAutomaticDecompression;
 
         internal DecompressionMethods AutomaticDecompression
@@ -314,7 +326,7 @@ namespace System.Net.Http
         {
             get { return _useCookie; }
             set
-            {               
+            {
                 CheckDisposedOrStarted();
                 _useCookie = value;
             }
@@ -462,8 +474,6 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
-
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
             var easy = new EasyRequest(this, request, cancellationToken);
@@ -476,8 +486,6 @@ namespace System.Net.Http
             {
                 easy.CleanupAndFailRequest(exc);
             }
-
-            s_diagnosticListener.LogHttpResponse(easy.Task, loggingRequestId);
 
             return easy.Task;
         }
@@ -568,7 +576,7 @@ namespace System.Net.Http
             catch (CookieException e)
             {
                 EventSourceTrace(
-                    "Malformed cookie parsing failed: {0}, server: {1}, cookie: {2}", 
+                    "Malformed cookie parsing failed: {0}, server: {1}, cookie: {2}",
                     e.Message, state._requestMessage.RequestUri, cookieHeader,
                     easy: state);
             }
@@ -680,18 +688,16 @@ namespace System.Net.Http
                 string.Equals(credential1.Password, credential2.Password, StringComparison.Ordinal);
         }
 
-        private static bool EventSourceTracingEnabled { get { return HttpEventSource.Log.IsEnabled(); } }
-
         // PERF NOTE:
         // These generic overloads of EventSourceTrace (and similar wrapper methods in some of the other CurlHandler
         // nested types) exist to allow call sites to call EventSourceTrace without boxing and without checking
-        // EventSourceTracingEnabled.  Do not remove these without fixing the call sites accordingly.
+        // NetEventSource.IsEnabled.  Do not remove these without fixing the call sites accordingly.
 
         private static void EventSourceTrace<TArg0>(
             string formatMessage, TArg0 arg0,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(string.Format(formatMessage, arg0), agent, easy, memberName);
             }
@@ -701,17 +707,17 @@ namespace System.Net.Http
             (string formatMessage, TArg0 arg0, TArg1 arg1, TArg2 arg2,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(string.Format(formatMessage, arg0, arg1, arg2), agent, easy, memberName);
             }
         }
 
         private static void EventSourceTrace(
-            string message, 
+            string message,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(message, agent, easy, memberName);
             }
@@ -725,7 +731,7 @@ namespace System.Net.Http
                 agent = easy._associatedMultiAgent;
             }
 
-            HttpEventSource.Log.HandlerMessage(
+            if (NetEventSource.IsEnabled) NetEventSource.Log.HandlerMessage(
                 (agent?.RunningWorkerId).GetValueOrDefault(),
                 easy != null ? easy.Task.Id : 0,
                 memberName,
@@ -767,7 +773,7 @@ namespace System.Net.Http
             }
             else if (!chunkedMode)
             {
-                // Make sure Transfer-Encoding: chunked header is set, 
+                // Make sure Transfer-Encoding: chunked header is set,
                 // as we have content to send but no known length for it.
                 request.Headers.TransferEncodingChunked = true;
             }

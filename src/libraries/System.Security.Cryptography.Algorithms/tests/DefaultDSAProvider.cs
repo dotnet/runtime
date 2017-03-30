@@ -17,6 +17,16 @@ namespace System.Security.Cryptography.Dsa.Tests
             dsa.KeySize = keySize;
             return dsa;
         }
+
+        public bool SupportsFips186_3
+        {
+            get
+            {
+                return !(PlatformDetection.IsWindows7 || PlatformDetection.IsOSX);
+            }
+        }
+
+        public bool SupportsKeyGeneration => !PlatformDetection.IsOSX;
     }
 
     public partial class DSAFactory

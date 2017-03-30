@@ -3,22 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
+    internal interface ILocalCache
+    {
+        LocalBuilder GetLocal(Type type);
+
+        void FreeLocal(LocalBuilder local);
+    }
+
     /// <summary>
     /// LambdaCompiler is responsible for compiling individual lambda (LambdaExpression). The complete tree may
     /// contain multiple lambdas, the Compiler class is responsible for compiling the whole tree, individual
     /// lambdas are then compiled by the LambdaCompiler.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
-    internal sealed partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler : ILocalCache
     {
         private delegate void WriteBack(LambdaCompiler compiler);
 
@@ -52,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
         private readonly BoundConstants _boundConstants;
 
         // Free list of locals, so we reuse them rather than creating new ones
-        private readonly KeyedQueue<Type, LocalBuilder> _freeLocals = new KeyedQueue<Type, LocalBuilder>();
+        private readonly KeyedStack<Type, LocalBuilder> _freeLocals = new KeyedStack<Type, LocalBuilder>();
 
         /// <summary>
         /// Creates a lambda compiler that will compile to a dynamic method
@@ -67,12 +72,12 @@ namespace System.Linq.Expressions.Compiler
             _lambda = lambda;
             _method = method;
 
-            // In a Win8 immersive process user code is not allowed to access non-W8P framework APIs through 
+            // In a Win8 immersive process user code is not allowed to access non-W8P framework APIs through
             // reflection or RefEmit. Framework code, however, is given an exemption.
             // This is to make sure that user code cannot access non-W8P framework APIs via ExpressionTree.
 
             // TODO: This API is not available, is there an alternative way to achieve the same.
-            // method.ProfileAPICheck = true; 
+            // method.ProfileAPICheck = true;
 
             _ilg = method.GetILGenerator();
 
@@ -108,7 +113,7 @@ namespace System.Linq.Expressions.Compiler
 
             _tree = tree;
             _lambda = lambda;
-            _typeBuilder = (TypeBuilder)method.DeclaringType.GetTypeInfo();
+            _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
             _hasClosureArgument = hasClosureArgument;
 
@@ -155,21 +160,12 @@ namespace System.Linq.Expressions.Compiler
             return _method.ToString();
         }
 
-        internal ILGenerator IL
-        {
-            get { return _ilg; }
-        }
+        internal ILGenerator IL => _ilg;
 
-        internal ReadOnlyCollection<ParameterExpression> Parameters
-        {
-            get { return _lambda.Parameters; }
-        }
+        internal IParameterProvider Parameters => _lambda;
 
 #if FEATURE_COMPILE_TO_METHODBUILDER
-        internal bool CanEmitBoundConstants
-        {
-            get { return _method is DynamicMethod; }
-        }
+        internal bool CanEmitBoundConstants => _method is DynamicMethod;
 #endif
 
         #region Compiler entry points
@@ -198,7 +194,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Mutates the MethodBuilder parameter, filling in IL, parameters,
         /// and return type.
-        /// 
+        ///
         /// (probably shouldn't be modifying parameters/return type...)
         /// </summary>
         internal static void Compile(LambdaExpression lambda, MethodBuilder method)
@@ -226,26 +222,12 @@ namespace System.Linq.Expressions.Compiler
             return VariableBinder.Bind(lambda);
         }
 
-        internal LocalBuilder GetLocal(Type type)
+        public LocalBuilder GetLocal(Type type) => _freeLocals.TryPop(type) ?? _ilg.DeclareLocal(type);
+
+        public void FreeLocal(LocalBuilder local)
         {
-            Debug.Assert(type != null);
-
-            LocalBuilder local;
-            if (_freeLocals.TryDequeue(type, out local))
-            {
-                Debug.Assert(type == local.LocalType);
-                return local;
-            }
-
-            return _ilg.DeclareLocal(type);
-        }
-
-        internal void FreeLocal(LocalBuilder local)
-        {
-            if (local != null)
-            {
-                _freeLocals.Enqueue(local.LocalType, local);
-            }
+            Debug.Assert(local != null);
+            _freeLocals.Push(local.LocalType, local);
         }
 
         internal LocalBuilder GetNamedLocal(Type type, ParameterExpression variable)

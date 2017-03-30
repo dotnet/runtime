@@ -189,7 +189,7 @@ namespace System.Xml.Tests
 
                 // for function elemNamespace_13
                 {
-                    this.AddChild(new CVariation(elemNamespace_13) { Attribute = new Variation("Try to re-define NS prefix on attribute which is aleady defined on an element") { id = 13, Pri = 2 } });
+                    this.AddChild(new CVariation(elemNamespace_13) { Attribute = new Variation("Try to re-define NS prefix on attribute which is already defined on an element") { id = 13, Pri = 2 } });
                 }
 
 
@@ -640,8 +640,8 @@ namespace System.Xml.Tests
                 // for function CData_13
                 {
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Entitize") { Params = new object[] { 10, NewLineHandling.Entitize, "<r><![CDATA[\n]]></r>" }, id = 18, Pri = 1 } });
-                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Replace") { Params = new object[] { 13, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" }, id = 13, Pri = 1 } });
-                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Replace") { Params = new object[] { 10, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" }, id = 16, Pri = 1 } });
+                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Replace") { Params = new object[] { 13, NewLineHandling.Replace, string.Format("<r><![CDATA[{0}]]></r>", Environment.NewLine) }, id = 13, Pri = 1 } });
+                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Replace") { Params = new object[] { 10, NewLineHandling.Replace, string.Format("<r><![CDATA[{0}]]></r>", Environment.NewLine) }, id = 16, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.None") { Params = new object[] { 10, NewLineHandling.None, "<r><![CDATA[\n]]></r>" }, id = 17, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Entitize") { Params = new object[] { 13, NewLineHandling.Entitize, "<r><![CDATA[\r]]></r>" }, id = 15, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.None") { Params = new object[] { 13, NewLineHandling.None, "<r><![CDATA[\r]]></r>" }, id = 14, Pri = 1 } });
@@ -1148,7 +1148,7 @@ namespace System.Xml.Tests
 
                 // for function writeString_13
                 {
-                    this.AddChild(new CVariation(writeString_13) { Attribute = new Variation("Surrogate charaters in text nodes, range limits") { id = 13, Pri = 1 } });
+                    this.AddChild(new CVariation(writeString_13) { Attribute = new Variation("Surrogate characters in text nodes, range limits") { id = 13, Pri = 1 } });
                 }
 
 
@@ -1231,13 +1231,13 @@ namespace System.Xml.Tests
 
                 // for function writeValue_3
                 {
-                    this.AddChild(new CVariation(writeValue_3) { Attribute = new Variation("Write multiple atomic values inside element, seperate by WriteWhitespace(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_3) { Attribute = new Variation("Write multiple atomic values inside element, separate by WriteWhitespace(' ')") { Pri = 1 } });
                 }
 
 
                 // for function writeValue_4
                 {
-                    this.AddChild(new CVariation(writeValue_4) { Attribute = new Variation("Write multiple atomic values inside element, seperate by WriteString(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_4) { Attribute = new Variation("Write multiple atomic values inside element, separate by WriteString(' ')") { Pri = 1 } });
                 }
 
 
@@ -1249,7 +1249,7 @@ namespace System.Xml.Tests
 
                 // for function writeValue_6
                 {
-                    this.AddChild(new CVariation(writeValue_6) { Attribute = new Variation("Write multiple atomic values inside attribute, seperate by WriteString(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_6) { Attribute = new Variation("Write multiple atomic values inside attribute, separate by WriteString(' ')") { Pri = 1 } });
                 }
 
 
@@ -2144,7 +2144,7 @@ namespace System.Xml.Tests
 
                     // for function xmlSpace_9
                     {
-                        this.AddChild(new CVariation(xmlSpace_9) { Attribute = new Variation("Veify XmlSpace value when received through WriteString") { id = 9, Pri = 1 } });
+                        this.AddChild(new CVariation(xmlSpace_9) { Attribute = new Variation("Verify XmlSpace value when received through WriteString") { id = 9, Pri = 1 } });
                     }
                 }
             }
@@ -2180,13 +2180,13 @@ namespace System.Xml.Tests
 
                     // for function XmlLang_5
                     {
-                        this.AddChild(new CVariation(XmlLang_5) { Attribute = new Variation("Veify XmlLang value when received through WriteAttributes") { id = 5, Pri = 1 } });
+                        this.AddChild(new CVariation(XmlLang_5) { Attribute = new Variation("Verify XmlLang value when received through WriteAttributes") { id = 5, Pri = 1 } });
                     }
 
 
                     // for function XmlLang_6
                     {
-                        this.AddChild(new CVariation(XmlLang_6) { Attribute = new Variation("Veify XmlLang value when received through WriteString") { id = 6 } });
+                        this.AddChild(new CVariation(XmlLang_6) { Attribute = new Variation("Verify XmlLang value when received through WriteString") { id = 6 } });
                     }
 
 

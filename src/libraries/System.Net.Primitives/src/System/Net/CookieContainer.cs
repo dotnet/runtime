@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
+#if uap
+using System.Net.Internal;
+#endif
 
 // Relevant cookie specs:
 //
@@ -87,6 +90,7 @@ namespace System.Net
     // CookieContainer
     //
     // Manage cookies for a user (implicit). Based on RFC 2965.
+    [Serializable]
     public class CookieContainer
     {
         public const int DefaultCookieLimit = 300;
@@ -116,7 +120,7 @@ namespace System.Net
             // Otherwise it will remain string.Empty.
         }
 
-        internal CookieContainer(int capacity) : this()
+        public CookieContainer(int capacity) : this()
         {
             if (capacity <= 0)
             {
@@ -125,7 +129,7 @@ namespace System.Net
             _maxCookies = capacity;
         }
 
-        internal CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
+        public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
         {
             if (perDomainCapacity != Int32.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity))
             {
@@ -213,7 +217,7 @@ namespace System.Net
         }
 
         // This method will construct a faked URI: the Domain property is required for param.
-        internal void Add(Cookie cookie)
+        public void Add(Cookie cookie)
         {
             if (cookie == null)
             {
@@ -519,7 +523,7 @@ namespace System.Net
             }
         }
 
-        internal void Add(CookieCollection cookies)
+        public void Add(CookieCollection cookies)
         {
             if (cookies == null)
             {
@@ -562,26 +566,27 @@ namespace System.Net
             if (ipParts != null && ipParts.Length == 4 && ipParts[0] == "127")
             {
                 int i;
-                for (i = 1; i < 4; i++)
+                for (i = 1; i < ipParts.Length; i++)
                 {
-                    switch (ipParts[i].Length)
+                    string part = ipParts[i];
+                    switch (part.Length)
                     {
                         case 3:
-                            if (ipParts[i][2] < '0' || ipParts[i][2] > '9')
+                            if (part[2] < '0' || part[2] > '9')
                             {
                                 break;
                             }
                             goto case 2;
 
                         case 2:
-                            if (ipParts[i][1] < '0' || ipParts[i][1] > '9')
+                            if (part[1] < '0' || part[1] > '9')
                             {
                                 break;
                             }
                             goto case 1;
 
                         case 1:
-                            if (ipParts[i][0] < '0' || ipParts[i][0] > '9')
+                            if (part[0] < '0' || part[0] > '9')
                             {
                                 break;
                             }
@@ -636,9 +641,9 @@ namespace System.Net
 
         internal CookieCollection CookieCutter(Uri uri, string headerName, string setCookieHeader, bool isThrow)
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() uri:" + uri + " headerName:" + headerName + " setCookieHeader:" + setCookieHeader + " isThrow:" + isThrow);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
             }
 
             CookieCollection cookies = new CookieCollection();
@@ -665,10 +670,7 @@ namespace System.Net
                 do
                 {
                     Cookie cookie = parser.Get();
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("CookieContainer#" + LoggingHash.HashString(this) + "::CookieCutter() CookieParser returned cookie:" + LoggingHash.ObjectToString(cookie));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
                     if (cookie == null)
                     {
@@ -728,6 +730,11 @@ namespace System.Net
 
         internal CookieCollection InternalGetCookies(Uri uri)
         {
+            if (_count == 0)
+            {
+                return null;
+            }
+
             bool isSecure = (uri.Scheme == UriScheme.Https);
             int port = uri.Port;
             CookieCollection cookies = null;
@@ -977,6 +984,7 @@ namespace System.Net
         }
     }
 
+    [Serializable]
     internal struct PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
@@ -1054,6 +1062,7 @@ namespace System.Net
             }
         }
 
+        [Serializable]
         private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();

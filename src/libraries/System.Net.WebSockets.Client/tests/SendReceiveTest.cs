@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10702)]
+        [ActiveIssue(9296)]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessage_Success(Uri server)
         {
@@ -191,6 +191,10 @@ namespace System.Net.WebSockets.Client.Tests
                                 (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success),
                                 "WebSocketErrorCode");
                         }
+                        else if (ex is OperationCanceledException)
+                        {
+                            Assert.Equal(WebSocketState.Aborted, cws.State);
+                        }
                         else
                         {
                             Assert.True(false, "Unexpected exception: " + ex.Message);
@@ -245,8 +249,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var rand = new Random();
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
-                // Values chosen close to boundaries in websockets message length handling.
-                foreach (int bufferSize in new int[] { 1, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
+                // Values chosen close to boundaries in websockets message length handling as well
+                // as in vectors used in mask application.
+                foreach (int bufferSize in new int[] { 1, 3, 4, 5, 31, 32, 33, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
                 {
                     byte[] sendBuffer = new byte[bufferSize];
                     rand.NextBytes(sendBuffer);

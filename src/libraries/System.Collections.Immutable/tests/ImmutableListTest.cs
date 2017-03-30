@@ -31,7 +31,7 @@ namespace System.Collections.Immutable.Tests
             var expected = new List<int>();
             var actual = ImmutableList<int>.Empty;
 
-            int seed = (int)DateTime.Now.Ticks;
+            int seed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
@@ -148,6 +148,17 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRange_IOrderedCollection()
+        {
+            var list = ImmutableList<int>.Empty;
+            ImmutableList<int>.Builder builder = ImmutableList.CreateBuilder<int>();
+            builder.Add(1);
+
+            list = list.AddRange(builder);
+            Assert.Equal(new int[] { 1 }, list);
+        }
+
+        [Fact]
         public void AddRangeOptimizationsTest()
         {
             // All these optimizations are tested based on filling an empty list.
@@ -168,7 +179,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRangeBalanceTest()
         {
-            int randSeed = (int)DateTime.Now.Ticks;
+            int randSeed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
@@ -201,7 +212,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void InsertRangeRandomBalanceTest()
         {
-            int randSeed = (int)DateTime.Now.Ticks;
+            int randSeed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
@@ -769,6 +780,7 @@ namespace System.Collections.Immutable.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
         }
 
+#if netcoreapp
         [Fact]
         public void UsableWithCollectibleAssemblies()
         {
@@ -787,6 +799,7 @@ namespace System.Collections.Immutable.Tests
 
             list.GetEnumerator(); // ensure this doesn't throw
         }
+#endif // netcoreapp
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {

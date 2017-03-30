@@ -139,6 +139,46 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
+        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/> class using a <see cref='System.SByte'/>
+        /// value.</para>
+        /// </devdoc>
+        [CLSCompliant(false)]
+        public DefaultValueAttribute(sbyte value)
+        {
+            this.value = value;
+        }
+
+        /// <devdoc>
+        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/> class using a <see cref='System.UInt16'/>
+        /// value.</para>
+        /// </devdoc>
+        [CLSCompliant(false)]
+        public DefaultValueAttribute(ushort value)
+        {
+            this.value = value;
+        }
+
+        /// <devdoc>
+        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/> class using a <see cref='System.UInt32'/>
+        /// value.</para>
+        /// </devdoc>
+        [CLSCompliant(false)]
+        public DefaultValueAttribute(uint value)
+        {
+            this.value = value;
+        }
+
+        /// <devdoc>
+        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/> class using a <see cref='System.UInt64'/>
+        /// value.</para>
+        /// </devdoc>
+        [CLSCompliant(false)]
+        public DefaultValueAttribute(ulong value)
+        {
+            this.value = value;
+        }
+
+        /// <devdoc>
         ///    <para>
         ///       Gets the default value of the property this
         ///       attribute is
@@ -179,6 +219,11 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        protected void SetValue(object value)
+        {
+            this.value = value;
         }
     }
 }

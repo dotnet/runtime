@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace System.Collections.ObjectModel
 {
@@ -17,6 +14,7 @@ namespace System.Collections.ObjectModel
     /// implementing INotifyCollectionChanged to notify listeners
     /// when items get added, removed or the whole list is refreshed.
     /// </summary>
+    [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, INotifyPropertyChanged
@@ -31,7 +29,7 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// Initializes a new instance of ObservableCollection that is empty and has default initial capacity.
         /// </summary>
-        public ObservableCollection() : base() { }
+        public ObservableCollection() { }
 
         /// <summary>
         /// Initializes a new instance of the ObservableCollection class that contains
@@ -44,12 +42,24 @@ namespace System.Collections.ObjectModel
         /// same order they are read by the enumerator of the collection.
         /// </remarks>
         /// <exception cref="ArgumentNullException"> collection is a null reference </exception>
-        public ObservableCollection(IEnumerable<T> collection) : base(CreateCopy(collection)) { }
+        public ObservableCollection(IEnumerable<T> collection) : base(CreateCopy(collection, nameof(collection))) { }
 
-        private static List<T> CreateCopy(IEnumerable<T> collection)
+        /// <summary>
+        /// Initializes a new instance of the ObservableCollection class
+        /// that contains elements copied from the specified list
+        /// </summary>
+        /// <param name="list">The list whose elements are copied to the new list.</param>
+        /// <remarks>
+        /// The elements are copied onto the ObservableCollection in the
+        /// same order they are read by the enumerator of the list.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"> list is a null reference </exception>
+        public ObservableCollection(List<T> list) : base(CreateCopy(list, nameof(list))) { }
+
+        private static List<T> CreateCopy(IEnumerable<T> collection, string paramName)
         {
             if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+                throw new ArgumentNullException(paramName);
 
             return new List<T>(collection);
         }
@@ -111,6 +121,7 @@ namespace System.Collections.ObjectModel
         /// <remarks>
         /// see <seealso cref="INotifyCollectionChanged"/>
         /// </remarks>
+        [field: NonSerialized]
         public virtual event NotifyCollectionChangedEventHandler CollectionChanged;
 
         #endregion Public Events
@@ -204,15 +215,13 @@ namespace System.Collections.ObjectModel
         /// </summary>
         protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
         {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, e);
-            }
+            PropertyChanged?.Invoke(this, e);
         }
 
         /// <summary>
         /// PropertyChanged event (per <see cref="INotifyPropertyChanged" />).
         /// </summary>
+        [field: NonSerialized]
         protected virtual event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
@@ -226,11 +235,14 @@ namespace System.Collections.ObjectModel
         /// </remarks>
         protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
-            if (CollectionChanged != null)
+            NotifyCollectionChangedEventHandler handler = CollectionChanged;
+            if (handler != null)
             {
-                using (BlockReentrancy())
+                // Not calling BlockReentrancy() here to avoid the IDisposable box allocation.
+                _blockReentrancyCount++;
+                using (new BlockReentrancyDisposable(this))
                 {
-                    CollectionChanged(this, e);
+                    handler(this, e);
                 }
             }
         }
@@ -250,8 +262,9 @@ namespace System.Collections.ObjectModel
         /// </remarks>
         protected IDisposable BlockReentrancy()
         {
-            _monitor.Enter();
-            return _monitor;
+            _blockReentrancyCount++;
+            // Lazily box the struct as IDisposable once and reuse the same boxed instance with subsequent calls.
+            return _boxedBlockReentrancyDisposable ?? (_boxedBlockReentrancyDisposable = new BlockReentrancyDisposable(this));
         }
 
         /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
@@ -259,13 +272,13 @@ namespace System.Collections.ObjectModel
         /// while another collection change is still being notified to other listeners </exception>
         protected void CheckReentrancy()
         {
-            if (_monitor.Busy)
+            if (_blockReentrancyCount > 0)
             {
                 // we can allow changes if there's only one listener - the problem
                 // only arises if reentrant changes make the original event args
                 // invalid for later listeners.  This keeps existing code working
                 // (e.g. Selector.SelectedItems).
-                if ((CollectionChanged != null) && (CollectionChanged.GetInvocationList().Length > 1))
+                if (CollectionChanged?.GetInvocationList().Length > 1)
                     throw new InvalidOperationException(SR.ObservableCollectionReentrancyNotAllowed);
             }
         }
@@ -337,22 +350,18 @@ namespace System.Collections.ObjectModel
 
         #region Private Types
 
-        // this class helps prevent reentrant calls
-        private class SimpleMonitor : IDisposable
+        [Serializable]
+        private struct BlockReentrancyDisposable : IDisposable
         {
-            public void Enter()
+            private readonly ObservableCollection<T> _collection;
+
+            public BlockReentrancyDisposable(ObservableCollection<T> collection)
             {
-                ++_busyCount;
+                Debug.Assert(collection != null);
+                _collection = collection;
             }
 
-            public void Dispose()
-            {
-                --_busyCount;
-            }
-
-            public bool Busy { get { return _busyCount > 0; } }
-
-            private int _busyCount;
+            public void Dispose() => _collection._blockReentrancyCount--;
         }
 
         #endregion Private Types
@@ -365,7 +374,8 @@ namespace System.Collections.ObjectModel
 
         #region Private Fields
 
-        private readonly SimpleMonitor _monitor = new SimpleMonitor();
+        private int _blockReentrancyCount;
+        private IDisposable _boxedBlockReentrancyDisposable; // Lazily allocated only when a subclass calls BlockReentrancy().
         #endregion Private Fields
     }
 

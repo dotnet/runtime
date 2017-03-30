@@ -66,6 +66,17 @@ namespace Internal.Cryptography.Pal.Windows
             using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
             {
                 int cbSize = 0;
+
+                if (Interop.Crypt32.CertGetCertificateContextProperty(
+                    hCertContext,
+                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                    null,
+                    ref cbSize))
+                {
+                    keySpec = CryptKeySpec.CERT_NCRYPT_KEY_SPEC;
+                    return null;
+                }
+
                 if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbSize))
                 {
                     ErrorCode errorCode = (ErrorCode)(Marshal.GetLastWin32Error());
@@ -110,7 +121,20 @@ namespace Internal.Cryptography.Pal.Windows
             using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
             {
                 IntPtr hKey;
+                int cbSize = IntPtr.Size;
+
+                if (Interop.Crypt32.CertGetCertificateContextProperty(
+                    hCertContext,
+                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                    out hKey,
+                    ref cbSize))
+                {
+                    exception = null;
+                    return new SafeProvOrNCryptKeyHandleUwp(hKey, hCertContext);
+                }
+
                 CryptKeySpec keySpec;
+
                 if (!Interop.Crypt32.CryptAcquireCertificatePrivateKey(hCertContext, flags, IntPtr.Zero, out hKey, out keySpec, out mustFree))
                 {
                     exception = Marshal.GetHRForLastWin32Error().ToCryptographicException();

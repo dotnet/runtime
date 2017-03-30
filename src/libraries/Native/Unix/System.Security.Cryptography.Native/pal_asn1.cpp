@@ -4,8 +4,6 @@
 
 #include "pal_asn1.h"
 
-#include <openssl/objects.h>
-
 static_assert(PAL_NID_undef == NID_undef, "");
 static_assert(PAL_NID_X9_62_prime256v1 == NID_X9_62_prime256v1, "");
 static_assert(PAL_NID_secp224r1 == NID_secp224r1, "");

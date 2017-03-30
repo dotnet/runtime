@@ -23,7 +23,7 @@ namespace System.Net
 
             if (String.IsNullOrEmpty(host))
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "host"));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)));
             }
 
             if (port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort)

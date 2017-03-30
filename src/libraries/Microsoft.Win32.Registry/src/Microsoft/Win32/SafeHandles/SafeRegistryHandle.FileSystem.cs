@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
 #else
     internal
 #endif
-    sealed partial class SafeRegistryHandle : SafeHandle
+    sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // TODO: implement this if necessary
         protected override bool ReleaseHandle() => true;

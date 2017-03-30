@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <Import Project="properties.props"/>
+
+  <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="FindBestConfiguration" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+
+  <Target Name="Build">
+    <PropertyGroup>
+      <ConfigurationPropsFolder>$(ToolsDir)configuration</ConfigurationPropsFolder>
+    </PropertyGroup>
+
+    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(ConfigurationPropsFolder)" />
+  </Target>
+  
+  <Target Name="FindBestConfiguration">
+    <PropertyGroup>
+      <ProjectConfigurations>netcoreapp2.0;netstandard1.0-Windows_NT;netstandard1.6</ProjectConfigurations>
+    </PropertyGroup>
+    
+    <FindBestConfiguration Properties="@(Property)" 
+                           PropertyValues="@(PropertyValue)" 
+                           BuildConfigurations="$(ProjectConfigurations)"
+                           BuildConfiguration="netcoreapp1.1-Windows_NT-Debug-x64">
+      <Output TaskParameter="BestConfiguration" ItemName="ProjectConfiguration" />
+    </FindBestConfiguration>
+  </Target>
+
+  <Target Name="AnnotateProjectsWithConfiguration"
+          Returns="@(ProjectWithConfiguration)" >
+    <ItemGroup>
+      <ProjectWithConfiguration Include="@(Project)" />
+    </ItemGroup>
+  </Target>
+</Project>

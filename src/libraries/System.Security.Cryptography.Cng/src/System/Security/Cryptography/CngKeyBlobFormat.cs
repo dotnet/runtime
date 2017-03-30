@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
     ///     provide a list of well known blob formats, which helps Intellisense users find a set of good blob
     ///     formats to use.
     /// </summary>
+    [Serializable]
     public sealed class CngKeyBlobFormat : IEquatable<CngKeyBlobFormat>
     {
         public CngKeyBlobFormat(string format)

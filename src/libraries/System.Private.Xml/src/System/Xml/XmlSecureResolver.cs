@@ -6,18 +6,13 @@ namespace System.Xml
 {
     using System.Net;
     using System.Security;
-    using System.Security.Policy;
     using System.Runtime.Versioning;
 
     public partial class XmlSecureResolver : XmlResolver
     {
         private XmlResolver _resolver;
 
-        public XmlSecureResolver(XmlResolver resolver, string securityUrl) : this(resolver, CreateEvidenceForUrl(securityUrl)) { }
-
-        internal XmlSecureResolver(XmlResolver resolver, Evidence evidence) : this(resolver, SecurityManager.GetStandardSandbox(evidence)) { }
-
-        internal XmlSecureResolver(XmlResolver resolver, PermissionSet permissionSet)
+        public XmlSecureResolver(XmlResolver resolver, string securityUrl)
         {
             _resolver = resolver;
         }
@@ -35,37 +30,6 @@ namespace System.Xml
         public override Uri ResolveUri(Uri baseUri, string relativeUri)
         {
             return _resolver.ResolveUri(baseUri, relativeUri);
-        }
-
-        internal static Evidence CreateEvidenceForUrl(string securityUrl)
-        {
-            return new Evidence();
-        }
-
-#if SERIALIZABLE_DEFINED
-        [Serializable]
-#endif
-        private class UncDirectory
-        {
-            private string _uncDir;
-
-            public UncDirectory(string uncDirectory)
-            {
-                _uncDir = uncDirectory;
-            }
-
-            private SecurityElement ToXml()
-            {
-                SecurityElement root = new SecurityElement("System.Xml.XmlSecureResolver");
-                root.AddAttribute("version", "1");
-                root.AddChild(new SecurityElement("UncDirectory", _uncDir));
-                return root;
-            }
-
-            public override string ToString()
-            {
-                return ToXml().ToString();
-            }
         }
     }
 }

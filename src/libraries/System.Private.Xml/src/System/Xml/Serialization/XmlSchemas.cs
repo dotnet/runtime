@@ -14,7 +14,6 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Diagnostics;
     using System.Threading;
-    using System.Security.Policy;
     using System.Security;
     using System.Net;
     using System.Reflection;

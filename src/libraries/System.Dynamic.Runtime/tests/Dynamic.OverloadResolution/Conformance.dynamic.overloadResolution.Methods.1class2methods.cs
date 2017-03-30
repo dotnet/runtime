@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms001.diffnumberprms001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms001.diffnumberprms001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -54,8 +52,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms002.diffnumberprms002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms002.diffnumberprms002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -102,8 +98,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms003.diffnumberprms003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.diffnumberprms003.diffnumberprms003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -150,8 +144,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.moreprms001.moreprms001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.moreprms001.moreprms001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This tests overload resolution for more than 2 params at a sanity level
@@ -198,8 +190,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.moreprms002.moreprms002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.moreprms002.moreprms002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This tests overload resolution for more than 2 params at a sanity level
@@ -241,8 +231,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.negtwoprms001.negtwoprms001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.negtwoprms001.negtwoprms001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -297,7 +285,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.negtwoprms002.negtwoprms002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.negtwoprms002.negtwoprms002;
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -305,7 +292,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Target
     {
@@ -355,8 +341,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam001.onedynamicparam001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam001.onedynamicparam001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -408,8 +392,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam002.onedynamicparam002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam002.onedynamicparam002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -462,8 +444,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam003.onedynamicparam003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam003.onedynamicparam003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -521,8 +501,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam004.onedynamicparam004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam004.onedynamicparam004;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -574,8 +552,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam006.onedynamicparam006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam006.onedynamicparam006;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -635,8 +611,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam001.oneparam001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam001.oneparam001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -683,8 +657,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam002.oneparam002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam002.oneparam002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -733,8 +705,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam003.oneparam003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam003.oneparam003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -782,8 +752,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam004.oneparam004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam004.oneparam004;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -831,8 +799,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam005.oneparam005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam005.oneparam005;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -879,8 +845,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam006.oneparam006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam006.oneparam006;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -927,8 +891,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam007.oneparam007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam007.oneparam007;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -977,8 +939,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam008.oneparam008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam008.oneparam008;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1026,8 +986,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam009.oneparam009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam009.oneparam009;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1075,8 +1033,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam010.oneparam010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam010.oneparam010;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1124,8 +1080,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam011.oneparam011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam011.oneparam011;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1173,8 +1127,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam012.oneparam012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam012.oneparam012;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1222,8 +1174,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam013.oneparam013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam013.oneparam013;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1270,8 +1220,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam014.oneparam014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam014.oneparam014;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1318,8 +1266,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam015.oneparam015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam015.oneparam015;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1366,8 +1312,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam016.oneparam016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam016.oneparam016;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1419,14 +1363,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam017.oneparam017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparam017.oneparam017;
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections.Generic;
 
     public class MemberClass
@@ -1474,8 +1416,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv001.oneparamdifftypesconv001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv001.oneparamdifftypesconv001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1522,8 +1462,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv002.oneparamdifftypesconv002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv002.oneparamdifftypesconv002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1570,8 +1508,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv003.oneparamdifftypesconv003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv003.oneparamdifftypesconv003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1618,8 +1554,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv004.oneparamdifftypesconv004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv004.oneparamdifftypesconv004;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1665,8 +1599,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv005.oneparamdifftypesconv005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv005.oneparamdifftypesconv005;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1713,8 +1645,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv006.oneparamdifftypesconv006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv006.oneparamdifftypesconv006;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1768,8 +1698,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv007.oneparamdifftypesconv007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv007.oneparamdifftypesconv007;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1823,8 +1751,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv008.oneparamdifftypesconv008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv008.oneparamdifftypesconv008;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1877,7 +1803,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv009.oneparamdifftypesconv009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv009.oneparamdifftypesconv009;
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1940,7 +1865,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv010.oneparamdifftypesconv010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv010.oneparamdifftypesconv010;
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2003,8 +1927,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv011.oneparamdifftypesconv011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv011.oneparamdifftypesconv011;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2065,8 +1987,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv012.oneparamdifftypesconv012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv012.oneparamdifftypesconv012;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2121,8 +2041,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv013.oneparamdifftypesconv013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv013.oneparamdifftypesconv013;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2177,8 +2095,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv014.oneparamdifftypesconv014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv014.oneparamdifftypesconv014;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2233,8 +2149,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv015.oneparamdifftypesconv015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv015.oneparamdifftypesconv015;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2290,8 +2204,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv016.oneparamdifftypesconv016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv016.oneparamdifftypesconv016;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2346,8 +2258,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv017.oneparamdifftypesconv017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv017.oneparamdifftypesconv017;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2403,8 +2313,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv018.oneparamdifftypesconv018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesconv018.oneparamdifftypesconv018;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2459,8 +2367,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesnoconv001.oneparamdifftypesnoconv001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesnoconv001.oneparamdifftypesnoconv001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2506,8 +2412,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesnoconv002.oneparamdifftypesnoconv002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesnoconv002.oneparamdifftypesnoconv002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2553,8 +2457,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv001.oneparamdifftypesuserconv001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv001.oneparamdifftypesuserconv001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2609,8 +2511,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv002.oneparamdifftypesuserconv002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv002.oneparamdifftypesuserconv002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2670,8 +2570,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv003.oneparamdifftypesuserconv003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.oneparamdifftypesuserconv003.oneparamdifftypesuserconv003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2730,8 +2628,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype001.statictype001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype001.statictype001;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -2783,8 +2679,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype002.statictype002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype002.statictype002;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -2836,8 +2730,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype003.statictype003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype003.statictype003;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -2885,8 +2777,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype004.statictype004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype004.statictype004;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -2934,8 +2824,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype005.statictype005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype005.statictype005;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -2987,8 +2875,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype006.statictype006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype006.statictype006;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3040,8 +2926,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype007.statictype007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype007.statictype007;
-
     public class Test
     {
         public static int Status;
@@ -3073,8 +2957,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype008.statictype008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype008.statictype008;
-
     public class Test
     {
         public static int Status;
@@ -3106,8 +2988,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype009.statictype009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype009.statictype009;
-
     public class Test
     {
         public static int Status;
@@ -3139,8 +3019,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype010.statictype010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype010.statictype010;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters (with nullable types)
@@ -3189,8 +3067,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype011.statictype011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype011.statictype011;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters (with nullable types)
@@ -3234,8 +3110,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype012.statictype012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype012.statictype012;
-
     public class Test
     {
         public static int Status;
@@ -3303,8 +3177,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype013.statictype013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype013.statictype013;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3353,8 +3225,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype014.statictype014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype014.statictype014;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3403,8 +3273,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype015.statictype015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype015.statictype015;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3457,8 +3325,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype016.statictype016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype016.statictype016;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3511,8 +3377,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype017.statictype017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype017.statictype017;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3561,8 +3425,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype018.statictype018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype018.statictype018;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3611,8 +3473,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype019.statictype019
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype019.statictype019;
-
     public class Test
     {
         public static int Status;
@@ -3650,8 +3510,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype020.statictype020
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype020.statictype020;
-
     public class Test
     {
         public static int Status;
@@ -3689,8 +3547,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype021.statictype021
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype021.statictype021;
-
     public class Test
     {
         public static int Status;
@@ -3727,8 +3583,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype022.statictype022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype022.statictype022;
-
     public class Test
     {
         public static int Status;
@@ -3765,8 +3619,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype023.statictype023
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype023.statictype023;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3814,8 +3666,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype024.statictype024
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype024.statictype024;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3863,8 +3713,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype025.statictype025
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype025.statictype025;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3912,8 +3760,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype026.statictype026
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.statictype026.statictype026;
-
     // <Title> Tests overload resolution when the static type of the variable is passed to the binder</Title>
     // <Description>
     // Calls a method dynamically but uses non-dynamic parameters
@@ -3961,8 +3807,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms001.twoprms001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms001.twoprms001;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4017,8 +3861,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms002.twoprms002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms002.twoprms002;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4074,8 +3916,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms003.twoprms003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms003.twoprms003;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4131,8 +3971,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4180,8 +4018,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms005.twoprms005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms005.twoprms005;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4229,8 +4065,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms006.twoprms006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms006.twoprms006;
-
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // This will have an ambiguity at runtime
@@ -4278,7 +4112,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.generic001.generic001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.generic001.generic001;
     // <Title> Tests overload resolution - Generic</Title>
     // <Description>Program compiles successfully and runs without exceptions.
     //              Runtime binder should use the same tie-breaking rules.
@@ -4321,8 +4154,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.generic002.generic002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.generic002.generic002;
-
     public class Test
     {
         public class A<T>
@@ -4361,11 +4192,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.literals01.literals01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.literals01.literals01;
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
 
     public class A
     {
@@ -4455,8 +4284,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.bestmeth01.bestmeth01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.bestmeth01.bestmeth01;
-
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
@@ -4493,8 +4320,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger01.cnstraintegereger01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger01.cnstraintegereger01;
-
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
@@ -4533,8 +4358,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger02.cnstraintegereger02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger02.cnstraintegereger02;
-
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
@@ -4577,8 +4400,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger03.cnstraintegereger03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger03.cnstraintegereger03;
-
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
@@ -4617,8 +4438,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger04.cnstraintegereger04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.cnstraintegereger04.cnstraintegereger04;
-
     // <Area>Overload resolution</Area>
     // <Expects status=success></Expects>
     // <Code>
@@ -4661,13 +4480,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.operate001.operate001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.operate001.operate001;
     // <Title> Tests overload resolution - Generic</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class A
     {
@@ -4701,14 +4518,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.arglistprms002.arglistprms002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.arglistprms002.arglistprms002;
     // <Title>Arglist</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -4740,14 +4555,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.regression01.regression01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.regression01.regression01;
     // <Title>Regression test</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class A
     {

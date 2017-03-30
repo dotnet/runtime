@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization
             return reader.Read();
         }
 
-        public void Close()
+        public override void Close()
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableIllegalOperation)));
         }
@@ -114,7 +114,7 @@ namespace System.Runtime.Serialization
 
         public override object ReadContentAsObject() { return InnerReader.ReadContentAsObject(); }
         public override bool ReadContentAsBoolean() { return InnerReader.ReadContentAsBoolean(); }
-        public DateTime ReadContentAsDateTime() { return InnerReader.ReadContentAsDateTimeOffset().DateTime; }
+        public override DateTime ReadContentAsDateTime() { return InnerReader.ReadContentAsDateTimeOffset().DateTime; }
         public override double ReadContentAsDouble() { return InnerReader.ReadContentAsDouble(); }
         public override int ReadContentAsInt() { return InnerReader.ReadContentAsInt(); }
         public override long ReadContentAsLong() { return InnerReader.ReadContentAsLong(); }

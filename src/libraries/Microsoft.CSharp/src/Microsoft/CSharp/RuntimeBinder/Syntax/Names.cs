@@ -6,7 +6,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal class Name
     {
-        private string _text;
+        private readonly string _text;
 
         public Name(string text)
         {
@@ -16,11 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         public string Text
         {
             get { return _text; }
-        }
-
-        public virtual PredefinedName PredefinedName
-        {
-            get { return PredefinedName.PN_COUNT; }
         }
 
         public override string ToString()

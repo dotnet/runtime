@@ -13,6 +13,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_ServerCertificates_Test
     {
         [OuterLoop] // TODO: Issue #11345
@@ -32,6 +34,33 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Throws<InvalidOperationException>(() => handler.ServerCertificateCustomValidationCallback = null);
                 Assert.Throws<InvalidOperationException>(() => handler.CheckCertificateRevocationList = false);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        public void UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
+        {
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: true,
+                expectCreds: false);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            var handler = new HttpClientHandler();
+            handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null);
+            handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> responseTask = client.PostAsync(
+                    Configuration.Http.SecureRemoteEchoServer,
+                    new StringContent("This is a test"));
+                Task.WaitAll(proxyTask, responseTask);
+                using (responseTask.Result)
+                {
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+                }
             }
         }
 
@@ -123,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object[][] CertificateValidationServers = 
+        public static readonly object[][] CertificateValidationServers = 
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer },
             new object[] { Configuration.Http.SelfSignedCertRemoteServer },
@@ -145,10 +174,45 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            using (var client = new HttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+            // On macOS (libcurl+darwinssl) we cannot turn revocation off.
+            // But we also can't realistically say that the default value for
+            // CheckCertificateRevocationList throws in the general case.
+            try
             {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                using (var client = new HttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+            catch (HttpRequestException)
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    throw;
+
+                // If a run on a clean macOS ever fails we need to consider that "false"
+                // for CheckCertificateRevocationList is actually "use a system default" now,
+                // and may require changing how this option is exposed. Considering the variety of
+                // systems this should probably be complex like
+                // enum RevocationCheckingOption {
+                //     // Use it if able
+                //     BestPlatformSecurity = 0,
+                //     // Don't use it, if that's an option.
+                //     BestPlatformPerformance,
+                //     // Required
+                //     MustCheck,
+                //     // Prohibited
+                //     MustNotCheck,
+                // }
+
+                switch (CurlSslVersionDescription())
+                {
+                    case "SecureTransport":
+                        // Suppress the exception, making the test pass.
+                        break;
+                    default:
+                        throw;
+                }
             }
         }
 
@@ -163,7 +227,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object[][] CertificateValidationServersAndExpectedPolicies =
+        public static readonly object[][] CertificateValidationServersAndExpectedPolicies =
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
             new object[] { Configuration.Http.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
@@ -171,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
         };
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(7812, PlatformID.Windows)]
+        [ActiveIssue(7812, TestPlatforms.Windows)]
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
@@ -212,6 +276,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        // For macOS the "custom handling" means that revocation can't be *disabled*. So this test does not apply.
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task SSLBackendNotSupported_Revocation_ThrowsPlatformNotSupportedException()
         {
             using (var client = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true }))
@@ -221,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [PlatformSpecific(PlatformID.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
+        [PlatformSpecific(TestPlatforms.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
         public async Task PostAsync_Post_ChannelBinding_ConfiguredCorrectly()
         {
@@ -270,9 +336,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+        internal static bool BackendSupportsCustomCertificateHandling
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return true;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return false;
+                }
+
+                // For other Unix-based systems it's true if (and only if) the openssl backend
+                // is used with libcurl.
+                return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+            }
+        }
 
         private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
 

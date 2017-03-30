@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -44,18 +43,18 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), testFile.FullName));
         }
 
-        [Fact]
-        public void PathWithIllegalCharacters()
+        [Theory MemberData(nameof(PathsWithInvalidCharacters))]
+        public void PathWithIllegalCharacters(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.All(IOInputs.GetPathsWithInvalidCharacters(), (invalid) =>
-            {
-                if (invalid.Contains(@"\\?\"))
-                    Assert.Throws<IOException>(() => Move(testFile.FullName, invalid));
-                else
-                    Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalid));
-            });
+
+            // Under legacy normalization we kick \\?\ paths back as invalid with ArgumentException
+            // New style we don't prevalidate \\?\ at all
+            if (invalidPath.Contains(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
+                Assert.Throws<IOException>(() => Move(testFile.FullName, invalidPath));
+            else
+                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
         }
 
         [Fact]
@@ -148,9 +147,10 @@ namespace System.IO.Tests
             Assert.False(File.Exists(testFileSource));
         }
 
-        [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
-        public void MaxPath_Windows()
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
+        public void OverMaxPathWorks_Windows()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters,
             // but under the long path limitation (32K).
@@ -178,7 +178,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Path longer than max Windows path limit throws
         public void LongPath()
         {
             //Create a destination path longer than the traditional Windows limit of 256 characters
@@ -197,20 +197,17 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
-        public void WindowsPathWithIllegalColons()
+        [Theory MemberData(nameof(PathsWithInvalidColons))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.All(IOInputs.GetPathsWithInvalidColons(), (invalid) =>
-            {
-                Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalid));
-            });
+            Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalidPath));
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path throw ArgumentException
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
@@ -220,7 +217,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Wild characters in path are allowed
         public void UnixWildCharacterPath()
         {
             string testDir = GetTestFilePath();
@@ -244,7 +241,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace in path throws ArgumentException
         public void WindowsWhitespacePath()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -255,7 +252,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace in path allowed
         public void UnixWhitespacePath()
         {
             FileInfo testFileSource = new FileInfo(GetTestFilePath());

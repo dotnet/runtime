@@ -435,7 +435,7 @@ namespace XLinqTests
                         return XElement.Load(s, lo);
                     }
                 default:
-                    throw new TestFailedException("TEST FAILED: don't know how to create XDocument");
+                    throw new TestFailedException("TEST FAILED: don't know how to create XElement");
             }
         }
         #endregion

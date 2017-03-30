@@ -10,8 +10,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DataTestUtility
     {
-        public readonly static string NpConnStr = null;
-        public readonly static string TcpConnStr = null;
+        public static readonly string NpConnStr = null;
+        public static readonly string TcpConnStr = null;
 
         static DataTestUtility()
         {
@@ -42,6 +42,20 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return uniqueName;
         }
 
+        public static bool IsLocalDBInstalled()
+        {
+            string localDBInstallationFlag = Environment.GetEnvironmentVariable("TEST_LOCALDB_INSTALLED");
+            if (!string.IsNullOrWhiteSpace(localDBInstallationFlag))
+            {
+                int result;
+                if(int.TryParse(localDBInstallationFlag.Trim(), out result))
+                {
+                    return result == 1;
+                }
+            }
+            return false;
+        }
+
         private static bool CheckException<TException>(Exception ex, string exceptionMessage, bool innerExceptionMustBeNull) where TException : Exception
         {
             return ((ex != null) && (ex is TException) &&
@@ -51,13 +65,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         public static void AssertEqualsWithDescription(object expectedValue, object actualValue, string failMessage)
         {
-            var msg = string.Format("{0}\nExpected: {1}\nActual: {2}", failMessage, expectedValue, actualValue);
             if (expectedValue == null || actualValue == null)
             {
+                var msg = string.Format("{0}\nExpected: {1}\nActual: {2}", failMessage, expectedValue, actualValue);
                 Assert.True(expectedValue == actualValue, msg);
             }
             else
             {
+                var msg = string.Format("{0}\nExpected: {1} ({2})\nActual: {3} ({4})", failMessage, expectedValue, expectedValue.GetType(), actualValue, actualValue.GetType());
                 Assert.True(expectedValue.Equals(actualValue), msg);
             }
         }

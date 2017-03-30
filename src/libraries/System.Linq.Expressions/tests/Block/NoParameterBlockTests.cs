@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -317,7 +317,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(ConstantValuesAndSizes))]
-        [ActiveIssue(3958)]
         public void RewriteToSameWithSameValues(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -326,6 +325,7 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(expressions);
             Assert.Same(block, block.Update(null, expressions));
             Assert.Same(block, block.Update(Enumerable.Empty<ParameterExpression>(), expressions));
+            Assert.Same(block, NoOpVisitor.Instance.Visit(block));
         }
 
         [Theory]
@@ -342,6 +342,48 @@ namespace System.Linq.Expressions.Tests
 
             for (int i = 0; i != values.Length; ++i)
                 Assert.Equal(i, expressions.IndexOf(values[i]));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void ExpressionListBehavior(int parCount)
+        {
+            // This method contains a lot of assertions, which amount to one large assertion that
+            // the result of the Expressions property behaves correctly.
+            Expression[] exps = Enumerable.Range(0, parCount).Select(_ => Expression.Constant(0)).ToArray();
+            BlockExpression block = Expression.Block(exps);
+            ReadOnlyCollection<Expression> children = block.Expressions;
+            Assert.Equal(parCount, children.Count);
+            using (var en = children.GetEnumerator())
+            {
+                IEnumerator nonGenEn = ((IEnumerable)children).GetEnumerator();
+                for (int i = 0; i != parCount; ++i)
+                {
+                    Assert.True(en.MoveNext());
+                    Assert.True(nonGenEn.MoveNext());
+                    Assert.Same(exps[i], children[i]);
+                    Assert.Same(exps[i], en.Current);
+                    Assert.Same(exps[i], nonGenEn.Current);
+                    Assert.Equal(i, children.IndexOf(exps[i]));
+                    Assert.True(children.Contains(exps[i]));
+                }
+
+                Assert.False(en.MoveNext());
+                Assert.False(nonGenEn.MoveNext());
+                (nonGenEn as IDisposable)?.Dispose();
+            }
+
+            Expression[] copyToTest = new Expression[parCount + 1];
+            Assert.Throws<ArgumentNullException>(() => children.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => children.CopyTo(copyToTest, -1));
+            Assert.All(copyToTest, Assert.Null); // assert partial copy didn't happen before exception
+            Assert.Throws<ArgumentException>(() => children.CopyTo(copyToTest, 2));
+            Assert.All(copyToTest, Assert.Null);
+            children.CopyTo(copyToTest, 1);
+            Assert.Equal(copyToTest, exps.Prepend(null));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => children[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => children[parCount]);
+            Assert.Equal(-1, children.IndexOf(Expression.Parameter(typeof(int))));
+            Assert.False(children.Contains(Expression.Parameter(typeof(int))));
         }
 
         [Theory]
@@ -408,6 +450,59 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(typeof(object), expressions);
 
             Assert.NotSame(block, new TestVistor().Visit(block));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateToNullArguments(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant);
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.Throws<ArgumentNullException>("expressions", () => block.Update(null, null));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateDoesntRepeatEnumeration(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.Same(block, block.Update(null, new RunOnceEnumerable<Expression>(expressions)));
+            Assert.NotSame(
+                block,
+                block.Update(null, new RunOnceEnumerable<Expression>(PadBlock(blockSize - 1, Expression.Constant(1)))));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateDifferentSizeReturnsDifferent(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.NotSame(block, block.Update(null, block.Expressions.Prepend(Expression.Empty())));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateAnyExpressionDifferentReturnsDifferent(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            Expression[] expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            for (int i = 0; i != expressions.Length; ++i)
+            {
+                Expression[] newExps = new Expression[expressions.Length];
+                expressions.CopyTo(newExps, 0);
+                newExps[i] = Expression.Constant(1);
+                Assert.NotSame(block, block.Update(null, newExps));
+            }
         }
     }
 }

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -25,7 +24,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(".")]
         [InlineData("............")]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid extensions should be removed
         public void WindowsInvalidExtensionsAreRemoved(string extension)
         {
             string testFile = GetTestFilePath();
@@ -36,7 +35,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(".s", ".")]
         [InlineData(".s", ".s....")]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Trailing dots in extension are removed
         public void WindowsCurtailTrailingDots(string extension, string trailing)
         {
             string testFile = GetTestFilePath();
@@ -48,7 +47,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(".s", ".")]
         [InlineData(".s.s....", ".ls")]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Last dot is extension
         public void UnixLastDotIsExtension(string extension, string trailing)
         {
             string testFile = GetTestFilePath();

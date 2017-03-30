@@ -12,8 +12,6 @@ using System.Xml.Linq;
 
 using Microsoft.Test.ModuleCore;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-
 namespace CoreXml.Test.XLinq
 {
     public static class Helpers
@@ -184,7 +182,7 @@ namespace CoreXml.Test.XLinq
                     }
                     else
                     {
-                        TestLog.WriteLine("No mach in actual values");
+                        TestLog.WriteLine("No match in actual values");
                         return false;
                     }
                 }

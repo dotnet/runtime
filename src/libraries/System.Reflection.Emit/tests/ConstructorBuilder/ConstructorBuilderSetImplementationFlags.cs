@@ -16,17 +16,7 @@ namespace System.Reflection.Emit.Tests
 
             constructor.SetImplementationFlags(MethodImplAttributes.Runtime);
             MethodImplAttributes methodImplementationFlags = constructor.MethodImplementationFlags;
-            int methodImplementationValue = (int)methodImplementationFlags;
-
-            FieldInfo[] fields = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
-            for (int i = 0; i < fields.Length; i++)
-            {
-                if (fields[i].Name == "Runtime")
-                {
-                    int fieldValue = (int)fields[i].GetValue(null);
-                    Assert.Equal(fieldValue, (fieldValue & methodImplementationValue));
-                }
-            }
+            Assert.Equal(MethodImplAttributes.Runtime, constructor.MethodImplementationFlags);
         }
 
         [Fact]
@@ -35,18 +25,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(string) });
 
-            MethodImplAttributes methodImplementationFlags = constructor.MethodImplementationFlags;
-            int methodImplementationValue = (int)methodImplementationFlags;
-
-            FieldInfo[] fields = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
-            for (int i = 0; i < fields.Length; i++)
-            {
-                if (fields[i].Name == "Runtime")
-                {
-                    int fieldValue = (int)fields[i].GetValue(null);
-                    Assert.NotEqual(fieldValue, (fieldValue & methodImplementationValue));
-                }
-            }
+            Assert.Equal(MethodImplAttributes.IL, constructor.MethodImplementationFlags);
         }
 
         [Fact]
@@ -54,9 +33,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
-
-            ILGenerator ilGenerator = constructor.GetILGenerator();
-            ilGenerator.Emit(OpCodes.Ldarg_1);
+            constructor.GetILGenerator().Emit(OpCodes.Ret);
 
             Type createdType = type.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() => constructor.SetImplementationFlags(MethodImplAttributes.Runtime));

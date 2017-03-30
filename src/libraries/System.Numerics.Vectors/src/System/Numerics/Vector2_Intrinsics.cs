@@ -147,7 +147,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Abs(Vector2 value)
         {
-            return new Vector2(Math.Abs(value.X), Math.Abs(value.Y));
+            return new Vector2(MathF.Abs(value.X), MathF.Abs(value.Y));
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 SquareRoot(Vector2 value)
         {
-            return new Vector2((Single)Math.Sqrt(value.X), (Single)Math.Sqrt(value.Y));
+            return new Vector2(MathF.Sqrt(value.X), MathF.Sqrt(value.Y));
         }
         #endregion Public Static Methods
 

@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#define DEBUG // Do not remove this, it is needed to retain calls to these conditional methods in release builds
+// Do not remove this, it is needed to retain calls to these conditional methods in release builds
+#define DEBUG
 
 namespace System.Diagnostics
 {
@@ -11,6 +12,67 @@ namespace System.Diagnostics
     /// </summary>
     static partial class Debug
     {
+        private static readonly object s_lock = new object();
+
+        public static bool AutoFlush { get { return true; } set { } }
+
+        [ThreadStatic]
+        private static int s_indentLevel;
+        public static int IndentLevel
+        {
+            get
+            {
+                return s_indentLevel;
+            }
+            set
+            {
+                s_indentLevel = value < 0 ? 0 : value;
+            }
+        }
+
+        private static int s_indentSize = 4;
+        public static int IndentSize
+        {
+            get
+            {
+                return s_indentSize;
+            }
+            set
+            {
+                s_indentSize = value < 0 ? 0 : value;
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Close() { }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Flush() { }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Indent()
+        {
+            IndentLevel++;
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Unindent()
+        {
+            IndentLevel--;
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Print(string message)
+        {
+            Write(message);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Print(string format, params object[] args)
+        {
+            Write(string.Format(null, format, args));
+        }
+
         private static readonly object s_ForLock = new Object();
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -35,7 +97,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    stackTrace = Environment.StackTrace;
+                    stackTrace = Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
                 }
                 catch
                 {
@@ -61,11 +123,12 @@ namespace System.Diagnostics
 
         private static string FormatAssert(string stackTrace, string message, string detailMessage)
         {
-            return SR.DebugAssertBanner + Environment.NewLine
-                   + SR.DebugAssertShortMessage + Environment.NewLine
-                   + message + Environment.NewLine
-                   + SR.DebugAssertLongMessage + Environment.NewLine
-                   + detailMessage + Environment.NewLine
+            string newLine = GetIndentString() + NewLine;
+            return SR.DebugAssertBanner + newLine
+                   + SR.DebugAssertShortMessage + newLine
+                   + message + newLine
+                   + SR.DebugAssertLongMessage + newLine
+                   + detailMessage + newLine
                    + stackTrace;
         }
 
@@ -78,25 +141,42 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            Write(message + Environment.NewLine);
+            Write(message + NewLine);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(string message)
         {
-            s_logger.WriteCore(message ?? string.Empty);
+            lock (s_lock)
+            {
+                if (message == null)
+                {
+                    WriteCore(string.Empty);
+                    return;
+                }
+                if (s_needIndent)
+                {
+                    message = GetIndentString() + message;
+                    s_needIndent = false;
+                }
+                WriteCore(message);
+                if (message.EndsWith(NewLine))
+                {
+                    s_needIndent = true;
+                }
+            }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(object value)
         {
-            WriteLine((value == null) ? string.Empty : value.ToString());
+            WriteLine(value?.ToString());
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(object value, string category)
         {
-            WriteLine((value == null) ? string.Empty : value.ToString(), category);
+            WriteLine(value?.ToString(), category);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -114,14 +194,14 @@ namespace System.Diagnostics
             }
             else
             {
-                WriteLine(category + ":" + ((message == null) ? string.Empty : message));
+                WriteLine(category + ":" + message);
             }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(object value)
         {
-            Write((value == null) ? string.Empty : value.ToString());
+            Write(value?.ToString());
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -133,14 +213,14 @@ namespace System.Diagnostics
             }
             else
             {
-                Write(category + ":" + ((message == null) ? string.Empty : message));
+                Write(category + ":" + message);
             }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(object value, string category)
         {
-            Write((value == null) ? string.Empty : value.ToString(), category);
+            Write(value?.ToString(), category);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -198,21 +278,40 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value)
+        public static void WriteLineIf(bool condition, string message)
         {
             if (condition)
             {
-                WriteLine(value);
+                WriteLine(message);
             }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteLineIf(bool condition, string value, string category)
+        public static void WriteLineIf(bool condition, string message, string category)
         {
             if (condition)
             {
-                WriteLine(value, category);
+                WriteLine(message, category);
             }
+        }
+
+        private static bool s_needIndent;
+
+        private static string s_indentString;
+
+        private static string GetIndentString()
+        {
+            int indentCount = IndentSize * IndentLevel;
+            if (s_indentString?.Length == indentCount)
+            {
+                return s_indentString;
+            }
+            return s_indentString = new string(' ', indentCount);
+        }
+
+        private static void WriteCore(string message)
+        {
+            s_logger.WriteCore(message);
         }
 
         internal interface IDebugLogger
@@ -224,7 +323,7 @@ namespace System.Diagnostics
         private sealed class DebugAssertException : Exception
         {
             internal DebugAssertException(string message, string detailMessage, string stackTrace) :
-                base(message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace)
+                base(message + NewLine + detailMessage + NewLine + stackTrace)
             {
             }
         }

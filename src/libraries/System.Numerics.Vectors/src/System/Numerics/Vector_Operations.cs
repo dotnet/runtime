@@ -9,7 +9,7 @@ namespace System.Numerics
     /// <summary>
     /// Contains various methods useful for creating, manipulating, combining, and converting generic vectors with one another.
     /// </summary>
-    public static class Vector
+    public static partial class Vector
     {
         // JIT is not looking at the Vector class methods
         // all methods here should be inlined and they must be implemented in terms of Vector<T> intrinsics

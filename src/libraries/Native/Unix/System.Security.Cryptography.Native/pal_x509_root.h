@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "opensslshim.h"
+
 /*
 Look up the directory in which all certificate files therein are considered
 trusted (root or trusted intermediate).

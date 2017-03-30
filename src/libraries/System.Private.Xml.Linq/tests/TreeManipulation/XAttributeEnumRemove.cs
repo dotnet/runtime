@@ -245,9 +245,9 @@ namespace XLinqTests
             var expectedAttrsForParent = new Dictionary<XElement, List<ExpectedValue>>();
             foreach (XElement p in parents)
             {
-                if (p != null && !expectedAttrsForParent.ContainsKey(p))
+                if (p != null)
                 {
-                    expectedAttrsForParent.Add(p, p.Attributes().Except(copyAllAttributes.Where(x => x != null)).Select(a => new ExpectedValue(true, a)).ToList());
+                    expectedAttrsForParent.TryAdd(p, p.Attributes().Except(copyAllAttributes.Where(x => x != null)).Select(a => new ExpectedValue(true, a)).ToList());
                 }
             }
 
@@ -281,7 +281,7 @@ namespace XLinqTests
                         TestLog.Compare(parent.Attributes().Where(x => x.Name == a.Name).IsEmpty(), "Attributes node");
 
                         // Compare the rest of the elements
-                        TestLog.Compare(expectedAttrsForParent[parent].EqualAllAttributes(parent.Attributes(), Helpers.MyAttributeComparer), "The rest of ther attributes");
+                        TestLog.Compare(expectedAttrsForParent[parent].EqualAllAttributes(parent.Attributes(), Helpers.MyAttributeComparer), "The rest of the attributes");
                     }
                 }
             }

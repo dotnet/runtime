@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -33,8 +34,9 @@ namespace Internal.Cryptography.Pal
             _certs = null;
         }
 
-        public byte[] Export(X509ContentType contentType, string password)
+        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
         {
+            Debug.Assert(password != null);
             switch (contentType)
             {
                 case X509ContentType.Cert:
@@ -70,7 +72,7 @@ namespace Internal.Cryptography.Pal
             return _certs[0].RawData;
         }
 
-        private byte[] ExportPfx(string password)
+        private byte[] ExportPfx(SafePasswordHandle password)
         {
             using (SafeX509StackHandle publicCerts = Interop.Crypto.NewX509Stack())
             {

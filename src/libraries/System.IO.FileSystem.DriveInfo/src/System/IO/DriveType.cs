@@ -7,6 +7,7 @@ using System;
 namespace System.IO
 {
     // Matches Win32's DRIVE_XXX #defines from winbase.h
+    [Serializable]
     public enum DriveType
     {
         Unknown = 0,

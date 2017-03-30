@@ -13,7 +13,9 @@ internal static partial class Interop
         internal enum PAL_SymmetricAlgorithm
         {
             AES = 0,
+            DES = 1,
             TripleDES = 2,
+            RC2 = 5,
         }
 
         internal enum PAL_SymmetricOperation

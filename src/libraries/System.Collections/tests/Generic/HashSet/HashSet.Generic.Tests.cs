@@ -11,7 +11,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of the HashSet class.
     /// </summary>
-    public abstract class HashSet_Generic_Tests<T> : ISet_Generic_Tests<T>
+    public abstract partial class HashSet_Generic_Tests<T> : ISet_Generic_Tests<T>
     {
         #region ISet<T> Helper Methods
 
@@ -269,7 +269,6 @@ namespace System.Collections.Tests
 
         #region CreateSetComparer
 
-#if netstandard17
         [Fact]
         public void SetComparer_SetEqualsTests()
         {
@@ -331,7 +330,6 @@ namespace System.Collections.Tests
             Assert.True(noComparerSet.SequenceEqual(set, HashSet<T>.CreateSetComparer()));
             Assert.False(comparerSet.SequenceEqual(set));
         }
-#endif
 
         #endregion
 

@@ -122,7 +122,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Null(cc.GetCredential(uriPrefix1, "invalid-authentication-type")); //No such authenticationType
 
             Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("authType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
         }
 
         [Fact]
@@ -162,7 +162,13 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>("host", () => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
             Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
 
-            Assert.Throws<ArgumentException>("host", () => cc.Add("", 500, "authenticationType", new NetworkCredential())); //Empty host
+            var exception = Record.Exception(() => cc.Add("", 500, "authenticationType", new NetworkCredential())); 
+            // On full framework we get exception.ParamName as null while it is "host" on netcore
+            Assert.NotNull(exception);
+            Assert.True(exception is ArgumentException);
+            ArgumentException ae = exception as ArgumentException;
+            Assert.True(ae.ParamName == "host" || ae.ParamName == null);
+
             Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
         }
 
@@ -233,7 +239,7 @@ namespace System.Net.Primitives.Functional.Tests
             CredentialCache cc = new CredentialCache();
 
             Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("authType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
         }
 
         [Fact]
@@ -244,7 +250,12 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>("host", () => cc.GetCredential(null, 500, "authenticationType")); //Null host
             Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
 
-            Assert.Throws<ArgumentException>("host", () => cc.GetCredential("", 500, "authenticationType")); //Empty host
+            var exception = Record.Exception(() => cc.GetCredential("", 500, "authenticationType")); //Empty host
+            // On full framework we get exception.ParamName as null while it is "host" on netcore
+            Assert.NotNull(exception);
+            Assert.True(exception is ArgumentException);
+            ArgumentException ae = exception as ArgumentException;
+            Assert.True(ae.ParamName == "host" || ae.ParamName == null);
 
             Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
         }
@@ -383,6 +394,19 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success_net46()
+        {
+            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            CredentialCache cc = new CredentialCache();
+
+            // The full framework throw System.ArgumentException with the message
+            // 'Default credentials cannot be supplied for the authenticationType1 authentication scheme.'
+            Assert.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success()
         {
             NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
@@ -397,6 +421,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void AddRemove_HostPortAuthenticationTypeDefaultCredentials_Success()
         {
             NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;

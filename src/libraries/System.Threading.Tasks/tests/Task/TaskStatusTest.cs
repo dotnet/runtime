@@ -128,7 +128,7 @@ namespace System.Threading.Tasks.Tests.Status
                             CancellationTokenSource cts = new CancellationTokenSource();
                             scheduler.Cancellation = cts;
 
-                            // Replace _task with a task that has a cutoms scheduler
+                            // Replace _task with a task that has a custom scheduler
                             _task = Task.Factory.StartNew(() => { }, cts.Token, TaskCreationOptions.None, scheduler);
 
                             try { _task.GetAwaiter().GetResult(); }
@@ -172,13 +172,19 @@ namespace System.Threading.Tasks.Tests.Status
                         {
                             //we may have reach this point too soon, let's keep spinning until the status changes.
                             while (_task.Status == TaskStatus.Running)
-                                ;
-                            //
-                            // If we're still waiting for children our Status should reflect so
-                            //
-                            if (_task.Status != TaskStatus.WaitingForChildrenToComplete)
                             {
-                                Assert.True(false, string.Format("Expecting currrent Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
+                                Task.Delay(1).Wait();
+                            }
+
+                            //
+                            // If we're still waiting for children our Status should reflect so. For this verification, the
+                            // parent task's status needs to be read before the child task's status (they are volatile loads) to
+                            // make the child task's status more recent, since the child task may complete during the status
+                            // reads.
+                            //
+                            if (_task.Status != TaskStatus.WaitingForChildrenToComplete && !_childTask.IsCompleted)
+                            {
+                                Assert.True(false, string.Format("Expecting current Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
                             }
                         }
                         _task.Wait();

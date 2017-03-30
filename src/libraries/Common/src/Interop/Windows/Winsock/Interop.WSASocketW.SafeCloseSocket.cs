@@ -31,7 +31,7 @@ internal static partial class Interop
                                                 [In] SocketConstructorFlags flags);
 
         [DllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal unsafe static extern SafeCloseSocket.InnerSafeCloseSocket WSASocketW(
+        internal static extern unsafe SafeCloseSocket.InnerSafeCloseSocket WSASocketW(
                                     [In] AddressFamily addressFamily,
                                     [In] SocketType socketType,
                                     [In] ProtocolType protocolType,

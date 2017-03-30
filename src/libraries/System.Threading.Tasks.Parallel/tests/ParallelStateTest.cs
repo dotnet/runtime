@@ -33,7 +33,7 @@ namespace System.Threading.Tasks.Test
         private readonly TestParameters _parameters;
         private readonly ManualResetEventSlim _mreSlim;
 
-        private readonly double[] _results;  // global place to store the workload result for verication
+        private readonly double[] _results;  // global place to store the workload result for verification
 
         // data structure used with ParallelLoopState<TLocal>
         // each row is the sequence of loop "index" finished in the same thread
@@ -44,7 +44,7 @@ namespace System.Threading.Tasks.Test
 
         private long _startIndex = 0;  // start index for the loop
 
-        // Hold list of actions to be perfomed
+        // Hold list of actions to be performed
         private List<Action<long, ParallelLoopState>> _actions = new List<Action<long, ParallelLoopState>>();
 
         // Hold list of verification

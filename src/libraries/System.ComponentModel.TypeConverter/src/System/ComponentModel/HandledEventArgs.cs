@@ -29,7 +29,6 @@ namespace System.ComponentModel
         ///    </para>
         /// </summary>
         public HandledEventArgs(bool defaultHandledValue)
-        : base()
         {
             Handled = defaultHandledValue;
         }

@@ -10,7 +10,7 @@
  * Copyright (c) 2004-2006 Intel Corporation - All Rights Reserved
  *
  *
- * This software program is licensed subject to the BSD License, 
+ * This software program is licensed subject to the BSD License,
  * available at http://www.opensource.org/licenses/bsd-license.html.
  */
 
@@ -21,13 +21,13 @@ namespace System.IO.Compression
     /// <summary>
     /// This class contains a managed Crc32 function as well as an indirection to the Interop.Zlib.Crc32 call.
     /// Since Desktop compression uses this file alongside the Open ZipArchive, we cannot remove it
-    /// without breaking the Desktop build. 
-    /// 
+    /// without breaking the Desktop build.
+    ///
     /// Note that in CoreFX the ZlibCrc32 function is always called.
     /// </summary>
     internal static class Crc32Helper
     {
-         // Calculate CRC based on the old CRC and the new bytes 
+        // Calculate CRC based on the old CRC and the new bytes
         // See RFC1952 for details.
         public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
@@ -44,7 +44,7 @@ namespace System.IO.Compression
 #if !FEATURE_ZLIB
 
         // Generated tables for managed crc calculation.
-        // Each table n (starting at 0) contains remainders from the long division of 
+        // Each table n (starting at 0) contains remainders from the long division of
         // all possible byte values, shifted by an offset of (n * 4 bits).
         // The divisor used is the crc32 standard polynomial 0xEDB88320
         // Please see cited paper for more details.
@@ -493,7 +493,7 @@ namespace System.IO.Compression
 
             for (int i = 0; i < runningLength / 8; i++)
             {
-                crc32 ^= (uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24);
+                crc32 ^= unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
                 offset += 4;
                 term1 = s_crcTable_7[crc32 & 0x000000FF] ^
                         s_crcTable_6[(crc32 >> 8) & 0x000000FF];
@@ -503,7 +503,7 @@ namespace System.IO.Compression
                         s_crcTable_4[(term2 >> 8) & 0x000000FF];
 
 
-                term3 = (uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24);
+                term3 = unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
                 offset += 4;
                 term1 = s_crcTable_3[term3 & 0x000000FF] ^
                         s_crcTable_2[(term3 >> 8) & 0x000000FF];

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Needs netfx configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
+    <BuildConfigurations>
+      netstandard;
+      netfx;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

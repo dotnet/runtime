@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using Xunit;
 
-public class TimerFiringTests
+public partial class TimerFiringTests
 {
     internal const int MaxPositiveTimeoutInMs = 30000;
 
@@ -131,20 +131,6 @@ public class TimerFiringTests
             t.Change(10, Timeout.Infinite);
             Assert.True(are.WaitOne(MaxPositiveTimeoutInMs), "Should have received a second timer event after changing it");
         }
-    }
-
-    [Fact]
-    public void Running_Timer_CanBeFinalizedAndStopsFiring()
-    {
-        AutoResetEvent are = new AutoResetEvent(false);
-        TimerCallback tc = new TimerCallback((object o) => are.Set());
-        var t = new Timer(tc, null, 1, 500);
-        Assert.True(are.WaitOne(MaxPositiveTimeoutInMs), "Failed to get first timer fire");
-        t = null; // Remove our refence so the timer can be GC'd 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        Assert.False(are.WaitOne(500), "Should not have received a timer fire after it was collected");
     }
 
     [Fact]

@@ -83,11 +83,11 @@ namespace System.Xml.Tests
         public int NS_Handling_1()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
-            CError.Compare(wSettings.NamespaceHandling, NamespaceHandling.Default, "Incorect default value for XmlWriterSettings.NamespaceHandling");
+            CError.Compare(wSettings.NamespaceHandling, NamespaceHandling.Default, "Incorrect default value for XmlWriterSettings.NamespaceHandling");
 
             using (XmlWriter w = CreateMemWriter(wSettings))
             {
-                CError.Compare(w.Settings.NamespaceHandling, NamespaceHandling.Default, "Incorect default value for XmlWriter.Settings.NamespaceHandling");
+                CError.Compare(w.Settings.NamespaceHandling, NamespaceHandling.Default, "Incorrect default value for XmlWriter.Settings.NamespaceHandling");
             }
             return TEST_PASS;
         }

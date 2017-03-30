@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,12 +33,18 @@ namespace System.Net.Http
         /// <summary>Provides all of the state associated with a single request/response, referred to as an "easy" request in libcurl parlance.</summary>
         private sealed class EasyRequest : TaskCompletionSource<HttpResponseMessage>
         {
+            /// <summary>Maximum content length where we'll use COPYPOSTFIELDS to let libcurl dup the content.</summary>
+            private const int InMemoryPostContentLimit = 32 * 1024; // arbitrary limit; could be tweaked in the future based on experimentation
+            /// <summary>Debugging flag used to enable CURLOPT_VERBOSE to dump to stderr when not redirecting it to the event source.</summary>
+            private static readonly bool s_curlDebugLogging = Environment.GetEnvironmentVariable("CURLHANDLER_DEBUG_VERBOSE") == "true";
+
             internal readonly CurlHandler _handler;
             internal readonly HttpRequestMessage _requestMessage;
             internal readonly CurlResponseMessage _responseMessage;
             internal readonly CancellationToken _cancellationToken;
             internal Stream _requestContentStream;
             internal long? _requestContentStreamStartingPosition;
+            internal bool _inMemoryPostContent;
 
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSListHandle _requestHeaders;
@@ -74,8 +81,17 @@ namespace System.Net.Http
                 }
                 _easyHandle = easyHandle;
 
+                // Before setting any other options, turn on curl's debug tracing
+                // if desired.  CURLOPT_VERBOSE may also be set subsequently if
+                // EventSource tracing is enabled.
+                if (s_curlDebugLogging)
+                {
+                    SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
+                }
+
                 // Configure the handle
                 SetUrl();
+                SetNetworkingOptions();
                 SetMultithreading();
                 SetTimeouts();
                 SetRedirection();
@@ -214,6 +230,9 @@ namespace System.Net.Http
 
                 // Dispose native callback resources
                 _callbackHandle?.Dispose();
+
+                // Release any send transfer state, which will return its buffer to the pool
+                _sendTransferState?.Dispose();
             }
 
             private void SetUrl()
@@ -230,7 +249,12 @@ namespace System.Net.Http
                 }
 
                 EventSourceTrace("Url: {0}", requestUri);
-                SetCurlOption(CURLoption.CURLOPT_URL, requestUri.AbsoluteUri);
+                string idnHost = requestUri.IdnHost;
+                string url = requestUri.Host == idnHost ? 
+                                requestUri.AbsoluteUri : 
+                                new UriBuilder(requestUri) { Host = idnHost }.Uri.AbsoluteUri;
+
+                SetCurlOption(CURLoption.CURLOPT_URL, url);
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
             }
 
@@ -245,6 +269,14 @@ namespace System.Net.Http
 
                 scopeId = 0;
                 return false;
+            }
+
+            private void SetNetworkingOptions()
+            {
+                // Disable the TCP Nagle algorithm.  It's disabled by default starting with libcurl 7.50.2,
+                // and when enabled has a measurably negative impact on latency in key scenarios
+                // (e.g. POST'ing small-ish data).
+                SetCurlOption(CURLoption.CURLOPT_TCP_NODELAY, 1L);
             }
 
             private void SetMultithreading()
@@ -353,6 +385,7 @@ namespace System.Net.Http
                             lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
                             contentLength);
                     }
+                    EventSourceTrace("Set content length: {0}", contentLength);
                     return;
                 }
 
@@ -375,7 +408,53 @@ namespace System.Net.Http
                 else if (_requestMessage.Method == HttpMethod.Post)
                 {
                     SetCurlOption(CURLoption.CURLOPT_POST, 1L);
+
+                    // Set the content length if we have one available. We must set POSTFIELDSIZE before setting
+                    // COPYPOSTFIELDS, as the setting of COPYPOSTFIELDS uses the size to know how much data to read
+                    // out; if POSTFIELDSIZE is not done before, COPYPOSTFIELDS will look for a null terminator, and
+                    // we don't necessarily have one.
                     SetContentLength(CURLoption.CURLOPT_POSTFIELDSIZE);
+
+                    // For most content types and most HTTP methods, we use a callback that lets libcurl
+                    // get data from us if/when it wants it.  However, as an optimization, for POSTs that
+                    // use content already known to be entirely in memory, we hand that data off to libcurl
+                    // ahead of time.  This not only saves on costs associated with all of the async transfer
+                    // between the content and libcurl, it also lets libcurl do larger writes that can, for
+                    // example, enable fewer packets to be sent on the wire.
+                    var inMemContent = _requestMessage.Content as ByteArrayContent;
+                    ArraySegment<byte> contentSegment;
+                    if (inMemContent != null &&
+                        inMemContent.TryGetBuffer(out contentSegment) &&
+                        contentSegment.Count <= InMemoryPostContentLimit) // skip if we'd be forcing libcurl to allocate/copy a large buffer
+                    {
+                        // Only pre-provide the content if the content still has its ContentLength
+                        // and if that length matches the segment.  If it doesn't, something has been overridden,
+                        // and we should rely on reading from the content stream to get the data.
+                        long? contentLength = inMemContent.Headers.ContentLength;
+                        if (contentLength.HasValue && contentLength.GetValueOrDefault() == contentSegment.Count)
+                        {
+                            _inMemoryPostContent = true;
+
+                            // Debug double-check array segment; this should all have been validated by the ByteArrayContent
+                            Debug.Assert(contentSegment.Array != null, "Expected non-null byte content array");
+                            Debug.Assert(contentSegment.Count >= 0, $"Expected non-negative byte content count {contentSegment.Count}");
+                            Debug.Assert(contentSegment.Offset >= 0, $"Expected non-negative byte content offset {contentSegment.Offset}");
+                            Debug.Assert(contentSegment.Array.Length - contentSegment.Offset >= contentSegment.Count,
+                                $"Expected offset {contentSegment.Offset} + count {contentSegment.Count} to be within array length {contentSegment.Array.Length}");
+
+                            // Hand the data off to libcurl with COPYPOSTFIELDS for it to copy out the data. (The alternative
+                            // is to use POSTFIELDS, which would mean we'd need to pin the array in the ByteArrayContent for the
+                            // duration of the request.  Often with a ByteArrayContent, the data will be small and the copy cheap.)
+                            unsafe
+                            {
+                                fixed (byte* inMemContentPtr = contentSegment.Array)
+                                {
+                                    SetCurlOption(CURLoption.CURLOPT_COPYPOSTFIELDS, new IntPtr(inMemContentPtr + contentSegment.Offset));
+                                    EventSourceTrace("Set post fields rather than using send content callback");
+                                }
+                            }
+                        }
+                    }
                 }
                 else if (_requestMessage.Method == HttpMethod.Trace)
                 {
@@ -673,9 +752,11 @@ namespace System.Net.Http
                     receiveHeadersCallback,
                     easyGCHandle,
                     ref _callbackHandle);
+                ThrowOOMIfInvalid(_callbackHandle);
 
-                // If we're sending data as part of the request, add callbacks for sending request data
-                if (_requestMessage.Content != null)
+                // If we're sending data as part of the request and it wasn't already added as
+                // in-memory data, add callbacks for sending request data.
+                if (!_inMemoryPostContent && _requestMessage.Content != null)
                 {
                     Interop.Http.RegisterReadWriteCallback(
                         _easyHandle,
@@ -683,12 +764,14 @@ namespace System.Net.Http
                         sendCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
 
                     Interop.Http.RegisterSeekCallback(
                         _easyHandle,
                         seekCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                 }
 
                 // If we're expecting any data in response, add a callback for receiving body data
@@ -700,9 +783,10 @@ namespace System.Net.Http
                         receiveBodyCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                 }
 
-                if (EventSourceTracingEnabled)
+                if (NetEventSource.IsEnabled)
                 {
                     SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
                     CURLcode curlResult = Interop.Http.RegisterDebugCallback(
@@ -710,6 +794,7 @@ namespace System.Net.Http
                         debugCallback,
                         easyGCHandle,
                         ref _callbackHandle);
+                    Debug.Assert(!_callbackHandle.IsInvalid, $"Should have been allocated (or failed) when originally adding handlers");
                     if (curlResult != CURLcode.CURLE_OK)
                     {
                         EventSourceTrace("Failed to register debug callback.");
@@ -724,8 +809,7 @@ namespace System.Net.Http
                     _callbackHandle = new SafeCallbackHandle();
                 }
 
-                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
-                return result;
+                return Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
             }
 
             private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSListHandle handle)
@@ -738,10 +822,25 @@ namespace System.Net.Http
                         continue;
                     }
 
-                    string headerValue = headers.GetHeaderString(header.Key);
-                    string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
-                        header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
-                        header.Key + ": " + headerValue;
+                    string headerKeyAndValue;
+                    string[] values = header.Value as string[];
+                    Debug.Assert(values != null, "Implementation detail, but expected Value to be a string[]");
+                    if (values != null && values.Length < 2)
+                    {
+                        // 0 or 1 values
+                        headerKeyAndValue = values.Length == 0 || string.IsNullOrEmpty(values[0]) ?
+                            header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
+                            header.Key + ": " + values[0];
+                    }
+                    else
+                    {
+                        // Either Values wasn't a string[], or it had 2 or more items. Both are handled by GetHeaderString.
+                        string headerValue = headers.GetHeaderString(header.Key);
+                        headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
+                            header.Key + ";" : // semicolon needed by libcurl; see above
+                            header.Key + ": " + headerValue;
+                    }
+
                     ThrowOOMIfFalse(Interop.Http.SListAppend(handle, headerKeyAndValue));
                 }
             }
@@ -769,31 +868,56 @@ namespace System.Net.Http
             private static void ThrowOOMIfFalse(bool appendResult)
             {
                 if (!appendResult)
-                    throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
+                {
+                    ThrowOOM();
+                }
             }
 
-            internal sealed class SendTransferState
+            private static void ThrowOOMIfInvalid(SafeHandle handle)
             {
-                internal readonly byte[] _buffer;
-                internal int _offset;
-                internal int _count;
-                internal Task<int> _task;
+                if (handle.IsInvalid)
+                {
+                    ThrowOOM();
+                }
+            }
 
-                internal SendTransferState(int bufferLength)
+            private static void ThrowOOM()
+            {
+                throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
+            }
+
+            internal sealed class SendTransferState : IDisposable
+            {
+                internal byte[] Buffer { get; private set; }
+                internal int Offset { get; set; }
+                internal int Count { get; set; }
+                internal Task<int> Task { get; private set; }
+
+                public SendTransferState(int bufferLength)
                 {
                     Debug.Assert(bufferLength > 0 && bufferLength <= MaxRequestBufferSize, $"Expected 0 < bufferLength <= {MaxRequestBufferSize}, got {bufferLength}");
-                    _buffer = new byte[bufferLength];
+                    Buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
                 }
 
-                internal void SetTaskOffsetCount(Task<int> task, int offset, int count)
+                public void Dispose()
+                {
+                    byte[] b = Buffer;
+                    if (b != null)
+                    {
+                        Buffer = null;
+                        ArrayPool<byte>.Shared.Return(b);
+                    }
+                }
+
+                public void SetTaskOffsetCount(Task<int> task, int offset, int count)
                 {
                     Debug.Assert(offset >= 0, "Offset should never be negative");
                     Debug.Assert(count >= 0, "Count should never be negative");
                     Debug.Assert(offset <= count, "Offset should never be greater than count");
 
-                    _task = task;
-                    _offset = offset;
-                    _count = count;
+                    Task = task;
+                    Offset = offset;
+                    Count = count;
                 }
             }
 
@@ -804,12 +928,15 @@ namespace System.Net.Http
                 if (urlResult == CURLcode.CURLE_OK && urlCharPtr != IntPtr.Zero)
                 {
                     string url = Marshal.PtrToStringAnsi(urlCharPtr);
-                    Uri finalUri;
-                    if (Uri.TryCreate(url, UriKind.Absolute, out finalUri))
+                    if (url != _requestMessage.RequestUri.OriginalString)
                     {
-                        _requestMessage.RequestUri = finalUri;
-                        return;
+                        Uri finalUri;
+                        if (Uri.TryCreate(url, UriKind.Absolute, out finalUri))
+                        {
+                            _requestMessage.RequestUri = finalUri;
+                        }
                     }
+                    return;
                 }
 
                 Debug.Fail("Expected to be able to get the last effective Uri from libcurl");

@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class TransparentIdentifierMemberSymbol : Symbol
+    internal sealed class TransparentIdentifierMemberSymbol : Symbol
     {
     }
 }

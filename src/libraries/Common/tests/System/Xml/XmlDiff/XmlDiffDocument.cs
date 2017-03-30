@@ -202,7 +202,7 @@ namespace System.Xml.XmlDiff
             else
             {
                 //something really wrong here, what should we do???
-                Debug.Assert(false, "ComparePosition meets an undecision situation.");
+                Debug.Assert(false, "ComparePosition meets an indecision situation.");
                 return NodePosition.Unknown;
             }
         }

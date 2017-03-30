@@ -12,10 +12,8 @@ namespace System.Xml.Serialization
     using System.Text;
     using System.Threading;
     using System.Globalization;
-    using System.Security.Policy;
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
-    using System.CodeDom.Compiler;
 
 
     /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory"]/*' />
@@ -68,8 +66,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializer CreateSerializer(XmlTypeMapping xmlTypeMapping)
         {
-            TempAssembly tempAssembly = XmlSerializer.GenerateTempAssembly(xmlTypeMapping);
-            return (XmlSerializer)tempAssembly.Contract.TypedSerializers[xmlTypeMapping.Key];
+            return new XmlSerializer(xmlTypeMapping);
         }
 
         /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer6"]/*' />
@@ -87,71 +84,12 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, string defaultNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            TempAssembly tempAssembly = s_cache[defaultNamespace, type];
-            XmlTypeMapping mapping = null;
-            if (tempAssembly == null)
-            {
-                lock (s_cache)
-                {
-                    tempAssembly = s_cache[defaultNamespace, type];
-                    if (tempAssembly == null)
-                    {
-                        XmlSerializerImplementation contract;
-                        Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, defaultNamespace, out contract);
-                        if (assembly == null)
-                        {
-                            // need to reflect and generate new serialization assembly
-                            XmlReflectionImporter importer = new XmlReflectionImporter(defaultNamespace);
-                            mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
-                            tempAssembly = XmlSerializer.GenerateTempAssembly(mapping, type, defaultNamespace);
-                        }
-                        else
-                        {
-                            tempAssembly = new TempAssembly(contract);
-                        }
-                        s_cache.Add(defaultNamespace, type, tempAssembly);
-                    }
-                }
-            }
-            if (mapping == null)
-            {
-                mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
-            }
-            return (XmlSerializer)tempAssembly.Contract.GetSerializer(type);
+            return new XmlSerializer(type, defaultNamespace);
         }
 
         public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
         {
-#pragma warning disable 618 // Passing through null evidence to centralize the CreateSerializer implementation
-            return CreateSerializer(type, overrides, extraTypes, root, defaultNamespace, location, null);
-#pragma warning restore 618
-        }
-
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer7"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateSerializer which does not take an Evidence parameter. See http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        internal XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
-        {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (location != null || evidence != null)
-            {
-                DemandForUserLocationOrEvidence();
-            }
-
-            XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
-            for (int i = 0; i < extraTypes.Length; i++)
-                importer.IncludeType(extraTypes[i]);
-            XmlTypeMapping mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
-            TempAssembly tempAssembly = XmlSerializer.GenerateTempAssembly(mapping, type, defaultNamespace, location, evidence);
-            return (XmlSerializer)tempAssembly.Contract.TypedSerializers[mapping.Key];
+            return new XmlSerializer(type, overrides, extraTypes, root, defaultNamespace, location);
         }
 
         private void DemandForUserLocationOrEvidence()

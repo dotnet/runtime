@@ -19,6 +19,13 @@ namespace System.IO
         /// <summary>Starts a new watch operation if one is not currently running.</summary>
         private void StartRaisingEvents()
         {
+            // If we're called when "Initializing" is true, set enabled to true
+            if (IsSuspended())
+            {
+                _enabled = true;
+                return;
+            }
+
             // If we already have a cancellation object, we're already running.
             if (_cancellation != null)
             {
@@ -87,6 +94,9 @@ namespace System.IO
         private void StopRaisingEvents()
         {
             _enabled = false;
+
+            if (IsSuspended())
+                return;
 
             // If there's an active cancellation token, cancel and release it.
             // The cancellation token and the processing task respond to cancellation
@@ -732,6 +742,7 @@ namespace System.IO
             private bool TryReadEvent(out NotifyEvent notifyEvent)
             {
                 Debug.Assert(_buffer != null);
+                Debug.Assert(_buffer.Length > 0);
                 Debug.Assert(_bufferAvailable >= 0 && _bufferAvailable <= _buffer.Length);
                 Debug.Assert(_bufferPos >= 0 && _bufferPos <= _bufferAvailable);
 
@@ -744,7 +755,7 @@ namespace System.IO
                     {
                         try
                         {
-                            fixed (byte* buf = this._buffer)
+                            fixed (byte* buf = &_buffer[0])
                             {
                                 _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length), 
                                     isDirectory: true);

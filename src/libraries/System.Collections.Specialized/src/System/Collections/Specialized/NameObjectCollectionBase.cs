@@ -66,6 +66,18 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
+        [Obsolete("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
+        protected NameObjectCollectionBase(IHashCodeProvider hashProvider, IComparer comparer) {
+            _keyComparer = new CompatibleComparer(hashProvider, comparer); 
+            Reset();
+        }
+
+        [Obsolete("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
+        protected NameObjectCollectionBase(int capacity, IHashCodeProvider hashProvider, IComparer comparer) {
+            _keyComparer = new CompatibleComparer(hashProvider, comparer); 
+            Reset(capacity);
+        }
+
         /// <devdoc>
         /// <para>Creates an empty <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance with the specified
         ///    initial capacity and using the default case-insensitive hash code provider

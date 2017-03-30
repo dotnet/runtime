@@ -10,6 +10,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_DefaultProxyCredentials_Test : RemoteExecutorTestBase
     {
         [Fact]
@@ -53,7 +55,10 @@ namespace System.Net.Http.Functional.Tests
                 handler.DefaultProxyCredentials = wrongCreds;
 
                 Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
-                Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
+                Task<string> responseStringTask = responseTask.ContinueWith(t =>
+                {
+                    using (t.Result) return t.Result.Content.ReadAsStringAsync();
+                }, TaskScheduler.Default).Unwrap();
                 Task.WaitAll(proxyTask, responseTask, responseStringTask);
 
                 TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
@@ -66,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)] // proxies set via the http_proxy environment variable are specific to Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // proxies set via the http_proxy environment variable are specific to Unix
         public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
         {
             int port;
@@ -89,7 +94,10 @@ namespace System.Net.Http.Functional.Tests
                     handler.DefaultProxyCredentials = creds;
 
                     Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
-                    Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
+                    Task<string> responseStringTask = responseTask.ContinueWith(t =>
+                    {
+                        using (t.Result) return t.Result.Content.ReadAsStringAsync();
+                    }, TaskScheduler.Default).Unwrap();
                     Task.WaitAll(responseTask, responseStringTask);
 
                     TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);

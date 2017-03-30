@@ -1,25 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
-    <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
-    <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
+    <AssemblyVersion>9.9.9.9</AssemblyVersion>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' And '$(TargetGroup)' != 'netstandard'">
+    <Compile Include="Drawing\ColorConverterTests.cs" />
+    <Compile Include="Drawing\PointConverterTests.cs" />
+    <Compile Include="Drawing\RectangleConverterTests.cs" />
+    <Compile Include="Drawing\SizeConverterTests.cs" />
+    <Compile Include="Drawing\SizeFConverterTests.cs" />
+  </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\tests\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="ArrayConverterTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />
     <Compile Include="AttributeProviderAttributeTests.cs" />
@@ -66,13 +69,16 @@
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
+    <Compile Include="TimerTests.cs" />
+    <Compile Include="BindingListTests.cs" />
+    <Compile Include="ContainerTests.cs" />
+    <Compile Include="CultureInfoConverterTests.cs" />
+    <Compile Include="LicenseManagerTests.cs" />
+    <Compile Include="ReferenceConverterTests.cs" />
+    <Compile Include="ContextStackTests.cs" />
+    <Compile Include="InstanceDescriptorTests.cs" />
+    <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

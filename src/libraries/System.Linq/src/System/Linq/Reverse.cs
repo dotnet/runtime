@@ -20,11 +20,14 @@ namespace System.Linq
             return new ReverseIterator<TSource>(source);
         }
 
+        /// <summary>
+        /// An iterator that yields the items of an <see cref="IEnumerable{TSource}"/> in reverse.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private sealed class ReverseIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private TSource[] _buffer;
-            private int _index;
 
             public ReverseIterator(IEnumerable<TSource> source)
             {
@@ -39,19 +42,36 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
+                if (_state - 2 <= -2)
+                {
+                    // Either someone called a method and cast us to IEnumerable without calling GetEnumerator,
+                    // or we were already disposed. In either case, iteration has ended, so return false.
+                    // A comparison is made against -2 instead of _state <= 0 because we want to handle cases where
+                    // the source is really large and adding the bias causes _state to overflow.
+                    Debug.Assert(_state == -1 || _state == 0);
+                    Dispose();
+                    return false;
+                }
+
                 switch (_state)
                 {
                     case 1:
+                        // Iteration has just started. Capture the source into an array and set _state to 2 + the count.
+                        // Having an extra field for the count would be more readable, but we save it into _state with a
+                        // bias instead to minimize field size of the iterator.
                         Buffer<TSource> buffer = new Buffer<TSource>(_source);
                         _buffer = buffer._items;
-                        _index = buffer._count - 1;
-                        _state = 2;
-                        goto case 2;
-                    case 2:
-                        if (_index != -1)
+                        _state = buffer._count + 2;
+                        goto default;
+                    default:
+                        // At this stage, _state starts from 2 + the count. _state - 3 represents the current index into the
+                        // buffer. It is continuously decremented until it hits 2, which means that we've run out of items to
+                        // yield and should return false.
+                        int index = _state - 3;
+                        if (index != -1)
                         {
-                            _current = _buffer[_index];
-                            --_index;
+                            _current = _buffer[index];
+                            --_state;
                             return true;
                         }
 
@@ -71,16 +91,7 @@ namespace System.Linq
             public TSource[] ToArray()
             {
                 TSource[] array = _source.ToArray();
-
-                // Array.Reverse() involves boxing for non-primitive value types, but
-                // checking that has its own cost, so just use this approach for all types.
-                for (int i = 0, j = array.Length - 1; i < j; ++i, --j)
-                {
-                    TSource temp = array[i];
-                    array[i] = array[j];
-                    array[j] = temp;
-                }
-
+                Array.Reverse<TSource>(array);
                 return array;
             }
 

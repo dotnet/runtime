@@ -4,8 +4,6 @@
 
 #include "pal_pkcs12.h"
 
-#include <openssl/err.h>
-
 extern "C" PKCS12* CryptoNative_DecodePkcs12(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)

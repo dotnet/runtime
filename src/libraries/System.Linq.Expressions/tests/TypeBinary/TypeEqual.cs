@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -29,6 +27,17 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.Constant(0);
             Type byRef = typeof(int).MakeByRefType();
             Assert.Throws<ArgumentException>("type", () => Expression.TypeEqual(exp, byRef));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TypePointer(bool useInterpreter)
+        {
+            Expression exp = Expression.Constant(0);
+            Type pointer = typeof(int*);
+            var test = Expression.TypeEqual(exp, pointer);
+            var lambda = Expression.Lambda<Func<bool>>(test);
+            var func = lambda.Compile(useInterpreter);
+            Assert.False(func());
         }
 
         [Fact]
@@ -114,7 +123,7 @@ namespace System.Linq.Expressions.Tests
                 expected = value != null && value.GetType() == nonNullable;
             }
 
-            var param = Expression.Parameter(expression.Type);
+            ParameterExpression param = Expression.Parameter(expression.Type);
 
             Func<bool> func = Expression.Lambda<Func<bool>>(
                 Expression.Block(
@@ -161,7 +170,7 @@ namespace System.Linq.Expressions.Tests
             Action<string> a = x => { };
             Action<string> b = ao;
 
-            var param = Expression.Parameter(typeof(Action<string>));
+            ParameterExpression param = Expression.Parameter(typeof(Action<string>));
 
             Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
                 Expression.TypeEqual(param, typeof(Action<string>)),
@@ -191,7 +200,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e = Expression.TypeEqual(Expression.Parameter(typeof(string), "s"), typeof(string));
+            TypeBinaryExpression e = Expression.TypeEqual(Expression.Parameter(typeof(string), "s"), typeof(string));
             Assert.Equal("(s TypeEqual String)", e.ToString());
         }
     }

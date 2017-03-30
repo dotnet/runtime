@@ -561,7 +561,7 @@ namespace System
         public void WalkFreeListResult(string cacheName, int freeListCount, int gen0BuffersInFreeList) { if (IsEnabled()) WriteEvent(21, cacheName, freeListCount, gen0BuffersInFreeList); }
 
 
-        static internal ulong AddressOf(object obj)
+        internal static ulong AddressOf(object obj)
         {
             var asByteArray = obj as byte[];
             if (asByteArray != null)
@@ -573,7 +573,7 @@ namespace System
         }
 
         [System.Security.SecuritySafeCritical]
-        static internal unsafe long AddressOfByteArray(byte[] array)
+        internal static unsafe long AddressOfByteArray(byte[] array)
         {
             if (array == null)
             {

@@ -1,30 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Import Project="dir.props" />
   <Import Project="..\dir.targets" />
 
   <PropertyGroup>
+    <!-- The SignFiles target needs OutDir to be defined -->
     <OutDir>$(BinDir)</OutDir>
   </PropertyGroup>
 
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
 
+  <ItemGroup>
+    <WindowsNativeLocation Include="$(NativeBinDir)\clrcompression.dll" />
+    <WindowsNativeLocation Include="$(NativeBinDir)_aot\clrcompression.dll" />
+  </ItemGroup>
+
+  <Target Name="GenerateSignForWindowsNative">
+    <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
+                          MarkerFile="%(WindowsNativeLocation.Identity).requires_signing" />
+  </Target>
+
   <!-- populates item group FilesToSign with the list of files to sign -->
-  <Target Name="GetFilesToSignItems">
+  <Target Name="GetFilesToSignItems"
+          DependsOnTargets="GenerateSignForWindowsNative">
     <!-- read all of the marker files and populate the FilesToSign item group -->
     <ItemGroup>
+      <!-- Note: this also looks for things under bin\obj which require signing like the shims -->
       <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
     </ItemGroup>
     <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
       <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
     </ReadSigningRequired>
+    <Message Text="Attempting to sign %(FilesToSign.Identity) with authenticode %(FilesToSign.Authenticode) and strongname %(FilesToSign.StrongName)" />
   </Target>
 
   <Target Name="Build"
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
           DependsOnTargets="GetFilesToSignItems">
-    <CallTarget Targets="SignFiles" />
+    <!--ToDo: Remove ContinueOnError once we verify that signing is succeeding-->
+    <CallTarget Targets="SignFiles" ContinueOnError="true" />
     <!-- now that the files have been signed delete the marker files -->
     <Delete Files="@(SignMarkerFile)" />
   </Target>

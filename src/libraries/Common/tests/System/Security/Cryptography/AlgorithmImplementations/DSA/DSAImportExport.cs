@@ -8,7 +8,10 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAImportExport
     {
-        [Fact]
+        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
+        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;
@@ -38,6 +41,50 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        public static void Import_512()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa512Parameters);
+
+                Assert.Equal(512, dsa.KeySize);
+            }
+        }
+
+        [Fact]
+        public static void Import_576()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.Dsa576Parameters);
+
+                Assert.Equal(576, dsa.KeySize);
+            }
+        }
+
+        [Fact]
+        public static void Import_1024()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
+                Assert.Equal(1024, dsa.KeySize);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsFips186_3))]
+        public static void Import_2048()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA2048Params());
+
+                Assert.Equal(2048, dsa.KeySize);
+            }
+        }
+
+        [Fact]
         public static void MultiExport()
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
@@ -62,6 +109,26 @@ namespace System.Security.Cryptography.Dsa.Tests
 
                 AssertKeyEquals(ref exportedPublic, ref exportedPublic2);
                 AssertKeyEquals(ref exportedPublic, ref exportedPublic3);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportRoundTrip(bool includePrivate)
+        {
+            DSAParameters imported = DSATestData.GetDSA1024Params();
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(imported);
+                DSAParameters exported = dsa.ExportParameters(includePrivate);
+                using (DSA dsa2 = DSAFactory.Create())
+                {
+                    dsa2.ImportParameters(exported);
+                    DSAParameters exported2 = dsa2.ExportParameters(includePrivate);
+                    AssertKeyEquals(ref exported, ref exported2);
+                }
             }
         }
 

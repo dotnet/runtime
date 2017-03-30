@@ -98,7 +98,7 @@ namespace System.Net.WebSockets
 
                 case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SECURE_FAILURE:
                     Debug.Assert(
-                        statusInformationLength == Marshal.SizeOf<uint>(),
+                        statusInformationLength == sizeof(uint),
                         "RequestCallback: statusInformationLength must be sizeof(uint).");
 
                     // statusInformation contains a flag: WINHTTP_CALLBACK_STATUS_FLAG_*
@@ -237,7 +237,7 @@ namespace System.Net.WebSockets
 
                 case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SECURE_FAILURE:
                     Debug.Assert(
-                        statusInformationLength == Marshal.SizeOf<uint>(),
+                        statusInformationLength == sizeof(uint),
                         "WebSocketCallback: statusInformationLength must be sizeof(uint).");
 
                     // statusInformation contains a flag: WINHTTP_CALLBACK_STATUS_FLAG_*
@@ -315,24 +315,16 @@ namespace System.Net.WebSockets
 
             if (asyncResult.AsyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
             {
-                var exception = new WebSocketException(
-                    WebSocketError.InvalidState,
-                    SR.Format(
-                        SR.net_WebSockets_InvalidState_ClosedOrAborted,
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"),
-                    innerException);
-
                 state.UpdateState(WebSocketState.Aborted);
 
                 if (state.TcsReceive != null)
                 {
-                    state.TcsReceive.TrySetException(exception);
+                    state.TcsReceive.TrySetCanceled();
                 }
 
                 if (state.TcsSend != null)
                 {
-                    state.TcsSend.TrySetException(exception);
+                    state.TcsSend.TrySetCanceled();
                 }
 
                 return;

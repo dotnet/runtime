@@ -198,7 +198,7 @@ namespace OLEDB.Test.ModuleCore
 
         public virtual tagVARIATION_STATUS ExecuteVariation(int index)
         {
-            //Track the testcase were in
+            //Track the test case we're in
             CTestModule testmodule = this.TestModule;
             if (testmodule != null)
                 testmodule.CurTestCase = this;

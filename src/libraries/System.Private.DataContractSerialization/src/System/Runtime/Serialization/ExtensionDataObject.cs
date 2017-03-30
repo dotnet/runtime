@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
     {
         private IList<ExtensionDataMember> _members;
 
-#if USE_REFEMIT
+#if USE_REFEMIT || uapaot
         public ExtensionDataObject()
 #else
         internal ExtensionDataObject()
@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || uapaot
         public IList<ExtensionDataMember> Members
 #else
         internal IList<ExtensionDataMember> Members
@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || uapaot
     public class ExtensionDataMember
 #else
     internal class ExtensionDataMember
@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || uapaot
     public interface IDataNode
 #else
     internal interface IDataNode
@@ -237,6 +237,44 @@ namespace System.Runtime.Serialization
         {
             base.Clear();
             _members = null;
+        }
+    }
+
+    internal class XmlDataNode : DataNode<object>
+    {
+        private IList<XmlAttribute> _xmlAttributes;
+        private IList<XmlNode> _xmlChildNodes;
+        private XmlDocument _ownerDocument;
+
+        internal XmlDataNode()
+        {
+            dataType = Globals.TypeOfXmlDataNode;
+        }
+
+        internal IList<XmlAttribute> XmlAttributes
+        {
+            get { return _xmlAttributes; }
+            set { _xmlAttributes = value; }
+        }
+
+        internal IList<XmlNode> XmlChildNodes
+        {
+            get { return _xmlChildNodes; }
+            set { _xmlChildNodes = value; }
+        }
+
+        internal XmlDocument OwnerDocument
+        {
+            get { return _ownerDocument; }
+            set { _ownerDocument = value; }
+        }
+
+        public override void Clear()
+        {
+            base.Clear();
+            _xmlAttributes = null;
+            _xmlChildNodes = null;
+            _ownerDocument = null;
         }
     }
 

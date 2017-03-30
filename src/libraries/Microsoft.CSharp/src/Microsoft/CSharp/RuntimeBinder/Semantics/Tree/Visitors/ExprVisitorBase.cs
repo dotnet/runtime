@@ -6,16 +6,16 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class ExprVisitorBase
+    internal abstract class ExprVisitorBase
     {
-        public EXPR Visit(EXPR pExpr)
+        public Expr Visit(Expr pExpr)
         {
             if (pExpr == null)
             {
                 return null;
             }
 
-            EXPR pResult;
+            Expr pResult;
             if (IsCachedExpr(pExpr, out pResult))
             {
                 return pResult;
@@ -31,12 +31,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected EXPRSTMT DispatchStatementList(EXPRSTMT expr)
+        private ExprStatement DispatchStatementList(ExprStatement expr)
         {
             Debug.Assert(expr != null);
 
-            EXPRSTMT first = expr;
-            EXPRSTMT pexpr = first;
+            ExprStatement first = expr;
+            ExprStatement pexpr = first;
 
             while (pexpr != null)
             {
@@ -44,22 +44,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // null, another statement, or a list of statements -- then we
                 // make sure that the statement list is hooked together correctly.
 
-                EXPRSTMT next = pexpr.GetOptionalNextStatement();
-                EXPRSTMT old = pexpr;
+                ExprStatement next = pexpr.OptionalNextStatement;
+                ExprStatement old = pexpr;
 
                 // Unhook the next one.
-                pexpr.SetOptionalNextStatement(null);
+                pexpr.OptionalNextStatement = null;
 
-                EXPR result = Dispatch(pexpr);
+                Expr result = Dispatch(pexpr);
                 Debug.Assert(result == null || result.isSTMT());
 
                 if (pexpr == first)
                 {
-                    first = (result == null) ? null : result.asSTMT();
+                    first = result?.asSTMT();
                 }
                 else
                 {
-                    pexpr.SetOptionalNextStatement((result == null) ? null : result.asSTMT());
+                    pexpr.OptionalNextStatement = result?.asSTMT();
                 }
 
                 // A transformation may return back a list of statements (or
@@ -69,20 +69,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Skip visiting the new list, then hook the tail of the old list
                 // up to the end of the new list.
 
-                while (pexpr.GetOptionalNextStatement() != null)
+                while (pexpr.OptionalNextStatement != null)
                 {
-                    pexpr = pexpr.GetOptionalNextStatement();
+                    pexpr = pexpr.OptionalNextStatement;
                 }
 
                 // Re-hook the next pointer.
-                pexpr.SetOptionalNextStatement(next);
+                pexpr.OptionalNextStatement = next;
             }
             return first;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected bool IsCachedExpr(EXPR pExpr, out EXPR pTransformedExpr)
+        private bool IsCachedExpr(Expr pExpr, out Expr pTransformedExpr)
         {
             pTransformedExpr = null;
             return false;
@@ -90,87 +90,87 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected EXPR CacheExprMapping(EXPR pExpr, EXPR pTransformedExpr)
+        private Expr CacheExprMapping(Expr pExpr, Expr pTransformedExpr)
         {
             return pTransformedExpr;
         }
 
-        protected virtual EXPR Dispatch(EXPR pExpr)
+        protected virtual Expr Dispatch(Expr pExpr)
         {
-            switch (pExpr.kind)
+            switch (pExpr.Kind)
             {
                 case ExpressionKind.EK_BLOCK:
-                    return VisitBLOCK(pExpr as EXPRBLOCK);
+                    return VisitBLOCK(pExpr as ExprBlock);
                 case ExpressionKind.EK_RETURN:
-                    return VisitRETURN(pExpr as EXPRRETURN);
+                    return VisitRETURN(pExpr as ExprReturn);
                 case ExpressionKind.EK_BINOP:
-                    return VisitBINOP(pExpr as EXPRBINOP);
+                    return VisitBINOP(pExpr as ExprBinOp);
                 case ExpressionKind.EK_UNARYOP:
-                    return VisitUNARYOP(pExpr as EXPRUNARYOP);
+                    return VisitUNARYOP(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_ASSIGNMENT:
-                    return VisitASSIGNMENT(pExpr as EXPRASSIGNMENT);
+                    return VisitASSIGNMENT(pExpr as ExprAssignment);
                 case ExpressionKind.EK_LIST:
-                    return VisitLIST(pExpr as EXPRLIST);
+                    return VisitLIST(pExpr as ExprList);
                 case ExpressionKind.EK_QUESTIONMARK:
-                    return VisitQUESTIONMARK(pExpr as EXPRQUESTIONMARK);
+                    return VisitQUESTIONMARK(pExpr as ExprQuestionMark);
                 case ExpressionKind.EK_ARRAYINDEX:
-                    return VisitARRAYINDEX(pExpr as EXPRARRAYINDEX);
+                    return VisitARRAYINDEX(pExpr as ExprArrayIndex);
                 case ExpressionKind.EK_ARRAYLENGTH:
-                    return VisitARRAYLENGTH(pExpr as EXPRARRAYLENGTH);
+                    return VisitARRAYLENGTH(pExpr as ExprArrayLength);
                 case ExpressionKind.EK_CALL:
-                    return VisitCALL(pExpr as EXPRCALL);
+                    return VisitCALL(pExpr as ExprCall);
                 case ExpressionKind.EK_EVENT:
-                    return VisitEVENT(pExpr as EXPREVENT);
+                    return VisitEVENT(pExpr as ExprEvent);
                 case ExpressionKind.EK_FIELD:
-                    return VisitFIELD(pExpr as EXPRFIELD);
+                    return VisitFIELD(pExpr as ExprField);
                 case ExpressionKind.EK_LOCAL:
-                    return VisitLOCAL(pExpr as EXPRLOCAL);
+                    return VisitLOCAL(pExpr as ExprLocal);
                 case ExpressionKind.EK_THISPOINTER:
-                    return VisitTHISPOINTER(pExpr as EXPRTHISPOINTER);
+                    return VisitTHISPOINTER(pExpr as ExprThisPointer);
                 case ExpressionKind.EK_CONSTANT:
-                    return VisitCONSTANT(pExpr as EXPRCONSTANT);
+                    return VisitCONSTANT(pExpr as ExprConstant);
                 case ExpressionKind.EK_TYPEARGUMENTS:
-                    return VisitTYPEARGUMENTS(pExpr as EXPRTYPEARGUMENTS);
+                    return VisitTYPEARGUMENTS(pExpr as ExprTypeArguments);
                 case ExpressionKind.EK_TYPEORNAMESPACE:
-                    return VisitTYPEORNAMESPACE(pExpr as EXPRTYPEORNAMESPACE);
+                    return VisitTYPEORNAMESPACE(pExpr as ExprTypeOrNamespace);
                 case ExpressionKind.EK_CLASS:
-                    return VisitCLASS(pExpr as EXPRCLASS);
+                    return VisitCLASS(pExpr as ExprClass);
                 case ExpressionKind.EK_FUNCPTR:
-                    return VisitFUNCPTR(pExpr as EXPRFUNCPTR);
+                    return VisitFUNCPTR(pExpr as ExprFuncPtr);
                 case ExpressionKind.EK_PROP:
-                    return VisitPROP(pExpr as EXPRPROP);
+                    return VisitPROP(pExpr as ExprProperty);
                 case ExpressionKind.EK_MULTI:
-                    return VisitMULTI(pExpr as EXPRMULTI);
+                    return VisitMULTI(pExpr as ExprMulti);
                 case ExpressionKind.EK_MULTIGET:
-                    return VisitMULTIGET(pExpr as EXPRMULTIGET);
+                    return VisitMULTIGET(pExpr as ExprMultiGet);
                 case ExpressionKind.EK_WRAP:
-                    return VisitWRAP(pExpr as EXPRWRAP);
+                    return VisitWRAP(pExpr as ExprWrap);
                 case ExpressionKind.EK_CONCAT:
-                    return VisitCONCAT(pExpr as EXPRCONCAT);
+                    return VisitCONCAT(pExpr as ExprConcat);
                 case ExpressionKind.EK_ARRINIT:
-                    return VisitARRINIT(pExpr as EXPRARRINIT);
+                    return VisitARRINIT(pExpr as ExprArrayInit);
                 case ExpressionKind.EK_CAST:
-                    return VisitCAST(pExpr as EXPRCAST);
+                    return VisitCAST(pExpr as ExprCast);
                 case ExpressionKind.EK_USERDEFINEDCONVERSION:
-                    return VisitUSERDEFINEDCONVERSION(pExpr as EXPRUSERDEFINEDCONVERSION);
+                    return VisitUSERDEFINEDCONVERSION(pExpr as ExprUserDefinedConversion);
                 case ExpressionKind.EK_TYPEOF:
-                    return VisitTYPEOF(pExpr as EXPRTYPEOF);
+                    return VisitTYPEOF(pExpr as ExprTypeOf);
                 case ExpressionKind.EK_ZEROINIT:
-                    return VisitZEROINIT(pExpr as EXPRZEROINIT);
+                    return VisitZEROINIT(pExpr as ExprZeroInit);
                 case ExpressionKind.EK_USERLOGOP:
-                    return VisitUSERLOGOP(pExpr as EXPRUSERLOGOP);
+                    return VisitUSERLOGOP(pExpr as ExprUserLogicalOp);
                 case ExpressionKind.EK_MEMGRP:
-                    return VisitMEMGRP(pExpr as EXPRMEMGRP);
+                    return VisitMEMGRP(pExpr as ExprMemberGroup);
                 case ExpressionKind.EK_BOUNDLAMBDA:
-                    return VisitBOUNDLAMBDA(pExpr as EXPRBOUNDLAMBDA);
+                    return VisitBOUNDLAMBDA(pExpr as ExprBoundLambda);
                 case ExpressionKind.EK_UNBOUNDLAMBDA:
-                    return VisitUNBOUNDLAMBDA(pExpr as EXPRUNBOUNDLAMBDA);
+                    return VisitUNBOUNDLAMBDA(pExpr as ExprUnboundLambda);
                 case ExpressionKind.EK_HOISTEDLOCALEXPR:
-                    return VisitHOISTEDLOCALEXPR(pExpr as EXPRHOISTEDLOCALEXPR);
+                    return VisitHOISTEDLOCALEXPR(pExpr as ExprHoistedLocalExpr);
                 case ExpressionKind.EK_FIELDINFO:
-                    return VisitFIELDINFO(pExpr as EXPRFIELDINFO);
+                    return VisitFIELDINFO(pExpr as ExprFieldInfo);
                 case ExpressionKind.EK_METHODINFO:
-                    return VisitMETHODINFO(pExpr as EXPRMETHODINFO);
+                    return VisitMETHODINFO(pExpr as ExprMethodInfo);
 
                 // Binary operators
                 case ExpressionKind.EK_EQUALS:
@@ -265,34 +265,34 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     throw Error.InternalCompilerError();
             }
         }
-        protected void VisitChildren(EXPR pExpr)
+        private void VisitChildren(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
 
-            EXPR exprRet = null;
+            Expr exprRet = null;
 
             // Lists are a special case.  We treat a list not as a
             // binary node but rather as a node with n children.
             if (pExpr.isLIST())
             {
-                EXPRLIST list = pExpr.asLIST();
+                ExprList list = pExpr.asLIST();
                 while (true)
                 {
-                    list.SetOptionalElement(Visit(list.GetOptionalElement()));
-                    if (list.GetOptionalNextListNode() == null)
+                    list.OptionalElement = Visit(list.OptionalElement);
+                    if (list.OptionalNextListNode== null)
                     {
                         return;
                     }
-                    if (!list.GetOptionalNextListNode().isLIST())
+                    if (!list.OptionalNextListNode.isLIST())
                     {
-                        list.SetOptionalNextListNode(Visit(list.GetOptionalNextListNode()));
+                        list.OptionalNextListNode = Visit(list.OptionalNextListNode);
                         return;
                     }
-                    list = list.GetOptionalNextListNode().asLIST();
+                    list = list.OptionalNextListNode.asLIST();
                 }
             }
 
-            switch (pExpr.kind)
+            switch (pExpr.Kind)
             {
                 default:
                     if (pExpr.isUnaryOperator())
@@ -314,10 +314,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRBINOP:
                     goto VISIT_EXPR;
                 VISIT_EXPRBINOP:
-                    exprRet = Visit((pExpr as EXPRBINOP).GetOptionalLeftChild());
-                    (pExpr as EXPRBINOP).SetOptionalLeftChild(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRBINOP).GetOptionalRightChild());
-                    (pExpr as EXPRBINOP).SetOptionalRightChild(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprBinOp).OptionalLeftChild);
+                    (pExpr as ExprBinOp).OptionalLeftChild = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprBinOp).OptionalRightChild);
+                    (pExpr as ExprBinOp).OptionalRightChild = exprRet as Expr;
                     goto VISIT_BASE_EXPRBINOP;
 
                 case ExpressionKind.EK_LIST:
@@ -325,10 +325,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRLIST:
                     goto VISIT_EXPR;
                 VISIT_EXPRLIST:
-                    exprRet = Visit((pExpr as EXPRLIST).GetOptionalElement());
-                    (pExpr as EXPRLIST).SetOptionalElement(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRLIST).GetOptionalNextListNode());
-                    (pExpr as EXPRLIST).SetOptionalNextListNode(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprList).OptionalElement);
+                    (pExpr as ExprList).OptionalElement = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprList).OptionalNextListNode);
+                    (pExpr as ExprList).OptionalNextListNode = exprRet as Expr;
                     goto VISIT_BASE_EXPRLIST;
 
                 case ExpressionKind.EK_ASSIGNMENT:
@@ -336,12 +336,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRASSIGNMENT:
                     goto VISIT_EXPR;
                 VISIT_EXPRASSIGNMENT:
-                    exprRet = Visit((pExpr as EXPRASSIGNMENT).GetLHS());
+                    exprRet = Visit((pExpr as ExprAssignment).LHS);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRASSIGNMENT).SetLHS(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRASSIGNMENT).GetRHS());
+                    (pExpr as ExprAssignment).LHS = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprAssignment).RHS);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRASSIGNMENT).SetRHS(exprRet as EXPR);
+                    (pExpr as ExprAssignment).RHS = exprRet as Expr;
                     goto VISIT_BASE_EXPRASSIGNMENT;
 
                 case ExpressionKind.EK_QUESTIONMARK:
@@ -349,12 +349,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRQUESTIONMARK:
                     goto VISIT_EXPR;
                 VISIT_EXPRQUESTIONMARK:
-                    exprRet = Visit((pExpr as EXPRQUESTIONMARK).GetTestExpression());
+                    exprRet = Visit((pExpr as ExprQuestionMark).TestExpression);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRQUESTIONMARK).SetTestExpression(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRQUESTIONMARK).GetConsequence());
+                    (pExpr as ExprQuestionMark).TestExpression = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprQuestionMark).Consequence);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRQUESTIONMARK).SetConsequence(exprRet as EXPRBINOP);
+                    (pExpr as ExprQuestionMark).Consequence = exprRet as ExprBinOp;
                     goto VISIT_BASE_EXPRQUESTIONMARK;
 
                 case ExpressionKind.EK_ARRAYINDEX:
@@ -362,12 +362,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRARRAYINDEX:
                     goto VISIT_EXPR;
                 VISIT_EXPRARRAYINDEX:
-                    exprRet = Visit((pExpr as EXPRARRAYINDEX).GetArray());
+                    exprRet = Visit((pExpr as ExprArrayIndex).Array);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRARRAYINDEX).SetArray(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRARRAYINDEX).GetIndex());
+                    (pExpr as ExprArrayIndex).Array = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprArrayIndex).Index);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRARRAYINDEX).SetIndex(exprRet as EXPR);
+                    (pExpr as ExprArrayIndex).Index = exprRet as Expr;
                     goto VISIT_BASE_EXPRARRAYINDEX;
 
                 case ExpressionKind.EK_ARRAYLENGTH:
@@ -375,9 +375,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRARRAYLENGTH:
                     goto VISIT_EXPR;
                 VISIT_EXPRARRAYLENGTH:
-                    exprRet = Visit((pExpr as EXPRARRAYLENGTH).GetArray());
+                    exprRet = Visit((pExpr as ExprArrayLength).Array);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRARRAYLENGTH).SetArray(exprRet as EXPR);
+                    (pExpr as ExprArrayLength).Array = exprRet as Expr;
                     goto VISIT_BASE_EXPRARRAYLENGTH;
 
                 case ExpressionKind.EK_UNARYOP:
@@ -385,9 +385,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRUNARYOP:
                     goto VISIT_EXPR;
                 VISIT_EXPRUNARYOP:
-                    exprRet = Visit((pExpr as EXPRUNARYOP).Child);
+                    exprRet = Visit((pExpr as ExprUnaryOp).Child);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRUNARYOP).Child = exprRet as EXPR;
+                    (pExpr as ExprUnaryOp).Child = exprRet as Expr;
                     goto VISIT_BASE_EXPRUNARYOP;
 
                 case ExpressionKind.EK_USERLOGOP:
@@ -395,15 +395,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRUSERLOGOP:
                     goto VISIT_EXPR;
                 VISIT_EXPRUSERLOGOP:
-                    exprRet = Visit((pExpr as EXPRUSERLOGOP).TrueFalseCall);
+                    exprRet = Visit((pExpr as ExprUserLogicalOp).TrueFalseCall);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRUSERLOGOP).TrueFalseCall = exprRet as EXPR;
-                    exprRet = Visit((pExpr as EXPRUSERLOGOP).OperatorCall);
+                    (pExpr as ExprUserLogicalOp).TrueFalseCall = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprUserLogicalOp).OperatorCall);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRUSERLOGOP).OperatorCall = exprRet as EXPRCALL;
-                    exprRet = Visit((pExpr as EXPRUSERLOGOP).FirstOperandToExamine);
+                    (pExpr as ExprUserLogicalOp).OperatorCall = exprRet as ExprCall;
+                    exprRet = Visit((pExpr as ExprUserLogicalOp).FirstOperandToExamine);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRUSERLOGOP).FirstOperandToExamine = exprRet as EXPR;
+                    (pExpr as ExprUserLogicalOp).FirstOperandToExamine = exprRet as Expr;
                     goto VISIT_BASE_EXPRUSERLOGOP;
 
                 case ExpressionKind.EK_TYPEOF:
@@ -411,8 +411,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRTYPEOF:
                     goto VISIT_EXPR;
                 VISIT_EXPRTYPEOF:
-                    exprRet = Visit((pExpr as EXPRTYPEOF).GetSourceType());
-                    (pExpr as EXPRTYPEOF).SetSourceType(exprRet as EXPRTYPEORNAMESPACE);
+                    exprRet = Visit((pExpr as ExprTypeOf).SourceType);
+                    (pExpr as ExprTypeOf).SourceType = exprRet as ExprTypeOrNamespace;
                     goto VISIT_BASE_EXPRTYPEOF;
 
                 case ExpressionKind.EK_CAST:
@@ -420,11 +420,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRCAST:
                     goto VISIT_EXPR;
                 VISIT_EXPRCAST:
-                    exprRet = Visit((pExpr as EXPRCAST).GetArgument());
+                    exprRet = Visit((pExpr as ExprCast).Argument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRCAST).SetArgument(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRCAST).GetDestinationType());
-                    (pExpr as EXPRCAST).SetDestinationType(exprRet as EXPRTYPEORNAMESPACE);
+                    (pExpr as ExprCast).Argument = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprCast).DestinationType);
+                    (pExpr as ExprCast).DestinationType = exprRet as ExprTypeOrNamespace;
                     goto VISIT_BASE_EXPRCAST;
 
                 case ExpressionKind.EK_USERDEFINEDCONVERSION:
@@ -432,9 +432,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRUSERDEFINEDCONVERSION:
                     goto VISIT_EXPR;
                 VISIT_EXPRUSERDEFINEDCONVERSION:
-                    exprRet = Visit((pExpr as EXPRUSERDEFINEDCONVERSION).UserDefinedCall);
+                    exprRet = Visit((pExpr as ExprUserDefinedConversion).UserDefinedCall);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRUSERDEFINEDCONVERSION).UserDefinedCall = exprRet as EXPR;
+                    (pExpr as ExprUserDefinedConversion).UserDefinedCall = exprRet as Expr;
                     goto VISIT_BASE_EXPRUSERDEFINEDCONVERSION;
 
                 case ExpressionKind.EK_ZEROINIT:
@@ -442,11 +442,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRZEROINIT:
                     goto VISIT_EXPR;
                 VISIT_EXPRZEROINIT:
-                    exprRet = Visit((pExpr as EXPRZEROINIT).OptionalArgument);
-                    (pExpr as EXPRZEROINIT).OptionalArgument = exprRet as EXPR;
+                    exprRet = Visit((pExpr as ExprZeroInit).OptionalArgument);
+                    (pExpr as ExprZeroInit).OptionalArgument = exprRet as Expr;
                     // Used for when we zeroinit 0 parameter constructors for structs/enums.
-                    exprRet = Visit((pExpr as EXPRZEROINIT).OptionalConstructorCall);
-                    (pExpr as EXPRZEROINIT).OptionalConstructorCall = exprRet as EXPR;
+                    exprRet = Visit((pExpr as ExprZeroInit).OptionalConstructorCall);
+                    (pExpr as ExprZeroInit).OptionalConstructorCall = exprRet as Expr;
                     goto VISIT_BASE_EXPRZEROINIT;
 
                 case ExpressionKind.EK_BLOCK:
@@ -454,8 +454,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRBLOCK:
                     goto VISIT_EXPRSTMT;
                 VISIT_EXPRBLOCK:
-                    exprRet = Visit((pExpr as EXPRBLOCK).GetOptionalStatements());
-                    (pExpr as EXPRBLOCK).SetOptionalStatements(exprRet as EXPRSTMT);
+                    exprRet = Visit((pExpr as ExprBlock).OptionalStatements);
+                    (pExpr as ExprBlock).OptionalStatements = exprRet as ExprStatement;
                     goto VISIT_BASE_EXPRBLOCK;
 
                 case ExpressionKind.EK_MEMGRP:
@@ -464,8 +464,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_EXPR;
                 VISIT_EXPRMEMGRP:
                     // The object expression. NULL for a static invocation.
-                    exprRet = Visit((pExpr as EXPRMEMGRP).GetOptionalObject());
-                    (pExpr as EXPRMEMGRP).SetOptionalObject(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprMemberGroup).OptionalObject);
+                    (pExpr as ExprMemberGroup).OptionalObject = exprRet as Expr;
                     goto VISIT_BASE_EXPRMEMGRP;
 
                 case ExpressionKind.EK_CALL:
@@ -473,11 +473,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRCALL:
                     goto VISIT_EXPR;
                 VISIT_EXPRCALL:
-                    exprRet = Visit((pExpr as EXPRCALL).GetOptionalArguments());
-                    (pExpr as EXPRCALL).SetOptionalArguments(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRCALL).GetMemberGroup());
+                    exprRet = Visit((pExpr as ExprCall).OptionalArguments);
+                    (pExpr as ExprCall).OptionalArguments = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprCall).MemberGroup);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRCALL).SetMemberGroup(exprRet as EXPRMEMGRP);
+                    (pExpr as ExprCall).MemberGroup = exprRet as ExprMemberGroup;
                     goto VISIT_BASE_EXPRCALL;
 
 
@@ -486,11 +486,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRPROP:
                     goto VISIT_EXPR;
                 VISIT_EXPRPROP:
-                    exprRet = Visit((pExpr as EXPRPROP).GetOptionalArguments());
-                    (pExpr as EXPRPROP).SetOptionalArguments(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRPROP).GetMemberGroup());
+                    exprRet = Visit((pExpr as ExprProperty).OptionalArguments);
+                    (pExpr as ExprProperty).OptionalArguments = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprProperty).MemberGroup);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRPROP).SetMemberGroup(exprRet as EXPRMEMGRP);
+                    (pExpr as ExprProperty).MemberGroup = exprRet as ExprMemberGroup;
                     goto VISIT_BASE_EXPRPROP;
 
                 case ExpressionKind.EK_FIELD:
@@ -498,8 +498,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRFIELD:
                     goto VISIT_EXPR;
                 VISIT_EXPRFIELD:
-                    exprRet = Visit((pExpr as EXPRFIELD).GetOptionalObject());
-                    (pExpr as EXPRFIELD).SetOptionalObject(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprField).OptionalObject);
+                    (pExpr as ExprField).OptionalObject = exprRet as Expr;
                     goto VISIT_BASE_EXPRFIELD;
 
                 case ExpressionKind.EK_EVENT:
@@ -507,8 +507,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPREVENT:
                     goto VISIT_EXPR;
                 VISIT_EXPREVENT:
-                    exprRet = Visit((pExpr as EXPREVENT).OptionalObject);
-                    (pExpr as EXPREVENT).OptionalObject = exprRet as EXPR;
+                    exprRet = Visit((pExpr as ExprEvent).OptionalObject);
+                    (pExpr as ExprEvent).OptionalObject = exprRet as Expr;
                     goto VISIT_BASE_EXPREVENT;
 
                 case ExpressionKind.EK_LOCAL:
@@ -530,8 +530,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRRETURN:
                     goto VISIT_EXPRSTMT;
                 VISIT_EXPRRETURN:
-                    exprRet = Visit((pExpr as EXPRRETURN).GetOptionalObject());
-                    (pExpr as EXPRRETURN).SetOptionalObject(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprReturn).OptionalObject);
+                    (pExpr as ExprReturn).OptionalObject = exprRet as Expr;
                     goto VISIT_BASE_EXPRRETURN;
 
                 case ExpressionKind.EK_CONSTANT:
@@ -540,8 +540,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_EXPR;
                 VISIT_EXPRCONSTANT:
                     // Used for when we zeroinit 0 parameter constructors for structs/enums.
-                    exprRet = Visit((pExpr as EXPRCONSTANT).GetOptionalConstructorCall());
-                    (pExpr as EXPRCONSTANT).SetOptionalConstructorCall(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprConstant).OptionalConstructorCall);
+                    (pExpr as ExprConstant).OptionalConstructorCall = exprRet as Expr;
                     goto VISIT_BASE_EXPRCONSTANT;
 
                 /*************************************************************************************************
@@ -552,8 +552,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   TYPEARGUMENTS - This wraps the type arguments for a class. It contains the TypeArray* which is
                     associated with the AggregateType for the instantiation of the class. 
 
-                  TYPEORNAMESPACE - This is the base class for this set of EXPRs. When binding a type, the result
-                    must be a type or a namespace. This EXPR encapsulates that fact. The lhs member is the EXPR 
+                  TYPEORNAMESPACE - This is the base class for this set of Exprs. When binding a type, the result
+                    must be a type or a namespace. This Expr encapsulates that fact. The lhs member is the Expr 
                     tree that was bound to resolve the type or namespace.
 
                   TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we don't know
@@ -577,8 +577,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRTYPEARGUMENTS:
                     goto VISIT_EXPR;
                 VISIT_EXPRTYPEARGUMENTS:
-                    exprRet = Visit((pExpr as EXPRTYPEARGUMENTS).GetOptionalElements());
-                    (pExpr as EXPRTYPEARGUMENTS).SetOptionalElements(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprTypeArguments).OptionalElements);
+                    (pExpr as ExprTypeArguments).OptionalElements = exprRet as Expr;
                     goto VISIT_BASE_EXPRTYPEARGUMENTS;
 
                 case ExpressionKind.EK_TYPEORNAMESPACE:
@@ -614,12 +614,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRMULTI:
                     goto VISIT_EXPR;
                 VISIT_EXPRMULTI:
-                    exprRet = Visit((pExpr as EXPRMULTI).GetLeft());
+                    exprRet = Visit((pExpr as ExprMulti).Left);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRMULTI).SetLeft(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRMULTI).GetOperator());
+                    (pExpr as ExprMulti).Left = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprMulti).Operator);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRMULTI).SetOperator(exprRet as EXPR);
+                    (pExpr as ExprMulti).Operator = exprRet as Expr;
                     goto VISIT_BASE_EXPRMULTI;
 
                 case ExpressionKind.EK_WRAP:
@@ -634,12 +634,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRCONCAT:
                     goto VISIT_EXPR;
                 VISIT_EXPRCONCAT:
-                    exprRet = Visit((pExpr as EXPRCONCAT).GetFirstArgument());
+                    exprRet = Visit((pExpr as ExprConcat).FirstArgument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRCONCAT).SetFirstArgument(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRCONCAT).GetSecondArgument());
+                    (pExpr as ExprConcat).FirstArgument = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprConcat).SecondArgument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as EXPRCONCAT).SetSecondArgument(exprRet as EXPR);
+                    (pExpr as ExprConcat).SecondArgument = exprRet as Expr;
                     goto VISIT_BASE_EXPRCONCAT;
 
                 case ExpressionKind.EK_ARRINIT:
@@ -647,10 +647,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRARRINIT:
                     goto VISIT_EXPR;
                 VISIT_EXPRARRINIT:
-                    exprRet = Visit((pExpr as EXPRARRINIT).GetOptionalArguments());
-                    (pExpr as EXPRARRINIT).SetOptionalArguments(exprRet as EXPR);
-                    exprRet = Visit((pExpr as EXPRARRINIT).GetOptionalArgumentDimensions());
-                    (pExpr as EXPRARRINIT).SetOptionalArgumentDimensions(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprArrayInit).OptionalArguments);
+                    (pExpr as ExprArrayInit).OptionalArguments = exprRet as Expr;
+                    exprRet = Visit((pExpr as ExprArrayInit).OptionalArgumentDimensions);
+                    (pExpr as ExprArrayInit).OptionalArgumentDimensions = exprRet as Expr;
                     goto VISIT_BASE_EXPRARRINIT;
 
                 case ExpressionKind.EK_NOOP:
@@ -665,8 +665,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 VISIT_BASE_EXPRBOUNDLAMBDA:
                     goto VISIT_EXPR;
                 VISIT_EXPRBOUNDLAMBDA:
-                    exprRet = Visit((pExpr as EXPRBOUNDLAMBDA).OptionalBody);
-                    (pExpr as EXPRBOUNDLAMBDA).OptionalBody = exprRet as EXPRBLOCK;
+                    exprRet = Visit((pExpr as ExprBoundLambda).OptionalBody);
+                    (pExpr as ExprBoundLambda).OptionalBody = exprRet as ExprBlock;
                     goto VISIT_BASE_EXPRBOUNDLAMBDA;
 
                 case ExpressionKind.EK_UNBOUNDLAMBDA:
@@ -698,332 +698,332 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_BASE_EXPRMETHODINFO;
             }
         }
-        protected virtual EXPR VisitEXPR(EXPR pExpr)
+        protected virtual Expr VisitEXPR(Expr pExpr)
         {
             VisitChildren(pExpr);
             return pExpr;
         }
-        protected virtual EXPR VisitBLOCK(EXPRBLOCK pExpr)
+        protected virtual Expr VisitBLOCK(ExprBlock pExpr)
         {
             return VisitSTMT(pExpr);
         }
-        protected virtual EXPR VisitTHISPOINTER(EXPRTHISPOINTER pExpr)
+        protected virtual Expr VisitTHISPOINTER(ExprThisPointer pExpr)
         {
             return VisitLOCAL(pExpr);
         }
-        protected virtual EXPR VisitRETURN(EXPRRETURN pExpr)
+        protected virtual Expr VisitRETURN(ExprReturn pExpr)
         {
             return VisitSTMT(pExpr);
         }
-        protected virtual EXPR VisitCLASS(EXPRCLASS pExpr)
+        protected virtual Expr VisitCLASS(ExprClass pExpr)
         {
             return VisitTYPEORNAMESPACE(pExpr);
         }
-        protected virtual EXPR VisitSTMT(EXPRSTMT pExpr)
+        protected virtual Expr VisitSTMT(ExprStatement pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitBINOP(EXPRBINOP pExpr)
+        protected virtual Expr VisitBINOP(ExprBinOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitLIST(EXPRLIST pExpr)
+        protected virtual Expr VisitLIST(ExprList pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitASSIGNMENT(EXPRASSIGNMENT pExpr)
+        protected virtual Expr VisitASSIGNMENT(ExprAssignment pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitQUESTIONMARK(EXPRQUESTIONMARK pExpr)
+        protected virtual Expr VisitQUESTIONMARK(ExprQuestionMark pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitARRAYINDEX(EXPRARRAYINDEX pExpr)
+        protected virtual Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitARRAYLENGTH(EXPRARRAYLENGTH pExpr)
+        protected virtual Expr VisitARRAYLENGTH(ExprArrayLength pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitUNARYOP(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitUSERLOGOP(EXPRUSERLOGOP pExpr)
+        protected virtual Expr VisitUSERLOGOP(ExprUserLogicalOp pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitTYPEOF(EXPRTYPEOF pExpr)
+        protected virtual Expr VisitTYPEOF(ExprTypeOf pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitCAST(EXPRCAST pExpr)
+        protected virtual Expr VisitCAST(ExprCast pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitUSERDEFINEDCONVERSION(EXPRUSERDEFINEDCONVERSION pExpr)
+        protected virtual Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitZEROINIT(EXPRZEROINIT pExpr)
+        protected virtual Expr VisitZEROINIT(ExprZeroInit pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitMEMGRP(EXPRMEMGRP pExpr)
+        protected virtual Expr VisitMEMGRP(ExprMemberGroup pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitCALL(EXPRCALL pExpr)
+        protected virtual Expr VisitCALL(ExprCall pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitPROP(EXPRPROP pExpr)
+        protected virtual Expr VisitPROP(ExprProperty pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitFIELD(EXPRFIELD pExpr)
+        protected virtual Expr VisitFIELD(ExprField pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitEVENT(EXPREVENT pExpr)
+        protected virtual Expr VisitEVENT(ExprEvent pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitLOCAL(EXPRLOCAL pExpr)
+        protected virtual Expr VisitLOCAL(ExprLocal pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitCONSTANT(EXPRCONSTANT pExpr)
+        protected virtual Expr VisitCONSTANT(ExprConstant pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitTYPEARGUMENTS(EXPRTYPEARGUMENTS pExpr)
+        protected virtual Expr VisitTYPEARGUMENTS(ExprTypeArguments pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitTYPEORNAMESPACE(EXPRTYPEORNAMESPACE pExpr)
+        protected virtual Expr VisitTYPEORNAMESPACE(ExprTypeOrNamespace pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitFUNCPTR(EXPRFUNCPTR pExpr)
+        protected virtual Expr VisitFUNCPTR(ExprFuncPtr pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitMULTIGET(EXPRMULTIGET pExpr)
+        protected virtual Expr VisitMULTIGET(ExprMultiGet pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitMULTI(EXPRMULTI pExpr)
+        protected virtual Expr VisitMULTI(ExprMulti pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitWRAP(EXPRWRAP pExpr)
+        protected virtual Expr VisitWRAP(ExprWrap pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitCONCAT(EXPRCONCAT pExpr)
+        protected virtual Expr VisitCONCAT(ExprConcat pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitARRINIT(EXPRARRINIT pExpr)
+        protected virtual Expr VisitARRINIT(ExprArrayInit pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitBOUNDLAMBDA(EXPRBOUNDLAMBDA pExpr)
+        protected virtual Expr VisitBOUNDLAMBDA(ExprBoundLambda pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitUNBOUNDLAMBDA(EXPRUNBOUNDLAMBDA pExpr)
+        protected virtual Expr VisitUNBOUNDLAMBDA(ExprUnboundLambda pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitHOISTEDLOCALEXPR(EXPRHOISTEDLOCALEXPR pExpr)
+        protected virtual Expr VisitHOISTEDLOCALEXPR(ExprHoistedLocalExpr pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitFIELDINFO(EXPRFIELDINFO pExpr)
+        protected virtual Expr VisitFIELDINFO(ExprFieldInfo pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitMETHODINFO(EXPRMETHODINFO pExpr)
+        protected virtual Expr VisitMETHODINFO(ExprMethodInfo pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitEQUALS(EXPRBINOP pExpr)
+        protected virtual Expr VisitEQUALS(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitCOMPARE(EXPRBINOP pExpr)
+        protected virtual Expr VisitCOMPARE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitEQ(EXPRBINOP pExpr)
+        protected virtual Expr VisitEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitNE(EXPRBINOP pExpr)
+        protected virtual Expr VisitNE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitLE(EXPRBINOP pExpr)
+        protected virtual Expr VisitLE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitGE(EXPRBINOP pExpr)
+        protected virtual Expr VisitGE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitADD(EXPRBINOP pExpr)
+        protected virtual Expr VisitADD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSUB(EXPRBINOP pExpr)
+        protected virtual Expr VisitSUB(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitDIV(EXPRBINOP pExpr)
+        protected virtual Expr VisitDIV(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitBITAND(EXPRBINOP pExpr)
+        protected virtual Expr VisitBITAND(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitBITOR(EXPRBINOP pExpr)
+        protected virtual Expr VisitBITOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitLSHIFT(EXPRBINOP pExpr)
+        protected virtual Expr VisitLSHIFT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitLOGAND(EXPRBINOP pExpr)
+        protected virtual Expr VisitLOGAND(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSEQUENCE(EXPRBINOP pExpr)
+        protected virtual Expr VisitSEQUENCE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSAVE(EXPRBINOP pExpr)
+        protected virtual Expr VisitSAVE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitINDIR(EXPRBINOP pExpr)
+        protected virtual Expr VisitINDIR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSTRINGEQ(EXPRBINOP pExpr)
+        protected virtual Expr VisitSTRINGEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitDELEGATEEQ(EXPRBINOP pExpr)
+        protected virtual Expr VisitDELEGATEEQ(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitDELEGATEADD(EXPRBINOP pExpr)
+        protected virtual Expr VisitDELEGATEADD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitRANGE(EXPRBINOP pExpr)
+        protected virtual Expr VisitRANGE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitLT(EXPRBINOP pExpr)
+        protected virtual Expr VisitLT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitMUL(EXPRBINOP pExpr)
+        protected virtual Expr VisitMUL(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitBITXOR(EXPRBINOP pExpr)
+        protected virtual Expr VisitBITXOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitRSHIFT(EXPRBINOP pExpr)
+        protected virtual Expr VisitRSHIFT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitLOGOR(EXPRBINOP pExpr)
+        protected virtual Expr VisitLOGOR(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSEQREV(EXPRBINOP pExpr)
+        protected virtual Expr VisitSEQREV(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSTRINGNE(EXPRBINOP pExpr)
+        protected virtual Expr VisitSTRINGNE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitDELEGATENE(EXPRBINOP pExpr)
+        protected virtual Expr VisitDELEGATENE(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitGT(EXPRBINOP pExpr)
+        protected virtual Expr VisitGT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitMOD(EXPRBINOP pExpr)
+        protected virtual Expr VisitMOD(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitSWAP(EXPRBINOP pExpr)
+        protected virtual Expr VisitSWAP(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitDELEGATESUB(EXPRBINOP pExpr)
+        protected virtual Expr VisitDELEGATESUB(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual EXPR VisitTRUE(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitTRUE(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitINC(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitINC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitLOGNOT(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitLOGNOT(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitNEG(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitNEG(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitBITNOT(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitBITNOT(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitADDR(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitADDR(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitDECIMALNEG(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitDECIMALNEG(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitDECIMALDEC(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitDECIMALDEC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitFALSE(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitFALSE(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitDEC(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitDEC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitUPLUS(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitUPLUS(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }
-        protected virtual EXPR VisitDECIMALINC(EXPRUNARYOP pExpr)
+        protected virtual Expr VisitDECIMALINC(ExprUnaryOp pExpr)
         {
             return VisitUNARYOP(pExpr);
         }

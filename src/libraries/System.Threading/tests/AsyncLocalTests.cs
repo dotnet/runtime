@@ -364,5 +364,60 @@ namespace System.Threading.Tests
 
             Assert.Equal(local.Value, 42);
         }
+
+        [Fact]
+        public static async Task AddAndUpdateManyLocals_ValueType()
+        {
+            var locals = new AsyncLocal<int>[40];
+            for (int i = 0; i < locals.Length; i++)
+            {
+                locals[i] = new AsyncLocal<int>();
+                locals[i].Value = i;
+
+                for (int j = 0; j <= i; j++)
+                {
+                    Assert.Equal(j, locals[j].Value);
+
+                    locals[j].Value = j + 1;
+                    Assert.Equal(j + 1, locals[j].Value);
+
+                    locals[j].Value = j;
+                    Assert.Equal(j, locals[j].Value);
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task AddUpdateAndRemoveManyLocals_ReferenceType()
+        {
+            var locals = new AsyncLocal<string>[40];
+
+            for (int i = 0; i < locals.Length; i++)
+            {
+                locals[i] = new AsyncLocal<string>();
+                locals[i].Value = i.ToString();
+
+                for (int j = 0; j <= i; j++)
+                {
+                    Assert.Equal(j.ToString(), locals[j].Value);
+
+                    locals[j].Value = (j + 1).ToString();
+                    Assert.Equal((j + 1).ToString(), locals[j].Value);
+
+                    locals[j].Value = j.ToString();
+                    Assert.Equal(j.ToString(), locals[j].Value);
+                }
+            }
+
+            for (int i = 0; i < locals.Length; i++)
+            {
+                locals[i].Value = null;
+                Assert.Null(locals[i].Value);
+                for (int j = i + 1; j < locals.Length; j++)
+                {
+                    Assert.Equal(j.ToString(), locals[j].Value);
+                }
+            }
+        }
     }
 }

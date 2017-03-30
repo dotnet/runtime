@@ -145,7 +145,7 @@ namespace System.Linq.Parallel
                 for (int i = 0; i < partitionCount; i++)
                 {
                     outputStream[i] = new UnionQueryOperatorEnumerator<TLeftKey, TRightKey>(
-                        leftHashStream[i], rightHashStream[i], i, _comparer, cancellationToken);
+                        leftHashStream[i], rightHashStream[i], _comparer, cancellationToken);
                 }
 
                 outputRecipient.Receive(outputStream);
@@ -184,7 +184,6 @@ namespace System.Linq.Parallel
         {
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> _rightSource; // Right data source.
-            private readonly int _partitionIndex; // The current partition.
             private Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the union.
             private CancellationToken _cancellationToken;
             private Shared<int> _outputLoopCount;
@@ -197,7 +196,7 @@ namespace System.Linq.Parallel
             internal UnionQueryOperatorEnumerator(
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> leftSource,
                 QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> rightSource,
-                int partitionIndex, IEqualityComparer<TInputOutput> comparer,
+                IEqualityComparer<TInputOutput> comparer,
                 CancellationToken cancellationToken)
             {
                 Debug.Assert(leftSource != null);
@@ -205,7 +204,6 @@ namespace System.Linq.Parallel
 
                 _leftSource = leftSource;
                 _rightSource = rightSource;
-                _partitionIndex = partitionIndex;
                 _comparer = comparer;
                 _cancellationToken = cancellationToken;
             }

@@ -29,7 +29,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                    SR.ArgumentIsNullOrWhitespace, "name"));
+                    SR.ArgumentIsNullOrWhitespace, nameof(name)));
             }
 
             _name = name;

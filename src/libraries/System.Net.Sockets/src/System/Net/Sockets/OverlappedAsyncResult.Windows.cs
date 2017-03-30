@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Sockets
 {
@@ -42,11 +38,11 @@ namespace System.Net.Sockets
         // These calls are outside the runtime and are unmanaged code, so we need
         // to prepare specific structures and ints that lie in unmanaged memory
         // since the overlapped calls may complete asynchronously.
-        internal void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress socketAddress, bool pinSocketAddress)
+        internal void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress socketAddress)
         {
             // Fill in Buffer Array structure that will be used for our send/recv Buffer
             _socketAddress = socketAddress;
-            if (pinSocketAddress && _socketAddress != null)
+            if (_socketAddress != null)
             {
                 object[] objectsToPin = null;
                 objectsToPin = new object[2];
@@ -104,24 +100,20 @@ namespace System.Net.Sockets
         // 3) failed.
         internal override object PostCompletion(int numBytes)
         {
-            if (ErrorCode == 0 && SocketsEventSource.Log.IsEnabled())
+            if (ErrorCode == 0 && NetEventSource.IsEnabled)
             {
                 LogBuffer(numBytes);
             }
 
-            return (int)numBytes;
+            return base.PostCompletion(numBytes);
         }
 
         private void LogBuffer(int size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
-            {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("OverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
-                }
-                Debug.Fail("OverlappedAsyncResult#" + LoggingHash.HashString(this) + "::LogBuffer()|Logging is off!");
-            }
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
 
             if (size > -1)
             {
@@ -129,7 +121,7 @@ namespace System.Net.Sockets
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {
-                        SocketsEventSource.Dump(wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -138,7 +130,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    SocketsEventSource.Dump(_singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
+                    NetEventSource.DumpBuffer(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
                 }
             }
         }

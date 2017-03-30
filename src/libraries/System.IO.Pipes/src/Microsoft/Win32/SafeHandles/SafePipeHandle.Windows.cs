@@ -8,19 +8,13 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafePipeHandle : SafeHandle
+    public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const int DefaultInvalidHandle = 0;
 
         protected override bool ReleaseHandle()
         {
-            return Interop.mincore.CloseHandle(handle);
-        }
-
-        public override bool IsInvalid
-        {
-            [SecurityCritical]
-            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
+            return Interop.Kernel32.CloseHandle(handle);
         }
     }
 }

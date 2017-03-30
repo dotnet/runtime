@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // ----------------------------------------------------------------------------
 
     // Either a ClassNode or a DelegateNode
-    internal class AggregateDeclaration : Declaration
+    internal sealed class AggregateDeclaration : Declaration
     {
         public AggregateSymbol Agg()
         {
@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        public new Assembly GetAssembly()
+        public Assembly GetAssembly()
         {
             return Agg().AssociatedAssembly;
         }

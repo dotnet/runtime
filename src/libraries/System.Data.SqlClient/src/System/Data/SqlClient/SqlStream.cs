@@ -8,6 +8,7 @@
 
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -289,7 +290,7 @@ namespace System.Data.SqlClient
 
         internal XmlReader ToXmlReader(bool async = false)
         {
-            return SqlTypes.SqlXml.CreateSqlXmlReader(this, closeInput: true, async: async);
+            return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(this, closeInput: true, async: async);
         }
 
         override public long Seek(long offset, SeekOrigin origin)

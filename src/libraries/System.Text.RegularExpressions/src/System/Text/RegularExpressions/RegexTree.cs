@@ -6,13 +6,12 @@
 // global information attached.
 
 using System.Collections;
-using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions
 {
     internal sealed class RegexTree
     {
-        internal RegexTree(RegexNode root, Dictionary<Int32, Int32> caps, Int32[] capnumlist, int captop, Dictionary<string, int> capnames, String[] capslist, RegexOptions opts)
+        internal RegexTree(RegexNode root, Hashtable caps, int[] capnumlist, int captop, Hashtable capnames, string[] capslist, RegexOptions opts)
         {
             _root = root;
             _caps = caps;
@@ -24,10 +23,10 @@ namespace System.Text.RegularExpressions
         }
 
         internal readonly RegexNode _root;
-        internal readonly Dictionary<Int32, Int32> _caps;
-        internal readonly Int32[] _capnumlist;
-        internal readonly Dictionary<string, int> _capnames;
-        internal readonly String[] _capslist;
+        internal readonly Hashtable _caps;
+        internal readonly int[] _capnumlist;
+        internal readonly Hashtable _capnames;
+        internal readonly string[] _capslist;
         internal readonly RegexOptions _options;
         internal readonly int _captop;
 

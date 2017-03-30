@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl
 {
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class XslTransformException : XsltException
     {
         public XslTransformException(Exception inner, string res, params string[] args)
@@ -94,9 +92,7 @@ namespace System.Xml.Xsl
         }
     }
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class XslLoadException : XslTransformException
     {
         private ISourceLineInfo _lineInfo;

@@ -3,12 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    public static class CertTests
+    public class CertTests
     {
+        private readonly ITestOutputHelper _log;
+
+        public CertTests(ITestOutputHelper output)
+        {
+            _log = output;
+        }
+
         [Fact]
         public static void X509CertTest()
         {
@@ -68,10 +77,74 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(notAfter, cert2.NotAfter);
                 Assert.Equal(notBefore, cert2.NotBefore);
 
+                Assert.Equal(notAfter.ToString(), cert2.GetExpirationDateString());
+                Assert.Equal(notBefore.ToString(), cert2.GetEffectiveDateString());
+
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
                 Assert.Equal("7A74410FB0CD5C972A364B71BF031D88A6510E9E", cert2.Thumbprint);
                 Assert.Equal(3, cert2.Version);
+            }
+        }
+
+        [Fact]
+        [OuterLoop("May require using the network, to download CRLs and intermediates")]
+        public void TestVerify()
+        {
+            bool success;
+
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            {
+                // Fails because expired (NotAfter = 10/16/2016)
+                Assert.False(microsoftDotCom.Verify(), "MicrosoftDotComSslCertBytes");
+            }
+
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            {
+                // NotAfter=10/31/2023
+                success = microsoftDotComIssuer.Verify();
+                if (!success)
+                {
+                    LogVerifyErrors(microsoftDotComIssuer, "MicrosoftDotComIssuerBytes");
+                }
+                Assert.True(success, "MicrosoftDotComIssuerBytes");
+            }
+
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            {
+                // NotAfter=7/17/2036
+                success = microsoftDotComRoot.Verify();
+                if (!success)
+                {
+                    LogVerifyErrors(microsoftDotComRoot, "MicrosoftDotComRootBytes");
+                }
+                Assert.True(success, "MicrosoftDotComRootBytes");
+            }
+        }
+
+        private void LogVerifyErrors(X509Certificate2 cert, string testName)
+        {
+            // Emulate cert.Verify() implementation in order to capture and log errors.
+            try
+            {
+                using (var chain = new X509Chain())
+                {
+                    if (!chain.Build(cert))
+                    {
+                        foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+                        {
+                            _log.WriteLine(string.Format($"X509Certificate2.Verify error: {testName}, {chainStatus.Status}, {chainStatus.StatusInformation}"));
+                        }
+                    }
+                    else
+                    {
+                        _log.WriteLine(string.Format($"X509Certificate2.Verify expected error; received none: {testName}"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _log.WriteLine($"X509Certificate2.Verify exception: {testName}, {e}");
             }
         }
 
@@ -181,6 +254,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // causing ObjectDisposedExceptions.
                 h = c.Handle;
                 Assert.Equal(IntPtr.Zero, h);
+
+                // State held on X509Certificate
                 Assert.ThrowsAny<CryptographicException>(() => c.GetCertHash());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithm());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParameters());
@@ -189,6 +264,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
                 Assert.ThrowsAny<CryptographicException>(() => c.Issuer);
                 Assert.ThrowsAny<CryptographicException>(() => c.Subject);
+                Assert.ThrowsAny<CryptographicException>(() => c.NotBefore);
+                Assert.ThrowsAny<CryptographicException>(() => c.NotAfter);
+
+                // State held on X509Certificate2
+                Assert.ThrowsAny<CryptographicException>(() => c.RawData);
+                Assert.ThrowsAny<CryptographicException>(() => c.SignatureAlgorithm);
+                Assert.ThrowsAny<CryptographicException>(() => c.Version);
+                Assert.ThrowsAny<CryptographicException>(() => c.SubjectName);
+                Assert.ThrowsAny<CryptographicException>(() => c.IssuerName);
+                Assert.ThrowsAny<CryptographicException>(() => c.PublicKey);
+                Assert.ThrowsAny<CryptographicException>(() => c.Extensions);
+                Assert.ThrowsAny<CryptographicException>(() => c.PrivateKey);
             }
         }
 
@@ -200,17 +287,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Pre-condition: There's no private key
                 Assert.False(publicOnly.HasPrivateKey);
 
-                // This won't throw.
-                byte[] pkcs12Bytes = publicOnly.Export(X509ContentType.Pkcs12);
+                // macOS 10.12 (Sierra) fails to create a PKCS#12 blob if it has no private keys within it.
+                bool shouldThrow = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
-                // Read it back as a collection, there should be only one cert, and it should
-                // be equal to the one we started with.
-                using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                try
                 {
-                    X509Certificate2Collection fromPfx = ic.Collection;
+                    byte[] pkcs12Bytes = publicOnly.Export(X509ContentType.Pkcs12);
 
-                    Assert.Equal(1, fromPfx.Count);
-                    Assert.Equal(publicOnly, fromPfx[0]);
+                    Assert.False(shouldThrow, "PKCS#12 export of a public-only certificate threw as expected");
+
+                    // Read it back as a collection, there should be only one cert, and it should
+                    // be equal to the one we started with.
+                    using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                    {
+                        X509Certificate2Collection fromPfx = ic.Collection;
+
+                        Assert.Equal(1, fromPfx.Count);
+                        Assert.Equal(publicOnly, fromPfx[0]);
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    if (!shouldThrow)
+                    {
+                        throw;
+                    }
                 }
             }
         }

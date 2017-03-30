@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -142,7 +141,7 @@ namespace System.Diagnostics
             return provider.GetMetadataReader();
         }
 
-        private unsafe static MetadataReaderProvider TryOpenReaderForInMemoryPdb(IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
+        private static unsafe MetadataReaderProvider TryOpenReaderForInMemoryPdb(IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
         {
             Debug.Assert(inMemoryPdbAddress != IntPtr.Zero);
 
@@ -168,7 +167,7 @@ namespace System.Diagnostics
             }
         }
 
-        private unsafe static PEReader TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private static unsafe PEReader TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
             // TODO: https://github.com/dotnet/corefx/issues/11406
             //if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)

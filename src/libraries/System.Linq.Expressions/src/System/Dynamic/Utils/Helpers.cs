@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
 using System.Collections.Generic;
 
 namespace System.Dynamic.Utils
@@ -12,7 +11,7 @@ namespace System.Dynamic.Utils
     {
         internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
             {
                 return first;

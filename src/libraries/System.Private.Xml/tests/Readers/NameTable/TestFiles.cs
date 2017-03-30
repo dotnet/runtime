@@ -146,11 +146,11 @@ namespace System.Xml.Tests
             tw.WriteLine("<ATTRIBUTE2 a1='a1value' />");
             tw.WriteLine("<ATTRIBUTE3 a1='a1value' a2='a2value' a3='a3value' />");
             tw.WriteLine("<ATTRIBUTE4 a1='' />");
-            tw.WriteLine("<ATTRIBUTE5 CRLF='x\r\nx' CR='x\rx' LF='x\nx' MS='x     x' TAB='x\tx' />");
-            tw.WriteLine("<ENDOFLINE1>x\r\nx</ENDOFLINE1>");
-            tw.WriteLine("<ENDOFLINE2>x\rx</ENDOFLINE2>");
+            tw.WriteLine(string.Format("<ATTRIBUTE5 CRLF='x{0}x' CR='x{0}x' LF='x\nx' MS='x     x' TAB='x\tx' />", Environment.NewLine));
+            tw.WriteLine(string.Format("<ENDOFLINE1>x{0}x</ENDOFLINE1>", Environment.NewLine));
+            tw.WriteLine(string.Format("<ENDOFLINE2>x{0}x</ENDOFLINE2>", Environment.NewLine));
             tw.WriteLine("<ENDOFLINE3>x\nx</ENDOFLINE3>");
-            tw.WriteLine("<WHITESPACE1>\r\n<ELEM />\r\n</WHITESPACE1>");
+            tw.WriteLine(string.Format("<WHITESPACE1>{0}<ELEM />{0}</WHITESPACE1>", Environment.NewLine));
             tw.WriteLine("<WHITESPACE2> <ELEM /> </WHITESPACE2>");
             tw.WriteLine("<WHITESPACE3>\t<ELEM />\t</WHITESPACE3>");
             tw.WriteLine("<SKIP1 /><AFTERSKIP1 />");
@@ -259,7 +259,7 @@ namespace System.Xml.Tests
             tw.WriteLine("<EMPTY4 val=\"abc\"></EMPTY4>");
             tw.WriteLine("<COMPLEX>Text<!-- comment --><![CDATA[cdata]]></COMPLEX>");
             tw.WriteLine("<DUMMY />");
-            tw.WriteLine("<MULTISPACES att=' \r\n \t \r\r\n  n1  \r\n \t \r\r\n  n2  \r\n \t \r\r\n ' />");
+            tw.WriteLine(string.Format("<MULTISPACES att=' {0} \t {0}{0}  n1  {0} \t {0}{0}  n2  {0} \t {0}{0} ' />", Environment.NewLine));
             tw.WriteLine("<CAT>AB<![CDATA[CD]]> </CAT>");
             tw.WriteLine("<CATMIXED>AB<![CDATA[CD]]> </CATMIXED>");
 

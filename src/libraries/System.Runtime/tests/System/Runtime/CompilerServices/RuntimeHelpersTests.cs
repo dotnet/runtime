@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
 {
-    public static class RuntimeHelpersTests
+    public static partial class RuntimeHelpersTests
     {
         [Fact]
         public static void GetHashCodeTest()

@@ -455,7 +455,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
-        /// <summary>Adds an individual exceptionto this source.</summary>
+        /// <summary>Adds an individual exception to this source.</summary>
         /// <param name="exception">The exception to add</param>
         internal void AddException(Exception exception)
         {

@@ -19,8 +19,8 @@ namespace System.IO
 {
     internal sealed partial class WinRTFileSystem : FileSystem
     {
-        public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override int MaxPath { get { return Interop.Kernel32.MAX_PATH; } }
+        public override int MaxDirectoryPath { get { return Interop.Kernel32.MAX_DIRECTORY_PATH; } }
 
         private static System.IO.FileAttributes ConvertFileAttributes(WinRTFileAttributes fileAttributes)
         {
@@ -96,6 +96,27 @@ namespace System.IO
             await file.CopyAsync(destFolder, destFileName, overwrite ? NameCollisionOption.ReplaceExisting : NameCollisionOption.FailIfExists).TranslateWinRTTask(sourceFullPath);
         }
 
+        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            EnsureBackgroundThread();
+            SynchronousResultOf(ReplaceFileAsync(sourceFullPath, destFullPath, destBackupFullPath, ignoreMetadataErrors));
+        }
+
+        private async Task ReplaceFileAsync(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            // Copy the destination file to a backup.
+            if (destBackupFullPath != null)
+            {
+                await CopyFileAsync(destFullPath, destBackupFullPath, overwrite: true).ConfigureAwait(false);
+            }
+
+            // Then copy the contents of the source file to the destination file.
+            await CopyFileAsync(sourceFullPath, destFullPath, overwrite: true).ConfigureAwait(false);
+
+            // Finally, delete the source file.
+            await DeleteFileAsync(sourceFullPath).ConfigureAwait(false);
+        }
+
         public override void CreateDirectory(string fullPath)
         {
             EnsureBackgroundThread();
@@ -104,7 +125,7 @@ namespace System.IO
 
         private async Task<StorageFolder> CreateDirectoryAsync(string fullPath, bool failIfExists)
         {
-            if (fullPath.Length >= Interop.mincore.MAX_DIRECTORY_PATH)
+            if (fullPath.Length >= Interop.Kernel32.MAX_DIRECTORY_PATH)
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
             Stack<string> stackDir = new Stack<string>();
@@ -130,7 +151,7 @@ namespace System.IO
                     if (String.IsNullOrEmpty(folderName))
                     {
                         // we reached the root and it did not exist.  we can't create roots.
-                        throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_PATH_NOT_FOUND, workingPath);
+                        throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, workingPath);
                     }
 
                     stackDir.Push(folderName);
@@ -141,7 +162,7 @@ namespace System.IO
             Debug.Assert(workingFolder != null);
 
             if (failIfExists && (stackDir.Count == 0))
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_ALREADY_EXISTS, fullPath);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_ALREADY_EXISTS, fullPath);
 
             // we have work to do.  if stackDir is empty it means we were passed a path to an existing directory.
             while (stackDir.Count > 0)
@@ -408,7 +429,7 @@ namespace System.IO
 
         public override string GetCurrentDirectory()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470;
         }
 
         public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
@@ -570,11 +591,11 @@ namespace System.IO
         {
             // When trying to open the root directory, we need to throw an Access Denied
             if (PathInternal.GetRootLength(fullPath) == fullPath.Length)
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_ACCESS_DENIED, fullPath);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_ACCESS_DENIED, fullPath);
 
             // Win32 CreateFile returns ERROR_PATH_NOT_FOUND when given a path that ends with '\'
             if (PathHelpers.EndsInDirectorySeparator(fullPath))
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_PATH_NOT_FOUND, fullPath);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, fullPath);
 
             StorageFile file = null;
 
@@ -651,7 +672,7 @@ namespace System.IO
 
             // StorageFolder.DeleteAsync will always be recursive.  Detect a non-empty folder up front and throw.
             if (!recursive && (await folder.GetItemsAsync()).Count != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_DIR_NOT_EMPTY, fullPath);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_DIR_NOT_EMPTY, fullPath);
 
             // StorageFolder.Delete ignores readonly attribute.  Detect and throw.
             if ((folder.Attributes & WinRTFileAttributes.ReadOnly) == WinRTFileAttributes.ReadOnly)
@@ -665,7 +686,7 @@ namespace System.IO
             // WinRT will ignore failures to delete in cases where files are in use.
             // Throw if the folder still remains after successful DeleteAsync
             if (null != await (parentFolder.TryGetItemAsync(folder.Name)))
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_DIR_NOT_EMPTY, fullPath);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_DIR_NOT_EMPTY, fullPath);
         }
 
         public override void SetAttributes(string fullPath, FileAttributes attributes)
@@ -710,7 +731,7 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470
         }
 
         public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)

@@ -5,11 +5,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Cache;
+using System.Net.Security;
+using System.Runtime.Serialization;
+using System.Security.Principal;
+using System.Threading;
 using System.Threading.Tasks;
-
 namespace System.Net
 {
-    public abstract class WebRequest
+    [Serializable]
+    public abstract class WebRequest :  MarshalByRefObject, ISerializable
     {
         internal class WebRequestPrefixElement
         {
@@ -23,8 +28,21 @@ namespace System.Net
             }
         }
 
-        private static volatile List<WebRequestPrefixElement> s_prefixList;
-        private static readonly object s_internalSyncObject = new object();
+        private static List<WebRequestPrefixElement> s_prefixList;
+        private static object s_internalSyncObject = new object();
+
+        internal const int DefaultTimeoutMilliseconds = 100 * 1000;
+
+        protected WebRequest() { }
+
+        protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
+
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
 
         // Create a WebRequest.
         //
@@ -42,10 +60,7 @@ namespace System.Net
         //     Newly created WebRequest.
         private static WebRequest Create(Uri requestUri, bool useUriBase)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Requests, "WebRequest", "Create", requestUri.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, requestUri);
 
             string LookupUri;
             WebRequestPrefixElement Current = null;
@@ -106,19 +121,12 @@ namespace System.Net
             {
                 // We found a match, so just call the creator and return what it does.
                 webRequest = Current.Creator.Create(requestUri);
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", webRequest);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, webRequest);
                 return webRequest;
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", null);
-            }
-
             // Otherwise no match, throw an exception.
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             throw new NotSupportedException(SR.net_unknown_prefix);
         }
 
@@ -173,7 +181,7 @@ namespace System.Net
         //
         // Returns:
         //     Newly created WebRequest.
-        internal static WebRequest CreateDefault(Uri requestUri)
+        public static WebRequest CreateDefault(Uri requestUri)
         {
             if (requestUri == null)
             {
@@ -334,8 +342,8 @@ namespace System.Net
         //
         //
         // This is the method that initializes the prefix list. We create
-        // an List for the PrefixList, then an HttpRequestCreator object,
-        // and then we register the HTTP and HTTPS prefixes.
+        // an List for the PrefixList, then each of the request creators,
+        // and then we register them with the associated prefixes.
         //
         // Returns:
         //     true
@@ -346,63 +354,120 @@ namespace System.Net
                 // GetConfig() might use us, so we have a circular dependency issue
                 // that causes us to nest here. We grab the lock only if we haven't
                 // initialized.
-                if (s_prefixList == null)
+                return LazyInitializer.EnsureInitialized(ref s_prefixList, ref s_internalSyncObject, () =>
                 {
-                    lock (s_internalSyncObject)
+                    var httpRequestCreator = new HttpRequestCreator();
+                    var ftpRequestCreator = new FtpWebRequestCreator();
+                    var fileRequestCreator = new FileWebRequestCreator();
+
+                    const int Count = 4;
+                    var prefixList = new List<WebRequestPrefixElement>(Count)
                     {
-                        if (s_prefixList == null)
-                        {
-                            var httpRequestCreator = new HttpRequestCreator();
+                        new WebRequestPrefixElement("http:", httpRequestCreator),
+                        new WebRequestPrefixElement("https:", httpRequestCreator),
+                        new WebRequestPrefixElement("ftp:", ftpRequestCreator),
+                        new WebRequestPrefixElement("file:", fileRequestCreator),
+                    };
+                    Debug.Assert(prefixList.Count == Count, $"Expected {Count}, got {prefixList.Count}");
 
-                            const int Count = 2;
-                            var prefixList = new List<WebRequestPrefixElement>(Count)
-                            {
-                                new WebRequestPrefixElement("http:", httpRequestCreator),
-                                new WebRequestPrefixElement("https:", httpRequestCreator)
-                            };
-                            Debug.Assert(prefixList.Count == Count);
-
-                            s_prefixList = prefixList;
-                        }
-                    }
-                }
-
-                return s_prefixList;
+                    return prefixList;
+                });
             }
             set
             {
-                s_prefixList = value;
+                Volatile.Write(ref s_prefixList, value);
             }
         }
 
-        protected WebRequest()
+        public static RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+
+        public virtual RequestCachePolicy CachePolicy { get; set; }
+
+        public AuthenticationLevel AuthenticationLevel { get; set; } = AuthenticationLevel.MutualAuthRequested;
+
+        public TokenImpersonationLevel ImpersonationLevel { get; set; } = TokenImpersonationLevel.Delegation;
+
+        public virtual string ConnectionGroupName
         {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract string Method
+        public virtual string Method
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract Uri RequestUri
+        public virtual Uri RequestUri
         {
-            get;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract WebHeaderCollection Headers
+        public virtual WebHeaderCollection Headers
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract string ContentType
+        public virtual long ContentLength
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }
+
+        public virtual string ContentType
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
         public virtual ICredentials Credentials
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }
+
+        public virtual int Timeout
         {
             get
             {
@@ -426,14 +491,36 @@ namespace System.Net
             }
         }
 
-        public abstract IAsyncResult BeginGetResponse(AsyncCallback callback, object state);
+        public virtual Stream GetRequestStream()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract WebResponse EndGetResponse(IAsyncResult asyncResult);
+        public virtual WebResponse GetResponse()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract IAsyncResult BeginGetRequestStream(AsyncCallback callback, Object state);
+        public virtual IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract Stream EndGetRequestStream(IAsyncResult asyncResult);
+        public virtual WebResponse EndGetResponse(IAsyncResult asyncResult)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
+        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
+        public virtual Stream EndGetRequestStream(IAsyncResult asyncResult)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+   
         public virtual Task<Stream> GetRequestStreamAsync()
         {
             // Offload to a different thread to avoid blocking the caller during request submission.
@@ -459,37 +546,43 @@ namespace System.Net
                     this));
         }
 
-        public abstract void Abort();
+        public virtual void Abort()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
         // Default Web Proxy implementation.
         private static IWebProxy s_DefaultWebProxy;
         private static bool s_DefaultWebProxyInitialized;
 
+        public static IWebProxy GetSystemWebProxy() => SystemWebProxy.Get();
+
         public static IWebProxy DefaultWebProxy
         {
             get
             {
-                lock (s_internalSyncObject)
-                {
-                    if (!s_DefaultWebProxyInitialized)
-                    {
-                        s_DefaultWebProxy = SystemWebProxy.Get();
-                        s_DefaultWebProxyInitialized = true;
-                    }
-
-                    return s_DefaultWebProxy;
-                }
+                return LazyInitializer.EnsureInitialized(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => SystemWebProxy.Get());
             }
-
             set
             {
                 lock (s_internalSyncObject)
                 {
                     s_DefaultWebProxy = value;
-                    s_DefaultWebProxyInitialized = true;
                 }
             }
         }
+
+        public virtual bool PreAuthenticate
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }    
 
         public virtual IWebProxy Proxy
         {

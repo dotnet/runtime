@@ -25,23 +25,30 @@ namespace System.Security.Cryptography
         private bool _canWrite;
         private bool _finalBlockTransformed;
         private SemaphoreSlim _lazyAsyncActiveSemaphore;
-        
+        private readonly bool _leaveOpen;
+
         // Constructors
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
+            : this(stream, transform, mode, false)
+        {
+        }
+
+        public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
 
             _stream = stream;
             _transformMode = mode;
             _transform = transform;
+            _leaveOpen = leaveOpen;
             switch (_transformMode)
             {
                 case CryptoStreamMode.Read:
-                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, "stream"));
+                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, nameof(stream)));
                     _canRead = true;
                     break;
                 case CryptoStreamMode.Write:
-                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, "stream"));
+                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, nameof(stream)));
                     _canWrite = true;
                     break;
                 default:
@@ -142,6 +149,20 @@ namespace System.Security.Cryptography
             return;
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            // If we have been inherited into a subclass, the following implementation could be incorrect
+            // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
+            // we will only use this implementation in cases where we know it is safe to do so,
+            // and delegate to our base class (which will call into Flush) when we are not sure.
+            if (GetType() != typeof(CryptoStream))
+                return base.FlushAsync(cancellationToken);
+
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException(SR.NotSupported_UnseekableStream);
@@ -157,6 +178,12 @@ namespace System.Security.Cryptography
             CheckReadArguments(buffer, offset, count);
             return ReadAsyncInternal(buffer, offset, count, cancellationToken);
         }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
 
         private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -375,6 +402,12 @@ namespace System.Security.Cryptography
             return WriteAsyncInternal(buffer, offset, count, cancellationToken);
         }
 
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
+
         private async Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // To avoid a race with a stream's position pointer & generating race 
@@ -513,6 +546,11 @@ namespace System.Security.Cryptography
             return;
         }
 
+        public void Clear()
+        {
+            Close();
+        }        
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -523,7 +561,10 @@ namespace System.Security.Cryptography
                     {
                         FlushFinalBlock();
                     }
-                    _stream.Dispose();
+                    if (!_leaveOpen)
+                    {
+                        _stream.Dispose();
+                    }
                 }
             }
             finally

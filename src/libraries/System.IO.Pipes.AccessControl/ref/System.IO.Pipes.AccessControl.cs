@@ -32,37 +32,37 @@ namespace System.IO.Pipes
     {
         public PipeAccessRule(System.Security.Principal.IdentityReference identity, System.IO.Pipes.PipeAccessRights rights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
         public PipeAccessRule(string identity, System.IO.Pipes.PipeAccessRights rights, System.Security.AccessControl.AccessControlType type) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AccessControlType)) { }
-        public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { return default(System.IO.Pipes.PipeAccessRights); } }
+        public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { throw null; } }
     }
     public sealed partial class PipeAuditRule : System.Security.AccessControl.AuditRule
     {
         public PipeAuditRule(System.Security.Principal.IdentityReference identity, System.IO.Pipes.PipeAccessRights rights, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
         public PipeAuditRule(string identity, System.IO.Pipes.PipeAccessRights rights, System.Security.AccessControl.AuditFlags flags) : base(default(System.Security.Principal.IdentityReference), default(int), default(bool), default(System.Security.AccessControl.InheritanceFlags), default(System.Security.AccessControl.PropagationFlags), default(System.Security.AccessControl.AuditFlags)) { }
-        public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { return default(System.IO.Pipes.PipeAccessRights); } }
+        public System.IO.Pipes.PipeAccessRights PipeAccessRights { get { throw null; } }
     }
     public static partial class PipesAclExtensions {
         [System.Security.SecurityCriticalAttribute]
-        public static System.IO.Pipes.PipeSecurity GetAccessControl(this System.IO.Pipes.PipeStream stream) { return default(System.IO.Pipes.PipeSecurity); }
+        public static System.IO.Pipes.PipeSecurity GetAccessControl(this System.IO.Pipes.PipeStream stream) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public static void SetAccessControl(this System.IO.Pipes.PipeStream stream, System.IO.Pipes.PipeSecurity pipeSecurity) { }
     }
     public partial class PipeSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
         public PipeSecurity() : base(default(bool), default(System.Security.AccessControl.ResourceType)) { }
-        public override System.Type AccessRightType { get { return default(System.Type); } }
-        public override System.Type AccessRuleType { get { return default(System.Type); } }
-        public override System.Type AuditRuleType { get { return default(System.Type); } }
-        public override System.Security.AccessControl.AccessRule AccessRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) { return default(System.Security.AccessControl.AccessRule); }
+        public override System.Type AccessRightType { get { throw null; } }
+        public override System.Type AccessRuleType { get { throw null; } }
+        public override System.Type AuditRuleType { get { throw null; } }
+        public override System.Security.AccessControl.AccessRule AccessRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AccessControlType type) { throw null; }
         public void AddAccessRule(System.IO.Pipes.PipeAccessRule rule) { }
         public void AddAuditRule(System.IO.Pipes.PipeAuditRule rule) { }
-        public sealed override System.Security.AccessControl.AuditRule AuditRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) { return default(System.Security.AccessControl.AuditRule); }
+        public sealed override System.Security.AccessControl.AuditRule AuditRuleFactory(System.Security.Principal.IdentityReference identityReference, int accessMask, bool isInherited, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.AuditFlags flags) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         protected internal void Persist(System.Runtime.InteropServices.SafeHandle handle) { }
         [System.Security.SecurityCriticalAttribute]
         protected internal void Persist(string name) { }
-        public bool RemoveAccessRule(System.IO.Pipes.PipeAccessRule rule) { return default(bool); }
+        public bool RemoveAccessRule(System.IO.Pipes.PipeAccessRule rule) { throw null; }
         public void RemoveAccessRuleSpecific(System.IO.Pipes.PipeAccessRule rule) { }
-        public bool RemoveAuditRule(System.IO.Pipes.PipeAuditRule rule) { return default(bool); }
+        public bool RemoveAuditRule(System.IO.Pipes.PipeAuditRule rule) { throw null; }
         public void RemoveAuditRuleAll(System.IO.Pipes.PipeAuditRule rule) { }
         public void RemoveAuditRuleSpecific(System.IO.Pipes.PipeAuditRule rule) { }
         public void ResetAccessRule(System.IO.Pipes.PipeAccessRule rule) { }

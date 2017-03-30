@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void ReleaseVariableSlots(int n)
         {
-            // This code does optimisation of variable placement. Comented out for this version
+            // This code does optimisation of variable placement. Commented out for this version
             //      Reuse of the variable disable the check that variable was assigned before the actual use
             //      this check has to be done in compile time n future.
             //            this.variableFreeSlot -= n;

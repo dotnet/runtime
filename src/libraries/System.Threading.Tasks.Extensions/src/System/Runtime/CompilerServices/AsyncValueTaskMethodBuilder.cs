@@ -84,6 +84,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
+            _useBuilder = true;
             _methodBuilder.AwaitOnCompleted(ref awaiter, ref stateMachine);
         }
 
@@ -97,6 +98,7 @@ namespace System.Runtime.CompilerServices
             where TAwaiter : ICriticalNotifyCompletion 
             where TStateMachine : IAsyncStateMachine
         {
+            _useBuilder = true;
             _methodBuilder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine);
         }
     }

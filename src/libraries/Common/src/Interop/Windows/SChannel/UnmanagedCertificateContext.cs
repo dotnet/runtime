@@ -9,7 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal unsafe static class UnmanagedCertificateContext
+    internal static unsafe class UnmanagedCertificateContext
     {
         internal static X509Certificate2Collection GetRemoteCertificatesFromStoreContext(SafeFreeCertContext certContext)
         {
@@ -38,12 +38,7 @@ namespace System.Net
                     }
 
                     var cert = new X509Certificate2(new IntPtr(next));
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print(
-                            "UnmanagedCertificateContext::GetRemoteCertificatesFromStoreContext " +
-                            "adding remote certificate:" + cert.Subject + cert.Thumbprint);
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(certContext, $"Adding remote certificate:{cert}");
 
                     result.Add(cert);
                     last = next;

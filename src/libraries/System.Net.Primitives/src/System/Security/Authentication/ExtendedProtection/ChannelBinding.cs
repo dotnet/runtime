@@ -10,27 +10,21 @@ namespace System.Security.Authentication.ExtendedProtection
     // NOTE: this does not inherit from the definition of SafeHandleZeroOrMinusOneIsInvalid
     // from $(CommonPath)/Microsoft/Win32/SafeHandles/SafeHandleZeroOrMinusOneIsInvalid because
     // that type is internal.
-    public abstract class ChannelBinding : SafeHandle
+    public abstract class ChannelBinding : SafeHandleZeroOrMinusOneIsInvalid
     {
         protected ChannelBinding()
-            : base(IntPtr.Zero, true)
+            : base(true)
         {
         }
 
         protected ChannelBinding(bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
+            : base(ownsHandle)
         {
         }
 
         public abstract int Size
         {
             get;
-        }
-
-        // Copied from SafeHandleZeroOrMinusOneIsInvalid
-        public override bool IsInvalid
-        {
-            get { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
         }
     }
 }

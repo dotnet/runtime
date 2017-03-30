@@ -50,20 +50,21 @@ namespace System.IO.Tests
             [ConditionalFact(nameof(CanCreateSymbolicLinks))]
             public void SetToPathContainingSymLink()
             {
-                var path = GetTestFilePath();
-                var linkPath = GetTestFilePath();
-
-                Directory.CreateDirectory(path);
-                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
-
-                // Both the symlink and the target exist
-                Assert.True(Directory.Exists(path), "path should exist");
-                Assert.True(Directory.Exists(linkPath), "linkPath should exist");
-
-                // Set Current Directory to symlink
-                string currentDir = Directory.GetCurrentDirectory();
-                try
+                RemoteInvoke(() =>
                 {
+                    var path = GetTestFilePath();
+                    var linkPath = GetTestFilePath();
+
+                    Directory.CreateDirectory(path);
+                    Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+
+                    // Both the symlink and the target exist
+                    Assert.True(Directory.Exists(path), "path should exist");
+                    Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+
+                    // Set Current Directory to symlink
+                    string currentDir = Directory.GetCurrentDirectory();
+
                     Directory.SetCurrentDirectory(linkPath);
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
@@ -77,12 +78,8 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(currentDir);
-                }
-                Assert.Equal(currentDir, Directory.GetCurrentDirectory());
+                    return SuccessExitCode;
+                }).Dispose();
             }
         }
     }

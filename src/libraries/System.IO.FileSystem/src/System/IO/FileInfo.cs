@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -14,6 +15,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
+    [Serializable]
     public sealed partial class FileInfo : FileSystemInfo
     {
         private String _name;
@@ -29,6 +31,12 @@ namespace System.IO
             Contract.EndContractBlock();
 
             Init(fileName);
+        }
+
+        private FileInfo(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            _name = Path.GetFileName(OriginalPath);
+            DisplayPath = GetDisplayPath(OriginalPath);
         }
 
         [System.Security.SecurityCritical]
@@ -117,20 +125,17 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
         {
-            Stream stream = FileStream.InternalOpen(FullPath);
-            return new StreamReader(stream, Encoding.UTF8, true);
+            return new StreamReader(FullPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         }
 
         public StreamWriter CreateText()
         {
-            Stream stream = FileStream.InternalCreate(FullPath);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: false);
         }
 
         public StreamWriter AppendText()
         {
-            Stream stream = FileStream.InternalAppend(FullPath);
-            return new StreamWriter(stream);
+            return new StreamWriter(FullPath, append: true);
         }
 
 
@@ -291,10 +296,32 @@ namespace System.IO
             Invalidate();
         }
 
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName)
+        {
+            return Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
+        }
+
+        public FileInfo Replace(String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
+        {
+            File.Replace(FullPath, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
+            return new FileInfo(destinationFileName);
+        }
+
         // Returns the display path
         public override String ToString()
         {
             return DisplayPath;
         }
+
+        public void Decrypt()
+        {
+            File.Decrypt(FullPath);
+        }
+
+        public void Encrypt()
+        {
+            File.Encrypt(FullPath);
+        }
+
     }
 }

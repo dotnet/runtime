@@ -33,7 +33,6 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-#if !NETSTANDARD10
         /// <summary>
         /// Gets a collection of properties for the type of array specified by the value
         /// parameter using the specified context and attributes.
@@ -42,7 +41,6 @@ namespace System.ComponentModel
         {
             return null;
         }
-#endif // !NETSTANDARD10
 
         /// <summary>
         /// Gets a value indicating whether this object supports properties.

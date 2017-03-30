@@ -67,6 +67,17 @@ namespace System.Net.NetworkInformation
         }
 
         /// <summary>
+        /// Provides Internet Protocol (IP) statistical data for this network interface.
+        /// Despite the naming, the results are not IPv4 specific.
+        /// Do not use this method, use GetIPStatistics instead.
+        /// </summary>
+        /// <returns>The interface's IP statistics.</returns>
+        public virtual IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
+        /// <summary>
         /// Gets the current operational state of the network connection.
         /// </summary>
         public virtual OperationalStatus OperationalStatus { get { throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException); } }

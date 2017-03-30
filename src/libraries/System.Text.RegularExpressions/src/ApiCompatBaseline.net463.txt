@@ -1,5 +1,0 @@
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Group.Name.get()' does not exist in the implementation but it does exist in the contract.

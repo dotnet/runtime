@@ -150,7 +150,12 @@ namespace System.IO
             if (_callbackInvoked)
                 return false;
 
-            _asyncStreamOperation.Cancel();
+            if (_asyncStreamOperation != null)
+            {
+                _asyncStreamOperation.Cancel();
+                _asyncStreamOperation = null;
+            }
+
             return true;
         }
 

@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -149,7 +148,7 @@ namespace System.IO.Tests
                                 default: createDestinationStream = s => File.Create(s); break;
                             }
 
-                            // Various exposeHandle (whether the SafeFileHandle was publically accessed), 
+                            // Various exposeHandle (whether the SafeFileHandle was publicly accessed), 
                             // preWrite, bufferSize, writeSize, and numWrites combinations
                             yield return new object[] { createDestinationStream, useAsync, preRead, false, false, cancelable, 0x1000, 0x100, 100 };
                             yield return new object[] { createDestinationStream, useAsync, preRead, false, false, cancelable, 0x1, 0x1, 1000 };
@@ -197,7 +196,7 @@ namespace System.IO.Tests
             Assert.Equal<byte>(expectedData, actualData);
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
@@ -238,7 +237,7 @@ namespace System.IO.Tests
             Assert.Equal<byte>(expectedData, actualData);
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         public async Task NamedPipeViaFileStream_CancellationRequested_OperationCanceled()
         {

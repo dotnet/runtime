@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
-    public class HttpWebRequestTest
+    public partial class HttpWebRequestTest
     {
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);
@@ -23,11 +23,12 @@ namespace System.Net.Tests
         private WebHeaderCollection _savedResponseHeaders = null;
         private Exception _savedRequestStreamException = null;
         private Exception _savedResponseException = null;
+
         private int _requestStreamCallbackCallCount = 0;
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
 
         public HttpWebRequestTest(ITestOutputHelper output)
         {
@@ -241,6 +242,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -254,6 +256,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -266,6 +269,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public void BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -278,6 +282,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public void BeginGetResponse_CreatePostRequestThenAbort_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -288,6 +293,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -304,6 +310,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -313,6 +320,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task GetResponseAsync_GetResponseStream_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -333,7 +341,7 @@ namespace System.Net.Tests
             {
                 strContent = sr.ReadToEnd();
             }
-            Assert.True(strContent.Contains("\"Host\": \"" + Configuration.Http.Host + "\""));
+            Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -355,12 +363,14 @@ namespace System.Net.Tests
             Assert.True(strContent.Contains(RequestBody));
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.UseDefaultCredentials = true;
-            WebResponse response = await request.GetResponseAsync();
+            await request.GetResponseAsync();
         }
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
@@ -375,8 +385,8 @@ namespace System.Net.Tests
         }
 
         public static object[][] StatusCodeServers = {
-            new object[] { Configuration.Http.StatusCodeUri(false, 404) },
-            new object[] { Configuration.Http.StatusCodeUri(true, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(false, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(true, 404) },
         };
 
         [Theory, MemberData(nameof(StatusCodeServers))]
@@ -390,6 +400,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -397,7 +408,9 @@ namespace System.Net.Tests
             Assert.True(request.HaveResponse);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -453,10 +466,11 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
         public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))
@@ -478,7 +492,7 @@ namespace System.Net.Tests
                 requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
             }
 
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
 
             Stream responseStream = response.GetResponseStream();
             String responseBody;
@@ -495,8 +509,8 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
             request.ContentType = "application/json";
-            
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))

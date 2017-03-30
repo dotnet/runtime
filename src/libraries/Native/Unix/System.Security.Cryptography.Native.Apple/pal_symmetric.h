@@ -19,7 +19,9 @@ typedef uint32_t PAL_SymmetricOperation;
 enum
 {
     PAL_AlgorithmAES = 0,
+    PAL_AlgorithmDES = 1,
     PAL_Algorithm3DES = 2,
+    PAL_AlgorithmRC2 = 5,
 };
 typedef uint32_t PAL_SymmetricAlgorithm;
 
@@ -63,36 +65,36 @@ algorithm and assumed valid. pbIv is only allowed to be NULL for PAL_ChainingMod
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-extern "C" int AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
-                                               PAL_SymmetricAlgorithm algorithm,
-                                               PAL_ChainingMode chainingMode,
-                                               PAL_PaddingMode paddingMode,
-                                               const uint8_t* pbKey,
-                                               int32_t cbKey,
-                                               const uint8_t* pbIv,
-                                               PAL_SymmetricOptions options,
-                                               CCCryptorRef* ppCryptorOut,
-                                               int32_t* pkCCStatus);
+extern "C" int32_t AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
+                                                   PAL_SymmetricAlgorithm algorithm,
+                                                   PAL_ChainingMode chainingMode,
+                                                   PAL_PaddingMode paddingMode,
+                                                   const uint8_t* pbKey,
+                                                   int32_t cbKey,
+                                                   const uint8_t* pbIv,
+                                                   PAL_SymmetricOptions options,
+                                                   CCCryptorRef* ppCryptorOut,
+                                                   int32_t* pkCCStatus);
 
 /*
 Shims CCCryptorUpdate, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-extern "C" int AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
-                                               const uint8_t* pbData,
-                                               int32_t cbData,
-                                               uint32_t* pbOutput,
-                                               int32_t cbOutput,
-                                               int32_t* pcbWritten,
-                                               int32_t* pkCCStatus);
+extern "C" int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
+                                                   const uint8_t* pbData,
+                                                   int32_t cbData,
+                                                   uint32_t* pbOutput,
+                                                   int32_t cbOutput,
+                                                   int32_t* pcbWritten,
+                                                   int32_t* pkCCStatus);
 
 /*
 Shims CCCryptorFinal, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-extern "C" int AppleCryptoNative_CryptorFinal(
+extern "C" int32_t AppleCryptoNative_CryptorFinal(
     CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pkCCStatus);
 
 /*
@@ -100,4 +102,4 @@ Shims CCCryptorReset, updating *pkCCStatus as its output.
 
 Returns 1 on success, 0 on system error, -1 on input error.
 */
-extern "C" int AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus);
+extern "C" int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus);

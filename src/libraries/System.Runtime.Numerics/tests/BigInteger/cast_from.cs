@@ -66,7 +66,7 @@ namespace System.Numerics.Tests
 
             // SByte Explicit Cast from BigInteger: Random value < SByte.MinValue
             bigInteger = GenerateRandomBigIntegerLessThan(SByte.MinValue, s_random);
-            value = (SByte)bigInteger.ToByteArray()[0];
+            value = unchecked((SByte)bigInteger.ToByteArray()[0]);
             Assert.Throws<OverflowException>(() => VerifySByteExplicitCastFromBigInteger(value, bigInteger));
 
             // SByte Explicit Cast from BigInteger: SByte.MinValue - 1
@@ -105,12 +105,12 @@ namespace System.Numerics.Tests
             // SByte Explicit Cast from BigInteger: SByte.MaxValue + 1
             bigInteger = new BigInteger(SByte.MaxValue);
             bigInteger += BigInteger.One;
-            value = (SByte)bigInteger.ToByteArray()[0];
+            value = unchecked((SByte)bigInteger.ToByteArray()[0]);
             Assert.Throws<OverflowException>(() => VerifySByteExplicitCastFromBigInteger(value, bigInteger));
 
             // SByte Explicit Cast from BigInteger: Random value > SByte.MaxValue
             bigInteger = GenerateRandomBigIntegerGreaterThan((UInt64)SByte.MaxValue, s_random);
-            value = (SByte)bigInteger.ToByteArray()[0];
+            value = unchecked((SByte)bigInteger.ToByteArray()[0]);
             Assert.Throws<OverflowException>(() => VerifySByteExplicitCastFromBigInteger(value, bigInteger));
         }
 
@@ -577,9 +577,10 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunDoubleExplicitCastFromLargeBigIntegerTests()
         {
-            DoubleExplicitCastFromLargeBigIntegerTests(0, 5, 64, 4);
+            DoubleExplicitCastFromLargeBigIntegerTests(0, 4, 32, 3);
         }
 
         [Fact]
@@ -611,7 +612,7 @@ namespace System.Numerics.Tests
                             carry = true;
                         }
                     }
-                    bits[j] = (int)temp2;
+                    bits[j] = unchecked((int)temp2);
                 }
                 value = new Decimal(bits[0], bits[1], bits[2], true, 0);
                 Assert.Throws<OverflowException>(() => VerifyDecimalExplicitCastFromBigInteger(value, bigInteger));
@@ -629,7 +630,7 @@ namespace System.Numerics.Tests
                 if (carry)
                 {
                     carry = false;
-                    temp2 += 1;
+                    temp2 = unchecked(temp2 + 1);
                     if (temp2 == 0)
                     {
                         carry = true;
@@ -723,11 +724,10 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j < bigShiftLoopLimit; j++)
                 {
-                    temp = temp << Int32.MaxValue;
+                    temp = temp << (int.MaxValue / 10);
                     VerifyDoubleExplicitCastFromBigInteger(Double.PositiveInfinity, temp);
                     VerifyDoubleExplicitCastFromBigInteger(Double.NegativeInfinity, -temp);
                 }
-
             }
         }
 

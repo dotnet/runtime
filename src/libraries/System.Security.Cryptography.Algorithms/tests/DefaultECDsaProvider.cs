@@ -20,10 +20,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return ec;
         }
 
+#if netcoreapp
         public ECDsa Create(ECCurve curve)
         {
             return ECDsa.Create(curve);
         }
+#endif
 
         public bool IsCurveValid(Oid oid)
         {
@@ -31,6 +33,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
             {
                 // Friendly name required for windows
                 return NativeOidFriendlyNameExists(oid.FriendlyName);
+            }
+            if (PlatformDetection.IsOSX)
+            {
+                return false;
             }
             if (!string.IsNullOrEmpty(oid.Value))
             {
@@ -48,6 +54,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     return PlatformDetection.WindowsVersion >= 10;
                 }
+
+                if (PlatformDetection.IsOSX)
+                {
+                    return false;
+                }
+
                 return true;
             }
         }
@@ -92,19 +104,16 @@ namespace System.Security.Cryptography.EcDsa.Tests
         private static readonly IECDsaProvider s_provider = new ECDsaProvider();
     }
 
-    internal static partial class Interop
-    {
-        private static partial class Libraries
-        {
-            internal const string CryptoNative = "System.Security.Cryptography.Native";
-        }
-        internal static partial class Crypto
-        {
-            [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
-            internal static extern IntPtr EcKeyCreateByOid(string oid);
+}
 
-            [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
-            internal static extern void EcKeyDestroy(IntPtr r);
-        }
+internal static partial class Interop
+{
+    internal static partial class Crypto
+    {
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
+        internal static extern System.IntPtr EcKeyCreateByOid(string oid);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
+        internal static extern void EcKeyDestroy(System.IntPtr r);
     }
 }

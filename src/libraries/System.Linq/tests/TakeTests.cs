@@ -142,6 +142,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            int[] source = { 2, 5, 9, 1 };
+            int[] expected = { 2, 5, 9 };
+
+            Assert.Equal(expected, source.RunOnce().Take(3));
+        }
+
+        [Fact]
         public void SourceNonEmptyTakeAllButOneNotIList()
         {
             var source = GuaranteeNotIList(new[] { 2, 5, 9, 1 });
@@ -449,6 +458,110 @@ namespace System.Linq.Tests
             var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
             var taken = source.Take(3);
             Assert.Equal(taken, taken);
+        }
+
+        [Theory]
+        [InlineData(1000)]
+        [InlineData(1000000)]
+        [InlineData(int.MaxValue)]
+        public void LazySkipAllTakenForLargeNumbers(int largeNumber)
+        {
+            Assert.Empty(new FastInfiniteEnumerator<int>().Take(largeNumber).Skip(largeNumber));
+            Assert.Empty(new FastInfiniteEnumerator<int>().Take(largeNumber).Skip(largeNumber).Skip(42));
+            Assert.Empty(new FastInfiniteEnumerator<int>().Take(largeNumber).Skip(largeNumber / 2).Skip(largeNumber / 2 + 1));
+        }
+
+        [Fact]
+        public void LazyOverflowRegression()
+        {
+            var range = NumberRangeGuaranteedNotCollectionType(1, 100);
+            var skipped = range.Skip(42); // Min index is 42.
+            var taken = skipped.Take(int.MaxValue); // May try to calculate max index as 42 + int.MaxValue, leading to integer overflow.
+            Assert.Equal(Enumerable.Range(43, 100 - 42), taken);
+            Assert.Equal(100 - 42, taken.Count());
+            Assert.Equal(Enumerable.Range(43, 100 - 42), taken.ToArray());
+            Assert.Equal(Enumerable.Range(43, 100 - 42), taken.ToList());
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(1, 1, 1)]
+        [InlineData(0, int.MaxValue, 100)]
+        [InlineData(int.MaxValue, 0, 0)]
+        [InlineData(0xffff, 1, 0)]
+        [InlineData(1, 0xffff, 99)]
+        [InlineData(int.MaxValue, int.MaxValue, 0)]
+        [InlineData(1, int.MaxValue, 99)] // Regression test: The max index is precisely int.MaxValue.
+        [InlineData(0, 100, 100)]
+        [InlineData(10, 100, 90)]
+        public void CountOfLazySkipTakeChain(int skip, int take, int expected)
+        {
+            var partition = NumberRangeGuaranteedNotCollectionType(1, 100).Skip(skip).Take(take);
+            Assert.Equal(expected, partition.Count());
+            Assert.Equal(expected, partition.Select(i => i).Count());
+            Assert.Equal(expected, partition.Select(i => i).ToArray().Length);
+        }
+
+        [Theory]
+        [InlineData(new[] { 1, 2, 3, 4 }, 1, 3, 2, 4)]
+        [InlineData(new[] { 1 }, 0, 1, 1, 1)]
+        [InlineData(new[] { 1, 2, 3, 5, 8, 13 }, 1, int.MaxValue, 2, 13)] // Regression test: The max index is precisely int.MaxValue.
+        [InlineData(new[] { 1, 2, 3, 5, 8, 13 }, 0, 2, 1, 2)]
+        [InlineData(new[] { 1, 2, 3, 5, 8, 13 }, 500, 2, 0, 0)]
+        [InlineData(new int[] { }, 10, 8, 0, 0)]
+        public void FirstAndLastOfLazySkipTakeChain(IEnumerable<int> source, int skip, int take, int first, int last)
+        {
+            var partition = ForceNotCollection(source).Skip(skip).Take(take);
+
+            Assert.Equal(first, partition.FirstOrDefault());
+            Assert.Equal(first, partition.ElementAtOrDefault(0));
+            Assert.Equal(last, partition.LastOrDefault());
+            Assert.Equal(last, partition.ElementAtOrDefault(partition.Count() - 1));
+        }
+
+        [Theory]
+        [InlineData(new[] { 1, 2, 3, 4, 5 }, 1, 3, new[] { -1, 0, 1, 2 }, new[] { 0, 2, 3, 4 })]
+        [InlineData(new[] { 0xfefe, 7000, 123 }, 0, 3, new[] { -1, 0, 1, 2 }, new[] { 0, 0xfefe, 7000, 123 })]
+        [InlineData(new[] { 0xfefe }, 100, 100, new[] { -1, 0, 1, 2 }, new[] { 0, 0, 0, 0 })]
+        [InlineData(new[] { 0xfefe, 123, 456, 7890, 5555, 55 }, 1, 10, new[] { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }, new[] { 0, 123, 456, 7890, 5555, 55, 0, 0, 0, 0, 0, 0, 0 })]
+        public void ElementAtOfLazySkipTakeChain(IEnumerable<int> source, int skip, int take, int[] indices, int[] expectedValues)
+        {
+            var partition = ForceNotCollection(source).Skip(skip).Take(take);
+
+            Assert.Equal(indices.Length, expectedValues.Length);
+            for (int i = 0; i < indices.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], partition.ElementAtOrDefault(indices[i]));
+            }
+        }
+
+        [Theory]
+        [InlineData(0, -1)]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(2, 1)]
+        [InlineData(2, 2)]
+        [InlineData(2, 3)]
+        public void DisposeSource(int sourceCount, int count)
+        {
+            int state = 0;
+
+            var source = new DelegateIterator<int>(
+                moveNext: () => ++state <= sourceCount,
+                current: () => 0,
+                dispose: () => state = -1);
+
+            IEnumerator<int> iterator = source.Take(count).GetEnumerator();
+            int iteratorCount = Math.Min(sourceCount, Math.Max(0, count));
+            Assert.All(Enumerable.Range(0, iteratorCount), _ => Assert.True(iterator.MoveNext()));
+
+            Assert.False(iterator.MoveNext());
+
+            // Unlike Skip, Take can tell straightaway that it can return a sequence with no elements if count <= 0.
+            // The enumerable it returns is a specialized empty iterator that has no connections to the source. Hence,
+            // after MoveNext returns false under those circumstances, it won't invoke Dispose on our enumerator.
+            int expected = count <= 0 ? 0 : -1;
+            Assert.Equal(expected, state);
         }
     }
 }

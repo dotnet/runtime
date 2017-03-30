@@ -93,7 +93,7 @@ namespace XDocumentTests.SDMSample
 
             Assert.Empty(elementCopy.Attributes());
 
-            // Hsh codes of equal elements shoukd be equal.
+            // Hsh codes of equal elements should be equal.
             Assert.Equal(XNode.EqualityComparer.GetHashCode(element), XNode.EqualityComparer.GetHashCode(elementCopy));
 
             // Null element is not allowed.
@@ -658,11 +658,11 @@ namespace XDocumentTests.SDMSample
             e2.RemoveAttributes();
             Assert.Empty(e2.Attributes());
 
-            // Removal of non-existant attribute
+            // Removal of non-existent attribute
             e1.SetAttributeValue("foo", null);
             Assert.Empty(e1.Attributes());
 
-            // Add of non-existant attribute
+            // Add of non-existent attribute
             e1.SetAttributeValue("foo", "foo-value");
             Assert.Equal(e1.Attribute("foo").Name.ToString(), "foo");
             Assert.Equal(e1.Attribute("foo").Value, "foo-value");
@@ -723,11 +723,11 @@ namespace XDocumentTests.SDMSample
         {
             XElement e1 = new XElement("x");
 
-            // Removal of non-existant element
+            // Removal of non-existent element
             e1.SetElementValue("foo", null);
             Assert.Empty(e1.Elements());
 
-            // Add of non-existant element
+            // Add of non-existent element
             e1.SetElementValue("foo", "foo-value");
             Assert.Equal(new XElement[] { new XElement("foo", "foo-value") }, e1.Elements(), XNode.EqualityComparer);
 

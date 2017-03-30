@@ -12,6 +12,6 @@ namespace System.Text
     public sealed partial class CodePagesEncodingProvider
     {
         internal CodePagesEncodingProvider() { }
-        public static System.Text.EncodingProvider Instance { get { return default(System.Text.EncodingProvider); } }
+        public static System.Text.EncodingProvider Instance { get { throw null; } }
     }
 }

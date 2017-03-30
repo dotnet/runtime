@@ -122,7 +122,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
@@ -140,7 +140,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_Unix()
         {
@@ -166,7 +166,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
@@ -185,7 +185,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix()
         {
@@ -239,7 +239,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
@@ -257,7 +257,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_Unix()
         {
@@ -283,7 +283,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
@@ -301,7 +301,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
@@ -366,21 +366,25 @@ namespace System.Net.NetworkInformation.Tests
 
             using (Ping p = new Ping())
             {
-                var mres = new ManualResetEventSlim();
+                TaskCompletionSource<bool> tcs = null;
                 PingCompletedEventArgs ea = null;
                 p.PingCompleted += (s, e) =>
                 {
                     ea = e;
-                    mres.Set();
+                    tcs.TrySetResult(true);
+                };
+                Action reset = () =>
+                {
+                    ea = null;
+                    tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 };
 
                 // Several normal iterations
                 for (int i = 0; i < 3; i++)
                 {
-                    ea = null;
-                    mres.Reset();
+                    reset();
                     p.SendAsync(TestSettings.LocalHost, null);
-                    mres.Wait();
+                    await tcs.Task;
 
                     Assert.NotNull(ea);
                     Assert.Equal(IPStatus.Success, ea.Reply.Status);
@@ -390,13 +394,19 @@ namespace System.Net.NetworkInformation.Tests
                 // Several canceled iterations
                 for (int i = 0; i < 3; i++)
                 {
-                    ea = null;
-                    mres.Reset();
+                    reset();
                     p.SendAsync(TestSettings.LocalHost, null);
                     p.SendAsyncCancel(); // will block until operation can be started again
+                    await tcs.Task;
+
+                    bool cancelled = ea.Cancelled;
+                    Exception error = ea.Error;
+                    PingReply reply = ea.Reply;
+                    Assert.True(cancelled ^ (error != null) ^ (reply != null),
+                        "Cancelled: " + cancelled +
+                        (error == null ? "" : (Environment.NewLine + "Error Message: " + error.Message + Environment.NewLine + "Error Inner Exception: " + error.InnerException)) +
+                        (reply == null ? "" : (Environment.NewLine + "Reply Address: " + reply.Address + Environment.NewLine + "Reply Status: " + reply.Status)));
                 }
-                mres.Wait();
-                Assert.True(ea.Cancelled ^ (ea.Error != null) ^ (ea.Reply != null));
             }
         }
 

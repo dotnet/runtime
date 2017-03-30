@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public static class BitArray_OperatorsTests
+    public static partial class BitArray_OperatorsTests
     {
         private const int BitsPerByte = 8;
         private const int BitsPerInt32 = 32;
@@ -189,3 +189,4 @@ namespace System.Collections.Tests
         }
     }
 }
+

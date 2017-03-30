@@ -18,16 +18,16 @@ namespace System.Reflection.Emit
     public partial class ILGenerator
     {
         internal ILGenerator() { }
-        public virtual int ILOffset { get { return default(int); } }
+        public virtual int ILOffset { get { throw null; } }
         public virtual void BeginCatchBlock(System.Type exceptionType) { }
         public virtual void BeginExceptFilterBlock() { }
-        public virtual System.Reflection.Emit.Label BeginExceptionBlock() { return default(System.Reflection.Emit.Label); }
+        public virtual System.Reflection.Emit.Label BeginExceptionBlock() { throw null; }
         public virtual void BeginFaultBlock() { }
         public virtual void BeginFinallyBlock() { }
         public virtual void BeginScope() { }
-        public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType) { return default(System.Reflection.Emit.LocalBuilder); }
-        public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned) { return default(System.Reflection.Emit.LocalBuilder); }
-        public virtual System.Reflection.Emit.Label DefineLabel() { return default(System.Reflection.Emit.Label); }
+        public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType) { throw null; }
+        public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned) { throw null; }
+        public virtual System.Reflection.Emit.Label DefineLabel() { throw null; }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode) { }
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, byte arg) { }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -67,28 +67,28 @@ namespace System.Reflection.Emit
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Label
     {
-        public override bool Equals(object obj) { return default(bool); }
-        public bool Equals(System.Reflection.Emit.Label obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { return default(bool); }
-        public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { return default(bool); }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Reflection.Emit.Label obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
+        public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
     }
     public sealed partial class LocalBuilder : System.Reflection.LocalVariableInfo
     {
         internal LocalBuilder() { }
-        public override bool IsPinned { get { return default(bool); } }
-        public override int LocalIndex { get { return default(int); } }
-        public override System.Type LocalType { get { return default(System.Type); } }
+        public override bool IsPinned { get { throw null; } }
+        public override int LocalIndex { get { throw null; } }
+        public override System.Type LocalType { get { throw null; } }
     }
     public partial class ParameterBuilder
     {
         internal ParameterBuilder() { }
-        public virtual int Attributes { get { return default(int); } }
-        public bool IsIn { get { return default(bool); } }
-        public bool IsOptional { get { return default(bool); } }
-        public bool IsOut { get { return default(bool); } }
-        public virtual string Name { get { return default(string); } }
-        public virtual int Position { get { return default(int); } }
+        public virtual int Attributes { get { throw null; } }
+        public bool IsIn { get { throw null; } }
+        public bool IsOptional { get { throw null; } }
+        public bool IsOut { get { throw null; } }
+        public virtual string Name { get { throw null; } }
+        public virtual int Position { get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
         public virtual void SetConstant(object defaultValue) { }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -106,21 +106,21 @@ namespace System.Reflection.Emit
         public void AddArgument(System.Type argument, System.Type[] requiredCustomModifiers, System.Type[] optionalCustomModifiers) { }
         public void AddArguments(System.Type[] arguments, System.Type[][] requiredCustomModifiers, System.Type[][] optionalCustomModifiers) { }
         public void AddSentinel() { }
-        public override bool Equals(object obj) { return default(bool); }
-        public static System.Reflection.Emit.SignatureHelper GetFieldSigHelper(System.Reflection.Module mod) { return default(System.Reflection.Emit.SignatureHelper); }
-        public override int GetHashCode() { return default(int); }
-        public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper() { return default(System.Reflection.Emit.SignatureHelper); }
-        public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper(System.Reflection.Module mod) { return default(System.Reflection.Emit.SignatureHelper); }
-        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.CallingConventions callingConvention, System.Type returnType) { return default(System.Reflection.Emit.SignatureHelper); }
+        public override bool Equals(object obj) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetFieldSigHelper(System.Reflection.Module mod) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper() { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetLocalVarSigHelper(System.Reflection.Module mod) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.CallingConventions callingConvention, System.Type returnType) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType) { return default(System.Reflection.Emit.SignatureHelper); }
+        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { return default(System.Reflection.Emit.SignatureHelper); }
+        public static System.Reflection.Emit.SignatureHelper GetMethodSigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { return default(System.Reflection.Emit.SignatureHelper); }
-        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { return default(System.Reflection.Emit.SignatureHelper); }
-        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { return default(System.Reflection.Emit.SignatureHelper); }
-        public byte[] GetSignature() { return default(byte[]); }
-        public override string ToString() { return default(string); }
+        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] parameterTypes) { throw null; }
+        public static System.Reflection.Emit.SignatureHelper GetPropertySigHelper(System.Reflection.Module mod, System.Type returnType, System.Type[] requiredReturnTypeCustomModifiers, System.Type[] optionalReturnTypeCustomModifiers, System.Type[] parameterTypes, System.Type[][] requiredParameterTypeCustomModifiers, System.Type[][] optionalParameterTypeCustomModifiers) { throw null; }
+        public byte[] GetSignature() { throw null; }
+        public override string ToString() { throw null; }
     }
 }

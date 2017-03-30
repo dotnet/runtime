@@ -32,16 +32,4 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         SK_IteratorFinallyMethodSymbol,
         SK_LIM
     }
-
-    // The kinds of Synthesized aggregates
-    internal enum SynthAggKind
-    {
-        NotSynthesized,
-
-        AnonymousMethodDisplayClass,
-        IteratorClass,
-        FixedBufferStruct,
-
-        Lim
-    }
 }

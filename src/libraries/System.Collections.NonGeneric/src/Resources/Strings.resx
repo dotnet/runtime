@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -141,26 +82,11 @@
   <data name="ArgumentNull_Array" xml:space="preserve">
     <value>Array cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Collection" xml:space="preserve">
-    <value>Collection cannot be null.</value>
-  </data>
   <data name="ArgumentNull_Dictionary" xml:space="preserve">
     <value>Dictionary cannot be null.</value>
   </data>
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
-  </data>
-  <data name="ArgumentOutOfRange_ArrayListInsert" xml:space="preserve">
-    <value>Insertion index was out of range. Must be non-negative and less than or equal to size.</value>
-  </data>
-  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
-    <value>Larger than collection size.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Count" xml:space="preserve">
-    <value>Count must be positive and count must refer to a location within the string/array/collection.</value>
-  </data>
-  <data name="ArgumentOutOfRange_HashtableLoadFactor" xml:space="preserve">
-    <value>Load factor needs to be between 0.1 and 1.0.</value>
   </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
@@ -173,9 +99,6 @@
   </data>
   <data name="ArgumentOutOfRange_QueueGrowFactor" xml:space="preserve">
     <value>Queue grow factor must be between {0} and {1}.</value>
-  </data>
-  <data name="ArgumentOutOfRange_MustBeNonNegNum" xml:space="preserve">
-    <value>'{0}' must be non-negative.</value>
   </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>
@@ -195,46 +118,10 @@
   <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
   </data>
-  <data name="InvalidOperation_UnderlyingArrayListChanged" xml:space="preserve">
-    <value>This range in the underlying list is invalid. A possible cause is that elements were removed.</value>
-  </data>
-  <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
-    <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
-  </data>
-  <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
-    <value>Collection was of a fixed size.</value>
-  </data>
   <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
     <value>Mutating a key collection derived from a dictionary is not allowed.</value>
   </data>
-  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
-    <value>Collection is read-only.</value>
-  </data>
-  <data name="NotSupported_RangeCollection" xml:space="preserve">
-    <value>The specified operation is not supported on Ranges.</value>
-  </data>
   <data name="NotSupported_SortedListNestedWrite" xml:space="preserve">
     <value>This operation is not supported on SortedList nested types because they require modifying the original SortedList.</value>
-  </data>
-  <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
-    <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
-  </data>
-  <data name="Serialization_InsufficientState" xml:space="preserve">
-    <value>Insufficient state to return the real object.</value>
-  </data>
-  <data name="Serialization_InvalidOnDeser" xml:space="preserve">
-    <value>OnDeserialization method was called while the object was not being deserialized.</value>
-  </data>
-  <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
-    <value>The keys and values arrays have different sizes.</value>
-  </data>
-  <data name="Serialization_MissingKeys" xml:space="preserve">
-    <value>The Keys for this Hashtable are missing.</value>
-  </data>
-  <data name="Serialization_MissingValues" xml:space="preserve">
-    <value>The Values for this Hashtable are missing.</value>
-  </data>
-  <data name="Serialization_NullKey" xml:space="preserve">
-    <value>One of the serialized keys is null.</value>
   </data>
 </root>

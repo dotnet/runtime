@@ -122,7 +122,7 @@ namespace System.Xml.Tests
 
             // for function TestTextReadBase64_26
             {
-                this.AddChild(new CVariation(TestTextReadBase64_26) { Attribute = new Variation("ReadBase64 with whitespaces in the middle") });
+                this.AddChild(new CVariation(TestTextReadBase64_26) { Attribute = new Variation("ReadBase64 with whitespace in the middle") });
             }
 
 

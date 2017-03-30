@@ -20,7 +20,7 @@ namespace System.IO.Tests
         [Fact]
         public async Task ConcurrentOperationsAreSerialized()
         {
-            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)i).ToArray();
+            byte[] data = Enumerable.Range(0, 1000).Select(i => unchecked((byte)i)).ToArray();
             var mcaos = new ManuallyReleaseAsyncOperationsStream();
             var stream = new BufferedStream(mcaos, 1);
 
@@ -52,6 +52,53 @@ namespace System.IO.Tests
 
             stream.WriteByte(1);
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
+        }
+
+        [Fact]
+        public async Task CopyToAsyncTest_RequiresAsyncFlushingOfWrites()
+        {
+            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
+
+            var manualReleaseStream = new ManuallyReleaseAsyncOperationsStream();
+            var src = new BufferedStream(manualReleaseStream);
+            src.Write(data, 0, data.Length);
+            src.Position = 0;
+
+            var dst = new MemoryStream();
+
+            data[0] = 42;
+            src.WriteByte(42);
+            dst.WriteByte(42);
+
+            Task copyTask = src.CopyToAsync(dst);
+            manualReleaseStream.Release();
+            await copyTask;
+
+            Assert.Equal(data, dst.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CopyToAsyncTest_ReadBeforeCopy_CopiesAllData(bool wrappedStreamCanSeek)
+        {
+            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
+
+            var wrapped = new ManuallyReleaseAsyncOperationsStream();
+            wrapped.Release();
+            wrapped.Write(data, 0, data.Length);
+            wrapped.Position = 0;
+            wrapped.SetCanSeek(wrappedStreamCanSeek);
+            var src = new BufferedStream(wrapped, 100);
+
+            src.ReadByte();
+
+            var dst = new MemoryStream();
+            await src.CopyToAsync(dst);
+
+            var expected = new byte[data.Length - 1];
+            Array.Copy(data, 1, expected, 0, expected.Length);
+            Assert.Equal(expected, dst.ToArray());
         }
     }
 
@@ -187,6 +234,11 @@ namespace System.IO.Tests
     internal sealed class ManuallyReleaseAsyncOperationsStream : MemoryStream
     {
         private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _canSeek = true;
+
+        public override bool CanSeek => _canSeek;
+
+        public void SetCanSeek(bool canSeek) => _canSeek = canSeek;
 
         public void Release() { _tcs.SetResult(true); }
 

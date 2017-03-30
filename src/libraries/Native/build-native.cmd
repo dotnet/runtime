@@ -1,4 +1,4 @@
-@if "%_echo%" neq "on" echo off
+@if not defined _echo @echo off
 setlocal
 
 :SetupArgs
@@ -9,6 +9,8 @@ set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
+set __TargetGroup=netcoreapp
+set __appContainer=""
 set __VCBuildArch=x86_amd64
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
@@ -24,39 +26,71 @@ if /i [%1] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
 
 if /i [%1] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [x86]         ( set __BuildArch=x86&&set __VCBuildArch=x86&&shift&goto Arg_Loop)
-if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&goto Arg_Loop)
+if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"&&shift&goto Arg_Loop)
 if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&goto Arg_Loop)
 
-if /i [%1] == [toolsetDir] ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [--TargetGroup]  ( set "__TargetGroup=%2"&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
 
 :ToolsVersion
-:: Determine the tools version to pass to cmake/msbuild
+:: Default to highest Visual Studio version available
+::
+:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
+:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
+:: allows users to locate where the instance of VS2015 is installed.
+::
+:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: is no longer set as a global environment variable and is instead only set if the user
+:: has launched the VS2017 Developer Command Prompt.
+::
+:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
+:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
+:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
+:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
+:: can be found.
 if not defined VisualStudioVersion (
-    if defined VS140COMNTOOLS (
+    if defined VS150COMNTOOLS (
+        call "%VS150COMNTOOLS%\VsDevCmd.bat"
+        goto :VS2017
+    ) else if defined VS140COMNTOOLS (
+        call "%VS140COMNTOOLS%\VsDevCmd.bat"
         goto :VS2015
-    ) 
+    )
     goto :MissingVersion
-) 
-if "%VisualStudioVersion%"=="14.0" (
+)
+
+if "%VisualStudioVersion%"=="15.0" (
+    goto :VS2017
+) else if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
-) 
+)
 
 :MissingVersion
-:: Can't find VS 2013+
-echo Error: Visual Studio 2015 required  
-echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+:: Can't find VS 2015 or 2017
+echo Error: Visual Studio 2015 or 2017 required  
+echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
+
+:VS2017
+:: Setup vars for VS2017
+set __VSVersion=vs2017
+set __PlatformToolset=v141
+if NOT "%__BuildArch%" == "arm64" (
+    :: Set the environment for the native build
+    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+)
+goto :SetupDirs
 
 :VS2015
 :: Setup vars for VS2015
 set __VSVersion=vs2015
 set __PlatformToolset=v140
-if NOT "%__BuildArch%" == "arm64" ( 
+if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
     call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 )
@@ -68,10 +102,10 @@ echo Commencing build of native components
 echo.
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
+    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
+    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -86,15 +120,15 @@ This is due to a bug in the Visual Studio installer. It does not install DIA SDK
 at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
 of previous version to "%VSINSTALLDIR%" and then resume build.
 :: DIA SDK not included in Express editions
-echo Visual Studio 2013 Express does not include the DIA SDK. ^
-You need Visual Studio 2013+ (Community is free).
+echo Visual Studio Express does not include the DIA SDK. ^
+You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :GenVSSolution
 :: Regenerate the VS solution
 
-if /i "%__BuildArch%" == "arm64" ( 
+if /i "%__BuildArch%" == "arm64" (
     REM arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
     call :PrivateToolSet
@@ -122,10 +156,30 @@ IF ERRORLEVEL 1 (
     goto :Failure
 )
 
-:Success
-:: Successful build
 echo Done building Native components
-EXIT /B 0
+
+:BuildNativeAOT
+set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
+set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
+set "__CMakeBinDir=%__CMakeBinDir:\=/%"
+set "__IntermediatesDir=%__IntermediatesDir:\=/%"
+if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
+set "__LinkArgs=%__LinkArgs% /APPCONTAINER"
+set "__appContainer=true"
+
+pushd "%__IntermediatesDir%"
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
+popd
+
+if not exist "%__IntermediatesDir%\install.vcxproj" goto :Failure
+
+call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vcxproj" -- /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+IF ERRORLEVEL 1 (
+    goto :Failure
+)
+echo Done building Native AOT components
+exit /B 0
 
 :Failure
 :: Build failed
@@ -136,7 +190,7 @@ exit /b 1
 echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
 
 if /i "%__ToolsetDir%" == "" (
-    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
+    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolsetDir argument.
     exit /b 1
 )
 

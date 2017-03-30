@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 
 namespace Internal.Cryptography.Pal
 {
@@ -77,7 +78,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public void Decrypt(string password)
+        public void Decrypt(SafePasswordHandle password)
         {
             bool parsed = Interop.Crypto.Pkcs12Parse(
                 _pkcs12Handle,

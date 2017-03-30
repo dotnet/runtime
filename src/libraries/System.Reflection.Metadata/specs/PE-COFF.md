@@ -1,4 +1,4 @@
-#PE/COFF Specification Addendum
+# PE/COFF Specification Addendum
 
 ## Deterministic PE/COFF File
 

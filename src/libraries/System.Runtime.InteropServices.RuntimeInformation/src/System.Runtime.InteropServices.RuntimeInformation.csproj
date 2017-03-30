@@ -1,42 +1,44 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
-    <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">wpa81</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
+    <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
+    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">$(DefineConstants);netfx</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">$(DefineConstants);wpa81</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='win8'">$(DefineConstants);win8</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">true</GeneratePlatformNotSupportedAssembly>
+    <!-- use netstandard1.1 refs for win8 and wpa81 -->
+    <RefPath Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(RefRootPath)/netstandard1.1</RefPath>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
     </PackageTargetRuntime>
-    <ValidPinvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_win8-wpa81-APIs.txt</ValidPinvokeMappings>
+    <ValidPInvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PInvokeAnalyzer_win8-wpa81-APIs.txt</ValidPInvokeMappings>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'wpa81_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'wpa81_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-AnyOS-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-AnyOS-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'wpa81-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'wpa81-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
@@ -58,7 +60,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='net45')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
@@ -71,22 +73,32 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)'=='true' AND '$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssembly)' != 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />

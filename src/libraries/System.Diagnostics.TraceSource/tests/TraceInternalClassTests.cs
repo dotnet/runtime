@@ -233,6 +233,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void FailTest()
         {
             var listener = GetTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Fail("Message");
             Assert.Equal(1, listener.GetCallCount(Method.Fail));
@@ -244,6 +246,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void Fail2Test()
         {
             var listener = GetTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Fail("Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.Fail));

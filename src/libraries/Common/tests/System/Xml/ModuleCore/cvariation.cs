@@ -27,14 +27,14 @@ namespace OLEDB.Test.ModuleCore
         {
             //Delegate
             //By default - if you don't specify the function name to run for this variation
-            //it creates Variation_X, where X is the next variation for this testcase...
+            //it creates Variation_X, where X is the next variation for this test case...
         }
 
         public CVariation(CTestCase testcase, string desc, string function)
             : base(function, desc)
         {
             //Note: The parent automatically gets setup on AddVariation so we don't 
-            //really need to pass in the testcase, left here for backward compatibility 
+            //really need to pass in the test case, left here for backward compatibility 
             //of inherited drivers.
         }
 
@@ -42,7 +42,7 @@ namespace OLEDB.Test.ModuleCore
             : base(null, desc)
         {
             //Note: The parent automatically gets setup on AddVariation so we don't 
-            //really need to pass in the testcase, left here for backward compatibility 
+            //really need to pass in the test case, left here for backward compatibility 
             //of inherited drivers.
             _pfunc = function;
         }

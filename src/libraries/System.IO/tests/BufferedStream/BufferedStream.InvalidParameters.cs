@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Threading.Tasks;
+using System.Threading;
 using Xunit;
 
 namespace System.IO.Tests
@@ -112,6 +110,44 @@ namespace System.IO.Tests
             using (BufferedStream stream = new BufferedStream(underlying))
             {
                 Assert.Throws<NotSupportedException>(() => stream.Seek(0, new SeekOrigin()));
+            }
+        }
+
+        [Fact]
+        public void CopyToAsync_InvalidArguments_Throws()
+        {
+            using (var s = new BufferedStream(new MemoryStream()))
+            {
+                // Null destination
+                Assert.Throws<ArgumentNullException>("destination", () => { s.CopyToAsync(null); });
+
+                // Buffer size out-of-range
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { s.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { s.CopyToAsync(new MemoryStream(), -1, CancellationToken.None); });
+
+                // Copying to non-writable stream
+                Assert.Throws<NotSupportedException>(() => { s.CopyToAsync(new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: true)); });
+
+                // Copying to a non-writable and non-readable stream
+                Assert.Throws<ObjectDisposedException>(() => { s.CopyToAsync(new WrappedMemoryStream(canRead: false, canWrite: false, canSeek: false)); });
+
+                // Copying after disposing the buffer stream
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { s.CopyToAsync(new MemoryStream()); });
+            }
+
+            // Copying after disposing the underlying stream
+            using (var ms = new MemoryStream())
+            using (var s = new BufferedStream(ms))
+            {
+                ms.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { s.CopyToAsync(new MemoryStream()); });
+            }
+
+            // Copying from a non-readable source
+            using (var s = new BufferedStream(new WrappedMemoryStream(canRead: false, canWrite: true, canSeek: true)))
+            {
+                Assert.Throws<NotSupportedException>(() => { s.CopyToAsync(new MemoryStream()); });
             }
         }
     }

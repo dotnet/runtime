@@ -12,28 +12,28 @@ namespace System
     [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeSystemExtensions
     {
-        public static global::Windows.Foundation.IAsyncAction AsAsyncAction(this global::System.Threading.Tasks.Task source) { return default(global::Windows.Foundation.IAsyncAction); }
-        public static global::Windows.Foundation.IAsyncOperation<TResult> AsAsyncOperation<TResult>(this global::System.Threading.Tasks.Task<TResult> source) { return default(global::Windows.Foundation.IAsyncOperation<TResult>); }
-        public static global::System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source, global::System.Threading.CancellationToken cancellationToken) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.IProgress<TProgress> progress) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.Threading.CancellationToken cancellationToken) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.Threading.CancellationToken cancellationToken, global::System.IProgress<TProgress> progress) { return default(global::System.Threading.Tasks.Task); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source) { return default(global::System.Threading.Tasks.Task<TResult>); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source, global::System.Threading.CancellationToken cancellationToken) { return default(global::System.Threading.Tasks.Task<TResult>); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source) { return default(global::System.Threading.Tasks.Task<TResult>); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.IProgress<TProgress> progress) { return default(global::System.Threading.Tasks.Task<TResult>); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.Threading.CancellationToken cancellationToken) { return default(global::System.Threading.Tasks.Task<TResult>); }
-        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.Threading.CancellationToken cancellationToken, global::System.IProgress<TProgress> progress) { return default(global::System.Threading.Tasks.Task<TResult>); }
+        public static global::Windows.Foundation.IAsyncAction AsAsyncAction(this global::System.Threading.Tasks.Task source) { throw null; }
+        public static global::Windows.Foundation.IAsyncOperation<TResult> AsAsyncOperation<TResult>(this global::System.Threading.Tasks.Task<TResult> source) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask(this global::Windows.Foundation.IAsyncAction source, global::System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.IProgress<TProgress> progress) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static global::System.Threading.Tasks.Task AsTask<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source, global::System.Threading.CancellationToken cancellationToken, global::System.IProgress<TProgress> progress) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source, global::System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.IProgress<TProgress> progress) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static global::System.Threading.Tasks.Task<TResult> AsTask<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source, global::System.Threading.CancellationToken cancellationToken, global::System.IProgress<TProgress> progress) { throw null; }
         [global::System.ComponentModel.EditorBrowsableAttribute((global::System.ComponentModel.EditorBrowsableState)(1))]
-        public static global::System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this global::Windows.Foundation.IAsyncAction source) { return default(global::System.Runtime.CompilerServices.TaskAwaiter); }
+        public static global::System.Runtime.CompilerServices.TaskAwaiter GetAwaiter(this global::Windows.Foundation.IAsyncAction source) { throw null; }
         [global::System.ComponentModel.EditorBrowsableAttribute((global::System.ComponentModel.EditorBrowsableState)(1))]
-        public static global::System.Runtime.CompilerServices.TaskAwaiter GetAwaiter<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source) { return default(global::System.Runtime.CompilerServices.TaskAwaiter); }
+        public static global::System.Runtime.CompilerServices.TaskAwaiter GetAwaiter<TProgress>(this global::Windows.Foundation.IAsyncActionWithProgress<TProgress> source) { throw null; }
         [global::System.ComponentModel.EditorBrowsableAttribute((global::System.ComponentModel.EditorBrowsableState)(1))]
-        public static global::System.Runtime.CompilerServices.TaskAwaiter<TResult> GetAwaiter<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source) { return default(global::System.Runtime.CompilerServices.TaskAwaiter<TResult>); }
+        public static global::System.Runtime.CompilerServices.TaskAwaiter<TResult> GetAwaiter<TResult>(this global::Windows.Foundation.IAsyncOperation<TResult> source) { throw null; }
         [global::System.ComponentModel.EditorBrowsableAttribute((global::System.ComponentModel.EditorBrowsableState)(1))]
-        public static global::System.Runtime.CompilerServices.TaskAwaiter<TResult> GetAwaiter<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source) { return default(global::System.Runtime.CompilerServices.TaskAwaiter<TResult>); }
+        public static global::System.Runtime.CompilerServices.TaskAwaiter<TResult> GetAwaiter<TResult, TProgress>(this global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> source) { throw null; }
     }
 }
 namespace System.IO
@@ -42,35 +42,35 @@ namespace System.IO
     public static partial class WindowsRuntimeStorageExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForReadAsync(this global::Windows.Storage.IStorageFile windowsRuntimeFile) { return default(global::System.Threading.Tasks.Task<global::System.IO.Stream>); }
+        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForReadAsync(this global::Windows.Storage.IStorageFile windowsRuntimeFile) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForReadAsync(this global::Windows.Storage.IStorageFolder rootDirectory, string relativePath) { return default(global::System.Threading.Tasks.Task<global::System.IO.Stream>); }
+        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForReadAsync(this global::Windows.Storage.IStorageFolder rootDirectory, string relativePath) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFile windowsRuntimeFile) { return default(global::System.Threading.Tasks.Task<global::System.IO.Stream>); }
+        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFile windowsRuntimeFile) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFolder rootDirectory, string relativePath, global::Windows.Storage.CreationCollisionOption creationCollisionOption) { return default(global::System.Threading.Tasks.Task<global::System.IO.Stream>); }
+        public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFolder rootDirectory, string relativePath, global::Windows.Storage.CreationCollisionOption creationCollisionOption) { throw null; }
     }
     [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeStreamExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IInputStream AsInputStream(this global::System.IO.Stream stream) { return default(global::Windows.Storage.Streams.IInputStream); }
+        public static global::Windows.Storage.Streams.IInputStream AsInputStream(this global::System.IO.Stream stream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IOutputStream AsOutputStream(this global::System.IO.Stream stream) { return default(global::Windows.Storage.Streams.IOutputStream); }
+        public static global::Windows.Storage.Streams.IOutputStream AsOutputStream(this global::System.IO.Stream stream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IRandomAccessStream AsRandomAccessStream(this global::System.IO.Stream stream) { return default(global::Windows.Storage.Streams.IRandomAccessStream); }
+        public static global::Windows.Storage.Streams.IRandomAccessStream AsRandomAccessStream(this global::System.IO.Stream stream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IRandomAccessStream windowsRuntimeStream) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IRandomAccessStream windowsRuntimeStream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IRandomAccessStream windowsRuntimeStream, int bufferSize) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IRandomAccessStream windowsRuntimeStream, int bufferSize) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStreamForRead(this global::Windows.Storage.Streams.IInputStream windowsRuntimeStream) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStreamForRead(this global::Windows.Storage.Streams.IInputStream windowsRuntimeStream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStreamForRead(this global::Windows.Storage.Streams.IInputStream windowsRuntimeStream, int bufferSize) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStreamForRead(this global::Windows.Storage.Streams.IInputStream windowsRuntimeStream, int bufferSize) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStreamForWrite(this global::Windows.Storage.Streams.IOutputStream windowsRuntimeStream) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStreamForWrite(this global::Windows.Storage.Streams.IOutputStream windowsRuntimeStream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStreamForWrite(this global::Windows.Storage.Streams.IOutputStream windowsRuntimeStream, int bufferSize) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStreamForWrite(this global::Windows.Storage.Streams.IOutputStream windowsRuntimeStream, int bufferSize) { throw null; }
     }
 }
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -79,31 +79,31 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [global::System.Security.SecurityCriticalAttribute]
     public static partial class AsyncInfo
     {
-        public static global::Windows.Foundation.IAsyncAction Run(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task> taskProvider) { return default(global::Windows.Foundation.IAsyncAction); }
-        public static global::Windows.Foundation.IAsyncActionWithProgress<TProgress> Run<TProgress>(global::System.Func<global::System.Threading.CancellationToken, global::System.IProgress<TProgress>, global::System.Threading.Tasks.Task> taskProvider) { return default(global::Windows.Foundation.IAsyncActionWithProgress<TProgress>); }
-        public static global::Windows.Foundation.IAsyncOperation<TResult> Run<TResult>(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task<TResult>> taskProvider) { return default(global::Windows.Foundation.IAsyncOperation<TResult>); }
-        public static global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> Run<TResult, TProgress>(global::System.Func<global::System.Threading.CancellationToken, global::System.IProgress<TProgress>, global::System.Threading.Tasks.Task<TResult>> taskProvider) { return default(global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress>); }
+        public static global::Windows.Foundation.IAsyncAction Run(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task> taskProvider) { throw null; }
+        public static global::Windows.Foundation.IAsyncActionWithProgress<TProgress> Run<TProgress>(global::System.Func<global::System.Threading.CancellationToken, global::System.IProgress<TProgress>, global::System.Threading.Tasks.Task> taskProvider) { throw null; }
+        public static global::Windows.Foundation.IAsyncOperation<TResult> Run<TResult>(global::System.Func<global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task<TResult>> taskProvider) { throw null; }
+        public static global::Windows.Foundation.IAsyncOperationWithProgress<TResult, TProgress> Run<TResult, TProgress>(global::System.Func<global::System.Threading.CancellationToken, global::System.IProgress<TProgress>, global::System.Threading.Tasks.Task<TResult>> taskProvider) { throw null; }
     }
     [global::System.Security.SecurityCriticalAttribute]
     public sealed partial class WindowsRuntimeBuffer
     {
         internal WindowsRuntimeBuffer() { }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer Create(byte[] data, int offset, int length, int capacity) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer Create(byte[] data, int offset, int length, int capacity) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer Create(int capacity) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer Create(int capacity) { throw null; }
     }
     [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeBufferExtensions
     {
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source, int offset, int length) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source, int offset, int length) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source, int offset, int length, int capacity) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer AsBuffer(this byte[] source, int offset, int length, int capacity) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IBuffer source) { return default(global::System.IO.Stream); }
+        public static global::System.IO.Stream AsStream(this global::Windows.Storage.Streams.IBuffer source) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
         public static void CopyTo(this byte[] source, int sourceIndex, global::Windows.Storage.Streams.IBuffer destination, uint destinationIndex, int count) { }
         [global::System.CLSCompliantAttribute(false)]
@@ -117,17 +117,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [global::System.CLSCompliantAttribute(false)]
         public static void CopyTo(this global::Windows.Storage.Streams.IBuffer source, global::Windows.Storage.Streams.IBuffer destination) { }
         [global::System.CLSCompliantAttribute(false)]
-        public static byte GetByte(this global::Windows.Storage.Streams.IBuffer source, uint byteOffset) { return default(byte); }
+        public static byte GetByte(this global::Windows.Storage.Streams.IBuffer source, uint byteOffset) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer GetWindowsRuntimeBuffer(this global::System.IO.MemoryStream underlyingStream) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer GetWindowsRuntimeBuffer(this global::System.IO.MemoryStream underlyingStream) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static global::Windows.Storage.Streams.IBuffer GetWindowsRuntimeBuffer(this global::System.IO.MemoryStream underlyingStream, int positionInStream, int length) { return default(global::Windows.Storage.Streams.IBuffer); }
+        public static global::Windows.Storage.Streams.IBuffer GetWindowsRuntimeBuffer(this global::System.IO.MemoryStream underlyingStream, int positionInStream, int length) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static bool IsSameData(this global::Windows.Storage.Streams.IBuffer buffer, global::Windows.Storage.Streams.IBuffer otherBuffer) { return default(bool); }
+        public static bool IsSameData(this global::Windows.Storage.Streams.IBuffer buffer, global::Windows.Storage.Streams.IBuffer otherBuffer) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static byte[] ToArray(this global::Windows.Storage.Streams.IBuffer source) { return default(byte[]); }
+        public static byte[] ToArray(this global::Windows.Storage.Streams.IBuffer source) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
-        public static byte[] ToArray(this global::Windows.Storage.Streams.IBuffer source, uint sourceIndex, int count) { return default(byte[]); }
+        public static byte[] ToArray(this global::Windows.Storage.Streams.IBuffer source, uint sourceIndex, int count) { throw null; }
     }
 }
 namespace Windows.Foundation
@@ -136,49 +136,49 @@ namespace Windows.Foundation
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Point
     {
-        public Point(double x, double y) { throw new global::System.NotImplementedException(); }
-        public double X { get { return default(double); } set { } }
-        public double Y { get { return default(double); } set { } }
+        public Point(double x, double y) { throw null; }
+        public double X { get { throw null; } set { } }
+        public double Y { get { throw null; } set { } }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override bool Equals(object o) { return default(bool); }
-        public bool Equals(global::Windows.Foundation.Point value) { return default(bool); }
+        public override bool Equals(object o) { throw null; }
+        public bool Equals(global::Windows.Foundation.Point value) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { return default(bool); }
-        public static bool operator !=(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { return default(bool); }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
+        public static bool operator !=(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { return default(string); }
-        public string ToString(global::System.IFormatProvider provider) { return default(string); }
+        public override string ToString() { throw null; }
+        public string ToString(global::System.IFormatProvider provider) { throw null; }
     }
     [global::System.Security.SecurityCriticalAttribute]
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Rect
     {
-        public Rect(double x, double y, double width, double height) { throw new global::System.NotImplementedException(); }
-        public Rect(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw new global::System.NotImplementedException(); }
-        public Rect(global::Windows.Foundation.Point location, global::Windows.Foundation.Size size) { throw new global::System.NotImplementedException(); }
-        public double Bottom { get { return default(double); } }
-        public static global::Windows.Foundation.Rect Empty { get { return default(global::Windows.Foundation.Rect); } }
-        public double Height { get { return default(double); } set { } }
-        public bool IsEmpty { get { return default(bool); } }
-        public double Left { get { return default(double); } }
-        public double Right { get { return default(double); } }
-        public double Top { get { return default(double); } }
-        public double Width { get { return default(double); } set { } }
-        public double X { get { return default(double); } set { } }
-        public double Y { get { return default(double); } set { } }
-        public bool Contains(global::Windows.Foundation.Point point) { return default(bool); }
+        public Rect(double x, double y, double width, double height) { throw null; }
+        public Rect(global::Windows.Foundation.Point point1, global::Windows.Foundation.Point point2) { throw null; }
+        public Rect(global::Windows.Foundation.Point location, global::Windows.Foundation.Size size) { throw null; }
+        public double Bottom { get { throw null; } }
+        public static global::Windows.Foundation.Rect Empty { get { throw null; } }
+        public double Height { get { throw null; } set { } }
+        public bool IsEmpty { get { throw null; } }
+        public double Left { get { throw null; } }
+        public double Right { get { throw null; } }
+        public double Top { get { throw null; } }
+        public double Width { get { throw null; } set { } }
+        public double X { get { throw null; } set { } }
+        public double Y { get { throw null; } set { } }
+        public bool Contains(global::Windows.Foundation.Point point) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override bool Equals(object o) { return default(bool); }
-        public bool Equals(global::Windows.Foundation.Rect value) { return default(bool); }
+        public override bool Equals(object o) { throw null; }
+        public bool Equals(global::Windows.Foundation.Rect value) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override int GetHashCode() { return default(int); }
+        public override int GetHashCode() { throw null; }
         public void Intersect(global::Windows.Foundation.Rect rect) { }
-        public static bool operator ==(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { return default(bool); }
-        public static bool operator !=(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { return default(bool); }
+        public static bool operator ==(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
+        public static bool operator !=(global::Windows.Foundation.Rect rect1, global::Windows.Foundation.Rect rect2) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { return default(string); }
-        public string ToString(global::System.IFormatProvider provider) { return default(string); }
+        public override string ToString() { throw null; }
+        public string ToString(global::System.IFormatProvider provider) { throw null; }
         public void Union(global::Windows.Foundation.Point point) { }
         public void Union(global::Windows.Foundation.Rect rect) { }
     }
@@ -186,20 +186,20 @@ namespace Windows.Foundation
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Size
     {
-        public Size(double width, double height) { throw new global::System.NotImplementedException(); }
-        public static global::Windows.Foundation.Size Empty { get { return default(global::Windows.Foundation.Size); } }
-        public double Height { get { return default(double); } set { } }
-        public bool IsEmpty { get { return default(bool); } }
-        public double Width { get { return default(double); } set { } }
+        public Size(double width, double height) { throw null; }
+        public static global::Windows.Foundation.Size Empty { get { throw null; } }
+        public double Height { get { throw null; } set { } }
+        public bool IsEmpty { get { throw null; } }
+        public double Width { get { throw null; } set { } }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override bool Equals(object o) { return default(bool); }
-        public bool Equals(global::Windows.Foundation.Size value) { return default(bool); }
+        public override bool Equals(object o) { throw null; }
+        public bool Equals(global::Windows.Foundation.Size value) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { return default(bool); }
-        public static bool operator !=(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { return default(bool); }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { throw null; }
+        public static bool operator !=(global::Windows.Foundation.Size size1, global::Windows.Foundation.Size size2) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { return default(string); }
+        public override string ToString() { throw null; }
     }
 }
 namespace Windows.UI
@@ -208,20 +208,20 @@ namespace Windows.UI
     [global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Color
     {
-        public byte A { get { return default(byte); } set { } }
-        public byte B { get { return default(byte); } set { } }
-        public byte G { get { return default(byte); } set { } }
-        public byte R { get { return default(byte); } set { } }
+        public byte A { get { throw null; } set { } }
+        public byte B { get { throw null; } set { } }
+        public byte G { get { throw null; } set { } }
+        public byte R { get { throw null; } set { } }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override bool Equals(object o) { return default(bool); }
-        public bool Equals(global::Windows.UI.Color color) { return default(bool); }
-        public static global::Windows.UI.Color FromArgb(byte a, byte r, byte g, byte b) { return default(global::Windows.UI.Color); }
+        public override bool Equals(object o) { throw null; }
+        public bool Equals(global::Windows.UI.Color color) { throw null; }
+        public static global::Windows.UI.Color FromArgb(byte a, byte r, byte g, byte b) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { return default(bool); }
-        public static bool operator !=(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { return default(bool); }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
+        public static bool operator !=(global::Windows.UI.Color color1, global::Windows.UI.Color color2) { throw null; }
         [global::System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { return default(string); }
-        public string ToString(global::System.IFormatProvider provider) { return default(string); }
+        public override string ToString() { throw null; }
+        public string ToString(global::System.IFormatProvider provider) { throw null; }
     }
 }

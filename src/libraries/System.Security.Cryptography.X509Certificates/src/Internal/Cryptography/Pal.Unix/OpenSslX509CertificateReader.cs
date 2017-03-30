@@ -265,6 +265,16 @@ namespace Internal.Cryptography.Pal
             return new RSAOpenSsl(_privateKey);
         }
 
+        public DSA GetDSAPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new DSAOpenSsl(_privateKey);
+        }
+
         public ECDsa GetECDsaPublicKey()
         {
             using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))

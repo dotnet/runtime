@@ -179,7 +179,7 @@ namespace System.Security.AccessControl.Tests
                 //forbid the modification on uncanonical ACL, this case will throw InvalidOperationException
                 TestPurge(systemAcl, sid, aceCount);
             });
-            //case 9, 1 explict ObjectAce
+            //case 9, 1 explicit ObjectAce
 
 
             revision = 127;

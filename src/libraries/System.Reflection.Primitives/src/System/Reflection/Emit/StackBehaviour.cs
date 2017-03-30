@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Emit
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [Serializable]
     public enum StackBehaviour
     {
         Pop0 = 0,

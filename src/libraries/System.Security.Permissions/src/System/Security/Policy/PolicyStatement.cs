@@ -4,19 +4,20 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class PolicyStatement : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable
+    [Serializable]
+    public sealed partial class PolicyStatement : ISecurityEncodable, ISecurityPolicyEncodable
     {
-        public PolicyStatement(System.Security.PermissionSet permSet) { }
-        public PolicyStatement(System.Security.PermissionSet permSet, System.Security.Policy.PolicyStatementAttribute attributes) { }
-        public System.Security.Policy.PolicyStatementAttribute Attributes { get; set; }
+        public PolicyStatement(PermissionSet permSet) { }
+        public PolicyStatement(PermissionSet permSet, PolicyStatementAttribute attributes) { }
+        public PolicyStatementAttribute Attributes { get; set; }
         public string AttributeString { get { return null; } }
-        public System.Security.PermissionSet PermissionSet { get; set; }
-        public System.Security.Policy.PolicyStatement Copy() { return this; }
+        public PermissionSet PermissionSet { get; set; }
+        public PolicyStatement Copy() { return this; }
         public override bool Equals(object o) => base.Equals(o);
         public void FromXml(SecurityElement et) { }
-        public void FromXml(SecurityElement et, System.Security.Policy.PolicyLevel level) { }
+        public void FromXml(SecurityElement et, PolicyLevel level) { }
         public override int GetHashCode() => base.GetHashCode();
         public SecurityElement ToXml() { return default(SecurityElement); }
-        public SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { return default(SecurityElement); }
+        public SecurityElement ToXml(PolicyLevel level) { return default(SecurityElement); }
     }
 }

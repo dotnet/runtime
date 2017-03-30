@@ -27,7 +27,6 @@ namespace System.Xml
         RoundtripKind,
     }
 
-    /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert"]/*' />
     /// <devdoc>
     ///    Encodes and decodes XML names according to
     ///    the "Encoding of arbitrary Unicode Characters in XML Names" specification.
@@ -41,7 +40,6 @@ namespace System.Xml
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.EncodeName"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Converts names, such
@@ -54,7 +52,6 @@ namespace System.Xml
             return EncodeName(name, true/*Name_not_NmToken*/, false/*Local?*/);
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.EncodeNmToken"]/*' />
         /// <devdoc>
         ///    <para> Verifies the name is valid
         ///       according to production [7] in the XML spec.</para>
@@ -64,7 +61,6 @@ namespace System.Xml
             return EncodeName(name, false/*Name_not_NmToken*/, false/*Local?*/);
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.EncodeLocalName"]/*' />
         /// <devdoc>
         ///    <para>Converts names, such as DataTable or DataColumn names, that contain
         ///       characters that are not permitted in XML names to valid names.</para>
@@ -74,7 +70,6 @@ namespace System.Xml
             return EncodeName(name, true/*Name_not_NmToken*/, true/*Local?*/);
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.DecodeName"]/*' />
         /// <devdoc>
         ///    <para>
         ///       Transforms an XML name into an object name (such as DataTable or DataColumn).</para>
@@ -342,8 +337,6 @@ namespace System.Xml
 
         //
         // Verification methods for strings
-        // 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.VerifyName"]/*' />
         /// <devdoc>
         ///    <para>
         ///    </para>
@@ -408,7 +401,6 @@ namespace System.Xml
             return name;
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.VerifyNCName"]/*' />
         /// <devdoc>
         ///    <para>
         ///    </para>
@@ -451,7 +443,6 @@ namespace System.Xml
             return null;
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.VerifyTOKEN"]/*' />
         /// <devdoc>
         ///    <para>
         ///    </para>
@@ -482,7 +473,6 @@ namespace System.Xml
             return null;
         }
 
-        /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.VerifyNMTOKEN"]/*' />
         /// <devdoc>
         ///    <para>
         ///    </para>
@@ -629,7 +619,7 @@ namespace System.Xml
         }
 #endif
 
-        // Valid XML character – as defined in XML 1.0 spec (fifth edition) production [2] Char
+        // Valid XML character â€“ as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static unsafe bool IsXmlChar(char ch)
         {
             return s_xmlCharType.IsCharData(ch);
@@ -640,13 +630,13 @@ namespace System.Xml
             return XmlCharType.IsHighSurrogate(highChar) && XmlCharType.IsLowSurrogate(lowChar);
         }
 
-        // Valid PUBLIC ID character – as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
+        // Valid PUBLIC ID character â€“ as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
         public static bool IsPublicIdChar(char ch)
         {
             return s_xmlCharType.IsPubidChar(ch);
         }
 
-        // Valid Xml white space – as defined in XML 1.0 spec (fifth edition) production [3] S
+        // Valid Xml whitespace â€“ as defined in XML 1.0 spec (fifth edition) production [3] S
         public static unsafe bool IsWhitespaceChar(char ch)
         {
             return s_xmlCharType.IsWhiteSpace(ch);
@@ -864,7 +854,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
             }
             XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
             return xsdDateTime.ToString();
@@ -1419,7 +1409,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
             }
             return dt;
         }

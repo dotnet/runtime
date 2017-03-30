@@ -63,3 +63,8 @@ extern "C" uint32_t SystemNative_GetEGid()
 {
     return getegid();
 }
+
+extern "C" int32_t SystemNative_SetEUid(uid_t euid)
+{
+    return seteuid(euid);
+}

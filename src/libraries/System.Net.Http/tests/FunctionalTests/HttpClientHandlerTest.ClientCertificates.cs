@@ -12,6 +12,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_ClientCertificates_Test
     {
         [Fact]
@@ -46,6 +48,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void ClientCertificates_ClientCertificateOptionsAutomatic_ThrowsException()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
+                Assert.Throws<InvalidOperationException>(() => handler.ClientCertificates);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
@@ -69,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(9543, PlatformID.Windows)] // reuseClient==false fails in debug/release, reuseClient==true fails sporadically in release
+        [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(6, false)]
         [InlineData(3, true)]
@@ -78,67 +90,67 @@ namespace System.Net.Http.Functional.Tests
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
             var options = new LoopbackServer.Options { UseSsl = true };
-            using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
+
+            Func<X509Certificate2, HttpClient> createClient = (cert) =>
             {
-                Func<HttpClient> createClient = () =>
-                {
-                    var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = delegate { return true; } };
-                    handler.ClientCertificates.Add(cert);
-                    return new HttpClient(handler);
-                };
+                var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = delegate { return true; } };
+                handler.ClientCertificates.Add(cert);
+                return new HttpClient(handler);
+            };
 
-                Func<HttpClient, Socket, Uri, Task> makeAndValidateRequest = async (client, server, url) =>
-                {
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        client.GetStringAsync(url),
-                        LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
-                        {
-                            SslStream sslStream = Assert.IsType<SslStream>(stream);
-                            Assert.Equal(cert, sslStream.RemoteCertificate);
-                            await LoopbackServer.ReadWriteAcceptedAsync(socket, reader, writer);
-                            return null;
-                        }, options));
-                };
-
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
-                {
-                    if (reuseClient)
+            Func<HttpClient, Socket, Uri, X509Certificate2, Task> makeAndValidateRequest = async (client, server, url, cert) =>
+            {
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    client.GetStringAsync(url),
+                    LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
                     {
-                        using (HttpClient client = createClient())
+                        SslStream sslStream = Assert.IsType<SslStream>(stream);
+                        Assert.Equal(cert, sslStream.RemoteCertificate);
+                        await LoopbackServer.ReadWriteAcceptedAsync(socket, reader, writer);
+                        return null;
+                    }, options));
+            };
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                if (reuseClient)
+                {
+                    using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
+                    {
+                        using (HttpClient client = createClient(cert))
                         {
                             for (int i = 0; i < numberOfRequests; i++)
                             {
-                                await makeAndValidateRequest(client, server, url);
+                                await makeAndValidateRequest(client, server, url, cert);
 
                                 GC.Collect();
                                 GC.WaitForPendingFinalizers();
                             }
                         }
                     }
-                    else
+                }
+                else
+                {
+                    for (int i = 0; i < numberOfRequests; i++)
                     {
-                        for (int i = 0; i < numberOfRequests; i++)
+                        using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
                         {
-                            using (HttpClient client = createClient())
+                            using (HttpClient client = createClient(cert))
                             {
-                                await makeAndValidateRequest(client, server, url);
+                                await makeAndValidateRequest(client, server, url, cert);
                             }
-
-                            GC.Collect();
-                            GC.WaitForPendingFinalizers();
                         }
+
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
                     }
-                }, options);
-            }
+                }
+            }, options);
         }
 
         private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+            HttpClientHandler_ServerCertificates_Test.BackendSupportsCustomCertificateHandling;
 
         private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
-        private static extern string CurlSslVersionDescription();
     }
 }

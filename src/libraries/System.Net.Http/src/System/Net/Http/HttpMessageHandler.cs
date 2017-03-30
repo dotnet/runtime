@@ -14,8 +14,7 @@ namespace System.Net.Http
     {
         protected HttpMessageHandler()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", null);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
         }
 
         protected internal abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);

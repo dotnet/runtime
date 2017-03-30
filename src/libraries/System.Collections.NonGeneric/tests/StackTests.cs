@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -79,8 +80,17 @@ namespace System.Collections.Tests
             stack.Push(1);
             stack.Push("b");
             stack.Push(2);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(stack);
 
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(stack);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+
+            Assert.Equal(stack.ToArray(), items);
+        }
+
+        [Fact]
+        public static void DebuggerAttribute_NullStack_ThrowsArgumentNullException()
+        {
             bool threwNull = false;
             try
             {
@@ -258,6 +268,67 @@ namespace System.Collections.Tests
                     enumerator.Reset();
                 }
             });
+        }
+
+        [Fact]
+        public static void GetEnumerator_StartOfEnumeration_Clone()
+        {
+            Stack stack = Helpers.CreateIntStack(10);
+
+            IEnumerator enumerator = stack.GetEnumerator();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.NotSame(enumerator, clonedEnumerator);
+
+            // Cloned and original enumerators should enumerate separately.
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(stack.Count - 1, enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Current);
+
+            Assert.True(clonedEnumerator.MoveNext());
+            Assert.Equal(stack.Count - 1, enumerator.Current);
+            Assert.Equal(stack.Count - 1, clonedEnumerator.Current);
+
+            // Cloned and original enumerators should enumerate in the same sequence.
+            for (int i = 1; i < stack.Count; i++)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.NotEqual(enumerator.Current, clonedEnumerator.Current);
+
+                Assert.True(clonedEnumerator.MoveNext());
+                Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Equal(0, clonedEnumerator.Current);
+
+            Assert.False(clonedEnumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Current);
+        }
+
+        [Fact]
+        public static void GetEnumerator_InMiddleOfEnumeration_Clone()
+        {
+            Stack stack = Helpers.CreateIntStack(10);
+
+            IEnumerator enumerator = stack.GetEnumerator();
+            enumerator.MoveNext();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            // Cloned and original enumerators should start at the same spot, even
+            // if the original is in the middle of enumeration.
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+
+            for (int i = 0; i < stack.Count - 1; i++)
+            {
+                Assert.True(clonedEnumerator.MoveNext());
+            }
+
+            Assert.False(clonedEnumerator.MoveNext());
         }
 
         [Fact]

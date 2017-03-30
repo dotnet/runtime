@@ -29,15 +29,7 @@ namespace System.Xml.Serialization
             {
                 if (s_mode == DateTimeSerializationSection.DateTimeSerializationMode.Default)
                 {
-                    DateTimeSerializationSection section = PrivilegedConfigurationManager.GetSection(ConfigurationStrings.DateTimeSerializationSectionPath) as DateTimeSerializationSection;
-                    if (section != null)
-                    {
-                        s_mode = section.Mode;
-                    }
-                    else
-                    {
-                        s_mode = DateTimeSerializationSection.DateTimeSerializationMode.Roundtrip;
-                    }
+                    s_mode = DateTimeSerializationSection.DateTimeSerializationMode.Roundtrip;
                 }
                 return s_mode;
             }

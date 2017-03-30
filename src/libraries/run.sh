@@ -6,6 +6,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Always copy over the Tools-Override
+cp $__scriptpath/Tools-Override/* $__scriptpath/Tools > /dev/null
+
 __toolRuntime=$__scriptpath/Tools
 __dotnet=$__toolRuntime/dotnetcli/dotnet
 

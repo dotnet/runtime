@@ -14,9 +14,8 @@ namespace System.Runtime.Serialization
     using System.Xml.Schema;
     using System.Security;
     using System.Linq;
-    using XmlSchemaType = System.Object;
 
-#if NET_NATIVE
+#if uapaot
     public delegate IXmlSerializable CreateXmlSerializableDelegate();
     public sealed class XmlDataContract : DataContract
 #else
@@ -24,29 +23,13 @@ namespace System.Runtime.Serialization
     internal sealed class XmlDataContract : DataContract
 #endif
     {
-        [SecurityCritical]
-        /// <SecurityNote>
-        /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
-        ///            Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
         private XmlDataContractCriticalHelper _helper;
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         public XmlDataContract() : base(new XmlDataContractCriticalHelper())
         {
             _helper = base.Helper as XmlDataContractCriticalHelper;
         }
 
-        /// <SecurityNote>
-        /// Critical - initializes SecurityCritical field 'helper'
-        /// Safe - doesn't leak anything
-        /// </SecurityNote>
-        [SecuritySafeCritical]
         internal XmlDataContract(Type type) : base(new XmlDataContractCriticalHelper(type))
         {
             _helper = base.Helper as XmlDataContractCriticalHelper;
@@ -54,96 +37,61 @@ namespace System.Runtime.Serialization
 
         public override DataContractDictionary KnownDataContracts
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical KnownDataContracts property 
-            /// Safe - KnownDataContracts only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.KnownDataContracts; }
-            /// <SecurityNote>
-            /// Critical - sets the critical KnownDataContracts property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.KnownDataContracts = value; }
         }
 
+        internal XmlSchemaType XsdType
+        {
+            get { return _helper.XsdType; }
+            set { _helper.XsdType = value; }
+        }
+
+
         internal bool IsAnonymous
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical IsAnonymous property
-            /// Safe - IsAnonymous only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.IsAnonymous; }
         }
 
         public override bool HasRoot
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical HasRoot property
-            /// Safe - HasRoot only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.HasRoot; }
-            /// <SecurityNote>
-            /// Critical - sets the critical HasRoot property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.HasRoot = value; }
         }
 
         public override XmlDictionaryString TopLevelElementName
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical TopLevelElementName property
-            /// Safe - TopLevelElementName only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.TopLevelElementName; }
-            /// <SecurityNote>
-            /// Critical - sets the critical TopLevelElementName property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.TopLevelElementName = value; }
         }
 
         public override XmlDictionaryString TopLevelElementNamespace
         {
-            /// <SecurityNote>
-            /// Critical - fetches the critical TopLevelElementNamespace property
-            /// Safe - TopLevelElementNamespace only needs to be protected for write
-            /// </SecurityNote>
-            [SecuritySafeCritical]
             get
             { return _helper.TopLevelElementNamespace; }
-            /// <SecurityNote>
-            /// Critical - sets the critical TopLevelElementNamespace property
-            /// </SecurityNote>
-            [SecurityCritical]
+
             set
             { _helper.TopLevelElementNamespace = value; }
         }
 
-#if NET_NATIVE
+#if uapaot
         private CreateXmlSerializableDelegate _createXmlSerializableDelegate;
         public CreateXmlSerializableDelegate CreateXmlSerializableDelegate        
 #else
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
 #endif
         {
-#if !NET_NATIVE
-            /// <SecurityNote>
-            /// Critical - fetches the critical CreateXmlSerializableDelegate property
-            /// Safe - CreateXmlSerializableDelegate only needs to be protected for write; initialized in getter if null
-            /// </SecurityNote>
-            [SecuritySafeCritical]
+#if !uapaot
             get
             {
                 // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
@@ -185,24 +133,10 @@ namespace System.Runtime.Serialization
 #endif            
         }
 
-        internal override bool CanContainReferences
-        {
-            get { return false; }
-        }
+        internal override bool CanContainReferences => false;
 
-        public override bool IsBuiltInDataContract
-        {
-            get
-            {
-                return UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
-            }
-        }
-        [SecurityCritical]
+        public override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
 
-        /// <SecurityNote>
-        /// Critical - holds all state used for (de)serializing XML types.
-        ///            since the data is cached statically, we lock down access to it.
-        /// </SecurityNote>
         private class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private DataContractDictionary _knownDataContracts;
@@ -211,6 +145,7 @@ namespace System.Runtime.Serialization
             private XmlDictionaryString _topLevelElementNamespace;
             private bool _hasRoot;
             private CreateXmlSerializableDelegate _createXmlSerializable;
+            private XmlSchemaType _xsdType;
 
             internal XmlDataContractCriticalHelper()
             {
@@ -218,9 +153,9 @@ namespace System.Runtime.Serialization
 
             internal XmlDataContractCriticalHelper(Type type) : base(type)
             {
-                if (type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false))
+                if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
-                if (type.GetTypeInfo().IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+                if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
                 XmlSchemaType xsdType;
                 bool hasRoot;
@@ -231,7 +166,7 @@ namespace System.Runtime.Serialization
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[] xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetTypeInfo().GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[] xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
@@ -259,7 +194,6 @@ namespace System.Runtime.Serialization
 
             internal override DataContractDictionary KnownDataContracts
             {
-                [SecurityCritical]
                 get
                 {
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
@@ -276,43 +210,40 @@ namespace System.Runtime.Serialization
                     }
                     return _knownDataContracts;
                 }
-                [SecurityCritical]
+
                 set
                 { _knownDataContracts = value; }
             }
 
-            internal bool IsAnonymous
+            internal XmlSchemaType XsdType
             {
-                get { return false; }
+                get { return _xsdType; }
+                set { _xsdType = value; }
             }
+
+            internal bool IsAnonymous => _xsdType != null;
 
             internal override bool HasRoot
             {
-                [SecurityCritical]
                 get
                 { return _hasRoot; }
 
-                [SecurityCritical]
                 set
                 { _hasRoot = value; }
             }
 
             internal override XmlDictionaryString TopLevelElementName
             {
-                [SecurityCritical]
                 get
                 { return _topLevelElementName; }
-                [SecurityCritical]
                 set
                 { _topLevelElementName = value; }
             }
 
             internal override XmlDictionaryString TopLevelElementNamespace
             {
-                [SecurityCritical]
                 get
                 { return _topLevelElementNamespace; }
-                [SecurityCritical]
                 set
                 { _topLevelElementNamespace = value; }
             }
@@ -327,7 +258,7 @@ namespace System.Runtime.Serialization
         {
             Type type = UnderlyingType;
 
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
                 return null;
 
             ConstructorInfo ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
@@ -337,12 +268,7 @@ namespace System.Runtime.Serialization
             return ctor;
         }
 
-#if !NET_NATIVE
-        /// <SecurityNote>
-        /// Critical - calls CodeGenerator.BeginMethod which is SecurityCritical
-        /// Safe - self-contained: returns the delegate to the generated IL but otherwise all IL generation is self-contained here
-        /// </SecurityNote>
-        [SecuritySafeCritical]
+#if !uapaot
         internal CreateXmlSerializableDelegate GenerateCreateXmlSerializableDelegate()
         {
             Type type = this.UnderlyingType;
@@ -363,7 +289,7 @@ namespace System.Runtime.Serialization
                     throw;
                 }
             }
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 System.Reflection.Emit.LocalBuilder local = ilg.DeclareLocal(type, type.Name + "Value");
                 ilg.Ldloca(local);
@@ -377,7 +303,7 @@ namespace System.Runtime.Serialization
                 ConstructorInfo ctor = GetConstructor();
                 if (!ctor.IsPublic && type.FullName == "System.Xml.Linq.XElement")
                 {
-                    Type xName = type.GetTypeInfo().Assembly.GetType("System.Xml.Linq.XName");
+                    Type xName = type.Assembly.GetType("System.Xml.Linq.XName");
                     if (xName != null)
                     {
                         MethodInfo XName_op_Implicit = xName.GetMethod(
@@ -439,7 +365,7 @@ namespace System.Runtime.Serialization
 
         internal IXmlSerializable ReflectionCreateXmlSerializable(Type type)
         {
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 throw new NotImplementedException("ReflectionCreateXmlSerializable - value type");
             }
@@ -485,4 +411,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

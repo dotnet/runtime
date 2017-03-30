@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace System.Data.SqlClient
 {
+    [Serializable]
     public sealed class SqlErrorCollection : ICollection
     {
         // Ideally this would be typed as List<SqlError>, but that would make the non-generic

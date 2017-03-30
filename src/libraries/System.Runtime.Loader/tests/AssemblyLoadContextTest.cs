@@ -19,14 +19,15 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
-            var expectedName = typeof(ISet<>).GetTypeInfo().Assembly.GetName();
-            var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
+            var expectedName = typeof(AssemblyLoadContextTest).Assembly.GetName();
+            var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.Loader.Tests.dll");
             Assert.Equal(expectedName.FullName, actualAsmName.FullName);
 
             // Verify that the AssemblyName returned by GetAssemblyName can be used to load an assembly. System.Runtime would
             // already be loaded, but this is just verifying it does not throw some other unexpected exception.
             var asm = Assembly.Load(actualAsmName);
             Assert.NotNull(asm);
+            Assert.Equal(asm, typeof(AssemblyLoadContextTest).Assembly);
         }
 
         [Fact]
@@ -83,7 +84,8 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
-            var asmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
+            var asmName = typeof(ISet<>).Assembly.GetName();
+            asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
             // We should be able to override (and thus, load) assemblies that were

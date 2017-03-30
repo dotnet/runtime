@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -117,6 +58,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_CryptographyException" xml:space="preserve">
+    <value>Error occurred during a cryptographic operation.</value>
+  </data>
   <data name="Arg_EmptyOrNullArray" xml:space="preserve">
     <value>Array may not be empty or null.</value>
   </data>
@@ -129,14 +73,14 @@
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
   </data>
+  <data name="Arg_InvalidType" xml:space="preserve">
+    <value>Invalid type.</value>
+  </data>  
   <data name="Arg_OutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
-  <data name="Arg_RemoveArgNotFound" xml:space="preserve">
-    <value>Cannot remove the specified item because it was not found in the specified Collection.</value>
   </data>
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
@@ -156,6 +100,18 @@
   <data name="Chain_NoPolicyMatch" xml:space="preserve">
     <value>The certificate has invalid policy.</value>
   </data>
+  <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
+    <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
+  </data>
+  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
+    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
+    <value>Only named curves are supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
   <data name="Cryptography_InvalidContextHandle" xml:space="preserve">
     <value>The chain context handle is invalid.</value>
   </data>
@@ -165,8 +121,17 @@
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
   </data>
+  <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
+    <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+  </data>
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
+  </data>
+  <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
+    <value>Cannot open an invalid handle.</value>
   </data>
   <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Stores are read-only for all users.</value>
@@ -177,8 +142,14 @@
   <data name="Cryptography_Unix_X509_PropertyNotSettable" xml:space="preserve">
       <value>The {0} value cannot be set on Unix.</value>
   </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
+  </data>
+  <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
+    <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
   </data>
   <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
     <value>The certificate export operation failed.</value>
@@ -195,8 +166,8 @@
   <data name="Cryptography_X509_InvalidFindValue" xml:space="preserve">
     <value>Invalid find value.</value>
   </data>
-  <data name="Cryptography_X509_KeyMismatch" xml:space="preserve">
-    <value>The public key of the certificate does not match the value specified.</value>
+  <data name="Cryptography_X509_InvalidFlagCombination" xml:space="preserve">
+    <value>The flags '{0}' may not be specified together.</value>
   </data>
   <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
     <value>Cannot find the original signer.</value>
@@ -213,20 +184,17 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
+      <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
-  </data>
-  <data name="InvalidPublicKeyInX509" xml:space="preserve">
-    <value>Cannot obtain public key from X509Certificate. Public Key ASN.1 is in an unexpected format.</value>
   </data>
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>
   </data>
   <data name="NotSupported_Export_MultiplePrivateCerts" xml:space="preserve">
     <value>Only one certificate with a private key can be exported in a single PFX.</value>
-  </data>
-  <data name="NotSupported_InvalidKeyImpl" xml:space="preserve">
-    <value>Only asymmetric keys that implement ICspAsymmetricAlgorithm are supported.</value>
   </data>
   <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
     <value>The certificate key algorithm is not supported.</value>
@@ -239,6 +207,9 @@
   </data>
   <data name="Security_InvalidValue" xml:space="preserve">
     <value>The {0} value was invalid.</value>
+  </data>
+  <data name="Security_AccessDenied" xml:space="preserve">
+    <value>Access is denied.</value>
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
@@ -260,5 +231,41 @@
   </data>
   <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
     <value>The string contains a character not in the 7 bit ASCII character set.</value>
+  </data>
+  <data name="Cryptography_X509_NoEphemeralPfx" xml:space="preserve">
+    <value>This platform does not support loading with EphemeralKeySet. Remove the flag to allow keys to be temporarily created on disk.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_InvalidKeySize" xml:space="preserve">
+    <value>Specified key is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_DSA_KeyGenNotSupported" xml:space="preserve">
+    <value>DSA keys can be imported, but new key generation is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedQX" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q and X (if present) must be the same length.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPJ" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; J (if present) must be shorter than P.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
   </data>
 </root>

@@ -681,7 +681,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     if (forPostponementTransfer)
                     {
-                        // We didn't consume message so we need to decrement because we havent consumed the element.
+                        // We didn't consume message so we need to decrement because we haven't consumed the element.
                         _boundingState.OutstandingTransfers--;
                     }
                 }

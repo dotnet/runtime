@@ -83,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Substitute on the CType.
-            if (atsCheck.GetTypeArgsAll().size > 0)
+            if (atsCheck.GetTypeArgsAll().Count > 0)
             {
                 CType = SymbolLoader.GetTypeManager().SubstType(CType, atsCheck);
             }
@@ -112,9 +112,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             TypeArray typeArgs = type.AsAggregateType().GetTypeArgsAll();
-            for (int i = 0; i < typeArgs.size; i++)
+            for (int i = 0; i < typeArgs.Count; i++)
             {
-                if (!CheckTypeAccess(typeArgs.Item(i), symWhere))
+                if (!CheckTypeAccess(typeArgs[i], symWhere))
                     return false;
             }
 
@@ -161,7 +161,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Utility methods
         //
-        protected ACCESSERROR CheckAccessCore(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
+        private ACCESSERROR CheckAccessCore(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
         {
             Debug.Assert(symCheck != null);
             Debug.Assert(atsCheck == null || symCheck.parent == atsCheck.getAggregate());

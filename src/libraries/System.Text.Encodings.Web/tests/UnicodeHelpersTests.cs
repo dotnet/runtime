@@ -98,10 +98,10 @@ namespace Microsoft.Framework.WebEncoders
 
                 // Act
                 List<byte> actualUtf8Bytes = new List<byte>(4);
-                uint asUtf8 = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)i);
+                uint asUtf8 = unchecked((uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)i));
                 do
                 {
-                    actualUtf8Bytes.Add((byte)asUtf8);
+                    actualUtf8Bytes.Add(unchecked((byte)asUtf8));
                 } while ((asUtf8 >>= 8) != 0);
 
                 // Assert

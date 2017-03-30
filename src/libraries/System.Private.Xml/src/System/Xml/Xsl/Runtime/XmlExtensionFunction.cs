@@ -322,7 +322,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private Type GetClrType(Type clrType)
         {
-            if (clrType.GetTypeInfo().IsEnum)
+            if (clrType.IsEnum)
                 return Enum.GetUnderlyingType(clrType);
 
             if (clrType.IsByRef)

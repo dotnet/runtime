@@ -17,7 +17,7 @@ namespace System.Xml
     [DebuggerDisplay("{debuggerDisplayProxy}")]
     public abstract partial class XmlReader : IDisposable
     {
-        static private uint s_isTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
+        private static uint s_isTextualNodeBitmap = 0x6018; // 00 0110 0000 0001 1000
         // 0 None, 
         // 0 Element,
         // 0 Attribute,
@@ -37,7 +37,7 @@ namespace System.Xml
         // 0 EndEntity,
         // 0 XmlDeclaration
 
-        static private uint s_canReadContentAsBitmap = 0x1E1BC; // 01 1110 0001 1011 1100
+        private static uint s_canReadContentAsBitmap = 0x1E1BC; // 01 1110 0001 1011 1100
         // 0 None, 
         // 0 Element,
         // 1 Attribute,
@@ -57,7 +57,7 @@ namespace System.Xml
         // 1 EndEntity,
         // 0 XmlDeclaration
 
-        static private uint s_hasValueBitmap = 0x2659C; // 10 0110 0101 1001 1100
+        private static uint s_hasValueBitmap = 0x2659C; // 10 0110 0101 1001 1100
         // 0 None, 
         // 0 Element,
         // 1 Attribute,
@@ -1000,7 +1000,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
             // atomize name
             name = NameTable.Add(name);
@@ -1021,7 +1021,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1048,7 +1048,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
             // save the element or root depth
             int parentDepth = Depth;
@@ -1090,7 +1090,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1137,7 +1137,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
 
             // atomize name
@@ -1165,7 +1165,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1428,7 +1428,7 @@ namespace System.Xml
             }
         }
 
-        static internal bool IsTextualNode(XmlNodeType nodeType)
+        internal static bool IsTextualNode(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
@@ -1455,7 +1455,7 @@ namespace System.Xml
             return 0 != (s_isTextualNodeBitmap & (1 << (int)nodeType));
         }
 
-        static internal bool CanReadContentAs(XmlNodeType nodeType)
+        internal static bool CanReadContentAs(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies IsTextualNodeBitmap mapping of XmlNodeType to a bool specifying
@@ -1482,7 +1482,7 @@ namespace System.Xml
             return 0 != (s_canReadContentAsBitmap & (1 << (int)nodeType));
         }
 
-        static internal bool HasValueInternal(XmlNodeType nodeType)
+        internal static bool HasValueInternal(XmlNodeType nodeType)
         {
 #if DEBUG
             // This code verifies HasValueBitmap mapping of XmlNodeType to a bool specifying
@@ -1541,7 +1541,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1572,12 +1572,12 @@ namespace System.Xml
             return CanReadContentAs(this.NodeType);
         }
 
-        static internal Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
-        static internal Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
@@ -1884,7 +1884,7 @@ namespace System.Xml
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))
             {
                 if (inputContext != null)
-                    throw new ArgumentException(SR.XmlBinary_NoParserContext, "inputContext");
+                    throw new ArgumentException(SR.XmlBinary_NoParserContext, nameof(inputContext));
                 reader = new XmlSqlBinaryReader(input, bytes, byteCount, string.Empty, settings.CloseInput, settings);
             }
             else

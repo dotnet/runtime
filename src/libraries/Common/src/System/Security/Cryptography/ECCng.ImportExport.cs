@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
                 }
 
                 blob = new byte[blobSize];
-                fixed (byte* pBlob = blob)
+                fixed (byte* pBlob = &blob[0])
                 {
                     // Build the header
                     BCRYPT_ECCKEY_BLOB* pBcryptBlob = (BCRYPT_ECCKEY_BLOB*)pBlob;
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
                 }
 
                 blob = new byte[blobSize];
-                fixed (byte* pBlob = blob)
+                fixed (byte* pBlob = &blob[0])
                 {
                     // Build the header
                     BCRYPT_ECCFULLKEY_BLOB* pBcryptBlob = (BCRYPT_ECCFULLKEY_BLOB*)pBlob;
@@ -171,7 +171,7 @@ namespace System.Security.Cryptography
                 if (ecBlob.Length < sizeof(BCRYPT_ECCKEY_BLOB))
                     throw ErrorCode.E_FAIL.ToCryptographicException();
 
-                fixed (byte* pEcBlob = ecBlob)
+                fixed (byte* pEcBlob = &ecBlob[0])
                 {
                     BCRYPT_ECCKEY_BLOB* pBcryptBlob = (BCRYPT_ECCKEY_BLOB*)pEcBlob;
 
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography
                 if (ecBlob.Length < sizeof(BCRYPT_ECCFULLKEY_BLOB))
                     throw ErrorCode.E_FAIL.ToCryptographicException();
 
-                fixed (byte* pEcBlob = ecBlob)
+                fixed (byte* pEcBlob = &ecBlob[0])
                 {
                     BCRYPT_ECCFULLKEY_BLOB* pBcryptBlob = (BCRYPT_ECCFULLKEY_BLOB*)pEcBlob;
 
@@ -286,7 +286,7 @@ namespace System.Security.Cryptography
                     (curve.Seed == null ? 0 : curve.Seed.Length);
 
                 byte[] blob = new byte[blobSize];
-                fixed (byte* pBlob = blob)
+                fixed (byte* pBlob = &blob[0])
                 {
                     // Build the header
                     BCRYPT_ECC_PARAMETER_HEADER* pBcryptBlob = (BCRYPT_ECC_PARAMETER_HEADER*)pBlob;

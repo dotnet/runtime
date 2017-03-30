@@ -49,7 +49,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
-        public DateTime StartTime
+        internal DateTime StartTimeCore
         {
             get
             {
@@ -80,6 +80,24 @@ namespace System.Diagnostics
             get
             {
                 return TicksToTimeSpan(GetStat().utime);
+            }
+        }
+
+        partial void EnsureHandleCountPopulated()
+        {
+            if (_processInfo.HandleCount <= 0 && _haveProcessId)
+            {
+                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
+                if (Directory.Exists(path))
+                {
+                    try
+                    {
+                        _processInfo.HandleCount = Directory.GetFiles(path, "*", SearchOption.TopDirectoryOnly).Length;
+                    }
+                    catch (DirectoryNotFoundException) // Occurs when the process is deleted between the Exists check and the GetFiles call.
+                    {
+                    }
+                }
             }
         }
 

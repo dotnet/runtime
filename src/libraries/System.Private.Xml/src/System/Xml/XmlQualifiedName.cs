@@ -2,41 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Warning: Do not port implementation of GetHashCode to Desktop. See notes in SecureStringHasher
+
 using System.Collections;
 using System.Diagnostics;
 
 namespace System.Xml
 {
-    /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
+    [Serializable]
     public class XmlQualifiedName
     {
         private string _name;
         private string _ns;
 
+        [NonSerialized]
         private Int32 _hash;
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.Empty"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public static readonly XmlQualifiedName Empty = new XmlQualifiedName(string.Empty);
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.XmlQualifiedName"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public XmlQualifiedName() : this(string.Empty, string.Empty) { }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.XmlQualifiedName1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public XmlQualifiedName(string name) : this(name, string.Empty) { }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.XmlQualifiedName2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -46,7 +45,6 @@ namespace System.Xml
             _name = name == null ? string.Empty : name;
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.Namespace"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -55,7 +53,6 @@ namespace System.Xml
             get { return _ns; }
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.Name"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -64,13 +61,11 @@ namespace System.Xml
             get { return _name; }
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.GetHashCode"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         public override int GetHashCode()
         {
-			// TODO: make sure randomized hashing is enabled by default
             if (_hash == 0)
             {
                 _hash = Name.GetHashCode() /*+ Namespace.GetHashCode()*/; // for perf reasons we are not taking ns's hashcode.
@@ -78,7 +73,6 @@ namespace System.Xml
             return _hash;
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.IsEmpty"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -87,7 +81,6 @@ namespace System.Xml
             get { return Name.Length == 0 && Namespace.Length == 0; }
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.ToString"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -96,7 +89,6 @@ namespace System.Xml
             return Namespace.Length == 0 ? Name : string.Concat(Namespace, ":", Name);
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.Equals"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -117,7 +109,6 @@ namespace System.Xml
             return false;
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.operator=="]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -132,7 +123,6 @@ namespace System.Xml
             return (a.Name == b.Name && a.Namespace == b.Namespace);
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.operator!="]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -141,7 +131,6 @@ namespace System.Xml
             return !(a == b);
         }
 
-        /// <include file='doc\XmlQualifiedName.uex' path='docs/doc[@for="XmlQualifiedName.ToString1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

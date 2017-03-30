@@ -20,7 +20,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public BitVector32(int data)
         {
-            _data = (uint)data;
+            _data = unchecked((uint)data);
         }
 
         /// <devdoc>
@@ -39,17 +39,20 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return (_data & bit) == (uint)bit;
+                return (_data & bit) == unchecked((uint)bit);
             }
             set
             {
-                if (value)
+                unchecked
                 {
-                    _data |= (uint)bit;
-                }
-                else
-                {
-                    _data &= ~(uint)bit;
+                    if (value)
+                    {
+                        _data |= (uint)bit;
+                    }
+                    else
+                    {
+                        _data &= ~(uint)bit;
+                    }
                 }
             }
         }
@@ -61,7 +64,10 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return (int)((_data & (uint)(section.Mask << section.Offset)) >> section.Offset);
+                unchecked
+                {
+                    return (int)((_data & (uint)(section.Mask << section.Offset)) >> section.Offset);
+                }
             }
             set
             {
@@ -72,7 +78,7 @@ namespace System.Collections.Specialized
 
                 value <<= section.Offset;
                 int offsetMask = (0xFFFF & (int)section.Mask) << section.Offset;
-                _data = (_data & ~(uint)offsetMask) | ((uint)value & (uint)offsetMask);
+                _data = unchecked((_data & ~(uint)offsetMask) | ((uint)value & (uint)offsetMask));
             }
         }
 
@@ -83,7 +89,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return (int)_data;
+                return unchecked((int)_data);
             }
         }
 
@@ -198,7 +204,7 @@ namespace System.Collections.Specialized
         {
             StringBuilder sb = new StringBuilder(/*"BitVector32{".Length*/12 + /*32 bits*/32 + /*"}".Length"*/1);
             sb.Append("BitVector32{");
-            int locdata = (int)value._data;
+            int locdata = unchecked((int)value._data);
             for (int i = 0; i < 32; i++)
             {
                 if ((locdata & 0x80000000) != 0)

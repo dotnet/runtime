@@ -5,7 +5,6 @@
 #include "pal_eckey.h"
 
 #include <assert.h>
-#include <openssl/objects.h>
 
 extern "C" void CryptoNative_EcKeyDestroy(EC_KEY* r)
 {

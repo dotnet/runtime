@@ -1,0 +1,38 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "src\System.Reflection.Primitives.csproj", "{CCE47F37-2C51-44EB-8F54-0474D7831515}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712} = {F512184F-76E5-4AE5-8AB5-395AF9D18712}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "ref\System.Reflection.Primitives.csproj", "{F512184F-76E5-4AE5-8AB5-395AF9D18712}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CCE47F37-2C51-44EB-8F54-0474D7831515}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{CCE47F37-2C51-44EB-8F54-0474D7831515}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{CCE47F37-2C51-44EB-8F54-0474D7831515}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{CCE47F37-2C51-44EB-8F54-0474D7831515}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CCE47F37-2C51-44EB-8F54-0474D7831515} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{F512184F-76E5-4AE5-8AB5-395AF9D18712} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+EndGlobal

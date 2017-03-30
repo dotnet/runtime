@@ -50,7 +50,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_SetSystemAclProtection_TestData))]
-        [ActiveIssue(15)]
         public static void TestSetSystemAclProtection(bool isContainer, bool isDS, string sddl, bool isProtected, bool preserveInheritance, string verifierSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

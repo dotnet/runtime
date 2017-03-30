@@ -8,15 +8,15 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-// The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
-// directly into the .NET Native System.Net.Http.dll implementation assembly in order to use internal class
+// The uap #define is used in some source files to indicate we are compiling classes
+// directly into the UWP System.Net.Http.dll implementation assembly in order to use internal class
 // methods. Internal methods are needed in order to map cookie response headers from the WinRT Windows.Web.Http APIs.
 // Windows.Web.Http is used underneath the System.Net.Http classes on .NET Native. Having other similarly
-// named classes would normally conflict with the public System.Net namespace classes that are also in the 
-// System.Private.Networking dll. So, we need to move the classes to a different namespace. Those classes are never
+// named classes would normally conflict with the public System.Net namespace classes.
+// So, we need to move the classes to a different namespace. Those classes are never
 // exposed up to user code so there isn't a problem.  In the future, we might expose some of the internal methods
 // as new public APIs and then we can remove this duplicate source code inclusion in the binaries.
-#if NETNative_SystemNetHttp
+#if uap
 namespace System.Net.Internal
 #else
 namespace System.Net
@@ -38,6 +38,7 @@ namespace System.Net
     // Currently, only represents client-side cookies. The cookie classes know
     // how to parse a set-cookie format string, but not a cookie format string
     // (e.g. "Cookie: $Version=1; name=value; $Path=/foo; $Secure")
+    [Serializable]
     public sealed class Cookie
     {
         // NOTE: these two constants must change together.
@@ -681,14 +682,10 @@ namespace System.Net
             set
             {
                 // Only set by HttpListenerRequest::Cookies_get()
-#if !NETNative_SystemNetHttp
+#if !uap
                 if (value != CookieVariant.Rfc2965)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("Cookie#{0}::set_Variant()|value:{1}", LoggingHash.HashString(this), value);
-                    }
-                    Debug.Fail("Cookie#" + LoggingHash.HashString(this) + "::set_Variant()|value:" + value);
+                    NetEventSource.Fail(this, $"value != Rfc2965:{value}");
                 }
 #endif
                 _cookieVariant = value;
@@ -855,10 +852,11 @@ namespace System.Net
 #if DEBUG
         internal void Dump()
         {
-#if !NETNative_SystemNetHttp
-            if (GlobalLog.IsEnabled)
+#if !uap
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("Cookie: " + ToString() + "->\n"
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
+                                  "Cookie: "        + ToString() + "->\n"
                                 + "\tComment    = " + Comment + "\n"
                                 + "\tCommentUri = " + CommentUri + "\n"
                                 + "\tDiscard    = " + Discard + "\n"
@@ -1335,7 +1333,7 @@ namespace System.Net
         }
 
         // Recognized attributes in order of expected frequency.
-        private readonly static RecognizedAttribute[] s_recognizedAttributes = {
+        private static readonly RecognizedAttribute[] s_recognizedAttributes = {
             new RecognizedAttribute(Cookie.PathAttributeName, CookieToken.Path),
             new RecognizedAttribute(Cookie.MaxAgeAttributeName, CookieToken.MaxAge),
             new RecognizedAttribute(Cookie.ExpiresAttributeName, CookieToken.Expires),
@@ -1349,7 +1347,7 @@ namespace System.Net
             new RecognizedAttribute(Cookie.HttpOnlyAttributeName, CookieToken.HttpOnly),
         };
 
-        private readonly static RecognizedAttribute[] s_recognizedServerAttributes = {
+        private static readonly RecognizedAttribute[] s_recognizedServerAttributes = {
             new RecognizedAttribute('$' + Cookie.PathAttributeName, CookieToken.Path),
             new RecognizedAttribute('$' + Cookie.VersionAttributeName, CookieToken.Version),
             new RecognizedAttribute('$' + Cookie.DomainAttributeName, CookieToken.Domain),

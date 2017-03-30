@@ -202,7 +202,7 @@ namespace Test
             // Pre-increment the dontCounts for pre-canceled continuations to make final check easier
             // (i.e., all counts should be 1 at end).
             int[] doneCount = { 0, 0, 1, 0, 1, 0 };
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             Task t1 = new Task(delegate { doneCount[0]++; });
             Task c1 = t1.ContinueWith((_, obj) => { doneCount[1]++; }, stateParam);
@@ -271,7 +271,7 @@ namespace Test
             int x = 0;
             int y = 0;
 
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
             Task t1 = new Task(delegate { x = 1; });
             Task t2 = t1.ContinueWith(delegate (Task t, Object obj) { y = 1; }, stateParam);
             Task<int> t3 = t2.ContinueWith(delegate (Task t, Object obj) { return 5; }, stateParam);
@@ -317,7 +317,7 @@ namespace Test
 
             try
             {
-                string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+                string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
                 Task t2 = t1.ContinueWith((completedTask, obj) => { }, stateParam);
             }
             catch
@@ -329,7 +329,7 @@ namespace Test
         [Fact]
         public static void RunContinueWithParamsTest_State_Cancellation()
         {
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             //
             // Test whether parentage/cancellation is working correctly
@@ -380,7 +380,7 @@ namespace Test
         public static void RunContinueWithParamsTest_State_IllegalParameters()
         {
             Task t1 = new Task(delegate { });
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             try
             {
@@ -421,7 +421,7 @@ namespace Test
         {
             bool ran = false;
 
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             if (runNegativeCases)
             {
@@ -455,7 +455,7 @@ namespace Test
             bool ran = false;
 
             Debug.WriteLine("* RunContinueWithTaskFuture_StateA(Object, options={0})", options);
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             if (runNegativeCases)
             {
@@ -489,7 +489,7 @@ namespace Test
             bool ran = false;
 
             Debug.WriteLine("* RunContinueWithFutureTask_State(Object, options={0})", options);
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
 
             if (runNegativeCases)
             {
@@ -523,7 +523,7 @@ namespace Test
             bool ran = false;
 
             Debug.WriteLine("* RunContinueWithFutureFuture_StateA(Object, options={0})", options);
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
             if (runNegativeCases)
             {
                 RunContinueWithBase_ExceptionCases(options,

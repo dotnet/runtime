@@ -1,13 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Principal.Windows.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp2.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Principal.Windows.builds" />
-  </ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj" />
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <Value>.NETCoreApp,Version=v1.1;.NETCoreApp,Version=v2.0</Value>
+    </ValidatePackageSuppression>
 
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

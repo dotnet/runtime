@@ -35,7 +35,7 @@ namespace Windows.Foundation
         private float _width;
         private float _height;
 
-        private readonly static Size s_empty = CreateEmptySize();
+        private static readonly Size s_empty = CreateEmptySize();
 
         public Size(double width, double height)
         {
@@ -82,7 +82,7 @@ namespace Windows.Foundation
             get { return Width < 0; }
         }
 
-        static private Size CreateEmptySize()
+        private static Size CreateEmptySize()
         {
             Size size = new Size();
             // We can't set these via the property setters because negatives widths

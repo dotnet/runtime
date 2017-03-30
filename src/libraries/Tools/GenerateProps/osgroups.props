@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <OSGroups Include="Windows_NT">
+      <Imports>AnyOS</Imports>
+      <TargetsWindows>true</TargetsWindows>
+      <PackageTargetRuntime>win</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="Unix">
+      <Imports>AnyOS</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsLinux>true</TargetsLinux>
+      <PackageTargetRuntime>unix</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="Linux">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsLinux>true</TargetsLinux>
+      <PackageTargetRuntime>linux</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="OSX">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsOSX>true</TargetsOSX>
+      <PackageTargetRuntime>osx</PackageTargetRuntime>
+    </OSGroups>
+    <OSGroups Include="FreeBSD">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsFreeBSD>true</TargetsFreeBSD>
+    </OSGroups>
+    <OSGroups Include="NetBSD">
+      <Imports>Unix</Imports>
+      <TargetsUnix>true</TargetsUnix>
+      <TargetsNetBSD>true</TargetsNetBSD>
+    </OSGroups>
+    <OSGroups Include="AnyOS" />
+  </ItemGroup>
+</Project>

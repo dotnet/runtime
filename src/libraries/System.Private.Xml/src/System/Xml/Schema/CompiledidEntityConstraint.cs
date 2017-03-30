@@ -56,7 +56,7 @@ namespace System.Xml.Schema
             catch (XmlSchemaException e)
             {
                 e.SetSource(constraint.Selector);
-                throw e;
+                throw;
             }
             XmlSchemaObjectCollection fields = constraint.Fields;
             Debug.Assert(fields.Count > 0);
@@ -70,7 +70,7 @@ namespace System.Xml.Schema
                 catch (XmlSchemaException e)
                 {
                     e.SetSource(constraint.Fields[idxField]);
-                    throw e;
+                    throw;
                 }
             }
             if (constraint is XmlSchemaUnique)

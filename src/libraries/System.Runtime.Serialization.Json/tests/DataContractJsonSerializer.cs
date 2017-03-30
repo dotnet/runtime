@@ -10,14 +10,26 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
 
 public static partial class DataContractJsonSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationOptionSetterName = "set_Option";
+
+    static DataContractJsonSerializerTests()
+    {
+        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
+        method.Invoke(null, new object[] { 1 });
+    }
+#endif
     [Fact]
     public static void DCJS_BoolAsRoot()
     {
@@ -934,9 +946,6 @@ public static partial class DataContractJsonSerializerTests
         var dict0 = new Dictionary<string, object> { { "Key0", dict1 } };
 
         var y = SerializeAndDeserialize<Dictionary<string, object>>(dict0, @"[{""Key"":""Key0"",""Value"":[{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key1-0"",""value"":""Value1-0""},{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key1-1"",""value"":[{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key2-0"",""value"":""Value2-0""}]}]}]"
-#if NET_NATIVE
-            , null, () => { return new DataContractJsonSerializer(typeof(Dictionary<string, object>), new Type[] { typeof(KeyValuePair<string, object>) }); }
-#endif
         );
         Assert.NotNull(y);
         Assert.StrictEqual(y.Count, 1);
@@ -2186,6 +2195,204 @@ public static partial class DataContractJsonSerializerTests
 
     #endregion
 
+    [Fact]
+    public static void DCJS_CreateJsonReaderTest()
+    {
+        const string json = @"{
+                                ""Toy"":""Car"",
+                                ""School"": {
+                                ""Student"":""Mike""
+                                }
+                                }";
+        byte[] bytes = Encoding.ASCII.GetBytes(json);
+        using (var stream = new MemoryStream(bytes))
+        {
+            var quotas = new XmlDictionaryReaderQuotas();
+            var jsonReader = JsonReaderWriterFactory.CreateJsonReader(stream, quotas);
+            var xml = XDocument.Load(jsonReader);
+            string expected = "<root type=\"object\">\r\n  <Toy type=\"string\">Car</Toy>\r\n  <School type=\"object\">\r\n    <Student type=\"string\">Mike</Student>\r\n  </School>\r\n</root>";
+            Utils.CompareResult result = Utils.Compare(expected, xml.ToString());
+            Assert.True(result.Equal);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_CreateJsonWriterTest()
+    {
+        using (var mo = new MemoryStream())
+        {
+            var p = new Person1();
+            p.Name = "David";
+            p.Age = 15;
+            XmlDictionaryWriter writer = JsonReaderWriterFactory.CreateJsonWriter(mo, Encoding.UTF8);
+            var serializer = new DataContractJsonSerializer(typeof(Person1));
+            var sr = new StreamReader(mo);
+            serializer.WriteObject(writer, p);
+            writer.Flush();
+            mo.Position = 0;
+            var output = sr.ReadToEnd();
+            string expected = "{\"Age\":15,\"Name\":\"David\"}";
+            Utils.CompareResult result = Utils.Compare(expected, output);
+            Assert.True(result.Equal);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_MyISerializableType()
+    {
+        var value = new MyISerializableType();
+        value.StringValue = "test string";
+
+        var actual = SerializeAndDeserialize(value, "{\"_stringValue\":\"test string\"}");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.StringValue, actual.StringValue);
+    }
+
+    [Fact]
+    public static void DCJS_ConstructorWithRootName()
+    {
+        var value = new TypeForRootNameTest() { StringProperty = "Test String" };
+        var serializer = new DataContractJsonSerializer(typeof(TypeForRootNameTest), typeof(TypeForRootNameTest).Name);
+        string actualString = ConstructorWithRootNameTestHelper(value, serializer);
+        string expectedString = "{\"TypeForRootNameTest\":{\"StringProperty\":\"Test String\"}}";
+        Utils.CompareResult result = Utils.Compare(expectedString, actualString, false);
+        Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
+    }
+
+
+    [Fact]
+    public static void DCJS_ConstructorWithRootNameAsXmlDictionaryString()
+    {
+        var value = new TypeForRootNameTest() { StringProperty = "Test String" };
+        XmlDictionary dict = new XmlDictionary();
+        XmlDictionaryString rootName = dict.Add(typeof(TypeForRootNameTest).Name);
+        var serializer = new DataContractJsonSerializer(typeof(TypeForRootNameTest), rootName);
+        string actualString = ConstructorWithRootNameTestHelper(value, serializer);
+        string expectedString = "{\"TypeForRootNameTest\":{\"StringProperty\":\"Test String\"}}";
+        Utils.CompareResult result = Utils.Compare(expectedString, actualString, false);
+        Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
+    }
+
+#if ReflectionOnly
+    [ActiveIssue(13699)]
+#endif
+    [Fact]
+    public static void DCJS_ExtensionDataObjectTest()
+    {
+        var p2 = new PersonV2();
+        p2.Name = "Elizabeth";
+        p2.ID = 2006;
+
+        // Serialize the PersonV2 object
+        var ser = new DataContractJsonSerializer(typeof(PersonV2));
+        var ms1 = new MemoryStream();
+        ser.WriteObject(ms1, p2);
+
+        // Verify the payload
+        ms1.Position = 0;
+        string actualOutput1 = new StreamReader(ms1).ReadToEnd();
+        string baseline1 = "{\"Name\":\"Elizabeth\",\"ID\":2006}";
+
+        try
+        {
+            Utils.CompareResult result = Utils.Compare(baseline1, actualOutput1);
+            Assert.True(result.Equal, $"{nameof(actualOutput1)} was not as expected: {Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+        }
+        catch (Exception e)
+        {
+            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+        }
+
+
+        // Deserialize the payload into a Person instance.
+        ms1.Position = 0;
+        var ser2 = new DataContractJsonSerializer(typeof(Person));
+        var p1 = (Person)ser2.ReadObject(ms1);
+
+        Assert.True(p1 != null, $"Variable {nameof(p1)} was null.");
+        Assert.True(p1.ExtensionData != null, $"{nameof(p1.ExtensionData)} was null.");
+        Assert.Equal(p2.Name, p1.Name);
+
+        // Serialize the Person instance
+        var ms2 = new MemoryStream();
+        ser2.WriteObject(ms2, p1);
+
+        // Verify the payload
+        ms2.Position = 0;
+        string actualOutput2 = new StreamReader(ms2).ReadToEnd();
+        string baseline2 = "{\"Name\":\"Elizabeth\",\"ID\":2006}";
+
+        try
+        {
+            Utils.CompareResult result2 = Utils.Compare(baseline2, actualOutput2);
+            Assert.True(result2.Equal, $"{nameof(actualOutput2)} was not as expected: {Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+        }
+        catch(Exception e)
+        {
+            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+        }
+    }
+
+    private static string ConstructorWithRootNameTestHelper(TypeForRootNameTest value, DataContractJsonSerializer serializer)
+    {
+        using (var ms = new MemoryStream())
+        {
+            XmlDictionaryWriter w = JsonReaderWriterFactory.CreateJsonWriter(ms);
+            w.WriteStartElement("root");
+            w.WriteAttributeString("type", "object");
+            serializer.WriteObject(w, value);
+            w.WriteEndElement();
+            w.Flush();
+            return Encoding.Default.GetString(ms.ToArray());
+        }
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithNonSerializedField()
+    {
+        var value = new TypeWithSerializableAttributeAndNonSerializedField();
+        value.Member1 = 11;
+        value.Member2 = "22";
+        value.SetMember3(33);
+        value.Member4 = "44";
+
+        var actual = SerializeAndDeserialize(value, "{\"Member1\":11,\"_member2\":\"22\",\"_member3\":33}");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+        Assert.Equal(value.Member3, actual.Member3);
+        Assert.Null(actual.Member4);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithOptionalField()
+    {
+        var value = new TypeWithOptionalField();
+        value.Member1 = 11;
+        value.Member2 = 22;
+
+        var actual = SerializeAndDeserialize(value, "{\"Member1\":11,\"Member2\":22}");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Member1, actual.Member1);
+        Assert.Equal(value.Member2, actual.Member2);
+
+        int member1Value = 11;
+        string payloadMissingOptionalField = $"{{\"Member1\":{member1Value}}}";
+        var deserialized = DeserializeString<TypeWithOptionalField>(payloadMissingOptionalField);
+        Assert.Equal(member1Value, deserialized.Member1);
+        Assert.Equal(0, deserialized.Member2);
+    }
+
+    [Fact]
+    public static void DCJS_SquareWithDeserializationCallback()
+    {
+        var value = new SquareWithDeserializationCallback(2);
+        var actual = SerializeAndDeserialize(value, "{\"Edge\":2}");
+        Assert.NotNull(actual);
+        Assert.Equal(value.Area, actual.Area);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;
@@ -2215,6 +2422,28 @@ public static partial class DataContractJsonSerializerTests
 
             ms.Position = 0;
             T deserialized = (T)dcjs.ReadObject(ms);
+
+            return deserialized;
+        }
+    }
+
+    private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
+    {
+        DataContractJsonSerializer dcs;
+        if (serializerFactory != null)
+        {
+            dcs = serializerFactory();
+        }
+        else
+        {
+            dcs = (settings != null) ? new DataContractJsonSerializer(typeof(T), settings) : new DataContractJsonSerializer(typeof(T));
+        }
+
+        byte[] bytesToDeserialize = Encoding.UTF8.GetBytes(stringToDeserialize);
+        using (MemoryStream ms = new MemoryStream(bytesToDeserialize))
+        {
+            ms.Position = 0;
+            T deserialized = (T)dcs.ReadObject(ms);
 
             return deserialized;
         }

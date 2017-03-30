@@ -59,7 +59,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
 
         private static void CompareNodeTypes(XPathNodeType a, XPathNodeType b)
         {
-            // XPath.XDocument interprets whitespaces as XPathNodeType.Text
+            // XPath.XDocument interprets whitespace as XPathNodeType.Text
             // while other XPath navigators do it properly
             Assert.Equal(IsWhitespaceOrText(a), IsWhitespaceOrText(b));
             Assert.Equal(IsNamespaceOrAttribute(a), IsNamespaceOrAttribute(b));

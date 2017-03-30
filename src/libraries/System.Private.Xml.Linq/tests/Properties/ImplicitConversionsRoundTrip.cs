@@ -287,7 +287,7 @@ namespace CoreXml.Test.XLinq
                     foreach (object o in _data)
                     {
                         string desc = o.GetType().ToString() + " : ";
-                        // On Arabic locale DateTime and DateTimeOffset types threw on serliazation if the date was 
+                        // On Arabic locale DateTime and DateTimeOffset types threw on serialization if the date was 
                         // too big for the Arabic calendar
                         if (o is DateTime)
                             desc += ((DateTime)o).ToString(CultureInfo.InvariantCulture);
@@ -305,7 +305,7 @@ namespace CoreXml.Test.XLinq
                         foreach (object o in _data)
                         {
                             string desc = o.GetType().ToString() + " : ";
-                            // On Arabic locale DateTime and DateTimeOffset types threw on serliazation if the date was 
+                            // On Arabic locale DateTime and DateTimeOffset types threw on serialization if the date was 
                             // too big for the Arabic calendar
                             if (o is DateTime)
                                 desc += ((DateTime)o).ToString(CultureInfo.InvariantCulture);

@@ -26,21 +26,30 @@ namespace System.Reflection.Emit
         public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Type owner) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Type owner, bool skipVisibility) { }
-        public override System.Reflection.MethodAttributes Attributes { get { return default(System.Reflection.MethodAttributes); } }
-        public override System.Reflection.CallingConventions CallingConvention { get { return default(System.Reflection.CallingConventions); } }
-        public override System.Type DeclaringType { get { return default(System.Type); } }
-        public bool InitLocals { get { return default(bool); } set { } }
-        public override string Name { get { return default(string); } }
-        public override System.Reflection.ParameterInfo ReturnParameter { get { return default(System.Reflection.ParameterInfo); } }
-        public override System.Type ReturnType { get { return default(System.Type); } }
+        public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
+        public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
+        public override System.Type DeclaringType { get { throw null; } }
+        public bool InitLocals { get { throw null; } set { } }
+        public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public override System.Type ReflectedType { get { throw null; } }
+        public override System.Reflection.ParameterInfo ReturnParameter { get { throw null; } }
+        public override System.Type ReturnType { get { throw null; } }
+        public override System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
-        public sealed override System.Delegate CreateDelegate(System.Type delegateType) { return default(System.Delegate); }
+        public sealed override System.Delegate CreateDelegate(System.Type delegateType) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public sealed override System.Delegate CreateDelegate(System.Type delegateType, object target) { return default(System.Delegate); }
-        public System.Reflection.Emit.ILGenerator GetILGenerator() { return default(System.Reflection.Emit.ILGenerator); }
+        public sealed override System.Delegate CreateDelegate(System.Type delegateType, object target) { throw null; }
+        public override System.Reflection.MethodInfo GetBaseDefinition() { throw null; }
+        public override object[] GetCustomAttributes(bool inherit) { throw null; }
+        public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
+        public System.Reflection.Emit.ILGenerator GetILGenerator() { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
-        public System.Reflection.Emit.ILGenerator GetILGenerator(int streamSize) { return default(System.Reflection.Emit.ILGenerator); }
-        public override System.Reflection.ParameterInfo[] GetParameters() { return default(System.Reflection.ParameterInfo[]); }
-        public override string ToString() { return default(string); }
+        public System.Reflection.Emit.ILGenerator GetILGenerator(int streamSize) { throw null; }
+        public override System.Reflection.MethodImplAttributes GetMethodImplementationFlags() { throw null; }
+        public override System.Reflection.ParameterInfo[] GetParameters() { throw null; }
+        public override object Invoke(object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, object[] parameters, System.Globalization.CultureInfo culture) { throw null; }
+        public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        public override string ToString() { throw null; }
     }
 }

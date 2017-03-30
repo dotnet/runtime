@@ -38,8 +38,6 @@ namespace System.Reflection.Metadata
 
         public BlobWriter(byte[] buffer, int start, int count)
         {
-            // the writer assumes little-endian architecture:
-            Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(buffer != null);
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buffer.Length - start);
@@ -231,7 +229,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            fixed (byte* ptr = buffer)
+            fixed (byte* ptr = &buffer[0])
             {
                 WriteBytes(ptr + start, byteCount);
             }
@@ -384,7 +382,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            fixed (char* ptr = value)
+            fixed (char* ptr = &value[0])
             {
                 WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
             }

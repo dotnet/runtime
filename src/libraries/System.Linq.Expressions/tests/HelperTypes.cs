@@ -4,6 +4,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
+using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -244,19 +247,17 @@ namespace System.Linq.Expressions.Tests
 
     internal class CompilationTypes : IEnumerable<object[]>
     {
-        private static readonly object[] False = new object[] { false };
-        private static readonly object[] True = new object[] { true };
-
-        public IEnumerator<object[]> GetEnumerator()
+        private static readonly IEnumerable<object[]> Booleans = new[]
         {
-            yield return False;
-            yield return True;
-        }
+            new object[] {false},
+#if FEATURE_COMPILE && FEATURE_INTERPRET
+            new object[] {true}
+#endif
+        };
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        public IEnumerator<object[]> GetEnumerator() => Booleans.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     internal class NoOpVisitor : ExpressionVisitor
@@ -276,6 +277,10 @@ namespace System.Linq.Expressions.Tests
     public class GenericClass<T>
     {
         public void Method() { }
+
+        public static T Field;
+
+        public static T Property => Field;
     }
 
     public class NonGenericClass
@@ -286,6 +291,58 @@ namespace System.Linq.Expressions.Tests
 
         public void GenericMethod<T>() { }
         public static void StaticMethod() { }
+
+        public static readonly NonGenericClass NonGenericField = new NonGenericClass();
+
+        public static NonGenericClass NonGenericProperty => NonGenericField;
+    }
+
+    public class InvalidTypesData : IEnumerable<object[]>
+    {
+        private static readonly object[] GenericTypeDefinition = new object[] { typeof(GenericClass<>) };
+        private static readonly object[] ContainsGenericParameters = new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return GenericTypeDefinition;
+            yield return ContainsGenericParameters;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public class UnreadableExpressionsData : IEnumerable<object[]>
+    {
+        private static readonly object[] Property = new object[] { Expression.Property(null, typeof(Unreadable<bool>), nameof(Unreadable<bool>.WriteOnly)) };
+        private static readonly object[] Indexer = new object[] { Expression.Property(null, typeof(Unreadable<bool>).GetProperty(nameof(Unreadable<bool>.WriteOnly)), new Expression[0]) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return Property;
+            yield return Indexer;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    public class OpenGenericMethodsData : IEnumerable<object[]>
+    {
+        private static readonly object[] GenericClass = new object[] { typeof(GenericClass<>).GetMethod(nameof(GenericClass<string>.Method)) };
+        private static readonly object[] GenericMethod = new object[] { typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.GenericMethod)) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return GenericClass;
+            yield return GenericMethod;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     public enum ByteEnum : byte { A = Byte.MaxValue }
@@ -296,4 +353,155 @@ namespace System.Linq.Expressions.Tests
     public enum UInt32Enum : uint { A = UInt32.MaxValue }
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
+
+#if FEATURE_COMPILE
+    public static class NonCSharpTypes
+    {
+        private static Type _charEnumType;
+        private static Type _boolEnumType;
+
+        private static ModuleBuilder GetModuleBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            return assembly.DefineDynamicModule("Name");
+        }
+
+        public static Type CharEnumType
+        {
+            get
+            {
+                if (_charEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("CharEnumType", TypeAttributes.Public, typeof(char));
+                    eb.DefineLiteral("A", 'A');
+                    eb.DefineLiteral("B", 'B');
+                    eb.DefineLiteral("C", 'C');
+                    _charEnumType = eb.CreateTypeInfo();
+                }
+
+                return _charEnumType;
+            }
+        }
+
+        public static Type BoolEnumType
+        {
+            get
+            {
+                if (_boolEnumType == null)
+                {
+                    EnumBuilder eb = GetModuleBuilder().DefineEnum("BoolEnumType", TypeAttributes.Public, typeof(bool));
+                    eb.DefineLiteral("False", false);
+                    eb.DefineLiteral("True", true);
+                    _boolEnumType = eb.CreateTypeInfo();
+                }
+
+                return _boolEnumType;
+            }
+        }
+    }
+#endif
+
+    public class FakeExpression : Expression
+    {
+        public FakeExpression(ExpressionType customNodeType, Type customType)
+        {
+            CustomNodeType = customNodeType;
+            CustomType = customType;
+        }
+
+        public ExpressionType CustomNodeType { get; set; }
+        public Type CustomType { get; set; }
+
+        public override ExpressionType NodeType => CustomNodeType;
+        public override Type Type => CustomType;
+    }
+
+    public struct Number : IEquatable<Number>
+    {
+        private readonly int _value;
+
+        public Number(int value)
+        {
+            _value = value;
+        }
+
+        public static readonly Number MinValue = new Number(int.MinValue);
+        public static readonly Number MaxValue = new Number(int.MaxValue);
+
+        public static Number operator +(Number l, Number r) => new Number(unchecked(l._value + r._value));
+        public static Number operator -(Number l, Number r) => new Number(l._value - r._value);
+        public static Number operator *(Number l, Number r) => new Number(unchecked(l._value * r._value));
+        public static Number operator /(Number l, Number r) => new Number(l._value / r._value);
+        public static Number operator %(Number l, Number r) => new Number(l._value % r._value);
+
+        public static Number operator &(Number l, Number r) => new Number(l._value & r._value);
+        public static Number operator |(Number l, Number r) => new Number(l._value | r._value);
+        public static Number operator ^(Number l, Number r) => new Number(l._value ^ r._value);
+
+        public static bool operator >(Number l, Number r) => l._value > r._value;
+        public static bool operator >=(Number l, Number r) => l._value >= r._value;
+        public static bool operator <(Number l, Number r) => l._value < r._value;
+        public static bool operator <=(Number l, Number r) => l._value <= r._value;
+        public static bool operator ==(Number l, Number r) => l._value == r._value;
+        public static bool operator !=(Number l, Number r) => l._value != r._value;
+
+        public override bool Equals(object obj) => obj is Number && Equals((Number)obj);
+        public bool Equals(Number other) => _value == other._value;
+        public override int GetHashCode() => _value;
+    }
+
+    public static class ExpressionAssert
+    {
+        public static void Verify(this LambdaExpression expression, string il, string instructions)
+        {
+#if FEATURE_COMPILE
+            expression.VerifyIL(il);
+#endif
+
+            // FEATURE_COMPILE is not directly required, 
+            // but this functionality relies on private reflection and that would not work with AOT
+#if FEATURE_INTERPRET && FEATURE_COMPILE
+            expression.VerifyInstructions(instructions);
+#endif
+        }
+    }
+
+    public class RunOnceEnumerable<T> : IEnumerable<T>
+    {
+        private readonly IEnumerable<T> _source;
+        private bool _called;
+
+        public RunOnceEnumerable(IEnumerable<T> source)
+        {
+            _source = source;
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            Assert.False(_called);
+            _called = true;
+            return _source.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public class Truthiness
+    {
+        private bool Value { get; }
+
+        public Truthiness(bool value)
+        {
+            Value = value;
+        }
+
+        public static implicit operator bool(Truthiness truth) => truth.Value;
+
+        public static bool operator true(Truthiness truth) => truth.Value;
+
+        public static bool operator false(Truthiness truth) => !truth.Value;
+
+        public static Truthiness operator !(Truthiness truth) => new Truthiness(!truth.Value);
+    }
 }

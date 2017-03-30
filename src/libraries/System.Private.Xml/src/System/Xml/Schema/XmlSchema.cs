@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.ServiceModel.Dispatcher
-{
-    using XmlSchema = XmlSchemaConstants;
-    internal static class XmlSchemaConstants
-    {
-        public const string Namespace = "http://www.w3.org/2001/XMLSchema";
-        public const string InstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
-    }
-}
-
 namespace System.Xml.Schema
 {
 #if SILVERLIGHT
@@ -128,7 +118,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
                 return null;
             }
@@ -244,7 +234,7 @@ namespace System.Xml.Schema
         {
             SchemaInfo sInfo = new SchemaInfo();
             sInfo.SchemaType = SchemaType.XSD;
-            CompileSchema(null, System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver(), sInfo, null, validationEventHandler, NameTable, false);
+            CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
         /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Compileq"]/*' />

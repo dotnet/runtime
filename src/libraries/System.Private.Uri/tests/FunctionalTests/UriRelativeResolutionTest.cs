@@ -3,6 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 
 namespace System.PrivateUri.Tests
 {
@@ -131,6 +135,138 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
+        [Fact]
+        public void Uri_Relative_SimplePartialPathWithUnknownScheme_Unicode_ReturnsPartialPathWithScheme()
+        {
+            string schemeAndRelative = "scheme:\u011E";
+            Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+            String expectedResult = schemeAndRelative;
+            Assert.Equal(expectedResult, resolved.ToString());
+        }
+
+        [Fact]
+        public void Uri_Relative_SimplePartialPathWithScheme_Unicode_ReturnsPartialPathWithScheme()
+        {
+            string schemeAndRelative = "http:\u00C7";
+            Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+            String expectedResult = schemeAndRelative;
+            Assert.Equal(expectedResult, resolved.ToString());
+        }
+
+        [Fact]
+        public void Uri_Relative_RightToLeft()
+        {
+            var loremIpsumArabic = "\u0643\u0644 \u0627\u0644\u0649 \u0627\u0644\u0639\u0627\u0644\u0645";
+
+            string schemeAndRelative = "scheme:" + loremIpsumArabic;
+            Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+            String expectedResult = schemeAndRelative;
+            Assert.Equal(expectedResult, resolved.ToString());
+        }
+
+        [Fact]
+        public void Uri_Relative_Unicode_Glitchy()
+        {
+            var glitchy = "4\u0308\u0311\u031A\u030B\u0352\u034A\u030D\u036C\u036C\u036B\u0344\u0312\u0322\u0334\u0328\u0319\u0323\u0359\u0317\u0324\u0319\u032D\u0331\u0319\u031F\u0331\u0330\u0347\u0353\u0318\u032F\u032C\u03162\u0303\u0313\u031A\u0368\u036E\u0368\u0301\u0367\u0368\u0306\u0305\u0350\u036A\u036F\u0307\u0328\u035F\u0321\u0361\u0320\u032F\u032B\u034E\u0326\u033B";
+
+            string schemeAndRelative = "scheme:" + glitchy;
+            Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+            String expectedResult = schemeAndRelative;
+            Assert.Equal(expectedResult, resolved.ToString());
+        }
+
+        [Fact]
+        public void Uri_Unicode_Format_Character_Combinations_Scheme()
+        {
+            var combinations = CartesianProductAll(_ => CharUnicodeInfo.GetUnicodeCategory(_) == UnicodeCategory.Format && !UriHelper.IsIriDisallowedBidi(_));
+
+            foreach (var combination in combinations)
+            {
+                var escaped = UriHelper.IriEscapeNonUcsChars(combination);
+
+                string schemeAndRelative = $"scheme:{escaped}";
+                Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+                string expectedResult = schemeAndRelative;
+                Assert.Equal(expectedResult, resolved.ToString());
+            }
+        }
+
+        [Fact]
+        public void Uri_Unicode_Reserved_Character_Combinations_Scheme()
+        {
+            var combinations = CartesianProductAll(UriHelper.IsIriReserved);
+
+            foreach (var combination in combinations)
+            {
+                string schemeAndRelative = $"scheme:{combination}";
+                Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+                string expectedResult = schemeAndRelative;
+                Assert.Equal(expectedResult, resolved.ToString());
+            }
+        }
+
+        [Fact]
+        public void Uri_Unicode_IriUnreserved_Character_Combinations_Scheme()
+        {
+            var combinations = CartesianProductAll(UriHelper.IsIriUnreserved, _ => false, false);
+
+            foreach (var combination in combinations)
+            {
+                string schemeAndRelative = $"scheme:{combination}";
+                Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+                string expectedResult = schemeAndRelative;
+                Assert.Equal(expectedResult, resolved.ToString());
+            }
+        }
+
+        [Fact]
+        public void Uri_Unicode_SurrogatePairs_Scheme()
+        {
+            var combinations = CartesianProductAll(char.IsHighSurrogate, char.IsLowSurrogate, false);
+
+            foreach (var combination in combinations)
+            {
+                var escape = !UriHelper.IsIriAllowedSurrogate(combination);
+
+                string schemeAndRelative = escape ? $"scheme:{UriHelper.IriEscapeAll(combination)}" : $"scheme:{combination}";
+                Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+                string expectedResult = schemeAndRelative;
+                Assert.Equal(expectedResult, resolved.ToString());
+            }
+        }
+
+        private IEnumerable<string> CartesianProductAll(Func<char, bool> filter, Func<char, bool> secondFilter = null, bool includeSingleChars = true)
+        {
+            var characters = Enumerable.Range(0, 0xFFFF).Select(_ => (char)_).Where(filter).ToList();
+
+            var secondCharacters = secondFilter == null ? characters : Enumerable.Range(0, 0xFFFF).Select(_ => (char)_).Where(secondFilter).ToList();
+
+            return CartesianProduct(characters, secondCharacters, includeSingleChars);
+        }
+
+        private IEnumerable<string> CartesianProduct(IEnumerable<char> first, IEnumerable<char> second, bool includeSingleChars = true)
+        {
+            var cartesian = from c1 in first
+                            from c2 in second
+                            select new string(new[] { c1, c2 });
+
+            if (includeSingleChars)
+            {
+                cartesian = cartesian.Concat(first.Select(_ => _.ToString()));
+                cartesian = cartesian.Union(second.Select(_ => _.ToString()));
+            }
+
+            return cartesian.ToList();
+        }
+        
         [Fact]
         public void Uri_Relative_BaseVsDoubleCharColinChar_ReturnsCharColinChar()
         {
@@ -488,6 +624,164 @@ namespace System.PrivateUri.Tests
             throwAway = resultUri.Port; // For Debugging.
 
             Assert.Equal(testUri.Port, resultUri.Port);
+        }
+
+        /// <summary>
+        /// Performs IRI character class lookups and character encodings.
+        /// </summary>
+        private static class UriHelper
+        {
+            private static readonly IEnumerable<Tuple<char, char>> _iriUnreservedRanges = new List<Tuple<char, char>>()
+            {
+                // ALPHA
+                Tuple.Create('A', 'Z'),
+                Tuple.Create('a', 'z'),
+
+                // DIGIT
+                Tuple.Create('0', '9'),
+
+                // single chars
+                Tuple.Create('-', '-'),
+                Tuple.Create('.', '.'),
+                Tuple.Create('_', '-'),
+                Tuple.Create('~', '~'),
+
+                // UCSCHAR
+                Tuple.Create('\u00A0', '\uD7FF'),
+                Tuple.Create('\uF900', '\uFDCF'),
+                Tuple.Create('\uFDF0', '\uFFEF'),
+            };
+
+            private static readonly IEnumerable<Tuple<char, char>> _iriUcscharRanges = new List<Tuple<char, char>>()
+            {
+                // UCSCHAR
+                Tuple.Create('\u00A0', '\uD7FF'),
+                Tuple.Create('\uF900', '\uFDCF'),
+                Tuple.Create('\uFDF0', '\uFFEF'),
+            };
+
+            private static readonly IEnumerable<Tuple<string, string>> _iriAllowedSurrogateRanges = new List<Tuple<string, string>>()
+            {
+                // UCSCHAR
+                Tuple.Create("\U00010000", "\U0001FFFD"),
+                Tuple.Create("\U00020000", "\U0002FFFD"),
+                Tuple.Create("\U00030000", "\U0003FFFD"),
+                Tuple.Create("\U00040000", "\U0004FFFD"),
+                Tuple.Create("\U00050000", "\U0005FFFD"),
+                Tuple.Create("\U00060000", "\U0006FFFD"),
+                Tuple.Create("\U00070000", "\U0007FFFD"),
+                Tuple.Create("\U00080000", "\U0008FFFD"),
+                Tuple.Create("\U00090000", "\U0009FFFD"),
+                Tuple.Create("\U000A0000", "\U000AFFFD"),
+                Tuple.Create("\U000B0000", "\U000BFFFD"),
+                Tuple.Create("\U000C0000", "\U000CFFFD"),
+                Tuple.Create("\U000D0000", "\U000DFFFD"),
+                Tuple.Create("\U000E1000", "\U000EFFFD"),
+            };
+
+            private static readonly HashSet<char> _iriReserved = new HashSet<char>()
+            {
+                ':', ',', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='
+            };
+
+            // https://tools.ietf.org/html/rfc3987#page-18 (LRM, RLM, LRE, RLE, LRO, RLO, and PDF)
+            private static readonly HashSet<char> _iriDisallowedBidi = new HashSet<char>()
+            {
+                '\u200E', '\u200F', '\u202A', '\u202B', '\u202D', '\u202E', '\u202C'
+            };
+
+            public static string IriEscapeAll(string input)
+            {
+                var result = new StringBuilder();
+
+                var bytes = Encoding.UTF8.GetBytes(input);
+
+                foreach (var b in bytes)
+                {
+                    result.Append('%');
+                    result.Append(b.ToString("X2"));
+                }
+
+                return result.ToString();
+            }
+
+            public static string IriEscapeNonUcsChars(string input)
+            {
+                var result = new StringBuilder();
+
+                foreach (var c in input)
+                {
+                    if (IsIriUcschar(c))
+                    {
+                        result.Append(c);
+
+                        continue;
+                    }
+
+                    var bytes = Encoding.UTF8.GetBytes(c.ToString());
+
+                    foreach (var b in bytes)
+                    {
+                        result.Append('%');
+                        result.Append(b.ToString("X2"));
+                    }
+                }
+
+                return result.ToString();
+            }
+            public static bool IsIriAllowedSurrogate(string pair)
+            {
+                var inRange =
+                    _iriAllowedSurrogateRanges.Any(
+                        _ => string.CompareOrdinal(_.Item1, pair) <= 0 && string.CompareOrdinal(_.Item2, pair) >= 0);
+
+                return inRange;
+            }
+
+            public static bool IsIriDisallowedBidi(char c)
+            {
+                return _iriDisallowedBidi.Contains(c);
+            }
+            public static bool IsIriReserved(char c)
+            {
+                /*
+                reserved       = gen-delims / sub-delims
+                gen-delims     = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+                sub-delims     = "!" / "$" / "&" / "'" / "(" / ")"
+                                / "*" / "+" / "," / ";" / "="
+                */
+
+                return _iriReserved.Contains(c);
+            }
+
+            private static bool IsIriUcschar(char c)
+            {
+                var inRange = _iriUcscharRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
+
+                return inRange;
+            }
+
+            public static bool IsIriUnreserved(char c)
+            {
+                /*
+                ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
+                DIGIT          =  %x30-39
+
+                iunreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~" / ucschar
+
+                ucschar        = %xA0-D7FF / %xF900-FDCF / %xFDF0-FFEF
+                                / %x10000-1FFFD / %x20000-2FFFD / %x30000-3FFFD
+                                / %x40000-4FFFD / %x50000-5FFFD / %x60000-6FFFD
+                                / %x70000-7FFFD / %x80000-8FFFD / %x90000-9FFFD
+                                / %xA0000-AFFFD / %xB0000-BFFFD / %xC0000-CFFFD
+                                / %xD0000-DFFFD / %xE1000-EFFFD
+                */
+
+                // https://www.ietf.org/rfc/rfc3987.txt 2.2
+                var inRange = _iriUnreservedRanges.Any(_ => _.Item1 <= c && _.Item2 >= c);
+
+                return inRange;
+            }
         }
     }
 }

@@ -1,21 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Text.Encoding.Tests</AssemblyName>
-    <RootNamespace>System.Text.Encoding.Tests</RootNamespace>
+    <ProjectGuid>{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.cs" />
@@ -45,7 +40,9 @@
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
     <Compile Include="Fallback\DecoderExceptionFallbackTests.cs" />
     <Compile Include="NegativeEncodingTests.cs" />
+    <Compile Include="NegativeEncodingTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="EncodingTestHelpers.cs" />
+    <Compile Include="EncodingTestHelpers.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Latin1Encoding\Latin1EncodingEncode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingDecode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingGetMaxByteCount.cs" />
@@ -78,9 +75,10 @@
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="Encoding\Encoding.netstandard.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard.cs" />
+    <Compile Include="Decoder\Decoder.netstandard.cs" />
+    <Compile Include="Encoder\Encoder.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

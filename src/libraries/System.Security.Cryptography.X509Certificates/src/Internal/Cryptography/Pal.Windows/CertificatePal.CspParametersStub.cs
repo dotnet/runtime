@@ -6,7 +6,7 @@
 // assembly.  So these type definitions allow the code to continue to use the same data transport structure
 // that it has for quite a while.
 
-#if NETNATIVE
+#if uap
 using System;
 
 namespace Internal.Cryptography.Pal
@@ -41,7 +41,7 @@ namespace Internal.Cryptography.Pal
                     int flags = (int)value;
                     if ((flags & ~allFlags) != 0)
                     {
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "value"));
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(value)));
                     }
                     _flags = flags;
                 }
@@ -68,4 +68,4 @@ namespace Internal.Cryptography.Pal
     }
 }
 
-#endif // #if NETNATIVE
+#endif // #if uap

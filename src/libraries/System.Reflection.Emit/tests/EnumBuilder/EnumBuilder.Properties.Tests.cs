@@ -32,11 +32,27 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void UnderlyingField_TypeCreated()
+        public void IsArray()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            enumBuilder.AsType();
-            Assert.Equal(typeof(int), enumBuilder.UnderlyingField.FieldType);
+            Assert.False(enumBuilder.IsArray);
+            Assert.False(enumBuilder.IsSZArray);
+
+            Type asType = enumBuilder.AsType();
+            Assert.False(asType.IsArray);
+            Assert.False(asType.IsSZArray);
+
+            Type arrType = enumBuilder.MakeArrayType();
+            Assert.True(arrType.IsArray);
+            Assert.True(arrType.IsSZArray);
+
+            arrType = enumBuilder.MakeArrayType(1);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+
+            arrType = enumBuilder.MakeArrayType(2);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
         }
     }
 }

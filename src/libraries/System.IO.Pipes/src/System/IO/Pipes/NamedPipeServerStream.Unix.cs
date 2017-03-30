@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -173,10 +174,7 @@ namespace System.IO.Pipes
                 return name;
             }
 
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            throw error.Error == Interop.Error.ENOTSUP ?
-                new PlatformNotSupportedException() :
-                Interop.GetExceptionForIoErrno(error, _path);
+            throw CreateExceptionForLastError();
         }
 
         public override int InBufferSize
@@ -203,5 +201,48 @@ namespace System.IO.Pipes
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        // This method calls a delegate while impersonating the client.
+        public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
+        {
+            CheckWriteOperations();
+            SafeHandle handle = InternalHandle?.NamedPipeSocketHandle;
+            if (handle == null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
+            }
+            // Get the current effective ID to fallback to after the impersonationWorker is run
+            uint currentEUID = Interop.Sys.GetEUid();
+
+            // Get the userid of the client process at the end of the pipe
+            uint peerID;
+            if (Interop.Sys.GetPeerID(handle, out peerID) == -1)
+            {
+                throw CreateExceptionForLastError();
+            }
+
+            // set the effective userid of the current (server) process to the clientid
+            if (Interop.Sys.SetEUid(peerID) == -1)
+            {
+                throw CreateExceptionForLastError();
+            }
+
+            try
+            {
+                impersonationWorker();
+            }
+            finally
+            {
+                // set the userid of the current (server) process back to its original value
+                Interop.Sys.SetEUid(currentEUID);
+            }
+        }
+
+        private Exception CreateExceptionForLastError()
+        {
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+            return error.Error == Interop.Error.ENOTSUP ?
+                new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_OperatingSystemError, nameof(Interop.Error.ENOTSUP))) :
+                Interop.GetExceptionForIoErrno(error, _path);
+        }
     }
 }

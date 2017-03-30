@@ -18,7 +18,7 @@ using System.Diagnostics;
 namespace System.Threading.Tasks.Tests
 {
     /// <summary>
-    /// A class that implements the APM pattern to ensure that TPL can support APM patttern
+    /// A class that implements the APM pattern to ensure that TPL can support APM pattern
     /// </summary>
     public sealed class TaskAPMTests : IDisposable
     {

@@ -301,10 +301,10 @@ namespace System.Security.Tests
         [Fact]
         public static void SecureStringMarshal_NullArgsAllowed_IntPtrZero()
         {
-            Assert.Equal(IntPtr.Zero, SecureStringMarshal.SecureStringToCoTaskMemAnsi(null));
-            Assert.Equal(IntPtr.Zero, SecureStringMarshal.SecureStringToCoTaskMemUnicode(null));
-            Assert.Equal(IntPtr.Zero, SecureStringMarshal.SecureStringToGlobalAllocAnsi(null));
-            Assert.Equal(IntPtr.Zero, SecureStringMarshal.SecureStringToGlobalAllocUnicode(null));
+            Assert.Throws<ArgumentNullException>("s", () => SecureStringMarshal.SecureStringToCoTaskMemAnsi(null));
+            Assert.Throws<ArgumentNullException>("s", () => SecureStringMarshal.SecureStringToCoTaskMemUnicode(null));
+            Assert.Throws<ArgumentNullException>("s", () => SecureStringMarshal.SecureStringToGlobalAllocAnsi(null));
+            Assert.Throws<ArgumentNullException>("s", () => SecureStringMarshal.SecureStringToGlobalAllocUnicode(null));
         }
 
         [Fact]

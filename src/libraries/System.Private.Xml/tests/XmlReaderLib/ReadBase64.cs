@@ -436,7 +436,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadBase64 with whitespaces in the middle")]
+        [Variation("ReadBase64 with whitespace in the middle")]
         public int TestTextReadBase64_26()
         {
             byte[] buffer = new byte[1];
@@ -942,7 +942,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadBase64 with whitespaces in the middle")]
+        [Variation("ReadBase64 with whitespace in the middle")]
         public int TestTextReadBase64_26()
         {
             byte[] buffer = new byte[1];

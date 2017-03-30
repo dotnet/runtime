@@ -26,36 +26,9 @@ namespace System.Security.AccessControl.Tests
         }
 
         [Fact]
-        public static void AdditionalTestCases()
+        public static void NegativeCapacity()
         {
-            RawAcl rawAcl = null;
-            byte revision = 0;
-            int capacity = 0;
-
-            //case 1, capacity = -1
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                revision = 0;
-                capacity = -1;
-                rawAcl = new RawAcl(revision, capacity);
-            });
-
-            //case 2, capacity = Int32.MaxValue/2 
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                revision = 0;
-                capacity = Int32.MaxValue / 2;
-                TestConstructor(revision, capacity);
-            });
-
-            //case 3, capacity = Int32.MaxValue
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                revision = 0;
-                capacity = Int32.MaxValue;
-                TestConstructor(revision, capacity);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RawAcl(0, -1));
         }
-
     }
 }

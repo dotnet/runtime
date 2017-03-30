@@ -1,0 +1,158 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.Axes.Tests", "tests\axes\System.Xml.Linq.Axes.Tests.csproj", "{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.Events.Tests", "tests\events\System.Xml.Linq.Events.Tests.csproj", "{C560E194-5B14-4112-ABC6-3208491E53E6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.Misc.Tests", "tests\misc\System.Xml.Linq.Misc.Tests.csproj", "{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.Properties.Tests", "tests\Properties\System.Xml.Linq.Properties.Tests.csproj", "{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Schema.Extensions.Tests", "tests\Schema\System.Xml.Schema.Extensions.Tests.csproj", "{AFB408EA-2EF7-42B3-B98F-BA60F6481313}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.SDMSample.Tests", "tests\SDMSample\System.Xml.Linq.SDMSample.Tests.csproj", "{F6C73170-9333-4B52-B3FA-A536C5EA6A48}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.Streaming.Tests", "tests\Streaming\System.Xml.Linq.Streaming.Tests.csproj", "{CB11B315-2567-4574-977D-89E3135243C4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.TreeManipulation.Tests", "tests\TreeManipulation\System.Xml.Linq.TreeManipulation.Tests.csproj", "{10EFE488-FAB4-43DA-847D-FF057BFF52AC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Common", "tests\XDocument.Common\XDocument.Common.csproj", "{52666206-B6C9-49FA-A1D7-D0A0C68807B0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Test.ModuleCore", "tests\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj", "{979510CE-9042-4F8D-9C74-EE03B89194CC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.xNodeBuilder.Tests", "tests\xNodeBuilder\System.Xml.Linq.xNodeBuilder.Tests.csproj", "{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.Linq.xNodeReader.Tests", "tests\xNodeReader\System.Xml.Linq.xNodeReader.Tests.csproj", "{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XPath.XDocument.Tests", "tests\XPath\XDocument\System.Xml.XPath.XDocument.Tests.csproj", "{10D52320-17B7-476E-BBD2-A1064DD38CBF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {BAC347A3-9841-44FC-B1E3-2344D1152C23}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Xml.Linq", "src\System.Private.Xml.Linq.csproj", "{BAC347A3-9841-44FC-B1E3-2344D1152C23}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C560E194-5B14-4112-ABC6-3208491E53E6}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{C560E194-5B14-4112-ABC6-3208491E53E6}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{C560E194-5B14-4112-ABC6-3208491E53E6}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{C560E194-5B14-4112-ABC6-3208491E53E6}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFB408EA-2EF7-42B3-B98F-BA60F6481313}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFB408EA-2EF7-42B3-B98F-BA60F6481313}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFB408EA-2EF7-42B3-B98F-BA60F6481313}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFB408EA-2EF7-42B3-B98F-BA60F6481313}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6C73170-9333-4B52-B3FA-A536C5EA6A48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6C73170-9333-4B52-B3FA-A536C5EA6A48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6C73170-9333-4B52-B3FA-A536C5EA6A48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6C73170-9333-4B52-B3FA-A536C5EA6A48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB11B315-2567-4574-977D-89E3135243C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB11B315-2567-4574-977D-89E3135243C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB11B315-2567-4574-977D-89E3135243C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB11B315-2567-4574-977D-89E3135243C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10EFE488-FAB4-43DA-847D-FF057BFF52AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10EFE488-FAB4-43DA-847D-FF057BFF52AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10EFE488-FAB4-43DA-847D-FF057BFF52AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10EFE488-FAB4-43DA-847D-FF057BFF52AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52666206-B6C9-49FA-A1D7-D0A0C68807B0}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{52666206-B6C9-49FA-A1D7-D0A0C68807B0}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{52666206-B6C9-49FA-A1D7-D0A0C68807B0}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{52666206-B6C9-49FA-A1D7-D0A0C68807B0}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10D52320-17B7-476E-BBD2-A1064DD38CBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10D52320-17B7-476E-BBD2-A1064DD38CBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10D52320-17B7-476E-BBD2-A1064DD38CBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10D52320-17B7-476E-BBD2-A1064DD38CBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{C560E194-5B14-4112-ABC6-3208491E53E6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{D24E2563-7A46-4368-94D4-B3A39E9EF1B5} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{AFB408EA-2EF7-42B3-B98F-BA60F6481313} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{F6C73170-9333-4B52-B3FA-A536C5EA6A48} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{CB11B315-2567-4574-977D-89E3135243C4} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{10EFE488-FAB4-43DA-847D-FF057BFF52AC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{52666206-B6C9-49FA-A1D7-D0A0C68807B0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{979510CE-9042-4F8D-9C74-EE03B89194CC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{10D52320-17B7-476E-BBD2-A1064DD38CBF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{BAC347A3-9841-44FC-B1E3-2344D1152C23} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+EndGlobal

@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.integeregererface01.integeregererface01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.integeregererface01.integeregererface01;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Types Rule : Interface Methods (Compiler)
     //          CLS-compliant language compilers must have syntax for the situation where a single type implements
@@ -94,8 +90,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.integereg
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.mixedmode02.mixedmode02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.mixedmode02.mixedmode02;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Naming Rule : Characters and casing
     //          CLS-compliant language compilers must follow the rules of Annex 7 of Technical Report 15 of
@@ -205,8 +199,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.mixedmode
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr02.namingchr02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr02.namingchr02;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Naming Rule : Characters and casing
     //          CLS-compliant language compilers must follow the rules of Annex 7 of Technical Report 15 of
@@ -277,8 +269,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr03.namingchr03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr03.namingchr03;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Naming Rule : Characters and casing
     //          CLS-compliant language compilers must follow the rules of Annex 7 of Technical Report 15 of
@@ -378,8 +368,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr04.namingchr04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr04.namingchr04;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Visibility - CLS rules apply only to those parts of a type that are exposed outside the defining assembly.
     //      Naming Rule : Characters and casing
@@ -433,7 +421,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
 
         public class MyClass2 : MyClass
         {
-            //static public dynamic[,,,] array1; //cube array
+            //public static dynamic[,,,] array1; //cube array
             private dynamic _classIdentifier;
             private dynamic MEthod01(int n, ref dynamic d)
             {
@@ -460,7 +448,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
                 return default(object);
             }
 
-            internal protected dynamic method03(U x, ref V y, params dynamic[] ary)
+            protected internal dynamic method03(U x, ref V y, params dynamic[] ary)
             {
                 return default(object);
             }
@@ -473,8 +461,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingchr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingkeyword01.namingkeyword01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingkeyword01.namingkeyword01;
-
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Naming Rule : Keywords (Compiler)
     //          CLS-compliant language compilers supply a mechanism for referencing identifiers that coincide with keywords.
@@ -558,7 +544,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.namingkey
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.typegeneral01.typegeneral01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.typegeneral01.typegeneral01;
     // <Title> CLS Compliance for Dynamic </Title>
     // <Description> Types Rule : Interface Methods (Compiler)
     //          CLS-compliant language compilers must have syntax for the situation where a single type implements
@@ -568,7 +553,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.typegener
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     //[assembly: System.CLSCompliant(true)]
     namespace MyNamespace
@@ -634,8 +618,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.typegener
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.bug89385_a.bug89385_a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.ClsCompliance.bug89385_a.bug89385_a;
-
     // <Title> regression test</Title>
     // <Description>
     // </Description>

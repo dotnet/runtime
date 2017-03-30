@@ -4,17 +4,18 @@
 
 namespace System.Security.Permissions
 {
-    public sealed partial class TypeDescriptorPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    [Serializable]
+    public sealed partial class TypeDescriptorPermission : CodeAccessPermission, IUnrestrictedPermission
     {
-        public TypeDescriptorPermission(System.Security.Permissions.PermissionState state) { }
-        public TypeDescriptorPermission(System.Security.Permissions.TypeDescriptorPermissionFlags flag) { }
-        public System.Security.Permissions.TypeDescriptorPermissionFlags Flags { get; set; }
-        public override System.Security.IPermission Copy() { return this; }
+        public TypeDescriptorPermission(PermissionState state) { }
+        public TypeDescriptorPermission(TypeDescriptorPermissionFlags flag) { }
+        public TypeDescriptorPermissionFlags Flags { get; set; }
+        public override IPermission Copy() { return this; }
         public override void FromXml(SecurityElement securityElement) { }
-        public override System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public override bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return default(IPermission); }
+        public override bool IsSubsetOf(IPermission target) { return false; }
         public bool IsUnrestricted() { return false; }
         public override SecurityElement ToXml() { return default(SecurityElement); }
-        public override System.Security.IPermission Union(System.Security.IPermission target) { return default(System.Security.IPermission); }
+        public override IPermission Union(IPermission target) { return default(IPermission); }
     }
 }

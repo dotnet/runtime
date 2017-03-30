@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -20,10 +19,8 @@ namespace System.Linq.Expressions.Interpreter
         #region Construction
 
         internal CallInstruction() { }
-        public override string InstructionName
-        {
-            get { return "Call"; }
-        }
+
+        public override string InstructionName => "Call";
 
 #if FEATURE_DLG_INVOKE
         private static readonly Dictionary<MethodInfo, CallInstruction> _cache = new Dictionary<MethodInfo, CallInstruction>();
@@ -31,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static CallInstruction Create(MethodInfo info)
         {
-            return Create(info, info.GetParameters());
+            return Create(info, info.GetParametersCached());
         }
 
         /// <summary>
@@ -52,10 +49,10 @@ namespace System.Linq.Expressions.Interpreter
                 return GetArrayAccessor(info, argumentCount);
             }
 
+#if !FEATURE_DLG_INVOKE
             return new MethodInfoCallInstruction(info, argumentCount);
-#if FEATURE_DLG_INVOKE
-
-            if (!info.IsStatic && info.DeclaringType.GetTypeInfo().IsValueType)
+#else
+            if (!info.IsStatic && info.DeclaringType.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -88,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            // create it 
+            // create it
             try
             {
 #if FEATURE_FAST_CREATE
@@ -113,9 +110,9 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (NotSupportedException)
             {
-                // if Delegate.CreateDelegate can't handle the method fall back to 
-                // the slow reflection version.  For example this can happen w/ 
-                // a generic method defined on an interface and implemented on a class or 
+                // if Delegate.CreateDelegate can't handle the method fall back to
+                // the slow reflection version.  For example this can happen w/
+                // a generic method defined on an interface and implemented on a class or
                 // a virtual generic method.
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -144,19 +141,19 @@ namespace System.Linq.Expressions.Interpreter
                 case 1:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter1");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter2");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter3");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }
 
@@ -167,7 +164,6 @@ namespace System.Linq.Expressions.Interpreter
 
             return Create(alternativeMethod);
         }
-
 
         public static void ArrayItemSetter1(Array array, int index0, object value)
         {
@@ -251,7 +247,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
         }
 #endif
@@ -260,22 +257,15 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Instruction
 
-        public override int ConsumedStack { get { return ArgumentCount; } }
+        public override int ConsumedStack => ArgumentCount;
 
-        public override string ToString()
-        {
-            return "Call()";
-        }
         #endregion
 
         /// <summary>
         /// If the target of invocation happens to be a delegate
-        /// over enclosed instance lightLambda, return that instance. 
+        /// over enclosed instance lightLambda, return that instance.
         /// We can interpret LightLambdas directly.
         /// </summary>
-        /// <param name="instance"></param>
-        /// <param name="lightLambda"></param>
-        /// <returns></returns>
         protected static bool TryGetLightLambdaTarget(object instance, out LightLambda lightLambda)
         {
             var del = instance as Delegate;
@@ -314,7 +304,7 @@ namespace System.Linq.Expressions.Interpreter
         protected readonly MethodInfo _target;
         protected readonly int _argumentCount;
 
-        public override int ArgumentCount { get { return _argumentCount; } }
+        public override int ArgumentCount => _argumentCount;
 
         internal MethodInfoCallInstruction(MethodInfo target, int argumentCount)
         {
@@ -322,7 +312,7 @@ namespace System.Linq.Expressions.Interpreter
             _argumentCount = argumentCount;
         }
 
-        public override int ProducedStack { get { return _target.ReturnType == typeof(void) ? 0 : 1; } }
+        public override int ProducedStack => _target.ReturnType == typeof(void) ? 0 : 1;
 
         public override int Run(InterpretedFrame frame)
         {
@@ -331,22 +321,23 @@ namespace System.Linq.Expressions.Interpreter
             object ret;
             if (_target.IsStatic)
             {
-                var args = GetArgs(frame, first, 0);
+                object[] args = GetArgs(frame, first, 0);
                 try
                 {
                     ret = _target.Invoke(null, args);
                 }
                 catch (TargetInvocationException e)
                 {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
             }
             else
             {
-                var instance = frame.Data[first];
+                object instance = frame.Data[first];
                 NullCheck(instance);
 
-                var args = GetArgs(frame, first, 1);
+                object[] args = GetArgs(frame, first, 1);
 
                 LightLambda targetLambda;
                 if (TryGetLightLambdaTarget(instance, out targetLambda))
@@ -362,7 +353,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -382,7 +374,7 @@ namespace System.Linq.Expressions.Interpreter
 
         protected object[] GetArgs(InterpretedFrame frame, int first, int skip)
         {
-            var count = _argumentCount - skip;
+            int count = _argumentCount - skip;
 
             if (count > 0)
             {
@@ -400,6 +392,8 @@ namespace System.Linq.Expressions.Interpreter
                 return Array.Empty<object>();
             }
         }
+
+        public override string ToString() => "Call(" + _target + ")";
     }
 
     internal class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
@@ -412,7 +406,7 @@ namespace System.Linq.Expressions.Interpreter
             _byrefArgs = byrefArgs;
         }
 
-        public override int ProducedStack { get { return (_target.ReturnType == typeof(void) ? 0 : 1); } }
+        public override int ProducedStack => _target.ReturnType == typeof(void) ? 0 : 1;
 
         public sealed override int Run(InterpretedFrame frame)
         {
@@ -432,7 +426,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
                 else
@@ -456,7 +451,8 @@ namespace System.Linq.Expressions.Interpreter
                         }
                         catch (TargetInvocationException e)
                         {
-                            throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                            ExceptionHelpers.UnwrapAndRethrow(e);
+                            throw ContractUtils.Unreachable;
                         }
                     }
                 }
@@ -475,18 +471,11 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (args != null)
                 {
-                    foreach (var arg in _byrefArgs)
+                    foreach (ByRefUpdater arg in _byrefArgs)
                     {
-                        if (arg.ArgumentIndex == -1)
-                        {
-                            // instance param, just copy back the exact instance invoked with, which 
-                            // gets passed by reference from reflection for value types.
-                            arg.Update(frame, instance);
-                        }
-                        else
-                        {
-                            arg.Update(frame, args[arg.ArgumentIndex]);
-                        }
+                        // -1: instance param, just copy back the exact instance invoked with, which
+                        // gets passed by reference from reflection for value types.
+                        arg.Update(frame, arg.ArgumentIndex == -1 ? instance : args[arg.ArgumentIndex]);
                     }
                 }
             }

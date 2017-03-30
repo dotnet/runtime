@@ -99,12 +99,12 @@ namespace System.Linq.Expressions.Compiler
         private void EmitGotoExpression(Expression expr, CompilationFlags flags)
         {
             var node = (GotoExpression)expr;
-            var labelInfo = ReferenceLabel(node.Target);
+            LabelInfo labelInfo = ReferenceLabel(node.Target);
 
-            var tailCall = flags & CompilationFlags.EmitAsTailCallMask;
+            CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
             if (tailCall != CompilationFlags.EmitAsNoTail)
             {
-                // Since tail call flags are not passed into EmitTryExpression, CanReturn 
+                // Since tail call flags are not passed into EmitTryExpression, CanReturn
                 // means the goto will be emitted as Ret. Therefore we can emit the goto's
                 // default value with tail call. This can be improved by detecting if the
                 // target label is equivalent to the return label.
@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Compiler
         {
             if (node.Type != typeof(void) && (flags & CompilationFlags.EmitAsVoidType) == 0)
             {
-                _ilg.EmitDefault(node.Type);
+                _ilg.EmitDefault(node.Type, this);
             }
         }
 
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Compiler
             // Anything that is "statement-like" -- e.g. has no associated
             // stack state can be jumped into, with the exception of try-blocks
             // We indicate this by a "Block"
-            // 
+            //
             // Otherwise, we push an "Expression" to indicate that it can't be
             // jumped into
             switch (node.NodeType)
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Compiler
                     // thing if it's in a switch case body.
                     if (_labelBlock.Kind == LabelScopeKind.Block)
                     {
-                        var label = ((LabelExpression)node).Target;
+                        LabelTarget label = ((LabelExpression)node).Target;
                         if (_labelBlock.ContainsTarget(label))
                         {
                             return false;
@@ -248,7 +248,7 @@ namespace System.Linq.Expressions.Compiler
         // This allows us to generate better IL
         private void AddReturnLabel(LambdaExpression lambda)
         {
-            var expression = lambda.Body;
+            Expression expression = lambda.Body;
 
             while (true)
             {
@@ -260,7 +260,7 @@ namespace System.Linq.Expressions.Compiler
                     case ExpressionType.Label:
                         // Found the label. We can directly return from this place
                         // only if the label type is reference assignable to the lambda return type.
-                        var label = ((LabelExpression)expression).Target;
+                        LabelTarget label = ((LabelExpression)expression).Target;
                         _labelInfo.Add(label, new LabelInfo(_ilg, label, TypeUtils.AreReferenceAssignable(lambda.ReturnType, label.Type)));
                         return;
                     case ExpressionType.Block:

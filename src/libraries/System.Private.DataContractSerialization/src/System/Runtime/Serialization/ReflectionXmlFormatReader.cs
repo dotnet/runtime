@@ -11,9 +11,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security;
 using System.Diagnostics;
-#if NET_NATIVE
-using Internal.Runtime.Augments;
-#endif
 
 namespace System.Runtime.Serialization
 {

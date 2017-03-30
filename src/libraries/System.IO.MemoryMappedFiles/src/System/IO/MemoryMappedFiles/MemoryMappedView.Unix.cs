@@ -12,7 +12,7 @@ namespace System.IO.MemoryMappedFiles
     internal partial class MemoryMappedView
     {
         [SecurityCritical]
-        public unsafe static MemoryMappedView CreateView(
+        public static unsafe MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {

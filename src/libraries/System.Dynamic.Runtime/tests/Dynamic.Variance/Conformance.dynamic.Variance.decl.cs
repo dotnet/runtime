@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order1.order1
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order1.order1;
-
     // <Area>variance</Area>
     // <Title> Order of Basic covariance on interfaces</Title>
     // <Description> basic coavariance on interfaces with many parameters. Order does not matter</Description>
@@ -64,8 +62,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order1.or
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order2.order2
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order2.order2;
-
     // <Area>variance</Area>
     // <Title> Order of Basic covariance on interfaces</Title>
     // <Description> basic coavariance on interfaces with many parameters.
@@ -153,8 +149,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order2.or
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order3.order3
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order3.order3;
-
     // <Area>variance</Area>
     // <Title> Order of Basic covariance on delegates</Title>
     // <Description> basic coavariance on delegates with many parameters. Order does not matter</Description>
@@ -214,8 +208,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order3.or
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order4.order4
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order4.order4;
-
     // <Area>variance</Area>
     // <Title> Order of Basic covariance on delegates</Title>
     // <Description> basic coavariance on delegates with many parameters. only one type param is variant</Description>
@@ -310,8 +302,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.order4.or
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.partial01.partial01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.partial01.partial01;
-
     // <Area>variance</Area>
     // <Title> Basic covariance on delegate types </Title>
     // <Description> Having a covariant delegate and assigning it to a bigger type in a partial public class </Description>
@@ -358,8 +348,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.partial01
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype01.valtype01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype01.valtype01;
-
     // <Area>variance</Area>
     // <Title> Value types</Title>
     // <Description> basic coavariance on interfaces with value types </Description>
@@ -437,8 +425,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype01
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype02.valtype02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype02.valtype02;
-
     // <Area>variance</Area>
     // <Title> Value types</Title>
     // <Description> basic coavariance on dynamic with value types </Description>
@@ -521,8 +507,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype02
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype03.valtype03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype03.valtype03;
-
     // <Area>variance</Area>
     // <Title> Value types</Title>
     // <Description> basic coavariance on interfaces with nullable value types </Description>
@@ -600,8 +584,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype03
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype04.valtype04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.decl.valtype04.valtype04;
-
     // <Area>variance</Area>
     // <Title> Value types</Title>
     // <Description> basic coavariance on delegate with null value types </Description>

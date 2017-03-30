@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Xml.Tests
 {
-    public class XmlSystemPathResolverTests
+    public class XmlSystemPathResolverTests : TC_SchemaSetBase
     {
         private const int k_getUniqueFileNameAttempts = 10;
 

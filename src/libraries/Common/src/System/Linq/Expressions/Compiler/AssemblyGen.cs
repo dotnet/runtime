@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -14,7 +15,6 @@ namespace System.Linq.Expressions.Compiler
     {
         private static AssemblyGen s_assembly;
 
-        private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
 
         private int _index;
@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 if (s_assembly == null)
                 {
-                    Interlocked.CompareExchange(ref s_assembly, new AssemblyGen(), null);
+                    Interlocked.CompareExchange(ref s_assembly, new AssemblyGen(), comparand: null);
                 }
                 return s_assembly;
             }
@@ -36,12 +36,12 @@ namespace System.Linq.Expressions.Compiler
             var name = new AssemblyName("Snippets");
 
             // mark the assembly transparent so that it works in partial trust:
-            var attributes = new[] {
+            CustomAttributeBuilder[] attributes = new[] {
                 new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), Array.Empty<object>())
             };
 
-            _myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
-            _myModule = _myAssembly.DefineDynamicModule(name.Name);
+            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run, attributes);
+            _myModule = myAssembly.DefineDynamicModule(name.Name);
         }
 
         private TypeBuilder DefineType(string name, Type parent, TypeAttributes attr)

@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace System.Net.Http.Headers
 {
@@ -51,7 +53,7 @@ namespace System.Net.Http.Headers
 
         public TransferCodingHeaderValue(string value)
         {
-            HeaderUtilities.CheckValidToken(value, "value");
+            HeaderUtilities.CheckValidToken(value, nameof(value));
             _value = value;
         }
 
@@ -130,7 +132,10 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            return _value + NameValueHeaderValue.ToString(_parameters, ';', true);
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append(_value);
+            NameValueHeaderValue.ToString(_parameters, ';', true, sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public override bool Equals(object obj)

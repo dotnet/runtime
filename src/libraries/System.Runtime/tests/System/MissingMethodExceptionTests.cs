@@ -39,5 +39,14 @@ namespace System.Tests
             Assert.Same(innerException, exception.InnerException);
             Assert.Equal(innerException.HResult, exception.InnerException.HResult);
         }
+        [Fact]
+        public static void Ctor_String_String()
+        {
+            string className = "class";
+            string memberName = "member";
+            var exception = new MissingMethodException(className, memberName);
+            Assert.True(exception.Message.Contains(className));
+            Assert.True(exception.Message.Contains(memberName));
+        }
     }
 }

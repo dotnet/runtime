@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Net.Internals;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,21 +22,35 @@ namespace System.Net
         // If the host name is 255 chars, the last char must be a dot.
         private const int MaxHostName = 255;
 
-        internal static IPHostEntry InternalGetHostByName(string hostName, bool includeIPv6)
+        [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry GetHostByName(string hostName)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", hostName);
-            IPHostEntry ipHostEntry = null;
+            NameResolutionPal.EnsureSocketsAreInitialized();
 
-            if (GlobalLog.IsEnabled)
+            if (hostName == null)
             {
-                GlobalLog.Print("Dns.GetHostByName: " + hostName);
+                throw new ArgumentNullException(nameof(hostName));
             }
+
+            // See if it's an IP Address.
+            IPAddress address;
+            if (IPAddress.TryParse(hostName, out address))
+            {
+                return NameResolutionUtilities.GetUnresolvedAnswer(address);
+            }
+            return InternalGetHostByName(hostName, false);
+        }
+
+        private static IPHostEntry InternalGetHostByName(string hostName, bool includeIPv6)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
+            IPHostEntry ipHostEntry = null;
 
             if (hostName.Length > MaxHostName // If 255 chars, the last one must be a dot.
                 || hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')
             {
                 throw new ArgumentOutOfRangeException(nameof(hostName), SR.Format(SR.net_toolong,
-                    "hostName", MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
+                    nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
 
             //
@@ -71,17 +86,48 @@ namespace System.Net
                 ipHostEntry = NameResolutionPal.GetHostByName(hostName);
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "GetHostByName", ipHostEntry);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // GetHostByName
 
-        // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        internal static IPHostEntry InternalGetHostByAddress(IPAddress address, bool includeIPv6)
+        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry GetHostByAddress(string address)
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, address);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (address == null)
             {
-                GlobalLog.Print("Dns.InternalGetHostByAddress: " + address.ToString());
+                throw new ArgumentNullException(nameof(address));
             }
+
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(IPAddress.Parse(address), false);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        } // GetHostByAddress
+
+        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry GetHostByAddress(IPAddress address)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, address);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (address == null)
+            {
+                throw new ArgumentNullException(nameof(address));
+            }
+
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(address, false);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        } // GetHostByAddress
+        
+        // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
+        private static IPHostEntry InternalGetHostByAddress(IPAddress address, bool includeIPv6)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, address);
             
             //
             // IPv6 Changes: We need to use the new getnameinfo / getaddrinfo functions
@@ -110,14 +156,7 @@ namespace System.Net
                         return hostEntry;
                     }
 
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Exception(
-                            NetEventSource.ComponentType.Socket, 
-                            "DNS",
-                            "InternalGetHostByAddress", 
-                            SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode));
 
                     // One of two things happened:
                     // 1. There was a ptr record in dns, but not a corollary A/AAA record.
@@ -169,13 +208,48 @@ namespace System.Net
         /// </devdoc>
         public static string GetHostName()
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Dns.GetHostName");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, null);
 
             NameResolutionPal.EnsureSocketsAreInitialized();
+
             return NameResolutionPal.GetHostName();
+        }
+
+        [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry Resolve(string hostName)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
+
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (hostName == null)
+            {
+                throw new ArgumentNullException(nameof(hostName));
+            }
+
+            // See if it's an IP Address.
+            IPAddress address;
+            IPHostEntry ipHostEntry;
+
+            if (IPAddress.TryParse(hostName, out address) && (address.AddressFamily != AddressFamily.InterNetworkV6 || SocketProtocolSupportPal.OSSupportsIPv6))
+            {
+                try
+                {
+                    ipHostEntry = InternalGetHostByAddress(address, false);
+                }
+                catch (SocketException ex)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
+                    ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
+                }
+            }
+            else
+            {
+                ipHostEntry = InternalGetHostByName(hostName, false);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
         }
 
         private class ResolveAsyncResult : ContextAwareResult
@@ -231,29 +305,26 @@ namespace System.Net
 
         // Helpers for async GetHostByName, ResolveToAddresses, and Resolve - they're almost identical
         // If hostName is an IPString and justReturnParsedIP==true then no reverse lookup will be attempted, but the original address is returned.
-        private static IAsyncResult HostResolutionBeginHelper(string hostName, bool justReturnParsedIp, AsyncCallback requestCallback, object state)
+        private static IAsyncResult HostResolutionBeginHelper(string hostName, bool justReturnParsedIp, bool includeIPv6, bool throwOnIIPAny, AsyncCallback requestCallback, object state)
         {
             if (hostName == null)
             {
                 throw new ArgumentNullException(nameof(hostName));
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Dns.HostResolutionBeginHelper: " + hostName);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, hostName);
 
             // See if it's an IP Address.
             IPAddress address;
             ResolveAsyncResult asyncResult;
             if (IPAddress.TryParse(hostName, out address))
             {
-                if ((address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any)))
+                if (throwOnIIPAny && (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any)))
                 {
-                    throw new ArgumentException(SR.net_invalid_ip_addr, "hostNameOrAddress");
+                    throw new ArgumentException(SR.net_invalid_ip_addr, nameof(hostName));
                 }
 
-                asyncResult = new ResolveAsyncResult(address, null, true, state, requestCallback);
+                asyncResult = new ResolveAsyncResult(address, null, includeIPv6, state, requestCallback);
 
                 if (justReturnParsedIp)
                 {
@@ -266,7 +337,7 @@ namespace System.Net
             }
             else
             {
-                asyncResult = new ResolveAsyncResult(hostName, null, true, state, requestCallback);
+                asyncResult = new ResolveAsyncResult(hostName, null, includeIPv6, state, requestCallback);
             }
 
             // Set up the context, possibly flow.
@@ -297,10 +368,7 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Dns.HostResolutionBeginHelper: " + address);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, address);
 
             // Set up the context, possibly flow.
             ResolveAsyncResult asyncResult = new ResolveAsyncResult(address, null, includeIPv6, state, requestCallback);
@@ -338,13 +406,10 @@ namespace System.Net
             }
             if (castedResult.EndCalled)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndResolve"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndResolve)));
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Dns.HostResolutionEndHelper");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null);
 
             castedResult.InternalWaitForCompletion();
             castedResult.EndCalled = true;
@@ -352,56 +417,211 @@ namespace System.Net
             Exception exception = castedResult.Result as Exception;
             if (exception != null)
             {
-                throw exception;
+                ExceptionDispatchInfo.Throw(exception);
             }
 
             return (IPHostEntry)castedResult.Result;
         }
 
-        private static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback requestCallback, object stateObject)
+        [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback requestCallback, object stateObject)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", hostNameOrAddress);
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, false, requestCallback, stateObject);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", asyncResult);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, true, true, false, requestCallback, stateObject);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
-        } // BeginResolve
+        } // BeginGetHostByName
 
-        private static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback requestCallback, object stateObject)
+        [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", address);
-            IAsyncResult asyncResult = HostResolutionBeginHelper(address, true, true, requestCallback, stateObject);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, asyncResult);
+            NameResolutionPal.EnsureSocketsAreInitialized();
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostEntry", asyncResult);
-            return asyncResult;
-        } // BeginResolve
-
-        private static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostEntry", asyncResult);
             IPHostEntry ipHostEntry = HostResolutionEndHelper(asyncResult);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostEntry", ipHostEntry);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        } // EndGetHostByName()
+
+        public static IPHostEntry GetHostEntry(string hostNameOrAddress)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (hostNameOrAddress == null)
+            {
+                throw new ArgumentNullException(nameof(hostNameOrAddress));
+            }
+
+            // See if it's an IP Address.
+            IPAddress address;
+            IPHostEntry ipHostEntry;
+            if (IPAddress.TryParse(hostNameOrAddress, out address))
+            {
+                if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
+                }
+
+                ipHostEntry = InternalGetHostByAddress(address, true);
+            }
+            else
+            {
+                ipHostEntry = InternalGetHostByName(hostNameOrAddress, true);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        }
+
+
+        public static IPHostEntry GetHostEntry(IPAddress address)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, address);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (address == null)
+            {
+                throw new ArgumentNullException(nameof(address));
+            }
+
+            if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
+            {
+                throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(address)));
+            }
+
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(address, true);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        } // GetHostEntry
+
+        public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            if (hostNameOrAddress == null)
+            {
+                throw new ArgumentNullException(nameof(hostNameOrAddress));
+            }
+
+            // See if it's an IP Address.
+            IPAddress address;
+            IPAddress[] addresses;
+            if (IPAddress.TryParse(hostNameOrAddress, out address))
+            {
+                if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
+                }
+                addresses = new IPAddress[] { address };
+            }
+            else
+            {
+                // InternalGetHostByName works with IP addresses (and avoids a reverse-lookup), but we need
+                // explicit handling in order to do the ArgumentException and guarantee the behavior.
+                addresses = InternalGetHostByName(hostNameOrAddress, true).AddressList;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, addresses);
+            return addresses;
+        }
+
+        public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback requestCallback, object stateObject)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, false, true, true, requestCallback, stateObject);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
+            return asyncResult;
+        } // BeginResolve
+
+        public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback requestCallback, object stateObject)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, address);
+
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            IAsyncResult asyncResult = HostResolutionBeginHelper(address, true, true, requestCallback, stateObject);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
+            return asyncResult;
+        } // BeginResolve
+
+        public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, asyncResult);
+            IPHostEntry ipHostEntry = HostResolutionEndHelper(asyncResult);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // EndResolve()
 
-        private static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state)
+        public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostAddresses", hostNameOrAddress);
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, true, requestCallback, state);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
+            NameResolutionPal.EnsureSocketsAreInitialized();
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "BeginGetHostAddresses", asyncResult);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, true, true, true, requestCallback, state);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
         } // BeginResolve
 
-        private static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
+        public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostAddresses", asyncResult);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, asyncResult);
             IPHostEntry ipHostEntry = HostResolutionEndHelper(asyncResult);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Socket, "DNS", "EndGetHostAddresses", ipHostEntry);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry.AddressList;
         } // EndResolveToAddresses
+
+        [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IAsyncResult BeginResolve(string hostName, AsyncCallback requestCallback, object stateObject)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
+
+            NameResolutionPal.EnsureSocketsAreInitialized();
+
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, false, false, false, requestCallback, stateObject);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
+            return asyncResult;
+        } // BeginResolve
+
+
+        [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static IPHostEntry EndResolve(IAsyncResult asyncResult)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, asyncResult);
+            IPHostEntry ipHostEntry;
+
+            try
+            {
+                ipHostEntry = HostResolutionEndHelper(asyncResult);
+            }
+            catch (SocketException ex)
+            {
+                IPAddress address = ((ResolveAsyncResult)asyncResult).address;
+                if (address == null)
+                    throw; // BeginResolve was called with a HostName, not an IPAddress
+
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
+                ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
+            return ipHostEntry;
+        } // EndResolve()
 
         //************* Task-based async public methods *************************
         public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress)

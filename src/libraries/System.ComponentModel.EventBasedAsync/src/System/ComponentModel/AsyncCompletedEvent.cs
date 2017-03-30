@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.ExceptionServices;
+using System.Reflection;
 
 namespace System.ComponentModel
 {
@@ -16,23 +16,17 @@ namespace System.ComponentModel
             _cancelled = cancelled;
             _error = error;
             _state = userState;
-
-            if (error != null)
-            {
-                _edi = ExceptionDispatchInfo.Capture(error);
-            }
         }
 
         protected void RaiseExceptionIfNecessary()
         {
-            if (Cancelled)
+            if (Error != null)
             {
-                throw new OperationCanceledException(SR.Async_OperationCancelled);
+                throw new TargetInvocationException(SR.Async_ExceptionOccurred, Error);
             }
-
-            if (_edi != null)
+            else if (Cancelled)
             {
-                _edi.Throw();
+                throw new InvalidOperationException(SR.Async_OperationCancelled);
             }
         }
 
@@ -43,7 +37,6 @@ namespace System.ComponentModel
         private readonly bool _cancelled;
         private readonly Exception _error;
         private readonly object _state;
-        private readonly ExceptionDispatchInfo _edi;
 
     }
 }

@@ -108,16 +108,11 @@ namespace System.Reflection.PortableExecutable
 
         internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64;
 
-        internal int ComputeSizeOfPeHeaders(int sectionCount)
-        {
-            // TODO: constants
-            int sizeOfPeHeaders = 128 + 4 + 20 + 224 + 40 * sectionCount;
-            if (!Is32Bit)
-            {
-                sizeOfPeHeaders += 16;
-            }
-
-            return sizeOfPeHeaders;
-        }
+        internal int ComputeSizeOfPEHeaders(int sectionCount) =>
+            PEBuilder.DosHeaderSize +
+            PEHeaders.PESignatureSize +
+            CoffHeader.Size + 
+            PEHeader.Size(Is32Bit) + 
+            SectionHeader.Size * sectionCount;
     }
 }

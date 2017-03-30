@@ -64,7 +64,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (int)_mtu;
+                return unchecked((int)_mtu);
             }
         }
 

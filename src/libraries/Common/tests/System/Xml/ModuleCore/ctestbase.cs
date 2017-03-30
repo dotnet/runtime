@@ -210,7 +210,7 @@ namespace OLEDB.Test.ModuleCore
             if (child.Implemented || CModInfo.IncludeNotImplemented)
             {
                 //Determine any children of this node (before adding it)
-                //Note: We don't call 'determinechildren' from within the (testcase) constructor
+                //Note: We don't call 'determinechildren' from within the (test case) constructor
                 //since none of the attributes/properties are setup until now.  So as soon as we
                 //setup that information then we call determinechildren which when implemented
                 //for dynamic tests can now look at those properties (otherwise they wouldn't be setup

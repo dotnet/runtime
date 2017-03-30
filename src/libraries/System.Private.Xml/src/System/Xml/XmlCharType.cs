@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Xml
 {
-    unsafe internal struct XmlCharType
+    internal unsafe struct XmlCharType
     {
         // Surrogate constants
         internal const int SurHighStart = 0xd800;    // 1101 10xx
@@ -1242,7 +1242,7 @@ namespace System.Xml
             return -1;
         }
 
-        static internal bool IsOnlyDigits(string str, int startPos, int len)
+        internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
             Debug.Assert(startPos + len <= str.Length);
@@ -1258,7 +1258,7 @@ namespace System.Xml
             return true;
         }
 
-        static internal bool IsOnlyDigits(char[] chars, int startPos, int len)
+        internal static bool IsOnlyDigits(char[] chars, int startPos, int len)
         {
             Debug.Assert(chars != null);
             Debug.Assert(startPos + len <= chars.Length);
@@ -1293,8 +1293,7 @@ namespace System.Xml
         private static bool InRange(int value, int start, int end)
         {
             Debug.Assert(start <= end);
-            return (uint)(value - start) <= (uint)(end - start);
+            return unchecked((uint)(value - start) <= (uint)(end - start));
         }
     }
 }
-

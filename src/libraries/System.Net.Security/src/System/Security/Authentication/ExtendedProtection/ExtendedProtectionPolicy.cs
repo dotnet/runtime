@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Security.Authentication.ExtendedProtection
@@ -11,7 +13,8 @@ namespace System.Security.Authentication.ExtendedProtection
     /// This class contains the necessary settings for specifying how Extended Protection 
     /// should behave. Use one of the Build* methods to create an instance of this type.
     /// </summary>
-    public class ExtendedProtectionPolicy
+    [Serializable]
+    public class ExtendedProtectionPolicy : ISerializable
     {
         private const string policyEnforcementName = "policyEnforcement";
         private const string protectionScenarioName = "protectionScenario";
@@ -73,6 +76,32 @@ namespace System.Security.Authentication.ExtendedProtection
             // This is the only constructor which allows PolicyEnforcement.Never.
             _policyEnforcement = policyEnforcement;
             _protectionScenario = ProtectionScenario.TransportSelected;
+        }
+
+        protected ExtendedProtectionPolicy(SerializationInfo info, StreamingContext context)
+        {
+            _policyEnforcement = (PolicyEnforcement)info.GetInt32(policyEnforcementName);
+            _protectionScenario = (ProtectionScenario)info.GetInt32(protectionScenarioName);
+            _customServiceNames = (ServiceNameCollection)info.GetValue(customServiceNamesName, typeof(ServiceNameCollection));
+
+            byte[] channelBindingData = (byte[])info.GetValue(customChannelBindingName, typeof(byte[]));
+            if (channelBindingData != null)
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (_customChannelBinding != null)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            info.AddValue(policyEnforcementName, (int)_policyEnforcement);
+            info.AddValue(protectionScenarioName, (int)_protectionScenario);
+            info.AddValue(customServiceNamesName, _customServiceNames, typeof(ServiceNameCollection));
+            info.AddValue(customChannelBindingName, null, typeof(byte[]));
         }
 
         public ServiceNameCollection CustomServiceNames

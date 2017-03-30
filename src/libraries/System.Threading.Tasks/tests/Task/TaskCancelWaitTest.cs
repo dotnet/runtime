@@ -105,7 +105,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                 if (delta > 0)
                 {
                     Debug.WriteLine("ElapsedMilliseconds way more than requested Timeout.");
-                    Debug.WriteLine("WaitTime= {0} ms, ElapsedTime= {1} ms, Allowed Descrepancy = {2} ms", _waitTimeout, sw.ElapsedMilliseconds, s_deltaTimeOut);
+                    Debug.WriteLine("WaitTime= {0} ms, ElapsedTime= {1} ms, Allowed Discrepancy = {2} ms", _waitTimeout, sw.ElapsedMilliseconds, s_deltaTimeOut);
                     Debug.WriteLine("Delta= {0} ms", delta);
                 }
                 else
@@ -237,7 +237,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("unknown API_CancelWait of", _api));
+                    throw new ArgumentOutOfRangeException(string.Format("unknown API_CancelWait of {0}", _api));
             }
         }
 
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             {
                 // need to make sure the parent task at least called .Cancel() on the child
                 if (!ti.CancellationToken.IsCancellationRequested)
-                    Assert.True(false, string.Format("Task which has been explictly cancel-requested either by parent must have CancellationRequested set as true"));
+                    Assert.True(false, string.Format("Task which has been explicitly cancel-requested either by parent must have CancellationRequested set as true"));
             }
             else if (ti.IsRespectParentCancellation)
             {
@@ -459,7 +459,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             int index = -1;
             for (int i = 0; i < options.Length; i++)
             {
-                string o = options[i].Trim(); // remove any white spaces.
+                string o = options[i].Trim(); // remove any whitespace.
                 options[i] = o;
                 if (o.Equals("RespectParentCancellation", StringComparison.OrdinalIgnoreCase))
                 {
@@ -570,7 +570,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         #region Helper Methods
 
         /// <summary>
-        /// Recursively traverse the tree and compare the current node usign the predicate  
+        /// Recursively traverse the tree and compare the current node using the predicate  
         /// </summary>
         /// <param name="predicate">the predicate</param>
         /// <param name="report"></param>

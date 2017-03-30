@@ -7,7 +7,6 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>Specifies the display name for a property or event.  The default is the name of the property or event.</para>
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class | AttributeTargets.Method)]
     public class DisplayNameAttribute : Attribute
     {
@@ -59,6 +58,11 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             return DisplayName.GetHashCode();
+        }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Equals(DisplayNameAttribute.Default);
         }
     }
 }

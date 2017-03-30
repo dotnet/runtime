@@ -688,7 +688,7 @@ public class CXmlCache
     protected CXmlNode prDocumentRootNode;
     protected CXmlNode prRootNode = null;
     internal static NodeFlags _eDefaultFlags = NodeFlags.None;
-    static internal BufferWriter _rBufferWriter = new BufferWriter();
+    internal static BufferWriter _rBufferWriter = new BufferWriter();
 
     //
     // Constructor

@@ -35,19 +35,20 @@ namespace System.Net.NetworkInformation
         Unknown = -1,
         UnrecognizedNextHeader = 11043,
     }
-    public partial class Ping
+    public partial class Ping : System.ComponentModel.Component
     {
         public Ping() { }
         public event System.Net.NetworkInformation.PingCompletedEventHandler PingCompleted { add { } remove { } }
+        protected override void Dispose(bool disposing) { }
         protected void OnPingCompleted(System.Net.NetworkInformation.PingCompletedEventArgs e) { }
-        public PingReply Send(string hostNameOrAddress) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(string hostNameOrAddress, int timeout) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(System.Net.IPAddress address) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(System.Net.IPAddress address, int timeout) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(System.Net.IPAddress address, int timeout, byte[] buffer) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { return default(System.Net.NetworkInformation.PingReply); }
-        public PingReply Send(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { return default(System.Net.NetworkInformation.PingReply); }
+        public PingReply Send(string hostNameOrAddress) { throw null; }
+        public PingReply Send(string hostNameOrAddress, int timeout) { throw null; }
+        public PingReply Send(System.Net.IPAddress address) { throw null; }
+        public PingReply Send(System.Net.IPAddress address, int timeout) { throw null; }
+        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer) { throw null; }
+        public PingReply Send(System.Net.IPAddress address, int timeout, byte[] buffer) { throw null; }
+        public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { throw null; }
+        public PingReply Send(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { throw null; }
         public void SendAsync(string hostNameOrAddress, object userToken) { }
         public void SendAsync(string hostNameOrAddress, int timeout, object userToken) { }
         public void SendAsync(System.Net.IPAddress address, object userToken) { }
@@ -57,14 +58,14 @@ namespace System.Net.NetworkInformation
         public void SendAsync(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options, object userToken) { }
         public void SendAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options, object userToken) { }
         public void SendAsyncCancel() { }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
-        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply>); }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions options) { throw null; }
     }
     public delegate void PingCompletedEventHandler(object sender, PingCompletedEventArgs e);
     public class PingCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
@@ -76,21 +77,22 @@ namespace System.Net.NetworkInformation
     {
         public PingException(string message) { }
         public PingException(string message, System.Exception innerException) { }
+        protected PingException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class PingOptions
     {
         public PingOptions() { }
         public PingOptions(int ttl, bool dontFragment) { }
-        public bool DontFragment { get { return default(bool); } set { } }
-        public int Ttl { get { return default(int); } set { } }
+        public bool DontFragment { get { throw null; } set { } }
+        public int Ttl { get { throw null; } set { } }
     }
     public partial class PingReply
     {
         internal PingReply() { }
-        public System.Net.IPAddress Address { get { return default(System.Net.IPAddress); } }
-        public byte[] Buffer { get { return default(byte[]); } }
-        public System.Net.NetworkInformation.PingOptions Options { get { return default(System.Net.NetworkInformation.PingOptions); } }
-        public long RoundtripTime { get { return default(long); } }
-        public System.Net.NetworkInformation.IPStatus Status { get { return default(System.Net.NetworkInformation.IPStatus); } }
+        public System.Net.IPAddress Address { get { throw null; } }
+        public byte[] Buffer { get { throw null; } }
+        public System.Net.NetworkInformation.PingOptions Options { get { throw null; } }
+        public long RoundtripTime { get { throw null; } }
+        public System.Net.NetworkInformation.IPStatus Status { get { throw null; } }
     }
 }

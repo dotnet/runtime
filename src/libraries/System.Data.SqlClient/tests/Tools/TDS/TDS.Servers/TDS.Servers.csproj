@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{978063D3-FBB5-4E10-8C45-67C90BE1B931}</ProjectGuid>
+    <RootNamespace>Microsoft.SqlServer.TDS.Servers</RootNamespace>
+    <AssemblyName>Microsoft.SqlServer.TDS.Servers</AssemblyName>
+    <ClsCompliant>false</ClsCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="ApplicationIntentFilterType.cs" />
+    <Compile Include="AuthenticatingTDSServer.cs" />
+    <Compile Include="AuthenticatingTDSServerArguments.cs" />
+    <Compile Include="DateFormatString.cs" />
+    <Compile Include="FederatedAuthenticationNegativeTDSServer.cs" />
+    <Compile Include="FederatedAuthenticationNegativeTDSServerArguments.cs" />
+    <Compile Include="FederatedAuthenticationNegativeTDSScenarioType.cs" />
+    <Compile Include="GenericTDSServer.cs" />
+    <Compile Include="GenericTDSServerSession.cs" />
+    <Compile Include="QueryEngine.cs" />
+    <Compile Include="RoutingTDSServer.cs" />
+    <Compile Include="RoutingTDSServerArguments.cs" />
+    <Compile Include="ServerNameFilterType.cs" />
+    <Compile Include="TDSServerArguments.cs" />
+    <None Include="TdsServerCertificate.pfx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TDS.EndPoint\TDS.EndPoint.csproj">
+      <Name>TDS.EndPoint</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TDS\TDS.csproj">
+      <Name>TDS</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -967,7 +967,7 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            //[TestCase(Name = "MoveToFirstAtribute", Desc = "MoveToFirstAttribute")]
+            //[TestCase(Name = "MoveToFirstAttribute", Desc = "MoveToFirstAttribute")]
             public partial class TCMoveToFirstAttribute : BridgeHelpers
             {
                 //[Variation("MoveToFirstAttribute() When AttributeCount=0, <EMPTY1/> ", Priority = 0)]

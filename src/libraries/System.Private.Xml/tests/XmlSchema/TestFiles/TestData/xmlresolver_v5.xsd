@@ -1,0 +1,3 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:import namespace="foo" schemaLocation="xmlresolver_v4.xsd"/>
+</xsd:schema>

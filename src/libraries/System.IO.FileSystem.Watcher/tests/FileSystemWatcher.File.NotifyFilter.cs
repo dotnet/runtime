@@ -12,7 +12,7 @@ namespace System.IO.Tests
 {
     public class File_NotifyFilter_Tests : FileSystemWatcherTest
     {
-        [DllImport("api-ms-win-security-provider-l1-1-0.dll", EntryPoint = "SetNamedSecurityInfoW",
+        [DllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW",
             CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
         private static extern uint SetSecurityInfoByHandle(string name, uint objectType, uint securityInformation,
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
@@ -169,7 +169,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         public void FileSystemWatcher_File_NotifyFilter_Security(NotifyFilters filter)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

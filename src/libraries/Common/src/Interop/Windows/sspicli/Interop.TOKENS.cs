@@ -26,7 +26,6 @@ internal static partial class Interop
     {
         internal IntPtr Sid;
         internal uint Attributes;
-        internal static readonly long SizeOf = (long)Marshal.SizeOf<SID_AND_ATTRIBUTES>();
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

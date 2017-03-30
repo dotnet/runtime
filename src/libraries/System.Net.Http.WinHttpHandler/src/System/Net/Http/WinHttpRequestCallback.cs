@@ -67,7 +67,7 @@ namespace System.Net.Http
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE:
-                        Debug.Assert(statusInformationLength == Marshal.SizeOf<int>());
+                        Debug.Assert(statusInformationLength == sizeof(int));
                         int bytesAvailable = Marshal.ReadInt32(statusInformation);
                         OnRequestDataAvailable(state, bytesAvailable);
                         return;
@@ -128,28 +128,21 @@ namespace System.Net.Http
         private static void OnRequestSendRequestComplete(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
-            Debug.Assert(state.TcsSendRequest != null, "OnRequestSendRequestComplete: TcsSendRequest is null");
-            Debug.Assert(!state.TcsSendRequest.Task.IsCompleted, "OnRequestSendRequestComplete: TcsSendRequest.Task is completed");
+            Debug.Assert(state.LifecycleAwaitable != null, "OnRequestSendRequestComplete: LifecycleAwaitable is null");
             
-            state.TcsSendRequest.TrySetResult(true);
+            state.LifecycleAwaitable.SetResult(1);
         }
 
         private static void OnRequestDataAvailable(WinHttpRequestState state, int bytesAvailable)
         {
             Debug.Assert(state != null, "OnRequestDataAvailable: state is null");
-            Debug.Assert(state.TcsQueryDataAvailable != null, "TcsQueryDataAvailable is null");
-            Debug.Assert(!state.TcsQueryDataAvailable.Task.IsCompleted, "TcsQueryDataAvailable.Task is completed");
 
-            state.TcsQueryDataAvailable.TrySetResult(bytesAvailable);
+            state.LifecycleAwaitable.SetResult(bytesAvailable);
         }
 
         private static void OnRequestReadComplete(WinHttpRequestState state, uint bytesRead)
         {
             Debug.Assert(state != null, "OnRequestReadComplete: state is null");
-            Debug.Assert(state.TcsReadFromResponseStream != null, "TcsReadFromResponseStream is null");
-            Debug.Assert(!state.TcsReadFromResponseStream.Task.IsCompleted, "TcsReadFromResponseStream.Task is completed");
-
-            state.DisposeCtrReadFromResponseStream();
 
             // If we read to the end of the stream and we're using 'Content-Length' semantics on the response body,
             // then verify we read at least the number of bytes required.
@@ -157,16 +150,15 @@ namespace System.Net.Http
                 && state.ExpectedBytesToRead.HasValue
                 && state.CurrentBytesRead < state.ExpectedBytesToRead.Value)
             {
-                state.TcsReadFromResponseStream.TrySetException(
-                    new IOException(string.Format(
-                        SR.net_http_io_read_incomplete,
-                        state.ExpectedBytesToRead.Value,
-                        state.CurrentBytesRead)).InitializeStackTrace());
+                state.LifecycleAwaitable.SetException(new IOException(string.Format(
+                    SR.net_http_io_read_incomplete,
+                    state.ExpectedBytesToRead.Value,
+                    state.CurrentBytesRead)));
             }
             else
             {
                 state.CurrentBytesRead += (long)bytesRead;
-                state.TcsReadFromResponseStream.TrySetResult((int)bytesRead);
+                state.LifecycleAwaitable.SetResult((int)bytesRead);
             }
         }
 
@@ -182,18 +174,15 @@ namespace System.Net.Http
         private static void OnRequestReceiveResponseHeadersComplete(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestReceiveResponseHeadersComplete: state is null");
-            Debug.Assert(state.TcsReceiveResponseHeaders != null, "TcsReceiveResponseHeaders is null");
-            Debug.Assert(!state.TcsReceiveResponseHeaders.Task.IsCompleted, "TcsReceiveResponseHeaders.Task is completed");
+            Debug.Assert(state.LifecycleAwaitable != null, "LifecycleAwaitable is null");
 
-            state.TcsReceiveResponseHeaders.TrySetResult(true);
+            state.LifecycleAwaitable.SetResult(1);
         }
 
         private static void OnRequestRedirect(WinHttpRequestState state, Uri redirectUri)
         {
             Debug.Assert(state != null, "OnRequestRedirect: state is null");
             Debug.Assert(redirectUri != null, "OnRequestRedirect: redirectUri is null");
-            Debug.Assert(state.TcsReceiveResponseHeaders != null, "TcsReceiveResponseHeaders is null");
-            Debug.Assert(!state.TcsReceiveResponseHeaders.Task.IsCompleted, "TcsReceiveResponseHeaders.Task is completed");
 
             // If we're manually handling cookies, we need to reset them based on the new URI.
             if (state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
@@ -254,6 +243,19 @@ namespace System.Net.Http
                     ref certHandleSize))
                 {
                     int lastError = Marshal.GetLastWin32Error();
+                    WinHttpTraceHelper.Trace(
+                        "OnRequestSendingRequest: Error getting WINHTTP_OPTION_SERVER_CERT_CONTEXT, {0}",
+                        lastError);
+
+                    if (lastError == Interop.WinHttp.ERROR_WINHTTP_INCORRECT_HANDLE_STATE)
+                    {
+                        // Not yet an SSL/TLS connection. This occurs while connecting thru a proxy where the
+                        // CONNECT verb hasn't yet been processed due to the proxy requiring authentication.
+                        // We need to ignore this notification. Another notification will be sent once the final
+                        // connection thru the proxy is completed.
+                        return;
+                    }
+
                     throw WinHttpException.CreateExceptionUsingError(lastError);
                 }
                 
@@ -303,19 +305,19 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError).InitializeStackTrace();
+            Exception innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError);
 
             switch ((uint)asyncResult.dwResult.ToInt32())
             {
                 case Interop.WinHttp.API_SEND_REQUEST:
-                    state.TcsSendRequest.TrySetException(innerException);
+                    state.LifecycleAwaitable.SetException(innerException);
                     break;
                     
                 case Interop.WinHttp.API_RECEIVE_RESPONSE:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_RESEND_REQUEST)
                     {
                         state.RetryRequest = true;
-                        state.TcsReceiveResponseHeaders.TrySetResult(false);
+                        state.LifecycleAwaitable.SetResult(0);
                     }
                     else if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED)
                     {
@@ -327,15 +329,15 @@ namespace System.Net.Http
                         Debug.Assert(state.RequestHandle != null, "OnRequestError: state.RequestHandle is null");
                         WinHttpHandler.SetNoClientCertificate(state.RequestHandle);
                         state.RetryRequest = true;
-                        state.TcsReceiveResponseHeaders.TrySetResult(false);
+                        state.LifecycleAwaitable.SetResult(0);
                     }
                     else if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        state.TcsReceiveResponseHeaders.TrySetCanceled(state.CancellationToken);
+                        state.LifecycleAwaitable.SetCanceled(state.CancellationToken);
                     }
                     else
                     {
-                        state.TcsReceiveResponseHeaders.TrySetException(innerException);
+                        state.LifecycleAwaitable.SetException(innerException);
                     }
                     break;
 
@@ -345,29 +347,26 @@ namespace System.Net.Http
                         // TODO: Issue #2165. We need to pass in the cancellation token from the
                         // user's ReadAsync() call into the TrySetCanceled().
                         Debug.WriteLine("RequestCallback: QUERY_DATA_AVAILABLE - ERROR_WINHTTP_OPERATION_CANCELLED");
-                        state.TcsQueryDataAvailable.TrySetCanceled();
+                        state.LifecycleAwaitable.SetCanceled();
                     }
                     else
                     {
-                        state.TcsQueryDataAvailable.TrySetException(
+                        state.LifecycleAwaitable.SetException(
                             new IOException(SR.net_http_io_read, innerException));
                     }
                     break;
 
                 case Interop.WinHttp.API_READ_DATA:
-                    state.DisposeCtrReadFromResponseStream();
-
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
                         // TODO: Issue #2165. We need to pass in the cancellation token from the
                         // user's ReadAsync() call into the TrySetCanceled().
                         Debug.WriteLine("RequestCallback: API_READ_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
-                        state.TcsReadFromResponseStream.TrySetCanceled();
+                        state.LifecycleAwaitable.SetCanceled();
                     }
                     else
                     {
-                        state.TcsReadFromResponseStream.TrySetException(
-                            new IOException(SR.net_http_io_read, innerException));
+                        state.LifecycleAwaitable.SetException(new IOException(SR.net_http_io_read, innerException));
                     }
                     break;
 

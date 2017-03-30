@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,6 +89,14 @@ namespace System.Linq.Tests
                 });
         }
 
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(new int[] {1, 2, 3, 4, 5, 6, 7}, Enumerable.Range(1, 7).RunOnce().ToArray());
+            Assert.Equal(
+                new string[] {"1", "2", "3", "4", "5", "6", "7", "8"},
+                Enumerable.Range(1, 8).Select(i => i.ToString()).RunOnce().ToArray());
+        }
 
         [Fact]
         public void ToArray_TouchCountWithICollection()
@@ -118,8 +127,7 @@ namespace System.Linq.Tests
             Assert.Equal(1, source.CopyToTouched);
         }
 
-        [Fact]
-        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
+        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
         public void ToArray_FailOnExtremelyLargeCollection()
         {
             var largeSeq = new FastInfiniteEnumerator<byte>();
@@ -318,6 +326,50 @@ namespace System.Linq.Tests
         {
             var source = NumberRangeGuaranteedNotCollectionType(0, 100).OrderBy(i => i).Select(i => i.ToString()).Skip(1000);
             Assert.Empty(source.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(JustBelowPowersOfTwoLengths))]
+        [MemberData(nameof(PowersOfTwoLengths))]
+        [MemberData(nameof(JustAbovePowersOfTwoLengths))]
+        public void ToArrayShouldWorkWithSpecialLengthLazyEnumerables(int length)
+        {
+            Debug.Assert(length >= 0);
+
+            var range = Enumerable.Range(0, length);
+            var lazyEnumerable = ForceNotCollection(range); // We won't go down the IIListProvider path
+            Assert.Equal(range, lazyEnumerable.ToArray());
+        }
+
+        public static IEnumerable<object[]> JustBelowPowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p - 1 });
+        }
+
+        public static IEnumerable<object[]> PowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p });
+        }
+
+        public static IEnumerable<object[]> JustAbovePowersOfTwoLengths()
+        {
+            return SmallPowersOfTwo.Select(p => new object[] { p + 1 });
+        }
+        
+        private static IEnumerable<int> SmallPowersOfTwo
+        {
+            get
+            {
+                // By N being "small" we mean that allocating an array of
+                // size N doesn't come close to the risk of causing an OOME
+                
+                const int MaxPower = 18;
+
+                for (int i = 0; i <= MaxPower; i++)
+                {
+                    yield return 1 << i; // equivalent to pow(2, i)
+                }
+            }
         }
     }
 }

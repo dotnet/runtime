@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 {
     public class MetadataAggregatorTests
     {
-        private unsafe static EnCMapTableReader CreateEncMapTable(int[] tokens)
+        private static unsafe EnCMapTableReader CreateEncMapTable(int[] tokens)
         {
             GCHandle handle = GCHandle.Alloc(tokens, GCHandleType.Pinned);
             var block = new MemoryBlock((byte*)handle.AddrOfPinnedObject(), tokens.Length * sizeof(uint));

@@ -1,0 +1,16 @@
+sspicli.dll!AcceptSecurityContext
+sspicli.dll!AcquireCredentialsHandleW
+sspicli.dll!ApplyControlToken
+sspicli.dll!CompleteAuthToken
+sspicli.dll!DecryptMessage
+sspicli.dll!DeleteSecurityContext
+sspicli.dll!EncryptMessage
+sspicli.dll!EnumerateSecurityPackagesW
+sspicli.dll!FreeContextBuffer
+sspicli.dll!FreeCredentialsHandle
+sspicli.dll!InitializeSecurityContextW
+sspicli.dll!QueryContextAttributesW
+sspicli.dll!QuerySecurityContextToken
+sspicli.dll!SetContextAttributesW
+sspicli.dll!SspiEncodeStringsAsAuthIdentity
+sspicli.dll!SspiFreeAuthIdentity

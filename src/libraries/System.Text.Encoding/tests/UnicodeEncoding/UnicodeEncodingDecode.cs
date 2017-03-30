@@ -52,6 +52,17 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 48, 1 }, 0, 2, "\u0130" };
             yield return new object[] { new byte[] { 92, 0, 97, 0, 98, 0, 99, 0, 32, 0, }, 0, 10, "\\abc\u0020" };
 
+            // High BMP non-chars
+            yield return new object[] { new byte[] { 253, 255 }, 0, 2, "\uFFFD" };
+            yield return new object[] { new byte[] { 254, 255 }, 0, 2, "\uFFFE" };
+            yield return new object[] { new byte[] { 255, 255 }, 0, 2, "\uFFFF" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFE, 0xFF }, 0, 4, "\uFFFF\uFFFE" };
+
+            // U+FDD0 - U+FDEF
+            yield return new object[] { new byte[] { 0xD0, 0xFD, 0xEF, 0xFD }, 0, 4, "\uFDD0\uFDEF" };
+
+            yield return new object[] { new byte[] { 0, 216, 0, 220 }, 1, 2, "\u00D8" };
+
             // Empty string
             yield return new object[] { new byte[0], 0, 0, string.Empty };
             yield return new object[] { new byte[10], 0, 0, string.Empty };
@@ -89,6 +100,31 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 31, "\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
             
             yield return new object[] { new byte[] { 3, 216, 84 }, 0, 3, "\uFFFD\uFFFD" };
+
+            // Invalid surrogate bytes
+            byte[] validSurrogateBytes1 = new byte[] { 0, 216, 0, 220 };
+            yield return new object[] { validSurrogateBytes1, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { validSurrogateBytes1, 1, 3, "\u00D8\uFFFD" };
+            yield return new object[] { validSurrogateBytes1, 0, 2, "\uFFFD" };
+            yield return new object[] { validSurrogateBytes1, 2, 2, "\uFFFD" };
+            yield return new object[] { validSurrogateBytes1, 2, 1, "\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 2, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 3, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0xFF, 0xDF }, 1, 3, "\uFFDB\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0xD8, 0xFF, 0xDF }, 2, 2, "\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xFF, 0xDF }, 0, 2, "\uFFFD" };
+
+            // Odd number of bytes
+            yield return new object[] { new byte[] { 97 }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 97, 0, 97 }, 0, 3, "a\uFFFD" };
+
+            yield return new object[] { new byte[] { 3, 216, 48 }, 0, 3, "\uFFFD\uFFFD" };
+
+            yield return new object[] { new byte[] { 0x61, 0x00, 0x00 }, 0, 3, "\u0061\uFFFD" };
+            yield return new object[] { new byte[] { 0x61 }, 0, 1, "\uFFFD" };
+
         }
 
         [Theory]
@@ -107,45 +143,6 @@ namespace System.Text.Tests
             NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(false, false, true), littleEndianBytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(true, false, true), bigEndianBytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UnicodeEncoding(true, true, true), bigEndianBytes, index, count);
-        }
-
-        [Fact]
-        public void Decode_InvalidBytes()
-        {
-            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
-            // High BMP non-chars
-            Decode(new byte[] { 253, 255 }, 0, 2, "\uFFFD");
-            Decode(new byte[] { 254, 255 }, 0, 2, "\uFFFE");
-            Decode(new byte[] { 255, 255 }, 0, 2, "\uFFFF");
-            Decode(new byte[] { 0xFF, 0xFF, 0xFE, 0xFF }, 0, 4, "\uFFFF\uFFFE");
-
-            // U+FDD0 - U+FDEF
-            Decode(new byte[] { 0xD0, 0xFD, 0xEF, 0xFD }, 0, 4, "\uFDD0\uFDEF");
-
-            // Invalid bytes
-            byte[] validSurrogateBytes1 = new byte[] { 0, 216, 0, 220 };
-            Decode_InvalidBytes(validSurrogateBytes1, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes1, 1, 3, "\u00D8\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes1, 0, 2, "\uFFFD");
-            Decode(validSurrogateBytes1, 1, 2, "\u00D8");
-            Decode_InvalidBytes(validSurrogateBytes1, 2, 2, "\uFFFD");
-            Decode_InvalidBytes(validSurrogateBytes1, 2, 1, "\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 2, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0xDC }, 0, 3, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0xFF, 0xDF }, 1, 3, "\uFFDB\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0xD8, 0xFF, 0xDF }, 2, 2, "\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDF }, 0, 2, "\uFFFD");
-
-            // Odd number of bytes
-            Decode_InvalidBytes(new byte[] { 97 }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 97, 0, 97 }, 0, 3, "a\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 3, 216, 48 }, 0, 3, "\uFFFD\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0x61, 0x00, 0x00 }, 0, 3, "\u0061\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x61 }, 0, 1, "\uFFFD");
         }
 
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)

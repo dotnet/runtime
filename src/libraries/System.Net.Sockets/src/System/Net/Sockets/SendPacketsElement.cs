@@ -13,9 +13,6 @@ namespace System.Net.Sockets
         internal int _count;
         internal SendPacketsElementFlags _flags;
 
-        // Hide the default constructor.
-        private SendPacketsElement() { }
-
         // Constructors for file elements.
         public SendPacketsElement(string filepath) :
             this(filepath, 0, 0, false)

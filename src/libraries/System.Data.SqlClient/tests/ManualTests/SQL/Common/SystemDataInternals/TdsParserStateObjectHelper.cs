@@ -10,12 +10,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests.SystemDataInternals
     {
         private static Assembly s_systemDotData = typeof(System.Data.SqlClient.SqlConnection).GetTypeInfo().Assembly;
         private static Type s_tdsParserStateObject = s_systemDotData.GetType("System.Data.SqlClient.TdsParserStateObject");
+        private static Type s_tdsParserStateObjectNative = s_systemDotData.GetType("System.Data.SqlClient.TdsParserStateObjectNative");
         private static FieldInfo s_forceAllPends = s_tdsParserStateObject.GetField("_forceAllPends", BindingFlags.Static | BindingFlags.NonPublic);
         private static FieldInfo s_skipSendAttention = s_tdsParserStateObject.GetField("_skipSendAttention", BindingFlags.Static | BindingFlags.NonPublic);
         private static FieldInfo s_forceSyncOverAsyncAfterFirstPend = s_tdsParserStateObject.GetField("_forceSyncOverAsyncAfterFirstPend", BindingFlags.Static | BindingFlags.NonPublic);
         private static FieldInfo s_failAsyncPends = s_tdsParserStateObject.GetField("_failAsyncPends", BindingFlags.Static | BindingFlags.NonPublic);
         private static FieldInfo s_forcePendingReadsToWaitForUser = s_tdsParserStateObject.GetField("_forcePendingReadsToWaitForUser", BindingFlags.Static | BindingFlags.NonPublic);
-        private static FieldInfo s_tdsParserStateObjectSessionHandle = s_tdsParserStateObject.GetField("_sessionHandle", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static FieldInfo s_tdsParserStateObjectNativeSessionHandle = s_tdsParserStateObjectNative.GetField("_sessionHandle", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static Type s_tdsParserStateObjectManaged = s_systemDotData.GetType("System.Data.SqlClient.SNI.TdsParserStateObjectManaged");
+        private static FieldInfo s_tdsParserStateObjectManagedSessionHandle = s_tdsParserStateObjectManaged.GetField("_sessionHandle", BindingFlags.Instance | BindingFlags.NonPublic);
 
         internal static bool ForceAllPends
         {
@@ -51,14 +54,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests.SystemDataInternals
         {
             if (stateObject == null)
                 throw new ArgumentNullException("stateObject");
-            if (!s_tdsParserStateObject.IsInstanceOfType(stateObject))
+            if (!s_tdsParserStateObjectManaged.IsInstanceOfType(stateObject))
                 throw new ArgumentException("Object provided was not a DbConnectionInternal", "internalConnection");
         }
 
         internal static object GetSessionHandle(object stateObject)
         {
             VerifyObjectIsTdsParserStateObject(stateObject);
-            return s_tdsParserStateObjectSessionHandle.GetValue(stateObject);
+            return s_tdsParserStateObjectManagedSessionHandle.GetValue(stateObject);
         }
     }
 }

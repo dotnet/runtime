@@ -57,34 +57,22 @@ namespace System.Security.Cryptography
 
         private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
         {
-#if !NETNATIVE
             Key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
-#endif //!NETNATIVE
         }
 
         private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
         {
-#if !NETNATIVE
             Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
-#endif //!NETNATIVE
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)
         {
-#if NETNATIVE
-            return null;
-#else
             return ECCng.ExportKeyBlob(Key, includePrivateParameters);
-#endif //NETNATIVE
         }
 
         private byte[] ExportFullKeyBlob(bool includePrivateParameters)
         {
-#if NETNATIVE
-            return null;
-#else
             return ECCng.ExportFullKeyBlob(Key, includePrivateParameters);
-#endif //NETNATIVE
         }
     }
 }

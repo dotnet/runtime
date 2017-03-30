@@ -169,10 +169,12 @@ namespace System
         internal const int ERROR_MOD_NOT_FOUND = unchecked((int)0x8007007E);
         internal const int ERROR_NO_UNICODE_TRANSLATION = unchecked((int)0x80070459);
         internal const int ERROR_NOACCESS = unchecked((int)0x800703E6);
+        internal const int ERROR_NOT_OWNER = unchecked((int)0x80070120);
         internal const int ERROR_NOT_READY = unchecked((int)0x80070015);
         internal const int ERROR_OPEN_FAILED = unchecked((int)0x8007006E);
         internal const int ERROR_PATH_NOT_FOUND = unchecked((int)0x80070003);
         internal const int ERROR_SHARING_VIOLATION = unchecked((int)0x80070020);
+        internal const int ERROR_TIMEOUT = unchecked((int)0x800705B4);
         internal const int ERROR_TOO_MANY_OPEN_FILES = unchecked((int)0x80070004);
         internal const int ERROR_UNRECOGNIZED_VOLUME = unchecked((int)0x800703ED);
         internal const int ERROR_WRONG_TARGET_NAME = unchecked((int)0x80070574);

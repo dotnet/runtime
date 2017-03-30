@@ -4,7 +4,8 @@
 
 namespace System.Security.Policy
 {
-    [System.FlagsAttribute]
+    [Serializable]
+    [Flags]
     public enum PolicyStatementAttribute
     {
         All = 3,

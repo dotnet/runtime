@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.Runtime
         private string _val;
         private XmlCharType _xmlCharType = XmlCharType.Instance;
 
-        static public XmlReader CreateReader(XmlReader baseReader, WhitespaceRuleLookup wsRules)
+        public static XmlReader CreateReader(XmlReader baseReader, WhitespaceRuleLookup wsRules)
         {
             if (wsRules == null)
             {

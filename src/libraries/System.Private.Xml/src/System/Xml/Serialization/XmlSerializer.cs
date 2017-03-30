@@ -13,10 +13,8 @@ namespace System.Xml.Serialization
     using System.Threading;
     using System.Globalization;
     using System.Security;
-    using System.Security.Policy;
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
-    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Runtime.Versioning;
 
@@ -115,16 +113,37 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
+        internal enum SerializationMode
+        {
+            CodeGenOnly,
+            ReflectionOnly,
+            ReflectionAsBackup
+        }
+
+        internal static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
+
+        private static bool ReflectionMethodEnabled
+        {
+            get
+            {
+                return Mode == SerializationMode.ReflectionOnly || Mode == SerializationMode.ReflectionAsBackup;
+            }
+        }
+
         private TempAssembly _tempAssembly;
+#pragma warning disable 0414
         private bool _typedSerializer;
+#pragma warning restore 0414
         private Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
-#if NET_NATIVE
-        public string DefaultNamespace = null;
+#if uapaot
         private XmlSerializer innerSerializer;
-        private readonly Type rootType;
+        public string DefaultNamespace = null;
+#else
+        internal string DefaultNamespace = null;
 #endif
+        private Type rootType;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -175,7 +194,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-#if !NET_NATIVE
+#if !uapaot
         public XmlSerializer(Type type, Type[] extraTypes) : this(type, null, extraTypes, null, null, null)
 #else
         public XmlSerializer(Type type, Type[] extraTypes) : this(type)
@@ -197,7 +216,12 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializer(XmlTypeMapping xmlTypeMapping)
         {
+            if (xmlTypeMapping == null)
+                throw new ArgumentNullException(nameof(xmlTypeMapping));
+
+#if !uapaot
             _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
+#endif
             _mapping = xmlTypeMapping;
         }
 
@@ -218,17 +242,16 @@ namespace System.Xml.Serialization
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-#if NET_NATIVE
-            this.DefaultNamespace = defaultNamespace;
+            DefaultNamespace = defaultNamespace;
             rootType = type;
-#endif
+
             _mapping = GetKnownMapping(type, defaultNamespace);
             if (_mapping != null)
             {
                 _primitiveType = type;
                 return;
             }
-#if !NET_NATIVE
+#if !uapaot
             _tempAssembly = s_cache[defaultNamespace, type];
             if (_tempAssembly == null)
             {
@@ -258,28 +281,30 @@ namespace System.Xml.Serialization
             {
                 this.innerSerializer = contract.GetSerializer(type);
             }
-#endif
-        }
+            else if (ReflectionMethodEnabled)
+            {
+                var importer = new XmlReflectionImporter(defaultNamespace);
+                _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
 
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
-#pragma warning disable 618 // Passing through null evidence to keep the .ctor code centralized
-            : this(type, overrides, extraTypes, root, defaultNamespace, location, null)
-        {
-#pragma warning restore 618
+                if (_mapping == null)
+                {
+                    _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
+                }
+            }
+#endif
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer7"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        internal XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
+        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
         {
-#if NET_NATIVE
-            throw new PlatformNotSupportedException();
-#else
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
+            DefaultNamespace = defaultNamespace;
+            rootType = type;
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
             {
@@ -287,11 +312,13 @@ namespace System.Xml.Serialization
                     importer.IncludeType(extraTypes[i]);
             }
             _mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
-            if (location != null || evidence != null)
+            if (location != null)
             {
                 DemandForUserLocationOrEvidence();
             }
-            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location, evidence);
+
+#if !uapaot
+            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
 #endif
         }
 
@@ -307,14 +334,23 @@ namespace System.Xml.Serialization
 
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace)
         {
-            if (xmlMapping == null)
-                throw new ArgumentNullException(nameof(xmlMapping));
-            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, null, null);
+            return GenerateTempAssembly(xmlMapping, type, defaultNamespace, null);
         }
 
-        internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace, string location, Evidence evidence)
+        internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace, string location)
         {
-            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, location, evidence);
+            if (xmlMapping == null)
+            {
+                throw new ArgumentNullException(nameof(xmlMapping));
+            }
+
+            xmlMapping.CheckShallow();
+            if (xmlMapping.IsSoap)
+            {
+                return null;
+            }
+
+            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, location);
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize"]/*' />
@@ -395,9 +431,26 @@ namespace System.Xml.Serialization
                     }
                     SerializePrimitive(xmlWriter, o, namespaces);
                 }
-#if !NET_NATIVE
+#if !uapaot
+                else if (ShouldUseReflectionBasedSerialization())
+                {
+                    XmlMapping mapping;
+                    if (_mapping != null && _mapping.GenerateSerializer)
+                    {
+                        mapping = _mapping;
+                    }
+                    else
+                    {
+                        XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                    }
+
+                    var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                    writer.WriteObject(o);
+                }
                 else if (_tempAssembly == null || _typedSerializer)
                 {
+                    // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
                     writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, _tempAssembly);
                     try
@@ -414,25 +467,43 @@ namespace System.Xml.Serialization
 #else
                 else
                 {
-                    if (this.innerSerializer == null)
+                    if (this.innerSerializer != null)
+                    {
+                        if (!string.IsNullOrEmpty(this.DefaultNamespace))
+                        {
+                            this.innerSerializer.DefaultNamespace = this.DefaultNamespace;
+                        }
+
+                        XmlSerializationWriter writer = this.innerSerializer.CreateWriter();
+                        writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                        try
+                        {
+                            this.innerSerializer.Serialize(o, writer);
+                        }
+                        finally
+                        {
+                            writer.Dispose();
+                        }
+                    }
+                    else if (ReflectionMethodEnabled)
+                    {
+                        XmlMapping mapping;
+                        if (_mapping != null && _mapping.GenerateSerializer)
+                        {
+                            mapping = _mapping;
+                        }
+                        else
+                        {
+                            XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                            mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                        }
+
+                        var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                        writer.WriteObject(o);
+                    }
+                    else
                     {
                         throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
-                    }
-
-                    if (!string.IsNullOrEmpty(this.DefaultNamespace))
-                    {
-                        this.innerSerializer.DefaultNamespace = this.DefaultNamespace; 
-                    }
-                    
-                    XmlSerializationWriter writer = this.innerSerializer.CreateWriter();
-                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
-                    try
-                    {
-                        this.innerSerializer.Serialize(o, writer);
-                    }
-                    finally
-                    {
-                        writer.Dispose();
                     }
                 }
 #endif
@@ -507,7 +578,23 @@ namespace System.Xml.Serialization
                     }
                     return DeserializePrimitive(xmlReader, events);
                 }
-#if !NET_NATIVE
+#if !uapaot
+                else if (ShouldUseReflectionBasedSerialization())
+                {
+                    XmlMapping mapping;
+                    if (_mapping != null && _mapping.GenerateSerializer)
+                    {
+                        mapping = _mapping;
+                    }
+                    else
+                    {
+                        XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                    }
+
+                    var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
+                    return reader.ReadObject();
+                }
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationReader reader = CreateReader();
@@ -528,25 +615,44 @@ namespace System.Xml.Serialization
 #else
                 else
                 {
-                    if (this.innerSerializer == null)
+                    if (this.innerSerializer != null)
                     {
+                        if (!string.IsNullOrEmpty(this.DefaultNamespace))
+                        {
+                            this.innerSerializer.DefaultNamespace = this.DefaultNamespace;
+                        }
+
+                        XmlSerializationReader reader = this.innerSerializer.CreateReader();
+                        reader.Init(xmlReader, encodingStyle);
+                        try
+                        {
+                            return this.innerSerializer.Deserialize(reader);
+                        }
+                        finally
+                        {
+                            reader.Dispose();
+                        }
+                    }
+                    else if (ReflectionMethodEnabled)
+                    {
+                        XmlMapping mapping;
+                        if (_mapping != null && _mapping.GenerateSerializer)
+                        {
+                            mapping = _mapping;
+                        }
+                        else
+                        {
+                            XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                            mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                        }
+
+                        var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
+                        return reader.ReadObject();
+                    }
+                    else
+                    {
+
                         throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
-                    }
-
-                    if (!string.IsNullOrEmpty(this.DefaultNamespace))
-                    {
-                        this.innerSerializer.DefaultNamespace = this.DefaultNamespace; 
-                    }
-
-                    XmlSerializationReader reader = this.innerSerializer.CreateReader();
-                    reader.Init(xmlReader, encodingStyle);
-                    try
-                    {
-                        return this.innerSerializer.Deserialize(reader);
-                    }
-                    finally
-                    {
-                        reader.Dispose();
                     }
                 }
 #endif
@@ -568,6 +674,12 @@ namespace System.Xml.Serialization
             }
         }
 
+        private bool ShouldUseReflectionBasedSerialization()
+        {
+            return Mode == SerializationMode.ReflectionOnly
+                || (_mapping != null && _mapping.IsSoap);
+        }
+
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CanDeserialize"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -579,7 +691,7 @@ namespace System.Xml.Serialization
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType];
                 return xmlReader.IsStartElement(typeDesc.DataType.Name, string.Empty);
             }
-#if !NET_NATIVE
+#if !uapaot
             else if (_tempAssembly != null)
             {
                 return _tempAssembly.CanRead(_mapping, xmlReader);
@@ -589,12 +701,14 @@ namespace System.Xml.Serialization
                 return false;
             }
 #else
-            if (this.innerSerializer == null)
+            if (this.innerSerializer != null)
             {
-                return false;
+                return this.innerSerializer.CanDeserialize(xmlReader);
             }
-
-            return this.innerSerializer.CanDeserialize(xmlReader);
+            else
+            {
+                return ReflectionMethodEnabled;
+            }
 #endif
         }
 
@@ -614,6 +728,18 @@ namespace System.Xml.Serialization
         public static XmlSerializer[] FromMappings(XmlMapping[] mappings, Type type)
         {
             if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
+
+#if uapaot
+            var serializers = new XmlSerializer[mappings.Length];
+            for(int i=0;i<mappings.Length;i++)
+            {
+                serializers[i] = new XmlSerializer();
+                serializers[i].rootType = type;
+                serializers[i]._mapping = mappings[i];
+            }
+
+            return serializers;
+#else
             XmlSerializerImplementation contract = null;
             Assembly assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
             TempAssembly tempAssembly = null;
@@ -627,7 +753,7 @@ namespace System.Xml.Serialization
                 {
                     if (type == null)
                     {
-                        tempAssembly = new TempAssembly(mappings, new Type[] { type }, null, null, null);
+                        tempAssembly = new TempAssembly(mappings, new Type[] { type }, null, null);
                         XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
 
                         contract = tempAssembly.Contract;
@@ -654,6 +780,7 @@ namespace System.Xml.Serialization
                     serializers[i] = (XmlSerializer)contract.TypedSerializers[mappings[i].Key];
                 return serializers;
             }
+#endif
         }
 
         private static XmlSerializer[] GetSerializersFromCache(XmlMapping[] mappings, Type type)
@@ -691,7 +818,7 @@ namespace System.Xml.Serialization
                         pendingMappings[index++] = mappingKey.Mapping;
                     }
 
-                    TempAssembly tempAssembly = new TempAssembly(pendingMappings, new Type[] { type }, null, null, null);
+                    TempAssembly tempAssembly = new TempAssembly(pendingMappings, new Type[] { type }, null, null);
                     XmlSerializerImplementation contract = tempAssembly.Contract;
 
                     foreach (XmlSerializerMappingKey mappingKey in pendingKeys.Keys)
@@ -708,56 +835,6 @@ namespace System.Xml.Serialization
             return serializers;
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GenerateSerializer"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings)
-        {
-            CompilerParameters parameters = new CompilerParameters();
-            parameters.TempFiles = new TempFileCollection();
-            parameters.GenerateInMemory = false;
-            parameters.IncludeDebugInformation = false;
-            return GenerateSerializer(types, mappings, parameters);
-        }
-
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GenerateSerializer1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        // SxS: This method does not take any resource name and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
-        internal static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings, CompilerParameters parameters)
-        {
-            if (types == null || types.Length == 0)
-                return null;
-
-            if (mappings == null)
-                throw new ArgumentNullException(nameof(mappings));
-
-            if (XmlMapping.IsShallow(mappings))
-            {
-                throw new InvalidOperationException(SR.XmlMelformMapping);
-            }
-
-            Assembly assembly = null;
-            for (int i = 0; i < types.Length; i++)
-            {
-                Type type = types[i];
-                if (DynamicAssemblies.IsTypeDynamic(type))
-                {
-                    throw new InvalidOperationException(SR.Format(SR.XmlPregenTypeDynamic, type.FullName));
-                }
-                if (assembly == null)
-                    assembly = type.GetTypeInfo().Assembly;
-                else if (type.GetTypeInfo().Assembly != assembly)
-                {
-                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName/*, assembly.Location*/), "types");
-                }
-            }
-            return TempAssembly.GenerateAssembly(mappings, types, null, null, XmlSerializerCompilerParameters.Create(parameters, /* needTempDirAccess = */ true), assembly, new Hashtable());
-        }
-
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromTypes"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -767,7 +844,7 @@ namespace System.Xml.Serialization
             if (types == null)
                 return Array.Empty<XmlSerializer>();
 
-#if NET_NATIVE
+#if uapaot
             var serializers = new XmlSerializer[types.Length];
             for (int i = 0; i < types.Length; i++)
             {
@@ -785,7 +862,7 @@ namespace System.Xml.Serialization
 #endif
         }
 
-#if NET_NATIVE
+#if uapaot
         // this the global XML serializer contract introduced for multi-file
         private static XmlSerializerImplementation xmlSerializerContract;
 
@@ -828,7 +905,7 @@ namespace System.Xml.Serialization
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            return Compiler.GetTempAssemblyName(type.GetTypeInfo().Assembly.GetName(), defaultNamespace);
+            return Compiler.GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.UnknownNode"]/*' />

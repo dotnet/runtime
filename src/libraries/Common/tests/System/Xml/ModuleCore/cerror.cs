@@ -25,7 +25,7 @@ namespace OLEDB.Test.ModuleCore
         {
         }
 
-        static public IError Error
+        public static IError Error
         {
             set
             {
@@ -49,17 +49,17 @@ namespace OLEDB.Test.ModuleCore
             get { return s_rIError; }
         }
 
-        static public TextWriter Out
+        public static TextWriter Out
         {
             get { return s_rLTMConsole; }
         }
 
-        static public ITestConsole TestConsole
+        public static ITestConsole TestConsole
         {
             get { return s_rITestConsole; }
         }
 
-        static internal void Dispose()
+        internal static void Dispose()
         {
             //Reset the info.  
             s_rIError = null;
@@ -69,17 +69,17 @@ namespace OLEDB.Test.ModuleCore
             s_rLTMConsole = null;
         }
 
-        static internal void DisableAsserts()
+        internal static void DisableAsserts()
         {
         }
 
         //Helpers
-        static public void Increment()
+        public static void Increment()
         {
             Error.Increment();
         }
 
-        static public tagERRORLEVEL ErrorLevel
+        public static tagERRORLEVEL ErrorLevel
         {
             get
             {
@@ -94,59 +94,59 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public void Transmit(string text)
+        public static void Transmit(string text)
         {
             Write(text);
         }
 
-        static public string NewLine
+        public static string NewLine
         {
             get { return "\n"; }
         }
 
-        static public void Write(object value)
+        public static void Write(object value)
         {
             if (value != null)
                 Write(value.ToString());
         }
 
-        static public void WriteLine(object value)
+        public static void WriteLine(object value)
         {
             Write(value);
             WriteLine();
         }
 
-        static public void Write(string text)
+        public static void Write(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_TEXT, text);
         }
 
-        static public void WriteLine(string text)
+        public static void WriteLine(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_TEXT, text);
             WriteLine();
         }
 
-        static public void Write(string text, params object[] args)
+        public static void Write(string text, params object[] args)
         {
             //Delegate
             Write(String.Format(text, args));
         }
 
-        static public void WriteLine(string text, params object[] args)
+        public static void WriteLine(string text, params object[] args)
         {
             //Delegate
             WriteLine(String.Format(text, args));
         }
 
-        static public void Write(char[] value)
+        public static void Write(char[] value)
         {
             //Delegate
             if (value != null)
                 Write(new string(value));
         }
 
-        static public void WriteLine(char[] value)
+        public static void WriteLine(char[] value)
         {
             //Delegate
             if (value != null)
@@ -154,27 +154,27 @@ namespace OLEDB.Test.ModuleCore
             WriteLine();
         }
 
-        static public void WriteXml(string text)
+        public static void WriteXml(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_XML, text);
         }
 
-        static public void WriteRaw(string text)
+        public static void WriteRaw(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_RAW, text);
         }
 
-        static public void WriteIgnore(string text)
+        public static void WriteIgnore(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_IGNORE, text);
         }
 
-        static public void WriteLineIgnore(string text)
+        public static void WriteLineIgnore(string text)
         {
             Write(tagCONSOLEFLAGS.CONSOLE_IGNORE, text + CError.NewLine);
         }
 
-        static public void Write(tagCONSOLEFLAGS flags, string text)
+        public static void Write(tagCONSOLEFLAGS flags, string text)
         {
             if (flags == tagCONSOLEFLAGS.CONSOLE_TEXT)
             {
@@ -193,7 +193,7 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public void WriteLine()
+        public static void WriteLine()
         {
             if (TestConsole != null)
                 TestConsole.WriteLine();
@@ -201,14 +201,14 @@ namespace OLEDB.Test.ModuleCore
                 Error.Transmit(CError.NewLine);
         }
 
-        static public bool Compare(bool equal, string message)
+        public static bool Compare(bool equal, string message)
         {
             if (equal)
                 return true;
             return Compare(false, true, message);
         }
 
-        static public bool Compare(object actual, object expected, string message)
+        public static bool Compare(object actual, object expected, string message)
         {
             if (InternalEquals(actual, expected))
                 return true;
@@ -223,7 +223,7 @@ namespace OLEDB.Test.ModuleCore
             throw new CTestFailedException(message, actual, expected, null);
         }
 
-        static public bool Compare(object actual, object expected1, object expected2, string message)
+        public static bool Compare(object actual, object expected1, object expected2, string message)
         {
             if (InternalEquals(actual, expected1) || InternalEquals(actual, expected2))
                 return true;
@@ -239,7 +239,7 @@ namespace OLEDB.Test.ModuleCore
             //return false;
         }
 
-        static public bool Equals(object actual, object expected, string message)
+        public static bool Equals(object actual, object expected, string message)
         {
             try
             {
@@ -255,7 +255,7 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public bool Equals(bool equal, string message)
+        public static bool Equals(bool equal, string message)
         {
             try
             {
@@ -271,17 +271,17 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public bool Warning(bool equal, string message)
+        public static bool Warning(bool equal, string message)
         {
             return Warning(equal, true, message, null);
         }
 
-        static public bool Warning(object actual, object expected, string message)
+        public static bool Warning(object actual, object expected, string message)
         {
             return Warning(actual, expected, message, null);
         }
 
-        static public bool Warning(object actual, object expected, string message, Exception inner)
+        public static bool Warning(object actual, object expected, string message, Exception inner)
         {
             //See if these are equal
             bool equal = InternalEquals(actual, expected);
@@ -301,20 +301,20 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        static public bool Skip(string message)
+        public static bool Skip(string message)
         {
             //Delegate
             return Skip(true, message);
         }
 
-        static public bool Skip(bool skip, string message)
+        public static bool Skip(bool skip, string message)
         {
             if (skip)
                 throw new CTestSkippedException(message);
             return false;
         }
 
-        static internal bool InternalEquals(object actual, object expected)
+        internal static bool InternalEquals(object actual, object expected)
         {
             //Handle null comparison
             if (actual == null && expected == null)
@@ -326,7 +326,7 @@ namespace OLEDB.Test.ModuleCore
             return expected.Equals(actual);
         }
 
-        static public bool Log(object actual, object expected, string source, string message, string details, tagERRORLEVEL eErrorLevel)
+        public static bool Log(object actual, object expected, string source, string message, string details, tagERRORLEVEL eErrorLevel)
         {
             //Obtain the error level
             tagERRORLEVEL rSavedLevel = ErrorLevel;

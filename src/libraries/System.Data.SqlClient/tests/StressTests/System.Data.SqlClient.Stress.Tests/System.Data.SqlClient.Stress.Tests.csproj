@@ -5,14 +5,13 @@
     <ProjectGuid>{B94B8E6D-3E41-4046-B758-4A2E281F74EE}</ProjectGuid>
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
-    <OutputType>Library</OutputType>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <!-- These should not run in Helix: they produce no outputs and are only run manually -->
+    <ArchiveTests>false</ArchiveTests>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\System.Data.StressRunner\System.Data.StressRunner.csproj" />
     <ProjectReference Include="..\System.Data.StressFramework\System.Data.StressFramework.csproj" />
@@ -24,16 +23,6 @@
     <Compile Include="FilteredDefaultTraceListener.cs" />
     <Compile Include="HostsFileManager.cs" />
     <Compile Include="NetUtils.cs" />
-  </ItemGroup>
-  <!--Import the targets-->
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Data.SqlClient.csproj">
-      <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

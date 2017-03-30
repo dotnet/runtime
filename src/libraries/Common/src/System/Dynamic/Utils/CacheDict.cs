@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Diagnostics;
 
@@ -14,27 +11,26 @@ namespace System.Dynamic.Utils
     /// Provides a dictionary-like object used for caches which holds onto a maximum
     /// number of elements specified at construction time.
     /// </summary>
-    internal class CacheDict<TKey, TValue>
+    internal sealed class CacheDict<TKey, TValue>
     {
-
-        // cache size is always ^2. 
+        // cache size is always ^2.
         // items are placed at [hash ^ mask]
         // new item will displace previous one at the same location.
-        private readonly int mask;
-        private readonly Entry[] entries;
+        private readonly int _mask;
+        private readonly Entry[] _entries;
 
         // class, to ensure atomic updates.
         private sealed class Entry
         {
-            internal readonly int hash;
-            internal readonly TKey key;
-            internal readonly TValue value;
+            internal readonly int _hash;
+            internal readonly TKey _key;
+            internal readonly TValue _value;
 
             internal Entry(int hash, TKey key, TValue value)
             {
-                this.hash = hash;
-                this.key = key;
-                this.value = value;
+                _hash = hash;
+                _key = key;
+                _value = value;
             }
         }
 
@@ -44,9 +40,9 @@ namespace System.Dynamic.Utils
         /// <param name="size">The maximum number of elements to store will be this number aligned to next ^2.</param>
         internal CacheDict(int size)
         {
-            var alignedSize = AlignSize(size);
-            this.mask = alignedSize - 1;
-            this.entries = new Entry[alignedSize];
+            int alignedSize = AlignSize(size);
+            _mask = alignedSize - 1;
+            _entries = new Entry[alignedSize];
         }
 
         private static int AlignSize(int size)
@@ -72,12 +68,12 @@ namespace System.Dynamic.Utils
         internal bool TryGetValue(TKey key, out TValue value)
         {
             int hash = key.GetHashCode();
-            int idx = hash & mask;
+            int idx = hash & _mask;
 
-            var entry = Volatile.Read(ref this.entries[idx]);
-            if (entry != null && entry.hash == hash && entry.key.Equals(key))
+            Entry entry = Volatile.Read(ref _entries[idx]);
+            if (entry != null && entry._hash == hash && entry._key.Equals(key))
             {
-                value = entry.value;
+                value = entry._value;
                 return true;
             }
 
@@ -91,13 +87,13 @@ namespace System.Dynamic.Utils
         /// </summary>
         internal void Add(TKey key, TValue value)
         {
-            var hash = key.GetHashCode();
-            var idx = hash & mask;
+            int hash = key.GetHashCode();
+            int idx = hash & _mask;
 
-            var entry = Volatile.Read(ref this.entries[idx]);
-            if (entry == null || entry.hash != hash || !entry.key.Equals(key))
+            Entry entry = Volatile.Read(ref _entries[idx]);
+            if (entry == null || entry._hash != hash || !entry._key.Equals(key))
             {
-                Volatile.Write(ref entries[idx], new Entry(hash, key, value));
+                Volatile.Write(ref _entries[idx], new Entry(hash, key, value));
             }
         }
 

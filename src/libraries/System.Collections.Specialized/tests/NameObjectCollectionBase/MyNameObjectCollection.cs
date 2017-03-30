@@ -4,13 +4,13 @@
 
 namespace System.Collections.Specialized.Tests
 {
-    public class MyNameObjectCollection : NameObjectCollectionBase
+    public partial class MyNameObjectCollection : NameObjectCollectionBase
     {
         public MyNameObjectCollection() : base() { }
         public MyNameObjectCollection(int capacity) : base(capacity) { }
         public MyNameObjectCollection(IEqualityComparer comparer) : base(comparer) { }
         public MyNameObjectCollection(int capacity, IEqualityComparer comparer) : base(capacity, comparer) { }
-        
+
         public new bool IsReadOnly
         {
             get { return base.IsReadOnly; }

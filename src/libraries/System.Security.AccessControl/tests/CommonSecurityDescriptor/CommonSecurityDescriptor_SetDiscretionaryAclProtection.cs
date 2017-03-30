@@ -24,7 +24,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_SetDiscretionaryAclProtection_TestData))]
-        [ActiveIssue(15)]
         public static void TestSetDiscretionaryAclProtection(bool isContainer, bool isDS, string sddl, bool isProtected, bool preserveInheritance, string verifierSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

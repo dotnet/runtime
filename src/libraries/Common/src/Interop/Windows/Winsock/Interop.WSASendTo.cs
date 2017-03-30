@@ -3,35 +3,61 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 internal static partial class Interop
 {
     internal static partial class Winsock
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError WSASendTo(
-            [In] SafeCloseSocket socketHandle,
-            [In] ref WSABuffer buffer,
-            [In] int bufferCount,
-            [Out] out int bytesTransferred,
-            [In] SocketFlags socketFlags,
-            [In] IntPtr socketAddress,
-            [In] int socketAddressSize,
-            [In] SafeHandle overlapped,
-            [In] IntPtr completionRoutine);
+        internal static unsafe extern SocketError WSASendTo(
+            SafeCloseSocket socketHandle,
+            WSABuffer* buffers,
+            int bufferCount,
+            out int bytesTransferred,
+            SocketFlags socketFlags,
+            IntPtr socketAddress,
+            int socketAddressSize,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError WSASendTo(
-            [In] SafeCloseSocket socketHandle,
-            [In] WSABuffer[] buffersArray,
-            [In] int bufferCount,
+        internal static unsafe SocketError WSASendTo(
+            SafeCloseSocket socketHandle,
+            ref WSABuffer buffer,
+            int bufferCount,
+            out int bytesTransferred,
+            SocketFlags socketFlags,
+            IntPtr socketAddress,
+            int socketAddressSize,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine)
+        {
+            // We intentionally do NOT copy this back after the function completes:
+            // We don't want to cause a race in async scenarios.
+            // The WSABuffer struct should be unchanged anyway.
+            WSABuffer localBuffer = buffer;
+            return WSASendTo(socketHandle, &localBuffer, bufferCount, out bytesTransferred, socketFlags, socketAddress, socketAddressSize, overlapped, completionRoutine);
+        }
+
+        internal static unsafe SocketError WSASendTo(
+            SafeCloseSocket socketHandle,
+            WSABuffer[] buffers,
+            int bufferCount,
             [Out] out int bytesTransferred,
-            [In] SocketFlags socketFlags,
-            [In] IntPtr socketAddress,
-            [In] int socketAddressSize,
-            [In] SafeNativeOverlapped overlapped,
-            [In] IntPtr completionRoutine);
+            SocketFlags socketFlags,
+            IntPtr socketAddress,
+            int socketAddressSize,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine)
+        {
+            Debug.Assert(buffers != null);
+            fixed (WSABuffer* buffersPtr = &buffers[0])
+            {
+                return WSASendTo(socketHandle, buffersPtr, bufferCount, out bytesTransferred, socketFlags, socketAddress, socketAddressSize, overlapped, completionRoutine);
+            }
+        }
     }
 }

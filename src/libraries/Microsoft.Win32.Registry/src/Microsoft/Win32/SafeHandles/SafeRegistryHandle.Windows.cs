@@ -11,9 +11,9 @@ namespace Microsoft.Win32.SafeHandles
 #else
     internal
 #endif
-    sealed partial class SafeRegistryHandle : SafeHandle
+    sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         protected override bool ReleaseHandle() =>
-            Interop.mincore.RegCloseKey(handle) == Interop.mincore.Errors.ERROR_SUCCESS;
+            Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
     }
 }

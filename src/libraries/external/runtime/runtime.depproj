@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT' AND '$(RunningOnUnix)' == 'true'">win7-x64</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uap'">win10-$(ArchGroup)</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uapaot'">win10-$(ArchGroup)-aot</NugetRuntimeIdentifier>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
+    <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
+    <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <FileToExclude Include="System.Private.CoreLib.Augments" />
+    <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
+    <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Setup the testing shared framework host -->
+  <Target Name="SetupTestingHost" AfterTargets="ResolveNuGetPackages" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+
+    <PropertyGroup>
+      <HostFxrFileName Condition="'$(OSGroup)'=='Windows_NT'">hostfxr</HostFxrFileName>
+      <HostFxrFileName Condition="'$(OSGroup)'!='Windows_NT'">libhostfxr</HostFxrFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(NETCoreAppTestRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+
+  <Target Name="OverrideRuntime"
+          Condition="'$(CoreCLROverridePath)' != ''"
+          AfterTargets="ResolveNuGetPackages;FilterNugetPackages">
+    <Warning Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
+    <PropertyGroup>
+      <CoreCLRPDBOverridePath Condition="'$(CoreCLRPDBOverridePath)' == '' and Exists('$(CoreCLROverridePath)/PDB')">$(CoreCLROverridePath)/PDB</CoreCLRPDBOverridePath>
+      <ExcludeNativeImages Condition="'$(ExcludeNativeImages)' == '' and '$(Coverage)' == 'true'">true</ExcludeNativeImages>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLROverridePath)/*.*" />
+      <CoreCLRPDBFiles Condition="'$(CoreCLRPDBOverridePath)' != ''" Include="$(CoreCLRPDBOverridePath)/*.pdb" />
+
+      <_ReferenceCopyLocalPathsToRemove Include="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Remove="@(_ReferenceCopyLocalPathsToRemove)" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRPDBFiles)" />
+    </ItemGroup>
+
+    <Warning Condition="Exists('$(CoreCLROverridePath)') And '@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
+
+    <ItemGroup Condition="'$(ExcludeNativeImages)' == 'true'">
+      <ReferenceCopyLocalPathsNativeImages Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(Filename)%(Extension)').Contains('.ni.'))" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPathsNativeImages)" />
+    </ItemGroup>
+
+  </Target>
+</Project>

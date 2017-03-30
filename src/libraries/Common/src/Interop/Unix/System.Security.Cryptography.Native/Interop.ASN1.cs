@@ -17,7 +17,7 @@ internal static partial class Interop
         internal static extern SafeAsn1ObjectHandle ObjTxt2Obj(string s);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjObj2Txt")]
-        private static unsafe extern int ObjObj2Txt(byte* buf, int buf_len, IntPtr a);
+        private static extern unsafe int ObjObj2Txt(byte* buf, int buf_len, IntPtr a);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetObjectDefinitionByName", CharSet = CharSet.Ansi)]
         internal static extern IntPtr GetObjectDefinitionByName(string friendlyName);
@@ -93,7 +93,7 @@ internal static partial class Interop
             // so make sure to leave room for it.
             int initialBytesNeeded = bytesNeeded;
             byte[] bufHeap = new byte[bytesNeeded + 1];
-            fixed (byte* buf = bufHeap)
+            fixed (byte* buf = &bufHeap[0])
             {
                 bytesNeeded = ObjObj2Txt(buf, bufHeap.Length, asn1ObjectPtr);
 

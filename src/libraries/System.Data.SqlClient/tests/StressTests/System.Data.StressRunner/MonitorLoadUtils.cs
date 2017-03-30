@@ -19,7 +19,7 @@ namespace DPStressHarness
             Assembly mainAssembly = typeof(Monitoring.IMonitorLoader).GetTypeInfo().Assembly;
 
             Type t = mainAssembly.GetType(classname);
-            //make sure the the type is derived from IMonitorLoader
+            //make sure the type is derived from IMonitorLoader
             Type[] interfaces = t.GetInterfaces();
             bool derivedFromIMonitorLoader = false;
             if (interfaces != null)

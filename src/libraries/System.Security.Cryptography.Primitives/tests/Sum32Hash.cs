@@ -8,9 +8,9 @@ namespace System.Security.Cryptography.Hashing.Tests
     {
         private uint _sum;
 
-        public override int HashSize
+        public Sum32Hash()
         {
-            get { return sizeof(uint); }
+            HashSizeValue = sizeof(uint);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)

@@ -8,13 +8,14 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    // These tests test the static Debug class. They cannot be run in parallel
+    [Collection("System.Diagnostics.Debug")]
     public class DebugTests
     {
         private readonly string s_newline = // avoid Environment direct dependency, due to it being visible from both System.Private.Corelib and System.Runtime.Extensions
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\r\n" : "\n";
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Asserts()
         {
             VerifyLogged(() => { Debug.Assert(true); }, "");
@@ -29,7 +30,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Fail()
         {
             VerifyAssert(() => { Debug.Fail("something bad happened"); }, "something bad happened");
@@ -37,7 +37,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void Write()
         {
             VerifyLogged(() => { Debug.Write(5); }, "5");
@@ -54,7 +53,13 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public void Print()
+        {
+            VerifyLogged(() => { Debug.Print("logged"); }, "logged");
+            VerifyLogged(() => { Debug.Print("logged {0}", 5); }, "logged 5");
+        }
+
+        [Fact]
         public void WriteLine()
         {
             VerifyLogged(() => { Debug.WriteLine(5); }, "5" + s_newline);
@@ -69,7 +74,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteIf()
         {
             VerifyLogged(() => { Debug.WriteIf(true, 5); }, "5");
@@ -86,7 +90,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public void WriteLineIf()
         {
             VerifyLogged(() => { Debug.WriteLineIf(true, 5); }, "5" + s_newline);
@@ -100,6 +103,25 @@ namespace System.Diagnostics.Tests
 
             VerifyLogged(() => { Debug.WriteLineIf(true, "logged", "category"); }, "category:logged" + s_newline);
             VerifyLogged(() => { Debug.WriteLineIf(false, "logged", "category"); }, "");     
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(3)]
+        public void Indentation(int indentSize)
+        {
+            Debug.IndentLevel = 0;
+            Debug.IndentSize = indentSize;
+            VerifyLogged(() => { Debug.WriteLine("pizza"); }, "pizza" + s_newline);
+            Debug.Indent();
+            string expectedIndent = new string(' ', indentSize);
+            VerifyLogged(() => { Debug.WriteLine("pizza"); }, expectedIndent + "pizza" + s_newline);
+            Debug.Indent();
+            expectedIndent = new string(' ', indentSize * 2);
+            VerifyLogged(() => { Debug.WriteLine("pizza"); }, expectedIndent + "pizza" + s_newline);
+            Debug.Unindent();
+            Debug.Unindent();
         }
 
 
@@ -158,7 +180,7 @@ namespace System.Diagnostics.Tests
 
         class WriteLogger : Debug.IDebugLogger
         {
-            public readonly static WriteLogger Instance = new WriteLogger();
+            public static readonly WriteLogger Instance = new WriteLogger();
 
             private WriteLogger()
             {

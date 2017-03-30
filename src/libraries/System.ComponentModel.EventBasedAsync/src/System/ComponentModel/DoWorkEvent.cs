@@ -6,49 +6,15 @@ namespace System.ComponentModel
 {
     public delegate void DoWorkEventHandler(object sender, DoWorkEventArgs e);
 
-    public class DoWorkEventArgs : EventArgs
+    public class DoWorkEventArgs : CancelEventArgs
     {
-        private readonly object _argument;
-        private object _result;
-        private bool _cancel;
-
         public DoWorkEventArgs(object argument)
         {
-            _argument = argument;
+            Argument = argument;
         }
 
-        public object Argument
-        {
-            get 
-            {
-                return _argument;
-            }
-        }
+        public object Argument { get; }
 
-        public object Result
-        {
-            get
-            {
-                return _result;
-            }
-
-            set
-            {
-                _result = value;
-            }
-        }
-
-        public bool Cancel
-        {
-            get
-            {
-                return _cancel;
-            }
-
-            set
-            {
-                _cancel = value; 
-            }
-        }
+        public object Result { get; set; }
     }
 }

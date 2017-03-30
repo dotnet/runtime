@@ -9,8 +9,6 @@ namespace System.Numerics.Tests
 {
     public static class MyBigIntImp
     {
-        public static BigInteger outParam = 0;
-
         public static BigInteger DoUnaryOperatorMine(BigInteger num1, string op)
         {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
@@ -32,7 +30,7 @@ namespace System.Numerics.Tests
                 case "u~":
                     return new BigInteger(Not(bytes1).ToArray());
                 case "uLog10":
-                    factor = (int)BigInteger.Log(num1, 10);
+                    factor = unchecked((int)BigInteger.Log(num1, 10));
                     if (factor > 100)
                     {
                         for (int i = 0; i < factor - 100; i++)
@@ -50,7 +48,7 @@ namespace System.Numerics.Tests
                     }
                     return ApproximateBigInteger(result);
                 case "uLog":
-                    factor = (int)BigInteger.Log(num1, 10);
+                    factor = unchecked((int)BigInteger.Log(num1, 10));
                     if (factor > 100)
                     {
                         for (int i = 0; i < factor - 100; i++)
@@ -92,6 +90,13 @@ namespace System.Numerics.Tests
 
         public static BigInteger DoBinaryOperatorMine(BigInteger num1, BigInteger num2, string op)
         {
+            BigInteger num3;
+
+            return DoBinaryOperatorMine(num1, num2, op, out num3);
+        }
+
+        public static BigInteger DoBinaryOperatorMine(BigInteger num1, BigInteger num2, string op, out BigInteger num3)
+        {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
             List<byte> bytes2 = new List<byte>(num2.ToByteArray());
 
@@ -123,7 +128,7 @@ namespace System.Numerics.Tests
                     BigInteger ret = new BigInteger(Divide(bytes1, bytes2).ToArray());
                     bytes1 = new List<byte>(num1.ToByteArray());
                     bytes2 = new List<byte>(num2.ToByteArray());
-                    outParam = new BigInteger(Remainder(bytes1, bytes2).ToArray());
+                    num3 = new BigInteger(Remainder(bytes1, bytes2).ToArray());
                     return ret;
                 case "bRemainder":
                 case "b%":

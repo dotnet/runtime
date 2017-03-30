@@ -175,6 +175,20 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode the segments { tag, length, value } of a BIT STRING which is wrapped over
+        /// other DER-encoded data.
+        /// </summary>
+        /// <param name="childSegments"></param>
+        /// <remarks>
+        /// Despite containing other DER-encoded data this does not get the constructed bit,
+        /// because it doesn't when encoding public keys in SubjectPublicKeyInfo</remarks>
+        /// <returns></returns>
+        internal static byte[][] SegmentedEncodeBitString(params byte[][][] childSegments)
+        {
+            return SegmentedEncodeBitString(ConcatenateArrays(childSegments));
+        }
+
+        /// <summary>
         /// Encode the segments { tag, length, value } of a bit string where all bits are significant.
         /// </summary>
         /// <param name="data">The data to encode</param>
@@ -509,6 +523,34 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Make a context-specific tagged value which is constructed of other DER encoded values.
+        /// Logically the same as a SEQUENCE, but providing context as to data interpretation (and usually
+        /// indicates an optional element adjacent to another SEQUENCE).
+        /// </summary>
+        /// <param name="contextId">The value's context ID</param>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one sequence.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] ConstructSegmentedContextSpecificValue(int contextId, params byte[][][] items)
+        {
+            Debug.Assert(items != null);
+            Debug.Assert(contextId >= 0 && contextId <= 30);
+
+            byte[] data = ConcatenateArrays(items);
+
+            byte tagId = (byte)(
+                DerSequenceReader.ConstructedFlag |
+                DerSequenceReader.ContextSpecificTagFlag |
+                contextId);
+
+            return new byte[][]
+            {
+                new byte[] { tagId },
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
         /// Make a constructed SET of the byte-triplets of the contents, but leave
         /// the value in a segmented form (to be included in a larger SEQUENCE).
         /// </summary>
@@ -791,7 +833,7 @@ namespace System.Security.Cryptography
             Stack<byte> littleEndianBytes = new Stack<byte>();
             byte continuance = 0;
 
-            while (unencoded != BigInteger.Zero)
+            do
             {
                 BigInteger remainder;
                 unencoded = BigInteger.DivRem(unencoded, divisor, out remainder);
@@ -803,6 +845,7 @@ namespace System.Security.Cryptography
                 continuance = 0x80;
                 littleEndianBytes.Push(octet);
             }
+            while (unencoded != BigInteger.Zero);
 
             encodedData.AddRange(littleEndianBytes);
         }

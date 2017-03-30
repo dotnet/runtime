@@ -296,7 +296,7 @@ namespace System.Threading.Tasks.Tests
                     {
                         t1.Wait();
                         Assert.False(cancellationExpected || exceptionExpected, "TaskRtTests.RunRunTests: Expected exception or cancellation");
-                        Assert.True(something == 1, "TaskRtTests.RunRunTests: Task completed but apparantly did not run");
+                        Assert.True(something == 1, "TaskRtTests.RunRunTests: Task completed but apparently did not run");
                     }
                     catch (AggregateException ae)
                     {

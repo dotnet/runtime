@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
             }
 
-            fixed (byte* ptr = id)
+            fixed (byte* ptr = &id[0])
             {
                 var reader = new BlobReader(ptr, id.Length);
                 Guid = reader.ReadGuid();
@@ -53,7 +53,7 @@ namespace System.Reflection.Metadata
             return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode));
         }
 
-        public unsafe static BlobContentId FromHash(byte[] hashCode)
+        public static unsafe BlobContentId FromHash(byte[] hashCode)
         {
             const int minHashSize = 20;
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -12,5 +13,6 @@ namespace Internal.Cryptography.Pal
         void CloneTo(X509Certificate2Collection collection);
         void Add(ICertificatePal cert);
         void Remove(ICertificatePal cert);
+        SafeHandle SafeHandle { get; }
     }
 }

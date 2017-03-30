@@ -56,7 +56,7 @@ namespace System.Xml.Tests
         [InlineData("@", "fft20.dll", "no", "fft20", "fft20.pdb", "no", "fft20.txt")]
         //[Variation("21", Desc = "Exercise @ with not existing filename", Pri = 1, Params = new object[] { "@IDontExist", "fft21.dll", "no", "fft21", "fft21.pdb", "no", "fft21.txt" })]
         [InlineData("@IDontExist", "fft21.dll", "no", "fft21", "fft21.pdb", "no", "fft21.txt")]
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
             if (ShouldSkip(new object[] { param0, param1, param2, param3, param4, param5, param6 }))

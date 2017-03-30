@@ -81,5 +81,16 @@ namespace System
 
             throw GetConvertToException(value, destinationType);
         }
+
+        public override bool IsValid(ITypeDescriptorContext context, object value)
+        {
+            string text = value as string;
+            if (text != null)
+            {
+                Uri uri;
+                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out uri);
+            }
+            return value is Uri;
+        }        
     }
 }

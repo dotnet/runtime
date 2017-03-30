@@ -91,7 +91,7 @@ namespace System.Xml.Schema
             {
                 // Note that (ulong) -Int64.MinValue = Int64.MaxValue + 1, which is what we want for that special case
                 isNegative = true;
-                ticksPos = (ulong)-ticks;
+                ticksPos = unchecked((ulong)-ticks);
             }
             else
             {

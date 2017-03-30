@@ -164,8 +164,8 @@ namespace System.Xml
             await ParseSubsetAsync().ConfigureAwait(false);
 
 #if DEBUG
-            Debug.Assert( readerAdapter.EntityStackLength == 0 ||
-                         ( freeFloatingDtd && readerAdapter.EntityStackLength == 1 ) );
+            Debug.Assert( _readerAdapter.EntityStackLength == 0 ||
+                         ( _freeFloatingDtd && _readerAdapter.EntityStackLength == 1 ) );
 #endif
         }
 
@@ -248,8 +248,8 @@ namespace System.Xml
                             }
 #if DEBUG
                             // check entity nesting
-                            Debug.Assert( readerAdapter.EntityStackLength == 0 || 
-                                          ( freeFloatingDtd && readerAdapter.EntityStackLength == 1 ) );
+                            Debug.Assert( _readerAdapter.EntityStackLength == 0 || 
+                                          ( _freeFloatingDtd && _readerAdapter.EntityStackLength == 1 ) );
 #endif
                         }
                         else
@@ -742,7 +742,7 @@ namespace System.Xml
                     localFrames.Push(currentFrame);
                     goto RecursiveCall;
                     // And we should return here when we return from the recursion
-                    //   but it's the samea s returning after the switch statement
+                    //   but it's the same as returning after the switch statement
 
                 case Token.GreaterThan:
                     Throw( curPos, SR.Xml_InvalidContentModel );

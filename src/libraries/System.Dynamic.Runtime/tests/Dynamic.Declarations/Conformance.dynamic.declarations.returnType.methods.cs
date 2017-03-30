@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.genericmethod001.genericmethod001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.genericmethod001.genericmethod001;
-
     public class Test
     {
         private class MyClass
@@ -49,8 +47,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method001.method001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method001.method001;
-
     public class Test
     {
         private class MyClass
@@ -92,8 +88,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method002.method002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method002.method002;
-
     public class Test
     {
         private class MyClass<T>
@@ -135,8 +129,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method003.method003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.method003.method003;
-
     public class Test
     {
         public class Program
@@ -175,8 +167,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticgenericmethod001.staticgenericmethod001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticgenericmethod001.staticgenericmethod001;
-
     public class Test
     {
         private class MyClass
@@ -217,8 +207,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticgenericmethod002.staticgenericmethod002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticgenericmethod002.staticgenericmethod002;
-
     public class Test
     {
         private class MyClass<T>
@@ -259,8 +247,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticmethod001.staticmethod001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticmethod001.staticmethod001;
-
     public class Test
     {
         private class MyClass
@@ -301,8 +287,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticmethod002.staticmethod002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.methods.staticmethod002.staticmethod002;
-
     static // <Title> Having dynamic as a return type</Title>
            // <Description>
            // </Description>
@@ -311,7 +295,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
            // <Code>
 public class MyClass
     {
-        static public dynamic Foo(this int x)
+        public static dynamic Foo(this int x)
         {
             dynamic d = x;
             return d;

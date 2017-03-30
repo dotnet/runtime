@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
     ///     Exception used for validation using <see cref="ValidationAttribute" />.
     /// </summary>
+    [Serializable]
     public class ValidationException : Exception
     {
         private ValidationResult _validationResult;
@@ -64,6 +67,16 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="innerException">inner exception</param>
         public ValidationException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        /// <summary>
+        ///     Constructor that takes a SerializationInfo.
+        /// </summary>
+        /// <param name="info">The SerializationInfo.</param>
+        /// <param name="context">The StreamingContext.</param>
+        protected ValidationException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
 

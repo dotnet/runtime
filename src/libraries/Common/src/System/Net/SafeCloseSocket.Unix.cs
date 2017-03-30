@@ -22,6 +22,82 @@ namespace System.Net.Sockets
         private bool _nonBlocking;
         private SocketAsyncContext _asyncContext;
 
+        private TrackedSocketOptions _trackedOptions;
+        internal bool LastConnectFailed { get; set; }
+        internal bool DualMode { get; set; }
+        internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
+
+        public void RegisterConnectResult(SocketError error)
+        {
+            switch (error)
+            {
+                case SocketError.Success:
+                case SocketError.WouldBlock:
+                    break;
+                default:
+                    LastConnectFailed = true;
+                    break;
+            }
+        }
+
+        public void TransferTrackedState(SafeCloseSocket target)
+        {
+            target._trackedOptions = _trackedOptions;
+            target.LastConnectFailed = LastConnectFailed;
+            target.DualMode = DualMode;
+            target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
+        }
+
+        public void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
+
+        public bool IsTrackedOption(TrackedSocketOptions option) => (_trackedOptions & option) != 0;
+
+        public void TrackOption(SocketOptionLevel level, SocketOptionName name)
+        {
+            // As long as only these options are set, we can support Connect{Async}(IPAddress[], ...).
+            switch (level)
+            {
+                case SocketOptionLevel.Tcp:
+                    switch (name)
+                    {
+                        case SocketOptionName.NoDelay: _trackedOptions |= TrackedSocketOptions.NoDelay; return;
+                    }
+                    break;
+
+                case SocketOptionLevel.IP:
+                    switch (name)
+                    {
+                        case SocketOptionName.DontFragment: _trackedOptions |= TrackedSocketOptions.DontFragment; return;
+                        case SocketOptionName.IpTimeToLive: _trackedOptions |= TrackedSocketOptions.Ttl; return;
+                    }
+                    break;
+
+                case SocketOptionLevel.IPv6:
+                    switch (name)
+                    {
+                        case SocketOptionName.IPv6Only: _trackedOptions |= TrackedSocketOptions.DualMode; return;
+                        case SocketOptionName.IpTimeToLive: _trackedOptions |= TrackedSocketOptions.Ttl; return;
+                    }
+                    break;
+
+                case SocketOptionLevel.Socket:
+                    switch (name)
+                    {
+                        case SocketOptionName.Broadcast: _trackedOptions |= TrackedSocketOptions.EnableBroadcast; return;
+                        case SocketOptionName.Linger: _trackedOptions |= TrackedSocketOptions.LingerState; return;
+                        case SocketOptionName.ReceiveBuffer: _trackedOptions |= TrackedSocketOptions.ReceiveBufferSize; return;
+                        case SocketOptionName.ReceiveTimeout: _trackedOptions |= TrackedSocketOptions.ReceiveTimeout; return;
+                        case SocketOptionName.SendBuffer: _trackedOptions |= TrackedSocketOptions.SendBufferSize; return;
+                        case SocketOptionName.SendTimeout: _trackedOptions |= TrackedSocketOptions.SendTimeout; return;
+                    }
+                    break;
+            }
+
+            // For any other settings, we need to track that they were used so that we can error out
+            // if a Connect{Async}(IPAddress[],...) attempt is made.
+            ExposedHandleOrUntrackedConfiguration = true;
+        }
+
         public SocketAsyncContext AsyncContext
         {
             get
@@ -85,19 +161,26 @@ namespace System.Net.Sockets
             }
         }
 
-        public unsafe static SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
+        public bool IsDisconnected { get; private set; } = false;
+
+        public void SetToDisconnected()
+        {
+            IsDisconnected = true;
+        }
+
+        public static unsafe SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
         }
 
-        public unsafe static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
+        public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out errorCode));
             return errorCode;
         }
 
-        public unsafe static SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
+        public static unsafe SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize, out errorCode));
@@ -123,10 +206,7 @@ namespace System.Net.Sockets
                 // case we need to do some recovery.
                 if (_blockable)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'blockable' branch.");
 
                     errorCode = Interop.Sys.Close(handle);
                     if (errorCode == -1)
@@ -134,10 +214,7 @@ namespace System.Net.Sockets
                         errorCode = (int)Interop.Sys.GetLastError();
                     }
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#1:" + errorCode.ToString());
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#1:{errorCode}");
 #if DEBUG
                     _closeSocketHandle = handle;
                     _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -157,10 +234,7 @@ namespace System.Net.Sockets
                         // The socket successfully made blocking; retry the close().
                         errorCode = Interop.Sys.Close(handle);
 
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#2:" + errorCode.ToString());
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#2:{errorCode}");
 #if DEBUG
                         _closeSocketHandle = handle;
                         _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -181,10 +255,7 @@ namespace System.Net.Sockets
 #if DEBUG
                 _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
                 if (errorCode != 0 && errorCode != (int)Interop.Error.EINVAL && errorCode != (int)Interop.Error.ENOPROTOOPT)
                 {
@@ -197,10 +268,7 @@ namespace System.Net.Sockets
                 _closeSocketHandle = handle;
                 _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close#3():" + (errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode).ToString());
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close#3():{(errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode)}");
 
                 return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
             }
@@ -256,7 +324,11 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    SocketPal.TryCompleteAccept(socketHandle, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
+                    bool completed = SocketPal.TryCompleteAccept(socketHandle, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
+                    if (!completed)
+                    {
+                        errorCode = SocketError.WouldBlock;
+                    }
                 }
 
                 var res = new InnerSafeCloseSocket();
@@ -264,5 +336,21 @@ namespace System.Net.Sockets
                 return res;
             }
         }
+    }
+
+    /// <summary>Flags that correspond to exposed options on Socket.</summary>
+    [Flags]
+    internal enum TrackedSocketOptions : short
+    {
+        DontFragment = 0x1,
+        DualMode = 0x2,
+        EnableBroadcast = 0x4,
+        LingerState = 0x8,
+        NoDelay = 0x10,
+        ReceiveBufferSize = 0x20,
+        ReceiveTimeout = 0x40,
+        SendBufferSize = 0x80,
+        SendTimeout = 0x100,
+        Ttl = 0x200,
     }
 }

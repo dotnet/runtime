@@ -4,7 +4,8 @@
 
 namespace System.Security
 {
-    [System.FlagsAttribute]
+    [Serializable]
+    [Flags]
     public enum HostSecurityManagerOptions
     {
         AllFlags = 31,

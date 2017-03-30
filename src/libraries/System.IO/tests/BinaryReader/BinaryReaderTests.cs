@@ -91,5 +91,43 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadUInt32());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadUInt64());
         }
+
+        public class NegEncoding : UTF8Encoding
+        {
+            public override Decoder GetDecoder()
+            {
+                return new NegDecoder();
+            }
+
+            public class NegDecoder : Decoder
+            {
+                public override int GetCharCount(byte[] bytes, int index, int count)
+                {
+                    return 1;
+                }
+
+                public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+                {
+                    return -10000000;
+                }
+            }
+        }
+
+        [Fact]
+        public void Read_InvalidEncoding()
+        {
+            using (var str = CreateStream())
+            {
+                byte[] memb = new byte[100];
+                new Random(345).NextBytes(memb);
+                str.Write(memb, 0, 100);
+                str.Position = 0;
+
+                using (var reader = new BinaryReader(str, new NegEncoding()))
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>("charsRemaining", () => reader.Read(new char[10], 0, 10));
+                }
+            }
+        }
     }
 }

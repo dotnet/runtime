@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -32,19 +33,7 @@ namespace System.Linq
                 return new ListPartition<TSource>(sourceList, 0, count - 1);
             }
 
-            return TakeIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            foreach (TSource element in source)
-            {
-                yield return element;
-                if (--count == 0)
-                {
-                    break;
-                }
-            }
+            return new EnumerablePartition<TSource>(source, 0, count - 1);
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
@@ -107,6 +96,57 @@ namespace System.Linq
 
                 yield return element;
             }
+        }
+
+        public static IEnumerable<TSource> TakeLast<TSource>(this IEnumerable<TSource> source, int count)
+        {
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (count <= 0)
+            {
+                return EmptyPartition<TSource>.Instance;
+            }
+
+            return TakeLastIterator(source, count);
+        }
+
+        private static IEnumerable<TSource> TakeLastIterator<TSource>(IEnumerable<TSource> source, int count)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(count > 0);
+
+            var queue = new Queue<TSource>();
+
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                while (e.MoveNext())
+                {
+                    if (queue.Count < count)
+                    {
+                        queue.Enqueue(e.Current);
+                    }
+                    else
+                    {
+                        do
+                        {
+                            queue.Dequeue();
+                            queue.Enqueue(e.Current);
+                        }
+                        while (e.MoveNext());
+                        break;
+                    }
+                }
+            }
+
+            Debug.Assert(queue.Count <= count);
+            do
+            {
+                yield return queue.Dequeue();
+            }
+            while (queue.Count > 0);
         }
     }
 }

@@ -45,7 +45,7 @@ local unsigned std1_longest_match(deflate_state *z_const s, IPos cur_match)
 	 */
 	best_len = s->prev_length;
 	chain_length = s->max_chain_length;
-	if (best_len >= s->good_match)
+	if ((unsigned)best_len >= s->good_match)
 		chain_length >>= 2;
 
 	/*
@@ -164,7 +164,7 @@ local unsigned std2_longest_match(deflate_state *z_const s, IPos cur_match)
 	 */
 	best_len = s->prev_length;
 	chain_length = s->max_chain_length;
-	if (best_len >= s->good_match)
+	if ((unsigned)best_len >= s->good_match)
 		chain_length >>= 2;
 
 	/*
@@ -309,5 +309,5 @@ local unsigned fastest_longest_match(deflate_state *z_const s, IPos cur_match)
 		return MIN_MATCH-1;
 	
 	s->match_start = cur_match;
-	return len <= s->lookahead ? len : s->lookahead;
+	return (unsigned)len <= s->lookahead ? len : s->lookahead;
 }

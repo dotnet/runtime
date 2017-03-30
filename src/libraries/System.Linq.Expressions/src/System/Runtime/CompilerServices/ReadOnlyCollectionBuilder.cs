@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
@@ -9,11 +10,12 @@ using System.Dynamic.Utils;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// The builder for read only collection.
+    /// Builder for read only collections.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
+    [Serializable]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList
+    public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, IList
     {
         private const int DefaultCapacity = 4;
 
@@ -21,10 +23,8 @@ namespace System.Runtime.CompilerServices
         private int _size;
         private int _version;
 
-        private Object _syncRoot;
-
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public ReadOnlyCollectionBuilder()
         {
@@ -32,23 +32,27 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder with a given initial capacity.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/> with a given initial capacity.
         /// The contents are empty but builder will have reserved room for the given
         /// number of elements before any reallocations are required.
-        /// </summary> 
+        /// </summary>
+        /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            ContractUtils.Requires(capacity >= 0, nameof(capacity));
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+
             _items = new T[capacity];
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder, copying contents of the given collection.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>, copying contents of the given collection.
         /// </summary>
-        /// <param name="collection"></param>
+        /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
-            ContractUtils.Requires(collection != null, nameof(collection));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             ICollection<T> c = collection as ICollection<T>;
             if (c != null)
@@ -74,14 +78,15 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Gets and sets the capacity of this ReadOnlyCollectionBuilder
+        /// Gets and sets the capacity of this <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public int Capacity
         {
             get { return _items.Length; }
             set
             {
-                ContractUtils.Requires(value >= _size, nameof(value));
+                if (value < _size)
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 if (value != _items.Length)
                 {
@@ -103,12 +108,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Returns number of elements in the ReadOnlyCollectionBuilder.
+        /// Returns number of elements in the <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
         #region IList<T> Members
 
@@ -129,7 +131,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item)
         {
-            ContractUtils.Requires(index <= _size, nameof(index));
+            if (index > _size)
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (_size == _items.Length)
             {
@@ -150,7 +153,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            ContractUtils.Requires(index >= 0 && index < _size, nameof(index));
+            if (index < 0 || index >= _size)
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             _size--;
             if (index < _size)
@@ -170,12 +174,16 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                ContractUtils.Requires(index < _size, nameof(index));
+                if (index >= _size)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
                 return _items[index];
             }
             set
             {
-                ContractUtils.Requires(index < _size, nameof(index));
+                if (index >= _size)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
                 _items[index] = value;
                 _version++;
             }
@@ -219,11 +227,11 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if item is found in the <see cref="ReadOnlyCollectionBuilder{T}"/>; otherwise, false.</returns>
         public bool Contains(T item)
         {
-            if ((Object)item == null)
+            if ((object)item == null)
             {
                 for (int i = 0; i < _size; i++)
                 {
-                    if ((Object)_items[i] == null)
+                    if ((object)_items[i] == null)
                     {
                         return true;
                     }
@@ -255,10 +263,7 @@ namespace System.Runtime.CompilerServices
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
-        bool ICollection<T>.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool ICollection<T>.IsReadOnly => false;
 
         /// <summary>
         /// Removes the first occurrence of a specific object from the <see cref="ReadOnlyCollectionBuilder{T}"/>.
@@ -287,30 +292,21 @@ namespace System.Runtime.CompilerServices
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.</returns>
-        public IEnumerator<T> GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public IEnumerator<T> GetEnumerator() => new Enumerator(this);
 
         #endregion
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion
 
         #region IList Members
 
-        bool System.Collections.IList.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool IList.IsReadOnly => false;
 
-        int System.Collections.IList.Add(object value)
+        int IList.Add(object value)
         {
             ValidateNullValue(value, nameof(value));
             try
@@ -319,12 +315,12 @@ namespace System.Runtime.CompilerServices
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, nameof(value));
+                throw InvalidTypeException(value, nameof(value));
             }
             return Count - 1;
         }
 
-        bool System.Collections.IList.Contains(object value)
+        bool IList.Contains(object value)
         {
             if (IsCompatibleObject(value))
             {
@@ -333,7 +329,7 @@ namespace System.Runtime.CompilerServices
             else return false;
         }
 
-        int System.Collections.IList.IndexOf(object value)
+        int IList.IndexOf(object value)
         {
             if (IsCompatibleObject(value))
             {
@@ -342,7 +338,7 @@ namespace System.Runtime.CompilerServices
             return -1;
         }
 
-        void System.Collections.IList.Insert(int index, object value)
+        void IList.Insert(int index, object value)
         {
             ValidateNullValue(value, nameof(value));
             try
@@ -351,16 +347,13 @@ namespace System.Runtime.CompilerServices
             }
             catch (InvalidCastException)
             {
-                ThrowInvalidTypeException(value, nameof(value));
+                throw InvalidTypeException(value, nameof(value));
             }
         }
 
-        bool System.Collections.IList.IsFixedSize
-        {
-            get { return false; }
-        }
+        bool IList.IsFixedSize => false;
 
-        void System.Collections.IList.Remove(object value)
+        void IList.Remove(object value)
         {
             if (IsCompatibleObject(value))
             {
@@ -368,7 +361,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        object System.Collections.IList.this[int index]
+        object IList.this[int index]
         {
             get
             {
@@ -384,7 +377,7 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (InvalidCastException)
                 {
-                    ThrowInvalidTypeException(value, nameof(value));
+                    throw InvalidTypeException(value, nameof(value));
                 }
             }
         }
@@ -393,29 +386,19 @@ namespace System.Runtime.CompilerServices
 
         #region ICollection Members
 
-        void System.Collections.ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
-            ContractUtils.Requires(array.Rank == 1, nameof(array));
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (array.Rank != 1)
+                throw new ArgumentException(nameof(array));
+
             Array.Copy(_items, 0, array, index, _size);
         }
 
-        bool System.Collections.ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        object System.Collections.ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         #endregion
 
@@ -434,8 +417,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            ContractUtils.Requires(index >= 0, nameof(index));
-            ContractUtils.Requires(count >= 0, nameof(count));
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             Array.Reverse(_items, index, count);
             _version++;
@@ -507,12 +492,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void ThrowInvalidTypeException(object value, string argument)
+        private static Exception InvalidTypeException(object value, string argument)
         {
-            throw new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
+            return new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
         }
 
-        private class Enumerator : IEnumerator<T>, System.Collections.IEnumerator
+        [Serializable]
+        private class Enumerator : IEnumerator<T>, IEnumerator
         {
             private readonly ReadOnlyCollectionBuilder<T> _builder;
             private readonly int _version;
@@ -530,10 +516,7 @@ namespace System.Runtime.CompilerServices
 
             #region IEnumerator<T> Members
 
-            public T Current
-            {
-                get { return _current; }
-            }
+            public T Current => _current;
 
             #endregion
 
@@ -541,14 +524,13 @@ namespace System.Runtime.CompilerServices
 
             public void Dispose()
             {
-                GC.SuppressFinalize(this);
             }
 
             #endregion
 
             #region IEnumerator Members
 
-            object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {
@@ -586,7 +568,7 @@ namespace System.Runtime.CompilerServices
 
             #region IEnumerator Members
 
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 if (_version != _builder._version)
                 {
@@ -595,6 +577,7 @@ namespace System.Runtime.CompilerServices
                 _index = 0;
                 _current = default(T);
             }
+
             #endregion
         }
     }

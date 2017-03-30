@@ -19,11 +19,95 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.ReducibleMustOverrideReduce);
         }
         /// <summary>
+        /// ArgumentException with message like "Argument count must be greater than number of named arguments."
+        /// </summary>
+        internal static Exception ArgCntMustBeGreaterThanNameCnt()
+        {
+            return new ArgumentException(Strings.ArgCntMustBeGreaterThanNameCnt);
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static Exception InvalidMetaObjectCreated(object p0)
+        {
+            return new InvalidOperationException(Strings.InvalidMetaObjectCreated(p0));
+        }
+        /// <summary>
+        /// System.Reflection.AmbiguousMatchException with message like "More than one key matching '{0}' was found in the ExpandoObject."
+        /// </summary>
+        internal static Exception AmbiguousMatchInExpandoObject(object p0)
+        {
+            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject(p0));
+        }
+        /// <summary>
+        /// ArgumentException with message like "An element with the same key '{0}' already exists in the ExpandoObject."
+        /// </summary>
+        internal static Exception SameKeyExistsInExpando(object p0)
+        {
+            return new ArgumentException(Strings.SameKeyExistsInExpando(p0), "key");
+        }
+        /// <summary>
+        /// System.Collections.Generic.KeyNotFoundException with message like "The specified key '{0}' does not exist in the ExpandoObject."
+        /// </summary>
+        internal static Exception KeyDoesNotExistInExpando(object p0)
+        {
+            return new System.Collections.Generic.KeyNotFoundException(Strings.KeyDoesNotExistInExpando(p0));
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "Collection was modified; enumeration operation may not execute."
+        /// </summary>
+        internal static Exception CollectionModifiedWhileEnumerating()
+        {
+            return new InvalidOperationException(Strings.CollectionModifiedWhileEnumerating);
+        }
+        /// <summary>
+        /// NotSupportedException with message like "Collection is read-only."
+        /// </summary>
+        internal static Exception CollectionReadOnly()
+        {
+            return new NotSupportedException(Strings.CollectionReadOnly);
+        }
+        /// <summary>
         /// ArgumentException with message like "node cannot reduce to itself or null"
         /// </summary>
         internal static Exception MustReduceToDifferent()
         {
             return new ArgumentException(Strings.MustReduceToDifferent);
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static Exception BinderNotCompatibleWithCallSite(object p0, object p1, object p2)
+        {
+            return new InvalidOperationException(Strings.BinderNotCompatibleWithCallSite(p0, p1, p2));
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static Exception DynamicBindingNeedsRestrictions(object p0, object p1)
+        {
+            return new InvalidOperationException(Strings.DynamicBindingNeedsRestrictions(p0, p1));
+        }
+        /// <summary>
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static Exception DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3)
+        {
+            return new InvalidCastException(Strings.DynamicObjectResultNotAssignable(p0, p1, p2, p3));
+        }
+        /// <summary>
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static Exception DynamicBinderResultNotAssignable(object p0, object p1, object p2)
+        {
+            return new InvalidCastException(Strings.DynamicBinderResultNotAssignable(p0, p1, p2));
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "Bind cannot return null."
+        /// </summary>
+        internal static Exception BindingCannotBeNull()
+        {
+            return new InvalidOperationException(Strings.BindingCannotBeNull);
         }
         /// <summary>
         /// ArgumentException with message like "cannot assign from the reduced node type to the original node type"
@@ -54,6 +138,20 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.IndexesOfSetGetMustMatch, paramName);
         }
         /// <summary>
+        /// InvalidOperationException with message like "Type parameter is {0}. Expected a delegate."
+        /// </summary>
+        internal static Exception TypeParameterIsNotDelegate(object p0)
+        {
+            return new InvalidOperationException(Strings.TypeParameterIsNotDelegate(p0));
+        }
+        /// <summary>
+        /// ArgumentException with message like "First argument of delegate must be CallSite"
+        /// </summary>
+        internal static Exception FirstArgumentMustBeCallSite()
+        {
+            return new ArgumentException(Strings.FirstArgumentMustBeCallSite);
+        }
+        /// <summary>
         /// ArgumentException with message like "Accessor method should not have VarArgs."
         /// </summary>
         internal static Exception AccessorsCannotHaveVarArgs(string paramName)
@@ -73,6 +171,20 @@ namespace System.Linq.Expressions
         internal static Exception AccessorsCannotHaveByRefArgs(string paramName, int index)
         {
             return AccessorsCannotHaveByRefArgs(GetParamName(paramName, index));
+        }
+        /// <summary>
+        /// ArgumentException with message like "Type must be derived from System.Delegate"
+        /// </summary>
+        internal static Exception TypeMustBeDerivedFromSystemDelegate()
+        {
+            return new ArgumentException(Strings.TypeMustBeDerivedFromSystemDelegate);
+        }
+        /// <summary>
+        /// InvalidOperationException with message like "No or Invalid rule produced"
+        /// </summary>
+        internal static Exception NoOrInvalidRuleProduced()
+        {
+            return new InvalidOperationException(Strings.NoOrInvalidRuleProduced);
         }
         /// <summary>
         /// ArgumentException with message like "Bounds count cannot be less than 1"
@@ -98,25 +210,27 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// ArgumentException with message like "Type doesn't have constructor with a given signature"
-        /// </summary>
-        internal static Exception TypeDoesNotHaveConstructorForTheSignature()
-        {
-            return new ArgumentException(Strings.TypeDoesNotHaveConstructorForTheSignature);
-        }
-        /// <summary>
         /// ArgumentException with message like "Setter should have void type."
         /// </summary>
         internal static Exception SetterMustBeVoid(string paramName)
         {
             return new ArgumentException(Strings.SetterMustBeVoid, paramName);
         }
+
+        /// <summary>
+        /// ArgumentException with message like "Property type must match the value type of getter"
+        /// </summary>
+        internal static Exception PropertyTypeMustMatchGetter(string paramName)
+        {
+            return new ArgumentException(Strings.PropertyTypeMustMatchGetter, paramName);
+        }
+        
         /// <summary>
         /// ArgumentException with message like "Property type must match the value type of setter"
         /// </summary>
         internal static Exception PropertyTypeMustMatchSetter(string paramName)
         {
-            return new ArgumentException(Strings.PropertyTypeMustMatchSetter);
+            return new ArgumentException(Strings.PropertyTypeMustMatchSetter, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Both accessors must be static."
@@ -138,7 +252,7 @@ namespace System.Linq.Expressions
         internal static Exception OnlyStaticPropertiesHaveNullInstance(string paramName)
         {
             return new ArgumentException(Strings.OnlyStaticPropertiesHaveNullInstance, paramName);
-        }   
+        }
         /// <summary>
         /// ArgumentException with message like "Static method requires null instance, non-static method requires non-null instance."
         /// </summary>
@@ -350,6 +464,13 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.ConversionIsNotSupportedForArithmeticTypes);
         }
         /// <summary>
+        /// ArgumentException with message like "Argument type cannot be void"
+        /// </summary>
+        internal static Exception ArgumentTypeCannotBeVoid()
+        {
+            return new ArgumentException(Strings.ArgumentTypeCannotBeVoid);
+        }
+        /// <summary>
         /// ArgumentException with message like "Argument must be array"
         /// </summary>
         internal static Exception ArgumentMustBeArray(string paramName)
@@ -434,7 +555,7 @@ namespace System.Linq.Expressions
             return ArgumentMustBeArrayIndexType(GetParamName(paramName, index));
         }
         /// <summary>
-        /// ArgumentException with message like "Argument must be single dimensional array type"
+        /// ArgumentException with message like "Argument must be single-dimensional, zero-based array type"
         /// </summary>
         internal static Exception ArgumentMustBeSingleDimensionalArrayType(string paramName)
         {
@@ -488,13 +609,6 @@ namespace System.Linq.Expressions
         internal static Exception ExpressionTypeCannotInitializeArrayType(object p0, object p1)
         {
             return new InvalidOperationException(Strings.ExpressionTypeCannotInitializeArrayType(p0, p1));
-        }
-        /// <summary>
-        /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionTypeDoesNotMatchConstructorParameter(object p0, object p1, string paramName)
-        {
-            return Dynamic.Utils.Error.ExpressionTypeDoesNotMatchConstructorParameter(p0, p1, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Expression of type '{0}' cannot be used for constructor parameter of type '{1}'"
@@ -713,20 +827,15 @@ namespace System.Linq.Expressions
         {
             return NotAMemberOfType(p0, p1, GetParamName(paramName, index));
         }
+
         /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for type '{1}'"
+        /// ArgumentException with message like "'{0}' is not a member of any type"
         /// </summary>
-        internal static Exception ExpressionNotSupportedForType(object p0, object p1)
+        internal static Exception NotAMemberOfAnyType(object p0, string paramName)
         {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForType(p0, p1));
+            return new ArgumentException(Strings.NotAMemberOfAnyType(p0), paramName);
         }
-        /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for nullable type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionNotSupportedForNullableType(object p0, object p1)
-        {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForNullableType(p0, p1));
-        }
+
         /// <summary>
         /// ArgumentException with message like "ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'"
         /// </summary>
@@ -758,9 +867,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Instance property '{0}{1}' is not defined for type '{2}'"
         /// </summary>
-        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2)
+        internal static Exception InstancePropertyWithSpecifiedParametersNotDefinedForType(object p0, object p1, object p2, string paramName)
         {
-            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2));
+            return new ArgumentException(Strings.InstancePropertyWithSpecifiedParametersNotDefinedForType(p0, p1, p2), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
@@ -858,9 +967,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
-        internal static Exception UnhandledUnary(object p0)
+        internal static Exception UnhandledUnary(object p0, string paramName)
         {
-            return new ArgumentException(Strings.UnhandledUnary(p0));
+            return new ArgumentException(Strings.UnhandledUnary(p0), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Unknown binding type"
@@ -891,13 +1000,6 @@ namespace System.Linq.Expressions
             return new ArgumentException(Strings.LogicalOperatorMustHaveBooleanOperators(p0, p1));
         }
         /// <summary>
-        /// InvalidOperationException with message like "No method '{0}' exists on type '{1}'."
-        /// </summary>
-        internal static Exception MethodDoesNotExistOnType(object p0, object p1)
-        {
-            return new InvalidOperationException(Strings.MethodDoesNotExistOnType(p0, p1));
-        }
-        /// <summary>
         /// InvalidOperationException with message like "No method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static Exception MethodWithArgsDoesNotExistOnType(object p0, object p1)
@@ -926,14 +1028,14 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.PropertyWithMoreThanOneMatch(p0, p1));
         }
         /// <summary>
-        /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of a Func type."
+        /// ArgumentException with message like "An incorrect number of type arguments were specified for the declaration of a Func type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForFunc(string paramName)
         {
             return new ArgumentException(Strings.IncorrectNumberOfTypeArgsForFunc, paramName);
         }
         /// <summary>
-        /// ArgumentException with message like "An incorrect number of type args were specified for the declaration of an Action type."
+        /// ArgumentException with message like "An incorrect number of type arguments were specified for the declaration of an Action type."
         /// </summary>
         internal static Exception IncorrectNumberOfTypeArgsForAction(string paramName)
         {
@@ -1047,26 +1149,13 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.InvalidLvalue(p0));
         }
         /// <summary>
-        /// InvalidOperationException with message like "Invalid member type: {0}."
-        /// </summary>
-        internal static Exception InvalidMemberType(object p0)
-        {
-            return new InvalidOperationException(Strings.InvalidMemberType(p0));
-        }
-        /// <summary>
         /// InvalidOperationException with message like "unknown lift type: '{0}'."
         /// </summary>
         internal static Exception UnknownLiftType(object p0)
         {
             return new InvalidOperationException(Strings.UnknownLiftType(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "Cannot create instance of {0} because it contains generic parameters"
-        /// </summary>
-        internal static Exception IllegalNewGenericParams(object p0, string paramName)
-        {
-            return new ArgumentException(Strings.IllegalNewGenericParams(p0), paramName);
-        }
+
         /// <summary>
         /// InvalidOperationException with message like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"
         /// </summary>
@@ -1172,7 +1261,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// The exception that is thrown when an invoked method is not supported, or when there is an attempt to read, seek, or write to a stream that does not support the invoked functionality. 
+        /// The exception that is thrown when an invoked method is not supported, or when there is an attempt to read, seek, or write to a stream that does not support the invoked functionality.
         /// </summary>
         internal static Exception NotSupported()
         {
@@ -1205,6 +1294,9 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.NonAbstractConstructorRequired);
         }
 
+        /// <summary>
+        /// InvalidProgramException with default message.
+        /// </summary>
         internal static Exception InvalidProgram()
         {
             return new InvalidProgramException();

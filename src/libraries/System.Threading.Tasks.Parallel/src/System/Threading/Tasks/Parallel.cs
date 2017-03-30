@@ -270,7 +270,7 @@ namespace System.Threading.Tasks
                         TaskReplicator.Run(
                             (ref object state, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                             {
-                                // In this particural case, we do not participate in cooperative multitasking:
+                                // In this particular case, we do not participate in cooperative multitasking:
                                 replicationDelegateYieldedBeforeCompletion = false;
 
                                 // Each for-task will pull an action at a time from the list
@@ -550,7 +550,7 @@ namespace System.Threading.Tasks
         /// If executing all iterations before the current one is not necessary, 
         /// <see cref="System.Threading.Tasks.ParallelLoopState.Stop()">ParallelLoopState.Stop()</see>
         /// should be preferred to using Break.  Calling Stop informs the For loop that it may abandon all remaining
-        /// iterations, regardless of whether they're for interations above or below the current, 
+        /// iterations, regardless of whether they're for iterations above or below the current, 
         /// since all required work has already been completed.  As with Break, however, there are no guarantees regarding 
         /// which other iterations will not execute.
         /// </para>
@@ -1083,7 +1083,7 @@ namespace System.Threading.Tasks
                 TaskReplicator.Run(
                     (ref RangeWorker currentWorker, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                     {
-                        // First thing we do upon enterying the task is to register as a new "RangeWorker" with the
+                        // First thing we do upon entering the task is to register as a new "RangeWorker" with the
                         // shared RangeManager instance.
 
                         if (!currentWorker.IsInitialized)
@@ -1182,7 +1182,7 @@ namespace System.Threading.Tasks
                                     replicationDelegateYieldedBeforeCompletion = true;
                                     break;
                                 }
-                                // Exit DO-loop if we can't find new work, or if the loop was stoppped:
+                                // Exit DO-loop if we can't find new work, or if the loop was stopped:
                             } while (currentWorker.FindNewWork32(out nFromInclusiveLocal, out nToExclusiveLocal) &&
                                       ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
                                         !sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
@@ -1191,7 +1191,7 @@ namespace System.Threading.Tasks
                         {
                             // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -1339,7 +1339,7 @@ namespace System.Threading.Tasks
                 TaskReplicator.Run(
                     (ref RangeWorker currentWorker, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                     {
-                        // First thing we do upon enterying the task is to register as a new "RangeWorker" with the
+                        // First thing we do upon entering the task is to register as a new "RangeWorker" with the
                         // shared RangeManager instance.
 
                         if (!currentWorker.IsInitialized)
@@ -1441,7 +1441,7 @@ namespace System.Threading.Tasks
                                     replicationDelegateYieldedBeforeCompletion = true;
                                     break;
                                 }
-                                // Exit DO-loop if we can't find new work, or if the loop was stoppped:
+                                // Exit DO-loop if we can't find new work, or if the loop was stopped:
                             } while (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) &&
                                       ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
                                         !sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
@@ -1450,7 +1450,7 @@ namespace System.Threading.Tasks
                         {
                             // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -3280,7 +3280,7 @@ namespace System.Threading.Tasks
                         {
                             // Inform other tasks of the exception, then rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -3400,11 +3400,7 @@ namespace System.Threading.Tasks
                                                                              Exception otherException)
         {
             OperationCanceledException reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
-
-            if (reducedCancelEx != null)
-                ExceptionDispatchInfo.Capture(reducedCancelEx).Throw();
-            else
-                ExceptionDispatchInfo.Capture(otherException).Throw();
+            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
         }
     }  // class Parallel
 }  // namespace

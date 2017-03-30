@@ -13,15 +13,17 @@ namespace System.Diagnostics.TraceSourceTests
         {
             TraceEvent = 0,
             TraceData,
+            TraceTransfer,
             Dispose,
             Write,
             WriteLine,
             Flush,
             Fail,
+            Close
             //NOTE: update MethodEnumCount if values are added
         }
 
-        private const int MethodEnumCount = 7;
+        private const int MethodEnumCount = 9;
 
         public TestTraceListener(bool threadSafe = false)
             : this(null, threadSafe)
@@ -104,6 +106,11 @@ namespace System.Diagnostics.TraceSourceTests
             Call(Method.TraceData);
         }
 
+        public override void TraceTransfer(TraceEventCache eventCache, String source, int id, string message, Guid relatedActivityId)
+        {
+            Call(Method.TraceTransfer);
+        }
+
         public override void Write(string message)
         {
             Call(Method.Write);
@@ -112,6 +119,11 @@ namespace System.Diagnostics.TraceSourceTests
         public override void WriteLine(string message)
         {
             Call(Method.WriteLine);
+        }
+
+        public override void Close()
+        {
+            Call(Method.Close);
         }
     }
 }

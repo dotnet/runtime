@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Microsoft.Win32;
 
 namespace System.Net.Sockets
 {
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
-    internal partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Socket _acceptSocket;
         private int _addressBufferLength;
@@ -26,11 +22,8 @@ namespace System.Net.Sockets
             Internals.SocketAddress remoteSocketAddress = null;
             if (errorCode == SocketError.Success)
             {
-                _localBytesTransferred = numBytes;
-                if (SocketsEventSource.Log.IsEnabled())
-                {
-                    LogBuffer((long)numBytes);
-                }
+                _numBytes = numBytes;
+                if (NetEventSource.IsEnabled) LogBuffer(numBytes);
 
                 // get the endpoint
                 remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
@@ -61,17 +54,14 @@ namespace System.Net.Sockets
                         SocketOptionLevel.Socket,
                         SocketOptionName.UpdateAcceptContext,
                         ref handle,
-                        Marshal.SizeOf(handle));
+                        IntPtr.Size);
 
                     if (errorCode == SocketError.SocketError)
                     {
-                        errorCode = (SocketError)Marshal.GetLastWin32Error();
+                        errorCode = SocketPal.GetLastSocketError();
                     }
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::PostCallback() setsockopt handle:" + handle.ToString() + " AcceptSocket:" + LoggingHash.HashString(_acceptSocket) + " itsHandle:" + _acceptSocket.SafeHandle.DangerousGetHandle().ToString() + " returns:" + errorCode.ToString());
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"setsockopt handle:{handle}, AcceptSocket:{_acceptSocket}, returns:{errorCode}");
                 }
                 catch (ObjectDisposedException)
                 {
@@ -107,25 +97,18 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            if (!SocketsEventSource.Log.IsEnabled())
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
+
+            if (size > -1)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("AcceptOverlappedAsyncResult#{0}::LogBuffer()|Logging is off!", LoggingHash.HashString(this));
-                }
-                Debug.Fail("AcceptOverlappedAsyncResult#" + LoggingHash.HashString(this) + "::LogBuffer()|Logging is off!");
+                NetEventSource.DumpBuffer(this, _buffer, 0, Math.Min((int)size, _buffer.Length));
             }
-            IntPtr pinnedBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0);
-            if (pinnedBuffer != IntPtr.Zero)
+            else
             {
-                if (size > -1)
-                {
-                    SocketsEventSource.Dump(pinnedBuffer, (int)Math.Min(size, (long)_buffer.Length));
-                }
-                else
-                {
-                    SocketsEventSource.Dump(pinnedBuffer, (int)_buffer.Length);
-                }
+                NetEventSource.DumpBuffer(this, _buffer);
             }
         }
 

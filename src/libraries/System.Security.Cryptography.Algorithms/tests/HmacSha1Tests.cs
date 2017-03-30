@@ -39,6 +39,28 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         protected override int BlockSize { get { return 64; } }
 
         [Fact]
+        public void HmacSha1_Byte_Constructors()
+        {
+            byte[] key = (byte[])s_testKeys2202[1].Clone();
+            string digest = "b617318655057264e28bc0b6fb378c8ef146be00";
+
+            using (HMACSHA1 h1 = new HMACSHA1(key))
+            {
+                VerifyHmac_KeyAlreadySet(h1, 1, digest);
+                using (HMACSHA1 h2 = new HMACSHA1(key, true))
+                {
+                    VerifyHmac_KeyAlreadySet(h2, 1, digest);
+                    Assert.Equal(h1.Key, h2.Key);
+                }
+                using (HMACSHA1 h2 = new HMACSHA1(key, false))
+                {
+                    VerifyHmac_KeyAlreadySet(h1, 1, digest);
+                    Assert.Equal(h1.Key, h2.Key);
+                }
+            }
+        }
+
+        [Fact]
         public void HmacSha1_Rfc2202_1()
         {
             VerifyHmac(1, "b617318655057264e28bc0b6fb378c8ef146be00");

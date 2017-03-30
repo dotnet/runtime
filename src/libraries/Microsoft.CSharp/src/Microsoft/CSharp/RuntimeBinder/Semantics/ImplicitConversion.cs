@@ -3,21 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // BindImplicitConversion
         // ----------------------------------------------------------------------------
 
-        private class ImplicitConversion
+        private sealed class ImplicitConversion
         {
-            public ImplicitConversion(ExpressionBinder binder, EXPR exprSrc, CType typeSrc, EXPRTYPEORNAMESPACE typeDest, bool needsExprDest, CONVERTTYPE flags)
+            public ImplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprTypeOrNamespace typeDest, bool needsExprDest, CONVERTTYPE flags)
             {
                 _binder = binder;
                 _exprSrc = exprSrc;
@@ -28,14 +27,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _flags = flags;
                 _exprDest = null;
             }
-            public EXPR ExprDest { get { return _exprDest; } }
-            private EXPR _exprDest;
-            private ExpressionBinder _binder;
-            private EXPR _exprSrc;
-            private CType _typeSrc;
-            private CType _typeDest;
-            private EXPRTYPEORNAMESPACE _exprTypeDest;
-            private bool _needsExprDest;
+            public Expr ExprDest { get { return _exprDest; } }
+            private Expr _exprDest;
+            private readonly ExpressionBinder _binder;
+            private readonly Expr _exprSrc;
+            private readonly CType _typeSrc;
+            private readonly CType _typeDest;
+            private readonly ExprTypeOrNamespace _exprTypeDest;
+            private readonly bool _needsExprDest;
             private CONVERTTYPE _flags;
 
             /*
@@ -88,7 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 Debug.Assert(_typeSrc != null && _typeDest != null);            // types must be supplied.
-                Debug.Assert(_exprSrc == null || _typeSrc == _exprSrc.type);    // type of source should be correct if source supplied
+                Debug.Assert(_exprSrc == null || _typeSrc == _exprSrc.Type);    // type of source should be correct if source supplied
                 Debug.Assert(!_needsExprDest || _exprSrc != null);           // need source expr to create dest expr
 
                 switch (_typeDest.GetTypeKind())
@@ -175,7 +174,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case TypeKind.TK_MethodGroupType:
                         if (_exprSrc.isMEMGRP())
                         {
-                            EXPRCALL outExpr;
+                            ExprCall outExpr;
                             bool retVal = _binder.BindGrpConversion(_exprSrc.asMEMGRP(), _typeDest, _needsExprDest, out outExpr, false);
                             _exprDest = outExpr;
                             return retVal;
@@ -234,15 +233,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // Every incoming dynamic operand should be implicitly convertible
                 // to any type that it is an instance of.
-
-                if (_exprSrc != null
-                    && _exprSrc.RuntimeObject != null
-                    && _typeDest.AssociatedSystemType.IsInstanceOfType(_exprSrc.RuntimeObject)
+                object srcRuntimeObject = _exprSrc?.RuntimeObject;
+                if (srcRuntimeObject != null
+                    && _typeDest.AssociatedSystemType.IsInstanceOfType(srcRuntimeObject)
                     && _binder.GetSemanticChecker().CheckTypeAccess(_typeDest, _binder.Context.ContextForMemberLookup()))
                 {
                     if (_needsExprDest)
                     {
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, _exprSrc.flags & EXPRFLAG.EXF_CANTBENULL);
+                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, _exprSrc.Flags & EXPRFLAG.EXF_CANTBENULL);
                     }
                     return true;
                 }
@@ -311,7 +309,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // This code assumes that STANDARD and ISEXPLICIT are never both set.
                 // bindUserDefinedConversion should ensure this!
                 Debug.Assert(0 != (~_flags & (CONVERTTYPE.STANDARD | CONVERTTYPE.ISEXPLICIT)));
-                Debug.Assert(_exprSrc == null || _exprSrc.type == _typeSrc);
+                Debug.Assert(_exprSrc == null || _exprSrc.Type == _typeSrc);
                 Debug.Assert(!_needsExprDest || _exprSrc != null);
                 Debug.Assert(_typeSrc != nubDst); // BindImplicitConversion should have taken care of this already.
                 AggregateType atsDst = nubDst.GetAts(GetErrorContext());
@@ -341,7 +339,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 int cnubDst;
                 int cnubSrc;
                 CType typeDstBase = nubDst.StripNubs(out cnubDst);
-                EXPRCLASS exprTypeDstBase = GetExprFactory().MakeClass(typeDstBase);
+                ExprClass exprTypeDstBase = GetExprFactory().MakeClass(typeDstBase);
                 CType typeSrcBase = _typeSrc.StripNubs(out cnubSrc);
 
                 ConversionFunc pfn = (_flags & CONVERTTYPE.ISEXPLICIT) != 0 ?
@@ -372,14 +370,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return true;
                     }
 
-                    EXPR exprTmp = _exprSrc;
+                    Expr exprTmp = _exprSrc;
 
                     // If there is an implicit/explicit S => T then there is an implicit/explicit S => T?
                     if (_typeSrc == typeDstBase || pfn(_exprSrc, _typeSrc, exprTypeDstBase, nubDst, _needsExprDest, out exprTmp, _flags | CONVERTTYPE.NOUDC))
                     {
                         if (_needsExprDest)
                         {
-                            EXPRUSERDEFINEDCONVERSION exprUDC = exprTmp.kind == ExpressionKind.EK_USERDEFINEDCONVERSION ? exprTmp.asUSERDEFINEDCONVERSION() : null;
+                            ExprUserDefinedConversion exprUDC = exprTmp.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION ? exprTmp.asUSERDEFINEDCONVERSION() : null;
                             if (exprUDC != null)
                             {
                                 exprTmp = exprUDC.UserDefinedCall;
@@ -391,15 +389,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             for (int i = 0; i < cnubDst; i++)
                             {
                                 exprTmp = _binder.BindNubNew(exprTmp);
-                                exprTmp.asCALL().nubLiftKind = NullableCallLiftKind.NullableConversionConstructor;
+                                exprTmp.asCALL().NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
                             }
                             if (exprUDC != null)
                             {
                                 exprUDC.UserDefinedCall = exprTmp;
-                                exprUDC.setType((CType)exprTmp.type);
+                                exprUDC.Type = (CType)exprTmp.Type;
                                 exprTmp = exprUDC;
                             }
-                            Debug.Assert(exprTmp.type == nubDst);
+                            Debug.Assert(exprTmp.Type == nubDst);
                             _exprDest = exprTmp;
                         }
                         return true;
@@ -420,22 +418,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_needsExprDest)
                 {
                     MethWithInst mwi = new MethWithInst(null, null);
-                    EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-                    EXPRCALL exprDst = GetExprFactory().CreateCall(0, nubDst, _exprSrc, pMemGroup, null);
+                    ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+                    ExprCall exprDst = GetExprFactory().CreateCall(0, nubDst, _exprSrc, pMemGroup, null);
 
                     // Here we want to first check whether or not the conversions work on the base types.
 
-                    EXPR arg1 = _binder.mustCast(_exprSrc, typeSrcBase);
-                    EXPRCLASS arg2 = GetExprFactory().MakeClass(typeDstBase);
+                    Expr arg1 = _binder.mustCast(_exprSrc, typeSrcBase);
+                    ExprClass arg2 = GetExprFactory().MakeClass(typeDstBase);
 
                     bool convertible;
                     if (0 != (_flags & CONVERTTYPE.ISEXPLICIT))
                     {
-                        convertible = _binder.BindExplicitConversion(arg1, arg1.type, arg2, typeDstBase, out arg1, _flags | CONVERTTYPE.NOUDC);
+                        convertible = _binder.BindExplicitConversion(arg1, arg1.Type, arg2, typeDstBase, out arg1, _flags | CONVERTTYPE.NOUDC);
                     }
                     else
                     {
-                        convertible = _binder.BindImplicitConversion(arg1, arg1.type, arg2, typeDstBase, out arg1, _flags | CONVERTTYPE.NOUDC);
+                        convertible = _binder.BindImplicitConversion(arg1, arg1.Type, arg2, typeDstBase, out arg1, _flags | CONVERTTYPE.NOUDC);
                     }
                     if (!convertible)
                     {
@@ -443,9 +441,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    exprDst.castOfNonLiftedResultToLiftedType = _binder.mustCast(arg1, nubDst, 0);
-                    exprDst.nubLiftKind = NullableCallLiftKind.NullableConversion;
-                    exprDst.pConversions = exprDst.castOfNonLiftedResultToLiftedType;
+                    exprDst.CastOfNonLiftedResultToLiftedType = _binder.mustCast(arg1, nubDst, 0);
+                    exprDst.NullableCallLiftKind = NullableCallLiftKind.NullableConversion;
+                    exprDst.PConversions = exprDst.CastOfNonLiftedResultToLiftedType;
                     _exprDest = exprDst;
                 }
 
@@ -559,8 +557,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if ((_typeDest.IsArrayType() ||
                      (_typeDest.isInterfaceType() &&
-                      _typeDest.AsAggregateType().GetTypeArgsAll().Size == 1 &&
-                      ((_typeDest.AsAggregateType().GetTypeArgsAll().Item(0) != _typeSrc.AsArrayType().GetElementType()) ||
+                      _typeDest.AsAggregateType().GetTypeArgsAll().Count == 1 &&
+                      ((_typeDest.AsAggregateType().GetTypeArgsAll()[0] != _typeSrc.AsArrayType().GetElementType()) ||
                        0 != (_flags & CONVERTTYPE.FORCECAST))))
                     &&
                     (0 != (_flags & CONVERTTYPE.FORCECAST) ||
@@ -650,7 +648,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (_exprSrc != null)
                 {
-                    flags = _exprSrc.flags & EXPRFLAG.EXF_CANTBENULL;
+                    flags = _exprSrc.Flags & EXPRFLAG.EXF_CANTBENULL;
                 }
                 if (_needsExprDest)
                     _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, flags);
@@ -705,18 +703,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     aggTypeSrc.getAggregate().GetPredefType() != PredefinedType.PT_BOOL &&
                     _exprSrc != null &&
                     _exprSrc.isZero() &&
-                    _exprSrc.type.isNumericType() &&
+                    _exprSrc.Type.isNumericType() &&
                     /*(exprSrc.flags & EXF_LITERALCONST) &&*/
                     0 == (_flags & CONVERTTYPE.STANDARD))
                 {
                     // NOTE: This allows conversions from uint, long, ulong, float, double, and hexadecimal int
                     // NOTE: This is for backwards compatibility with Everett
 
-                    // This is another place where we lose EXPR fidelity. We shouldn't fold this
+                    // This is another place where we lose Expr fidelity. We shouldn't fold this
                     // into a constant here - we should move this to a later pass.
                     if (_needsExprDest)
                     {
-                        _exprDest = GetExprFactory().CreateConstant(_typeDest, ConstValFactory.GetDefaultValue(_typeDest.constValKind()));
+                        _exprDest = GetExprFactory().CreateConstant(_typeDest, ConstVal.GetDefaultValue(_typeDest.constValKind()));
                     }
                     return true;
                 }
@@ -857,8 +855,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (_typeDest.IsTypeParameterType())
                         {
                             // For a type var destination we need to cast to object then to the other type var.
-                            EXPR exprT;
-                            EXPRCLASS exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                            Expr exprT;
+                            ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                             _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                             _binder.bindSimpleCast(exprT, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_FORCE_UNBOX);
                         }
@@ -870,11 +868,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     do
                     {
-                        if (++itype >= bnds.Size)
+                        if (++itype >= bnds.Count)
                         {
                             return false;
                         }
-                        typeTmp = bnds.Item(itype);
+                        typeTmp = bnds[itype];
                     }
                     while (!typeTmp.isInterfaceType() && !typeTmp.IsTypeParameterType());
                 }

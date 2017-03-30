@@ -12,11 +12,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitIfThenDoesNotCloneTree()
         {
-            var ifTrue = ((Expression<Action>)(() => Nop())).Body;
+            Expression ifTrue = ((Expression<Action>)(() => Nop())).Body;
 
-            var e = Expression.IfThen(Expression.Constant(true), ifTrue);
+            ConditionalExpression e = Expression.IfThen(Expression.Constant(true), ifTrue);
 
-            var r = new Visitor().Visit(e);
+            Expression r = new Visitor().Visit(e);
 
             Assert.Same(e, r);
         }
@@ -26,7 +26,7 @@ namespace System.Linq.Expressions.Tests
         public void Conditional(bool useInterpreter)
         {
             Expression<Func<int, int, int>> f = (x, y) => x > 5 ? x : y;
-            var d = f.Compile(useInterpreter);
+            Func<int, int, int> d = f.Compile(useInterpreter);
             Assert.Equal(7, d(7, 4));
             Assert.Equal(6, d(3, 6));
         }
@@ -232,10 +232,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.Condition(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"), Expression.Parameter(typeof(int), "c"));
+            ConditionalExpression e1 = Expression.Condition(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"), Expression.Parameter(typeof(int), "c"));
             Assert.Equal("IIF(a, b, c)", e1.ToString());
 
-            var e2 = Expression.IfThen(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"));
+            ConditionalExpression e2 = Expression.IfThen(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("IIF(a, b, default(Void))", e2.ToString());
         }
 
@@ -253,24 +253,6 @@ namespace System.Linq.Expressions.Tests
             BinaryExpression be = Expression.And(Expression.Constant(2), Expression.Constant(3));
             yield return new object[] { true, ce, be, ce, typeof(Expression) };
             yield return new object[] { false, ce, be, be, typeof(Expression) };
-        }
-
-        private class Truthiness
-        {
-            private bool Value { get; }
-
-            public Truthiness(bool value)
-            {
-                Value = value;
-            }
-
-            public static implicit operator bool(Truthiness truth) => truth.Value;
-
-            public static bool operator true(Truthiness truth) => truth.Value;
-
-            public static bool operator false(Truthiness truth) => !truth.Value;
-
-            public static Truthiness operator !(Truthiness truth) => new Truthiness(!truth.Value);
         }
 
         private static class Unreadable<T>

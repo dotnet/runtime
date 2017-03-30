@@ -25,8 +25,6 @@ namespace System.Net.Http
 {
     internal class HttpHandlerToFilter : HttpMessageHandler
     {
-        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
-
         private readonly RTHttpBaseProtocolFilter _next;
         private int _filterMaxVersionSet;
 
@@ -49,7 +47,6 @@ namespace System.Net.Http
             }
             cancel.ThrowIfCancellationRequested();
 
-            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
 
             RTHttpRequestMessage rtRequest = await ConvertRequestAsync(request).ConfigureAwait(false);
             RTHttpResponseMessage rtResponse = await _next.SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
@@ -59,8 +56,6 @@ namespace System.Net.Http
 
             HttpResponseMessage response = ConvertResponse(rtResponse);
             response.RequestMessage = request;
-
-            s_diagnosticListener.LogHttpResponse(response, loggingRequestId);
 
             return response;
         }
@@ -76,15 +71,15 @@ namespace System.Net.Http
             if (Interlocked.Exchange(ref _filterMaxVersionSet, 1) == 0)
             {
                 RTHttpVersion maxVersion;
-                if (request.Version == HttpVersion.Version20)
+                if (request.Version == HttpVersionInternal.Version20)
                 {
                     maxVersion = RTHttpVersion.Http20;
                 }
-                else if (request.Version == HttpVersion.Version11)
+                else if (request.Version == HttpVersionInternal.Version11)
                 {
                     maxVersion = RTHttpVersion.Http11;
                 }
-                else if (request.Version == HttpVersion.Version10)
+                else if (request.Version == HttpVersionInternal.Version10)
                 {
                     maxVersion = RTHttpVersion.Http10;
                 }
@@ -217,15 +212,15 @@ namespace System.Net.Http
             // Version
             if (rtResponse.Version == RTHttpVersion.Http11)
             {
-                response.Version = HttpVersion.Version11;
+                response.Version = HttpVersionInternal.Version11;
             }
             else if (rtResponse.Version == RTHttpVersion.Http10)
             {
-                response.Version = HttpVersion.Version10;
+                response.Version = HttpVersionInternal.Version10;
             }
             else if (rtResponse.Version == RTHttpVersion.Http20)
             {
-                response.Version = HttpVersion.Version20;
+                response.Version = HttpVersionInternal.Version20;
             }
             else
             {

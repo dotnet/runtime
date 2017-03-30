@@ -34,9 +34,9 @@ namespace System.Threading.Tests
         /// <summary>
         /// Testing Barrier constructor
         /// </summary>
-        /// <param name="initialCount">The intial barrier count</param>
+        /// <param name="initialCount">The initial barrier count</param>
         /// <param name="exceptionType">Type of the exception in case of invalid input, null for valid cases</param>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest1_ctor(int initialCount, Type exceptionType)
         {
             try
@@ -73,7 +73,7 @@ namespace System.Threading.Tests
         /// <param name="timeout">SignalAndWait timeout</param>
         /// <param name="result">Expected return value</param>
         /// <param name="exceptionType">Type of the exception in case of invalid input, null for valid cases</param>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest2_SignalAndWait(int initialCount, TimeSpan timeout, bool result, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
@@ -97,7 +97,7 @@ namespace System.Threading.Tests
         /// Test SignalANdWait parallel
         /// </summary>
         /// <param name="initialCount">Initial barrier count</param>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest3_SignalAndWait(int initialCount)
         {
             Barrier b = new Barrier(initialCount);
@@ -155,9 +155,9 @@ namespace System.Threading.Tests
         /// Test AddParticipants
         /// </summary>
         /// <param name="initialCount">The initial barrier participants count</param>
-        /// <param name="participantsToAdd">The aprticipants that will be added</param>
+        /// <param name="participantsToAdd">The participants that will be added</param>
         /// <param name="exceptionType">Type of the exception in case of invalid input, null for valid cases</param>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest4_AddParticipants(int initialCount, int participantsToAdd, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
@@ -192,9 +192,9 @@ namespace System.Threading.Tests
         /// Test RemoveParticipants
         /// </summary>
         /// <param name="initialCount">The initial barrier participants count</param>
-        /// <param name="participantsToRemove">The aprticipants that will be added</param>
+        /// <param name="participantsToRemove">The participants that will be added</param>
         /// <param name="exceptionType">Type of the exception in case of invalid input, null for valid cases</param>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunBarrierTest5_RemoveParticipants(int initialCount, int participantsToRemove, Type exceptionType)
         {
             Barrier b = new Barrier(initialCount);
@@ -213,7 +213,7 @@ namespace System.Threading.Tests
         /// <summary>
         /// Test Dispose
         /// </summary>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         [Fact]
         public static void RunBarrierTest6_Dispose()
         {
@@ -250,7 +250,7 @@ namespace System.Threading.Tests
         }
 
         /// <summary>
-        /// Test ithe case when the post phase action throws an exception
+        /// Test the case when the post phase action throws an exception
         /// </summary>
         /// <returns>True if the test succeeded, false otherwise</returns>
         [Fact]
@@ -266,7 +266,7 @@ namespace System.Threading.Tests
             int succeededCount = 0;
 
             // Run threads that will expect BarrierPostPhaseException when they call SignalAndWait, and increment the count in the catch block
-            // The BarrierPostPhaseException inner exception should be the real excption thrown by the post phase action
+            // The BarrierPostPhaseException inner exception should be the real exception thrown by the post phase action
             Task[] threads = new Task[participants];
             for (int i = 0; i < threads.Length; i++)
             {
@@ -316,7 +316,7 @@ namespace System.Threading.Tests
         /// <summary>
         /// Test ithe case when the post phase action throws an exception
         /// </summary>
-        /// <returns>Tru if the test succeeded, false otherwise</returns>
+        /// <returns>True if the test succeeded, false otherwise</returns>
         [Fact]
         public static void RunBarrierTest9_PostPhaseException()
         {

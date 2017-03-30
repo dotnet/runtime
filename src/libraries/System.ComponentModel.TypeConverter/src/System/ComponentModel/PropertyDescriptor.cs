@@ -10,14 +10,9 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>Provides a description of a property.</para>
     /// </summary>
-#if NETSTANDARD10
-    public abstract class PropertyDescriptor
-#else
     public abstract class PropertyDescriptor : MemberDescriptor
-#endif
     {
-#if !NETSTANDARD10
-        private TypeConverter _converter = null;
+        private TypeConverter _converter;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
         private Type[] _editorTypes;
@@ -86,7 +81,7 @@ namespace System.ComponentModel
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
                         Type converterType = GetTypeFromName(attr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
                             _converter = (TypeConverter)CreateInstance(converterType);
                         }
@@ -108,13 +103,7 @@ namespace System.ComponentModel
         ///       specified in the <see cref='System.ComponentModel.LocalizableAttribute'/>.
         ///    </para>
         /// </summary>
-        public virtual bool IsLocalizable
-        {
-            get
-            {
-                return (LocalizableAttribute.Yes.Equals(Attributes[typeof(LocalizableAttribute)]));
-            }
-        }
+        public virtual bool IsLocalizable => (LocalizableAttribute.Yes.Equals(Attributes[typeof(LocalizableAttribute)]));
 
         /// <summary>
         ///    <para>
@@ -200,9 +189,9 @@ namespace System.ComponentModel
                 // of an instanceof call.
                 PropertyDescriptor pd = obj as PropertyDescriptor;
 
-                if (pd != null && pd.NameHashCode == this.NameHashCode
-                    && pd.PropertyType == this.PropertyType
-                    && pd.Name.Equals(this.Name))
+                if (pd != null && pd.NameHashCode == NameHashCode
+                    && pd.PropertyType == PropertyType
+                    && pd.Name.Equals(Name))
                 {
                     return true;
                 }
@@ -221,7 +210,7 @@ namespace System.ComponentModel
         protected object CreateInstance(Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
-            ConstructorInfo ctor = type.GetTypeInfo().GetConstructor(typeArgs);
+            ConstructorInfo ctor = type.GetConstructor(typeArgs);
             if (ctor != null)
             {
                 return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });
@@ -317,7 +306,6 @@ namespace System.ComponentModel
             //
             if (editor == null)
             {
-#if FEATURE_EDITORATTRIBUTE
                 for (int i = 0; i < attrs.Count; i++)
                 {
                     EditorAttribute attr = attrs[i] as EditorAttribute;
@@ -338,7 +326,6 @@ namespace System.ComponentModel
                         }
                     }
                 }
-#endif
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.
@@ -379,7 +366,7 @@ namespace System.ComponentModel
         /// </summary>
         public override int GetHashCode()
         {
-            return this.NameHashCode ^ PropertyType.GetHashCode();
+            return NameHashCode ^ PropertyType.GetHashCode();
         }
 
         /// <summary>
@@ -421,14 +408,14 @@ namespace System.ComponentModel
             if (ComponentType != null)
             {
                 if ((typeFromGetType == null) ||
-                    (ComponentType.GetTypeInfo().Assembly.FullName.Equals(typeFromGetType.GetTypeInfo().Assembly.FullName)))
+                    (ComponentType.Assembly.FullName.Equals(typeFromGetType.Assembly.FullName)))
                 {
                     int comma = typeName.IndexOf(',');
 
                     if (comma != -1)
                         typeName = typeName.Substring(0, comma);
 
-                    typeFromComponent = ComponentType.GetTypeInfo().Assembly.GetType(typeName);
+                    typeFromComponent = ComponentType.Assembly.GetType(typeName);
                 }
             }
 
@@ -449,9 +436,9 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")]
         protected virtual void OnValueChanged(object component, EventArgs e)
         {
-            if (component != null && _valueChangedHandlers != null)
+            if (component != null)
             {
-                ((EventHandler)_valueChangedHandlers[component])?.Invoke(component, e);
+                ((EventHandler) _valueChangedHandlers?[component])?.Invoke(component, e);
             }
         }
 
@@ -483,7 +470,7 @@ namespace System.ComponentModel
         ///     component, in the form of a combined multicast event handler.
         ///     Returns null if no event handlers currently assigned to component.
         /// </summary>
-        internal protected EventHandler GetValueChangedHandler(object component)
+        protected internal EventHandler GetValueChangedHandler(object component)
         {
             if (component != null && _valueChangedHandlers != null)
             {
@@ -524,13 +511,6 @@ namespace System.ComponentModel
         ///     from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         ///     implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
         /// </summary>
-        public virtual bool SupportsChangeEvents
-        {
-            get
-            {
-                return false;
-            }
-        }
-#endif // NETSTANDARD10
+        public virtual bool SupportsChangeEvents => false;
     }
 }

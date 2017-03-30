@@ -73,10 +73,7 @@ namespace System.Net.NetworkInformation
             }
             catch (NetworkInformationException nie)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.NetworkInformation, "SystemNetworkInterface", "InternalGetIsNetworkAvailable", nie);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
             }
 
             return false;
@@ -153,7 +150,7 @@ namespace System.Net.NetworkInformation
 
             _type = ipAdapterAddresses.type;
             _operStatus = ipAdapterAddresses.operStatus;
-            _speed = (long)ipAdapterAddresses.receiveLinkSpeed;
+            _speed = unchecked((long)ipAdapterAddresses.receiveLinkSpeed);
 
             // API specific info.
             _ipv6Index = ipAdapterAddresses.ipv6Index;
@@ -183,6 +180,11 @@ namespace System.Net.NetworkInformation
         public override IPInterfaceProperties GetIPProperties()
         {
             return _interfaceProperties;
+        }
+
+        public override IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            return new SystemIPv4InterfaceStatistics(_index);
         }
 
         public override IPInterfaceStatistics GetIPStatistics()

@@ -169,22 +169,56 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void InterlockedCompareExchangeArrayDefault()
+        public void InterlockedCompareExchangeArray_LocationDefault_EqualToComparand()
         {
             ImmutableArray<int> array = default(ImmutableArray<int>);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), default(ImmutableArray<int>));
+            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            Assert.True(oldValue.IsDefault);
+            Assert.Equal(new[] { 4, 5, 6 }, array);
         }
 
         [Fact]
-        public void InterlockedCompareExchangeArray()
+        public void InterlockedCompareExchangeArray_LocationDefault_NotEqualToComparand()
+        {
+            ImmutableArray<int> array = default(ImmutableArray<int>);
+            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
+            Assert.True(oldValue.IsDefault);
+            Assert.True(array.IsDefault);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchangeArray_LocationNotDefault_EqualToComparand()
+        {
+            ImmutableArray<int> array = ImmutableArray.Create<int>(1, 2, 3);
+            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            Assert.Equal(new[] { 1, 2, 3 }, oldValue);
+            Assert.Equal(new[] { 4, 5, 6 }, array);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchangeArray_LocationNotDefault_EqualToComparandDifferentInstance()
+        {
+            ImmutableArray<int> array = ImmutableArray.Create<int>(1, 2, 3);
+            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
+            Assert.Equal(new[] { 1, 2, 3 }, oldValue);
+            Assert.Equal(new[] { 1, 2, 3 }, array);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchangeArray_LocationNotDefault_NotEqualToDefaultComparand()
         {
             ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
             var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), default(ImmutableArray<int>));
-            Assert.Equal(array.AsEnumerable(), oldValue);
+            Assert.Equal(new[] { 1, 2, 3 }, oldValue);
+            Assert.Equal(new[] { 1, 2, 3 }, array);
+        }
 
-            var arrayBefore = array;
-            oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
-            Assert.Equal(oldValue.AsEnumerable(), arrayBefore);
+        [Fact]
+        public void InterlockedCompareExchangeArray_LocationNotDefault_NotEqualToNonDefaultComparand()
+        {
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
+            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 4, 5, 6 }, array);
         }
 

@@ -1,0 +1,33 @@
+diff -u -r a/usr/lib/libc.so b/usr/lib/libc.so
+--- a/usr/lib/libc.so	2016-12-30 23:00:08.284951863 +0900
++++ b/usr/lib/libc.so	2016-12-30 23:00:32.140951815 +0900
+@@ -2,4 +2,4 @@
+    Use the shared library, but some functions are only in
+    the static library, so try that secondarily.  */
+ OUTPUT_FORMAT(elf32-littlearm)
+-GROUP ( /lib/libc.so.6 /usr/lib/libc_nonshared.a  AS_NEEDED ( /lib/ld-linux.so.3 ) )
++GROUP ( libc.so.6 libc_nonshared.a  AS_NEEDED ( ld-linux.so.3 ) )
+diff -u -r a/usr/lib/libpthread.so b/usr/lib/libpthread.so
+--- a/usr/lib/libpthread.so	2016-12-30 23:00:19.408951841 +0900
++++ b/usr/lib/libpthread.so	2016-12-30 23:00:39.068951801 +0900
+@@ -2,4 +2,4 @@
+    Use the shared library, but some functions are only in
+    the static library, so try that secondarily.  */
+ OUTPUT_FORMAT(elf32-littlearm)
+-GROUP ( /lib/libpthread.so.0 /usr/lib/libpthread_nonshared.a )
++GROUP ( libpthread.so.0 libpthread_nonshared.a )
+diff -u -r a/usr/lib/libpthread.so b/usr/lib/libpthread.so
+--- a/etc/os-release  2016-10-17 23:39:36.000000000 +0900
++++ b/etc/os-release  2017-01-05 14:34:39.099867682 +0900
+@@ -1,7 +1,7 @@
+ NAME=Tizen
+-VERSION="3.0.0 (Tizen3/Mobile)"
++VERSION="4.0.0 (Tizen4/Mobile)"
+ ID=tizen
+-VERSION_ID=3.0.0
+-PRETTY_NAME="Tizen 3.0.0 (Tizen3/Mobile)"
++VERSION_ID=4.0.0
++PRETTY_NAME="Tizen 4.0.0 (Tizen4/Mobile)"
+ ANSI_COLOR="0;36"
+-CPE_NAME="cpe:/o:tizen:tizen:3.0.0"
++CPE_NAME="cpe:/o:tizen:tizen:4.0.0"

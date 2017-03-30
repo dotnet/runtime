@@ -1,7 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Microsoft All Rules, with some turned off" Description="This rule set contains all rules that should apply to immutable types." ToolsVersion="11.0">
-  <IncludeAll Action="Warning" />
-  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
-    <Rule Id="CA1500" Action="None" />
-  </Rules>
-</RuleSet>

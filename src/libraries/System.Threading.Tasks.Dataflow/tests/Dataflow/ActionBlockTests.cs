@@ -389,7 +389,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 await Assert.ThrowsAsync<InvalidOperationException>(async () => await ab.Completion);
 
-                Assert.Equal(expected: 0, actual: ab.InputCount);
+                if (!singleProducerConstrained)
+                {
+                    Assert.Equal(expected: 0, actual: ab.InputCount); // not 100% guaranteed in the SPSC case
+                }
                 Assert.False(ab.Post(5));
             }
         }

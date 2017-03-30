@@ -96,6 +96,18 @@ namespace System.Text.Tests
             yield return new object[] { "\uD800\uDC00\u00E1\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00", 0, 15, new byte[] { 0xF0, 0x90, 0x80, 0x80, 0xC3, 0xA1, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80 } };
             yield return new object[] { "\uD800\uDC00\u8000\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00\uD800\uDC00", 0, 15, new byte[] { 0xF0, 0x90, 0x80, 0x80, 0xE8, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80, 0xF0, 0x90, 0x80, 0x80 } };
 
+            // U+FDD0 - U+FDEF
+            yield return new object[] { "\uFDD0\uFDEF", 0, 2, new byte[] { 0xEF, 0xB7, 0x90, 0xEF, 0xB7, 0xAF } };
+
+            // BOM
+            yield return new object[] { "\uFEFF\u0041", 0, 2, new byte[] { 0xEF, 0xBB, 0xBF, 0x41 } };
+
+            // High BMP non-chars
+            yield return new object[] { "\uFFFD", 0, 1, new byte[] { 239, 191, 189 } };
+            yield return new object[] { "\uFFFE", 0, 1, new byte[] { 239, 191, 190 } };
+            yield return new object[] { "\uFFFF", 0, 1, new byte[] { 239, 191, 191 } };
+
+
             // Empty strings
             yield return new object[] { string.Empty, 0, 0, new byte[0] };
             yield return new object[] { "abc", 3, 0, new byte[0] };
@@ -106,68 +118,135 @@ namespace System.Text.Tests
         [MemberData(nameof(Encode_TestData))]
         public void Encode(string chars, int index, int count, byte[] expected)
         {
-            EncodingHelpers.Encode(new UTF8Encoding(true, false), chars, index, count, expected);
-            EncodingHelpers.Encode(new UTF8Encoding(false, false), chars, index, count, expected);
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false), 
+                chars, index, count, expected);
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), 
+                chars, index, count, expected);
 
-            EncodingHelpers.Encode(new UTF8Encoding(false, true), chars, index, count, expected);
-            EncodingHelpers.Encode(new UTF8Encoding(true, true), chars, index, count, expected);
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), 
+                chars, index, count, expected);
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true), 
+                chars, index, count, expected);
         }
 
-        public void Encode_InvalidChars(string chars, int index, int count, byte[] expected)
+        public static IEnumerable<object[]> Encode_InvalidChars_TestData()
         {
-            EncodingHelpers.Encode(new UTF8Encoding(true, false), chars, index, count, expected);
-            EncodingHelpers.Encode(new UTF8Encoding(false, false), chars, index, count, expected);
-
-            NegativeEncodingTests.Encode_Invalid(new UTF8Encoding(false, true), chars, index, count);
-            NegativeEncodingTests.Encode_Invalid(new UTF8Encoding(true, true), chars, index, count);
-        }
-
-        [Fact]
-        public void Encode_InvalidChars()
-        {
-            // TODO: add into Encode_TestData or Encode_InvalidChars_TestData once #7166 is fixed
             byte[] unicodeReplacementBytes1 = new byte[] { 239, 191, 189 };
 
             // Lone high surrogate
-            Encode_InvalidChars("\uD800", 0, 1, unicodeReplacementBytes1);
-            Encode_InvalidChars("\uDD75", 0, 1, unicodeReplacementBytes1);
-            Encode_InvalidChars("\uDBFF", 0, 1, unicodeReplacementBytes1);
+            yield return new object[] { "\uD800", 0, 1, unicodeReplacementBytes1 };
+            yield return new object[] { "\uDD75", 0, 1, unicodeReplacementBytes1 };
+            yield return new object[] { "\uDBFF", 0, 1, unicodeReplacementBytes1 };
 
             // Lone low surrogate
-            Encode_InvalidChars("\uDC00", 0, 1, unicodeReplacementBytes1);
-            Encode_InvalidChars("\uDC00", 0, 1, unicodeReplacementBytes1);
+            yield return new object[] { "\uDC00", 0, 1, unicodeReplacementBytes1 };
+            yield return new object[] { "\uDC00", 0, 1, unicodeReplacementBytes1 };
 
             // Surrogate pair out of range
-            Encode_InvalidChars("\uD800\uDC00", 0, 1, unicodeReplacementBytes1);
-            Encode_InvalidChars("\uD800\uDC00", 1, 1, unicodeReplacementBytes1);
+            yield return new object[] { "\uD800\uDC00", 0, 1, unicodeReplacementBytes1 };
+            yield return new object[] { "\uD800\uDC00", 1, 1, unicodeReplacementBytes1 };
 
             // Invalid surrogate pair
-            Encode_InvalidChars("\u0041\uD800\uE000", 0, 3, new byte[] { 0x41, 0xEF, 0xBF, 0xBD, 0xEE, 0x80, 0x80 });
-            Encode_InvalidChars("\uD800\u0041\uDC00", 0, 3, new byte[] { 0xEF, 0xBF, 0xBD, 0x41, 0xEF, 0xBF, 0xBD });
-            Encode_InvalidChars("\uD800\u0041\u0042\u07FF\u0043\uDC00", 0, 6, new byte[] { 0xEF, 0xBF, 0xBD, 0x41, 0x42, 0xDF, 0xBF, 0x43, 0xEF, 0xBF, 0xBD });
+            yield return new object[] { "\u0041\uD800\uE000", 0, 3, new byte[] { 0x41, 0xEF, 0xBF, 0xBD, 0xEE, 0x80, 0x80 } };
+            yield return new object[] { "\uD800\u0041\uDC00", 0, 3, new byte[] { 0xEF, 0xBF, 0xBD, 0x41, 0xEF, 0xBF, 0xBD } };
+            yield return new object[] { "\uD800\u0041\u0042\u07FF\u0043\uDC00", 0, 6, new byte[] { 0xEF, 0xBF, 0xBD, 0x41, 0x42, 0xDF, 0xBF, 0x43, 0xEF, 0xBF, 0xBD } };
 
             // Mixture of ASCII, valid Unicode and invalid unicode
-            Encode_InvalidChars("\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", 0, 14, new byte[] { 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189 });
-            Encode_InvalidChars("Test\uD803Test", 0, 9, new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 });
-            Encode_InvalidChars("Test\uDD75Test", 0, 9, new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 });
-            Encode_InvalidChars("TestTest\uDD75", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 });
-            Encode_InvalidChars("TestTest\uD803", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 });
+            yield return new object[] { "\uDD75\uDD75\uD803\uDD75\uDD75\uDD75\uDD75\uD803\uD803\uD803\uDD75\uDD75\uDD75\uDD75", 0, 14, new byte[] { 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 239, 191, 189, 240, 144, 181, 181, 239, 191, 189, 239, 191, 189, 239, 191, 189 } };
+            yield return new object[] { "Test\uD803Test", 0, 9, new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 } };
+            yield return new object[] { "Test\uDD75Test", 0, 9, new byte[] { 84, 101, 115, 116, 239, 191, 189, 84, 101, 115, 116 } };
+            yield return new object[] { "TestTest\uDD75", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 } };
+            yield return new object[] { "TestTest\uD803", 0, 9, new byte[] { 84, 101, 115, 116, 84, 101, 115, 116, 239, 191, 189 } };
             
             byte[] unicodeReplacementBytes2 = new byte[] { 239, 191, 189, 239, 191, 189 };
-            Encode_InvalidChars("\uD800\uD800", 0, 2, unicodeReplacementBytes2); // High, high
-            Encode_InvalidChars("\uDC00\uD800", 0, 2, unicodeReplacementBytes2); // Low, high
-            Encode_InvalidChars("\uDC00\uDC00", 0, 2, unicodeReplacementBytes2); // Low, low
+            yield return new object[] { "\uD800\uD800", 0, 2, unicodeReplacementBytes2 }; // High, high
+            yield return new object[] { "\uDC00\uD800", 0, 2, unicodeReplacementBytes2 }; // Low, high
+            yield return new object[] { "\uDC00\uDC00", 0, 2, unicodeReplacementBytes2 }; // Low, low
+        }
+        
+        [Fact]
+        public static unsafe void GetBytes_ValidASCIIUnicode()
+        {
+            Encoding encoding = Encoding.UTF8;
+            // Bytes has enough capacity to accomodate result
+            string s = "T\uD83D\uDE01est";
+            Assert.Equal(4, encoding.GetBytes(s, 0, 2, new byte[4], 0));
+            Assert.Equal(5, encoding.GetBytes(s, 0, 3, new byte[5], 0));
+            Assert.Equal(6, encoding.GetBytes(s, 0, 4, new byte[6], 0));
+            Assert.Equal(7, encoding.GetBytes(s, 0, 5, new byte[7], 0));
 
-            // U+FDD0 - U+FDEF
-            Encode("\uFDD0\uFDEF", 0, 2, new byte[] { 0xEF, 0xB7, 0x90, 0xEF, 0xB7, 0xAF });
+            char[] c = s.ToCharArray();
+            Assert.Equal(4, encoding.GetBytes(c, 0, 2, new byte[4], 0));
+            Assert.Equal(5, encoding.GetBytes(c, 0, 3, new byte[5], 0));
+            Assert.Equal(6, encoding.GetBytes(c, 0, 4, new byte[6], 0));
+            Assert.Equal(7, encoding.GetBytes(c, 0, 5, new byte[7], 0));
 
-            // BOM
-            Encode("\uFEFF\u0041", 0, 2, new byte[] { 0xEF, 0xBB, 0xBF, 0x41 });
+            byte[] b = new byte[8];
+            fixed (char* pChar = c)
+            fixed (byte* pByte = b)
+            {
+                Assert.Equal(4, encoding.GetBytes(pChar, 2, pByte, 4));
+                Assert.Equal(5, encoding.GetBytes(pChar, 3, pByte, 5));
+                Assert.Equal(6, encoding.GetBytes(pChar, 4, pByte, 6));
+                Assert.Equal(7, encoding.GetBytes(pChar, 5, pByte, 7));
+            }
+        }
 
-            // High BMP non-chars
-            Encode("\uFFFD", 0, 1, unicodeReplacementBytes1);
-            Encode("\uFFFE", 0, 1, new byte[] { 239, 191, 190 });
-            Encode("\uFFFF", 0, 1, new byte[] { 239, 191, 191 });
+        [Fact]
+        public static unsafe void GetBytes_InvalidASCIIUnicode()
+        {
+            Encoding encoding = Encoding.UTF8;
+            // Bytes does not have enough capacity to accomodate result
+            string s = "T\uD83D\uDE01est";
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 2, new byte[3], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 4, new byte[5], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 5, new byte[6], 0));
+ 
+            char[] c = s.ToCharArray();           
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 2, new byte[3], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 3, new byte[4], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 4, new byte[5], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 5, new byte[6], 0));
+
+            byte[] b = new byte[8];
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 2, b, 3));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 3, b, 4));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 4, b, 5));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 5, b, 6));
+        }
+        
+        private static unsafe void FixedEncodingHelper(char[] c, int charCount, byte[] b, int byteCount)
+        {
+            Encoding encoding = Encoding.UTF8;
+            fixed (char* pChar = c)
+            fixed (byte* pByte = b)
+            {
+                Assert.Equal(byteCount, encoding.GetBytes(pChar, charCount, pByte, byteCount));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Encode_InvalidChars_TestData))]
+        public void Encode_InvalidChars(string chars, int index, int count, byte[] expected)
+        {
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: false), 
+                chars, index, count, expected);
+            EncodingHelpers.Encode(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), 
+                chars, index, count, expected);
+
+            NegativeEncodingTests.Encode_Invalid(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), 
+                chars, index, count);
+            NegativeEncodingTests.Encode_Invalid(
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true), 
+                chars, index, count);
         }
     }
 }

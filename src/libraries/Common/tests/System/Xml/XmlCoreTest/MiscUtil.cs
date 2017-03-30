@@ -4,13 +4,13 @@
 
 using System;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
 
 namespace XmlCoreTest.Common
 {
     public static class MiscUtil
     {
-        static public bool IsCurrentCultureHasLimitedDateRange
+        public static bool IsCurrentCultureHasLimitedDateRange
         {
             get
             {

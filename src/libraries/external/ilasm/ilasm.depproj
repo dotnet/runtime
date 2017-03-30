@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- Always restore the x64 assets. These are build-only assets, so they should match the environment of the build. -->
+    <NugetRuntimeIdentifier>$(RuntimeOS)-x64</NugetRuntimeIdentifier>
+    <OutputPath>$(ToolsDir)ilasm</OutputPath>
+    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

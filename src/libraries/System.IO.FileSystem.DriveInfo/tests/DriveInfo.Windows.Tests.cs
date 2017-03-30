@@ -17,7 +17,7 @@ namespace System.IO.FileSystem.DriveInfoTests
     public class DriveInfoWindowsTests
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestConstructor()
         {
             string[] invalidInput = { ":\0", ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
@@ -43,7 +43,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestGetDrives()
         {
             var validExpectedDrives = GetValidDriveLettersOnMachine();
@@ -60,7 +60,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveFormat()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -86,7 +86,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestDriveType()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -99,7 +99,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestValidDiskSpaceProperties()
         {
             bool win32Result;
@@ -131,7 +131,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestInvalidDiskProperties()
         {
             string invalidDriveName = GetInvalidDriveLettersOnMachine().First().ToString();
@@ -151,7 +151,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetVolumeLabel_Returns_CorrectLabel()
         {
             int serialNumber, maxFileNameLen, fileSystemFlags;
@@ -174,7 +174,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetVolumeLabel_Roundtrips()
         {
             DriveInfo drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -188,7 +188,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void VolumeLabelOnNetworkOrCdRom_Throws()
         {
             // Test setting the volume label on a Network or CD-ROM
@@ -206,17 +206,17 @@ namespace System.IO.FileSystem.DriveInfoTests
             }
         }
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
+        [DllImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern bool GetVolumeInformation(string drive, StringBuilder volumeName, int volumeNameBufLen, out int volSerialNumber, out int maxFileNameLen, out int fileSystemFlags, StringBuilder fileSystemName, int fileSystemNameBufLen);
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetDriveType(string drive);
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
-        internal static extern bool GetDiskFreeSpaceEx(String drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
 
         private IEnumerable<char> GetValidDriveLettersOnMachine()
         {

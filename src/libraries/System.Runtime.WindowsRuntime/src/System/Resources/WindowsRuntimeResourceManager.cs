@@ -133,7 +133,7 @@ namespace System.Resources
         // no such culture exists.
         private static CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
         {
-            StringBuilder localeNameBuffer = new StringBuilder(Interop.mincore.LOCALE_NAME_MAX_LENGTH);
+            StringBuilder localeNameBuffer = new StringBuilder(Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
             for (int i = 0; i < languages.Count; i++)
             {
@@ -142,7 +142,7 @@ namespace System.Resources
                     return new CultureInfo(languages[i]);
                 }
 
-                if (Interop.mincore.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
+                if (Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
                 {
                     string localeName = localeNameBuffer.ToString();
 
@@ -345,7 +345,7 @@ namespace System.Resources
                     {
                         if (packageSimpleName.EndsWith(".resources.dll", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            // Pretend we didnt get a package name. When an attempt is made to get resource string, GetString implementation
+                            // Pretend we didn't get a package name. When an attempt is made to get resource string, GetString implementation
                             // will see that we are going to use modern resource manager but we don't have PRI and will thrown an exception indicating
                             // so. This will force the developer to have a valid PRI based resource.
                             packageSimpleName = null;

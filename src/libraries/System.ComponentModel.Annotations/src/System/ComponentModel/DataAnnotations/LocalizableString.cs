@@ -130,7 +130,7 @@ namespace System.ComponentModel.DataAnnotations
                     var badlyConfigured = false;
 
                     // Make sure we found the property and it's the correct type, and that the type itself is public
-                    if (!_resourceType.GetTypeInfo().IsVisible || property == null ||
+                    if (!_resourceType.IsVisible || property == null ||
                         property.PropertyType != typeof(string))
                     {
                         badlyConfigured = true;

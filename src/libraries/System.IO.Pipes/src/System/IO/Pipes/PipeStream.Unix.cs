@@ -22,10 +22,10 @@ namespace System.IO.Pipes
         internal const bool CheckOperationsRequiresSetHandle = false;
 
         /// <summary>Characters that can't be used in a pipe's name.</summary>
-        private readonly static char[] s_invalidFileNameChars = Path.GetInvalidFileNameChars();
+        private static readonly char[] s_invalidFileNameChars = Path.GetInvalidFileNameChars();
 
         /// <summary>Prefix to prepend to all pipe names.</summary>
-        private readonly static string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+        private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
@@ -248,7 +248,7 @@ namespace System.IO.Pipes
             // via ioctl and TIOCOUTQ, which provides the number of unsent bytes.  However, 
             // that would require polling, and it wouldn't actually mean that the other
             // end has read all of the data, just that the data has left this end's buffer.
-            throw new PlatformNotSupportedException(); 
+            throw new PlatformNotSupportedException(); // not fully implementable on unix
         }
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can 
@@ -400,7 +400,7 @@ namespace System.IO.Pipes
         {
             if (!Interop.Sys.Fcntl.CanGetSetPipeSz)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(); // OS does not support getting pipe size
             }
 
             // If we have a handle, get the capacity of the pipe (there's no distinction between in/out direction).

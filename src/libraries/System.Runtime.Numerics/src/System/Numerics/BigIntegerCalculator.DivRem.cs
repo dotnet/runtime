@@ -40,6 +40,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the quotient.
+
             uint[] quotient = new uint[left.Length];
 
             ulong carry = 0UL;
@@ -60,6 +61,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the remainder.
+
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
             {
@@ -71,7 +73,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Divide(uint[] left, uint[] right,
+        public static unsafe uint[] Divide(uint[] left, uint[] right,
                                            out uint[] remainder)
         {
             Debug.Assert(left != null);
@@ -88,7 +90,7 @@ namespace System.Numerics
             uint[] localLeft = CreateCopy(left);
             uint[] bits = new uint[left.Length - right.Length + 1];
 
-            fixed (uint* l = localLeft, r = right, b = bits)
+            fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
             {
                 Divide(l, localLeft.Length,
                        r, right.Length,
@@ -101,7 +103,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Divide(uint[] left, uint[] right)
+        public static unsafe uint[] Divide(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -110,11 +112,13 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
 
             // Same as above, but only returning the quotient.
+
             // NOTE: left will get overwritten, we need a local copy
+
             uint[] localLeft = CreateCopy(left);
             uint[] bits = new uint[left.Length - right.Length + 1];
 
-            fixed (uint* l = localLeft, r = right, b = bits)
+            fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
             {
                 Divide(l, localLeft.Length,
                        r, right.Length,
@@ -125,7 +129,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Remainder(uint[] left, uint[] right)
+        public static unsafe uint[] Remainder(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -134,10 +138,12 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
 
             // Same as above, but only returning the remainder.
+
             // NOTE: left will get overwritten, we need a local copy
+
             uint[] localLeft = CreateCopy(left);
 
-            fixed (uint* l = localLeft, r = right)
+            fixed (uint* l = &localLeft[0], r = &right[0])
             {
                 Divide(l, localLeft.Length,
                        r, right.Length,
@@ -148,7 +154,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Divide(uint* left, int leftLength,
+        private static unsafe void Divide(uint* left, int leftLength,
                                           uint* right, int rightLength,
                                           uint* bits, int bitsLength)
         {
@@ -235,7 +241,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint AddDivisor(uint* left, int leftLength,
+        private static unsafe uint AddDivisor(uint* left, int leftLength,
                                               uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
@@ -243,12 +249,13 @@ namespace System.Numerics
             Debug.Assert(leftLength >= rightLength);
 
             // Repairs the dividend, if the last subtract was too much
+
             ulong carry = 0UL;
 
             for (int i = 0; i < rightLength; i++)
             {
                 ulong digit = (left[i] + carry) + right[i];
-                left[i] = (uint)digit;
+                left[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
 
@@ -256,7 +263,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint SubtractDivisor(uint* left, int leftLength,
+        private static unsafe uint SubtractDivisor(uint* left, int leftLength,
                                                    uint* right, int rightLength,
                                                    ulong q)
         {
@@ -273,11 +280,11 @@ namespace System.Numerics
             for (int i = 0; i < rightLength; i++)
             {
                 carry += right[i] * q;
-                uint digit = (uint)carry;
+                uint digit = unchecked((uint)carry);
                 carry = carry >> 32;
                 if (left[i] < digit)
                     ++carry;
-                left[i] -= digit;
+                left[i] = unchecked(left[i] - digit);
             }
 
             return (uint)carry;

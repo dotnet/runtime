@@ -70,10 +70,10 @@ namespace System.Text.RegularExpressions.Tests
             // Actual - "abc(?(1)111|222)"
             yield return new object[] { "(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty };
 
-            // "x" option. Removes unescaped white space from the pattern: Actual - " ([^/]+) ","x"
+            // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
             yield return new object[] { "            ((.)+)      ", "abc", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "abc" };
 
-            // "x" option. Removes unescaped white space from the pattern. : Actual - "\x20([^/]+)\x20","x"
+            // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return new object[] { "\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      " };
 
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 22, true, "foo4567890" };
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 4, true, "foo4" };
 
-            // Trim leading and trailing white spaces
+            // Trim leading and trailing whitespace
             yield return new object[] { @"\s*(.*?)\s*$", " Hello World ", RegexOptions.None, 0, 13, true, " Hello World " };
 
             // < in group
@@ -177,7 +177,15 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?<!)", "(?<!)cat", RegexOptions.None, 0, 8, false, string.Empty };
 
             // Alternation construct
+            yield return new object[] { "(?(cat)|dog)", "cat", RegexOptions.None, 0, 3, true, string.Empty };
+            yield return new object[] { "(?(cat)|dog)", "catdog", RegexOptions.None, 0, 6, true, string.Empty };
+            yield return new object[] { "(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty };
+            yield return new object[] { "(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2" };
+            yield return new object[] { "(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2" };
+            yield return new object[] { "(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty };
             yield return new object[] { "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
+            yield return new object[] { "(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty };
+            yield return new object[] { "(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty };
 
             // No Negation
             yield return new object[] { "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
@@ -325,10 +333,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @".*\B(SUCCESS)\B.*", "adfadsfSUCCESSadsfadsf", RegexOptions.None, 0, 22,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("adfadsfSUCCESSadsfadsf", 0, 22),
-                    new Capture("SUCCESS", 7, 7)
+                    new CaptureData("adfadsfSUCCESSadsfadsf", 0, 22),
+                    new CaptureData("SUCCESS", 7, 7)
                 }
             };
 
@@ -336,11 +344,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "^aaa(bb.+)(d|c)$", "aaabb.cc", RegexOptions.None, 0, 8,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabb.cc", 0, 8),
-                    new Capture("bb.c", 3, 4),
-                    new Capture("c", 7, 1)
+                    new CaptureData("aaabb.cc", 0, 8),
+                    new CaptureData("bb.c", 3, 4),
+                    new CaptureData("c", 7, 1)
                 }
             };
 
@@ -348,12 +356,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(a+)(b*)(c?)", "aaabbbccc", RegexOptions.None, 0, 9,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabbbc", 0, 7),
-                    new Capture("aaa", 0, 3),
-                    new Capture("bbb", 3, 3),
-                    new Capture("c", 6, 1)
+                    new CaptureData("aaabbbc", 0, 7),
+                    new CaptureData("aaa", 0, 3),
+                    new CaptureData("bbb", 3, 3),
+                    new CaptureData("c", 6, 1)
                 }
             };
 
@@ -362,12 +370,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(d+?)(e*?)(f??)", "dddeeefff", RegexOptions.None, 0, 9,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("d", 0, 1),
-                    new Capture("d", 0, 1),
-                    new Capture(string.Empty, 1, 0),
-                    new Capture(string.Empty, 1, 0)
+                    new CaptureData("d", 0, 1),
+                    new CaptureData("d", 0, 1),
+                    new CaptureData(string.Empty, 1, 0),
+                    new CaptureData(string.Empty, 1, 0)
                 }
             };
 
@@ -375,11 +383,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(a+)(?:b*)(ccc)", "aaabbbccc", RegexOptions.None, 0, 9,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabbbccc", 0, 9),
-                    new Capture("aaa", 0, 3),
-                    new Capture("ccc", 6, 3),
+                    new CaptureData("aaabbbccc", 0, 9),
+                    new CaptureData("aaa", 0, 3),
+                    new CaptureData("ccc", 6, 3),
                 }
             };
 
@@ -387,9 +395,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"abc(?=XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("abcXXXdef", 0, 9)
+                    new CaptureData("abcXXXdef", 0, 9)
                 }
             };
 
@@ -397,10 +405,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"(\w)\1", "aa", RegexOptions.None, 0, 2,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aa", 0, 2),
-                    new Capture("a", 0, 1),
+                    new CaptureData("aa", 0, 2),
+                    new CaptureData("a", 0, 1),
                 }
             };
 
@@ -408,10 +416,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(111|aaa)", "aaa", RegexOptions.None, 0, 3,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaa", 0, 3),
-                    new Capture("aaa", 0, 3)
+                    new CaptureData("aaa", 0, 3),
+                    new CaptureData("aaa", 0, 3)
                 }
             };
 
@@ -419,10 +427,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"(?<MyDigits>\d+)abc(?(MyDigits)222|111)", "111abc222", RegexOptions.None, 0, 9,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("111abc222", 0, 9),
-                    new Capture("111", 0, 3)
+                    new CaptureData("111abc222", 0, 9),
+                    new CaptureData("111", 0, 3)
                 }
             };
 
@@ -430,10 +438,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"([0-9]*)\s(?<s>[a-z_A-Z]+)", "200 dollars", RegexOptions.ExplicitCapture, 0, 11,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("200 dollars", 0, 11),
-                    new Capture("dollars", 4, 7)
+                    new CaptureData("200 dollars", 0, 11),
+                    new CaptureData("dollars", 4, 7)
                 }
             };
 
@@ -441,10 +449,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(.*)", "abc\nsfc", RegexOptions.Singleline, 0, 7,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("abc\nsfc", 0, 7),
-                    new Capture("abc\nsfc", 0, 7),
+                    new CaptureData("abc\nsfc", 0, 7),
+                    new CaptureData("abc\nsfc", 0, 7),
                 }
             };
 
@@ -452,15 +460,15 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"([0-9]+(\.[0-9]+){3})", "209.25.0.111", RegexOptions.None, 0, 12,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("209.25.0.111", 0, 12),
-                    new Capture("209.25.0.111", 0, 12),
-                    new Capture(".111", 8, 4, new Capture[]
+                    new CaptureData("209.25.0.111", 0, 12),
+                    new CaptureData("209.25.0.111", 0, 12),
+                    new CaptureData(".111", 8, 4, new CaptureData[]
                     {
-                        new Capture(".25", 3, 3),
-                        new Capture(".0", 6, 2),
-                        new Capture(".111", 8, 4),
+                        new CaptureData(".25", 3, 3),
+                        new CaptureData(".0", 6, 2),
+                        new CaptureData(".111", 8, 4),
                     }),
                 }
             };
@@ -469,24 +477,24 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @"(?<A1>a*)(?<A2>b*)(?<A3>c*)", "aaabbccccccccccaaaabc", RegexOptions.None, 0, 21,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabbcccccccccc", 0, 15),
-                    new Capture("aaa", 0, 3),
-                    new Capture("bb", 3, 2),
-                    new Capture("cccccccccc", 5, 10)
+                    new CaptureData("aaabbcccccccccc", 0, 15),
+                    new CaptureData("aaa", 0, 3),
+                    new CaptureData("bb", 3, 2),
+                    new CaptureData("cccccccccc", 5, 10)
                 }
             };
 
             yield return new object[]
             {
                 @"(?<A1>A*)(?<A2>B*)(?<A3>C*)", "aaabbccccccccccaaaabc", RegexOptions.IgnoreCase, 0, 21,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabbcccccccccc", 0, 15),
-                    new Capture("aaa", 0, 3),
-                    new Capture("bb", 3, 2),
-                    new Capture("cccccccccc", 5, 10)
+                    new CaptureData("aaabbcccccccccc", 0, 15),
+                    new CaptureData("aaa", 0, 3),
+                    new CaptureData("bb", 3, 2),
+                    new CaptureData("cccccccccc", 5, 10)
                 }
             };
 
@@ -494,11 +502,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "^aaa(bb.+)(d|c)$", "aaabb.cc", RegexOptions.None, 0, 8,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaabb.cc", 0, 8),
-                    new Capture("bb.c", 3, 4),
-                    new Capture("c", 7, 1)
+                    new CaptureData("aaabb.cc", 0, 8),
+                    new CaptureData("bb.c", 3, 4),
+                    new CaptureData("c", 7, 1)
                 }
             };
 
@@ -506,10 +514,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 @".*\b(\w+)\b", "XSP_TEST_FAILURE SUCCESS", RegexOptions.None, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("XSP_TEST_FAILURE SUCCESS", 0, 24),
-                    new Capture("SUCCESS", 17, 7)
+                    new CaptureData("XSP_TEST_FAILURE SUCCESS", 0, 24),
+                    new CaptureData("SUCCESS", 17, 7)
                 }
             };
 
@@ -517,10 +525,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(line2$\n)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("line2\nline3", 6, 11),
-                    new Capture("line2\n", 6, 6)
+                    new CaptureData("line2\nline3", 6, 11),
+                    new CaptureData("line2\n", 6, 6)
                 }
             };
 
@@ -528,10 +536,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(line2\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("line2\nline3", 6, 11),
-                    new Capture("line2\n", 6, 6)
+                    new CaptureData("line2\nline3", 6, 11),
+                    new CaptureData("line2\n", 6, 6)
                 }
             };
 
@@ -539,10 +547,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(line3\n$\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("line3\n\nline4", 12, 12),
-                    new Capture("line3\n\n", 12, 7)
+                    new CaptureData("line3\n\nline4", 12, 12),
+                    new CaptureData("line3\n\n", 12, 7)
                 }
             };
 
@@ -550,10 +558,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(line3\n^\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("line3\n\nline4", 12, 12),
-                    new Capture("line3\n\n", 12, 7)
+                    new CaptureData("line3\n\nline4", 12, 12),
+                    new CaptureData("line3\n\n", 12, 7)
                 }
             };
 
@@ -561,10 +569,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "(line2$\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("line2\nline3", 6, 11),
-                    new Capture("line2\n", 6, 6)
+                    new CaptureData("line2\nline3", 6, 11),
+                    new CaptureData("line2\n", 6, 6)
                 }
             };
 
@@ -572,16 +580,16 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "aaa", "aaabbb", RegexOptions.RightToLeft, 3, 3,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("aaa", 0, 3)
+                    new CaptureData("aaa", 0, 3)
                 }
             };
         }
 
         [Theory]
         [MemberData(nameof(Match_Advanced_TestData))]
-        public void Match(string pattern, string input, RegexOptions options, int beginning, int length, Capture[] expected)
+        public void Match(string pattern, string input, RegexOptions options, int beginning, int length, CaptureData[] expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultStart(input, options, length);
@@ -629,7 +637,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatch(Match match, bool expectedSuccess, Capture[] expected)
+        public static void VerifyMatch(Match match, bool expectedSuccess, CaptureData[] expected)
         {
             Assert.Equal(expectedSuccess, match.Success);
 
@@ -720,12 +728,12 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null));
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None));
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
-            
+
             // Start is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", 6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", 6, 0));
 
             // Length is invalid
             Assert.Throws<ArgumentOutOfRangeException>("length", () => new Regex("pattern").Match("input", 0, -1));
@@ -767,8 +775,8 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
 
             // Start is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", 6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", 6));
         }
     }
 }

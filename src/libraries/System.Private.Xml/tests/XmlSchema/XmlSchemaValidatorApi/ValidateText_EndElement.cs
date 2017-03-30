@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,9 +13,12 @@ namespace System.Xml.Tests
     public class TCValidateText : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateText(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -133,11 +135,11 @@ namespace System.Xml.Tests
             {
                 val.ValidateText(StringGetter("some text"));
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, new object[] { "Sch_InvalidTextInElementExpecting",
-																//		new object[] { "Sch_ElementName", "ElementOnlyElement" },
-																//		new object[] { "Sch_ElementName", "child" } });
+                _exVerifier.IsExceptionOk(e, new object[] { "Sch_InvalidTextInElementExpecting",
+                new object[] { "Sch_ElementName", "ElementOnlyElement" },
+                    new object[] { "Sch_ElementName", "child" } });
                 return;
             }
 
@@ -158,9 +160,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateText(StringGetter("some text"));
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidTextInEmpty");
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidTextInEmpty");
                 return;
             }
 
@@ -173,9 +175,12 @@ namespace System.Xml.Tests
     public class TCValidateWhitespace : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateWhitespace(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -205,7 +210,7 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateWhitespace(StringGetter(" \t\r\n"));
+            val.ValidateWhitespace(StringGetter(" \t" + Environment.NewLine));
             val.EndValidation();
 
             Assert.True(!holder.IsCalledA);
@@ -226,13 +231,13 @@ namespace System.Xml.Tests
             val.ValidateElement("ElementOnlyElement", "", info);
             val.ValidateEndOfAttributes(null);
 
-            val.ValidateWhitespace(StringGetter(" \t\r\n"));
+            val.ValidateWhitespace(StringGetter(" \t"+ Environment.NewLine));
 
             val.ValidateElement("child", "", info);
             val.ValidateEndOfAttributes(null);
             val.ValidateEndElement(info);
 
-            val.ValidateWhitespace(StringGetter(" \t\r\n"));
+            val.ValidateWhitespace(StringGetter(" \t" + Environment.NewLine));
 
             val.ValidateEndElement(info);
             val.EndValidation();
@@ -256,11 +261,11 @@ namespace System.Xml.Tests
 
             try
             {
-                val.ValidateWhitespace(StringGetter(" \r\n\t"));
+                val.ValidateWhitespace(StringGetter(" " + Environment.NewLine + "\t"));
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidWhitespaceInEmpty");
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidWhitespaceInEmpty");
                 return;
             }
 
@@ -282,7 +287,7 @@ namespace System.Xml.Tests
             }
             catch (Exception) // Replace with concrete exception type
             {
-                // Verify exception
+                // Verify exception ????
                 Assert.True(false);
             }
 
@@ -295,9 +300,12 @@ namespace System.Xml.Tests
     public class TCValidateEndElement : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateEndElement(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -474,9 +482,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateEndElement(info, "23");
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidEndElementCall");
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidEndElementCall");
                 return;
             }
 
@@ -606,9 +614,9 @@ namespace System.Xml.Tests
                         val.ValidateEndElement(info);
                         Assert.True(false);
                     }
-                    catch (XmlSchemaValidationException)
+                    catch (XmlSchemaValidationException e)
                     {
-                        //XmlExceptionVerifier.IsExceptionOk(e, "Sch_DuplicateKey", new string[] { "1", "numberKey" });
+                        _exVerifier.IsExceptionOk(e, "Sch_DuplicateKey", new string[] { "1", "numberKey" });
                         return;
                     }
                 }
@@ -624,9 +632,9 @@ namespace System.Xml.Tests
                     val.ValidateEndElement(info);
                     Assert.True(false);
                 }
-                catch (XmlSchemaValidationException)
+                catch (XmlSchemaValidationException e)
                 {
-                    //XmlExceptionVerifier.IsExceptionOk(e, "Sch_UnresolvedKeyref", new string[] { "3", "numberKey" });
+                    _exVerifier.IsExceptionOk(e, "Sch_UnresolvedKeyref", new string[] { "3", "numberKey" });
                     return;
                 }
             }
@@ -711,9 +719,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateEndElement(info, "23");
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, (string)null);
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidEndElementCallTyped");
                 return;
             }
 
@@ -726,9 +734,12 @@ namespace System.Xml.Tests
     public class TCSkipToEndElement : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCSkipToEndElement(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -838,9 +849,9 @@ namespace System.Xml.Tests
             {
                 val.SkipToEndElement(info);
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidEndElementMultiple", new string[] { "SkipToEndElement" });
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidEndElementMultiple", new string[] { "SkipToEndElement" });
                 return;
             }
 

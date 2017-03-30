@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -86,8 +83,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool _isSkipUDOps; // Never check for user defined operators on this type (eg, decimal, string, delegate).
 
-        private bool _isComImport;     // Does it have [ComImport]
-
         private bool _isAnonymousType;    // true if the class is an anonymous type
         // When this is unset we don't know if we have conversions.  When this 
         // is set it indicates if this type or any base type has user defined 
@@ -100,7 +95,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateSymbol GetBaseAgg()
         {
-            return _pBaseClass == null ? null : _pBaseClass.getAggregate();
+            return _pBaseClass?.getAggregate();
         }
 
         public AggregateType getThisType()
@@ -109,7 +104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(GetTypeVars() == GetTypeVarsAll() || isNested());
 
-                AggregateType pOuterType = this.isNested() ? GetOuterAgg().getThisType() : null;
+                AggregateType pOuterType = isNested() ? GetOuterAgg().getThisType() : null;
 
                 _atsInst = _pTypeManager.GetAggregate(this, pOuterType, GetTypeVars());
             }
@@ -139,7 +134,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             get { return parent.AsNamespaceOrAggregateSymbol(); }
         }
 
-        public new AggregateDeclaration DeclFirst()
+        private new AggregateDeclaration DeclFirst()
         {
             return (AggregateDeclaration)base.DeclFirst();
         }
@@ -160,7 +155,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (aid == GetModuleID());
         }
 
-        public KAID GetModuleID()
+        private KAID GetModuleID()
         {
             return 0;
         }
@@ -211,7 +206,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //An interface is always abstract
             if (aggKind == AggKindEnum.Interface)
             {
-                this.SetAbstract(true);
+                SetAbstract(true);
             }
         }
 
@@ -344,9 +339,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        public bool IsUnmanagedStruct()
+        private bool IsUnmanagedStruct()
         {
-            return _isUnmanagedStruct == true;
+            return _isUnmanagedStruct;
         }
 
         public void SetUnmanagedStruct(bool unmanagedStruct)
@@ -366,7 +361,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsKnownManagedStructStatus()
         {
-            Debug.Assert(this.IsStruct());
+            Debug.Assert(IsStruct());
             Debug.Assert(!IsManagedStruct() || !IsUnmanagedStruct());
             return IsManagedStruct() || IsUnmanagedStruct();
         }
@@ -402,11 +397,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _isSkipUDOps = skipUDOps;
         }
 
-        public void SetComImport(bool comImport)
-        {
-            _isComImport = comImport;
-        }
-
         public bool IsSource()
         {
             return _isSource == true;
@@ -427,12 +417,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 TypeArray outerTypeVars;
-                if (this.GetOuterAgg() != null)
+                if (GetOuterAgg() != null)
                 {
-                    Debug.Assert(this.GetOuterAgg().GetTypeVars() != null);
-                    Debug.Assert(this.GetOuterAgg().GetTypeVarsAll() != null);
+                    Debug.Assert(GetOuterAgg().GetTypeVars() != null);
+                    Debug.Assert(GetOuterAgg().GetTypeVarsAll() != null);
 
-                    outerTypeVars = this.GetOuterAgg().GetTypeVarsAll();
+                    outerTypeVars = GetOuterAgg().GetTypeVarsAll();
                 }
                 else
                 {
@@ -509,7 +499,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pConvFirst = conv;
         }
 
-        public new bool InternalsVisibleTo(Assembly assembly)
+        public bool InternalsVisibleTo(Assembly assembly)
         {
             return _pTypeManager.InternalsVisibleTo(AssociatedAssembly, assembly);
         }

@@ -13,8 +13,6 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Text;
 
-using Res = System.SR;
-
 
 namespace System.Data.SqlClient
 {
@@ -178,7 +176,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                Debug.Assert((value & SqlString.x_iValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
+                Debug.Assert((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
                 uint tmp = 0;
                 if (0 != (value & SqlCompareOptions.IgnoreCase))
                     tmp |= IgnoreCase;
@@ -195,7 +193,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static internal bool AreSame(SqlCollation a, SqlCollation b)
+        internal static bool AreSame(SqlCollation a, SqlCollation b)
         {
             if (a == null || b == null)
             {
@@ -472,6 +470,14 @@ namespace System.Data.SqlClient
         internal Encoding encoding;
         internal bool isNullable;
 
+        // UDT specific metadata
+        // server metadata info
+        // additional temporary UDT meta data
+        internal string udtDatabaseName;
+        internal string udtSchemaName;
+        internal string udtTypeName;
+        internal string udtAssemblyQualifiedName;
+        
         // Xml specific metadata
         internal string xmlSchemaCollectionDatabase;
         internal string xmlSchemaCollectionOwningSchema;
@@ -494,6 +500,10 @@ namespace System.Data.SqlClient
             this.codePage = original.codePage;
             this.encoding = original.encoding;
             this.isNullable = original.isNullable;
+            this.udtDatabaseName = original.udtDatabaseName;
+            this.udtSchemaName = original.udtSchemaName;
+            this.udtTypeName = original.udtTypeName;
+            this.udtAssemblyQualifiedName = original.udtAssemblyQualifiedName;
             this.xmlSchemaCollectionDatabase = original.xmlSchemaCollectionDatabase;
             this.xmlSchemaCollectionOwningSchema = original.xmlSchemaCollectionOwningSchema;
             this.xmlSchemaCollectionName = original.xmlSchemaCollectionName;
@@ -588,7 +598,7 @@ namespace System.Data.SqlClient
         {
             if (null != _multipartName)
             {
-                string[] parts = MultipartIdentifier.ParseMultipartIdentifier(_multipartName, "[\"", "]\"", Res.SQL_TDSParserTableName, false);
+                string[] parts = MultipartIdentifier.ParseMultipartIdentifier(_multipartName, "[\"", "]\"", SR.SQL_TDSParserTableName, false);
                 _serverName = parts[0];
                 _catalogName = parts[1];
                 _schemaName = parts[2];

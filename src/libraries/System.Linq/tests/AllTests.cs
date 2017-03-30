@@ -57,6 +57,12 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.All(predicate));
         }
 
+        [Theory, MemberData(nameof(All_TestData))]
+        public void AllRunOnce(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        {
+            Assert.Equal(expected, source.RunOnce().All(predicate));
+        }
+
         [Fact]
         public void NullSource_ThrowsArgumentNullException()
         {

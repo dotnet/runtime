@@ -4,9 +4,9 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class NameTable
+    internal sealed class NameTable
     {
-        private class Entry
+        private sealed class Entry
         {
             internal readonly Name name;
             internal readonly int hashCode;
@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         private Entry[] _entries;
         private int _count;
         private int _mask;
-        private int _hashCodeRandomizer;
+        private readonly int _hashCodeRandomizer;
 
         internal NameTable()
         {
@@ -43,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                     return e.name;
                 }
             }
-            return this.AddEntry(new Name(key), hashCode);
+            return AddEntry(new Name(key), hashCode);
         }
 
         internal void Add(Name name)
@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                     throw Error.InternalCompilerError();
                 }
             }
-            this.AddEntry(name, hashCode);
+            AddEntry(name, hashCode);
         }
 
         public Name Lookup(string key)
@@ -75,17 +75,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 
         private int ComputeHashCode(string key)
         {
-            int len = key.Length;
-            int hashCode = len + _hashCodeRandomizer;
-            // use key.Length to eliminate the range check
-            for (int i = 0; i < key.Length; i++)
+            int hashCode, len = key.Length;
+
+            unchecked
             {
-                hashCode += (hashCode << 7) ^ key[i];
+                hashCode = len + _hashCodeRandomizer;
+                // use key.Length to eliminate the range check
+                for (int i = 0; i < key.Length; i++)
+                {
+                    hashCode += (hashCode << 7) ^ key[i];
+                }
+                // mix it a bit more
+                hashCode -= hashCode >> 17;
+                hashCode -= hashCode >> 11;
+                hashCode -= hashCode >> 5;
             }
-            // mix it a bit more
-            hashCode -= hashCode >> 17;
-            hashCode -= hashCode >> 11;
-            hashCode -= hashCode >> 5;
+
             return hashCode;
         }
 
@@ -96,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             _entries[index] = e;
             if (_count++ == _mask)
             {
-                this.Grow();
+                Grow();
             }
             return e.name;
         }

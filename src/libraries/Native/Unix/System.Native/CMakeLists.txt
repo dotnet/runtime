@@ -11,12 +11,14 @@ set(NATIVE_SOURCES
     pal_networking.cpp
     pal_networkstatistics.cpp
     pal_process.cpp
+    pal_random.cpp
     pal_runtimeinformation.cpp
     pal_runtimeextensions.cpp
     pal_string.cpp
     pal_tcpstate.cpp
     pal_time.cpp
     pal_uid.cpp
+    pal_datetime.cpp
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -42,7 +44,7 @@ add_library(System.Native-Static
 SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
     target_link_libraries(System.Native rt)
 endif ()
 

@@ -269,7 +269,7 @@ namespace System.Threading.Tasks.Tests
     #region AsyncFunc
 
     /// <summary>
-    /// Extends the base class to implement that funtion form of APM 
+    /// Extends the base class to implement that function form of APM 
     /// </summary>
     public class AsyncFunc : AsyncWork
     {

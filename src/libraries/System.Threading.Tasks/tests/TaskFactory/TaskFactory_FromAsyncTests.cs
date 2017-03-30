@@ -559,5 +559,27 @@ namespace System.Threading.Tasks.Tests
                 get { return _exception; }
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FromAsync_CompletedSynchronouslyIAsyncResult_CompletesSynchronously(bool invokesCallback)
+        {
+            Task t = Task.Factory.FromAsync((callback, state) =>
+            {
+                var ar = new SynchronouslyCompletedAsyncResult { AsyncState = state };
+                if (invokesCallback) callback(ar);
+                return ar;
+            }, iar => { }, null);
+            Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+        }
+
+        private sealed class SynchronouslyCompletedAsyncResult : IAsyncResult
+        {
+            public object AsyncState { get; internal set; }
+            public bool CompletedSynchronously => true;
+            public bool IsCompleted => true;
+            public WaitHandle AsyncWaitHandle { get { throw new NotImplementedException(); } }
+        }
     }
 }

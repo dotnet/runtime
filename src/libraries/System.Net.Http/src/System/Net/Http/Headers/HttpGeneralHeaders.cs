@@ -37,7 +37,18 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (ConnectionCore.IsSpecialValueSet)
+                // If we've already initialized the connection header value collection
+                // and it contains the special value, or if we haven't and the headers contain
+                // the parsed special value, return true.  We don't just access ConnectionCore,
+                // as doing so will unnecessarily initialize the collection even if it's not needed.
+                if (_connection != null)
+                {
+                    if (_connection.IsSpecialValueSet)
+                    {
+                        return true;
+                    }
+                }
+                else if (_parent.ContainsParsedValue(HttpKnownHeaderNames.Connection, HeaderUtilities.ConnectionClose))
                 {
                     return true;
                 }
@@ -102,7 +113,18 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (TransferEncodingCore.IsSpecialValueSet)
+                // If we've already initialized the transfer encoding header value collection
+                // and it contains the special value, or if we haven't and the headers contain
+                // the parsed special value, return true.  We don't just access TransferEncodingCore,
+                // as doing so will unnecessarily initialize the collection even if it's not needed.
+                if (_transferEncoding != null)
+                {
+                    if (_transferEncoding.IsSpecialValueSet)
+                    {
+                        return true;
+                    }
+                }
+                else if (_parent.ContainsParsedValue(HttpKnownHeaderNames.TransferEncoding, HeaderUtilities.TransferEncodingChunked))
                 {
                     return true;
                 }

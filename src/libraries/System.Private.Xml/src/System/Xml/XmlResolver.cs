@@ -12,7 +12,6 @@ namespace System.Xml
     using System.Threading.Tasks;
     using System.Runtime.Versioning;
 
-    /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver"]/*' />
     /// <devdoc>
     ///    <para>Resolves external XML resources named by a Uniform
     ///       Resource Identifier (URI). This class is <see langword='abstract'/>
@@ -20,7 +19,6 @@ namespace System.Xml
     /// </devdoc>
     public abstract partial class XmlResolver
     {
-        /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver.GetEntity1"]/*' />
         /// <devdoc>
         ///    <para>Maps a
         ///       URI to an Object containing the actual resource.</para>
@@ -32,7 +30,6 @@ namespace System.Xml
 
 
 
-        /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver.ResolveUri"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -43,7 +40,7 @@ namespace System.Xml
                 Uri uri = new Uri(relativeUri, UriKind.RelativeOrAbsolute);
                 if (!uri.IsAbsoluteUri && uri.OriginalString.Length > 0)
                 {
-                    uri = new Uri(Path.GetFullPath(relativeUri));
+                    uri = new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(relativeUri));
                 }
                 return uri;
             }
@@ -80,7 +77,6 @@ namespace System.Xml
         }
 
         //UE attension
-        /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver.Credentials"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

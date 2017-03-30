@@ -139,7 +139,7 @@ namespace Stress.Data.SqlClient
                         // System.Diagnostics.Debug.Assert
                         if (actualCallstack == null)
                         {
-                            actualCallstack = new StackTrace(exception: new InvalidOperationException(), needFileInfo: false);
+                            actualCallstack = new StackTrace(e: new InvalidOperationException(), fNeedFileInfo: false);
                         }
 
                         StackFrame[] frames = actualCallstack.GetFrames();

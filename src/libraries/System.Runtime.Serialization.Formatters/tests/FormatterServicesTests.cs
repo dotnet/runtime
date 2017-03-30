@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void GetTypeFromAssembly_InvalidArguments_ThrowsException()
         {
             Assert.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
-            Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().GetTypeInfo().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
+            Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
         }
     }
 }

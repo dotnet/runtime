@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -193,6 +194,80 @@ namespace System.IO.Tests
                 // [] Pass in a closed stream
                 Assert.Throws<ObjectDisposedException>(() => ms2.WriteTo(readonlyStream));
             }
+        }
+
+        [Fact]
+        public static void MemoryStream_CopyTo_Invalid()
+        {
+            MemoryStream memoryStream;
+            using (memoryStream = new MemoryStream())
+            {
+                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null));
+                
+                // Validate the destination parameter first.
+                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: 0));
+                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: -1));
+
+                // Then bufferSize.
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // 0-length buffer doesn't make sense.
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
+            }
+
+            // After the Stream is disposed, we should fail on all CopyTos.
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // Not before bufferSize is validated.
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
+
+            MemoryStream disposedStream = memoryStream;
+
+            // We should throw first for the source being disposed...
+            Assert.Throws<ObjectDisposedException>(() => memoryStream.CopyTo(disposedStream, 1));
+
+            // Then for the destination being disposed.
+            memoryStream = new MemoryStream();
+            Assert.Throws<ObjectDisposedException>(() => memoryStream.CopyTo(disposedStream, 1));
+
+            // Then we should check whether we can't read but can write, which isn't possible for non-subclassed MemoryStreams.
+
+            // THen we should check whether the destination can read but can't write.
+            var readOnlyStream = new DelegateStream(
+                canReadFunc: () => true,
+                canWriteFunc: () => false
+            );
+
+            Assert.Throws<NotSupportedException>(() => memoryStream.CopyTo(readOnlyStream, 1));
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyToData))]
+        public void CopyTo(Stream source, byte[] expected)
+        {
+            using (var destination = new MemoryStream())
+            {
+                source.CopyTo(destination);
+                Assert.InRange(source.Position, source.Length, int.MaxValue); // Copying the data should have read to the end of the stream or stayed past the end.
+                Assert.Equal(expected, destination.ToArray());
+            }
+        }
+
+        public static IEnumerable<object[]> CopyToData()
+        {
+            // Stream is positioned @ beginning of data
+            var data1 = new byte[] { 1, 2, 3 };
+            var stream1 = new MemoryStream(data1);
+
+            yield return new object[] { stream1, data1 };
+
+            // Stream is positioned in the middle of data
+            var data2 = new byte[] { 0xff, 0xf3, 0xf0 };
+            var stream2 = new MemoryStream(data2) { Position = 1 };
+
+            yield return new object[] { stream2, new byte[] { 0xf3, 0xf0 } };
+            
+            // Stream is positioned after end of data
+            var data3 = data2;
+            var stream3 = new MemoryStream(data3) { Position = data3.Length + 1 };
+
+            yield return new object[] { stream3, Array.Empty<byte>() };
         }
     }
 }

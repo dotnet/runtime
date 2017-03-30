@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
+using Xunit;
 
 #pragma warning disable 0414
 
@@ -17,12 +16,12 @@ namespace System.Reflection.Tests
         [Fact]
         public void MetadataToken()
         {
-            Assert.True(Enumerable.SequenceEqual(GetMembers(typeof(SampleClass)), GetMembers(typeof(SampleClass))));
-            Assert.True(Enumerable.SequenceEqual(GetMembers(new MemberInfoTests().GetType()), GetMembers(new MemberInfoTests().GetType())));
-            Assert.True(Enumerable.SequenceEqual(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new Dictionary<int, int>().GetType())));
-            Assert.True(Enumerable.SequenceEqual(GetMembers(typeof(int)), GetMembers(typeof(int))));
-            Assert.True(Enumerable.SequenceEqual(GetMembers(typeof(Dictionary<,>)), GetMembers(typeof(Dictionary<,>))));
-            Assert.False(Enumerable.SequenceEqual(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new HashSet<int>().GetType())));
+            Assert.Equal(GetMembers(typeof(SampleClass)), GetMembers(typeof(SampleClass)));
+            Assert.Equal(GetMembers(new MemberInfoTests().GetType()), GetMembers(new MemberInfoTests().GetType()));
+            Assert.Equal(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new Dictionary<int, int>().GetType()));
+            Assert.Equal(GetMembers(typeof(int)), GetMembers(typeof(int)));
+            Assert.Equal(GetMembers(typeof(Dictionary<,>)), GetMembers(typeof(Dictionary<,>)));
+            Assert.NotEqual(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new HashSet<int>().GetType()));
         }
 
         private IEnumerable<int> GetMembers(Type type)

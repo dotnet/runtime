@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <memory>
-#include <openssl/hmac.h>
 
 extern "C" HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
 {

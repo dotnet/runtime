@@ -186,7 +186,7 @@ namespace System.Xml.Tests
             return BoolToLTMResult(bPassed);
         }
 
-        [Variation("ReadInnerXml with with entity references, EntityHandling = ExpandEntities")]
+        [Variation("ReadInnerXml with entity references, EntityHandling = ExpandEntities")]
         public int TestReadInnerXml8()
         {
             bool bPassed = false;
@@ -374,7 +374,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadInnerXml with with entity references, EntityHandling = ExpandCharEntites")]
+        [Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites")]
         public int TestTextReadInnerXml2()
         {
             bool bPassed = false;

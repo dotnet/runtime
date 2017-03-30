@@ -1,30 +1,58 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
     <FeatureInterpret>true</FeatureInterpret>
   </PropertyGroup>
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Linq.Expressions.Tests</AssemblyName>
-    <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
-    <IsInterpreting Condition="'$(PackageTargetFramework)' == 'netcore50'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
+    <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <None Include="project.json" />
+    <TargetingPackExclusions Include="System.Linq.Expressions" />
+    <ReferenceFromRuntime Include="System.Linq.Expressions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="xunit.core" />
+    <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
+    <ReferenceFromRuntime Include="xunit.assert" />
+    <ReferenceFromRuntime Include="xunit.abstractions" />
+    <ReferenceFromRuntime Include="xunit.performance.core" />
+    <ReferenceFromRuntime Include="xunit.performance.api" />
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Collections" />
+    <ReferenceFromRuntime Include="System.Reflection.Primitives" />
+    <ReferenceFromRuntime Include="Microsoft.CSharp" />
+    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
+    <ReferenceFromRuntime Include="System.Private.Uri" />
+    <ReferenceFromRuntime Include="System.Text.RegularExpressions" />
+    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
+    <ReferenceFromRuntime Include="System.ObjectModel" />
+    <ReferenceFromRuntime Include="System.Threading.Thread" />
+    <ReferenceFromRuntime Include="System.Threading.Tasks" />
+    <ReferenceFromRuntime Include="System.Linq" />
+    <ReferenceFromRuntime Include="System.Linq.Queryable" />
+    <ReferenceFromRuntime Include="System.Reflection" />
+    <ReferenceFromRuntime Include="System.IO.FileSystem" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
+    <ReferenceFromRuntime Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="netstandard" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
@@ -33,16 +61,13 @@
     <Compile Include="Array\ArrayArrayIndexTests.cs" />
     <Compile Include="Array\ArrayArrayLengthTests.cs" />
     <Compile Include="Array\ArrayBoundsOneOffTests.cs" />
-    <Compile Include="Array\ArrayBoundsTests.cs" />
     <Compile Include="Array\ArrayIndexTests.cs" />
     <Compile Include="Array\ArrayLengthTests.cs" />
+    <Compile Include="Array\NewArrayBoundsTests.cs" />
     <Compile Include="Array\NewArrayListTests.cs" />
-    <Compile Include="Array\NullableArrayBoundsTests.cs" />
     <Compile Include="Array\NullableArrayIndexTests.cs" />
     <Compile Include="Array\NullableArrayLengthTests.cs" />
     <Compile Include="Array\NullableNewArrayListTests.cs" />
-    <Compile Include="Array\ObjectArrayBoundsTests.cs" />
-    <Compile Include="Array\ObjectNullableArrayBoundsTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryShiftTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryAddTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryDivideTests.cs" />
@@ -66,14 +91,7 @@
     <Compile Include="BinaryOperators\Bitwise\BinaryOrTests.cs" />
     <Compile Include="BinaryOperators\Coalesce\BinaryCoalesceTests.cs" />
     <Compile Include="BinaryOperators\Comparison\EqualNotEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanOrEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryLessThanOrEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryLessThanTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableGreaterThanOrEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableGreaterThanTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanOrEqualTests.cs" />
-    <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanTests.cs" />
+    <Compile Include="BinaryOperators\Comparison\CompareTests.cs" />
     <Compile Include="BinaryOperators\GeneralBinaryTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryLogicalTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryNullableLogicalTests.cs" />
@@ -101,11 +119,31 @@
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
     <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
+    <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
     <Compile Include="DelegateType\FuncTypeTests.cs" />
     <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
+    <Compile Include="DynamicExpression\DynamicExpressionTests.cs" />
+    <Compile Include="Dynamic\BinaryOperationTests.cs" />
+    <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
+    <Compile Include="Dynamic\BindingRestrictionsTests.cs" />
+    <Compile Include="Dynamic\CallInfoTests.cs" />
+    <Compile Include="Dynamic\CallSiteBinderDefaultBehaviourTests.cs" />
+    <Compile Include="Dynamic\CallSiteTests.cs" />
+    <Compile Include="Dynamic\ConvertBinderTests.cs" />
+    <Compile Include="Dynamic\DynamicObjectTests.cs" />
+    <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
+    <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
+    <Compile Include="Dynamic\ExpandoObjectTests.cs" />
+    <Compile Include="Dynamic\GetIndexBinderTests.cs" />
+    <Compile Include="Dynamic\GetMemberBinderTests.cs" />
+    <Compile Include="Dynamic\InvokeBinderTests.cs" />
+    <Compile Include="Dynamic\InvokeMemberBindingTests.cs" />
+    <Compile Include="Dynamic\SetIndexBinderTests.cs" />
+    <Compile Include="Dynamic\SetMemberBinderTests.cs" />
+    <Compile Include="Dynamic\UnaryOperationTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
@@ -115,10 +153,12 @@
     <Compile Include="Goto\MakeGoto.cs" />
     <Compile Include="Goto\Return.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="ILReader\ITypeFactory.cs" />
     <Compile Include="IndexExpression\IndexExpressionHelpers.cs" />
     <Compile Include="IndexExpression\IndexExpressionVisitorTests.cs" />
     <Compile Include="IndexExpression\SampleClassWithProperties.cs" />
     <Compile Include="IndexExpression\IndexExpressionTests.cs" />
+    <Compile Include="InterpreterTests.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Label\LabelTargetTests.cs" />
@@ -170,10 +210,11 @@
     <Compile Include="MemberInit\MemberBindTests.cs" />
     <Compile Include="MemberInit\MemberInitTests.cs" />
     <Compile Include="Member\MemberAccessTests.cs" />
+    <Compile Include="New\NewWithByRefParameterTests.cs" />
     <Compile Include="New\NewTests.cs" />
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
-    <Compile Include="New\TypeExtensions.cs" />
+    <Compile Include="ReadOnlyCollectionBuilderTests.cs" />
     <Compile Include="SequenceTests\SequenceTests.cs" />
     <Compile Include="StackSpillerTests.cs" />
     <Compile Include="Switch\SwitchTests.cs" />
@@ -181,6 +222,7 @@
     <Compile Include="Ternary\TernaryArrayTests.cs" />
     <Compile Include="Ternary\TernaryNullableTests.cs" />
     <Compile Include="Ternary\TernaryTests.cs" />
+    <Compile Include="TestExtensions\InlinePerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\PerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\TestOrderer.cs" />
     <Compile Include="TestExtensions\TestOrderAttribute.cs" />
@@ -192,6 +234,8 @@
     <Compile Include="Unary\IncDecAssign\PostIncrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreDecrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreIncrementAssignTests.cs" />
+    <Compile Include="Unary\IncrementDecrementTests.cs" />
+    <Compile Include="Unary\MakeUnaryTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
@@ -224,11 +268,26 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="ILReader\DynamicMethodILProvider.cs" />
+    <Compile Include="ILReader\DynamicScopeTokenResolver.cs" />
+    <Compile Include="ILReader\FormatProvider.cs" />
+    <Compile Include="ILReader\ILInstruction.cs" />
+    <Compile Include="ILReader\ILProvider.cs" />
+    <Compile Include="ILReader\ILReader.cs" />
+    <Compile Include="ILReader\ILReaderFactory.cs" />
+    <Compile Include="ILReader\ReadableILStringVisitor.cs" />
+    <Compile Include="ILReader\TokenResolver.cs" />
+    <Compile Include="ILReader\ILPrinter.cs" />
+    <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
+    <Compile Include="ILReader\LocalsSignatureParser.cs" />
+    <Compile Include="ILReader\SigParser.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
-      <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>
-      <Name>System.Linq.Expressions</Name>
-    </ProjectReference>
+    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

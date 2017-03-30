@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;

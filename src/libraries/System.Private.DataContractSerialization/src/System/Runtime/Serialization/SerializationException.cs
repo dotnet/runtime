@@ -6,7 +6,7 @@ using System;
 
 namespace System.Runtime.Serialization
 {
-    public class SerializationException : Exception
+    public class SerializationException : SystemException
     {
         public SerializationException() { }
 

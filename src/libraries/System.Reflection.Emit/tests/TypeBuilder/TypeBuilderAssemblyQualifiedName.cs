@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("TypeName", "assemblyname")]
         [InlineData("type name  ", "assembly name  ")]
         [InlineData("-", "assembly name  ")]
-        public void TestWithAssemblyNameSet(string typeName, string assemblyName)
+        public void AssemblyQualifiedName(string typeName, string assemblyName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic, typeName: typeName, assemblyName: assemblyName);
             Assert.Equal($"{typeName}, {assemblyName.Trim()}, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", type.AssemblyQualifiedName);

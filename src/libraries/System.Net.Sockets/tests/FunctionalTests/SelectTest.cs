@@ -24,7 +24,7 @@ namespace System.Net.Sockets.Tests
         private const int SmallTimeoutMicroseconds = 10 * 1000;
         private const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [Theory]
         [InlineData(90, 0)]
         [InlineData(0, 90)]
@@ -52,7 +52,7 @@ namespace System.Net.Sockets.Tests
                 var readList = new List<Socket>(readPairs.Select(p => p.Key).ToArray());
                 var writeList = new List<Socket>(writePairs.Select(p => p.Key).ToArray());
 
-                Socket.Select(readList, writeList, null, FailTimeoutMicroseconds);
+                Socket.Select(readList, writeList, null, -1); // using -1 to test wait code path, but should complete instantly
 
                 // Since no buffers are full, all writes should be available.
                 Assert.Equal(writePairs.Length, writeList.Count);
@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [Fact]
         public void Select_ReadError_NoneReady_ManySockets()
         {
@@ -111,7 +111,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         public void Select_Read_OneReadyAtATime_ManySockets(int reads)
         {
             Select_Read_OneReadyAtATime(90); // value larger than the internal value in SocketPal.Unix that swaps between stack and heap allocation
@@ -145,7 +145,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/989
         public void Select_Error_OneReadyAtATime()
         {
@@ -236,6 +236,70 @@ namespace System.Net.Sockets.Tests
             {
                 pair.Key.Dispose();
                 pair.Value.Dispose();
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public static void Select_AcceptNonBlocking_Success()
+        {
+            using (Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listenSocket.BindToAnonymousPort(IPAddress.Loopback);
+
+                listenSocket.Blocking = false;
+
+                listenSocket.Listen(5);
+
+                Task t = Task.Run(() => { DoAccept(listenSocket, 5); });
+
+                // Loop, doing connections and pausing between
+                for (int i = 0; i < 5; i++)
+                {
+                    Thread.Sleep(50);
+                    using (Socket connectSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        connectSocket.Connect(listenSocket.LocalEndPoint);
+                    }
+                }
+
+                // Give the task 5 seconds to complete; if not, assume it's hung.
+                bool completed = t.Wait(5000);
+                Assert.True(completed);
+            }
+        }
+
+        public static void DoAccept(Socket listenSocket, int connectionsToAccept)
+        {
+            int connectionCount = 0;
+            while (true)
+            {
+                var ls = new List<Socket> { listenSocket };
+                Socket.Select(ls, null, null, 1000000);
+                if (ls.Count > 0)
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            Socket s = listenSocket.Accept();
+                            s.Close();
+                            connectionCount++;
+                        }
+                        catch (SocketException e)
+                        {
+                            Assert.Equal(e.SocketErrorCode, SocketError.WouldBlock);
+
+                            //No more requests in queue
+                            break;
+                        }
+
+                        if (connectionCount == connectionsToAccept)
+                        {
+                            return;
+                        }
+                    }
+                }
             }
         }
     }

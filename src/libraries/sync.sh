@@ -5,5 +5,6 @@ if [ $# == 0 ]; then
 fi
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 $working_tree_root/run.sh sync $__args $*
 exit $?

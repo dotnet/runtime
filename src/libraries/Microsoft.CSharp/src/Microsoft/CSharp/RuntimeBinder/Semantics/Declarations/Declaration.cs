@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // Children are DECLs.
     // ----------------------------------------------------------------------------
 
-    internal class Declaration : ParentSymbol
+    internal abstract class Declaration : ParentSymbol
     {
         public NamespaceOrAggregateSymbol bag;
         public Declaration declNext;

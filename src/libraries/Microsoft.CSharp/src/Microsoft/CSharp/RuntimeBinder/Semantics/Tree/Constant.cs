@@ -3,60 +3,36 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Text;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRCONSTANT : EXPR
+    internal sealed class ExprConstant : Expr
     {
-        public EXPR OptionalConstructorCall;
-        public EXPR GetOptionalConstructorCall() { return OptionalConstructorCall; }
-        public void SetOptionalConstructorCall(EXPR value) { OptionalConstructorCall = value; }
+        public Expr OptionalConstructorCall { get; set; }
 
-        private CONSTVAL _val;
+        public bool IsZero => Val.IsZero(Type.constValKind());
 
-        public bool IsZero
+        public ConstVal Val { get; set; }
+
+        public ulong UInt64Value => Val.UInt64Val;
+
+        public long Int64Value
         {
             get
             {
-                return Val.IsZero(this.type.constValKind());
-            }
-        }
-        public bool isZero() { return IsZero; }
-        public CONSTVAL getVal() { return Val; }
-        public void setVal(CONSTVAL newValue) { Val = newValue; }
-        public CONSTVAL Val
-        {
-            get
-            {
-                return _val;
-            }
-            set
-            {
-                _val = value;
-            }
-        }
-
-        public ulong getU64Value() { return _val.ulongVal; }
-        public long getI64Value() { return I64Value; }
-        public long I64Value
-        {
-            get
-            {
-                FUNDTYPE ft = type.fundType();
-                switch (ft)
+                switch (Type.fundType())
                 {
                     case FUNDTYPE.FT_I8:
                     case FUNDTYPE.FT_U8:
-                        return _val.longVal;
+                        return Val.Int64Val;
                     case FUNDTYPE.FT_U4:
-                        return _val.uiVal;
+                        return Val.UInt32Val;
                     case FUNDTYPE.FT_I1:
                     case FUNDTYPE.FT_I2:
                     case FUNDTYPE.FT_I4:
                     case FUNDTYPE.FT_U1:
                     case FUNDTYPE.FT_U2:
-                        return _val.iVal;
+                        return Val.Int32Val;
                     default:
                         Debug.Assert(false, "Bad fundType in getI64Value");
                         return 0;

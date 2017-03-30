@@ -43,5 +43,8 @@ internal static partial class Interop
         // Hash sub-IDs
         public const int ALG_SID_MD5 = 3;
         public const int ALG_SID_SHA = 4;
+        public const int ALG_SID_SHA_256 = 12;
+        public const int ALG_SID_SHA_384 = 13;
+        public const int ALG_SID_SHA_512 = 14;
     }
 }

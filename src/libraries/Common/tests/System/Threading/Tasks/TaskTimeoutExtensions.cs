@@ -23,5 +23,20 @@ namespace System.Threading.Tasks
                 throw new TimeoutException();
             }
         }
+
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, int millisecondsTimeout)
+        {
+            var cts = new CancellationTokenSource();
+
+            if (task == await Task<TResult>.WhenAny(task, Task<TResult>.Delay(millisecondsTimeout, cts.Token)))
+            {
+                cts.Cancel();
+                return await task;
+            }
+            else
+            {
+                throw new TimeoutException();
+            }
+        }
     }
 }

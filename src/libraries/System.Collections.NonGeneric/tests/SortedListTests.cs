@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -211,15 +212,34 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void DebuggerAttribute()
+        public static void DebuggerAttribute_Empty()
+        {
+            Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
+        }
+
+        [Fact]
+        public static void DebuggerAttribute_NormalList()
         {
             var list = new SortedList() { { "a", 1 }, { "b", 2 } };
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+            Assert.Equal(list.Count, items.Length);
+        }
 
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList());
+        [Fact]
+        public static void DebuggerAttribute_SynchronizedList()
+        {
+            var list = SortedList.Synchronized(new SortedList() { { "a", 1 }, { "b", 2 } });
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), list);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+            Assert.Equal(list.Count, items.Length);
+        }
 
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), SortedList.Synchronized(list));
-
+        [Fact]
+        public static void DebuggerAttribute_NullSortedList_ThrowsArgumentNullException()
+        {
             bool threwNull = false;
             try
             {
@@ -231,6 +251,24 @@ namespace System.Collections.Tests
             }
 
             Assert.True(threwNull);
+        }
+
+        [Fact]
+        public static void EnsureCapacity_NewCapacityLessThanMin_CapsToMaxArrayLength()
+        {
+            // A situation like this occurs for very large lengths of SortedList.
+            // To avoid allocating several GBs of memory and making this test run for a very
+            // long time, we can use reflection to invoke SortedList's growth method manually.
+            // This is relatively brittle, as it relies on accessing a private method via reflection
+            // that isn't guaranteed to be stable.
+            const int InitialCapacity = 10;
+            const int MinCapacity = InitialCapacity * 2 + 1;
+            var sortedList = new SortedList(InitialCapacity);
+
+            MethodInfo ensureCapacity = sortedList.GetType().GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
+            ensureCapacity.Invoke(sortedList, new object[] { MinCapacity });
+
+            Assert.Equal(MinCapacity, sortedList.Capacity);
         }
 
         [Fact]
@@ -582,6 +620,67 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void GetEnumerator_StartOfEnumeration_Clone()
+        {
+            SortedList sortedList = Helpers.CreateIntSortedList(10);
+
+            IDictionaryEnumerator enumerator = sortedList.GetEnumerator();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            IDictionaryEnumerator clonedEnumerator = (IDictionaryEnumerator)cloneableEnumerator.Clone();
+            Assert.NotSame(enumerator, clonedEnumerator);
+
+            // Cloned and original enumerators should enumerate separately.
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(sortedList[0], enumerator.Value);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Value);
+
+            Assert.True(clonedEnumerator.MoveNext());
+            Assert.Equal(sortedList[0], enumerator.Value);
+            Assert.Equal(sortedList[0], clonedEnumerator.Value);
+
+            // Cloned and original enumerators should enumerate in the same sequence.
+            for (int i = 1; i < sortedList.Count; i++)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.NotEqual(enumerator.Current, clonedEnumerator.Current);
+
+                Assert.True(clonedEnumerator.MoveNext());
+                Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Value);
+            Assert.Equal(sortedList[sortedList.Count - 1], clonedEnumerator.Value);
+
+            Assert.False(clonedEnumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Value);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Value);
+        }
+
+        [Fact]
+        public static void GetEnumerator_InMiddleOfEnumeration_Clone()
+        {
+            SortedList sortedList = Helpers.CreateIntSortedList(10);
+
+            IEnumerator enumerator = sortedList.GetEnumerator();
+            enumerator.MoveNext();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            // Cloned and original enumerators should start at the same spot, even
+            // if the original is in the middle of enumeration.
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+
+            for (int i = 0; i < sortedList.Count - 1; i++)
+            {
+                Assert.True(clonedEnumerator.MoveNext());
+            }
+
+            Assert.False(clonedEnumerator.MoveNext());
+        }
+
+        [Fact]
         public static void GetEnumerator_IEnumerator_Invalid()
         {
             SortedList sortList = Helpers.CreateIntSortedList(100);
@@ -755,11 +854,13 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
             {
                 IList keys = sortList2.GetKeyList();
-                Assert.Throws<ArgumentNullException>("dest", () => keys.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => keys.CopyTo(null, 0)); // Array is null
+                AssertExtensions.Throws<ArgumentException>("array", null, () => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in netfx ParamName is null
 
-                Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => keys.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>(string.Empty, () => keys.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                // Index < 0
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => keys.CopyTo(new object[100], -1));
+                // Index + list.Count > array.Count
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => keys.CopyTo(new object[150], 51));
             });
         }
 
@@ -995,11 +1096,11 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
             {
                 IList values = sortList2.GetValueList();
-                Assert.Throws<ArgumentNullException>("dest", () => values.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => values.CopyTo(null, 0)); // Array is null
+                AssertExtensions.Throws<ArgumentException>("array", null, () => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in netfx ParamName is null
 
-                Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>(string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
             });
         }
 
@@ -1226,50 +1327,50 @@ namespace System.Collections.Tests
         {
             var sortList = new SortedList();
 
-            CultureInfo currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo currentCulture = CultureInfo.CurrentCulture;
             try
             {
-                CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
-                var cultureNames = new string[]
-                {
-                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                    "zh-CN","zh-HK","zh-TW"
-                };
+                    CultureInfo.CurrentCulture = new CultureInfo("en-US");
+                    var cultureNames = new string[]
+                    {
+                        "cs-CZ","da-DK","de-DE","el-GR","en-US",
+                        "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
+                        "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
+                        "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
+                        "zh-CN","zh-HK","zh-TW"
+                    };
 
-                var installedCultures = new CultureInfo[cultureNames.Length];
-                var cultureDisplayNames = new string[installedCultures.Length];
-                int uniqueDisplayNameCount = 0;
+                    var installedCultures = new CultureInfo[cultureNames.Length];
+                    var cultureDisplayNames = new string[installedCultures.Length];
+                    int uniqueDisplayNameCount = 0;
 
-                foreach (string cultureName in cultureNames)
-                {
-                    var culture = new CultureInfo(cultureName);
-                    installedCultures[uniqueDisplayNameCount] = culture;
-                    cultureDisplayNames[uniqueDisplayNameCount] = culture.DisplayName;
-                    sortList.Add(cultureDisplayNames[uniqueDisplayNameCount], culture);
+                    foreach (string cultureName in cultureNames)
+                    {
+                        var culture = new CultureInfo(cultureName);
+                        installedCultures[uniqueDisplayNameCount] = culture;
+                        cultureDisplayNames[uniqueDisplayNameCount] = culture.DisplayName;
+                        sortList.Add(cultureDisplayNames[uniqueDisplayNameCount], culture);
 
-                    uniqueDisplayNameCount++;
+                        uniqueDisplayNameCount++;
+                    }
+
+                    // In Czech ch comes after h if the comparer changes based on the current culture of the thread
+                    // we will not be able to find some items
+                    CultureInfo.CurrentCulture = new CultureInfo("cs-CZ");
+
+                    for (int i = 0; i < uniqueDisplayNameCount; i++)
+                    {
+                        Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                    }
                 }
-
-                // In Czech ch comes after h if the comparer changes based on the current culture of the thread
-                // we will not be able to find some items
-                CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("cs-CZ");
-
-                for (int i = 0; i < uniqueDisplayNameCount; i++)
+                catch (CultureNotFoundException)
                 {
-                    Assert.Equal(installedCultures[i], sortList[installedCultures[i].DisplayName]);
+                }
+                finally
+                {
+                    CultureInfo.CurrentCulture = currentCulture;
                 }
             }
-            catch (CultureNotFoundException)
-            {
-            }
-            finally
-            {
-                CultureInfo.DefaultThreadCurrentCulture = currentCulture;
-            }
-        }
 
         [Fact]
         public static void Item_Set()

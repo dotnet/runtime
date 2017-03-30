@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaCng : ECDsa
         {
-#if !NETNATIVE
             /// <summary>
             /// Create an ECDsaCng algorithm with a named curve.
             /// </summary>
@@ -29,7 +28,6 @@ namespace System.Security.Cryptography
                 // Named curves generate the key immediately
                 GenerateKey(curve);
             }
-#endif
 
             /// <summary>
             ///     Create an ECDsaCng algorithm with a random 521 bit key pair.

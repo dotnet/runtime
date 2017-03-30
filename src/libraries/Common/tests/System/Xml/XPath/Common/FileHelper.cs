@@ -15,7 +15,7 @@ namespace XPathTests.Common
         public static Stream CreateStreamFromFile(string xml)
         {
             var xmlPath = Utils.ResourceFilesPath + xml;
-            Stream s = typeof(FileHelper).GetTypeInfo().Assembly.GetManifestResourceStream(xmlPath);
+            Stream s = typeof(FileHelper).Assembly.GetManifestResourceStream(xmlPath);
             if (s == null)
             {
                 throw new Exception("Couldn't find resource.");

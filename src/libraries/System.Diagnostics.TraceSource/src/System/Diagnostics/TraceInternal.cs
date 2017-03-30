@@ -5,6 +5,7 @@
 using System.Threading;
 using System.IO;
 using System.Collections;
+using System.Reflection;
 
 namespace System.Diagnostics
 {
@@ -55,9 +56,7 @@ namespace System.Diagnostics
             {
                 if (s_appName == null)
                 {
-                    // This needs to be updated once we have the correct property implemented in the Environment class.
-                    // Bug:895000 is tracking this.
-                    s_appName = "DEFAULT_APPNAME";
+                    s_appName = Assembly.GetEntryAssembly().GetName().Name;
                 }
                 return s_appName;
             }
@@ -237,7 +236,7 @@ namespace System.Diagnostics
                 {
                     foreach (TraceListener listener in Listeners)
                     {
-                        listener.Dispose();
+                        listener.Close();
                     }
                 }
             }
@@ -350,7 +349,7 @@ namespace System.Diagnostics
 
         // This method refreshes all the data from the configuration file, so that updated to the configuration file are mirrored
         // in the System.Diagnostics.Trace class
-        static internal void Refresh()
+        internal static void Refresh()
         {
             lock (critSec)
             {

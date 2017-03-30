@@ -30,7 +30,7 @@ namespace Microsoft.Win32.SafeHandles
 
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.LsaFreeMemory(handle) == 0;
+            return Interop.Advapi32.LsaFreeMemory(handle) == 0;
         }
     }
 
@@ -54,7 +54,7 @@ namespace Microsoft.Win32.SafeHandles
 
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.LsaClose(handle) == 0;
+            return Interop.Advapi32.LsaClose(handle) == 0;
         }
     }
 
@@ -79,7 +79,7 @@ namespace Microsoft.Win32.SafeHandles
         override protected bool ReleaseHandle()
         {
             // LsaFreeReturnBuffer returns an NTSTATUS
-            return Interop.mincore.LsaFreeReturnBuffer(handle) >= 0;
+            return Interop.SspiCli.LsaFreeReturnBuffer(handle) >= 0;
         }
     }
 }

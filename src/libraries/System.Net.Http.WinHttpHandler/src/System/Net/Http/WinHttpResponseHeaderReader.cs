@@ -60,7 +60,7 @@ namespace System.Net.Http
                     name = new string(_buffer, startIndex, nameLength);
                 }
 
-                // Normalize header value by trimming white space.
+                // Normalize header value by trimming whitespace.
                 int valueStartIndex = colonIndex + 1;
                 int valueLength = startIndex + length - colonIndex - 1;
                 CharArrayHelpers.Trim(_buffer, ref valueStartIndex, ref valueLength);

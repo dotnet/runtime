@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -84,6 +83,22 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void PointerType()
+        {
+            Type pointerType = typeof(int).MakePointerType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType, null));
+        }
+
+        [Fact]
+        public void ByRefType()
+        {
+            Type byRefType = typeof(int).MakeByRefType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType, null));
+        }
+
+        [Fact]
         public void NameIsStringRepresentation()
         {
             Assert.Equal("name", Expression.Label("name").ToString());
@@ -120,7 +135,7 @@ namespace System.Linq.Expressions.Tests
         public void LableNameNeedNotBeValidCSharpLabelWithValue(bool useInterpreter)
         {
             LabelTarget target = Expression.Label(typeof(int), "1, 2, 3, 4. This is not a valid C♯ label!\"'<>.\uffff");
-            var func = Expression.Lambda<Func<int>>(
+            Func<int> func = Expression.Lambda<Func<int>>(
                 Expression.Block(
                     Expression.Return(target, Expression.Constant(42)),
                     Expression.Throw(Expression.Constant(new CustomException())),

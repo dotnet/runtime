@@ -48,6 +48,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average(x => x));
         }
 
+        [Theory, MemberData(nameof(NullableFloat_TestData))]
+        public void NullableFoatRunOnce(float?[] source, float? expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Average());
+            Assert.Equal(expected, source.RunOnce().Average(x => x));
+        }
+
         [Fact]
         public void NullableFloat_NullSource_ThrowsArgumentNullException()
         {
@@ -112,6 +119,13 @@ namespace System.Linq.Tests
         {
             Assert.Equal(expected, source.Average());
             Assert.Equal(expected, source.Average(x => x));
+        }
+
+        [Theory, MemberData(nameof(Int_TestData))]
+        public void IntRunOnce(int[] source, double expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Average());
+            Assert.Equal(expected, source.RunOnce().Average(x => x));
         }
 
         [Fact]

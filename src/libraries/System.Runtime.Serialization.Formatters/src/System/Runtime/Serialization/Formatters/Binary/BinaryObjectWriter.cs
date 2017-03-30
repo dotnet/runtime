@@ -4,7 +4,6 @@
 
 using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.Remoting.Messaging;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -21,7 +20,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private long _topId;
         private string _topName = null;
-        private Header[] _headers;
 
         private InternalFE _formatterEnums;
         private SerializationBinder _binder;
@@ -49,9 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectManager = new SerializationObjectManager(context);
         }
 
-        // Commences the process of serializing the entire graph.
-        // initialize the graph walker.
-        internal void Serialize(object graph, Header[] inHeaders, BinaryFormatterWriter serWriter, bool fCheck)
+        internal void Serialize(object graph, BinaryFormatterWriter serWriter, bool fCheck)
         {
             if (graph == null)
             {
@@ -63,7 +59,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             _serWriter = serWriter;
-            _headers = inHeaders;
 
             serWriter.WriteBegin();
             long headerId = 0;
@@ -78,14 +73,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _serObjectInfoInit = new SerObjectInfoInit();
 
             _topId = InternalGetId(graph, false, null, out isNew);
-            headerId = _headers != null ? InternalGetId(_headers, false, null, out isNew) : -1;
+            headerId = -1;
             WriteSerializedStreamHeader(_topId, headerId);
-
-            // Write out SerializedStream header
-            if ((_headers != null) && (_headers.Length > 0))
-            {
-                _objectQueue.Enqueue(_headers);
-            }
 
             _objectQueue.Enqueue(graph);
             while ((obj = GetNext(out objectId)) != null)
@@ -450,7 +439,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // Get type of array element 
             Type arrayElemType = arrayType.GetElementType();
             WriteObjectInfo arrayElemObjectInfo = null;
-            if (!arrayElemType.GetTypeInfo().IsPrimitive)
+            if (!arrayElemType.IsPrimitive)
             {
                 arrayElemObjectInfo = WriteObjectInfo.Serialize(arrayElemType, _surrogates, _context, _serObjectInfoInit, _formatterConverter, _binder);
                 arrayElemObjectInfo._assemId = GetAssemblyId(arrayElemObjectInfo);
@@ -526,7 +515,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (!(Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._primitiveTypeEnum) && (lowerBoundA[0] == 0)))
                 {
                     object[] objectA = null;
-                    if (!arrayElemType.GetTypeInfo().IsValueType)
+                    if (!arrayElemType.IsValueType)
                     {
                         // Non-primitive type array                 
                         objectA = (object[])array;
@@ -555,10 +544,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 _serWriter.WriteJaggedArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, lengthA[0], lowerBoundA[0]);
 
-                var objectA = (object[])array;
+                var objectA = (Array)array;
                 for (int i = lowerBoundA[0]; i < upperBoundA[0] + 1; i++)
                 {
-                    WriteArrayMember(objectInfo, arrayElemTypeNameInfo, objectA[i]);
+                    WriteArrayMember(objectInfo, arrayElemTypeNameInfo, objectA.GetValue(i));
                 }
                 _serWriter.WriteItemEnd();
             }
@@ -781,7 +770,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return _previousId;
             }
             _idGenerator._currentCount = _currentId;
-            if (type != null && type.GetTypeInfo().IsValueType)
+            if (type != null && type.IsValueType)
             {
                 if (!assignUniqueIdToValueType)
                 {

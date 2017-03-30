@@ -4,15 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Compile", Desc = "", Priority = 0)]
-    public class TC_SchemaSet_Compile
+    public class TC_SchemaSet_Compile : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -76,7 +74,7 @@ namespace System.Xml.Tests
 
             try
             {
-                sc.Add(null, TestData._Root + "schema1.xdr");
+                sc.Add(null, Path.Combine(TestData._Root, "schema1.xdr"));
             }
             catch (XmlSchemaException)
             {

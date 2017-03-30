@@ -414,7 +414,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return base.ReadContentAsBase64(buffer, index, count);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -457,7 +457,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return base.ReadContentAsBinHex(buffer, index, count);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -518,7 +518,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return base.ReadElementContentAsBase64(buffer, index, count);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -578,7 +578,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return base.ReadElementContentAsBinHex(buffer, index, count);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);

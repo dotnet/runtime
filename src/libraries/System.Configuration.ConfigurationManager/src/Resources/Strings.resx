@@ -1,0 +1,674 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Parameter_Invalid" xml:space="preserve">
+    <value>The parameter '{0}' is invalid.</value>
+  </data>
+  <data name="Parameter_NullOrEmpty" xml:space="preserve">
+    <value>The string parameter '{0}' cannot be null or empty.</value>
+  </data>
+  <data name="Property_NullOrEmpty" xml:space="preserve">
+    <value>The value assigned to property '{0}' cannot be null or empty.</value>
+  </data>
+  <data name="Property_Invalid" xml:space="preserve">
+    <value>The value assigned to property '{0}' is invalid.</value>
+  </data>
+  <data name="Unexpected_Error" xml:space="preserve">
+    <value>An unexpected error occurred in '{0}'.</value>
+  </data>
+  <data name="Wrapped_exception_message" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <!--
+    Messages that are wrapped by WrapAsConfigException.
+    Note that the messages do not end in a period.
+  -->
+  <data name="Config_error_loading_XML_file" xml:space="preserve">
+    <value>An error occurred loading a configuration file</value>
+  </data>
+  <data name="Config_exception_creating_section_handler" xml:space="preserve">
+    <value>An error occurred creating the configuration section handler for {0}</value>
+  </data>
+  <data name="Config_exception_creating_section" xml:space="preserve">
+    <value>An error occurred creating the configuration section for {0}</value>
+  </data>
+  <data name="Config_tag_name_invalid" xml:space="preserve">
+    <value>Invalid format for a section or section group name</value>
+  </data>
+  <!--
+    other exceptions
+  -->
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An entry with the same key already exists.</value>
+  </data>
+  <data name="Config_add_configurationsection_already_added" xml:space="preserve">
+    <value>Cannot add a ConfigurationSection that already belongs to the Configuration.</value>
+  </data>
+  <data name="Config_add_configurationsection_already_exists" xml:space="preserve">
+    <value>Cannot add a ConfigurationSection with the same name that already exists.</value>
+  </data>
+  <data name="Config_add_configurationsection_in_location_config" xml:space="preserve">
+    <value>Cannot add a ConfigurationSection to a Configuration with a location.</value>
+  </data>
+  <data name="Config_add_configurationsectiongroup_already_added" xml:space="preserve">
+    <value>Cannot add a ConfigurationSectionGroup that already belongs to the Configuration.</value>
+  </data>
+  <data name="Config_add_configurationsectiongroup_already_exists" xml:space="preserve">
+    <value>Cannot add a ConfigurationSectionGroup with the same name that already exists.</value>
+  </data>
+  <data name="Config_add_configurationsectiongroup_in_location_config" xml:space="preserve">
+    <value>Cannot add a ConfigurationSectionGroup to a Configuration with a location.</value>
+  </data>
+  <data name="Config_allow_exedefinition_error_application" xml:space="preserve">
+    <value>It is an error to use a section registered as allowExeDefinition='MachineToApplication' beyond the application, in the user's config.  (This is the default behavior if not specified)</value>
+  </data>
+  <data name="Config_allow_exedefinition_error_machine" xml:space="preserve">
+    <value>It is an error to use a section registered as allowExeDefinition='MachineOnly' beyond machine.config.</value>
+  </data>
+  <data name="Config_allow_exedefinition_error_roaminguser" xml:space="preserve">
+    <value>It is an error to use a section registered as allowExeDefinition='MachineToRoamingUser' beyond the roaming user config, in the local user config.</value>
+  </data>
+  <data name="Config_appsettings_declaration_invalid" xml:space="preserve">
+    <value>The configuration section 'appSettings' has an unexpected declaration.</value>
+  </data>
+  <data name="Config_base_attribute_locked" xml:space="preserve">
+    <value>The attribute '{0}' has been locked in a higher level configuration.</value>
+  </data>
+  <data name="Config_base_collection_item_locked_cannot_clear" xml:space="preserve">
+    <value>A collection item has been locked in a higher level configuration. The collection may not be cleared.</value>
+  </data>
+  <data name="Config_base_collection_item_locked" xml:space="preserve">
+    <value>The collection item has been locked in a higher level configuration and may not be changed.</value>
+  </data>
+  <data name="Config_base_cannot_add_items_above_inherited_items" xml:space="preserve">
+    <value>This collection does not permit items to be added in or above the inherited items.</value>
+  </data>
+  <data name="Config_base_cannot_add_items_below_inherited_items" xml:space="preserve">
+    <value>This collection does not permit items to be added in or below the inherited items.</value>
+  </data>
+  <data name="Config_base_cannot_remove_inherited_items" xml:space="preserve">
+    <value>Inherited items may not be removed.</value>
+  </data>
+  <data name="Config_base_collection_elements_may_not_be_removed" xml:space="preserve">
+    <value>Elements of this collection may not be removed.</value>
+  </data>
+  <data name="Config_base_collection_entry_already_exists" xml:space="preserve">
+    <value>The entry '{0}' has already been added.</value>
+  </data>
+  <data name="Config_base_collection_entry_already_removed" xml:space="preserve">
+    <value>Entry already removed.</value>
+  </data>
+  <data name="Config_base_collection_entry_not_found" xml:space="preserve">
+    <value>The entry '{0}' is not in the collection.</value>
+  </data>
+  <data name="Config_base_element_cannot_have_multiple_child_elements" xml:space="preserve">
+    <value>The element &lt;{0}&gt; may only appear once in this section.</value>
+  </data>
+  <data name="Config_base_element_locked" xml:space="preserve">
+    <value>The element '{0}' has been locked in a higher level configuration.</value>
+  </data>
+  <data name="Config_base_expected_to_find_element" xml:space="preserve">
+    <value>Expected to find an element.</value>
+  </data>
+  <data name="Config_base_invalid_attribute_to_lock" xml:space="preserve">
+    <value>The attribute '{0}' is not valid in the locked list for this section. The following attributes can be locked: {1}. Multiple attributes may be listed separated by commas.</value>
+  </data>
+  <data name="Config_base_invalid_attribute_to_lock_by_add" xml:space="preserve">
+    <value>The attribute '{0}' is not valid in the locked list for this section. The following attributes can be locked: {1}.</value>
+  </data>
+  <data name="Config_base_invalid_element_key" xml:space="preserve">
+    <value>Invalid key value.</value>
+  </data>
+  <data name="Config_base_invalid_element_to_lock" xml:space="preserve">
+    <value>The element '{0}' is not valid in the locked list for this section. The following elements can be locked: {1}. Multiple elements may be listed separated by commas.</value>
+  </data>
+  <data name="Config_base_invalid_element_to_lock_by_add" xml:space="preserve">
+    <value>The element '{0}' is not valid in the locked list for this section. The following elements can be locked: {1}.</value>
+  </data>
+  <data name="Config_base_property_is_not_a_configuration_element" xml:space="preserve">
+    <value>Property '{0}' is not a ConfigurationElement.</value>
+  </data>
+  <data name="Config_base_read_only" xml:space="preserve">
+    <value>The configuration is read only.</value>
+  </data>
+  <data name="Config_base_required_attribute_locked" xml:space="preserve">
+    <value>The attribute '{0}' is required and is locked at a higher level configuration. The configuration with the lock should lock the entire element if it needs to lock required attributes.</value>
+  </data>
+  <data name="Config_base_required_attribute_lock_attempt" xml:space="preserve">
+    <value>The attribute '{0}' is required and cannot be locked. The configuration should lock the entire element if it needs to lock required attributes.</value>
+  </data>
+  <data name="Config_base_required_attribute_missing" xml:space="preserve">
+    <value>Required attribute '{0}' not found.</value>
+  </data>
+  <data name="Config_base_section_invalid_content" xml:space="preserve">
+    <value>The configuration section cannot contain a CDATA or text element.</value>
+  </data>
+  <data name="Config_base_unrecognized_attribute" xml:space="preserve">
+    <value>Unrecognized attribute '{0}'. Note that attribute names are case-sensitive.</value>
+  </data>
+  <data name="Config_base_unrecognized_element" xml:space="preserve">
+    <value>Unrecognized element.</value>
+  </data>
+  <data name="Config_base_unrecognized_element_name" xml:space="preserve">
+    <value>Unrecognized element '{0}'.</value>
+  </data>
+  <data name="Config_base_value_cannot_contain" xml:space="preserve">
+    <value>The value may not contain the '{0}' character.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_in_location_config" xml:space="preserve">
+    <value>ConfigurationSection properties for a &lt;section&gt; declaration cannot be edited in a Configuration with a location.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_parentsection" xml:space="preserve">
+    <value>ConfigurationSection properties can not be edited for the parent section of another section (ie. a section retrieved by calling GetParentSection on a section)</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_when_location_locked" xml:space="preserve">
+    <value>ConfigurationSection properties for a location section cannot be edited when allowLocation=false.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_when_locked" xml:space="preserve">
+    <value>ConfigurationSection properties cannot be edited when locked.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_when_not_attached" xml:space="preserve">
+    <value>ConfigurationSection cannot be edited before being added to a section group belonging to an instance of class Configuration.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_when_it_is_implicit" xml:space="preserve">
+    <value>ConfigurationSection cannot be edited because it is a built-in section.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsection_when_it_is_undeclared" xml:space="preserve">
+    <value>ConfigurationSection cannot be edited because it is not declared.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsectiongroup_in_location_config" xml:space="preserve">
+    <value>ConfigurationSectionGroup properties for a &lt;sectionGroup&gt; declaration cannot be edited in a Configuration with a location.</value>
+  </data>
+  <data name="Config_cannot_edit_configurationsectiongroup_when_not_attached" xml:space="preserve">
+    <value>ConfigurationSectionGroup cannot be edited before being added to a section group belonging to an instance of class Configuration.</value>
+  </data>
+  <data name="Config_cannot_edit_locationattriubtes" xml:space="preserve">
+    <value>AllowOverride and InheritInChildApplications can not be set in the exe configuration, these settings have no meaning there.</value>
+  </data>
+  <data name="Config_cannot_open_config_source" xml:space="preserve">
+    <value>Unable to open configSource file '{0}'.</value>
+  </data>
+  <data name="Config_client_config_init_error" xml:space="preserve">
+    <value>Configuration system failed to initialize</value>
+  </data>
+  <data name="Config_client_config_too_many_configsections_elements" xml:space="preserve">
+    <value>Only one &lt;configSections&gt; element allowed per config file and if present must be the first child of the root &lt;configuration&gt; element.</value>
+  </data>
+  <data name="Config_configmanager_open_noexe" xml:space="preserve">
+    <value>exePath must be specified when not running inside a stand alone exe.</value>
+  </data>
+  <data name="Config_configsection_parentnotvalid" xml:space="preserve">
+    <value>This is not valid for the parent section of another section (ie. a section retrieved by calling GetParentSection on a section)</value>
+  </data>
+  <data name="Config_connectionstrings_declaration_invalid" xml:space="preserve">
+    <value>The configuration section 'connectionStrings' has an unexpected declaration.</value>
+  </data>
+  <data name="Config_data_read_count_mismatch" xml:space="preserve">
+    <value>Data read count is not equal to data available.</value>
+  </data>
+  <data name="Config_element_no_context" xml:space="preserve">
+    <value>This element is not currently associated with any context</value>
+  </data>
+  <data name="Config_empty_lock_attributes_except" xml:space="preserve">
+    <value>The '{0}' attribute cannot be an empty string. {1}="*" may be used to lock all attributes.</value>
+  </data>
+  <data name="Config_empty_lock_element_except" xml:space="preserve">
+    <value>The '{0}' attribute cannot be an empty string. {1}="*" may be used to lock all elements.</value>
+  </data>
+  <data name="Config_exception_in_config_section_handler" xml:space="preserve">
+    <value>An error occurred executing the configuration section handler for {0}.</value>
+  </data>
+  <data name="Config_file_doesnt_have_root_configuration" xml:space="preserve">
+    <value>Configuration file {0} does not have root &lt;configuration&gt; tag</value>
+  </data>
+  <data name="Config_file_has_changed" xml:space="preserve">
+    <value>The configuration file has been changed by another program.</value>
+  </data>
+  <data name="Config_getparentconfigurationsection_first_instance" xml:space="preserve">
+    <value>GetParentSection can only be applied to ConfigurationSections from the first instance of a Configuration.</value>
+  </data>
+  <data name="Config_inconsistent_location_attributes" xml:space="preserve">
+    <value>Error in configuration section "{0}": AllowLocation is false and either AllowOverride or InheritInChildApplications is true.</value>
+  </data>
+  <data name="Config_invalid_attributes_for_write" xml:space="preserve">
+    <value>Unable to open file '{0}' for writing because it is read-only or hidden.</value>
+  </data>
+  <data name="Config_invalid_boolean_attribute" xml:space="preserve">
+    <value>The property '{0}' must have value 'true' or 'false'.</value>
+  </data>
+  <data name="Config_invalid_node_type" xml:space="preserve">
+    <value>Invalid node type.</value>
+  </data>
+  <data name="Config_location_location_not_allowed" xml:space="preserve">
+    <value>&lt;location&gt; sections are allowed only within &lt;configuration&gt; sections.</value>
+  </data>
+  <data name="Config_location_path_invalid_character" xml:space="preserve">
+    <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot contain any of '?' ':' '\\' '*' '"' '&lt;' '&gt;' or '|'.</value>
+  </data>
+  <data name="Config_location_path_invalid_first_character" xml:space="preserve">
+    <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot start with any of ' ' '.' '/' or '\\'.</value>
+  </data>
+  <data name="Config_location_path_invalid_last_character" xml:space="preserve">
+    <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot end with any of ' ' '.' '/' or '\\'.</value>
+  </data>
+  <data name="Config_missing_required_attribute" xml:space="preserve">
+    <value>The '{0}' attribute must be specified on the '{1}' tag.</value>
+  </data>
+  <data name="Config_more_data_than_expected" xml:space="preserve">
+    <value>More data than expected.</value>
+  </data>
+  <data name="Config_name_value_file_section_file_invalid_root" xml:space="preserve">
+    <value>The root element must match the name of the section referencing the file, '{0}'</value>
+  </data>
+  <data name="Config_namespace_invalid" xml:space="preserve">
+    <value>Namespace of '{0}' on configuration element is invalid, only '{1}' is valid.</value>
+  </data>
+  <data name="Config_no_stream_to_write" xml:space="preserve">
+    <value>A configuration file cannot be created for the requested Configuration object.</value>
+  </data>
+  <data name="Config_not_allowed_to_encrypt_this_section" xml:space="preserve">
+    <value>This configuration section cannot be encrypted.</value>
+  </data>
+  <data name="Config_object_is_null" xml:space="preserve">
+    <value>Configuration section handler returned a null object.</value>
+  </data>
+  <data name="Config_operation_not_runtime" xml:space="preserve">
+    <value>This operation does not apply at runtime.</value>
+  </data>
+  <data name="Config_properties_may_not_be_derived_from_configuration_section" xml:space="preserve">
+    <value>The Configuration property '{0}' may not be derived from ConfigurationSection.</value>
+  </data>
+  <data name="Config_provider_must_implement_type" xml:space="preserve">
+    <value>Provider must implement the class '{0}'.</value>
+  </data>
+  <data name="Config_root_section_group_cannot_be_edited" xml:space="preserve">
+    <value>The RootSectionGroup cannot be edited</value>
+  </data>
+  <data name="Config_section_allow_definition_attribute_invalid" xml:space="preserve">
+    <value>The 'allowDefinition' attribute must be one of the following values: Everywhere, MachineOnly, MachineToWebRoot, MachineToApplication.</value>
+  </data>
+  <data name="Config_section_allow_exe_definition_attribute_invalid" xml:space="preserve">
+    <value>The 'allowExeDefinition' attribute must be one of the following values: MachineOnly, MachineToApplication, MachineToRoamingUser, MachineToLocalUser.</value>
+  </data>
+  <data name="Config_section_cannot_be_used_in_location" xml:space="preserve">
+    <value>This section is not allowed in &lt;location&gt; elements.  This section has been marked allowLocation="false".</value>
+  </data>
+  <data name="Config_section_locked" xml:space="preserve">
+    <value>This configuration section cannot be used at this path.  This happens when the site administrator has locked access to this section using &lt;location allowOverride="false"&gt; from an inherited configuration file.</value>
+  </data>
+  <data name="Config_sections_must_be_unique" xml:space="preserve">
+    <value>Sections must only appear once per config file.  See the help topic &lt;location&gt; for exceptions.</value>
+  </data>
+  <data name="Config_source_cannot_be_shared" xml:space="preserve">
+    <value>The configSource file '{0}' can only be used by one type of section, and may not be the same as the configuration file.</value>
+  </data>
+  <data name="Config_source_parent_conflict" xml:space="preserve">
+    <value>The configSource file '{0}' is also used in a parent, this is not allowed.</value>
+  </data>
+  <data name="Config_source_file_format" xml:space="preserve">
+    <value>The format of a configSource file must be an element containing the name of the section.</value>
+  </data>
+  <data name="Config_source_invalid_format" xml:space="preserve">
+    <value>The configSource attribute must be a relative physical path.</value>
+  </data>
+  <data name="Config_source_invalid_chars" xml:space="preserve">
+    <value>The configSource attribute must be a relative physical path, so the '/' character is not allowed.</value>
+  </data>
+  <data name="Config_source_requires_file" xml:space="preserve">
+    <value>The 'configSource' property may not be set in a configuration that has no associated file.</value>
+  </data>
+  <data name="Config_source_syntax_error" xml:space="preserve">
+    <value>A section using 'configSource' may contain no other attributes or elements.</value>
+  </data>
+  <data name="Config_system_already_set" xml:space="preserve">
+    <value>The configuration system has already been initialized.</value>
+  </data>
+  <data name="Config_tag_name_already_defined" xml:space="preserve">
+    <value>Section or group name '{0}' is already defined. Updates to this may only occur at the configuration level where it is defined.</value>
+  </data>
+  <data name="Config_tag_name_already_defined_at_this_level" xml:space="preserve">
+    <value>Section or group name '{0}' is already defined. This can not be defined multiple times.</value>
+  </data>
+  <data name="Config_tag_name_cannot_be_location" xml:space="preserve">
+    <value>The section name 'location' is reserved for &lt;location&gt; sections.</value>
+  </data>
+  <data name="Config_tag_name_cannot_begin_with_config" xml:space="preserve">
+    <value>Section names beginning with config are reserved.</value>
+  </data>
+  <data name="Config_type_doesnt_inherit_from_type" xml:space="preserve">
+    <value>Type '{0}' does not inherit from '{1}'.</value>
+  </data>
+  <data name="Config_unexpected_element_end" xml:space="preserve">
+    <value>Unexpected end of element {0}.</value>
+  </data>
+  <data name="Config_unexpected_element_name" xml:space="preserve">
+    <value>Unexpected element name {0}.</value>
+  </data>
+  <data name="Config_unexpected_node_type" xml:space="preserve">
+    <value>expected XmlNodeType.Element, type is {0}.</value>
+  </data>
+  <data name="Config_unrecognized_configuration_section" xml:space="preserve">
+    <value>Unrecognized configuration section {0}.</value>
+  </data>
+  <data name="Config_write_failed" xml:space="preserve">
+    <value>Unable to save config to file '{0}'.</value>
+  </data>
+  <data name="Converter_timespan_not_in_second" xml:space="preserve">
+    <value>The expected format is an integer value in seconds.</value>
+  </data>
+  <data name="Converter_unsupported_value_type" xml:space="preserve">
+    <value>The converter cannot convert values with type '{0}'.</value>
+  </data>
+  <data name="Decryption_failed" xml:space="preserve">
+    <value>Failed to decrypt using provider '{0}'. Error message from the provider: {1}</value>
+  </data>
+  <data name="Default_value_conversion_error_from_string" xml:space="preserve">
+    <value>The default value of the property '{0}' cannot be parsed. The error is: {1}</value>
+  </data>
+  <data name="Default_value_wrong_type" xml:space="preserve">
+    <value>The default value for the property '{0}' has different type than the one of the property itself.</value>
+  </data>
+  <data name="DPAPI_bad_data" xml:space="preserve">
+    <value>The data specified for decryption is bad.</value>
+  </data>
+  <data name="Empty_attribute" xml:space="preserve">
+    <value>The '{0}' attribute cannot be an empty string.</value>
+  </data>
+  <data name="EncryptedNode_not_found" xml:space="preserve">
+    <value>The section is marked as being protected. However, the &lt;EncryptedData&gt; child node was not found in the section's node. Make sure that the section is correctly encrypted.</value>
+  </data>
+  <data name="EncryptedNode_is_in_invalid_format" xml:space="preserve">
+    <value>The section is marked as being protected, but it does not have the correct format. It should contain only the &lt;EncryptedData&gt; child node.</value>
+  </data>
+  <data name="Encryption_failed" xml:space="preserve">
+    <value>Failed to encrypt the section '{0}' using provider '{1}'. Error message from the provider: {2}</value>
+  </data>
+  <data name="IndexOutOfRange" xml:space="preserve">
+    <value>Index {0} is out of range.</value>
+  </data>
+  <data name="Invalid_enum_value" xml:space="preserve">
+    <value>The enumeration value must be one of the following: {0}.</value>
+  </data>
+  <data name="Must_add_to_config_before_protecting_it" xml:space="preserve">
+    <value>The configuration section must be added to a configuration hierarchy before you can protect it.</value>
+  </data>
+  <data name="No_converter" xml:space="preserve">
+    <value>Unable to find a converter that supports conversion to/from string for the property '{0}' of type '{1}'.</value>
+  </data>
+  <data name="No_exception_information_available" xml:space="preserve">
+    <value>No information about the exception is available.</value>
+  </data>
+  <data name="Property_name_reserved" xml:space="preserve">
+    <value>A configuration property cannot have the name '{0}' because it starts with the reserved prefix 'config' or 'lock'.</value>
+  </data>
+  <data name="Item_name_reserved" xml:space="preserve">
+    <value>A configuration item alias for '{0}' cannot have the name '{1}' because it starts with the reserved prefix 'config' or 'lock'.</value>
+  </data>
+  <data name="Basicmap_item_name_reserved" xml:space="preserve">
+    <value>A configuration item cannot have the name '{0}' because it starts with the reserved prefix 'config' or 'lock'.</value>
+  </data>
+  <data name="ProtectedConfigurationProvider_not_found" xml:space="preserve">
+    <value>The protection provider '{0}' was not found.</value>
+  </data>
+  <data name="Regex_validator_error" xml:space="preserve">
+    <value>The value does not conform to the validation regex string '{0}'.</value>
+  </data>
+  <data name="String_null_or_empty" xml:space="preserve">
+    <value>The string cannot be null or empty.</value>
+  </data>
+  <data name="Subclass_validator_error" xml:space="preserve">
+    <value>The type '{0}' must be derived from the type '{1}'.</value>
+  </data>
+  <data name="Top_level_conversion_error_from_string" xml:space="preserve">
+    <value>The value of the property '{0}' cannot be parsed. The error is: {1}</value>
+  </data>
+  <data name="Top_level_conversion_error_to_string" xml:space="preserve">
+    <value>The value of the property '{0}' cannot be converted to string. The error is: {1}</value>
+  </data>
+  <data name="Top_level_validation_error" xml:space="preserve">
+    <value>The value for the property '{0}' is not valid. The error is: {1}</value>
+  </data>
+  <data name="Type_cannot_be_resolved" xml:space="preserve">
+    <value>The type '{0}' cannot be resolved. Please verify the spelling is correct or that the full type name is provided.</value>
+  </data>
+  <data name="TypeNotPublic" xml:space="preserve">
+    <value>Unable to load type '{0}' because it is not public.</value>
+  </data>
+  <data name="Unrecognized_initialization_value" xml:space="preserve">
+    <value>The configuration setting '{0}' was not recognized.</value>
+  </data>
+  <data name="Validation_scalar_range_violation_not_different" xml:space="preserve">
+    <value>The value must be different than {0}.</value>
+  </data>
+  <data name="Validation_scalar_range_violation_not_equal" xml:space="preserve">
+    <value>The value must be equal to {0}.</value>
+  </data>
+  <data name="Validation_scalar_range_violation_not_in_range" xml:space="preserve">
+    <value>The value must be inside the range {0}-{1}.</value>
+  </data>
+  <data name="Validation_scalar_range_violation_not_outside_range" xml:space="preserve">
+    <value>The value must not be in the range {0}-{1}.</value>
+  </data>
+  <data name="Validator_Attribute_param_not_validator" xml:space="preserve">
+    <value>Only types derived from {0} are valid validator types.</value>
+  </data>
+  <data name="Validator_does_not_support_elem_type" xml:space="preserve">
+    <value>The supplied validator does not support validating the configuration element type {0}.</value>
+  </data>
+  <data name="Validator_does_not_support_prop_type" xml:space="preserve">
+    <value>The supplied validator does not support the type of the property '{0}'.</value>
+  </data>
+  <data name="Validator_element_not_valid" xml:space="preserve">
+    <value>The configuration element '{0}' is not valid. The error is: {1}</value>
+  </data>
+  <data name="Validator_method_not_found" xml:space="preserve">
+    <value>The supplied method name '{0}' was not found. The callback method must be a public static void method with one object parameter.</value>
+  </data>
+  <data name="Validator_min_greater_than_max" xml:space="preserve">
+    <value>The upper range limit value must be greater than the lower range limit value.</value>
+  </data>
+  <data name="Validator_scalar_resolution_violation" xml:space="preserve">
+    <value>The value must have a resolution of {0}.</value>
+  </data>
+  <data name="Validator_string_invalid_chars" xml:space="preserve">
+    <value>The string cannot contain any of the following characters: '{0}'.</value>
+  </data>
+  <data name="Validator_string_max_length" xml:space="preserve">
+    <value>The string must be no more than {0} characters long.</value>
+  </data>
+  <data name="Validator_string_min_length" xml:space="preserve">
+    <value>The string must be at least {0} characters long.</value>
+  </data>
+  <data name="Validator_value_type_invalid" xml:space="preserve">
+    <value>The supplied value is not of type which the validator can process.</value>
+  </data>
+  <data name="Validator_multiple_validator_attributes" xml:space="preserve">
+    <value>Multiple validator attributes are not currently supported. The property '{0}' has more than one validator attribute associated with it.</value>
+  </data>
+  <data name="Validator_timespan_value_must_be_positive" xml:space="preserve">
+    <value>The time span value must be positive.</value>
+  </data>
+  <data name="WrongType_of_Protected_provider" xml:space="preserve">
+    <value>The type specified does not extend ProtectedConfigurationProvider class.</value>
+  </data>
+  <data name="Config_element_locking_not_supported" xml:space="preserve">
+    <value>Locking of elements or attributes within a configuration section is not supported for legacy section '{0}'.</value>
+  </data>
+  <data name="Protection_provider_syntax_error" xml:space="preserve">
+    <value>A section using 'configProtectionProvider' may contain no other attributes.</value>
+  </data>
+  <data name="Protection_provider_invalid_format" xml:space="preserve">
+    <value>The configProtectionProvider attribute cannot be an empty string.</value>
+  </data>
+  <data name="Cannot_declare_or_remove_implicit_section" xml:space="preserve">
+    <value>The section '{0}' is a built-in section.  It cannot be declared by the user.</value>
+  </data>
+  <data name="Config_reserved_attribute" xml:space="preserve">
+    <value>The attribute '{0}' cannot be specified because its name starts with the reserved prefix 'config' or 'lock'.</value>
+  </data>
+  <data name="Filename_in_SaveAs_is_used_already" xml:space="preserve">
+    <value>The file name '{0}' is invalid because the same file name is already referenced by the configuration hierarchy you have opened.</value>
+  </data>
+  <data name="Provider_Already_Initialized" xml:space="preserve">
+    <value>This provider instance has already been initialized.</value>
+  </data>
+  <data name="Config_provider_name_null_or_empty" xml:space="preserve">
+    <value>Provider name cannot be null or empty.</value>
+  </data>
+  <data name="CollectionReadOnly" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="Config_source_not_under_config_dir" xml:space="preserve">
+    <value>The configSource '{0}' is invalid. It must refer to a file in the same directory or in a subdirectory as the configuration file.</value>
+  </data>
+  <data name="Config_source_invalid" xml:space="preserve">
+    <value>The configSource attribute is invalid.</value>
+  </data>
+  <data name="Location_invalid_inheritInChildApplications_in_machine_or_root_web_config" xml:space="preserve">
+    <value>InheritInChildApplications cannot be set to "false" if the location path is referring to machine.config or the root web.config.</value>
+  </data>
+  <data name="Cannot_change_both_AllowOverride_and_OverrideMode" xml:space="preserve">
+    <value>Changing both AllowOverride and OverrideMode is not supported for compatibility reasons. Please use only one or the other.</value>
+  </data>
+  <data name="Config_section_override_mode_attribute_invalid" xml:space="preserve">
+    <value>The 'overrideMode' and 'overrideModeDefault' attributes must be one of the following values: Inherited, Allow, Deny.</value>
+  </data>
+  <data name="Invalid_override_mode_declaration" xml:space="preserve">
+    <value>A &lt;location&gt; tag may contain only one of the 'allowOverride' or 'overrideMode' attributes.</value>
+  </data>
+  <data name="Machine_config_file_not_found" xml:space="preserve">
+    <value>The machine.config file '{0}' was not found.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="Unable_to_convert_type_from_string" xml:space="preserve">
+    <value>Could not find a type-converter to convert object if type '{0}' from string.</value>
+  </data>
+  <data name="Unable_to_convert_type_to_string" xml:space="preserve">
+    <value>Could not find a type-converter to convert object if type '{0}' to string.</value>
+  </data>
+  <data name="Could_not_create_from_default_value" xml:space="preserve">
+    <value>The property '{0}' could not be created from it's default value. Error message: {1}</value>
+  </data>
+  <data name="Could_not_create_from_default_value_2" xml:space="preserve">
+    <value>The property '{0}' could not be created from it's default value because the default value is of a different type.</value>
+  </data>
+  <data name="UserSettingsNotSupported" xml:space="preserve">
+    <value>The current configuration system does not support user-scoped settings.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Failed to save settings: {0}</value>
+  </data>
+  <data name="SettingsSaveFailedNoSection" xml:space="preserve">
+    <value>Failed to save settings: unable to access the configuration section.</value>
+  </data>
+  <data name="UnknownUserLevel" xml:space="preserve">
+    <value>Unknown ConfigurationUserLevel specified.</value>
+  </data>
+  <data name="BothScopeAttributes" xml:space="preserve">
+    <value>The setting {0} has both an ApplicationScopedSettingAttribute and a UserScopedSettingAttribute.</value>
+  </data>
+  <data name="NoScopeAttributes" xml:space="preserve">
+    <value>The setting {0} does not have either an ApplicationScopedSettingAttribute or UserScopedSettingAttribute.</value>
+  </data>
+  <data name="SettingsPropertyNotFound" xml:space="preserve">
+    <value>The settings property '{0}' was not found.</value>
+  </data>
+  <data name="SettingsPropertyReadOnly" xml:space="preserve">
+    <value>The settings property '{0}' is read-only.</value>
+  </data>
+  <data name="SettingsPropertyWrongType" xml:space="preserve">
+    <value>The settings property '{0}' is of a non-compatible type.</value>
+  </data>
+  <data name="ProviderInstantiationFailed" xml:space="preserve">
+    <value>Failed to instantiate provider: {0}.</value>
+  </data>
+  <data name="ProviderTypeLoadFailed" xml:space="preserve">
+    <value>Failed to load provider type: {0}.</value>
+  </data>
+  <data name="AppSettingsReaderNoKey" xml:space="preserve">
+    <value>The key '{0}' does not exist in the appSettings configuration section.</value>
+  </data>
+  <data name="AppSettingsReaderCantParse" xml:space="preserve">
+    <value>The value '{0}' was found in the appSettings configuration section for key '{1}', and this value is not a valid {2}.</value>
+  </data>
+  <data name="AppSettingsReaderEmptyString" xml:space="preserve">
+    <value>(empty string)</value>
+  </data>
+  <data name="Config_invalid_integer_attribute" xml:space="preserve">
+    <value>The '{0}' attribute must be set to an integer value.</value>
+  </data>
+  <data name="Config_base_required_attribute_empty" xml:space="preserve">
+    <value>Required attribute '{0}' cannot be empty.</value>
+  </data>
+  <data name="Config_base_elements_only" xml:space="preserve">
+    <value>Only elements allowed.</value>
+  </data>
+  <data name="Config_base_no_child_nodes" xml:space="preserve">
+    <value>Child nodes not allowed.</value>
+  </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="DuplicateFileName" xml:space="preserve">
+    <value>The file name '{0}' was already in the collection.</value>
+  </data>
+</root>

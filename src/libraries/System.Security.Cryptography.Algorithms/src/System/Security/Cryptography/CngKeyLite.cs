@@ -338,7 +338,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                fixed (byte* pValue = value)
+                fixed (byte* pValue = &value[0])
                 {
                     string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
                     return valueAsString;

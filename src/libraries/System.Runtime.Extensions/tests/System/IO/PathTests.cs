@@ -55,7 +55,7 @@ namespace System.IO.Tests
         [InlineData(@"..\..\files.txt", @"..\..")]
         [InlineData(@"C:\", null)]
         [InlineData(@"C:", null)]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific paths
         public static void GetDirectoryName_Windows(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
@@ -68,7 +68,7 @@ namespace System.IO.Tests
         [InlineData(@"dir/baz/bar", @"dir/baz")]
         [InlineData(@"../../files.txt", @"../..")]
         [InlineData(@"/", null)]
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific paths
         public static void GetDirectoryName_Unix(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
@@ -82,7 +82,7 @@ namespace System.IO.Tests
             Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(curDir)));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific special characters in directory path
         [Fact]
         public static void GetDirectoryName_ControlCharacters_Unix()
         {
@@ -110,7 +110,7 @@ namespace System.IO.Tests
             Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks file extension behavior on Unix
         [Theory]
         [InlineData("file.e xe", ".e xe")]
         [InlineData("file. ", ". ")]
@@ -143,7 +143,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific valid file names
         [Fact]
         public static void GetFileName_Unix()
         {
@@ -185,7 +185,7 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted("file.exe"));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests UNC
         [Theory]
         [InlineData(@"\\test\unc\path\to\something", @"\\test\unc")]
         [InlineData(@"\\a\b\c\d\e", @"\\a\b")]
@@ -203,7 +203,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific path convention
         [Theory]
         [InlineData(@"C:", @"C:")]
         [InlineData(@"C:\", @"C:\")]
@@ -218,7 +218,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific path convention
         [Fact]
         public static void GetPathRoot_Unix()
         {
@@ -226,6 +226,18 @@ namespace System.IO.Tests
             string uncPath = @"\\test\unc\path\to\something";
             Assert.False(Path.IsPathRooted(uncPath));
             Assert.Equal(string.Empty, Path.GetPathRoot(uncPath));
+        }
+        
+        // Testing invalid drive letters !(a-zA-Z)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(@"@:\foo")]    // 064 = @     065 = A
+        [InlineData(@"[:\\")]       // 091 = [     090 = Z
+        [InlineData(@"`:\foo")]    // 096 = `     097 = a
+        [InlineData(@"{:\\")]       // 123 = {     122 = z
+        public static void IsPathRooted_Windows_Invalid(string value)
+        {
+            Assert.False(Path.IsPathRooted(value));
         }
 
         [Fact]
@@ -304,7 +316,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(tmpPath));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Sets environment vars with Windows-specific paths
         [Theory]
         [InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp")]
         [InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp\")]
@@ -316,7 +328,7 @@ namespace System.IO.Tests
             GetTempPath_SetEnvVar("TMP", expected, newTempPath);
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Sets environment vars with Unix-specific paths
         [Theory]
         [InlineData("/tmp/", "/tmp")]
         [InlineData("/tmp/", "/tmp/")]
@@ -413,7 +425,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFullPath(path));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests whitespace in paths on Unix
         [Fact]
         public static void GetFullPath_Unix_Whitespace()
         {
@@ -423,7 +435,7 @@ namespace System.IO.Tests
             Assert.Equal(Path.Combine(curDir, "\r\n"), Path.GetFullPath("\r\n"));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests URIs as valid file names
         [Theory]
         [InlineData("http://www.microsoft.com")]
         [InlineData("file://somefile")]
@@ -435,7 +447,7 @@ namespace System.IO.Tests
                 Path.GetFullPath(uriAsFileName));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Checks normalized long path (> MaxPath) on Windows
         [Fact]
         public static void GetFullPath_Windows_NormalizedLongPathTooLong()
         {
@@ -452,7 +464,7 @@ namespace System.IO.Tests
             Assert.NotNull(Path.GetFullPath(longPath.ToString()));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         [Fact]
         public static void GetFullPath_Windows_AlternateDataStreamsNotSupported()
         {
@@ -461,7 +473,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath(@"C:\some\bad:path"));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         [Fact]
         public static void GetFullPath_Windows_URIFormatNotSupported()
         {
@@ -470,7 +482,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath("file://www.microsoft.com"));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         [Theory]
         [InlineData(@"bad::$DATA")]
         [InlineData(@"C  :")]
@@ -481,7 +493,7 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests legitimate Windows paths that are now allowed
         [Theory]
         [InlineData(@"C:...")]
         [InlineData(@"C:...\somedir")]
@@ -495,7 +507,7 @@ namespace System.IO.Tests
             Path.GetFullPath(path);
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests MaxPathNotTooLong on Windows
         [Fact]
         public static void GetFullPath_Windows_MaxPathNotTooLong()
         {
@@ -503,14 +515,14 @@ namespace System.IO.Tests
             Path.GetFullPath(@"C:\" + new string('a', 255) + @"\");
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests PathTooLong on Windows
         [Fact]
         public static void GetFullPath_Windows_PathTooLong()
         {
             Assert.Throws<PathTooLongException>(() => Path.GetFullPath(@"C:\" + new string('a', short.MaxValue) + @"\"));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific paths
         [Theory]
         [InlineData(@"C:\", @"C:\")]
         [InlineData(@"C:\.", @"C:\")]
@@ -523,7 +535,7 @@ namespace System.IO.Tests
             Assert.Equal(Path.GetFullPath(path), expected);
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests legitimate strage windows paths that are now allowed
         [Fact]
         public static void GetFullPath_Windows_StrangeButLegalPaths()
         {
@@ -542,7 +554,7 @@ namespace System.IO.Tests
                 Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ".. " + Path.DirectorySeparatorChar));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific paths
         [Theory]
         [InlineData(@"\\?\C:\ ")]
         [InlineData(@"\\?\C:\ \ ")]
@@ -599,39 +611,50 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests valid paths based on UNC
         [Theory]
-        [InlineData(@"\\server\share", @"\\server\share")]
-        [InlineData(@"\\server\share", @" \\server\share")]
-        [InlineData(@"\\server\share\dir", @"\\server\share\dir")]
-        [InlineData(@"\\server\share", @"\\server\share\.")]
-        [InlineData(@"\\server\share", @"\\server\share\..")]
-        [InlineData(@"\\server\share\", @"\\server\share\    ")]
-        [InlineData(@"\\server\  share\", @"\\server\  share\")]
-        [InlineData(@"\\?\UNC\server\share", @"\\?\UNC\server\share")]
-        [InlineData(@"\\?\UNC\server\share\dir", @"\\?\UNC\server\share\dir")]
-        [InlineData(@"\\?\UNC\server\share\. ", @"\\?\UNC\server\share\. ")]
-        [InlineData(@"\\?\UNC\server\share\.. ", @"\\?\UNC\server\share\.. ")]
-        [InlineData(@"\\?\UNC\server\share\    ", @"\\?\UNC\server\share\    ")]
-        [InlineData(@"\\?\UNC\server\  share\", @"\\?\UNC\server\  share\")]
+        // https://github.com/dotnet/corefx/issues/11965
+        [InlineData(@"\\LOCALHOST\share\test.txt.~SS", @"\\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share")]
+        [InlineData(@"\\LOCALHOST\share", @" \\LOCALHOST\share")]
+        [InlineData(@"\\LOCALHOST\share\dir", @"\\LOCALHOST\share\dir")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share\.")]
+        [InlineData(@"\\LOCALHOST\share", @"\\LOCALHOST\share\..")]
+        [InlineData(@"\\LOCALHOST\share\", @"\\LOCALHOST\share\    ")]
+        [InlineData(@"\\LOCALHOST\  share\", @"\\LOCALHOST\  share\")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\test.txt.~SS", @"\\?\UNC\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share", @"\\?\UNC\LOCALHOST\share")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\dir", @"\\?\UNC\LOCALHOST\share\dir")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\. ", @"\\?\UNC\LOCALHOST\share\. ")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\.. ", @"\\?\UNC\LOCALHOST\share\.. ")]
+        [InlineData(@"\\?\UNC\LOCALHOST\share\    ", @"\\?\UNC\LOCALHOST\share\    ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\  share\", @"\\.\UNC\LOCALHOST\  share\")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\test.txt.~SS", @"\\.\UNC\LOCALHOST\share\test.txt.~SS")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share", @"\\.\UNC\LOCALHOST\share")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\dir", @"\\.\UNC\LOCALHOST\share\dir")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\. ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\.. ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\share\", @"\\.\UNC\LOCALHOST\share\    ")]
+        [InlineData(@"\\.\UNC\LOCALHOST\  share\", @"\\.\UNC\LOCALHOST\  share\")]
+
         public static void GetFullPath_Windows_UNC_Valid(string expected, string input)
         {
             Assert.Equal(expected, Path.GetFullPath(input));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests invalid paths based on UNC
         [Theory]
         [InlineData(@"\\")]
-        [InlineData(@"\\server")]
-        [InlineData(@"\\server\")]
-        [InlineData(@"\\server\\")]
-        [InlineData(@"\\server\..")]
+        [InlineData(@"\\LOCALHOST")]
+        [InlineData(@"\\LOCALHOST\")]
+        [InlineData(@"\\LOCALHOST\\")]
+        [InlineData(@"\\LOCALHOST\..")]
         public static void GetFullPath_Windows_UNC_Invalid(string invalidPath)
         {
             Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get short path name
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public static void GetFullPath_Windows_83Paths()
         {
@@ -676,7 +699,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
         [Theory]
         [InlineData('*')]
         [InlineData('?')]
@@ -686,7 +709,7 @@ namespace System.IO.Tests
         }
 
         // Windows-only P/Invoke to create 8.3 short names from long names
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
+        [DllImport("kernel32.dll", EntryPoint = "GetShortPathNameW" ,CharSet = CharSet.Unicode)]
         private static extern uint GetShortPathName(string lpszLongPath, StringBuilder lpszShortPath, int cchBuffer);
     }
 }

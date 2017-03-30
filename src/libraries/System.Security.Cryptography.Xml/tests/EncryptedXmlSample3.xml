@@ -1,0 +1,51 @@
+﻿<s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+  <s:Header>
+    <a:Action s:mustUnderstand="1">http://tempuri.org/IFoo/Echo</a:Action>
+    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <o:BinarySecurityToken xmlns:o="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" u:Id="urn:uuid:d131b595-0752-437d-8c5e-7b2a98a2f45b">MIIBxTCCAS6gAwIBAgIQdpYkgiI1/kOLutzrMY5i1DANBgkqhkiG9w0BAQUFADAgMR4wHAYDVQQDExVNb25vIFRlc3QgUm9vdCBBZ2VuY3kwHhcNMDYwNzIxMDYzODUzWhcNMzkxMjMxMDk1OTU5WjAkMSIwIAYDVQQDExlQb3Vwb3Uncy1Tb2Z0d2FyZS1GYWN0b3J5MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQDSD0FU/Ymimao4JYiqVsgMYCVM1iRrfWtQwJ1/qUMfGj8GgmXyBcGxUz/cjpkn5n/TlzNVanjnNRYJS0FZifd4AbRnA3kON3R+YHKjWwzPqwoFHA7UQgRrrR7/QmuHOlXBPDOd/SgKjRtz6uWN2er0nYkwJyp/ihUktx1PLu7CWQIBETANBgkqhkiG9w0BAQUFAAOBgQCJzIlI/aUcM6/KHi6pgBJ77YbUcTXAlVFF7IPvOcVggC+OTXiRGK4tw5Q76QJK86HBE4QdUOd01eASPfJwCFNCq3X8g0bWRAukny8YON7XcLNP3psXRvNp2rudvSFJr51Eq1XtngZHMPDAFYCl4cBXvnlQZBwaHaWMGgngRCKnNA==</o:BinarySecurityToken>
+      <o:BinarySecurityToken xmlns:o="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" u:Id="urn:uuid:141b30e1-dd56-4310-a7f8-49c5a12ec43c">MIIBxTCCAS6gAwIBAgIQEee/K4+0mkmJA5E1MkwZvzANBgkqhkiG9w0BAQUFADAgMR4wHAYDVQQDExVNb25vIFRlc3QgUm9vdCBBZ2VuY3kwHhcNMDYwOTExMDc1MTI5WhcNMzkxMjMxMDk1OTU5WjAkMSIwIAYDVQQDExlQb3Vwb3Uncy1Tb2Z0d2FyZS1GYWN0b3J5MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCklg/n5bi6DYjx5r1sU0zDtXjC23e/aMQIqSZZU2S9x1Guf146AYwaDnSNUR1dUOwIVqbtf/Hud10i/SObG9enp/WNX7dT72XIqY9SHLhPv2BtK3rqCv27RyYnjLjuhvh9RQnrAR1A74TOWaOUFtPPbgkPVUPMfZOchcwc01kiSQIBETANBgkqhkiG9w0BAQUFAAOBgQA8VkJvtMigFi4jDC8+/t8ycmWo0YmrPJWMPtTCogRmbr4fin1mR4DPilU0XMycJGNDFcmRscqIb+iFOU4HbFqItSXZ7R8AVy5lInHMqY4dII+tau0HlBsog77eqzqjcEvaQuL7p5/Pj8jsjJPrqL6KbWfE7Q6irLFrAWqRghHO7Q==</o:BinarySecurityToken>
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+        <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5" />
+        <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+          <o:SecurityTokenReference xmlns:o="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <o:Reference URI="#urn:uuid:141b30e1-dd56-4310-a7f8-49c5a12ec43c" />
+          </o:SecurityTokenReference>
+        </KeyInfo>
+        <CipherData>
+          <CipherValue>CK8Oq5Yz0nDJr3lnXKorGloFU2SNdNxUjOJr29G3yZpBcWZs6DMQ74lkD2P+AE8lpNqSYdWSvKIyQp/RWZ+h8iSVZbk7fNQDsrgzHACaZt+IrLZ+9fp2bduMvW5arCLcyqQx6xyo1b71a6oClii9+4h/pU2yZknIgkbJkGVRI2k=</CipherValue>
+        </CipherData>
+        <ReferenceList>
+          <DataReference URI="_0" />
+        </ReferenceList>
+      </EncryptedKey>
+      <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+        <SignedInfo>
+          <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+          <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+          <Reference URI="">
+            <Transforms>
+              <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+            </Transforms>
+            <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+            <DigestValue>jERSBUIODT8GyYVl3vGZ9xol0ew=</DigestValue>
+          </Reference>
+        </SignedInfo>
+        <SignatureValue>YUmjsLb7VrLcG0SgpeyXJYEfyYeXBdwJTGm3z+Dd/koGPeCWZF7+B269oH0V+o8kMsob8G2es3tCdNv6Lrx3RE0dvUY2CWzrMzwa8kCI7B8g+jCoPvhZE8IEo0FNiqlEIC75iVino5XS9qFbiQG7U9/ORLO2A3F1WiZQe/wk7sM=</SignatureValue>
+        <KeyInfo>
+          <o:SecurityTokenReference xmlns:o="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <o:Reference URI="#urn:uuid:d131b595-0752-437d-8c5e-7b2a98a2f45b" />
+          </o:SecurityTokenReference>
+        </KeyInfo>
+      </Signature>
+    </Security>
+  </s:Header>
+  <s:Body>
+    <EncryptedData xmlns="http://www.w3.org/2001/04/xmlenc#">
+      <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#" />
+      <CipherData>
+        <CipherValue>bjfhChAWBuDrMmsnyyEw7zejIp1s8eMG6DUTXlX/7CsBPOkhmiHS1gPrtJ0ovbWJRA+E+FsD/maIKocUrqclUYa86/9JM+Qa3nN+OBVxX5cYp1T6wsJUuotRPV8bzz+p</CipherValue>
+      </CipherData>
+    </EncryptedData>
+  </s:Body>
+</s:Envelope>

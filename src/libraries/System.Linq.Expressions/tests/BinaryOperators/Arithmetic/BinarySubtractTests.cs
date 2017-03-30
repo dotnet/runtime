@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -201,7 +200,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(a - b), f());
+            Assert.Equal(unchecked((ushort)(a - b)), f());
         }
 
         private static void VerifyUShortSubtractOvf(ushort a, ushort b, bool useInterpreter)
@@ -238,7 +237,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)(a - b), f());
+            Assert.Equal(unchecked((short)(a - b)), f());
         }
 
         private static void VerifyShortSubtractOvf(short a, short b, bool useInterpreter)
@@ -275,7 +274,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyUIntSubtractOvf(uint a, uint b, bool useInterpreter)
@@ -313,7 +312,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyIntSubtractOvf(int a, int b, bool useInterpreter)
@@ -350,7 +349,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyULongSubtractOvf(ulong a, ulong b, bool useInterpreter)
@@ -388,7 +387,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyLongSubtractOvf(long a, long b, bool useInterpreter)
@@ -474,6 +473,43 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Subtract_MultipleOverloads_CorrectlyResolvesOperator1(bool useInterpreter)
+        {
+            BinaryExpression subtract = Expression.Subtract(Expression.Constant(new DateTime(100)), Expression.Constant(new DateTime(10)));
+            Func<TimeSpan> lambda = Expression.Lambda<Func<TimeSpan>>(subtract).Compile(useInterpreter);
+            Assert.Equal(new TimeSpan(90), lambda());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Subtract_MultipleOverloads_CorrectlyResolvesOperator2(bool useInterpreter)
+        {
+            BinaryExpression subtract = Expression.Subtract(Expression.Constant(new DateTime(100)), Expression.Constant(new TimeSpan(10)));
+            Func<DateTime> lambda = Expression.Lambda<Func<DateTime>>(subtract).Compile(useInterpreter);
+            Assert.Equal(new DateTime(90), lambda());
+        }
+
+        [Fact]
+        public static void Subtract_NoSuchOperatorDeclaredOnType_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Expression.Add(Expression.Constant(new SubClass(0)), Expression.Constant(new SubClass(1))));
+        }
+
+        public class BaseClass
+        {
+            public BaseClass(int value) { Value = value; }
+            public int Value { get; }
+
+            public static BaseClass operator -(BaseClass i1, BaseClass i2) => new BaseClass(i1.Value - i2.Value);
+        }
+
+        public class SubClass : BaseClass
+        {
+            public SubClass(int value) : base(value) { }
+        }
+
         [Fact]
         public static void CannotReduce()
         {
@@ -555,10 +591,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.Subtract(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e1 = Expression.Subtract(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a - b)", e1.ToString());
 
-            var e2 = Expression.SubtractChecked(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e2 = Expression.SubtractChecked(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a - b)", e2.ToString());
         }
     }

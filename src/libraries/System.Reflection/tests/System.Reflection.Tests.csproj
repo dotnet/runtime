@@ -1,75 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Reflection.Tests</AssemblyName>
-    <RootNamespace>System.Reflection.Tests</RootNamespace>
     <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
-    <Compile Include="GetType\GetTypeTests.cs" />
-    <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="GetTypeTests.cs" />
+    <Compile Include="ManifestResourceInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_GetBaseDefinition.cs" />
-    <Compile Include="MethodInfo\MethodInfo_CreateDelegateTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_CustomAttributeTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_EqualsTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_GetParametersTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_InvokeTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_MethodTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_NameTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_PropertyTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_SpecialReturnTypeTests.cs" />
-    <Compile Include="MethodInfo\MethodInfo_ToStringTests.cs" />
-    <Compile Include="Module\ModuleTests.cs" />
+    <Compile Include="MethodInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetSetValueTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_Members.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
-    <Compile Include="ReflectionContext\ReflectionContext.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredCtorTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredEventTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredFieldTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredMemberTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredMethodTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredNestedTypeTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredPropertiesTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GenericTypeArgumentsTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GenericTypeParametersTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_ImplementedInterfacesTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsAssignableFromTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsEquivalentTo.cs" />
-    <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_FindInterfaces.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GetEnum.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsAssignableAndInstanceOf.cs" />
-    <Compile Include="TypeInfo\TypeInfo_Members.cs" />
-    <Compile Include="TypeInfo\TypeInfo_StructLayoutAttribute.cs" />
-    <Compile Include="TypeInfo\TypeInfo_TypeInitializer.cs" />
-    <Compile Include="TypeInfo\TypeInfo_UnderlyingSystemType.cs" />
+    <Compile Include="PropertyInfoTests.cs" />
+    <Compile Include="ReflectionContextTests.cs" />
+    <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
+    <Compile Include="FieldInfoTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
@@ -80,11 +35,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Reflection.pkgproj">
-      <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
-      <Name>System.Reflection</Name>
-    </ProjectReference>
-    <ProjectReference Include="TestExe\System.Reflection.Tests.TestExe.csproj">
+    <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj">
       <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
       <Name>System.Reflection.Tests.TestExe</Name>
     </ProjectReference>

@@ -6,6 +6,7 @@
 #include "pal_utilities.h"
 
 #include <assert.h>
+#include <memory>
 #include <zlib.h>
 
 static_assert(PAL_Z_NOFLUSH == Z_NO_FLUSH, "");
@@ -30,14 +31,22 @@ static_assert(PAL_Z_DEFLATED == Z_DEFLATED, "");
 /*
 Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 */
-static void Init(PAL_ZStream* stream)
+static int32_t Init(PAL_ZStream* stream)
 {
-    z_stream* zStream = new z_stream();
-    zStream->zalloc = Z_NULL;
-    zStream->zfree = Z_NULL;
-    zStream->opaque = Z_NULL;
-
+    z_stream* zStream = new (std::nothrow) z_stream;
     stream->internalState = zStream;
+
+    if (zStream != nullptr)
+    {
+        zStream->zalloc = Z_NULL;
+        zStream->zfree = Z_NULL;
+        zStream->opaque = Z_NULL;
+        return PAL_Z_OK;
+    }
+    else
+    {
+        return PAL_Z_MEMERROR;
+    }
 }
 
 /*
@@ -47,9 +56,11 @@ static void End(PAL_ZStream* stream)
 {
     z_stream* zStream = reinterpret_cast<z_stream*>(stream->internalState);
     assert(zStream != nullptr);
-
-    delete zStream;
-    stream->internalState = nullptr;
+    if (zStream != nullptr)
+    {
+        delete zStream;
+        stream->internalState = nullptr;
+    }
 }
 
 /*
@@ -98,11 +109,13 @@ extern "C" int32_t CompressionNative_DeflateInit2_(
 {
     assert(stream != nullptr);
 
-    Init(stream);
-
-    z_stream* zStream = GetCurrentZStream(stream);
-    int32_t result = deflateInit2(zStream, level, method, windowBits, memLevel, strategy);
-    TransferState(zStream, stream);
+    int32_t result = Init(stream);
+    if (result == PAL_Z_OK)
+    {
+        z_stream* zStream = GetCurrentZStream(stream);
+        result = deflateInit2(zStream, level, method, windowBits, memLevel, strategy);
+        TransferState(zStream, stream);
+    }
 
     return result;
 }
@@ -133,11 +146,13 @@ extern "C" int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t 
 {
     assert(stream != nullptr);
 
-    Init(stream);
-
-    z_stream* zStream = GetCurrentZStream(stream);
-    int32_t result = inflateInit2(zStream, windowBits);
-    TransferState(zStream, stream);
+    int32_t result = Init(stream);
+    if (result == PAL_Z_OK)
+    {
+        z_stream* zStream = GetCurrentZStream(stream);
+        result = inflateInit2(zStream, windowBits);
+        TransferState(zStream, stream);
+    }
 
     return result;
 }

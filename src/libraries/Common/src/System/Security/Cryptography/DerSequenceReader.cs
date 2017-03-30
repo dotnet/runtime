@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 
 namespace System.Security.Cryptography
 {
@@ -15,6 +17,16 @@ namespace System.Security.Cryptography
     internal class DerSequenceReader
     {
         internal const byte ContextSpecificTagFlag = 0x80;
+        internal const byte ConstructedFlag = 0x20;
+        internal const byte ContextSpecificConstructedTag0 = ContextSpecificTagFlag | ConstructedFlag;
+        internal const byte ContextSpecificConstructedTag1 = ContextSpecificConstructedTag0 | 1;
+        internal const byte ContextSpecificConstructedTag2 = ContextSpecificConstructedTag0 | 2;
+        internal const byte ContextSpecificConstructedTag3 = ContextSpecificConstructedTag0 | 3;
+        internal const byte ConstructedSequence = ConstructedFlag | (byte)DerTag.Sequence;
+
+        internal const byte TagNumberMask = 0x1F;
+
+        internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
         private readonly byte[] _data;
         private readonly int _end;
@@ -40,17 +52,23 @@ namespace System.Security.Cryptography
         }
 
         internal DerSequenceReader(byte[] data, int offset, int length)
+            : this(DerTag.Sequence, data, offset, length)
+        {
+        }
+
+        internal DerSequenceReader(DerTag tagToEat, byte[] data, int offset, int length)
         {
             _data = data;
             _end = offset + length;
 
             Debug.Assert(data != null, "Data is null");
             Debug.Assert(offset >= 0, "Offset is negative");
-            Debug.Assert(length > 2, "Length is too short");
-            Debug.Assert(data.Length >= offset + length, "Array is too short");
+
+            if (length < 2 || length > data.Length - offset)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             _position = offset;
-            EatTag(DerTag.Sequence);
+            EatTag(tagToEat);
             ContentLength = EatLength();
         }
 
@@ -66,7 +84,20 @@ namespace System.Security.Cryptography
 
         internal byte PeekTag()
         {
+            if (!HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             return _data[_position];
+        }
+
+        internal bool HasTag(DerTag expectedTag)
+        {
+            return HasTag((byte)expectedTag);
+        }
+
+        internal bool HasTag(byte expectedTag)
+        {
+            return HasData && _data[_position] == expectedTag;
         }
 
         internal void SkipValue()
@@ -74,6 +105,37 @@ namespace System.Security.Cryptography
             EatTag((DerTag)PeekTag());
             int contentLength = EatLength();
             _position += contentLength;
+        }
+
+        /// <summary>
+        /// Returns the next value encoded (this includes tag and length)
+        /// </summary>
+        internal byte[] ReadNextEncodedValue()
+        {
+            int lengthLength;
+            int contentLength = ScanContentLength(_data, _position + 1, out lengthLength);
+            // Length of tag, encoded length, and the content
+            int totalLength = 1 + lengthLength + contentLength;
+
+            byte[] encodedValue = new byte[totalLength];
+            Buffer.BlockCopy(_data, _position, encodedValue, 0, totalLength);
+
+            _position += totalLength;
+            return encodedValue;
+        }
+
+        internal bool ReadBoolean()
+        {
+            EatTag(DerTag.Boolean);
+
+            int length = EatLength();
+
+            if (length != 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            bool value = _data[_position] != 0;
+            _position += length;
+            return value;
         }
 
         internal int ReadInteger()
@@ -92,6 +154,22 @@ namespace System.Security.Cryptography
             EatTag(DerTag.Integer);
 
             return ReadContentAsBytes();
+        }
+
+        internal byte[] ReadBitString()
+        {
+            EatTag(DerTag.BitString);
+
+            int contentLength = EatLength();
+            // skip the "unused bits" byte
+            contentLength--;
+            _position++;
+
+            byte[] octets = new byte[contentLength];
+            Buffer.BlockCopy(_data, _position, octets, 0, contentLength);
+
+            _position += contentLength;
+            return octets;
         }
 
         internal byte[] ReadOctetString()
@@ -161,18 +239,51 @@ namespace System.Security.Cryptography
             return new Oid(ReadOidAsString());
         }
 
-        internal DerSequenceReader ReadSequence()
+        internal string ReadUtf8String()
+        {
+            EatTag(DerTag.UTF8String);
+            int contentLength = EatLength();
+
+            string str = System.Text.Encoding.UTF8.GetString(_data, _position, contentLength);
+            _position += contentLength;
+
+            return TrimTrailingNulls(str);
+        }
+
+        private DerSequenceReader ReadCollectionWithTag(DerTag expected)
         {
             // DerSequenceReader wants to read its own tag, so don't EatTag here.
-            CheckTag(DerTag.Sequence, _data, _position);
+            CheckTag(expected, _data, _position);
 
             int lengthLength;
             int contentLength = ScanContentLength(_data, _position + 1, out lengthLength);
             int totalLength = 1 + lengthLength + contentLength;
 
-            DerSequenceReader reader = new DerSequenceReader(_data, _position, totalLength);
+            DerSequenceReader reader = new DerSequenceReader(expected, _data, _position, totalLength);
             _position += totalLength;
             return reader;
+        }
+
+        internal DerSequenceReader ReadSequence()
+        {
+            return ReadCollectionWithTag(DerTag.Sequence);
+        }
+
+        internal DerSequenceReader ReadSet()
+        {
+            return ReadCollectionWithTag(DerTag.Set);
+        }
+
+        internal string ReadPrintableString()
+        {
+            EatTag(DerTag.PrintableString);
+            int contentLength = EatLength();
+
+            // PrintableString is a subset of ASCII, so just return the ASCII interpretation.
+            string str = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
+            _position += contentLength;
+
+            return TrimTrailingNulls(str);
         }
 
         internal string ReadIA5String()
@@ -185,7 +296,108 @@ namespace System.Security.Cryptography
             string ia5String = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
             _position += contentLength;
 
-            return ia5String;
+            return TrimTrailingNulls(ia5String);
+        }
+
+        internal DateTime ReadX509Date()
+        {
+            byte tag = PeekTag();
+
+            switch ((DerTag)tag)
+            {
+                case DerTag.UTCTime:
+                    return ReadUtcTime();
+                case DerTag.GeneralizedTime:
+                    return ReadGeneralizedTime();
+            }
+
+            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+        }
+
+        internal DateTime ReadUtcTime()
+        {
+            return ReadTime(DerTag.UTCTime, "yyMMddHHmmss'Z'");
+        }
+
+        internal DateTime ReadGeneralizedTime()
+        {
+            // Currently only supports reading times with no fractional seconds or time differentials
+            // as RFC 2630 doesn't allow these. In case this is done, the format string has to be parsed
+            // to follow rules on X.680 and X.690.
+            return ReadTime(DerTag.GeneralizedTime, "yyyyMMddHHmmss'Z'");
+        }
+
+        internal string ReadBMPString()
+        {
+            EatTag(DerTag.BMPString);
+            int contentLength = EatLength();
+
+            // BMPString or Basic Multilingual Plane, is equal to UCS-2.
+            // And since this is cryptography, it's Big Endian.
+            string str = System.Text.Encoding.BigEndianUnicode.GetString(_data, _position, contentLength);
+            _position += contentLength;
+
+            return TrimTrailingNulls(str);
+        }
+
+        private static string TrimTrailingNulls(string value)
+        {
+            // .NET's string comparisons start by checking the length, so a trailing
+            // NULL character which was literally embedded in the DER would cause a
+            // failure in .NET whereas it wouldn't have with strcmp.
+            if (value?.Length > 0)
+            {
+                int newLength = value.Length;
+
+                while (newLength > 0 && value[newLength - 1] == 0)
+                {
+                    newLength--;
+                }
+
+                if (newLength != value.Length)
+                {
+                    return value.Substring(0, newLength);
+                }
+            }
+
+            return value;
+        }
+
+        private DateTime ReadTime(DerTag timeTag, string formatString)
+        {
+            EatTag(timeTag);
+            int contentLength = EatLength();
+
+            string decodedTime = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
+            _position += contentLength;
+
+            Debug.Assert(
+                decodedTime[decodedTime.Length - 1] == 'Z',
+                $"The date doesn't follow the X.690 format, ending with {decodedTime[decodedTime.Length - 1]}");
+
+            DateTime time;
+
+            DateTimeFormatInfo fi = LazyInitializer.EnsureInitialized(
+                ref s_validityDateTimeFormatInfo,
+                () =>
+                {
+                    var clone = (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+                    clone.Calendar.TwoDigitYearMax = 2049;
+
+                    return clone;
+                });
+
+            if (!DateTime.TryParseExact(
+                    decodedTime,
+                    formatString,
+                    fi,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out time))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            return time;
         }
 
         private byte[] ReadContentAsBytes()
@@ -201,12 +413,18 @@ namespace System.Security.Cryptography
 
         private void EatTag(DerTag expected)
         {
+            if (!HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             CheckTag(expected, _data, _position);
             _position++;
         }
 
         private static void CheckTag(DerTag expected, byte[] data, int position)
         {
+            if (position >= data.Length)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             byte actual = data[position];
 
             // Context-specific datatypes cannot be tag-verified
@@ -215,15 +433,21 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            byte relevant = (byte)(actual & 0x1F);
-            byte expectedByte = (byte)expected;
+            byte relevant = (byte)(actual & TagNumberMask);
+            byte expectedByte = (byte)((byte)expected & TagNumberMask);
 
             if (expectedByte != relevant)
             {
-                throw new InvalidOperationException(
-                    "Expected tag '0x" + expectedByte.ToString("X2") +
-                        "', got '0x" + actual.ToString("X2") +
-                        "' at position " + position);
+                throw new CryptographicException(
+                    SR.Cryptography_Der_Invalid_Encoding
+#if DEBUG
+                    ,
+                    new InvalidOperationException(
+                        "Expected tag '0x" + expectedByte.ToString("X2") +
+                            "', got '0x" + actual.ToString("X2") +
+                            "' at position " + position)
+#endif
+                    );
             }
         }
 
@@ -238,16 +462,29 @@ namespace System.Security.Cryptography
 
         private static int ScanContentLength(byte[] data, int offset, out int bytesConsumed)
         {
+            if (offset >= data.Length)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             byte lengthOrLengthLength = data[offset];
 
             if (lengthOrLengthLength < 0x80)
             {
+                if (lengthOrLengthLength > data.Length - offset)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
                 bytesConsumed = 1;
                 return lengthOrLengthLength;
             }
 
             // The one byte which was lengthLength, plus the number of bytes it said to consume.
             bytesConsumed = 1 + (lengthOrLengthLength & 0x7F);
+
+            if (bytesConsumed > data.Length - offset)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            // CER indefinite length is not supported.
+            if (bytesConsumed == 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             int end = offset + bytesConsumed;
             int accum = 0;
@@ -259,6 +496,9 @@ namespace System.Security.Cryptography
                 accum <<= 8;
                 accum += data[i];
             }
+
+            if (accum > data.Length - offset - bytesConsumed)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             return accum;
         }
@@ -278,6 +518,8 @@ namespace System.Security.Cryptography
             T61String = 0x14,
             IA5String = 0x16,
             UTCTime = 0x17,
+            GeneralizedTime = 0x18,
+            BMPString = 0x1E,
         }
     }
 }

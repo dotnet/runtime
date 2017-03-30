@@ -4,7 +4,7 @@
 
 namespace System.IO.Compression
 {
-    // Do not rearrange the enum values. 
+    // Do not rearrange the enum values.
     internal enum InflaterState
     {
         ReadingHeader = 0,           // Only applies to GZIP

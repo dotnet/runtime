@@ -6,6 +6,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class CurveDef
     {
+#if netcoreapp
         public CurveDef() { }
         public ECCurve Curve;
         public ECCurve.ECCurveType CurveType;
@@ -36,5 +37,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             return false;
         }
+#endif
     }
 }

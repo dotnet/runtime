@@ -61,7 +61,7 @@ namespace System.Reflection.PortableExecutable
         public int DataPointer { get; }
 
         /// <summary>
-        /// True if the the entry is a <see cref="DebugDirectoryEntryType.CodeView"/> entry pointing to a Portable PDB.
+        /// True if the entry is a <see cref="DebugDirectoryEntryType.CodeView"/> entry pointing to a Portable PDB.
         /// </summary>
         public bool IsPortableCodeView => MinorVersion == PortablePdbVersions.PortableCodeViewVersionMagic;
 

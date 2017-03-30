@@ -313,7 +313,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.ReadToDescendant("child1"), true, "Cant find child1");
             CError.Compare(DataReader.ReadToDescendant("child2"), true, "Cant find child2");
             CError.Compare(DataReader.ReadToDescendant("child3"), true, "Cant find child3");
-            CError.Compare(DataReader.ReadToDescendant("child4"), false, "shouldnt find child4");
+            CError.Compare(DataReader.ReadToDescendant("child4"), false, "Shouldn't find child4");
             CError.Compare(DataReader.NodeType, XmlNodeType.Element, "Not on EndElement");
             DataReader.Read();
             CError.Compare(DataReader.NodeType, XmlNodeType.Text, "Not on Element");
@@ -334,7 +334,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.ReadToDescendant("child1", "elem"), true, "Cant find child1");
             CError.Compare(DataReader.ReadToDescendant("child2", "child2"), true, "Cant find child2");
             CError.Compare(DataReader.ReadToDescendant("child3", "child2"), true, "Cant find child3");
-            CError.Compare(DataReader.ReadToDescendant("child4", "child2"), false, "shouldnt find child4");
+            CError.Compare(DataReader.ReadToDescendant("child4", "child2"), false, "Shouldn't find child4");
             CError.Compare(DataReader.NodeType, XmlNodeType.Element, "Not on EndElement");
             DataReader.Read();
             CError.Compare(DataReader.NodeType, XmlNodeType.Text, "Not on Element");
@@ -355,7 +355,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.ReadToDescendant("e:child1"), true, "Cant find child1");
             CError.Compare(DataReader.ReadToDescendant("e:child2"), true, "Cant find child2");
             CError.Compare(DataReader.ReadToDescendant("e:child3"), true, "Cant find child3");
-            CError.Compare(DataReader.ReadToDescendant("e:child4"), false, "shouldnt find child4");
+            CError.Compare(DataReader.ReadToDescendant("e:child4"), false, "Shouldn't find child4");
             CError.Compare(DataReader.NodeType, XmlNodeType.Element, "Not on EndElement");
             DataReader.Read();
             CError.Compare(DataReader.NodeType, XmlNodeType.Text, "Not on Element");

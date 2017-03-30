@@ -12,7 +12,6 @@ using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Globalization;
 using System.Security;
-using System.Security.Policy;
 using System.Reflection;
 using System.Runtime.Versioning;
 
@@ -501,7 +500,7 @@ namespace System.Xml
         private XmlSchemaObject FindSchemaInfo(XmlElement elementToValidate)
         {
             _isPartialTreeValid = true;
-            Debug.Assert(elementToValidate.ParentNode.NodeType != XmlNodeType.Document); //Handle if it is the documentElement seperately            
+            Debug.Assert(elementToValidate.ParentNode.NodeType != XmlNodeType.Document); //Handle if it is the documentElement separately            
 
             //Create nodelist to navigate down again
             XmlNode currentNode = elementToValidate;
@@ -687,7 +686,7 @@ namespace System.Xml
 
         // SxS: This function calls ValidateElement on XmlSchemaValidator which is annotated with ResourceExposure attribute.
         // Since the resource names passed to ValidateElement method are null and the function does not expose any resources 
-        // it is fine to supress the warning.
+        // it is fine to suppress the warning.
         private void ValidateSingleElement(XmlElement elementNode, bool skipToEnd, XmlSchemaInfo newSchemaInfo)
         {
             _nsManager.PushScope();

@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
+    <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.PlatformNotSupported.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeProvider.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpMemberAttributeConverter.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpModifierAttributeConverter.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpTypeAttributeConverter.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeGenerator.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeGenerator.PlatformNotSupported.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProvider.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBMemberAttributeConverter.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBModiferAttributeConverter.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBTypeAttributeConverter.cs" />
+    <Compile Include="System\CodeDom\CodeArgumentReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeArrayCreateExpression.cs" />
+    <Compile Include="System\CodeDom\CodeArrayIndexerExpression.cs" />
+    <Compile Include="System\CodeDom\CodeAssignStatement.cs" />
+    <Compile Include="System\CodeDom\CodeAttachEventStatement.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeArgument.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeArgumentCollection.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeDeclaration.cs" />
+    <Compile Include="System\CodeDom\CodeAttributeDeclarationCollection.cs" />
+    <Compile Include="System\CodeDom\CodeBaseReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeBinaryOperatorExpression.cs" />
+    <Compile Include="System\CodeDom\CodeBinaryOperatorType.cs" />
+    <Compile Include="System\CodeDom\CodeCastExpression.cs" />
+    <Compile Include="System\CodeDom\CodeCatchClause.cs" />
+    <Compile Include="System\CodeDom\CodeCatchClauseCollection.cs" />
+    <Compile Include="System\CodeDom\CodeChecksumPragma.cs" />
+    <Compile Include="System\CodeDom\CodeComment.cs" />
+    <Compile Include="System\CodeDom\CodeCommentStatement.cs" />
+    <Compile Include="System\CodeDom\CodeCommentStatementCollection.cs" />
+    <Compile Include="System\CodeDom\CodeCompileUnit.cs" />
+    <Compile Include="System\CodeDom\CodeConditionStatement.cs" />
+    <Compile Include="System\CodeDom\CodeConstructor.cs" />
+    <Compile Include="System\CodeDom\CodeDefaultValueExpression.cs" />
+    <Compile Include="System\CodeDom\CodeDelegateCreateExpression.cs" />
+    <Compile Include="System\CodeDom\CodeDelegateInvokeExpression.cs" />
+    <Compile Include="System\CodeDom\CodeDirectionExpression.cs" />
+    <Compile Include="System\CodeDom\CodeDirective.cs" />
+    <Compile Include="System\CodeDom\CodeDirectiveCollection.cs" />
+    <Compile Include="System\CodeDom\CodeEntryPointMethod.cs" />
+    <Compile Include="System\CodeDom\CodeEventReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeExpression.cs" />
+    <Compile Include="System\CodeDom\CodeExpressionCollection.cs" />
+    <Compile Include="System\CodeDom\CodeExpressionStatement.cs" />
+    <Compile Include="System\CodeDom\CodeFieldReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeGotoStatement.cs" />
+    <Compile Include="System\CodeDom\CodeIndexerExpression.cs" />
+    <Compile Include="System\CodeDom\CodeIterationStatement.cs" />
+    <Compile Include="System\CodeDom\CodeLabeledStatement.cs" />
+    <Compile Include="System\CodeDom\CodeLinePragma.cs" />
+    <Compile Include="System\CodeDom\CodeMemberEvent.cs" />
+    <Compile Include="System\CodeDom\CodeMemberField.cs" />
+    <Compile Include="System\CodeDom\CodeMemberMethod.cs" />
+    <Compile Include="System\CodeDom\CodeMemberProperty.cs" />
+    <Compile Include="System\CodeDom\CodeMethodInvokeExpression.cs" />
+    <Compile Include="System\CodeDom\codemethodreferenceexpression.cs" />
+    <Compile Include="System\CodeDom\CodeMethodReturnStatement.cs" />
+    <Compile Include="System\CodeDom\CodeNamespace.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceCollection.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceImport.cs" />
+    <Compile Include="System\CodeDom\CodeNamespaceImportCollection.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
+    <Compile Include="System\CodeDom\CodeObjectCreateExpression.cs" />
+    <Compile Include="System\CodeDom\CodeParameterDeclarationExpression.cs" />
+    <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
+    <Compile Include="System\CodeDom\CodePrimitiveExpression.cs" />
+    <Compile Include="System\CodeDom\CodePropertyReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodePropertySetValueReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeRegionDirective.cs" />
+    <Compile Include="System\CodeDom\CodeRegionMode.cs" />
+    <Compile Include="System\CodeDom\CodeRemoveEventStatement.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetCompileUnit.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetExpression.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetStatement.cs" />
+    <Compile Include="System\CodeDom\CodeSnippetTypeMember.cs" />
+    <Compile Include="System\CodeDom\CodeStatement.cs" />
+    <Compile Include="System\CodeDom\CodeStatementCollection.cs" />
+    <Compile Include="System\CodeDom\CodeThisReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeThrowExceptionStatement.cs" />
+    <Compile Include="System\CodeDom\CodeTryCatchFinallyStatement.cs" />
+    <Compile Include="System\CodeDom\CodeTypeConstructor.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDeclaration.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDeclarationCollection.cs" />
+    <Compile Include="System\CodeDom\CodeTypeDelegate.cs" />
+    <Compile Include="System\CodeDom\CodeTypeMember.cs" />
+    <Compile Include="System\CodeDom\CodeTypeMemberCollection.cs" />
+    <Compile Include="System\CodeDom\CodeTypeOfExpression.cs" />
+    <Compile Include="System\CodeDom\CodeTypeParameter.cs" />
+    <Compile Include="System\CodeDom\CodeTypeParameterCollection.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="System\CodeDom\CodeTypeReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\CodeVariableDeclarationStatement.cs" />
+    <Compile Include="System\CodeDom\CodeVariableReferenceExpression.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeCompiler.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeDomProvider.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGenerator.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeGeneratorOptions.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeParser.cs" />
+    <Compile Include="System\CodeDom\Compiler\CodeValidator.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerError.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerErrorCollection.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerInfo.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerParameters.cs" />
+    <Compile Include="System\CodeDom\Compiler\CompilerResults.cs" />
+    <Compile Include="System\CodeDom\Compiler\Executor.cs" />
+    <Compile Include="System\CodeDom\Compiler\GeneratorSupport.cs" />
+    <Compile Include="System\CodeDom\Compiler\ICodeCompiler.cs" />
+    <Compile Include="System\CodeDom\Compiler\ICodeGenerator.cs" />
+    <Compile Include="System\CodeDom\Compiler\ICodeParser.cs" />
+    <Compile Include="System\CodeDom\Compiler\ExposedTabStringIndentedTextWriter.cs" />
+    <Compile Include="System\CodeDom\Compiler\LanguageOptions.cs" />
+    <Compile Include="$(CommonPath)\System\IO\TempFileCollection.cs" />
+    <Compile Include="System\CodeDom\FieldDirection.cs" />
+    <Compile Include="System\CodeDom\MemberAttributes.cs" />
+    <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
+    <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

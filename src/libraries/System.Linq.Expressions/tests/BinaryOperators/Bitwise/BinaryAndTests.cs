@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -271,13 +270,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.And(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e1 = Expression.And(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a & b)", e1.ToString());
 
-            var e2 = Expression.And(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
+            BinaryExpression e2 = Expression.And(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a And b)", e2.ToString());
 
-            var e3 = Expression.And(Expression.Parameter(typeof(bool?), "a"), Expression.Parameter(typeof(bool?), "b"));
+            BinaryExpression e3 = Expression.And(Expression.Parameter(typeof(bool?), "a"), Expression.Parameter(typeof(bool?), "b"));
             Assert.Equal("(a And b)", e3.ToString());
         }
     }

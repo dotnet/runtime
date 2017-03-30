@@ -13,7 +13,7 @@ namespace System.Diagnostics
         {
             if (!s_hasProcessId)
             {
-                s_processId = (int)Interop.mincore.GetCurrentProcessId();
+                s_processId = (int)Interop.Kernel32.GetCurrentProcessId();
                 s_hasProcessId = true;
             }
 

@@ -177,6 +177,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(5, enumeratorStruct.Current);
             Assert.False(enumeratorStruct.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumeratorStruct.Current);
+            Assert.False(enumeratorStruct.MoveNext());
 
             var enumerator = ((IEnumerable<int>)stack).GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
@@ -184,6 +185,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(5, enumerator.Current);
             Assert.False(enumerator.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.False(enumerator.MoveNext());
 
             enumerator.Reset();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
@@ -207,6 +209,13 @@ namespace System.Collections.Immutable.Tests
             Assert.NotEqual(ImmutableStack<int>.Empty.Push(5), ImmutableStack<int>.Empty.Push(3));
             Assert.NotEqual(ImmutableStack<int>.Empty.Push(3).Push(5), ImmutableStack<int>.Empty.Push(3));
             Assert.NotEqual(ImmutableStack<int>.Empty.Push(3), ImmutableStack<int>.Empty.Push(3).Push(5));
+        }
+
+        [Fact]
+        public void GetEnumerator_EmptyStackMoveNext_ReturnsFalse()
+        {
+            ImmutableStack<int> stack = ImmutableStack<int>.Empty;
+            Assert.False(stack.GetEnumerator().MoveNext());
         }
 
         [Fact]

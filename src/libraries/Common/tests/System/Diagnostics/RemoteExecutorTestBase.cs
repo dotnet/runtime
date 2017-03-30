@@ -15,13 +15,18 @@ namespace System.Diagnostics
     {
         /// <summary>The name of the test console app.</summary>
         protected const string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
-        /// <summary>The CoreCLR host used to host the test console app.</summary>
-        protected static readonly string HostRunner = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "CoreRun.exe" : "corerun";
+        /// <summary>The name of the CoreCLR host used to host the test console app.</summary>
+        protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet";
+        /// <summary>The absolute path to the host runner executable.</summary>
+        protected static string HostRunner => Process.GetCurrentProcess().MainModule.FileName;
 
         /// <summary>A timeout (milliseconds) after which a wait on a remote operation should be considered a failure.</summary>
-        internal const int FailWaitTimeoutMilliseconds = 30 * 1000;
+        public const int FailWaitTimeoutMilliseconds = 60 * 1000;
         /// <summary>The exit code returned when the test process exits successfully.</summary>
         internal const int SuccessExitCode = 42;
+
+        /// <summary>Determines if we're running on the .NET Framework (rather than .NET Core).</summary>
+        internal static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
@@ -130,32 +135,35 @@ namespace System.Diagnostics
 
             // If we need the host (if it exists), use it, otherwise target the console app directly.
             string testConsoleAppArgs = "\"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args);
-            if (File.Exists(HostRunner))
-            {
-                psi.FileName = HostRunner;
-                psi.Arguments = TestConsoleApp + " " + testConsoleAppArgs;
-            }
-            else
+            
+            if (IsFullFramework)
             {
                 psi.FileName = TestConsoleApp;
                 psi.Arguments = testConsoleAppArgs;
             }
-
+            else
+            {
+                psi.FileName = HostRunner;
+                psi.Arguments = TestConsoleApp + " " + testConsoleAppArgs;
+            }
+         
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :
-                new Process() { StartInfo = psi });
+                new Process() { StartInfo = psi }, options);
         }
 
         /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
         internal sealed class RemoteInvokeHandle : IDisposable
         {
-            public RemoteInvokeHandle(Process process)
+            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options)
             {
                 Process = process;
+                Options = options;
             }
 
             public Process Process { get; private set; }
+            public RemoteInvokeOptions Options { get; private set; }
 
             public void Dispose()
             {
@@ -165,8 +173,13 @@ namespace System.Diagnostics
                     // needing to do this in every derived test and keep each test much simpler.
                     try
                     {
-                        Assert.True(Process.WaitForExit(FailWaitTimeoutMilliseconds));
-                        Assert.Equal(SuccessExitCode, Process.ExitCode);
+                        Assert.True(Process.WaitForExit(Options.TimeOut),
+                            $"Timed out after {Options.TimeOut}ms waiting for remote process {Process.Id}");
+
+                        if (Options.CheckExitCode)
+                        {
+                            Assert.Equal(SuccessExitCode, Process.ExitCode);
+                        }
                     }
                     finally
                     {
@@ -188,5 +201,8 @@ namespace System.Diagnostics
         public bool Start { get; set; } = true;
         public ProcessStartInfo StartInfo { get; set; } = new ProcessStartInfo();
         public bool EnableProfiling { get; set; } = true;
+        public bool CheckExitCode {get; set; } = true;
+
+        public int TimeOut {get; set; } = RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
     }
 }

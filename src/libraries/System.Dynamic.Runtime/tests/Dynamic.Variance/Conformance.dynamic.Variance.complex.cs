@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder01.Twondorder01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder01.Twondorder01;
-
     // <Area>variance</Area>
     // <Title> Higher order variance</Title>
     // <Description> 2nd order generic types </Description>
@@ -74,8 +72,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder02.Twondorder02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder02.Twondorder02;
-
     // <Area>variance</Area>
     // <Title> Higher order variance</Title>
     // <Description>declaration tests on interfaces -  2nd order generic types on return type, invariant => contravariant</Description>
@@ -126,8 +122,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse01.multipleuse01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse01.multipleuse01;
-
     // <Area>variance</Area>
     // <Title> Using both Co and contravariance in types</Title>
     // <Description> basic contravariance on delegates </Description>
@@ -195,8 +189,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multip
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse02.multipleuse02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse02.multipleuse02;
-
     // <Area>variance</Area>
     // <Title> Using both Co and contravariance in types</Title>
     // <Description> variance on interfaces </Description>
@@ -261,8 +253,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multip
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse03.multipleuse03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multipleuse03.multipleuse03;
-
     // <Area>variance</Area>
     // <Title> Using both Co and contravariance in types</Title>
     // <Description> variance on interfaces </Description>
@@ -345,8 +335,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.multip
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference001.typeinference001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference001.typeinference001;
-
     public // <Area>variance</Area>
            // <Title> </Title>
            // <Description> variance on generics </Description>
@@ -408,7 +396,6 @@ class Animal
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference002.typeinference002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference002.typeinference002;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
@@ -452,15 +439,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference003.typeinference003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference003.typeinference003;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public class C
     {
@@ -506,15 +490,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference004.typeinference004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference004.typeinference004;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public interface IFoo<in T>
     {
@@ -564,15 +545,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference005.typeinference005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference005.typeinference005;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public interface IFoo<in T>
     {
@@ -622,15 +600,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference006.typeinference006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference006.typeinference006;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public interface IFoo<in T>
     {
@@ -688,7 +663,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference007.typeinference007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference007.typeinference007;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
@@ -735,7 +709,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference008.typeinference008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference008.typeinference008;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>
@@ -782,7 +755,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typein
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference009.typeinference009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.typeinference009.typeinference009;
     // <Area>variance</Area>
     // <Title> </Title>
     // <Description> variance on generics </Description>

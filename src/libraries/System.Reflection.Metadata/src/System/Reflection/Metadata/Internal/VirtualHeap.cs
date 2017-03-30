@@ -51,9 +51,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             if (Table != null)
             {
-                foreach (var blob in Table.Values)
+                foreach (var blobPair in Table)
                 {
-                    blob.Free();
+                    blobPair.Value.Free();
                 }
             }
         }

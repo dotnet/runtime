@@ -32,6 +32,12 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 0xD0, 0xFD, 0x00, 0x00, 0xEF, 0xFD, 0x00, 0x00 }, 0, 8, "\uFDD0\uFDEF" };
             yield return new object[] { new byte[] { 0xD0, 0xFD, 0x00, 0x00, 0xEF, 0xFD, 0x00, 0x00 }, 0, 8, "\uFDD0\uFDEF" };
 
+            // High BMP non-chars: U+FFFF, U+FFFE, U+FFFD
+            yield return new object[] { new byte[] { 253, 255, 0, 0 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 254, 255, 0, 0 }, 0, 4, "\uFFFE" };
+            yield return new object[] { new byte[] { 255, 255, 0, 0 }, 0, 4, "\uFFFF" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 12, "\uFFFF\uFFFE\uFFFD" };
+
             // Empty strings
             yield return new object[] { new byte[0], 0, 0, string.Empty };
             yield return new object[] { new byte[10], 10, 0, string.Empty };
@@ -54,6 +60,32 @@ namespace System.Text.Tests
             EncodingHelpers.Decode(new UTF32Encoding(false, false, true), littleEndianBytes, index, count, expected);
         }
 
+        public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
+        {
+            yield return new object[] { new byte[] { 123 }, 0, 1, "\uFFFD" };
+            yield return new object[] { new byte[] { 123, 123 }, 0, 2, "\uFFFD" };
+            yield return new object[] { new byte[] { 123, 123, 123 }, 0, 3, "\uFFFD" };
+            yield return new object[] { new byte[] { 123, 123, 123, 123 }, 1, 3, "\uFFFD" };
+            yield return new object[] { new byte[] { 97, 0, 0, 0, 0 }, 0, 5, "a\uFFFD" };
+
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 4, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0xD8, 0x00, 0x00, 0x00, 0xDC, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0x80, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\u8000\uFFFD" };
+
+            // Too high scalar values
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0x11, 0x00 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x11, 0x00 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x01 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0x10, 0x01 }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0xFF }, 0, 4, "\uFFFD" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Decode_InvalidBytes_TestData))]
         public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
             byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
@@ -67,39 +99,6 @@ namespace System.Text.Tests
             NegativeEncodingTests.Decode_Invalid(new UTF32Encoding(true, false, true), bigEndianBytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UTF32Encoding(false, true, true), littleEndianBytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UTF32Encoding(false, false, true), littleEndianBytes, index, count);
-        }
-
-        [Fact]
-        public void Decode_InvalidBytes()
-        {
-            // TODO: add into Decode_TestData or Decode_InvalidBytes_TestData once #7166 is fixed
-            // High BMP non-chars: U+FFFF, U+FFFE, U+FFFD
-            Decode(new byte[] { 253, 255, 0, 0 }, 0, 4, "\uFFFD");
-            Decode(new byte[] { 254, 255, 0, 0 }, 0, 4, "\uFFFE");
-            Decode(new byte[] { 255, 255, 0, 0 }, 0, 4, "\uFFFF");
-            Decode(new byte[] { 0xFF, 0xFF, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 12, "\uFFFF\uFFFE\uFFFD");
-
-            // Invalid bytes
-            Decode_InvalidBytes(new byte[] { 123 }, 0, 1, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 123, 123 }, 0, 2, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 123, 123, 123 }, 0, 3, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 123, 123, 123, 123 }, 1, 3, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 97, 0, 0, 0, 0 }, 0, 5, "a\uFFFD");
-
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 4, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0xD8, 0x00, 0x00, 0x00, 0xDC, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xDB, 0x00, 0x00, 0xFD, 0xFF, 0x00, 0x00 }, 0, 8, "\uFFFD\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0x80, 0x00, 0x00, 0xFF, 0xDF, 0x00, 0x00 }, 0, 8, "\u8000\uFFFD");
-
-            // Too high scalar values
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0x11, 0x00 }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x11, 0x00 }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0x01 }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0x10, 0x01 }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0x00, 0x00, 0x00, 0xFF }, 0, 4, "\uFFFD");
-            Decode_InvalidBytes(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, 0, 4, "\uFFFD");
         }
 
         public static byte[] GetBigEndianBytes(byte[] littleEndianBytes, int index, int count)

@@ -4,8 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
@@ -30,7 +29,11 @@ namespace System.Net.Sockets.Tests
                         args.SetBuffer(new byte[1], 0, 1);
                         args.UserToken = client;
 
-                        Assert.True(client.ReceiveAsync(args));
+                        bool pending = client.ReceiveAsync(args);
+                        if (!pending)
+                        {
+                            OnOperationCompleted(null, args);
+                        }
                         break;
                     }
 
@@ -43,7 +46,11 @@ namespace System.Net.Sockets.Tests
                             break;
                         }
 
-                        Assert.True(client.SendAsync(args));
+                        bool pending = client.SendAsync(args);
+                        if (!pending)
+                        {
+                            OnOperationCompleted(null, args);
+                        }
                         break;
                     }
 
@@ -52,13 +59,18 @@ namespace System.Net.Sockets.Tests
                         var client = (Socket)args.UserToken;
 
                         Assert.True(args.BytesTransferred == args.Buffer.Length);
-                        Assert.True(client.ReceiveAsync(args));
+
+                        bool pending = client.ReceiveAsync(args);
+                        if (!pending)
+                        {
+                            OnOperationCompleted(null, args);
+                        }
                         break;
                     }
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop] // Explicitly waits for 5 seconds
         [Fact]
         public void Shutdown_TCP_CLOSED_Success()
         {
@@ -98,7 +110,7 @@ namespace System.Net.Sockets.Tests
 
                 // Wait for the underlying connection to transition from TIME_WAIT to
                 // CLOSED.
-                Task.Delay(TimeWaitTimeout).Wait();
+                Thread.Sleep(TimeWaitTimeout);
 
                 client.Shutdown(SocketShutdown.Both);
             }

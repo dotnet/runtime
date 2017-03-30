@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     [TestCase(Name = "MaxCharacters Settings", Desc = "MaxCharacters Settings")]
     public partial class TCMaxSettings : TCXMLReaderBaseGeneral
     {
-        private long _defaultCharsEnt = 0;
+        private long _defaultCharsEnt = (long)1e7;  // By default, entity resolving is limited to 10 million characters (On full .NET the default used to be zero (=unlimited) as LegacyXmlSettings was enabled)
         private long _defaultCharsDoc = 0;
         private long _maxVal = Int64.MaxValue;
         private long _bigVal = 100000;
@@ -330,8 +330,8 @@ namespace System.Xml.Tests
             using (XmlReader reader = ReaderHelper.Create(new StringReader(xml), rs))
             {
                 while (reader.Read()) ;
-                CError.Compare((int)reader.Settings.MaxCharactersFromEntities, 0, "Error");
-                CError.Compare((int)reader.Settings.MaxCharactersInDocument, 0, "Error");
+                CError.Compare((long)reader.Settings.MaxCharactersFromEntities, _defaultCharsEnt, "Error");
+                CError.Compare((long)reader.Settings.MaxCharactersInDocument, _defaultCharsDoc, "Error");
             }
             return TEST_PASS;
         }
@@ -341,7 +341,7 @@ namespace System.Xml.Tests
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "" })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&amp;</a>'>]><test>&a;<test>" })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<q = 'a'/>" })]
-        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<!-- http://www.w3.org is bound to n1 and n2 -->\r\n<x xmlns:n1=\"http://www.w3.org\"\r\n   xmlns:n2=\"http://www.w3.org\" >\r\n   <bad n1:a=\"1\"  n2:a=\"2\" /></x>" })]
+        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { string.Format("<!-- http://www.w3.org is bound to n1 and n2 -->{0}<x xmlns:n1=\"http://www.w3.org\"{0}   xmlns:n2=\"http://www.w3.org\" >{0}   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", Environment.NewLine) })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<root><!--comment \uD812><!--comment \uD812>-->--></root>" })]
         public int v260()
         {
@@ -371,7 +371,7 @@ namespace System.Xml.Tests
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&a;</a>'>]><test>&a;</test>", 25 })]     
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&amp;</a>'>]><test>&a;<test>", 26 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<q = 'a'/>", 5 })]
-        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<!-- http://www.w3.org is bound to n1 and n2 -->\r\n<x xmlns:n1=\"http://www.w3.org\"\r\n   xmlns:n2=\"http://www.w3.org\" >\r\n   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", 35 })]
+        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { string.Format("<!-- http://www.w3.org is bound to n1 and n2 -->{0}<x xmlns:n1=\"http://www.w3.org\"{0}   xmlns:n2=\"http://www.w3.org\" >{0}   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", Environment.NewLine), 35 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<root><!--comment \uD812><!--comment \uD812>-->--></root>", 18 })]
         public int v270()
         {

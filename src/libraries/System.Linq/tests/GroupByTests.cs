@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using Xunit;
 
@@ -208,6 +209,15 @@ namespace System.Linq.Tests
             int[] element = { };
             Record[] source = { };
             Assert.Empty(new Record[] { }.GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void EmptySourceRunOnce()
+        {
+            string[] key = { };
+            int[] element = { };
+            Record[] source = { };
+            Assert.Empty(new Record[] { }.RunOnce().GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -427,6 +437,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void DuplicateKeysCustomComparerRunOnce()
+        {
+            string[] key = { "Tim", "Tim", "Chris", "Chris", "Robert", "Prakash" };
+            int[] element = { 55, 25, 49, 24, -100, 9 };
+            Record[] source = {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "miT", Score = 25 }
+            };
+            long[] expected = { 240, 365, -600, 63 };
+
+            Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), new AnagramEqualityComparer()));
+        }
+
+        [Fact]
         public void NullComparer()
         {
             string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
@@ -442,6 +470,24 @@ namespace System.Linq.Tests
             long[] expected = { 165, 58, -600, 120, 75 };
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
+        }
+
+        [Fact]
+        public void NullComparerRunOnce()
+        {
+            string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
+            int[] element = { 55, 49, 9, -100, 24, 25 };
+            Record[] source = {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = null, Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = null, Score = 9 },
+                new Record { Name = "miT", Score = 25 }
+            };
+            long[] expected = { 165, 58, -600, 120, 75 };
+
+            Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
         }
 
         [Fact]
@@ -805,6 +851,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(0, Enumerable.Empty<int>().GroupBy(i => i, (x, y) => x + y.Count()).Count());
         }
+
         [Fact]
         public static void GroupingKeyIsPublic()
         {
@@ -816,6 +863,49 @@ namespace System.Linq.Tests
             Type grouptype = group.GetType();
             PropertyInfo key = grouptype.GetProperty("Key", BindingFlags.Instance | BindingFlags.Public);
             Assert.NotNull(key);
+        }
+
+        [Theory]
+        [MemberData(nameof(DebuggerAttributesValid_Data))]
+        public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString, TKey dummy1, TElement dummy2)
+        {
+            // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.
+            Assert.Equal($"Key = {keyString}", DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
+            
+            object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
+            
+            // Validate proxy fields
+            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject.GetType()));
+
+            // Validate proxy properties
+            IEnumerable<PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject.GetType());
+            Assert.Equal(2, properties.Count());
+            
+            // Key
+            TKey key = (TKey)properties.Single(property => property.Name == "Key").GetValue(proxyObject);
+            Assert.Equal(grouping.Key, key);
+
+            // Values
+            PropertyInfo valuesProperty = properties.Single(property => property.Name == "Values");
+            Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(valuesProperty));
+            TElement[] values = (TElement[])valuesProperty.GetValue(proxyObject);
+            Assert.IsType<TElement[]>(values); // Arrays can be covariant / of assignment-compatible types
+            Assert.Equal(grouping, values);
+            Assert.Same(values, valuesProperty.GetValue(proxyObject)); // The result should be cached, as Grouping is immutable.
+        }
+
+        public static IEnumerable<object[]> DebuggerAttributesValid_Data()
+        {
+            IEnumerable<int> source = new[] { 1 };
+            yield return new object[] { source.GroupBy(i => i).Single(), "1", 0, 0 };
+            yield return new object[] { source.GroupBy(i => i.ToString(), i => i).Single(), @"""1""", string.Empty, 0 };
+            yield return new object[] { source.GroupBy(i => TimeSpan.FromSeconds(i), i => i).Single(), "{00:00:01}", TimeSpan.Zero, 0 };
+
+            yield return new object[] { new string[] { null }.GroupBy(x => x).Single(), "null", string.Empty, string.Empty };
+            // This test won't even work with the work-around because nullables lose their type once boxed, so xUnit sees an `int` and thinks
+            // we're trying to pass an IGrouping<int, int> rather than an IGrouping<int?, int?>.
+            // However, it should also be fixed once that PR is brought in, so leaving in this comment.
+            // yield return new object[] { new int?[] { null }.GroupBy(x => x).Single(), "null", new int?(0), new int?(0) };
         }
     }
 }

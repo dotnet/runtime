@@ -1,74 +1,92 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net461' or '$(TargetGroup)' == 'netcore50'">4.1.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.6'">4.2.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.2.0.0'">..\ref\4.2\System.Security.Cryptography.Algorithms.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <GenFacadesArgs Condition="'$(TargetGroup)'=='net463' OR '$(TargetGroup)'=='netstandard1.6' OR '$(TargetGroup)'=='netstandard1.7'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <NoWarn>CA5351;$(NoWarn)</NoWarn>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="Internal\Cryptography\AesImplementation.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
+    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
+    <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
+    <Compile Include="System\Security\Cryptography\AesManaged.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <Compile Include="System\Security\Cryptography\DES.cs" />
     <Compile Include="System\Security\Cryptography\DSA.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Xml.cs" />
     <Compile Include="System\Security\Cryptography\DSAParameters.cs" />
+    <Compile Include="System\Security\Cryptography\DSASignatureDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellmanPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsa.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
+    <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
+    <Compile Include="System\Security\Cryptography\SHA1Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA256.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA384.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA512.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
+    <Compile Include="System\Security\Cryptography\PKCS1MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\RC2.cs" />
+    <Compile Include="System\Security\Cryptography\Rijndael.cs" />
+    <Compile Include="System\Security\Cryptography\RijndaelManaged.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
+    <Compile Include="System\Security\Cryptography\RSA.Xml.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\RSAOAEPKeyExchangeDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\RSAOAEPKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\RSAParameters.cs" />
+    <Compile Include="System\Security\Cryptography\RSAPKCS1KeyExchangeDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\RSAPKCS1KeyExchangeFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\RSAPKCS1SignatureDeformatter.cs" />
+    <Compile Include="System\Security\Cryptography\RSAPKCS1SignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
+    <Compile Include="System\Security\Cryptography\SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
-    <Compile Include="Internal\Cryptography\AesImplementation.cs" />
-    <Compile Include="Internal\Cryptography\Helpers.cs" />
-    <Compile Include="Internal\Cryptography\HMACCommon.cs" />
-    <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
     </Compile>
@@ -85,19 +103,21 @@
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\DSACng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipherBCrypt.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipherBCrypt.cs</Link>
     </Compile>
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -148,6 +168,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\DESBCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\DESBCryptModes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\RC2BCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\RC2BCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
       <Link>Common\Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
@@ -209,8 +235,8 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\ErrorCodeHelper.cs">
       <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
       <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
@@ -253,63 +279,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
-    <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
-      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs">
-      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs</Link>
-    </Compile>
-    <Compile Include="Internal\Cryptography\AesImplementation.OSX.cs" />
-    <Compile Include="Internal\Cryptography\AppleCCCryptor.cs" />
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
-    <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.OSX.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
-      <Link>Common\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -337,6 +306,15 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
@@ -355,20 +333,23 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpMdCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
-      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
-      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
@@ -382,23 +363,129 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
     </Compile>
+    <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
+    <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != '' And '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
-      <Link>Common\System\SerializableAttribute.cs</Link>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
-      <Link>Common\System\NonSerializedAttribute.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFData.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFError.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFString.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSASecurityTransforms.cs">
+      <Link>Common\System\Security\Cryptography\DSASecurityTransforms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaSecurityTransforms.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyBlobHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSASecurityTransforms.cs">
+      <Link>Common\System\Security\Cryptography\RSASecurityTransforms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\SecKeyPair.cs">
+      <Link>Common\System\Security\Cryptography\SecKeyPair.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Cryptography\AesImplementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\AppleCCCryptor.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.OSX.cs" />
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
-    <Compile Include="System\Security\Cryptography\IncrementalHash.net46.cs" />
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
+      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
+      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

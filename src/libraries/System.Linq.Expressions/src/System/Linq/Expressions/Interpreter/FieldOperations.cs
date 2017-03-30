@@ -2,54 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class LoadStaticFieldInstruction : Instruction
+    internal abstract class FieldInstruction : Instruction
     {
-        private readonly FieldInfo _field;
+        protected readonly FieldInfo _field;
 
-        public LoadStaticFieldInstruction(FieldInfo field)
-        {
-            Debug.Assert(field.IsStatic);
-            _field = field;
-        }
-
-        public override string InstructionName
-        {
-            get { return "LoadStaticField"; }
-        }
-
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame)
-        {
-            frame.Push(_field.GetValue(null));
-            return +1;
-        }
-    }
-
-    internal sealed class LoadFieldInstruction : Instruction
-    {
-        private readonly FieldInfo _field;
-
-        public LoadFieldInstruction(FieldInfo field)
+        public FieldInstruction(FieldInfo field)
         {
             Assert.NotNull(field);
             _field = field;
         }
 
-        public override string InstructionName
+        public override string ToString() => InstructionName + "(" + _field + ")";
+    }
+
+    internal sealed class LoadStaticFieldInstruction : FieldInstruction
+    {
+        public LoadStaticFieldInstruction(FieldInfo field)
+            : base(field)
         {
-            get { return "LoadField"; }
+            Debug.Assert(field.IsStatic);
         }
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
+
+        public override string InstructionName => "LoadStaticField";
+        public override int ProducedStack => 1;
+
+        public override int Run(InterpretedFrame frame)
+        {
+            frame.Push(_field.GetValue(obj: null));
+            return 1;
+        }
+    }
+
+    internal sealed class LoadFieldInstruction : FieldInstruction
+    {
+        public LoadFieldInstruction(FieldInfo field)
+            : base(field)
+        {
+        }
+
+        public override string InstructionName => "LoadField";
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
 
         public override int Run(InterpretedFrame frame)
         {
@@ -57,25 +55,20 @@ namespace System.Linq.Expressions.Interpreter
 
             NullCheck(self);
             frame.Push(_field.GetValue(self));
-            return +1;
+            return 1;
         }
     }
 
-    internal sealed class StoreFieldInstruction : Instruction
+    internal sealed class StoreFieldInstruction : FieldInstruction
     {
-        private readonly FieldInfo _field;
-
         public StoreFieldInstruction(FieldInfo field)
+            : base(field)
         {
             Assert.NotNull(field);
-            _field = field;
         }
-        public override string InstructionName
-        {
-            get { return "StoreField"; }
-        }
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 0; } }
+
+        public override string InstructionName => "StoreField";
+        public override int ConsumedStack => 2;
 
         public override int Run(InterpretedFrame frame)
         {
@@ -84,32 +77,27 @@ namespace System.Linq.Expressions.Interpreter
 
             NullCheck(self);
             _field.SetValue(self, value);
-            return +1;
+            return 1;
         }
     }
 
-    internal sealed class StoreStaticFieldInstruction : Instruction
+    internal sealed class StoreStaticFieldInstruction : FieldInstruction
     {
-        private readonly FieldInfo _field;
-
         public StoreStaticFieldInstruction(FieldInfo field)
+            : base(field)
         {
-            Assert.NotNull(field);
-            _field = field;
+            Debug.Assert(field.IsStatic);
         }
 
-        public override string InstructionName
-        {
-            get { return "StoreStaticField"; }
-        }
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 0; } }
+        public override string InstructionName => "StoreStaticField";
+
+        public override int ConsumedStack => 1;
 
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
             _field.SetValue(null, value);
-            return +1;
+            return 1;
         }
     }
 }

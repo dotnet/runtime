@@ -2,14 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Private.Uri.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AppxUriValue.cs" />
     <Compile Include="IdnCheckHostNameTest.cs" />
@@ -26,26 +22,17 @@
     <Compile Include="UriIsWellFormedUriStringTest.cs" />
     <Compile Include="UriMailToTest.cs" />
     <Compile Include="UriParameterValidationTest.cs" />
+    <Compile Include="UriParserTest.cs" />
     <Compile Include="UriRelativeResolutionTest.cs" />
     <Compile Include="UriTests.cs" />
     <Compile Include="WebSocketsUriParserTest.cs" />
-    
     <!-- Test common -->
     <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- System.Private.Uri doesn't have any netstandard compile assets in it's package-->
-    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -96,6 +96,7 @@ namespace System.Linq.Tests
                      "LeftJoin",
                      "Append",
                      "Prepend",
+                     "ToHashSet"
                  }
                 );
 
@@ -160,7 +161,7 @@ namespace System.Linq.Tests
                     ParameterInfo pb = pbs[i];
                     Type ta = Strip(pa.ParameterType);
                     Type tb = Strip(pb.ParameterType);
-                    if (ta.GetTypeInfo().IsGenericType && tb.GetTypeInfo().IsGenericType)
+                    if (ta.IsGenericType && tb.IsGenericType)
                     {
                         if (ta.GetGenericTypeDefinition() != tb.GetGenericTypeDefinition())
                         {
@@ -182,10 +183,10 @@ namespace System.Linq.Tests
 
             private Type Strip(Type t)
             {
-                if (t.GetTypeInfo().IsGenericType)
+                if (t.IsGenericType)
                 {
                     Type g = t;
-                    if (!g.GetTypeInfo().IsGenericTypeDefinition)
+                    if (!g.IsGenericTypeDefinition)
                     {
                         g = t.GetGenericTypeDefinition();
                     }

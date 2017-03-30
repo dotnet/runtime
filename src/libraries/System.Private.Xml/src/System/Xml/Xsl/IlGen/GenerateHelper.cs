@@ -661,10 +661,6 @@ namespace System.Xml.Xsl.IlGen
             LocalBuilder locBldr = _ilgen.DeclareLocal(type);
 #if DEBUG
             if (XmlILTrace.IsEnabled) {
-                // Set name for internal MS debugging.  This is not the user-defined name--that will be set later
-                if (this.isDebug)
-                    locBldr.SetLocalSymInfo(name + this.numLocals.ToString(CultureInfo.InvariantCulture));
-
                 this.symbols.Add(locBldr, name + this.numLocals.ToString(CultureInfo.InvariantCulture));
                 this.numLocals++;
             }
@@ -878,8 +874,8 @@ namespace System.Xml.Xsl.IlGen
                 OpCode opcode = meth.IsVirtual || meth.IsAbstract ? OpCodes.Callvirt : OpCodes.Call;
 
                 TraceCall(opcode, meth);
-                //BinCompat TODO: test this
-                //this.ilgen.Emit(opcode, ((ModuleBuilder) methBldr.GetModule()).GetMethodToken(meth).Token);
+
+                this._ilgen.Emit(opcode, ((ModuleBuilder) methBldr.Module).MetadataToken);
 
                 if (_lastSourceInfo != null)
                 {
@@ -935,13 +931,13 @@ namespace System.Xml.Xsl.IlGen
             if (clrTypeSrc == clrTypeDst)
                 return;
 
-            if (clrTypeSrc.GetTypeInfo().IsValueType)
+            if (clrTypeSrc.IsValueType)
             {
                 // If source is a value type, then destination may only be typeof(object), so box
                 Debug.Assert(clrTypeDst == typeof(object), "Invalid cast, since value types do not allow inheritance.");
                 Emit(OpCodes.Box, clrTypeSrc);
             }
-            else if (clrTypeDst.GetTypeInfo().IsValueType)
+            else if (clrTypeDst.IsValueType)
             {
                 // If destination type is value type, then source may only be typeof(object), so unbox
                 Debug.Assert(clrTypeSrc == typeof(object), "Invalid cast, since value types do not allow inheritance.");

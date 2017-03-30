@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -50,7 +51,21 @@ internal static partial class Interop
             IntPtr allocator, 
             string str, 
             CFStringBuiltInEncodings encoding);
-        
+
+        /// <summary>
+        /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="allocator">Should be IntPtr.Zero</param>
+        /// <param name="str">The string to get a CFStringRef for</param>
+        /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
+        /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
+        /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
+        [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
+        private static extern SafeCreateHandle CFStringCreateWithCString(
+            IntPtr allocator,
+            IntPtr str,
+            CFStringBuiltInEncodings encoding);
+
         /// <summary>
         /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
         /// </summary>
@@ -59,6 +74,16 @@ internal static partial class Interop
         internal static SafeCreateHandle CFStringCreateWithCString(string str)
         {
             return CFStringCreateWithCString(IntPtr.Zero, str, CFStringBuiltInEncodings.kCFStringEncodingUTF8);
+        }
+
+        /// <summary>
+        /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="utf8str">The string to get a CFStringRef for</param>
+        /// <returns>Returns a valid SafeCreateHandle to a CFString on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static SafeCreateHandle CFStringCreateWithCString(IntPtr utf8str)
+        {
+            return CFStringCreateWithCString(IntPtr.Zero, utf8str, CFStringBuiltInEncodings.kCFStringEncodingUTF8);
         }
 
         /// <summary>
@@ -74,7 +99,7 @@ internal static partial class Interop
             IntPtr allocator,
             [MarshalAs(UnmanagedType.LPArray)]
             IntPtr[] values,
-            ulong numValues,
+            UIntPtr numValues,
             IntPtr callbacks);
 
         /// <summary>
@@ -83,7 +108,7 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, ulong numValues)
+        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
         {
             return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
         }

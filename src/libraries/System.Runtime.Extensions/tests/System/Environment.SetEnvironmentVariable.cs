@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Security;
 using Xunit;
 
 namespace System.Tests
@@ -10,6 +13,11 @@ namespace System.Tests
     {
         private const int MAX_VAR_LENGTH_ALLOWED = 32767;
         private const string NullString = "\u0000";
+
+        private static bool IsSupportedTarget(EnvironmentVariableTarget target)
+        {
+            return target == EnvironmentVariableTarget.Process || RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
 
         [Fact]
         public void NullVariableThrowsArgumentNull()
@@ -20,7 +28,7 @@ namespace System.Tests
         [Fact]
         public void IncorrectVariableThrowsArgument()
         {
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(String.Empty, "test"));
+            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(string.Empty, "test"));
             Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(NullString, "test"));
             Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("Variable=Something", "test"));
 
@@ -28,64 +36,141 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "test"));
         }
 
-        [Fact]
-        public void Default()
+        private static void ExecuteAgainstTarget(
+            EnvironmentVariableTarget target,
+            Action action,
+            Action cleanUp = null)
+        {
+            bool shouldCleanUp = cleanUp != null;
+            try
+            {
+                action();
+            }
+            catch (SecurityException)
+            {
+                shouldCleanUp = false;
+                Assert.True(target == EnvironmentVariableTarget.Machine, "only machine target should have access issues");
+                Assert.True(PlatformDetection.IsWindows, "and it should be Windows");
+                Assert.False(PlatformDetection.IsWindowsAndElevated, "and we shouldn't be elevated");
+            }
+            finally
+            {
+                if (shouldCleanUp)
+                    cleanUp();
+            }
+        }
+
+        [Theory]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void Default(EnvironmentVariableTarget target)
         {
             const string varName = "Test_SetEnvironmentVariable_Default";
             const string value = "true";
 
-            try
+            ExecuteAgainstTarget(target,
+            () =>
             {
-                Environment.SetEnvironmentVariable(varName, value);
-                Assert.Equal(value, Environment.GetEnvironmentVariable(varName));
-            }
-            finally
+                Environment.SetEnvironmentVariable(varName, value, target);
+                Assert.Equal(IsSupportedTarget(target) ? value : null,
+                    Environment.GetEnvironmentVariable(varName, target));
+            },
+            () =>
             {
                 // Clear the test variable
-                Environment.SetEnvironmentVariable(varName, null);
-            }
+                Environment.SetEnvironmentVariable(varName, null, target);
+            });
         }
 
-        [Fact]
-        public void ModifyEnvironmentVariable()
+
+        [Theory]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void ModifyEnvironmentVariable(EnvironmentVariableTarget target)
         {
             const string varName = "Test_ModifyEnvironmentVariable";
             const string value = "false";
 
-            try
+            ExecuteAgainstTarget(target,
+            () =>
             {
                 // First set the value to something and then change it and ensure that it gets modified.
-                Environment.SetEnvironmentVariable(varName, "true");
-                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, "true", target);
+
+                Environment.SetEnvironmentVariable(varName, value, target);
 
                 // Check whether the variable exists.
-                Assert.Equal(value, Environment.GetEnvironmentVariable(varName));
-            }
-            finally
+                Assert.Equal(IsSupportedTarget(target) ? value : null, Environment.GetEnvironmentVariable(varName, target));
+            },
+            () =>
             {
                 // Clear the test variable
                 Environment.SetEnvironmentVariable(varName, null);
-            }
+            });
         }
 
-        [Fact]
-        public void DeleteEnvironmentVariable()
+        [Theory]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void ModifyEnvironmentVariable_AndEnumerate(EnvironmentVariableTarget target)
+        {
+            const string varName = "Test_ModifyEnvironmentVariable_AndEnumerate";
+            const string value = "false";
+
+            ExecuteAgainstTarget(target,
+            () =>
+            {
+                // First set the value to something and then change it and ensure that it gets modified.
+                Environment.SetEnvironmentVariable(varName, "true", target);
+
+                // Enumerate to validate our first value to ensure we can still set after enumerating
+                IDictionary variables = Environment.GetEnvironmentVariables(target);
+                if (IsSupportedTarget(target))
+                {
+                    Assert.True(variables.Contains(varName), "has the key we entered");
+                    Assert.Equal("true", variables[varName]);
+                }
+
+                Environment.SetEnvironmentVariable(varName, value, target);
+
+                // Check whether the variable exists.
+                Assert.Equal(IsSupportedTarget(target) ? value : null, Environment.GetEnvironmentVariable(varName, target));
+            },
+            () =>
+            {
+                // Clear the test variable
+                Environment.SetEnvironmentVariable(varName, null);
+            });
+        }
+
+        [Theory]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void DeleteEnvironmentVariable(EnvironmentVariableTarget target)
         {
             const string varName = "Test_DeleteEnvironmentVariable";
             const string value = "false";
 
-            // First set the value to something and then ensure that it can be deleted.
-            Environment.SetEnvironmentVariable(varName, value);
-            Environment.SetEnvironmentVariable(varName, String.Empty);
-            Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+            ExecuteAgainstTarget(target,
+            () =>
+            {
+                // First set the value to something and then ensure that it can be deleted.
+                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, string.Empty);
+                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
 
-            Environment.SetEnvironmentVariable(varName, value);
-            Environment.SetEnvironmentVariable(varName, null);
-            Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, null);
+                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
 
-            Environment.SetEnvironmentVariable(varName, value);
-            Environment.SetEnvironmentVariable(varName, NullString);
-            Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, NullString);
+                Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+            });
         }
 
         [Fact]

@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [Theory]
         [InlineData("1.3.6.1.5.5.7.3.1", "08", "2B06010505070301")]
         [InlineData("1.3.6.1.5.5.7.3.2", "08", "2B06010505070302")]
+        [InlineData("1.3.132.0.34", "05", "2B81040022")]
         [InlineData("2.999.3", "03", "883703")]
         [InlineData("2.999.19427512891.25", "08", "8837C8AFE1A43B19")]
         public static void ValidateOidEncodings(string oidValue, string hexLength, string encodedData)

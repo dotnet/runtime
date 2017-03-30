@@ -26,7 +26,7 @@ namespace System.Threading.Tasks.Tests
 
             ManualResetEvent mre = new ManualResetEvent(false);
 
-            // we need to run this test in a local task scheduler, because it needs to to perform 
+            // we need to run this test in a local task scheduler, because it needs to perform 
             // the verification based on a known number of initially available threads.
             //
             //
@@ -217,7 +217,7 @@ namespace System.Threading.Tasks.Tests
             // Remember the current SynchronizationContext, so that we can restore it
             SynchronizationContext previousSC = SynchronizationContext.Current;
 
-            // Now make up a "real" SynchronizationContext abd install it
+            // Now make up a "real" SynchronizationContext and install it
             SimpleSynchronizationContext newSC = new SimpleSynchronizationContext();
             SetSynchronizationContext(newSC);
 

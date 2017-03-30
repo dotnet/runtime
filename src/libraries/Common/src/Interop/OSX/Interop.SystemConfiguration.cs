@@ -41,7 +41,7 @@ internal static partial class Interop
         /// <param name="context">The context associated with the callout.</param>
         /// <returns>A reference to the new dynamic store session.</returns>
         [DllImport(Libraries.SystemConfigurationLibrary)]
-        private static unsafe extern SafeCreateHandle SCDynamicStoreCreate(
+        private static extern unsafe SafeCreateHandle SCDynamicStoreCreate(
             IntPtr allocator,
             CFStringRef name,
             SCDynamicStoreCallBack callout,

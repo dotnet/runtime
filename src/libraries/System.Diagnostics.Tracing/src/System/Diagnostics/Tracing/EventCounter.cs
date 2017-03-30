@@ -153,7 +153,7 @@ namespace System.Diagnostics.Tracing
                 result.Name = _name;
                 result.Count = _count;
                 result.Mean = _sum / _count;
-                result.StandardDerivation = (float)Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
+                result.StandardDeviation = (float)Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
                 result.Min = _min;
                 result.Max = _max;
                 ResetStatistics();
@@ -184,7 +184,7 @@ namespace System.Diagnostics.Tracing
 
         public float Mean { get; set; }
 
-        public float StandardDerivation { get; set; }
+        public float StandardDeviation { get; set; }
 
         public int Count { get; set; }
 
@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
             {
                 yield return new KeyValuePair<string, object>("Name", Name);
                 yield return new KeyValuePair<string, object>("Mean", Mean);
-                yield return new KeyValuePair<string, object>("StandardDerivation", StandardDerivation);
+                yield return new KeyValuePair<string, object>("StandardDeviation", StandardDeviation);
                 yield return new KeyValuePair<string, object>("Count", Count);
                 yield return new KeyValuePair<string, object>("Min", Min);
                 yield return new KeyValuePair<string, object>("Max", Max);

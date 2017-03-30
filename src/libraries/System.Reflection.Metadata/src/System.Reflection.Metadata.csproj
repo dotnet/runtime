@@ -3,30 +3,23 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F3E433C8-352F-4944-BF7F-765CE435370D}</ProjectGuid>
-    <AssemblyName>System.Reflection.Metadata</AssemblyName>
-    <DocumentationFile>$(OutputPath)System.Reflection.Metadata.xml</DocumentationFile>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <RootNamespace>System.Reflection.Metadata</RootNamespace>
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <!-- rev'ed to 1.4.1 so that we can drop pre-release down to beta -->
-    <DefineConstants>$(DefineConstants)</DefineConstants>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1;portable-net45+win8</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Optimize>false</Optimize>
-    <ErrorReport>prompt</ErrorReport>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Optimize>true</Optimize>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PathUtilities.cs" />
@@ -81,6 +74,7 @@
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEDirectoriesBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaderBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
@@ -126,9 +120,8 @@
     <Compile Include="System\Reflection\Metadata\Signatures\ArrayShape.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISZArrayTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISignatureTypeProvider.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\ITypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ISimpleTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\SignatureTypeKind.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SignatureDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\MethodSignature.cs" />
@@ -236,19 +229,34 @@
     <Compile Include="System\Reflection\PortableExecutable\DirectoryEntry.cs" />
     <Compile Include="System\Reflection\PortableExecutable\Machine.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBinaryReader.cs" />
-    <Compile Include="System\Reflection\PortableExecutable\PEFileConstants.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEFileFlags.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeader.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEMemoryBlock.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEReader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEReader.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEStreamOptions.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
     <Compile Include="System\Reflection\Throw.cs" />
     <Compile Include="System\Reflection\System.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

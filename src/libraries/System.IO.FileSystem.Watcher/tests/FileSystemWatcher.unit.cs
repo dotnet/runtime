@@ -92,7 +92,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileSystemWatcher_ctor_InvalidStrings()
+        public void FileSystemWatcher_ctor_NullStrings()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             {
@@ -102,7 +102,15 @@ namespace System.IO.Tests
                 // Null path
                 Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
                 Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
+            }
+        }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "On Desktop, these exceptions don't have a parameter")]
+        public void FileSystemWatcher_ctor_InvalidStrings()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            {
                 // Empty path
                 Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty));
                 Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty, "*"));
@@ -305,13 +313,13 @@ namespace System.IO.Tests
             Assert.Equal((NotifyFilters)0, watcher.NotifyFilter);
 
             // These throw InvalidEnumException on desktop, but ArgumentException on K
-            Assert.Throws<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)(-1));
-            Assert.Throws<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MinValue);
-            Assert.Throws<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MaxValue);
-            Assert.Throws<ArgumentException>(() => watcher.NotifyFilter = allFilters + 1);
+            Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)(-1));
+            Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MinValue);
+            Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MaxValue);
+            Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = allFilters + 1);
 
             // Simulate a bit added to the flags
-            Assert.Throws<ArgumentException>(() => watcher.NotifyFilter = allFilters | (NotifyFilters)((int)notifyFilters.Max() << 1));
+            Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = allFilters | (NotifyFilters)((int)notifyFilters.Max() << 1));
         }
 
         [Fact]
@@ -361,7 +369,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.OSX | PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]  // Casing matters on Linux
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -454,7 +462,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Unix FSW don't trigger on a file rename.
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -543,38 +551,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux)]
-        [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
-        public void FileSystemWatcher_CreateManyConcurrentInstances()
-        {
-            int maxUserInstances = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_instances"));
-            var watchers = new List<FileSystemWatcher>();
-
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            {
-                try
-                {
-                    Assert.Throws<IOException>(() =>
-                    {
-                        // Create enough inotify instances to exceed the number of allowed watches
-                        for (int i = 0; i <= maxUserInstances; i++)
-                        {
-                            watchers.Add(new FileSystemWatcher(dir.Path) { EnableRaisingEvents = true });
-                        }
-                    });
-                }
-                finally
-                {
-                    foreach (FileSystemWatcher watcher in watchers)
-                    {
-                        watcher.Dispose();
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]  // Reads MaxUsersWatches from Linux OS files
         [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
@@ -615,32 +592,21 @@ namespace System.IO.Tests
             // a FSW event callback and make sure we don't Thread.Join to deadlock
             using (var dir = new TempDirectory(GetTestFilePath()))
             {
-                FileSystemWatcher watcher = new FileSystemWatcher();
+                string filePath = Path.Combine(dir.Path, "testfile.txt");
+                File.Create(filePath).Dispose();
                 AutoResetEvent are = new AutoResetEvent(false);
-
+                FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(dir.Path), "*");
                 FileSystemEventHandler callback = (sender, arg) =>
                 {
                     watcher.Dispose();
                     are.Set();
                 };
-
-                // Attach the FSW to the existing structure
-                watcher.Path = Path.GetFullPath(dir.Path);
-                watcher.Filter = "*";
-                watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
+                watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
                 watcher.Changed += callback;
-
-                using (var file = File.Create(Path.Combine(dir.Path, "testfile.txt")))
-                {
-                    watcher.EnableRaisingEvents = true;
-
-                    // Change the nested file and verify we get the changed event
-                    byte[] bt = new byte[4096];
-                    file.Write(bt, 0, bt.Length);
-                    file.Flush();
-                }
-
-                ExpectEvent(are, "deleted");
+                watcher.EnableRaisingEvents = true;
+                File.SetLastWriteTime(filePath, File.GetLastWriteTime(filePath).AddDays(1));
+                Assert.True(are.WaitOne(10000));
+                Assert.Throws<ObjectDisposedException>(() => watcher.EnableRaisingEvents = true);
             }
         }
 

@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEnviron", SetLastError = true)]
-        internal static unsafe extern byte** GetEnviron();
+        internal static extern unsafe byte** GetEnviron();
     }
 }

@@ -218,7 +218,7 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        internal static bool TryReadPkcs12(byte[] rawData, string password, out ICertificatePal certPal)
+        internal static bool TryReadPkcs12(byte[] rawData, SafePasswordHandle password, out ICertificatePal certPal)
         {
             List<ICertificatePal> ignored;
 
@@ -226,21 +226,21 @@ namespace Internal.Cryptography.Pal
 
         }
 
-        internal static bool TryReadPkcs12(SafeBioHandle bio, string password, out ICertificatePal certPal)
+        internal static bool TryReadPkcs12(SafeBioHandle bio, SafePasswordHandle password, out ICertificatePal certPal)
         {
             List<ICertificatePal> ignored;
 
             return TryReadPkcs12(bio, password, true, out certPal, out ignored);
         }
 
-        internal static bool TryReadPkcs12(byte[] rawData, string password, out List<ICertificatePal> certPals)
+        internal static bool TryReadPkcs12(byte[] rawData, SafePasswordHandle password, out List<ICertificatePal> certPals)
         {
             ICertificatePal ignored;
 
             return TryReadPkcs12(rawData, password, false, out ignored, out certPals);
         }
 
-        internal static bool TryReadPkcs12(SafeBioHandle bio, string password, out List<ICertificatePal> certPals)
+        internal static bool TryReadPkcs12(SafeBioHandle bio, SafePasswordHandle password, out List<ICertificatePal> certPals)
         {
             ICertificatePal ignored;
 
@@ -249,7 +249,7 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryReadPkcs12(
             byte[] rawData,
-            string password,
+            SafePasswordHandle password,
             bool single,
             out ICertificatePal readPal,
             out List<ICertificatePal> readCerts)
@@ -272,7 +272,7 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryReadPkcs12(
             SafeBioHandle bio,
-            string password,
+            SafePasswordHandle password,
             bool single,
             out ICertificatePal readPal,
             out List<ICertificatePal> readCerts)
@@ -295,7 +295,7 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryReadPkcs12(
             OpenSslPkcs12Reader pfx,
-            string password,
+            SafePasswordHandle password,
             bool single,
             out ICertificatePal readPal,
             out List<ICertificatePal> readCerts)

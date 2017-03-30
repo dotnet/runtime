@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class TypeParameterSymbol : Symbol
+    internal sealed class TypeParameterSymbol : Symbol
     {
         private bool _bIsMethodTypeParameter;
         private bool _bHasRefBound;

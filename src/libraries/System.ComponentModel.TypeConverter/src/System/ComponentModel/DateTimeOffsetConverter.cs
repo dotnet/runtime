@@ -4,6 +4,7 @@
 
 // The code was copied from DateTimeConverter and adapted for DateTimeOffset.
 
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -22,7 +23,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -33,12 +34,10 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 

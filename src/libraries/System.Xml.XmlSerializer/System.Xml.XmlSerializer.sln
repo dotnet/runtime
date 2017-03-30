@@ -1,18 +1,17 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "src\System.Xml.XmlSerializer.csproj", "{D62A6082-5229-4845-8BE9-75753E08C65A}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9618597D-FDAE-42CB-B368-80DB80EA1E37}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\packages.Windows_NT.config = .nuget\packages.Windows_NT.config
+	ProjectSection(ProjectDependencies) = postProject
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46} = {3F7C5D50-7CDA-44EF-BB05-912D496BAA46}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer.Tests", "tests\System.Xml.XmlSerializer.Tests.csproj", "{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "ref\System.Xml.XmlSerializer.csproj", "{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer.Performance.Tests", "tests\Performance\System.Xml.XmlSerializer.Performance.Tests.csproj", "{FC8C8698-6B38-42D4-954E-498766641746}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,20 +19,20 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D62A6082-5229-4845-8BE9-75753E08C65A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D62A6082-5229-4845-8BE9-75753E08C65A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D62A6082-5229-4845-8BE9-75753E08C65A}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{D62A6082-5229-4845-8BE9-75753E08C65A}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{FC8C8698-6B38-42D4-954E-498766641746}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC8C8698-6B38-42D4-954E-498766641746}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC8C8698-6B38-42D4-954E-498766641746}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC8C8698-6B38-42D4-954E-498766641746}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{D62A6082-5229-4845-8BE9-75753E08C65A}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{D62A6082-5229-4845-8BE9-75753E08C65A}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{D62A6082-5229-4845-8BE9-75753E08C65A}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{D62A6082-5229-4845-8BE9-75753E08C65A}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D62A6082-5229-4845-8BE9-75753E08C65A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal

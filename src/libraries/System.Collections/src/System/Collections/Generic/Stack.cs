@@ -12,6 +12,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -81,24 +82,27 @@ namespace System.Collections.Generic
         // Removes all Objects from the Stack.
         public void Clear()
         {
-            Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+            }
             _size = 0;
             _version++;
         }
 
         public bool Contains(T item)
         {
-            int count = _size;
+            // Compare items using the default equality comparer
 
-            EqualityComparer<T> c = EqualityComparer<T>.Default;
-            while (count-- > 0)
-            {
-                if (c.Equals(_array[count], item))
-                {
-                    return true;
-                }
-            }
-            return false;
+            // PERF: Internally Array.LastIndexOf calls
+            // EqualityComparer<T>.Default.LastIndexOf, which
+            // is specialized for different types. This
+            // boosts performance since instead of making a
+            // virtual method call each iteration of the loop,
+            // via EqualityComparer<T>.Default.Equals, we
+            // only make one virtual call to EqualityComparer.LastIndexOf.
+
+            return _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
         }
 
         // Copies the stack into an array.
@@ -196,8 +200,22 @@ namespace System.Collections.Generic
         public T Peek()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
+            {
+                ThrowForEmptyStack();
+            }
+            
             return _array[_size - 1];
+        }
+
+        public bool TryPeek(out T result)
+        {
+            if (_size == 0)
+            {
+                result = default(T);
+                return false;
+            }
+            result = _array[_size - 1];
+            return true;
         }
 
         // Pops an item from the top of the stack.  If the stack is empty, Pop
@@ -205,11 +223,34 @@ namespace System.Collections.Generic
         public T Pop()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
+            {
+                ThrowForEmptyStack();
+            }
+            
             _version++;
             T item = _array[--_size];
-            _array[_size] = default(T);     // Free memory quicker.
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _array[_size] = default(T);     // Free memory quicker.
+            }
             return item;
+        }
+
+        public bool TryPop(out T result)
+        {
+            if (_size == 0)
+            {
+                result = default(T);
+                return false;
+            }
+
+            _version++;
+            result = _array[--_size];
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _array[_size] = default(T);     // Free memory quicker.
+            }
+            return true;
         }
 
         // Pushes an item to the top of the stack.
@@ -237,6 +278,12 @@ namespace System.Collections.Generic
                 i++;
             }
             return objArray;
+        }
+
+        private void ThrowForEmptyStack()
+        {
+            Debug.Assert(_size == 0);
+            throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]

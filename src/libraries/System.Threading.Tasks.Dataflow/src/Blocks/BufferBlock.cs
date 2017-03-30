@@ -410,7 +410,7 @@ namespace System.Threading.Tasks.Dataflow
                         if (exceptions != null)
                         {
                             // It is important to migrate these exceptions to the source part of the owning batch,
-                            // because that is the completion task that is publically exposed.
+                            // because that is the completion task that is publicly exposed.
                             thisBufferBlock._source.AddExceptions(exceptions);
                         }
 

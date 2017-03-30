@@ -21,6 +21,17 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         protected override int BlockSize { get { return 128; } }
 
         [Fact]
+        public void ProduceLegacyHmacValues()
+        {
+            using (var h = new HMACSHA384())
+            {
+                Assert.False(h.ProduceLegacyHmacValues);
+                h.ProduceLegacyHmacValues = false; // doesn't throw
+                Assert.Throws<PlatformNotSupportedException>(() => h.ProduceLegacyHmacValues = true);
+            }
+        }
+
+        [Fact]
         public void HmacSha384_Rfc4231_1()
         {
             VerifyHmac(1, "afd03944d84895626b0825f4ab46907f15f9dadbe4101ec682aa034c7cebc59cfaea9ea9076ede7f4af152e8b2fa9cb6");

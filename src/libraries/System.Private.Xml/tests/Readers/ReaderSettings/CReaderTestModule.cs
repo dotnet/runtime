@@ -30,175 +30,175 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        static public void TCConformanceSettings()
+        public static void TCConformanceSettings()
         {
             RunTest(() => new TCConformanceSettings() { Attribute = new TestCase() { Name = "Conformance Settings", Desc = "Conformance Settings" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCCreateOverloads()
+        public static void TCCreateOverloads()
         {
             RunTest(() => new TCCreateOverloads() { Attribute = new TestCase() { Name = "Create Overloads", Desc = "Create Overloads" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCFilterSettings()
+        public static void TCFilterSettings()
         {
             RunTest(() => new TCFilterSettings() { Attribute = new TestCase() { Name = "Filter Settings", Desc = "Filter Settings" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCLineInfo()
+        public static void TCLineInfo()
         {
             RunTest(() => new TCLineInfo() { Attribute = new TestCase() { Name = "LineInfo", Desc = "LineInfo" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCMaxSettings()
+        public static void TCMaxSettings()
         {
             RunTest(() => new TCMaxSettings() { Attribute = new TestCase() { Name = "MaxCharacters Settings", Desc = "MaxCharacters Settings" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCReaderSettingsGenericTestsCharCheckingReader()
+        public static void TCReaderSettingsGenericTestsCharCheckingReader()
         {
             RunTest(() => new TCReaderSettings() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.CharCheckingReader", Param = "CharCheckingReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCReaderSettingsGenericTestsSubtreeReader()
+        public static void TCReaderSettingsGenericTestsSubtreeReader()
         {
             RunTest(() => new TCReaderSettings() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.SubtreeReader", Param = "SubtreeReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCReaderSettingsGenericTestsCoreReader()
+        public static void TCReaderSettingsGenericTestsCoreReader()
         {
             RunTest(() => new TCReaderSettings() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.CoreReader", Param = "CoreReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCReaderSettingsGenericTestsWrappedReader()
+        public static void TCReaderSettingsGenericTestsWrappedReader()
         {
             RunTest(() => new TCReaderSettings() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.WrappedReader", Param = "WrappedReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCCloseInputWrappedReader()
+        public static void TCCloseInputWrappedReader()
         {
             RunTest(() => new TCCloseInput() { Attribute = new TestCase() { Name = "CloseInput.WrappedReader", Param = "WrappedReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCCloseInputCharCheckingReader()
+        public static void TCCloseInputCharCheckingReader()
         {
             RunTest(() => new TCCloseInput() { Attribute = new TestCase() { Name = "CloseInput.CharCheckingReader", Param = "CharCheckingReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCCloseInputCoreReader()
+        public static void TCCloseInputCoreReader()
         {
             RunTest(() => new TCCloseInput() { Attribute = new TestCase() { Name = "CloseInput.CoreReader", Param = "CoreReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCCloseInputSubtreeReader()
+        public static void TCCloseInputSubtreeReader()
         {
             RunTest(() => new TCCloseInput() { Attribute = new TestCase() { Name = "CloseInput.SubtreeReader", Param = "SubtreeReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRSGenericCharCheckingReader()
+        public static void TCRSGenericCharCheckingReader()
         {
             RunTest(() => new TCRSGeneric() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.CharCheckingReader", Param = "CharCheckingReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRSGenericCoreReader()
+        public static void TCRSGenericCoreReader()
         {
             RunTest(() => new TCRSGeneric() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.CoreReader", Param = "CoreReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRSGenericWrappedReader()
+        public static void TCRSGenericWrappedReader()
         {
             RunTest(() => new TCRSGeneric() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.WrappedReader", Param = "WrappedReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRSGenericSubtreeReader()
+        public static void TCRSGenericSubtreeReader()
         {
             RunTest(() => new TCRSGeneric() { Attribute = new TestCase() { Name = "ReaderSettings Generic Tests.SubtreeReader", Param = "SubtreeReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCDtdProcessingCoreReaderCharCheckingReader()
+        public static void TCDtdProcessingCoreReaderCharCheckingReader()
         {
             RunTest(() => new TCDtdProcessingCoreReader() { Attribute = new TestCase() { Name = "TCDtdProcessingCoreReader.CharCheckingReader", Param = "CharCheckingReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCDtdProcessingCoreReaderCoreReader()
+        public static void TCDtdProcessingCoreReaderCoreReader()
         {
             RunTest(() => new TCDtdProcessingCoreReader() { Attribute = new TestCase() { Name = "TCDtdProcessingCoreReader.CoreReader", Param = "CoreReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCDtdProcessingCoreReaderWrappedReader()
+        public static void TCDtdProcessingCoreReaderWrappedReader()
         {
             RunTest(() => new TCDtdProcessingCoreReader() { Attribute = new TestCase() { Name = "TCDtdProcessingCoreReader.WrappedReader", Param = "WrappedReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCDtdProcessingCoreReaderSubtreeReader()
+        public static void TCDtdProcessingCoreReaderSubtreeReader()
         {
             RunTest(() => new TCDtdProcessingCoreReader() { Attribute = new TestCase() { Name = "TCDtdProcessingCoreReader.SubtreeReader", Param = "SubtreeReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCOneByteStreamCharCheckingReader()
+        public static void TCOneByteStreamCharCheckingReader()
         {
             RunTest(() => new TCOneByteStream() { Attribute = new TestCase() { Name = "Read xml as one byte stream.CharCheckingReader", Param = "CharCheckingReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCOneByteStreamSubtreeReader()
+        public static void TCOneByteStreamSubtreeReader()
         {
             RunTest(() => new TCOneByteStream() { Attribute = new TestCase() { Name = "Read xml as one byte stream.SubtreeReader", Param = "SubtreeReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCOneByteStreamCoreReader()
+        public static void TCOneByteStreamCoreReader()
         {
             RunTest(() => new TCOneByteStream() { Attribute = new TestCase() { Name = "Read xml as one byte stream.CoreReader", Param = "CoreReader" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCOneByteStreamWrappedReader()
+        public static void TCOneByteStreamWrappedReader()
         {
             RunTest(() => new TCOneByteStream() { Attribute = new TestCase() { Name = "Read xml as one byte stream.WrappedReader", Param = "WrappedReader" } });
         }

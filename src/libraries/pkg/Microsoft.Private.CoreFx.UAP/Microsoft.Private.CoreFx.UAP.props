@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
+    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
+    <_aotSuffix Condition="'$(TargetGroup)' == 'uapaot'">-aot</_aotSuffix>
+  </PropertyGroup>
+  
+  <Choose>
+    <When Condition="'$(PackageRID)' != ''" />
+    <When Condition="'$(_runtimeOSFamily)' == 'win'">
+      <PropertyGroup>
+        <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)$(_aotSuffix)</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)$(_aotSuffix)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <OfficialBuildRID Include="win10-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-x64" />
+    <OfficialBuildRID Include="win10-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-x86-aot">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-x64-aot" />
+    <OfficialBuildRID Include="win10-arm-aot">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
+    <BuildRID Include="$(PackageRID)">
+      <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
+    </BuildRID>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">amd64</Platform>
+      <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
+  </ItemGroup>
+</Project>

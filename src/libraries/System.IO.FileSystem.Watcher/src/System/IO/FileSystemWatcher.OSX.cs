@@ -27,6 +27,13 @@ namespace System.IO
 
         private void StartRaisingEvents()
         {
+            // If we're called when "Initializing" is true, set enabled to true
+            if (IsSuspended())
+            {
+                _enabled = true;
+                return;
+            }
+
             // Don't start another instance if one is already runnings
             if (_cancellation != null)
             {
@@ -52,6 +59,9 @@ namespace System.IO
         private void StopRaisingEvents()
         {
             _enabled = false;
+
+            if (IsSuspended())
+                return;
 
             CancellationTokenSource token = _cancellation;
             if (token != null)
@@ -202,7 +212,7 @@ namespace System.IO
                 }
 
                 // Take the CFStringRef and put it into an array to pass to the EventStream
-                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, 1);
+                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, (UIntPtr)1);
                 if (arrPaths.IsInvalid)
                 {
                     path.Dispose();

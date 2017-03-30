@@ -8,11 +8,27 @@
 
 namespace System.Resources
 {
-    public sealed partial class ResourceWriter : System.IDisposable
+    public interface IResourceWriter : IDisposable
     {
+        void AddResource(string name, string value);
+        void AddResource(string name, object value);
+        void AddResource(string name, byte[] value);
+        void Close();
+        void Generate();
+    }
+    public sealed class ResourceWriter : IResourceWriter
+    {
+        public ResourceWriter(string fileName) { }
         public ResourceWriter(System.IO.Stream stream) { }
         public void AddResource(string name, string value) { }
+        public void AddResource(string name, object value) { }
+        public void AddResource(string name, byte[] value) { }
+        public void AddResource(string name, System.IO.Stream value) { }
+        public void AddResource(string name, System.IO.Stream value, bool closeAfterWrite) { }
+        public void AddResourceData(string name, string typeName, byte[] serializedData) { }
+        public void Close() { }
         public void Dispose() { }
         public void Generate() { }
+        public System.Func<System.Type, string> TypeNameConverter { get { throw null; } set { } }
     }
 }

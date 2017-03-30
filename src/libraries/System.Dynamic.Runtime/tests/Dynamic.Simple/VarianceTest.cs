@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace SampleDynamicTests
@@ -19,7 +18,8 @@ namespace SampleDynamicTests
     {
         private delegate T Create<out T>();
 
-        [Fact(Skip = "906219")]
+        [Fact]
+        [ActiveIssue(16748)]
         public static void VarianceTest_RunTest()
         {
             dynamic d1 = (Create<Tiger>)(() => new Tiger());

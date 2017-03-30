@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         NoRefOutDifference = 0x10
     }
 
-    internal class SubstContext
+    internal sealed class SubstContext
     {
         public CType[] prgtypeCls;
         public int ctypeCls;
@@ -43,16 +43,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        public SubstContext(AggregateType type, TypeArray typeArgsMeth, SubstTypeFlags grfst)
+        private SubstContext(AggregateType type, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
-            Init(type != null ? type.GetTypeArgsAll() : null, typeArgsMeth, grfst);
+            Init(type?.GetTypeArgsAll(), typeArgsMeth, grfst);
         }
 
         public SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth)
             : this(prgtypeCls, ctypeCls, prgtypeMeth, ctypeMeth, SubstTypeFlags.NormNone)
         {
         }
-        public SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth, SubstTypeFlags grfst)
+
+        private SubstContext(CType[] prgtypeCls, int ctypeCls, CType[] prgtypeMeth, int ctypeMeth, SubstTypeFlags grfst)
         {
             this.prgtypeCls = prgtypeCls;
             this.ctypeCls = ctypeCls;
@@ -67,15 +68,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Initializes a substitution context. Returns false iff no substitutions will ever be performed.
-        public void Init(TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
+        private void Init(TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
             if (typeArgsCls != null)
             {
-#if DEBUG
                 typeArgsCls.AssertValid();
-#endif
-                ctypeCls = typeArgsCls.size;
-                prgtypeCls = typeArgsCls.ToArray();
+                ctypeCls = typeArgsCls.Count;
+                prgtypeCls = typeArgsCls.Items;
             }
             else
             {
@@ -85,12 +84,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeArgsMeth != null)
             {
-#if DEBUG
                 typeArgsMeth.AssertValid();
-#endif
-
-                ctypeMeth = typeArgsMeth.size;
-                prgtypeMeth = typeArgsMeth.ToArray();
+                ctypeMeth = typeArgsMeth.Count;
+                prgtypeMeth = typeArgsMeth.Items;
             }
             else
             {

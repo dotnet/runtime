@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -14,13 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         internal static readonly AidContainer NullAidContainer = default(AidContainer);
 
-        private enum Kind
-        {
-            None = 0,
-            File,
-            ExternAlias
-        }
-
         private object _value;
 
         public AidContainer(FileRecord file)
@@ -29,30 +23,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class BSYMMGR
+    internal sealed class BSYMMGR
     {
-        internal HashSet<KAID> bsetGlobalAssemblies; // Assemblies in the global alias.
+        private HashSet<KAID> bsetGlobalAssemblies; // Assemblies in the global alias.
 
         // Special nullable members.
         public PropertySymbol propNubValue;
         public MethodSymbol methNubCtor;
 
-        private SymFactory _symFactory;
-        private MiscSymFactory _miscSymFactory;
+        private readonly SymFactory _symFactory;
+        private readonly MiscSymFactory _miscSymFactory;
 
-        private NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
+        private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
 
         // Map from aids to INFILESYMs and EXTERNALIASSYMs
-        protected List<AidContainer> ssetAssembly;
+        private List<AidContainer> ssetAssembly;
         // Map from aids to MODULESYMs and OUTFILESYMs
 
-        protected NameManager m_nameTable;
-        protected SYMTBL tableGlobal;
+        private NameManager m_nameTable;
+        private SYMTBL tableGlobal;
 
         // The hash table for type arrays.
-        protected Dictionary<TypeArrayKey, TypeArray> tableTypeArrays;
-
-        private InputFile _infileUnres;
+        private Dictionary<TypeArrayKey, TypeArray> tableTypeArrays;
 
         private const int LOG2_SYMTBL_INITIAL_BUCKET_CNT = 13;    // Initial local size: 8192 buckets.
 
@@ -67,11 +59,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             this.ssetAssembly = new List<AidContainer>();
 
-            _infileUnres = new InputFile();
-            _infileUnres.isSource = false;
-            _infileUnres.SetAssemblyID(KAID.kaidUnresolved);
+            InputFile infileUnres = new InputFile {isSource = false};
+            infileUnres.SetAssemblyID(KAID.kaidUnresolved);
 
-            this.ssetAssembly.Add(new AidContainer(_infileUnres));
+            ssetAssembly.Add(new AidContainer(infileUnres));
             this.bsetGlobalAssemblies = new HashSet<KAID>();
             this.bsetGlobalAssemblies.Add(KAID.kaidThisAssembly);
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
@@ -142,18 +133,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Same;
             }
-            if (ta1.Size != ta2.Size)
+            if (ta1.Count != ta2.Count)
             {
                 // The one with more parameters is more specific.
-                return ta1.Size > ta2.Size ? BetterType.Left : BetterType.Right;
+                return ta1.Count > ta2.Count ? BetterType.Left : BetterType.Right;
             }
 
             BetterType nTot = BetterType.Neither;
 
-            for (int i = 0; i < ta1.Size; i++)
+            for (int i = 0; i < ta1.Count; i++)
             {
-                CType type1 = ta1.Item(i);
-                CType type2 = ta2.Item(i);
+                CType type1 = ta1[i];
+                CType type2 = ta2[i];
                 BetterType nParam = BetterType.Neither;
 
             LAgain:
@@ -294,7 +285,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public AssemblyQualifiedNamespaceSymbol GetNsAid(NamespaceSymbol ns, KAID aid)
+        private AssemblyQualifiedNamespaceSymbol GetNsAid(NamespaceSymbol ns, KAID aid)
         {
             Name name = GetNameFromPtrs(aid, 0);
             Debug.Assert(name != null);
@@ -320,10 +311,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // 2) Make it so parameter lists can be compared by a simple pointer comparison
         // 3) Allow us to associate a token with each signature for faster metadata emit
 
-        protected struct TypeArrayKey : IEquatable<TypeArrayKey>
+        private struct TypeArrayKey : IEquatable<TypeArrayKey>
         {
-            private CType[] _types;
-            private int _hashCode;
+            private readonly CType[] _types;
+            private readonly int _hashCode;
 
             public TypeArrayKey(CType[] types)
             {
@@ -337,24 +328,36 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public bool Equals(TypeArrayKey other)
             {
-                if (other._types == _types) return true;
-                if (other._types.Length != _types.Length) return false;
-                if (other._hashCode != _hashCode) return false;
-                for (int i = 0, n = _types.Length; i < n; i++)
+                CType[] types = _types;
+                CType[] otherTypes = other._types;
+                if (otherTypes == types)
                 {
-                    if (!_types[i].Equals(other._types[i]))
-                        return false;
+                    return true;
                 }
+
+                if (other._hashCode != _hashCode || otherTypes.Length != types.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < types.Length; i++)
+                {
+                    if (!types[i].Equals(otherTypes[i]))
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
             }
 
+#if  DEBUG 
+            [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+#endif
             public override bool Equals(object obj)
             {
-                if (obj is TypeArrayKey)
-                {
-                    return this.Equals((TypeArrayKey)obj);
-                }
-                return false;
+                Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
+                return obj is TypeArrayKey && Equals((TypeArrayKey)obj);
             }
 
             public override int GetHashCode()
@@ -375,7 +378,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray AllocParams(int ctype, TypeArray array, int offset)
         {
-            CType[] types = array.ToArray();
+            CType[] types = array.Items;
             CType[] newTypes = new CType[ctype];
             Array.ConstrainedCopy(types, offset, newTypes, 0, ctype);
             return AllocParams(newTypes);
@@ -397,7 +400,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        public TypeArray ConcatParams(CType[] prgtype1, CType[] prgtype2)
+        private TypeArray ConcatParams(CType[] prgtype1, CType[] prgtype2)
         {
             CType[] combined = new CType[prgtype1.Length + prgtype2.Length];
             Array.Copy(prgtype1, 0, combined, 0, prgtype1.Length);
@@ -407,7 +410,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray ConcatParams(TypeArray pta1, TypeArray pta2)
         {
-            return ConcatParams(pta1.ToArray(), pta2.ToArray());
+            return ConcatParams(pta1.Items, pta2.Items);
         }
     }
 }

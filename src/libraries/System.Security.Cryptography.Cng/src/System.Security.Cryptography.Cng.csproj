@@ -1,40 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_NT_Debug</Configuration>
-  </PropertyGroup>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Security.Cryptography.Cng</AssemblyName>
     <ProjectGuid>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Cng.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net461'">4.1.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Cng.depproj</ContractProject>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6'">4.2.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.2.0.0'">..\ref\4.2\System.Security.Cryptography.Cng.depproj</ContractProject>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='netfx'">true</GenFacadesIgnoreMissingTypes>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <ContractProject>..\ref\4.1\System.Security.Cryptography.Cng.depproj</ContractProject>
-    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
-    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\AesCng.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
@@ -63,6 +48,10 @@
     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.ImportExport.cs" />
+    <Compile Include="System\Security\Cryptography\DSACng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
@@ -177,8 +166,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.UiPolicy.cs">
       <Link>Internal\Windows\NCrypt\Interop.UiPolicy.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
@@ -225,6 +214,21 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\DSACng.SignVerify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECCng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.HashAlgorithm.cs">
       <Link>Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs</Link>
     </Compile>
@@ -250,35 +254,21 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netcore50'">
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.ImportExport.cs">
-      <Link>Common\System\Security\Cryptography\ECCng.ImportExport.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.ImportExport.cs">
-      <Link>Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs</Link>
-    </Compile>
-    <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true' AND ('$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.7')">
-    <Compile Include="System\Security\Cryptography\DSACng.cs" />
-    <Compile Include="System\Security\Cryptography\DSACng.ImportExport.cs" />
-    <Compile Include="System\Security\Cryptography\DSACng.Key.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
-      <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.ImportExport.cs">
-      <Link>Common\System\Security\Cryptography\DSACng.ImportExport.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.SignVerify.cs">
-      <Link>Common\System\Security\Cryptography\DSACng.SignVerify.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System.Core" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

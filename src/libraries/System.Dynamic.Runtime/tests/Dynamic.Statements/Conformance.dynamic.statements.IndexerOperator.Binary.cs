@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add001.add001;
-
     public class Verify
     {
         public static int Check(dynamic actual, dynamic expected)
@@ -30,15 +28,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add001.add001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add001.add001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> + </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -88,14 +83,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add002.add002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add002.add002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> + </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -157,15 +150,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.and001.and001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.and001.and001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>&&</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -216,14 +206,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.and002.and002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.and002.and002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> &&  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -285,15 +273,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment001.assignment001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment001.assignment001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> += </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -343,14 +328,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment0010e.assignment0010e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment0010e.assignment0010e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >>=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -412,14 +395,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment001e.assignment001e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment001e.assignment001e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> +=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -481,15 +462,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment002.assignment002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment002.assignment002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> -= </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -539,14 +517,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment002e.assignment002e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment002e.assignment002e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> -=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -608,15 +584,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment003.assignment003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment003.assignment003;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> *= </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -666,14 +639,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment003e.assignment003e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment003e.assignment003e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> *=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -735,15 +706,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment004.assignment004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment004.assignment004;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> /= </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -793,14 +761,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment004e.assignment004e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment004e.assignment004e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> /=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -862,15 +828,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment005.assignment005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment005.assignment005;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  %=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -920,14 +883,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment005e.assignment005e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment005e.assignment005e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> %=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -989,15 +950,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment006.assignment006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment006.assignment006;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  &=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1047,14 +1005,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment006e.assignment006e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment006e.assignment006e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> &=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1116,15 +1072,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment007.assignment007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment007.assignment007;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  |=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1174,14 +1127,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment007e.assignment007e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment007e.assignment007e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> |=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1243,15 +1194,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment008.assignment008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment008.assignment008;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  ^=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1301,14 +1249,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment008e.assignment008e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment008e.assignment008e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> ^=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1370,15 +1316,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment009.assignment009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment009.assignment009;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  >>=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1428,14 +1371,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment009e.assignment009e
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment009e.assignment009e;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> <<=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1497,15 +1438,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment010.assignment010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment010.assignment010;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>  <<=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1555,15 +1493,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.devide001.devide001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.devide001.devide001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>/</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1613,14 +1548,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.devide002.devide002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.devide002.devide002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> / </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1682,15 +1615,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.equal001.equal001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.equal001.equal001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> == </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1740,14 +1670,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.equal002.equal002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.equal002.equal002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> ==  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1809,15 +1737,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greater001.greater001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greater001.greater001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>></Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1867,14 +1792,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greater002.greater002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greater002.greater002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1936,15 +1859,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greaterequal001.greaterequal001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greaterequal001.greaterequal001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >= </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1994,14 +1914,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greaterequal002.greaterequal002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greaterequal002.greaterequal002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2063,8 +1981,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.is001.is001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.is001.is001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> is </Description>
@@ -2072,7 +1988,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(36,21\).*CS1981</Expects>
-    using System;
 
     public class Test
     {
@@ -2122,15 +2037,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.leftshift001.leftshift001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.leftshift001.leftshift001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> << </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2180,14 +2092,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.leftshift002.leftshift002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.leftshift002.leftshift002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> <<  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2249,15 +2159,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.less001.less001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.less001.less001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> < </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2307,14 +2214,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.less002.less002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.less002.less002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> <  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2376,15 +2281,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.lessequal001.lessequal001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.lessequal001.lessequal001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> <= </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2434,14 +2336,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.lessequal002.lessequal002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.lessequal002.lessequal002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> <=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2503,15 +2403,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicaland001.logicaland001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicaland001.logicaland001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> & </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2561,14 +2458,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicaland002.logicaland002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicaland002.logicaland002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> &  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2630,15 +2525,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalor001.logicalor001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalor001.logicalor001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> | </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2688,14 +2580,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalor002.logicalor002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalor002.logicalor002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> |  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2757,15 +2647,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalxor001.logicalxor001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalxor001.logicalxor001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> ^ </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2815,14 +2702,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalxor002.logicalxor002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.logicalxor002.logicalxor002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> ^  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2884,15 +2769,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.multi001.multi001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.multi001.multi001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>*</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2942,14 +2824,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.multi002.multi002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.multi002.multi002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> *  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3011,15 +2891,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.notequal001.notequal001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.notequal001.notequal001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> != </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3069,14 +2946,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.notequal002.notequal002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.notequal002.notequal002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> !=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3138,15 +3013,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.or001.or001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.or001.or001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>||</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3197,14 +3069,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.or002.or002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.or002.or002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> ||  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3266,15 +3136,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.remainder001.remainder001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.remainder001.remainder001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>%</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3324,14 +3191,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.remainder002.remainder002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.remainder002.remainder002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> %  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3393,15 +3258,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.rightshift001.rightshift001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.rightshift001.rightshift001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >> </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3451,14 +3313,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.rightshift002.rightshift002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.rightshift002.rightshift002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> >>  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3520,15 +3380,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.sub001.sub001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.verify.verify;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.sub001.sub001;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description>-</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3578,14 +3435,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.sub002.sub002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.sub002.sub002;
     // <Area>operator on dynamic indexer</Area>
     // <Title> binary operator  </Title>
     // <Description> - </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {

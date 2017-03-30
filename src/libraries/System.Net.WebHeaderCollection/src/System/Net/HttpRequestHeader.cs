@@ -52,7 +52,7 @@ namespace System.Net
 
     internal static class HttpRequestHeaderExtensions
     {
-        private readonly static string[] s_names = {
+        private static readonly string[] s_names = {
             "Cache-Control",
             "Connection",
             "Date",

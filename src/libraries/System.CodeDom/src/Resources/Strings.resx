@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="CodeDomProvider_NotDefined" xml:space="preserve">
+    <value>There is no CodeDom provider defined for the language.</value>
+  </data>
+  <data name="NotSupported_CodeDomAPI" xml:space="preserve">
+    <value>This CodeDomProvider does not support this method.</value>
+  </data>
+  <data name="CodeGenOutputWriter" xml:space="preserve">
+    <value>The output writer for code generation and the writer supplied don't match and cannot be used. This is generally caused by a bad implementation of a CodeGenerator derived class.</value>
+  </data>
+  <data name="CodeGenReentrance" xml:space="preserve">
+    <value>This code generation API cannot be called while the generator is being used to generate something else.</value>
+  </data>
+  <data name="InvalidElementType" xml:space="preserve">
+    <value>Element type {0} is not supported.</value>
+  </data>
+  <data name="Argument_NullComment" xml:space="preserve">
+    <value>The 'Comment' property of the CodeCommentStatement '{0}' cannot be null.</value>
+  </data>
+  <data name="InvalidPrimitiveType" xml:space="preserve">
+    <value>Invalid Primitive Type: {0}. Consider using CodeObjectCreateExpression.</value>
+  </data>
+  <data name="InvalidIdentifier" xml:space="preserve">
+    <value>Identifier '{0}' is not valid.</value>
+  </data>
+  <data name="ArityDoesntMatch" xml:space="preserve">
+    <value>The total arity specified in '{0}' does not match the number of TypeArguments supplied.  There were '{1}' TypeArguments supplied.</value>
+  </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="DuplicateFileName" xml:space="preserve">
+    <value>The file name '{0}' was already in the collection.</value>
+  </data>
+  <data name="InvalidTypeName" xml:space="preserve">
+    <value>The type name:"{0}" on the property:"{1}" of type:"{2}" is not a valid language-independent type name.</value>
+  </data>
+  <data name="InvalidRegion" xml:space="preserve">
+    <value>The region directive '{0}' contains invalid characters.  RegionText cannot contain any new line characters.</value>
+  </data>
+  <data name="InvalidPathCharsInChecksum" xml:space="preserve">
+    <value>The CodeChecksumPragma file name '{0}' contains invalid path characters.</value>
+  </data>
+  <data name="ExecTimeout" xml:space="preserve">
+    <value>Timed out waiting for a program to execute. The command being executed was {0}.</value>
+  </data>
+  <data name="Provider_does_not_support_options" xml:space="preserve">
+    <value>This CodeDomProvider type does not have a constructor that takes providerOptions - "{0}".</value>
+  </data>
+  <data name="InvalidLanguageIdentifier" xml:space="preserve">
+    <value>The identifier:"{0}" on the property:"{1}" of type:"{2}" is not a valid language-independent identifier name. Check to see if CodeGenerator.IsValidLanguageIndependentIdentifier allows the identifier name.</value>
+  </data>
+  <data name="toStringUnknown" xml:space="preserve">
+    <value>{unknown}</value>
+  </data>
+  <data name="AutoGen_Comment_Line1" xml:space="preserve">
+    <value>auto-generated&gt;</value>
+  </data>
+  <data name="AutoGen_Comment_Line2" xml:space="preserve">
+    <value>This code was generated by a tool.</value>
+  </data>
+  <data name="AutoGen_Comment_Line3" xml:space="preserve">
+    <value>Runtime Version:</value>
+  </data>
+  <data name="AutoGen_Comment_Line4" xml:space="preserve">
+    <value>Changes to this file may cause incorrect behavior and will be lost if</value>
+  </data>
+  <data name="AutoGen_Comment_Line5" xml:space="preserve">
+    <value>the code is regenerated.</value>
+  </data>
+</root>

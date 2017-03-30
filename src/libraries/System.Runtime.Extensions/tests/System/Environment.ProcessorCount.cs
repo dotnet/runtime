@@ -9,7 +9,7 @@ namespace System.Tests
 {
     public class EnvironmentProcessorCount
     {
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get processor information
         [Fact]
         public void Windows_ProcessorCountTest()
         {
@@ -26,7 +26,8 @@ namespace System.Tests
             Assert.Equal(expected, actual);
         }
 
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+#if Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get processor information
         [Fact]
         public void Unix_ProcessorCountTest()
         {
@@ -47,8 +48,9 @@ namespace System.Tests
 
         [DllImport("libc")]
         private static extern long sysconf(int name);
+#endif
 
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         [StructLayout(LayoutKind.Sequential)]

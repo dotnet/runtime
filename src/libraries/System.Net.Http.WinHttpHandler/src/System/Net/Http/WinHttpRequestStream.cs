@@ -13,7 +13,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    internal class WinHttpRequestStream : Stream
+    internal sealed class WinHttpRequestStream : Stream
     {
         private static byte[] s_crLfTerminator = new byte[] { 0x0d, 0x0a }; // "\r\n"
         private static byte[] s_endChunk = new byte[] { 0x30, 0x0d, 0x0a, 0x0d, 0x0a }; // "0\r\n\r\n"
@@ -135,6 +135,12 @@ namespace System.Net.Http
         {
             WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
         }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
 
         public override long Seek(long offset, SeekOrigin origin)
         {

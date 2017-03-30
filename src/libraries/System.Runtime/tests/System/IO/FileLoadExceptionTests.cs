@@ -77,5 +77,16 @@ namespace System.IO.Tests
                 Assert.Contains(exception.StackTrace, exception.ToString());
             }
         }
+
+        [Fact]
+        public static void FusionLogTest()
+        {
+            string message = "this is not the file you're looking for";
+            string fileName = "file.txt";
+            var innerException = new Exception("Inner exception");
+            var exception = new FileLoadException(message, fileName, innerException);
+
+            Assert.Null(exception.FusionLog);
+        }
     }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
+    [Serializable]
     public enum CryptoStreamMode
     {
         Read = 0,

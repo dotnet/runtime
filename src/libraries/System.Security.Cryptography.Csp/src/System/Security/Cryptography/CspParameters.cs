@@ -42,10 +42,17 @@ namespace System.Security.Cryptography
                 int flags = (int)value;
                 if ((flags & ~allFlags) != 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "value"));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(value)));
                 }
                 _flags = flags;
             }
+        }
+
+        [CLSCompliantAttribute(false)]
+        public SecureString KeyPassword
+        {
+            get { return null; }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }

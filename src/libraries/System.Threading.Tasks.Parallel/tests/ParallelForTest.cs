@@ -25,7 +25,7 @@ namespace System.Threading.Tasks.Tests
 
         private IList<int> _collection = null;  // the collection used in Foreach
 
-        private readonly double[] _results;  // global place to store the workload result for verication
+        private readonly double[] _results;  // global place to store the workload result for verification
 
         // data structure used with ParallelLoopState<TLocal>
         // each row is the sequence of loop "index" finished in the same thread 
@@ -774,7 +774,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Each Parallel.For loop stores the result of its compuatation in the 'result' array.
+        /// Each Parallel.For loop stores the result of its computation in the 'result' array.
         /// This function checks if result[i] for each i from 0 to _parameters.Count is correct
         /// A result[i] == double[i] means that the body for index i was run more than once
         /// </summary>
@@ -790,7 +790,7 @@ namespace System.Threading.Tasks.Tests
 
             if (_results[i] < minLimit || _results[i] > maxLimit)
             {
-                Assert.False(double.MinValue == _results[i], String.Format("results[{0}] has been revisisted", i));
+                Assert.False(double.MinValue == _results[i], String.Format("results[{0}] has been revisited", i));
                 
                 Assert.True(_parameters.StateOption == ActionWithState.Stop && 0 == _results[i],
                     String.Format("Incorrect results[{0}]. Expected result to lie between {1} and {2} but got {3})", i, minLimit, maxLimit, _results[i]));
@@ -917,7 +917,7 @@ namespace System.Threading.Tasks.Tests
     }
 
     /// <summary>
-    /// Partitioner types used for ParallelForeach with partioners
+    /// Partitioner types used for ParallelForeach with partitioners
     /// </summary>
     [Flags]
     public enum PartitionerType
