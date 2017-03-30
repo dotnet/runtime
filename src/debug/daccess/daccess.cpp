@@ -5235,7 +5235,7 @@ ClrDataAccess::FollowStubStep(
         // this and redirect to the actual code.
         methodDesc = trace.GetMethodDesc();
         if (methodDesc->IsPreImplemented() &&
-            !methodDesc->IsPointingToNativeCode() &&
+            !methodDesc->IsPointingToStableNativeCode() &&
             !methodDesc->IsGenericMethodDefinition() &&
             methodDesc->HasNativeCode())
         {
