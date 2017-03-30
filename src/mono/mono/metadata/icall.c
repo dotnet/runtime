@@ -6556,7 +6556,7 @@ char **environ;
 #endif
 
 ICALL_EXPORT MonoArray *
-ves_icall_System_Environment_GetCoomandLineArgs (void)
+ves_icall_System_Environment_GetCommandLineArgs (void)
 {
 	MonoError error;
 	MonoArray *result = mono_runtime_get_main_args_checked (&error);

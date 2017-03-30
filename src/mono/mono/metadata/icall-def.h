@@ -263,7 +263,7 @@ ICALL(ENUM_7, "get_value", ves_icall_System_Enum_get_value)
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
 ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit)
-ICALL(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCoomandLineArgs)
+ICALL(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineArgs)
 ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames)
 ICALL(ENV_31, "GetIs64BitOperatingSystem", ves_icall_System_Environment_GetIs64BitOperatingSystem)
 ICALL(ENV_4, "GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives )
