@@ -249,7 +249,10 @@
       
     <ItemGroup Condition="'$(Performance)'!='true'">
       <!-- On Windows, call prevents the test command from making execution end prematurely -->
+      <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="set COMPlus_GCStress=$(TestGCStressLevel)"/>
       <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT'" Include="call $(TestCommandLine)"/>
+
+      <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="export COMPlus_GCStress=$(TestGCStressLevel)"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="$(TestCommandLine)"/>
     </ItemGroup>
 
