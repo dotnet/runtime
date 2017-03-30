@@ -1015,9 +1015,10 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 	static int farg_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD64_XMM2};
-	int i, framesize = 0, off_rbp, off_methodargs, off_targetaddr;
+	int buf_len, i, framesize = 0, off_rbp, off_methodargs, off_targetaddr;
 
-	start = code = (guint8 *) mono_global_codeman_reserve (256 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	buf_len = 512 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0);
+	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
 	off_rbp = -framesize;
 
@@ -1056,9 +1057,8 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
-	for (i = 0; i < fregs_num; i++) {
+	for (i = 0; i < fregs_num; i++)
 		x86_patch (label_fexits [i], code);
-	}
 
 	/* load pointer to MethodArguments* into R11 */
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, sizeof (mgreg_t));
@@ -1086,9 +1086,8 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
-	for (i = 0; i < gregs_num; i++) {
+	for (i = 0; i < gregs_num; i++)
 		x86_patch (label_gexits [i], code);
-	}
 
 	/* load target addr */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_targetaddr, sizeof (mgreg_t));
@@ -1108,8 +1107,6 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	label_is_float_ret = code;
 	x86_branch8 (code, X86_CC_NZ, 0, FALSE);
 
-
-
 	/* greg return */
 	/* load MethodArguments */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_methodargs, sizeof (mgreg_t));
@@ -1124,8 +1121,6 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	label_leave_tramp [1] = code;
 	x86_jump8 (code, 0);
-
-
 
 	/* freg return */
 	x86_patch (label_is_float_ret, code);
@@ -1146,6 +1141,8 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT));
 	amd64_pop_reg (code, AMD64_RBP);
 	amd64_ret (code);
+
+	g_assert (code - start < buf_len);
 
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);

@@ -1261,16 +1261,22 @@ mono_get_got_var (MonoCompile *cfg)
 	return cfg->got_var;
 }
 
-static MonoInst *
-mono_get_vtable_var (MonoCompile *cfg)
+static void
+mono_create_rgctx_var (MonoCompile *cfg)
 {
-	g_assert (cfg->gshared);
-
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* force the var to be stack allocated */
 		cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 	}
+}
+
+static MonoInst *
+mono_get_vtable_var (MonoCompile *cfg)
+{
+	g_assert (cfg->gshared);
+
+	mono_create_rgctx_var (cfg);
 
 	return cfg->rgctx_var;
 }
@@ -12338,6 +12344,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_GET_LAST_ERROR);
 				ins->dreg = alloc_dreg (cfg, STACK_I4);
 				ins->type = STACK_I4;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				ip += 2;
+				*sp++ = ins;
+				break;
+			case CEE_MONO_GET_RGCTX_ARG:
+				CHECK_OPSIZE (2);
+				CHECK_STACK_OVF (1);
+
+				mono_create_rgctx_var (cfg);
+
+				MONO_INST_NEW (cfg, ins, OP_MOVE);
+				ins->dreg = alloc_dreg (cfg, STACK_PTR);
+				ins->sreg1 = cfg->rgctx_var->dreg;
+				ins->type = STACK_PTR;
 				MONO_ADD_INS (cfg->cbb, ins);
 
 				ip += 2;

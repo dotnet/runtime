@@ -1751,7 +1751,7 @@ no_gsharedvt_in_wrapper (void)
 }
 
 static gpointer
-mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *error)
+mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_only, MonoError *error)
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
@@ -1763,8 +1763,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 	error_init (error);
 
 #ifdef ENABLE_INTERPRETER
-	if (mono_use_interpreter)
-		return mono_interp_create_method_pointer (method, error);
+	if (mono_use_interpreter && !jit_only) {
+		code = mono_interp_create_method_pointer (method, error);
+		if (code)
+			return code;
+	}
 #endif
 
 	if (mono_llvm_only)
@@ -1921,7 +1924,21 @@ mono_jit_compile_method (MonoMethod *method, MonoError *error)
 {
 	gpointer code;
 
-	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), error);
+	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), FALSE, error);
+	return code;
+}
+
+/*
+ * mono_jit_compile_method_jit_only:
+ *
+ *   Compile METHOD using the JIT/AOT, even in interpreted mode.
+ */
+gpointer
+mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
+{
+	gpointer code;
+
+	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), TRUE, error);
 	return code;
 }
 
@@ -2408,7 +2425,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (callee) {
-			compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), error);
+			compiled_method = mono_jit_compile_method (callee, error);
 			if (!compiled_method) {
 				g_assert (!mono_error_ok (error));
 				return NULL;
@@ -3354,6 +3371,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
+	mono_jit_code_hash_init (&info->interp_code_hash);
 
 	domain->runtime_info = info;
 }

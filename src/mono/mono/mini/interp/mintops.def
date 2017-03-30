@@ -509,4 +509,5 @@ OPDEF(MINT_MONO_NEWOBJ, "mono_newobj", 2, MintOpClassToken)
 OPDEF(MINT_MONO_RETOBJ, "mono_retobj", 1, MintOpNoArgs)
 OPDEF(MINT_MONO_FREE, "mono_free", 1, MintOpNoArgs)
 
-
+// FIXME: MintOp
+OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, MintOpNoArgs)

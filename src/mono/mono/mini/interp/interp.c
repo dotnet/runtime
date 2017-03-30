@@ -78,16 +78,28 @@
 #endif
 #endif
 
-#define INIT_FRAME(frame,parent_frame,method_args,method_retval,domain,mono_method,error)	\
-	do {	\
-		(frame)->parent = (parent_frame);	\
-		(frame)->stack_args = (method_args);	\
-		(frame)->retval = (method_retval);	\
-		(frame)->runtime_method = mono_interp_get_runtime_method ((domain), (mono_method), (error));	\
-		(frame)->ex = NULL;	\
-		(frame)->ip = NULL;	\
-		(frame)->invoke_trap = 0;	\
+static inline void
+init_frame (MonoInvocation *frame, MonoInvocation *parent_frame, RuntimeMethod *rmethod, stackval *method_args, stackval *method_retval)
+{
+	frame->parent = parent_frame;
+	frame->stack_args = method_args;
+	frame->retval = method_retval;
+	frame->runtime_method = rmethod;
+	frame->ex = NULL;
+	frame->ip = NULL;
+	frame->invoke_trap = 0;
+}
+
+#define INIT_FRAME(frame,parent_frame,method_args,method_retval,domain,mono_method,error) do { \
+	RuntimeMethod *_rmethod = mono_interp_get_runtime_method ((domain), (mono_method), (error));	\
+	init_frame ((frame), (parent_frame), _rmethod, (method_args), (method_retval)); \
 	} while (0)
+
+/*
+ * List of classes whose methods will be executed by transitioning to JITted code.
+ * Used for testing.
+ */
+GSList *jit_classes;
 
 void ves_exec_method (MonoInvocation *frame);
 
@@ -258,18 +270,33 @@ RuntimeMethod*
 mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	RuntimeMethod *rtm;
+	MonoJitDomainInfo *info;
+	MonoMethodSignature *sig;
+	int i;
+
 	error_init (error);
 
+	info = domain_jit_info (domain);
 	mono_domain_jit_code_hash_lock (domain);
-	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		mono_domain_jit_code_hash_unlock (domain);
+	rtm = mono_internal_hash_table_lookup (&info->interp_code_hash, method);
+	mono_domain_jit_code_hash_unlock (domain);
+	if (rtm)
 		return rtm;
-	}
+
+	sig = mono_method_signature (method);
+
 	rtm = mono_domain_alloc0 (domain, sizeof (RuntimeMethod));
 	rtm->method = method;
-	rtm->param_count = mono_method_signature (method)->param_count;
-	rtm->hasthis = mono_method_signature (method)->hasthis;
-	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
+	rtm->param_count = sig->param_count;
+	rtm->hasthis = sig->hasthis;
+	rtm->rtype = mini_get_underlying_type (sig->ret);
+	rtm->param_types = mono_domain_alloc0 (domain, sizeof (MonoType*) * sig->param_count);
+	for (i = 0; i < sig->param_count; ++i)
+		rtm->param_types [i] = mini_get_underlying_type (sig->params [i]);
+
+	mono_domain_jit_code_hash_lock (domain);
+	if (!mono_internal_hash_table_lookup (&info->interp_code_hash, method))
+		mono_internal_hash_table_insert (&info->interp_code_hash, method, rtm);
 	mono_domain_jit_code_hash_unlock (domain);
 
 	return rtm;
@@ -1415,6 +1442,209 @@ handle_enum:
 	return retval;
 }
 
+typedef struct {
+	RuntimeMethod *rmethod;
+	gpointer this_arg;
+	gpointer res;
+	gpointer args [16];
+	gpointer *many_args;
+} InterpEntryData;
+
+/* Main function for entering the interpreter from compiled code */
+static void
+interp_entry (InterpEntryData *data)
+{
+	MonoInvocation frame;
+	RuntimeMethod *rmethod = data->rmethod;
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
+	ThreadContext context_struct;
+	MonoInvocation *old_frame;
+	stackval result;
+	stackval *args;
+	MonoMethod *method;
+	MonoMethodSignature *sig;
+	MonoType *type;
+	int i;
+
+	method = rmethod->method;
+	sig = mono_method_signature (method);
+
+	// FIXME: Optimize this
+
+	//printf ("%s\n", mono_method_full_name (method, 1));
+
+	frame.ex = NULL;
+	if (context == NULL) {
+		context = &context_struct;
+		memset (context, 0, sizeof (ThreadContext));
+		context_struct.base_frame = &frame;
+		context_struct.env_frame = &frame;
+		mono_native_tls_set_value (thread_context_id, context);
+	}
+	else
+		old_frame = context->current_frame;
+	context->domain = mono_domain_get ();
+
+	args = alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
+	if (sig->hasthis)
+		args [0].data.p = data->this_arg;
+
+	gpointer *params;
+	if (data->many_args)
+		params = data->many_args;
+	else
+		params = data->args;
+	for (i = 0; i < sig->param_count; ++i) {
+		int a_index = i + (sig->hasthis ? 1 : 0);
+		if (sig->params [i]->byref) {
+			args [a_index].data.p = params [i];
+			continue;
+		}
+		type = rmethod->param_types [i];
+		switch (type->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+			args [a_index].data.i = *(MonoBoolean*)params [i];
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+			args [a_index].data.i = *(gint16*)params [i];
+			break;
+		case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 4
+			args [a_index].data.p = GINT_TO_POINTER (*(guint32*)params [i]);
+#else
+			args [a_index].data.p = GINT_TO_POINTER (*(guint64*)params [i]);
+#endif
+			break;
+		case MONO_TYPE_I:
+#if SIZEOF_VOID_P == 4
+			args [a_index].data.p = GINT_TO_POINTER (*(gint32*)params [i]);
+#else
+			args [a_index].data.p = GINT_TO_POINTER (*(gint64*)params [i]);
+#endif
+			break;
+		case MONO_TYPE_U4:
+			args [a_index].data.i = *(guint32*)params [i];
+			break;
+		case MONO_TYPE_I4:
+			args [a_index].data.i = *(gint32*)params [i];
+			break;
+		case MONO_TYPE_U8:
+			args [a_index].data.l = *(guint64*)params [i];
+			break;
+		case MONO_TYPE_I8:
+			args [a_index].data.l = *(gint64*)params [i];
+			break;
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_OBJECT:
+			args [a_index].data.p = *(MonoObject**)params [i];
+			break;
+		case MONO_TYPE_VALUETYPE:
+			args [a_index].data.p = params [i];
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (MONO_TYPE_IS_REFERENCE (type))
+				args [a_index].data.p = params [i];
+			else
+				args [a_index].data.vt = params [i];
+			break;
+		default:
+			printf ("%s\n", mono_type_full_name (sig->params [i]));
+			NOT_IMPLEMENTED;
+			break;
+		}
+	}
+
+	init_frame (&frame, context->current_frame, data->rmethod, args, &result);
+	context->managed_code = 1;
+
+	type = rmethod->rtype;
+	switch (type->type) {
+	case MONO_TYPE_GENERICINST:
+		if (!MONO_TYPE_IS_REFERENCE (type))
+			frame.retval->data.vt = data->res;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		frame.retval->data.vt = data->res;
+		break;
+	default:
+		break;
+	}
+
+	ves_exec_method_with_context (&frame, context);
+	context->managed_code = 0;
+	if (context == &context_struct)
+		mono_native_tls_set_value (thread_context_id, NULL);
+	else
+		context->current_frame = old_frame;
+
+	// FIXME:
+	g_assert (frame.ex == NULL);
+
+	type = rmethod->rtype;
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+		break;
+	case MONO_TYPE_I1:
+		*(gint8*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_U1:
+		*(guint8*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_I2:
+		*(gint16*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_U2:
+		*(guint16*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_I4:
+		*(gint32*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_U4:
+		*(guint64*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_I8:
+		*(gint64*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_U8:
+		*(guint64*)data->res = frame.retval->data.i;
+		break;
+	case MONO_TYPE_I:
+#if SIZEOF_VOID_P == 8
+		*(gint64*)data->res = (gint64)frame.retval->data.p;
+#else
+		*(gint32*)data->res = (gint32)frame.retval->data.p;
+#endif
+		break;
+	case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 8
+		*(guint64*)data->res = (guint64)frame.retval->data.p;
+#else
+		*(guint32*)data->res = (guint32)frame.retval->data.p;
+#endif
+		break;
+	case MONO_TYPE_OBJECT:
+		/* No need for a write barrier */
+		*(MonoObject**)data->res = (MonoObject*)frame.retval->data.p;
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (MONO_TYPE_IS_REFERENCE (type)) {
+			*(MonoObject**)data->res = *(MonoObject**)frame.retval->data.p;
+		} else {
+			/* Already set before the call */
+		}
+		break;
+	case MONO_TYPE_VALUETYPE:
+		/* Already set before the call */
+		break;
+	default:
+		printf ("%s\n", mono_type_full_name (sig->ret));
+		NOT_IMPLEMENTED;
+		break;
+	}
+}
+
 static stackval * 
 do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 {
@@ -1504,84 +1734,220 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 	return sp;
 }
 
-static mono_mutex_t create_method_pointer_mutex;
+/*
+ * These functions are the entry points into the interpreter from compiled code.
+ * They are called by the interp_in wrappers. They have the following signature:
+ * void (<optional this_arg>, <optional retval pointer>, <arg1>, ..., <argn>, <method ptr>)
+ * They pack up their arguments into an InterpEntryData structure and call interp_entry ().
+ * It would be possible for the wrappers to pack up the arguments etc, but that would make them bigger, and there are
+ * more wrappers then these functions.
+ * this/static * ret/void * 16 arguments -> 64 functions.
+ */
 
-static GHashTable *method_pointer_hash = NULL;
+#define MAX_INTERP_ENTRY_ARGS 8
 
-#define TRAMPS_USED 8
+#define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
+	InterpEntryData data; \
+	(data).rmethod = (_method); \
+	(data).res = (_res); \
+	(data).this_arg = (_this_arg); \
+	(data).many_args = NULL;
 
-static MonoMethod *method_pointers [TRAMPS_USED] = {0};
+#define INTERP_ENTRY0(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY1(_this_arg, _res, _method) {	  \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY2(_this_arg, _res, _method) {  \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY3(_this_arg, _res, _method) { \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY4(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	(data).args [3] = arg4; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY5(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	(data).args [3] = arg4; \
+	(data).args [4] = arg5; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY6(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	(data).args [3] = arg4; \
+	(data).args [4] = arg5; \
+	(data).args [5] = arg6; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY7(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	(data).args [3] = arg4; \
+	(data).args [4] = arg5; \
+	(data).args [5] = arg6; \
+	(data).args [6] = arg7; \
+	interp_entry (&data); \
+	}
+#define INTERP_ENTRY8(_this_arg, _res, _method) {	\
+	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	(data).args [0] = arg1; \
+	(data).args [1] = arg2; \
+	(data).args [2] = arg3; \
+	(data).args [3] = arg4; \
+	(data).args [4] = arg5; \
+	(data).args [5] = arg6; \
+	(data).args [6] = arg7; \
+	(data).args [7] = arg8; \
+	interp_entry (&data); \
+	}
 
-#define GEN_METHOD_PTR_TRAMP(num) \
-		static MonoObject * mp_tramp_ ## num (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) { \
-			MonoError error; \
-			void *params_real[] = {this_obj, &params, &exc, &compiled_method}; \
-			MonoObject *ret = mono_interp_runtime_invoke (method_pointers [num], NULL, params_real, NULL, &error); \
-			mono_error_cleanup (&error); \
-			return ret; \
-		}
+#define ARGLIST0 RuntimeMethod *rmethod
+#define ARGLIST1 gpointer arg1, RuntimeMethod *rmethod
+#define ARGLIST2 gpointer arg1, gpointer arg2, RuntimeMethod *rmethod
+#define ARGLIST3 gpointer arg1, gpointer arg2, gpointer arg3, RuntimeMethod *rmethod
+#define ARGLIST4 gpointer arg1, gpointer arg2, gpointer arg3, gpointer arg4, RuntimeMethod *rmethod
+#define ARGLIST5 gpointer arg1, gpointer arg2, gpointer arg3, gpointer arg4, gpointer arg5, RuntimeMethod *rmethod
+#define ARGLIST6 gpointer arg1, gpointer arg2, gpointer arg3, gpointer arg4, gpointer arg5, gpointer arg6, RuntimeMethod *rmethod
+#define ARGLIST7 gpointer arg1, gpointer arg2, gpointer arg3, gpointer arg4, gpointer arg5, gpointer arg6, gpointer arg7, RuntimeMethod *rmethod
+#define ARGLIST8 gpointer arg1, gpointer arg2, gpointer arg3, gpointer arg4, gpointer arg5, gpointer arg6, gpointer arg7, gpointer arg8, RuntimeMethod *rmethod
 
+static void interp_entry_static_0 (ARGLIST0) INTERP_ENTRY0 (NULL, NULL, rmethod)
+static void interp_entry_static_1 (ARGLIST1) INTERP_ENTRY1 (NULL, NULL, rmethod)
+static void interp_entry_static_2 (ARGLIST2) INTERP_ENTRY2 (NULL, NULL, rmethod)
+static void interp_entry_static_3 (ARGLIST3) INTERP_ENTRY3 (NULL, NULL, rmethod)
+static void interp_entry_static_4 (ARGLIST4) INTERP_ENTRY4 (NULL, NULL, rmethod)
+static void interp_entry_static_5 (ARGLIST5) INTERP_ENTRY5 (NULL, NULL, rmethod)
+static void interp_entry_static_6 (ARGLIST6) INTERP_ENTRY6 (NULL, NULL, rmethod)
+static void interp_entry_static_7 (ARGLIST7) INTERP_ENTRY7 (NULL, NULL, rmethod)
+static void interp_entry_static_8 (ARGLIST8) INTERP_ENTRY8 (NULL, NULL, rmethod)
+static void interp_entry_static_ret_0 (gpointer res, ARGLIST0) INTERP_ENTRY0 (NULL, res, rmethod)
+static void interp_entry_static_ret_1 (gpointer res, ARGLIST1) INTERP_ENTRY1 (NULL, res, rmethod)
+static void interp_entry_static_ret_2 (gpointer res, ARGLIST2) INTERP_ENTRY2 (NULL, res, rmethod)
+static void interp_entry_static_ret_3 (gpointer res, ARGLIST3) INTERP_ENTRY3 (NULL, res, rmethod)
+static void interp_entry_static_ret_4 (gpointer res, ARGLIST4) INTERP_ENTRY4 (NULL, res, rmethod)
+static void interp_entry_static_ret_5 (gpointer res, ARGLIST5) INTERP_ENTRY5 (NULL, res, rmethod)
+static void interp_entry_static_ret_6 (gpointer res, ARGLIST6) INTERP_ENTRY6 (NULL, res, rmethod)
+static void interp_entry_static_ret_7 (gpointer res, ARGLIST7) INTERP_ENTRY7 (NULL, res, rmethod)
+static void interp_entry_static_ret_8 (gpointer res, ARGLIST8) INTERP_ENTRY8 (NULL, res, rmethod)
+static void interp_entry_instance_0 (gpointer this_arg, ARGLIST0) INTERP_ENTRY0 (this_arg, NULL, rmethod)
+static void interp_entry_instance_1 (gpointer this_arg, ARGLIST1) INTERP_ENTRY1 (this_arg, NULL, rmethod)
+static void interp_entry_instance_2 (gpointer this_arg, ARGLIST2) INTERP_ENTRY2 (this_arg, NULL, rmethod)
+static void interp_entry_instance_3 (gpointer this_arg, ARGLIST3) INTERP_ENTRY3 (this_arg, NULL, rmethod)
+static void interp_entry_instance_4 (gpointer this_arg, ARGLIST4) INTERP_ENTRY4 (this_arg, NULL, rmethod)
+static void interp_entry_instance_5 (gpointer this_arg, ARGLIST5) INTERP_ENTRY5 (this_arg, NULL, rmethod)
+static void interp_entry_instance_6 (gpointer this_arg, ARGLIST6) INTERP_ENTRY6 (this_arg, NULL, rmethod)
+static void interp_entry_instance_7 (gpointer this_arg, ARGLIST7) INTERP_ENTRY7 (this_arg, NULL, rmethod)
+static void interp_entry_instance_8 (gpointer this_arg, ARGLIST8) INTERP_ENTRY8 (this_arg, NULL, rmethod)
+static void interp_entry_instance_ret_0 (gpointer this_arg, gpointer res, ARGLIST0) INTERP_ENTRY0 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_1 (gpointer this_arg, gpointer res, ARGLIST1) INTERP_ENTRY1 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_2 (gpointer this_arg, gpointer res, ARGLIST2) INTERP_ENTRY2 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_3 (gpointer this_arg, gpointer res, ARGLIST3) INTERP_ENTRY3 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_4 (gpointer this_arg, gpointer res, ARGLIST4) INTERP_ENTRY4 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_5 (gpointer this_arg, gpointer res, ARGLIST5) INTERP_ENTRY5 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_6 (gpointer this_arg, gpointer res, ARGLIST6) INTERP_ENTRY6 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_7 (gpointer this_arg, gpointer res, ARGLIST7) INTERP_ENTRY6 (this_arg, res, rmethod)
+static void interp_entry_instance_ret_8 (gpointer this_arg, gpointer res, ARGLIST8) INTERP_ENTRY6 (this_arg, res, rmethod)
 
-GEN_METHOD_PTR_TRAMP (0);
-GEN_METHOD_PTR_TRAMP (1);
-GEN_METHOD_PTR_TRAMP (2);
-GEN_METHOD_PTR_TRAMP (3);
-GEN_METHOD_PTR_TRAMP (4);
-GEN_METHOD_PTR_TRAMP (5);
-GEN_METHOD_PTR_TRAMP (6);
-GEN_METHOD_PTR_TRAMP (7);
+#define INTERP_ENTRY_FUNCLIST(type) interp_entry_ ## type ## _0, interp_entry_ ## type ## _1, interp_entry_ ## type ## _2, interp_entry_ ## type ## _3, interp_entry_ ## type ## _4, interp_entry_ ## type ## _5, interp_entry_ ## type ## _6, interp_entry_ ## type ## _7, interp_entry_ ## type ## _8
 
-#undef GEN_METHOD_PTR_TRAMP
+gpointer entry_funcs_static [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static) };
+gpointer entry_funcs_static_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static_ret) };
+gpointer entry_funcs_instance [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance) };
+gpointer entry_funcs_instance_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance_ret) };
 
-gpointer *mp_tramps[TRAMPS_USED] = {
-	(gpointer) mp_tramp_0, (gpointer) mp_tramp_1, (gpointer) mp_tramp_2, (gpointer) mp_tramp_3,
-	(gpointer) mp_tramp_4, (gpointer) mp_tramp_5, (gpointer) mp_tramp_6, (gpointer) mp_tramp_7
-};
+/* General version for methods with more than MAX_INTERP_ENTRY_ARGS arguments */
+static void
+interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer rmethod)
+{
+	INTERP_ENTRY_BASE (rmethod, this_arg, res);
+	data.many_args = args;
+	interp_entry (&data);
+}
 
-static int tramps_used = 0;
-
+/*
+ * mono_interp_create_method_pointer:
+ *
+ * Return a function pointer which can be used to call METHOD using the
+ * interpreter. Return NULL for methods which are not supported.
+ */
 gpointer
 mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
-	MonoJitInfo *ji;
+	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethod *wrapper;
+	RuntimeMethod *rmethod;
 
-	mono_os_mutex_lock (&create_method_pointer_mutex);
-	if (!method_pointer_hash) {
-		// FIXME: is registering method table as GC root really necessary?
-		// MONO_GC_REGISTER_ROOT_FIXED (method_pointer_hash);
-		method_pointer_hash = g_hash_table_new (NULL, NULL);
+	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+		return NULL;
+
+	rmethod = mono_interp_get_runtime_method (mono_domain_get (), method, error);
+	if (rmethod->jit_entry)
+		return rmethod->jit_entry;
+	wrapper = mini_get_interp_in_wrapper (sig);
+
+	gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	mono_error_assert_ok (error);
+
+	//printf ("%s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
+	gpointer entry_func;
+	if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
+		entry_func = interp_entry_general;
+	} else if (sig->hasthis) {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_instance [sig->param_count];
+		else
+			entry_func = entry_funcs_instance_ret [sig->param_count];
+	} else {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_static [sig->param_count];
+		else
+			entry_func = entry_funcs_static_ret [sig->param_count];
 	}
-	addr = g_hash_table_lookup (method_pointer_hash, method);
-	if (addr) {
-		mono_os_mutex_unlock (&create_method_pointer_mutex);
-		return addr;
-	}
+	g_assert (entry_func);
+
+	/* This is the argument passed to the interp_in wrapper by the static rgctx trampoline */
+	MonoFtnDesc *ftndesc = g_new0 (MonoFtnDesc, 1);
+	ftndesc->addr = entry_func;
+	ftndesc->arg = rmethod;
+	mono_error_assert_ok (error);
 
 	/*
-	 * If it is a static P/Invoke method, we can just return the pointer
-	 * to the method implementation.
+	 * The wrapper is called by compiled code, which doesn't pass the extra argument, so we pass it in the
+	 * rgctx register using a trampoline.
 	 */
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && ((MonoMethodPInvoke*) method)->addr) {
-		ji = g_new0 (MonoJitInfo, 1);
-		ji->d.method = method;
-		ji->code_size = 1;
-		ji->code_start = addr = ((MonoMethodPInvoke*) method)->addr;
 
-		mono_jit_info_table_add (mono_get_root_domain (), ji);
-	}		
-	else {
-		g_assert (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE);
-		g_assert (tramps_used < TRAMPS_USED);
+	// FIXME: AOT
+	g_assert (!mono_aot_only);
+	addr = mono_arch_get_static_rgctx_trampoline (ftndesc, jit_wrapper);
 
-		/* FIXME: needs locking */
-		method_pointers [tramps_used] = method;
-		addr = mp_tramps [tramps_used];
-		tramps_used++;
-	}
-
-	g_hash_table_insert (method_pointer_hash, method, addr);
-	mono_os_mutex_unlock (&create_method_pointer_mutex);
+	mono_memory_barrier ();
+	rmethod->jit_entry = addr;
 
 	return addr;
 }
@@ -1970,6 +2336,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
+
 			ves_exec_method_with_context (&child_frame, context);
 
 			context->current_frame = frame;
@@ -2023,6 +2390,215 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			}
 			MINT_IN_BREAK;
 		}
+
+		MINT_IN_CASE(MINT_JIT_CALL) {
+			MonoMethodSignature *sig;
+			RuntimeMethod *rmethod = rtm->data_items [* (guint16 *)(ip + 1)];
+			MonoFtnDesc ftndesc;
+			guint8 res_buf [256];
+			MonoType *type;
+
+			//printf ("%s\n", mono_method_full_name (rmethod->method, 1));
+
+			/*
+			 * Call JITted code through a gsharedvt_out wrapper. These wrappers receive every argument
+			 * by ref and return a return value using an explicit return value argument.
+			 */
+			if (!rmethod->jit_wrapper) {
+				MonoMethod *method = rmethod->method;
+				MonoError error;
+
+				sig = mono_method_signature (method);
+				g_assert (sig);
+
+				MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+				//printf ("J: %s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
+
+				gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, &error);
+				mono_error_assert_ok (&error);
+
+				gpointer addr = mono_jit_compile_method_jit_only (method, &error);
+				g_assert (addr);
+				mono_error_assert_ok (&error);
+
+				rmethod->jit_addr = addr;
+				rmethod->jit_sig = sig;
+				mono_memory_barrier ();
+				rmethod->jit_wrapper = jit_wrapper;
+
+			} else {
+				sig = rmethod->jit_sig;
+			}
+
+			frame->ip = ip;
+			ip += 2;
+			sp -= sig->param_count;
+			if (sig->hasthis)
+				--sp;
+
+			ftndesc.addr = rmethod->jit_addr;
+			ftndesc.arg = NULL;
+
+			// FIXME: Optimize this
+
+			gpointer args [32];
+			int pindex = 0;
+			int stack_index = 0;
+			if (rmethod->hasthis) {
+				args [pindex ++] = sp [0].data.p;
+				stack_index ++;
+			}
+			type = rmethod->rtype;
+			if (type->type != MONO_TYPE_VOID) {
+				if (MONO_TYPE_ISSTRUCT (type))
+					args [pindex ++] = vt_sp;
+				else
+					args [pindex ++] = res_buf;
+			}
+			for (int i = 0; i < rmethod->param_count; ++i) {
+				MonoType *t = rmethod->param_types [i];
+				stackval *sval = &sp [stack_index + i];
+				if (sig->params [i]->byref) {
+					args [pindex ++] = sval->data.p;
+				} else if (MONO_TYPE_ISSTRUCT (t)) {
+					args [pindex ++] = sval->data.p;
+				} else if (MONO_TYPE_IS_REFERENCE (t)) {
+					args [pindex ++] = &sval->data.p;
+				} else {
+					switch (t->type) {
+					case MONO_TYPE_I1:
+					case MONO_TYPE_U1:
+					case MONO_TYPE_I2:
+					case MONO_TYPE_U2:
+					case MONO_TYPE_I4:
+					case MONO_TYPE_U4:
+					case MONO_TYPE_VALUETYPE:
+						args [pindex ++] = &sval->data.i;
+						break;
+					case MONO_TYPE_PTR:
+					case MONO_TYPE_FNPTR:
+					case MONO_TYPE_I:
+					case MONO_TYPE_U:
+					case MONO_TYPE_OBJECT:
+						args [pindex ++] = &sval->data.p;
+						break;
+					case MONO_TYPE_I8:
+					case MONO_TYPE_U8:
+						args [pindex ++] = &sval->data.l;
+						break;
+					default:
+						printf ("%s\n", mono_type_full_name (t));
+						g_assert_not_reached ();
+					}
+				}
+			}
+
+			switch (pindex) {
+			case 0: {
+				void (*func)(gpointer) = rmethod->jit_wrapper;
+
+				func (&ftndesc);
+				break;
+			}
+			case 1: {
+				void (*func)(gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], &ftndesc);
+				break;
+			}
+			case 2: {
+				void (*func)(gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], &ftndesc);
+				break;
+			}
+			case 3: {
+				void (*func)(gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], args [2], &ftndesc);
+				break;
+			}
+			case 4: {
+				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], args [2], args [3], &ftndesc);
+				break;
+			}
+			case 5: {
+				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], args [2], args [3], args [4], &ftndesc);
+				break;
+			}
+			case 6: {
+				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], args [2], args [3], args [4], args [5], &ftndesc);
+				break;
+			}
+			case 7: {
+				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+				func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+
+			MonoType *rtype = rmethod->rtype;
+			switch (rtype->type) {
+			case MONO_TYPE_VOID:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+				sp->data.p = *(gpointer*)res_buf;
+				break;
+			case MONO_TYPE_I1:
+				sp->data.i = *(gint8*)res_buf;
+				break;
+			case MONO_TYPE_U1:
+				sp->data.i = *(guint8*)res_buf;
+				break;
+			case MONO_TYPE_I2:
+				sp->data.i = *(gint16*)res_buf;
+				break;
+			case MONO_TYPE_U2:
+				sp->data.i = *(guint16*)res_buf;
+				break;
+			case MONO_TYPE_I4:
+				sp->data.i = *(gint32*)res_buf;
+				break;
+			case MONO_TYPE_U4:
+				sp->data.i = *(guint32*)res_buf;
+				break;
+			case MONO_TYPE_VALUETYPE:
+				/* The result was written to vt_sp */
+				sp->data.p = vt_sp;
+				break;
+			case MONO_TYPE_GENERICINST:
+				if (MONO_TYPE_IS_REFERENCE (rtype)) {
+					sp->data.p = *(gpointer*)res_buf;
+				} else {
+					/* The result was written to vt_sp */
+					sp->data.p = vt_sp;
+				}
+				break;
+			default:
+				printf ("%s\n", mono_type_full_name (rtype));
+				g_assert_not_reached ();
+				break;
+			}
+			if (rtype->type != MONO_TYPE_VOID)
+				sp++;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_CALLVIRT) {
 			stackval *endsp = sp;
 			MonoObject *this_arg;
@@ -3668,6 +4244,9 @@ array_constructed:
 			BINOP_CAST(l, -, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY)
+			while (sp > frame->stack) {
+				--sp;
+			}
 			if (finally_ips) {
 				ip = finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
@@ -4426,11 +5005,24 @@ interp_ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_fi
 }
 
 void
+mono_interp_parse_options (const char *options)
+{
+	char **args, **ptr;
+
+	args = g_strsplit (options, ",", -1);
+	for (ptr = args; ptr && *ptr; ptr ++) {
+		char *arg = *ptr;
+
+		if (strncmp (arg, "jit=", 4) == 0)
+			jit_classes = g_slist_prepend (jit_classes, arg + 4);
+	}
+}
+
+void
 mono_interp_init ()
 {
 	mono_native_tls_alloc (&thread_context_id, NULL);
-    mono_native_tls_set_value (thread_context_id, NULL);
-	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
+	mono_native_tls_set_value (thread_context_id, NULL);
 
 	mono_interp_transform_init ();
 }
@@ -4547,6 +5139,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	*total += failed + cfailed;
 	*total_run += run;
 }
+
 static int
 interp_regression (MonoImage *image, int verbose, int *total_run)
 {

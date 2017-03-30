@@ -25,5 +25,8 @@ gpointer
 mono_interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
 void
+mono_interp_parse_options (const char *options);
+
+void
 interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 #endif /* __MONO_MINI_INTERPRETER_H__ */

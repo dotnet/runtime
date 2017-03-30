@@ -82,6 +82,12 @@ typedef struct _RuntimeMethod
 	guint32 *local_offsets;
 	unsigned int param_count;
 	unsigned int hasthis;
+	gpointer jit_wrapper;
+	gpointer jit_addr;
+	MonoMethodSignature *jit_sig;
+	gpointer jit_entry;
+	MonoType *rtype;
+	MonoType **param_types;
 } RuntimeMethod;
 
 struct _MonoInvocation {
@@ -111,6 +117,7 @@ typedef struct {
 } ThreadContext;
 
 extern int mono_interp_traceopt;
+extern GSList *jit_classes;
 
 MonoException *
 mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *context);

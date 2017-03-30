@@ -121,6 +121,7 @@ typedef enum {
 	/* Subtypes of MONO_WRAPPER_UNKNOWN */
 	WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG,
 	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
+	WRAPPER_SUBTYPE_INTERP_IN
 } WrapperSubtype;
 
 typedef struct {
@@ -195,6 +196,10 @@ typedef struct {
 	MonoMethod *method;
 } DelegateInvokeWrapperInfo;
 
+typedef struct {
+	MonoMethodSignature *sig;
+} InterpInWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -237,6 +242,8 @@ typedef struct {
 		GsharedvtWrapperInfo gsharedvt;
 		/* DELEGATE_INVOKE */
 		DelegateInvokeWrapperInfo delegate_invoke;
+		/* INTERP_IN */
+		InterpInWrapperInfo interp_in;
 	} d;
 } WrapperInfo;
 

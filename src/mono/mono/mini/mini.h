@@ -366,6 +366,8 @@ typedef struct
 	gpointer llvm_module;
 	/* Maps MonoMethod -> GSlist of addresses */
 	GHashTable *llvm_jit_callees;
+	/* Maps MonoMethod -> RuntimeMethod */
+	MonoInternalHashTable interp_code_hash;
 } MonoJitDomainInfo;
 
 typedef struct {
@@ -2420,6 +2422,7 @@ gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *dom
 gpointer  mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
 gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method);
 gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error);
+gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error);
 MonoLMF * mono_get_lmf                      (void);
 MonoLMF** mono_get_lmf_addr                 (void);
@@ -3098,6 +3101,7 @@ MonoMethod* mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig);
 MonoMethod* mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig);
 MonoMethodSignature* mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count);
 gboolean mini_gsharedvt_runtime_invoke_supported (MonoMethodSignature *sig);
+MonoMethod* mini_get_interp_in_wrapper (MonoMethodSignature *sig);
 
 /* SIMD support */
 

@@ -506,7 +506,8 @@ test_sources = 			\
 	basic-vectors.cs \
 	aot-tests.cs \
 	gc-test.cs \
-	gshared.cs
+	gshared.cs \
+	mixed.cs
 
 if NACL_CODEGEN
 test_sources += nacl.cs
@@ -750,6 +751,9 @@ rcheck: mono $(regtests)
 
 richeck: mono $(regtests)
 	$(INTERP_RUNTIME) --regression $(regtests)
+
+mixedcheck: mono mixed.exe
+	$(MINI_RUNTIME) --interp=jit=JitClass mixed.exe
 
 if ARM
 check-seq-points:
