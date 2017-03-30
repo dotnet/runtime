@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsBytes.cs" />
+    <Compile Include="Span\AsSpan.cs" />
     <Compile Include="Span\Fill.cs" />
     <Compile Include="Span\Clear.cs" />
     <Compile Include="Span\CopyTo.cs" />
@@ -47,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
+    <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayInt.cs" />
@@ -71,7 +73,6 @@
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
-    <Compile Include="ReadOnlySpan\StringSlice.cs" />
     <Compile Include="ReadOnlySpan\TestHelpers.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
   </ItemGroup>
