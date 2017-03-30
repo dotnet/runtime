@@ -198,6 +198,7 @@ namespace System.Net.Http
 
             // Adjust defaults to match current .NET Desktop HttpClientHandler (based on HWR stack).
             AllowAutoRedirect = true;
+            AutomaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
             UseProxy = true;
             UseCookies = true;
             CookieContainer = new CookieContainer();
