@@ -47,6 +47,10 @@ def osShortName = ['Windows 10': 'win10',
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
+def targetGroupOsMap = ['netcoreapp': ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 
+                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
+                        'netfx': ['Windows_NT']]
+
 // **************************
 // Define code coverage build
 // **************************
@@ -207,67 +211,69 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'].each { osName ->
-        ['Debug', 'Release'].each { configurationGroup ->
+    ['netcoreapp', 'netfx'].each { targetGroup ->
+        (targetGroupOsMap[targetGroup]).each { osName ->
+            ['Debug', 'Release'].each { configurationGroup ->
 
-            def osForMachineAffinity = osName
-            if (osForMachineAffinity == 'PortableLinux') {
-                // Portable Linux builds happen on RHEL7.2
-                osForMachineAffinity = "RHEL7.2"
-            }
+                def osForMachineAffinity = osName
+                if (osForMachineAffinity == 'PortableLinux') {
+                    // Portable Linux builds happen on RHEL7.2
+                    osForMachineAffinity = "RHEL7.2"
+                }
 
-            def archGroup = "x64"
-            def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
+                def archGroup = "x64"
+                def newJobName = "outerloop_${targetGroup}_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                steps {
-                    if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup}")
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -outerloop -- /p:IsCIBuild=true")
-                    }
-                    else if (osName == 'OSX10.12') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
-                        shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
-                    }
-                    else if (osName == 'CentOS7.1') {
-                        // On Centos7.1, the cmake toolset is currently installed in /usr/local/bin (it was built manually).  When
-                        // running sudo, that will be typically eliminated from the PATH, so let's add it back in.
-                        shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
-                        shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
-                    }
-                    else {
-                        def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
+                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                    steps {
+                        if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -framework:${targetGroup} -${configurationGroup}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -framework:${targetGroup} -${configurationGroup} -outerloop -- /p:IsCIBuild=true")
+                        }
+                        else if (osName == 'OSX10.12') {
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
+                        }
+                        else if (osName == 'CentOS7.1') {
+                            // On Centos7.1, the cmake toolset is currently installed in /usr/local/bin (it was built manually).  When
+                            // running sudo, that will be typically eliminated from the PATH, so let's add it back in.
+                            shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                            shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
+                        }
+                        else {
+                            def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
+                            shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
+                            shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
+                        }
                     }
                 }
-            }
 
-            // Set the affinity.  OS name matches the machine affinity.
-            if (osName == 'Windows_NT' || osName == 'OSX10.12') {
-                Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
-            }
-            else if (osGroupMap[osName] == 'Linux') {
-                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'outer-latest-or-auto')
-            } else {
-                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto');
-            }
+                // Set the affinity.  OS name matches the machine affinity.
+                if (osName == 'Windows_NT' || osName == 'OSX10.12') {
+                    Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
+                }
+                else if (osGroupMap[osName] == 'Linux') {
+                    Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'outer-latest-or-auto')
+                } else {
+                    Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto');
+                }
 
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-            // Add the unit test results
-            Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
-            // Add archival for the built data.
-            Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
-            // Set up appropriate triggers.  PR on demand, otherwise nightly
-            if (isPR) {
-                // Set PR trigger.
-                // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${osName} ${configurationGroup} ${archGroup}", "(?i).*test\\W+outerloop\\W+${osName}\\W+${configurationGroup}.*")
-            }
-            else {
-                // Set a periodic trigger
-                Utilities.addPeriodicTrigger(newJob, '@daily')
+                // Set up standard options.
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                // Add the unit test results
+                Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
+                // Add archival for the built data.
+                Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
+                // Set up appropriate triggers.  PR on demand, otherwise nightly
+                if (isPR) {
+                    // Set PR trigger.
+                    // TODO: More elaborate regex trigger?
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${targetGroup} ${osName} ${configurationGroup} ${archGroup}", "(?i).*test\\W+outerloop\\W+${targetGroup} ${osName}\\W+${configurationGroup}.*")
+                }
+                else {
+                    // Set a periodic trigger
+                    Utilities.addPeriodicTrigger(newJob, '@daily')
+                }
             }
         }
     }
