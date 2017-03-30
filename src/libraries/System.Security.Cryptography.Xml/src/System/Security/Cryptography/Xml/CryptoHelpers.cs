@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.Xml
     internal static class CryptoHelpers
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "HMACMD5 needed for compat.")]
         public static object CreateFromName(string name)
         {
             switch (name)
@@ -49,14 +50,10 @@ namespace System.Security.Cryptography.Xml
                     return new KeyInfoRetrievalMethod();
                 case "http://www.w3.org/2001/04/xmlenc# EncryptedKey":
                     return new KeyInfoEncryptedKey();
-                case "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160":
-                    throw new NotImplementedException(name);
-                    //return new System.Security.Cryptography.HMACRIPEMD160();
                 case "http://www.w3.org/2000/09/xmldsig#dsa-sha1":
                     return new DSASignatureDescription();
                 case "System.Security.Cryptography.DSASignatureDescription":
-                    throw new NotImplementedException(name);
-                    //return new DSASignatureDescription();
+                    return new DSASignatureDescription();
                 case "http://www.w3.org/2000/09/xmldsig#rsa-sha1":
                     return new RSAPKCS1SHA1SignatureDescription();
                 case "System.Security.Cryptography.RSASignatureDescription":
@@ -72,6 +69,12 @@ namespace System.Security.Cryptography.Xml
                 // remove attribute from this method when removing them
                 case "http://www.w3.org/2000/09/xmldsig#sha1":
                     return SHA1.Create();
+                case "MD5":
+                    return MD5.Create();
+                case "http://www.w3.org/2001/04/xmldsig-more#hmac-md5":
+                    return new HMACMD5();
+                case "http://www.w3.org/2001/04/xmlenc#tripledes-cbc":
+                    return TripleDES.Create();
             }
 
             return CryptoConfig.CreateFromName(name);
