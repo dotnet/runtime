@@ -55,7 +55,6 @@ namespace System.Security.Cryptography.Xml.Tests
             encryptedXml.ReplaceData(encryptedElement, rgbOutput);
         }
 
-
         public static IEnumerable<object[]> GetSymmetricAlgorithms()
         {
             foreach (var ctor in TestHelpers.GetSymmetricAlgorithms())
