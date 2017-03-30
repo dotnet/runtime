@@ -4171,12 +4171,11 @@ public:
     size_t          flags;
     PTR_heap_segment next;
     uint8_t*        background_allocated;
-    uint8_t*        plan_allocated;
-    uint8_t*        saved_bg_allocated;
-
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
 #endif //MULTIPLE_HEAPS
+    uint8_t*        plan_allocated;
+    uint8_t*        saved_bg_allocated;
 
 #ifdef _MSC_VER
 // Disable this warning - we intentionally want __declspec(align()) to insert padding for us
@@ -4196,6 +4195,9 @@ static_assert(offsetof(dac_heap_segment, mem) == offsetof(heap_segment, mem), "D
 static_assert(offsetof(dac_heap_segment, flags) == offsetof(heap_segment, flags), "DAC heap segment layout mismatch");
 static_assert(offsetof(dac_heap_segment, next) == offsetof(heap_segment, next), "DAC heap segment layout mismatch");
 static_assert(offsetof(dac_heap_segment, background_allocated) == offsetof(heap_segment, background_allocated), "DAC heap segment layout mismatch");
+#ifdef MULTIPLE_HEAPS
+static_assert(offsetof(dac_heap_segment, heap) == offsetof(heap_segment, heap), "DAC heap segment layout mismatch");
+#endif // MULTIPLE_HEAPS
 
 inline
 uint8_t*& heap_segment_reserved (heap_segment* inst)
