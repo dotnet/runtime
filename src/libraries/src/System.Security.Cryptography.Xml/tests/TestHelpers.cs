@@ -164,23 +164,23 @@ namespace System.Security.Cryptography.Xml.Tests
         /// Lists functions creating symmetric algorithms
         /// </summary>
         /// <returns></returns>
-        public static IEnumerable<Func<SymmetricAlgorithm>> GetSymmetricAlgorithms(bool skipDes = false)
+        public static IEnumerable<SymmetricAlgorithmFactory> GetSymmetricAlgorithms(bool skipDes = false)
         {
             if (!skipDes)
             {
-                yield return () => DES.Create();
+                yield return new SymmetricAlgorithmFactory("DES", () => DES.Create());
             }
 
-            yield return () => TripleDES.Create();
+            yield return new SymmetricAlgorithmFactory("TripleDES", () => TripleDES.Create());
 
             foreach (var keySize in new[] { 128, 192, 256 })
             {
-                yield return () =>
+                yield return new SymmetricAlgorithmFactory($"AES{keySize}", () =>
                 {
                     Aes aes = Aes.Create();
                     aes.KeySize = keySize;
                     return aes;
-                };
+                });
             }
         }
 

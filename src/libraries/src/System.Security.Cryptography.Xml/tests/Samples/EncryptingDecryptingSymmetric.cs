@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Theory, MemberData(nameof(GetSymmetricAlgorithms))]
-        public void SymmetricEncryptionRoundtrip(Func<SymmetricAlgorithm> algorithmConstructor)
+        public void SymmetricEncryptionRoundtrip(SymmetricAlgorithmFactory algorithmFactory)
         {
             const string testString = "some text node";
             const string ExampleXmlRootElement = "example";
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
 
-            using (var key = algorithmConstructor())
+            using (var key = algorithmFactory.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
