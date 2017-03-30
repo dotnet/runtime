@@ -125,6 +125,79 @@ namespace System
             return SpanHelpers.IndexOf(ref span.DangerousGetPinnableReference(), span.Length, ref value.DangerousGetPinnableReference(), value.Length);
         }
 
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        /// <param name="value2">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this Span<byte> span, byte value0, byte value1, byte value2)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, value2, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this Span<byte> span, ReadOnlySpan<byte> values)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), span.Length, ref values.DangerousGetPinnableReference(), values.Length);
+        }
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value0">One of the values to search for.</param>
+        /// <param name="value1">One of the values to search for.</param>
+        /// <param name="value2">One of the values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1, byte value2)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), value0, value1, value2, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> values)
+        {
+            return SpanHelpers.IndexOfAny(ref span.DangerousGetPinnableReference(), span.Length, ref values.DangerousGetPinnableReference(), values.Length);
+        }
+
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable&lt;T&gt;.Equals(T). 
         /// </summary>
