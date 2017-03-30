@@ -428,13 +428,13 @@ namespace System.Tests
 
         public static IEnumerable<object[]> FromMilliseconds_TestData()
         {
-            yield return new object[] { 1500.5,  PlatformDetection.IsFullFramework ? new TimeSpan(0, 0, 0, 1, 501) : new TimeSpan((long) (1500.5 * TimeSpan.TicksPerMillisecond))};
-            yield return new object[] { 2.5, PlatformDetection.IsFullFramework ? new TimeSpan(0, 0, 0, 0, 3) : new TimeSpan((long) (2.5 * TimeSpan.TicksPerMillisecond)) };
+            yield return new object[] { 1500.5, new TimeSpan(0, 0, 0, 1, 501) };
+            yield return new object[] { 2.5, new TimeSpan(0, 0, 0, 0, 3) };
             yield return new object[] { 1.0, new TimeSpan(0, 0, 0, 0, 1) };
             yield return new object[] { 0.0, new TimeSpan(0, 0, 0, 0, 0) };
             yield return new object[] { -1.0, new TimeSpan(0, 0, 0, 0, -1) };
-            yield return new object[] { -2.5, PlatformDetection.IsFullFramework ? new TimeSpan(0, 0, 0, 0, -3) : new TimeSpan((long) (-2.5 * TimeSpan.TicksPerMillisecond)) };
-            yield return new object[] { -1500.5,  PlatformDetection.IsFullFramework ? new TimeSpan(0, 0, 0, 1, -501) : new TimeSpan((long) (-1500.5 * TimeSpan.TicksPerMillisecond))};
+            yield return new object[] { -2.5, new TimeSpan(0, 0, 0, 0, -3) };
+            yield return new object[] { -1500.5, new TimeSpan(0, 0, 0, -1, -501) };
         }
 
         [Theory]
@@ -447,14 +447,14 @@ namespace System.Tests
         [Fact]
         public static void FromMilliseconds_Invalid()
         {
-            double maxMilliseconds = Math.Round((double) long.MaxValue / TimeSpan.TicksPerMillisecond, 0);
+            double maxMilliseconds = long.MaxValue / TimeSpan.TicksPerMillisecond;
 
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(double.PositiveInfinity)); // Value is positive infinity
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(double.NegativeInfinity)); // Value is positive infinity
 
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(maxMilliseconds)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(-maxMilliseconds)); // Value < TimeSpan.MinValue
-            
+
             Assert.Throws<ArgumentException>(null, () => TimeSpan.FromMilliseconds(double.NaN)); // Value is NaN
         }
 
