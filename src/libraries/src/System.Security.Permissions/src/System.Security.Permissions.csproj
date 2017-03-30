@@ -127,11 +127,32 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap' Or '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Security\Permissions\FileIOPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\IsolatedStorageContainment.cs" />
+    <Compile Include="System\Security\Permissions\IsolatedStorageFilePermission.cs" />
+    <Compile Include="System\Security\Permissions\IsolatedStorageFilePermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\IsolatedStoragePermission.cs" />
+    <Compile Include="System\Security\Permissions\IsolatedStoragePermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermission.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermissionAccessEntry.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermissionAccessEntryCollection.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermissionAccessEntryEnumerator.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\KeyContainerPermissionFlags.cs" />
+    <Compile Include="System\Security\Permissions\ResourcePermissionBase.cs" />
+    <Compile Include="System\Security\Permissions\ResourcePermissionBaseEntry.cs" />
+    <Compile Include="System\Security\Permissions\StorePermission.cs" />
+    <Compile Include="System\Security\Permissions\StorePermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\StorePermissionFlags.cs" />
+    <Compile Include="System\Security\Permissions\TypeDescriptorPermissionAttribute.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

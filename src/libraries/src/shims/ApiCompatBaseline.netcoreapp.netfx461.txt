@@ -856,20 +856,12 @@ CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.CodeAccessSecurityAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.EnvironmentPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.FileDialogPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Security.Permissions.FileIOPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.FileIOPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.GacIdentityPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.HostProtectionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Security.Permissions.IsolatedStorageContainment' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.IsolatedStorageFilePermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.IsolatedStorageFilePermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.IsolatedStoragePermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.IsolatedStoragePermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermissionAccessEntry' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.KeyContainerPermissionFlags' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.IsolatedStorageFilePermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.IsolatedStoragePermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.KeyContainerPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.PermissionSetAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.PrincipalPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.PublisherIdentityPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -1160,12 +1152,8 @@ TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configu
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.ResourcePermissionBase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.ResourcePermissionBaseEntry' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.StorePermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.StorePermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.StorePermissionFlags' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.TypeDescriptorPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.StorePermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.TypeDescriptorPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName, System.Reflection.Emit.CustomAttributeBuilder[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[], System.Reflection.AssemblyName, System.Reflection.Emit.CustomAttributeBuilder[], System.String)' does not exist in the implementation but it does exist in the contract.
@@ -3232,4 +3220,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3219
+Total Issues: 3207

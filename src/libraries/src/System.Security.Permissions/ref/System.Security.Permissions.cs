@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Security.Cryptography;
+
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.IPermission))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.ISecurityEncodable))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.SecurityElement))]
@@ -366,6 +369,23 @@ namespace System.Security.Permissions
         Read = 1,
         Write = 2,
     }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public sealed class FileIOPermissionAttribute : CodeAccessSecurityAttribute
+    {
+        public FileIOPermissionAttribute(SecurityAction action) : base(action) { }
+        public string Read { get; set; }
+        public string Write { get; set; }
+        public string Append { get; set; }
+        public string PathDiscovery { get; set; }
+        public string ViewAccessControl { get; set; }
+        public string ChangeAccessControl { get; set; }
+        [Obsolete]
+        public string All { get; set; }
+        public string ViewAndModify { get; set; }
+        public FileIOPermissionAccess AllFiles { get; set; }
+        public FileIOPermissionAccess AllLocalFiles { get; set; }
+        public override IPermission CreatePermission() { return null; }
+    }
     public sealed partial class GacIdentityPermission : System.Security.CodeAccessPermission
     {
         public GacIdentityPermission() { }
@@ -415,9 +435,137 @@ namespace System.Security.Permissions
         Synchronization = 1,
         UI = 128,
     }
+    public enum IsolatedStorageContainment
+    {
+        None = 0x00,
+        DomainIsolationByUser = 0x10,
+        ApplicationIsolationByUser = 0x15,
+        AssemblyIsolationByUser = 0x20,
+        DomainIsolationByMachine = 0x30,
+        AssemblyIsolationByMachine = 0x40,
+        ApplicationIsolationByMachine = 0x45,
+        DomainIsolationByRoamingUser = 0x50,
+        AssemblyIsolationByRoamingUser = 0x60,
+        ApplicationIsolationByRoamingUser = 0x65,
+        AdministerIsolatedStorageByUser = 0x70,
+        UnrestrictedIsolatedStorage = 0xF0
+    }
+    public sealed class IsolatedStorageFilePermission : IsolatedStoragePermission
+    {
+        public IsolatedStorageFilePermission(PermissionState state) : base(state) { }
+        public override IPermission Union(IPermission target) { return null; }
+        public override bool IsSubsetOf(IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return null; }
+        public override IPermission Copy() { return null; }
+        public override SecurityElement ToXml() { return null; }
+    }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor
+     | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly,
+    AllowMultiple = true, Inherited = false)]
+    sealed public class IsolatedStorageFilePermissionAttribute : IsolatedStoragePermissionAttribute
+    {
+        public IsolatedStorageFilePermissionAttribute(SecurityAction action) : base(action) { }
+        public override IPermission CreatePermission() { return null; }
+    }
+    [SecurityPermission(SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true)]
+    public abstract class IsolatedStoragePermission : CodeAccessPermission, IUnrestrictedPermission
+    {
+        protected IsolatedStoragePermission(PermissionState state) { }
+        public long UserQuota { get; set; }
+        public IsolatedStorageContainment UsageAllowed { get; set; }
+        public bool IsUnrestricted() { return false; }
+        public override SecurityElement ToXml() { return default(SecurityElement); }
+        public override void FromXml(SecurityElement esd) { }
+    }
+    public abstract class IsolatedStoragePermissionAttribute : CodeAccessSecurityAttribute
+    {
+        protected IsolatedStoragePermissionAttribute(SecurityAction action) : base(action) { }
+        public long UserQuota { get; set; }
+        public IsolatedStorageContainment UsageAllowed { get; set; }
+    }
     public partial interface IUnrestrictedPermission
     {
         bool IsUnrestricted();
+    }
+    public sealed class KeyContainerPermission : CodeAccessPermission, IUnrestrictedPermission
+    {
+        public KeyContainerPermission(PermissionState state) { }
+        public KeyContainerPermission(KeyContainerPermissionFlags flags) { }
+        public KeyContainerPermission(KeyContainerPermissionFlags flags, KeyContainerPermissionAccessEntry[] accessList) { }
+        public KeyContainerPermissionFlags Flags { get; }
+        public KeyContainerPermissionAccessEntryCollection AccessEntries { get; }
+        public bool IsUnrestricted() { return false; }
+        private bool IsEmpty() { return false; }
+        public override bool IsSubsetOf(IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return null; }
+        public override IPermission Union(IPermission target) { return null; }
+        public override IPermission Copy() { return null; }
+        public override SecurityElement ToXml() { return null; }
+        public override void FromXml(SecurityElement securityElement) { }
+    }
+    public sealed class KeyContainerPermissionAccessEntry
+    {
+        public KeyContainerPermissionAccessEntry(string keyContainerName, KeyContainerPermissionFlags flags) { }
+        public KeyContainerPermissionAccessEntry(CspParameters parameters, KeyContainerPermissionFlags flags) { }
+        public KeyContainerPermissionAccessEntry(string keyStore, string providerName, int providerType,
+                        string keyContainerName, int keySpec, KeyContainerPermissionFlags flags)
+        { }
+        public string KeyStore { get; set; }
+        public string ProviderName { get; set; }
+        public int ProviderType { get; set; }
+        public string KeyContainerName { get; set; }
+        public int KeySpec { get; set; }
+        public KeyContainerPermissionFlags Flags { get; set; }
+        public override bool Equals(object o) { return false; }
+        public override int GetHashCode() { return 0; }
+    }
+    public sealed class KeyContainerPermissionAccessEntryCollection : ICollection
+    {
+        public KeyContainerPermissionAccessEntry this[int index] { get { return null; } }
+        public int Count { get; }
+        public int Add(KeyContainerPermissionAccessEntry accessEntry) { return 0; }
+        public void Clear() { }
+        public int IndexOf(KeyContainerPermissionAccessEntry accessEntry) { return 0; }
+        public void Remove(KeyContainerPermissionAccessEntry accessEntry) { }
+        public KeyContainerPermissionAccessEntryEnumerator GetEnumerator() { return null; }
+        public void CopyTo(KeyContainerPermissionAccessEntry[] array, int index) { }
+        public void CopyTo(Array array, int index) { throw new NotImplementedException(); }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw new NotImplementedException(); }
+        public bool IsSynchronized { get; }
+        public object SyncRoot { get; }
+    }
+    public sealed class KeyContainerPermissionAccessEntryEnumerator : System.Collections.IEnumerator
+    {
+        public KeyContainerPermissionAccessEntry Current { get; }
+        object System.Collections.IEnumerator.Current { get; }
+        public bool MoveNext() { return false; }
+        public void Reset() { }
+    }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public sealed class KeyContainerPermissionAttribute : CodeAccessSecurityAttribute
+    {
+        public KeyContainerPermissionAttribute(SecurityAction action) : base(action) { }
+        public string KeyStore { get; set; }
+        public string ProviderName { get; set; }
+        public int ProviderType { get; set; }
+        public string KeyContainerName { get; set; }
+        public int KeySpec { get; set; }
+        public KeyContainerPermissionFlags Flags { get; set; }
+        public override IPermission CreatePermission() { return null; }
+    }
+    public enum KeyContainerPermissionFlags
+    {
+        NoFlags = 0x0000,
+        Create = 0x0001,
+        Open = 0x0002,
+        Delete = 0x0004,
+        Import = 0x0010,
+        Export = 0x0020,
+        Sign = 0x0100,
+        Decrypt = 0x0200,
+        ViewAcl = 0x1000,
+        ChangeAcl = 0x2000,
+        AllFlags = 0x3337
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple = true, Inherited = false)]
     public sealed partial class PermissionSetAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -562,6 +710,37 @@ namespace System.Security.Permissions
         public string Write { get; set; }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+    [SecurityPermission(SecurityAction.InheritanceDemand, ControlEvidence = true, ControlPolicy = true)]
+    public abstract class ResourcePermissionBase : CodeAccessPermission, IUnrestrictedPermission
+    {
+        public const string Any = "*";
+        public const string Local = ".";
+        protected ResourcePermissionBase() { }
+        protected ResourcePermissionBase(PermissionState state) { }
+        private static Hashtable CreateHashtable() { return null; }
+        private string ComputerName { get; set; }
+        private bool IsEmpty { get; }
+        protected Type PermissionAccessType { get; set; }
+        protected string[] TagNames { get; set; }
+        protected void AddPermissionAccess(ResourcePermissionBaseEntry entry) { }
+        protected void Clear() { }
+        public override IPermission Copy() { return null; }
+        protected ResourcePermissionBaseEntry[] GetPermissionEntries() { return null; }
+        public override void FromXml(SecurityElement securityElement) { }
+        public override IPermission Intersect(IPermission target) { return null; }
+        public override bool IsSubsetOf(IPermission target) { return false; }
+        public bool IsUnrestricted() { return false; }
+        protected void RemovePermissionAccess(ResourcePermissionBaseEntry entry) { }
+        public override SecurityElement ToXml() { return null; }
+        public override IPermission Union(IPermission target) { return null; }
+    }
+    public class ResourcePermissionBaseEntry
+    {
+        public ResourcePermissionBaseEntry() { }
+        public ResourcePermissionBaseEntry(int permissionAccess, string[] permissionAccessPath) { }
+        public int PermissionAccess { get; }
+        public string[] PermissionAccessPath { get; }
+    }
     public sealed partial class SecurityPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
         public SecurityPermission(System.Security.Permissions.PermissionState state) { }
@@ -594,6 +773,50 @@ namespace System.Security.Permissions
         public string Site { get; set; }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
+    public sealed class StorePermission : CodeAccessPermission, IUnrestrictedPermission
+    {
+        public StorePermission(PermissionState state) { }
+        public StorePermission(StorePermissionFlags flag) { }
+        public StorePermissionFlags Flags { get; set; }
+        public bool IsUnrestricted() { return false; }
+        public override IPermission Union(IPermission target) { return null; }
+        public override bool IsSubsetOf(IPermission target) { return false; }
+        public override IPermission Intersect(IPermission target) { return null; }
+        public override IPermission Copy() { return null; }
+        public override SecurityElement ToXml() { return null; }
+        public override void FromXml(SecurityElement securityElement) { }
+    }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public sealed class StorePermissionAttribute : CodeAccessSecurityAttribute
+    {
+        public StorePermissionAttribute(SecurityAction action) : base(action) { }
+        public StorePermissionFlags Flags { get; set; }
+        public bool CreateStore { get; set; }
+        public bool DeleteStore { get; set; }
+        public bool EnumerateStores { get; set; }
+        public bool OpenStore { get; set; }
+        public bool AddToStore { get; set; }
+        public bool RemoveFromStore { get; set; }
+        public bool EnumerateCertificates { get; set; }
+        public override IPermission CreatePermission() { return null; }
+    }
+    [Flags]
+    public enum StorePermissionFlags
+    {
+        NoFlags = 0x00,
+
+        CreateStore = 0x01,
+        DeleteStore = 0x02,
+        EnumerateStores = 0x04,
+
+        OpenStore = 0x10,
+        AddToStore = 0x20,
+        RemoveFromStore = 0x40,
+        EnumerateCertificates = 0x80,
+
+        AllFlags = 0xF7
+    }
+
     public sealed partial class StrongNameIdentityPermission : System.Security.CodeAccessPermission
     {
         public StrongNameIdentityPermission(System.Security.Permissions.PermissionState state) { }
@@ -636,6 +859,14 @@ namespace System.Security.Permissions
         public bool IsUnrestricted() { throw null; }
         public override System.Security.SecurityElement ToXml() { throw null; }
         public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+    }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public sealed class TypeDescriptorPermissionAttribute : CodeAccessSecurityAttribute
+    {
+        public TypeDescriptorPermissionAttribute(SecurityAction action) : base(action) { }
+        public TypeDescriptorPermissionFlags Flags { get; set; }
+        public bool RestrictedRegistrationAccess { get; set; }
+        public override IPermission CreatePermission() { return null; }
     }
     [System.FlagsAttribute]
     public enum TypeDescriptorPermissionFlags

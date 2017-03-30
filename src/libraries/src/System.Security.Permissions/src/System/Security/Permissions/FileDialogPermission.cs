@@ -7,9 +7,9 @@ namespace System.Security.Permissions
     [Serializable]
     public sealed partial class FileDialogPermission : CodeAccessPermission, IUnrestrictedPermission
     {
-        public FileDialogPermission(System.Security.Permissions.FileDialogPermissionAccess access) { }
+        public FileDialogPermission(FileDialogPermissionAccess access) { }
         public FileDialogPermission(PermissionState state) { }
-        public System.Security.Permissions.FileDialogPermissionAccess Access { get; set; }
+        public FileDialogPermissionAccess Access { get; set; }
         public override IPermission Copy() { return this; }
         public override void FromXml(SecurityElement esd) { }
         public override IPermission Intersect(IPermission target) { return default(IPermission); }
