@@ -35,17 +35,11 @@ internal class AllocBug
     {
         try
         {
-            Console.Write("Allocating ");
-            Console.Write(bytesToAlloc);
-            Console.Write(" bytes... ");
-
             byte[] buffer = new byte[bytesToAlloc];
-
-            Console.WriteLine("Passed");
         }
         catch (Exception)
         {
-            Console.WriteLine("Unexpected Exception: ");
+            Console.WriteLine("Unexpected Exception when allocating "+bytesToAlloc+" bytes.");
             ret = -1;
         }
     }
