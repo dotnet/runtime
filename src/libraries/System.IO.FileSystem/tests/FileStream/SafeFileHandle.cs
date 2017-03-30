@@ -59,10 +59,20 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ThrowWhenHandlePositionIsChanged(bool useAsync)
+        [Fact]
+        public async Task ThrowWhenHandlePositionIsChanged_sync()
+        {
+            await ThrowWhenHandlePositionIsChanged(useAsync: false);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX doesn't allow concurrent FileStream access when using overlapped IO.")]
+        public async Task ThrowWhenHandlePositionIsChanged_async()
+        {
+            await ThrowWhenHandlePositionIsChanged(useAsync: true);
+        }
+
+        private async Task ThrowWhenHandlePositionIsChanged(bool useAsync)
         {
             string fileName = GetTestFilePath();
 
