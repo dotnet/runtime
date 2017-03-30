@@ -1588,13 +1588,53 @@ ZapImage::CompileStatus ZapImage::CompileProfileDataWorker(mdToken token, unsign
     return TryCompileMethodDef(token, methodProfilingDataFlags);
 }
 
-void ZapImage::CompileProfileData()
+//  ProfileDisableInlining
+//     Before we start compiling any methods we may need to suppress the inlining
+//     of certain methods based upon our profile data.
+//     This method will arrange to disable this inlining.
+//
+void ZapImage::ProfileDisableInlining()
 {
+    // We suppress the inlining of any Hot methods that have the ExcludeHotMethodCode flag.
+    // We want such methods to be Jitted at runtime rather than compiled in the AOT native image.
+    // The inlining of such a method also need to be suppressed.
+    //
+    ProfileDataSection* methodProfileData = &(m_profileDataSections[MethodProfilingData]);
+    if (methodProfileData->tableSize > 0)
+    {
+        for (DWORD i = 0; i < methodProfileData->tableSize; i++)
+        {
+            CORBBTPROF_TOKEN_INFO * pTokenInfo = &(methodProfileData->pTable[i]);
+            unsigned methodProfilingDataFlags = pTokenInfo->flags;
+
+            // Hot methods can be marked to be excluded from the AOT native image.
+            // We also need to disable inlining of such methods.
+            //
+            if ((methodProfilingDataFlags & (1 << ExcludeHotMethodCode)) != 0)
+            {
+                // Disable the inlining of this method
+                //
+                // @ToDo: Figure out how to disable inlining for this method.               
+            }
+        }
+    }
+}
+
+//  CompileHotRegion
+//     Performs the compilation and placement for all methods in the the "Hot" code region
+//     Methods placed in this region typically correspond to all of the methods that were
+//     executed during any of the profiling scenarios.
+//
+void ZapImage::CompileHotRegion()
+{
+    // Compile all of the methods that were executed during profiling into the "Hot" code region.
+    //
     BeginRegion(CORINFO_REGION_HOT);
 
     CorProfileData* pProfileData = GetProfileData();
         
-    if (m_profileDataSections[MethodProfilingData].tableSize > 0)
+    ProfileDataSection* methodProfileData = &(m_profileDataSections[MethodProfilingData]);
+    if (methodProfileData->tableSize > 0)
     {
         // record the start of hot IBC methods.
         m_iIBCMethod = m_MethodCompilationOrder.GetCount();
@@ -1602,19 +1642,21 @@ void ZapImage::CompileProfileData()
         //
         // Compile the hot methods in the order specified in the MethodProfilingData
         //
-        for (DWORD i = 0; i < m_profileDataSections[MethodProfilingData].tableSize; i++)
+        for (DWORD i = 0; i < methodProfileData->tableSize; i++)
         {
-            unsigned methodProfilingDataFlags = m_profileDataSections[MethodProfilingData].pTable[i].flags;
-            _ASSERTE(methodProfilingDataFlags != 0);
+            CompileStatus compileResult = NOT_COMPILED;
+            CORBBTPROF_TOKEN_INFO * pTokenInfo = &(methodProfileData->pTable[i]);
 
-            mdToken token = m_profileDataSections[MethodProfilingData].pTable[i].token;
+            mdToken token = pTokenInfo->token;
+            unsigned methodProfilingDataFlags = pTokenInfo->flags;
+            _ASSERTE(methodProfilingDataFlags != 0);
 
             if (TypeFromToken(token) == mdtMethodDef)
             {
                 //
                 // Compile a non-generic method
                 // 
-                CompileProfileDataWorker(token, methodProfilingDataFlags);
+                compileResult = CompileProfileDataWorker(token, methodProfilingDataFlags);
             }
             else if (TypeFromToken(token) == ibcMethodSpec)
             {
@@ -1638,10 +1680,14 @@ void ZapImage::CompileProfileData()
                     {
                         m_pPreloader->AddMethodToTransitiveClosureOfInstantiations(pMethod);
 
-                        TryCompileInstantiatedMethod(pMethod, methodProfilingDataFlags);
+                        compileResult = TryCompileInstantiatedMethod(pMethod, methodProfilingDataFlags);
                     }
                 }
             }
+
+            // Update the 'flags' saved in the profileDataHashTable hash table.
+            //
+            hashBBUpdateFlagsAndCompileResult(token, methodProfilingDataFlags, compileResult);
         }
         // record the start of hot Generics methods.
         m_iGenericsMethod = m_MethodCompilationOrder.GetCount();
@@ -1653,71 +1699,91 @@ void ZapImage::CompileProfileData()
     EndRegion(CORINFO_REGION_HOT);
 }
 
+//  CompileColdRegion
+//     Performs the compilation and placement for all methods in the the "Cold" code region
+//     Methods placed in this region typically correspond to all of the methods that were
+//     NOT executed during any of the profiling scenarios.
+//
+void ZapImage::CompileColdRegion()
+{
+    // Compile all of the methods that were NOT executed during profiling into the "Cold" code region.
+    //
+
+    BeginRegion(CORINFO_REGION_COLD);
+    
+    IMDInternalImport * pMDImport = m_pMDImport;
+    
+    HENUMInternalHolder hEnum(pMDImport);
+    hEnum.EnumAllInit(mdtMethodDef);
+    
+    mdMethodDef md;
+    while (pMDImport->EnumNext(&hEnum, &md))
+    {
+        //
+        // Compile the remaining methods that weren't compiled during the CompileHotRegion phase
+        //
+        TryCompileMethodDef(md, 0);
+    }
+
+    // Compile any generic code which lands in this LoaderModule
+    // that resulted from the above compilations
+    CORINFO_METHOD_HANDLE handle = m_pPreloader->NextUncompiledMethod();
+    while (handle != NULL)
+    {
+        TryCompileInstantiatedMethod(handle, 0);
+        handle = m_pPreloader->NextUncompiledMethod();
+    }
+    
+    EndRegion(CORINFO_REGION_COLD);
+}
+
+//  PlaceMethodIL
+//     Copy the IL for all method into the AOT native image
+//
+void ZapImage::PlaceMethodIL()
+{
+    // Place the IL for all of the methods 
+    //
+    IMDInternalImport * pMDImport = m_pMDImport;
+    HENUMInternalHolder hEnum(pMDImport);
+    hEnum.EnumAllInit(mdtMethodDef);
+    
+    mdMethodDef md;
+    while (pMDImport->EnumNext(&hEnum, &md))
+    {
+        if (m_pILMetaData != NULL)
+        {
+            // Copy IL for all methods. We treat errors during copying IL 
+            // over as fatal error. These errors are typically caused by 
+            // corrupted IL images.
+            // 
+            m_pILMetaData->EmitMethodIL(md);
+        }
+    }
+}
+
 void ZapImage::Compile()
 {
     //
-    // First, compile methods in the load order array.
+    // Compile all of the methods for our AOT native image
     //
+
     bool doNothingNgen = false;
 #ifdef _DEBUG
     static ConfigDWORD fDoNothingNGen;
     doNothingNgen = !!fDoNothingNGen.val(CLRConfig::INTERNAL_ZapDoNothing);
 #endif
 
+    ProfileDisableInlining();
+
     if (!doNothingNgen)
     {
-        //
-        // Compile the methods specified by the IBC profile data
-        // 
-        CompileProfileData();
+        CompileHotRegion();
 
-        BeginRegion(CORINFO_REGION_COLD);
-
-
-        IMDInternalImport * pMDImport = m_pMDImport;
-
-        HENUMInternalHolder hEnum(pMDImport);
-        hEnum.EnumAllInit(mdtMethodDef);
-
-        mdMethodDef md;
-        while (pMDImport->EnumNext(&hEnum, &md))
-        {
-            if (m_pILMetaData != NULL)
-            {
-                // Copy IL for all methods. We treat errors during copying IL 
-                // over as fatal error. These errors are typically caused by 
-                // corrupted IL images.
-                // 
-                m_pILMetaData->EmitMethodIL(md);
-            }
-
-            //
-            // Compile the remaining methods that weren't compiled during the CompileProfileData phase
-            //
-            TryCompileMethodDef(md, 0);
-        }
-
-        // Compile any generic code which lands in this LoaderModule
-        // that resulted from the above compilations
-        CORINFO_METHOD_HANDLE handle = m_pPreloader->NextUncompiledMethod();
-        while (handle != NULL)
-        {
-            TryCompileInstantiatedMethod(handle, 0);
-            handle = m_pPreloader->NextUncompiledMethod();
-        }
-
-        EndRegion(CORINFO_REGION_COLD);
-
-        // If we want ngen to fail when we create partial ngen images we can
-        // throw an NGEN failure HRESULT here.
-#if 0
-        if (m_zapper->m_failed)
-        {
-            ThrowHR(NGEN_E_TP_PARTIAL_IMAGE); 
-        }
-#endif
-
+        CompileColdRegion();
     }
+
+    PlaceMethodIL();
 
     // Compute a preferred class layout order based on analyzing the graph
     // of which classes contain calls to other classes.
@@ -2022,20 +2088,64 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     }
 #endif
 
+    // Do we have a profile entry for this method?
+    //
     if (methodProfilingDataFlags != 0)
     {
         // Report the profiling data flags for layout of the EE datastructures
         m_pPreloader->SetMethodProfilingFlags(handle, methodProfilingDataFlags);
 
-        // Only proceed with compilation if the code is hot
+        // Hot methods can be marked to be excluded from the AOT native image.
+        // A Jitted method executes faster than a ReadyToRun compiled method.
+        //
+        if ((methodProfilingDataFlags & (1 << ExcludeHotMethodCode)) != 0)
+        {
+            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
+            return COMPILE_EXCLUDED;
+        }
+
+        // Cold methods can be marked to be excluded from the AOT native image.
+        // We can reduced the size of the AOT native image by selectively
+        // excluding the code for some of the cold methods.
+        //
+        if ((methodProfilingDataFlags & (1 << ExcludeColdMethodCode)) != 0)
+        {
+            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
+            return COMPILE_EXCLUDED;
+        }
+
+        // If the code was never executed based on the profile data
+        // then don't compile this method now. Wait until until later
+        // when we are compiling the methods in the cold section.
         //
         if ((methodProfilingDataFlags & (1 << ReadMethodCode)) == 0)
+        {
+            // returning NOT_COMPILED will defer until later the compilation of this method
             return NOT_COMPILED;
+        }
     }
-    else
+    else  // we are compiling methods for the cold region
     {
+        // When Partial Ngen is specified we will omit the AOT native code for every
+        // method that was not executed based on the profile data.
+        //
         if (m_zapper->m_pOpt->m_fPartialNGen)
+        {
+            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
             return COMPILE_EXCLUDED;
+        }
+
+        // Retrieve any information that we have about a previous compilation attempt of this method
+        const ProfileDataHashEntry* pEntry = profileDataHashTable.LookupPtr(md);
+
+        if (pEntry != nullptr)
+        {
+            if (pEntry->status == COMPILE_EXCLUDED)
+            {
+                // returning COMPILE_EXCLUDED excludes this method from the AOT native image
+                return COMPILE_EXCLUDED;
+            }
+        }
     }
 
     // Have we already compiled it?
@@ -3207,6 +3317,8 @@ HRESULT ZapImage::hashBBProfileData ()
         READ(methodHeader,CORBBTPROF_METHOD_HEADER);
         newEntry.md   = methodHeader->method.token;
         newEntry.size = methodHeader->size;
+        newEntry.flags = 0;
+        newEntry.status = NOT_COMPILED;
 
         // Add the new entry to the table
         profileDataHashTable.Add(newEntry);
@@ -3217,6 +3329,33 @@ HRESULT ZapImage::hashBBProfileData ()
     }
 
     return S_OK;
+}
+
+void ZapImage::hashBBUpdateFlagsAndCompileResult(mdToken token, unsigned methodProfilingDataFlags, ZapImage::CompileStatus compileResult)
+{
+    // SHash only supports replacing an entry so we setup our newEntry and then perform a lookup
+    //
+    ProfileDataHashEntry newEntry;
+    newEntry.md = token;
+    newEntry.flags = methodProfilingDataFlags;
+    newEntry.status = compileResult;
+
+    const ProfileDataHashEntry* pEntry = profileDataHashTable.LookupPtr(token);
+    if (pEntry != nullptr)
+    {
+        assert(pEntry->md == newEntry.md);
+        assert(pEntry->flags == 0);   // the flags should not be set at this point.
+
+        // Copy and keep the two fleids that were previously set
+        newEntry.size = pEntry->size;
+        newEntry.pos = pEntry->pos;
+    }
+    else // We have a method that doesn't have basic block counts
+    {
+        newEntry.size = 0;
+        newEntry.pos = 0;
+    }
+    profileDataHashTable.AddOrReplace(newEntry);
 }
 
 void ZapImage::LoadProfileData()
