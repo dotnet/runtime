@@ -46,11 +46,10 @@
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KeyedCollection\Serialization.netstandard.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard.cs" />
-    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.netstandard.cs" />
-    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.netstandard.cs" />
+    <Compile Include="KeyedCollection\Serialization.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_Serialization.cs" />
+    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

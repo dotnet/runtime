@@ -93,6 +93,7 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoShortestDayNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoShortTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoSortableDateTimePattern.cs" />
+    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoTests.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
     <Compile Include="DateTimeStyles\DateTimeStylesTests.cs" />
@@ -106,19 +107,23 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoGetFormat.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoGetInstance.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoReadOnly.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoTests.cs" />
     <Compile Include="NumberStyles\NumberStylesTests.cs" />
+    <Compile Include="SortVersion\SortVersionTests.cs" />
     <Compile Include="StringInfo\StringInfoCtor.cs" />
     <Compile Include="StringInfo\StringInfoEquals.cs" />
     <Compile Include="StringInfo\StringInfoGetNextTextElement.cs" />
     <Compile Include="StringInfo\StringInfoGetTextElementEnumerator.cs" />
     <Compile Include="StringInfo\StringInfoParseCombiningCharacters.cs" />
     <Compile Include="StringInfo\StringInfoString.cs" />
+    <Compile Include="StringInfo\StringInfoTests.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorTests.cs" />
     <Compile Include="TextInfo\TextInfoCultureName.cs" />
     <Compile Include="TextInfo\TextInfoEquals.cs" />
     <Compile Include="TextInfo\TextInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoIsReadOnly.cs" />
     <Compile Include="TextInfo\TextInfoListSeparator.cs" />
+    <Compile Include="TextInfo\TextInfoTests.cs" />
     <Compile Include="TextInfo\TextInfoToLower.cs" />
     <Compile Include="TextInfo\TextInfoToString.cs" />
     <Compile Include="TextInfo\TextInfoToUpper.cs" />
@@ -143,17 +148,6 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.netstandard.cs" />
-    <Compile Include="CompareInfo\CompareInfoTests.netstandard.cs" />
-    <Compile Include="CultureInfo\CultureInfoTests.netstandard.cs" />
-    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoTests.netstandard.cs" />
-    <Compile Include="NumberFormatInfo\NumberFormatInfoTests.netstandard.cs" />
-    <Compile Include="RegionInfo\RegionInfoTests.netstandard.cs" />
-    <Compile Include="TextInfo\TextInfoTests.netstandard.cs" />
-    <Compile Include="StringInfo\StringInfoTests.netstandard.cs" />
-    <Compile Include="SortVersion\SortVersionTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
