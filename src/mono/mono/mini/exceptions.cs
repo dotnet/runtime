@@ -2846,6 +2846,72 @@ class Tests
 		}
 		return 0;
 	}
+
+	public class MyException : Exception {
+		public int marker = 0;
+		public string res = "";
+
+		public MyException (String res) {
+			this.res = res;
+		}
+
+		public bool FilterWithoutState () {
+			return this.marker == 0x666;
+		}
+
+		public bool FilterWithState () {
+			bool ret = this.marker == 0x566;
+			this.marker += 0x100;
+			return ret;
+		}
+
+		public bool FilterWithStringState () {
+			bool ret = this.marker == 0x777;
+			this.res = "fromFilter_" + this.res;
+			return ret;
+		}
+	}
+
+	public static int test_1_basic_filter_catch () {
+		try {
+			MyException e = new MyException ("");
+			e.marker = 0x1337;
+			throw e;
+		} catch (MyException ex) when (ex.marker == 0x1337) {
+			return 1;
+		}
+		return 0;
+	}
+
+	public static int test_1234_complicated_filter_catch () {
+		string res = "init";
+		try {
+			MyException e = new MyException (res);
+			e.marker = 0x566;
+			try {
+				try {
+					throw e;
+				} catch (MyException ex) when (ex.FilterWithoutState ()) {
+					res = "WRONG_" + res;
+				} finally {
+					e.marker = 0x777;
+					res = "innerFinally_" + res;
+				}
+			} catch (MyException ex) when (ex.FilterWithState ()) {
+				res = "2ndcatch_" + res;
+			}
+			// "2ndcatch_innerFinally_init"
+			// Console.WriteLine ("res1: " + res);
+			e.res = res;
+			throw e;
+		} catch (MyException ex) when (ex.FilterWithStringState ()) {
+			res = "fwos_" + ex.res;
+		} finally {
+			res = "outerFinally_" + res;
+		}
+		// Console.WriteLine ("res2: " + res);
+		return "outerFinally_fwos_fromFilter_2ndcatch_innerFinally_init" == res ? 1234 : 0;
+	}
 }
 
 #if !__MOBILE__

@@ -1247,7 +1247,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_1_filters () {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 08 21 42 49 54 43 4F 44 45 00 00 )          // ...!BITCODE..
 		.maxstack 16
 		.locals init (

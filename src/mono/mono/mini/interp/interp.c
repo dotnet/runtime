@@ -2001,8 +2001,11 @@ static int opcode_counts[512];
 #define MINT_IN_DEFAULT default:
 #endif
 
+static void
+ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context);
+
 static void 
-ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
+ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception)
 {
 	MonoInvocation child_frame;
 	GSList *finally_ips = NULL;
@@ -2054,25 +2057,26 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	}
 
 	rtm = frame->runtime_method;
-	frame->args = alloca (rtm->alloca_size);
-	memset (frame->args, 0, rtm->alloca_size);
+	if (!start_with_ip ) {
+		frame->args = alloca (rtm->alloca_size);
+		memset (frame->args, 0, rtm->alloca_size);
 
-	sp = frame->stack = (stackval *)((char *)frame->args + rtm->args_size);
-	memset (sp, 0, rtm->stack_size);
-
+		ip = rtm->code;
+	} else {
+		ip = start_with_ip;
+	}
+	sp = frame->stack = (stackval *) ((char *) frame->args + rtm->args_size);
 	vt_sp = (unsigned char *) sp + rtm->stack_size;
-	memset (vt_sp, 0, rtm->vt_stack_size);
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
-
 	locals = (unsigned char *) vt_sp + rtm->vt_stack_size;
-	memset (vt_sp, 0, rtm->locals_size);
-
 	child_frame.parent = frame;
 
-	/* ready to go */
-	ip = rtm->code;
+	if (filter_exception) {
+		sp->data.p = filter_exception;
+		sp++;
+	}
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
@@ -4573,9 +4577,10 @@ array_constructed:
 			++ip;
 			MINT_IN_BREAK;
 		}
-#if 0
-		MINT_IN_CASE(MINT_ENDFILTER) ves_abort(); MINT_IN_BREAK;
-#endif
+		MINT_IN_CASE(MINT_ENDFILTER)
+			/* top of stack is result of filter */
+			frame->retval = &sp [-1];
+			goto exit_frame;
 		MINT_IN_CASE(MINT_INITOBJ)
 			--sp;
 			memset (sp->data.vt, 0, READ32(ip + 1));
@@ -4672,24 +4677,44 @@ array_constructed:
 			inv->ex_handler = NULL; /* clear this in case we are trhowing an exception while handling one  - this one wins */
 			for (i = 0; i < inv->runtime_method->num_clauses; ++i) {
 				clause = &inv->runtime_method->clauses [i];
-				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
-					if (!clause->flags) {
-						MonoObject *isinst_obj = mono_object_isinst_checked ((MonoObject*)frame->ex, clause->data.catch_class, &error);
-						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-						if (isinst_obj) {
-							/* 
-							 * OK, we found an handler, now we need to execute the finally
-							 * and fault blocks before branching to the handler code.
-							 */
-							inv->ex_handler = clause;
 #if DEBUG_INTERP
-							if (tracing)
-								g_print ("* Found handler at '%s'\n", method->name);
+				g_print ("* clause [%d]: %p\n", i, clause);
 #endif
-							goto handle_finally;
-						}
-					} else {
-						g_error ("FIXME: handle filter clause");
+				if (!MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
+					continue;
+				}
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+#if DEBUG_INTERP
+					if (tracing)
+						g_print ("* Filter found at '%s'\n", method->name);
+#endif
+					MonoInvocation dup_frame;
+					stackval retval;
+					memcpy (&dup_frame, inv, sizeof (MonoInvocation));
+					dup_frame.retval = &retval;
+					ves_exec_method_with_context_with_ip (&dup_frame, context, inv->runtime_method->code + clause->data.filter_offset, frame->ex);
+					if (dup_frame.retval->data.i) {
+#if DEBUG_INTERP
+						if (tracing)
+							g_print ("* Matched Filter at '%s'\n", method->name);
+#endif
+						inv->ex_handler = clause;
+						goto handle_finally;
+					}
+				} else if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+					MonoObject *isinst_obj = mono_object_isinst_checked ((MonoObject*)frame->ex, clause->data.catch_class, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					if (isinst_obj) {
+						/* 
+						 * OK, we found an handler, now we need to execute the finally
+						 * and fault blocks before branching to the handler code.
+						 */
+#if DEBUG_INTERP
+						if (tracing)
+							g_print ("* Found handler at '%s'\n", method->name);
+#endif
+						inv->ex_handler = clause;
+						goto handle_finally;
 					}
 				}
 			}
@@ -4813,6 +4838,12 @@ die_on_ex:
 	}
 exit_frame:
 	DEBUG_LEAVE ();
+}
+
+static void
+ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
+{
+	ves_exec_method_with_context_with_ip (frame, context, NULL, NULL);
 }
 
 void

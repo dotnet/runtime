@@ -977,6 +977,17 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		td.stack_state [c->handler_offset] = g_malloc0(sizeof(StackInfo));
 		td.stack_state [c->handler_offset][0].type = STACK_TYPE_O;
 		td.stack_state [c->handler_offset][0].klass = NULL; /*FIX*/
+
+		if (c->flags & MONO_EXCEPTION_CLAUSE_FILTER) {
+			td.stack_height [c->data.filter_offset] = 0;
+			td.vt_stack_size [c->data.filter_offset] = 0;
+			td.is_bb_start [c->data.filter_offset] = 1;
+
+			td.stack_height [c->data.filter_offset] = 1;
+			td.stack_state [c->data.filter_offset] = g_malloc0(sizeof(StackInfo));
+			td.stack_state [c->data.filter_offset][0].type = STACK_TYPE_O;
+			td.stack_state [c->data.filter_offset][0].klass = NULL; /*FIX*/
+		}
 	}
 
 	td.ip = header->code;
@@ -3106,8 +3117,11 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				break;
 #if 0
 			case CEE_UNUSED57: ves_abort(); break;
-			case CEE_ENDFILTER: ves_abort(); break;
 #endif
+			case CEE_ENDFILTER:
+				ADD_CODE (&td, MINT_ENDFILTER);
+				++td.ip;
+				break;
 			case CEE_UNALIGNED_:
 				++td.ip;
 				/* FIX: should do something? */;
@@ -3236,6 +3250,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		end_off = c->handler_offset + c->handler_len;
 		c->handler_offset = td.in_offsets [c->handler_offset];
 		c->handler_len = td.in_offsets [end_off] - c->handler_offset;
+		if (c->flags & MONO_EXCEPTION_CLAUSE_FILTER)
+			c->data.filter_offset = td.in_offsets [c->data.filter_offset];
 	}
 	rtm->vt_stack_size = td.max_vt_sp;
 	rtm->alloca_size = rtm->locals_size + rtm->args_size + rtm->vt_stack_size + rtm->stack_size;
