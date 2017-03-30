@@ -41,12 +41,12 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static DependencyContextLoader Default { get; } = new DependencyContextLoader();
 
-        internal virtual bool IsEntryAssembly(Assembly assembly)
+        private static bool IsEntryAssembly(Assembly assembly)
         {
             return assembly.Equals(Assembly.GetEntryAssembly());
         }
 
-        internal virtual Stream GetResourceStream(Assembly assembly, string name)
+        private static Stream GetResourceStream(Assembly assembly, string name)
         {
             return assembly.GetManifestResourceStream(name);
         }
