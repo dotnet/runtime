@@ -13,11 +13,11 @@
 
 using System;
 using System.Collections;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Threading;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Security.AccessControl
 {
@@ -90,13 +90,6 @@ namespace System.Security.AccessControl
         {
         }
 
-        /*  // Not in the spec
-        public MutexAuditRule(string identity, MutexRights eventRights, AuditFlags flags)
-            : this(new NTAccount(identity), (int) eventRights, false, InheritanceFlags.None, PropagationFlags.None, flags)
-        {
-        }
-        */
-
         internal MutexAuditRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, flags)
         {
@@ -116,22 +109,19 @@ namespace System.Security.AccessControl
         {
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public MutexSecurity(String name, AccessControlSections includeSections)
-            : base(true, ResourceType.KernelObject, name, includeSections, _HandleErrorCode, null)
+            : base(true, ResourceType.KernelObject, name, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal MutexSecurity(SafeWaitHandle handle, AccessControlSections includeSections)
-            : base(true, ResourceType.KernelObject, handle, includeSections, _HandleErrorCode, null)
+            : base(true, ResourceType.KernelObject, handle, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
-        private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
         {
             System.Exception exception = null;
 
@@ -144,9 +134,6 @@ namespace System.Security.AccessControl
                         exception = new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
                     else
                         exception = new WaitHandleCannotBeOpenedException();
-                    break;
-
-                default:
                     break;
             }
 
@@ -167,7 +154,7 @@ namespace System.Security.AccessControl
         {
             AccessControlSections persistRules = AccessControlSections.None;
             if (AccessRulesModified)
-                persistRules = AccessControlSections.Access;
+                persistRules |= AccessControlSections.Access;
             if (AuditRulesModified)
                 persistRules |= AccessControlSections.Audit;
             if (OwnerModified)
@@ -177,7 +164,6 @@ namespace System.Security.AccessControl
             return persistRules;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal void Persist(SafeWaitHandle handle)
         {
             // Let the underlying ACL API's demand unmanaged code.
