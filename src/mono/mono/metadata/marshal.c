@@ -156,7 +156,7 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 static void init_safe_handle (void);
 
 static void*
-ves_icall_marshal_alloc (gulong size);
+ves_icall_marshal_alloc (gsize size);
 
 void
 mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
@@ -332,7 +332,7 @@ mono_marshal_init (void)
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32 int32", FALSE);
 		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32 int32", FALSE);
-		register_icall (ves_icall_marshal_alloc, "ves_icall_marshal_alloc", "ptr int32", FALSE);
+		register_icall (ves_icall_marshal_alloc, "ves_icall_marshal_alloc", "ptr ptr", FALSE);
 		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
 		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
 		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", FALSE);
@@ -10693,7 +10693,7 @@ mono_marshal_alloc (gulong size, MonoError *error)
 
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
 static void*
-ves_icall_marshal_alloc (gulong size)
+ves_icall_marshal_alloc (gsize size)
 {
 	MonoError error;
 	void *ret = mono_marshal_alloc (size, &error);
