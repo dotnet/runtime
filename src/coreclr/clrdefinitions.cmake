@@ -125,6 +125,7 @@ endif(FEATURE_EVENT_TRACE)
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DFEATURE_EVENTSOURCE_XPLAT=1)
 endif(CLR_CMAKE_PLATFORM_UNIX)
+add_definitions(-DFEATURE_TIERED_COMPILATION)
 # NetBSD doesn't implement this feature
 if(NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     add_definitions(-DFEATURE_HIJACK)

@@ -7032,6 +7032,16 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     LIMITED_METHOD_CONTRACT;
 
 
+#ifdef FEATURE_TIERED_COMPILATION
+    // Keep in-sync with MethodDesc::IsEligibleForTieredCompilation()
+    if (g_pConfig->TieredCompilation() &&
+        !GetModule()->HasNativeOrReadyToRunImage() &&
+        (pMDMethod->GetMethodType() == METHOD_TYPE_NORMAL || pMDMethod->GetMethodType() == METHOD_TYPE_INSTANTIATED))
+    {
+        return TRUE;
+    }
+#endif
+
     return GetModule()->IsEditAndContinueEnabled();
 }
 

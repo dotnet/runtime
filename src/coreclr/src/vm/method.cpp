@@ -2300,7 +2300,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
     else
     {
-        if (IsPointingToNativeCode())
+        if (IsPointingToStableNativeCode())
             return GetNativeCode();
     }
 
