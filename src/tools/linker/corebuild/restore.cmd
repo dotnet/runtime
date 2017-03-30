@@ -14,4 +14,5 @@ REM need to explicitly restore Mono.Cecil as well as Mono.Linker.
 
 @call run.cmd restore "'-Project=..\linker\Mono.Linker.csproj'" "'-Configuration=netcore_Debug'" %*
 @call run.cmd restore "'-Project=..\cecil\Mono.Cecil.csproj'" "'-Configuration=netstandard_Debug'" %*
+@call run.cmd restore "'-Project=..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj'" "'-Configuration=netstandard_Debug'" %*
 @exit /b %ERRORLEVEL%
