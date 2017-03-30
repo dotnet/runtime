@@ -947,12 +947,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTreePtr       op1,
             while (vnStore->GetVNFunc(vn, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
                    (vnStore->TypeOfVN(vn) == TYP_BYREF))
             {
-                if (vnStore->IsVNConstant(funcAttr.m_args[1]))
+                if (vnStore->IsVNConstant(funcAttr.m_args[1]) &&
+                    varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
                 {
                     offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
                     vn = funcAttr.m_args[0];
                 }
-                else if (vnStore->IsVNConstant(funcAttr.m_args[0]))
+                else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
+                         varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
                 {
                     offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
                     vn = funcAttr.m_args[1];
