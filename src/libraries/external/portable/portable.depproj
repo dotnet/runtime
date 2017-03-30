@@ -7,6 +7,11 @@
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="$(TargetingPackNugetPackageId)">
+      <Version>1.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
     <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>

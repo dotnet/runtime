@@ -10,7 +10,7 @@
     <Compile Include="Tests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.IO.Packaging.TestData\1.0.0-prerelease\content\**\*.*" />
+    <SupplementalTestData Include="$(PackagesDir)system.io.packaging.testdata\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

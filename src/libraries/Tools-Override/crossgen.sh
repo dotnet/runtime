@@ -2,7 +2,9 @@
 
 # Restores crossgen and runs it on all tools components.
 
-__CoreClrVersion=1.1.0
+__CoreClrVersion=2.0.0-preview1-25204-02
+__SharedFxVersion=2.0.0-preview1-001913-00
+__MyGetFeed=https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 
 usage()
 {
@@ -20,15 +22,16 @@ restore_crossgen()
 
     __pjDir=$__toolsDir/crossgen
     mkdir -p $__pjDir
-    echo "{\"frameworks\":{\"netcoreapp1.1\":{\"dependencies\":{\"Microsoft.NETCore.Runtime.CoreCLR\":\"$__CoreClrVersion\", \"Microsoft.NETCore.Platforms\": \"$__CoreClrVersion\"}}},\"runtimes\":{\"$__rid\":{}}}" > "$__pjDir/project.json"
-    $__dotnet restore $__pjDir/project.json --packages $__packagesDir
-    __crossgenInPackage=$__packagesDir/runtime.$__packageRid.Microsoft.NETCore.Runtime.CoreCLR/$__CoreClrVersion/tools/crossgen
+    echo "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>netcoreapp2.0</TargetFramework><DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences><RuntimeIdentifiers>$__packageRid</RuntimeIdentifiers></PropertyGroup><ItemGroup><PackageReference Include=\"Microsoft.NETCore.Runtime.CoreCLR\" Version=\"$__CoreClrVersion\" /><PackageReference Include=\"Microsoft.NETCore.Platforms\" Version=\"1.1.0\" /></ItemGroup></Project>" > "$__pjDir/crossgen.csproj"
+    $__dotnet restore $__pjDir/crossgen.csproj --packages $__packagesDir --source $__MyGetFeed
+    __crossgenInPackage=$__packagesDir/runtime.$__packageRid.microsoft.netcore.runtime.coreclr/$__CoreClrVersion/tools/crossgen
     if [ ! -e $__crossgenInPackage ]; then
         echo "The crossgen executable could not be found at "$__crossgenInPackage". Aborting crossgen.sh."
         exit 1
     fi
     cp $__crossgenInPackage $__sharedFxDir
     __crossgen=$__sharedFxDir/crossgen
+    chmod +x $__crossgen
 }
 
 crossgen_everything()
@@ -50,7 +53,7 @@ crossgen_everything()
 crossgen_single()
 {
     __file=$1
-    $__crossgen /Platform_Assemblies_Paths $__toolsDir:$__sharedFxDir /nologo /MissingDependenciesOK $__file > /dev/null
+    $__crossgen /Platform_Assemblies_Paths $__sharedFxDir:$__toolsDir /nologo /MissingDependenciesOK /ReadyToRun $__file > /dev/null
     if [ $? -eq 0 ]; then
       __outname="${__file/.dll/.ni.dll}"
       __outname="${__outname/.exe/.ni.exe}"
@@ -74,7 +77,7 @@ __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __toolsDir=$__scriptpath/../Tools
 __dotnet=$__toolsDir/dotnetcli/dotnet
 __packagesDir=$__scriptpath/../packages
-__sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
+__sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__SharedFxVersion/
 __rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
 
 if [[ $__rid == *"osx"* ]]; then

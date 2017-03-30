@@ -6,6 +6,22 @@
     <NugetRuntimeIdentifier>$(RuntimeOS)-x64</NugetRuntimeIdentifier>
     <OutputPath>$(ToolsDir)ilasm</OutputPath>
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.Platforms">
+      <Version>2.0.0-$(CoreFxExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.ILAsm">
+      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <!-- When zipped/unzipped in a package, ilasm loses its executable flag. Reset it. -->
+  <Target Name="MakeIlasmExecutable" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(RunningOnUnix)' == 'true'">
+    <Exec Command="chmod +x $(OutputPath)ilasm" />
+  </Target>
 </Project>

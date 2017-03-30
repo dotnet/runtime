@@ -1,9 +1,0 @@
-﻿{
-  "frameworks": {
-    "{TFM}": {
-      "dependencies": {
-        "{PackageId}": "1.0.1"
-      }
-    }
-  }
-}
