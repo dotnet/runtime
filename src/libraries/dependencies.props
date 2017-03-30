@@ -17,20 +17,20 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>1f6532b32fa97b7810ae57ccbc28ab4db50f9c1a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>1c85d98be6efa8cf210d8f7ce4a24261a9011e78</CoreClrCurrentRef>
+    <CoreFxCurrentRef>645e607fc492555f9282c35ce58587df902d1015</CoreFxCurrentRef>
+    <CoreClrCurrentRef>645e607fc492555f9282c35ce58587df902d1015</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>2e21bfd4e7556b77af80268812a802d5f7bd701f</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>645e607fc492555f9282c35ce58587df902d1015</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
     <StandardCurrentRef>5a38b0ed841e10af1607905d58dd30e326dbff01</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-25129-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>preview1-25130-03</CoreClrExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-25130-03</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>preview1-25130-04</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25129-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-25130-00</ProjectNTfsExpectedPrerelease>
     <NETStandardPackageVersion>2.0.0-beta-25130-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
