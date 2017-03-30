@@ -76,6 +76,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         public static IEnumerable<object[]> GetSymmetricAlgorithmsPairs()
         {
+            // DES is not supported in keywrap scenario, there is no specification string for it either
             foreach (var first in TestHelpers.GetSymmetricAlgorithms(skipDes: true))
             {
                 foreach (var second in TestHelpers.GetSymmetricAlgorithms(skipDes: true))

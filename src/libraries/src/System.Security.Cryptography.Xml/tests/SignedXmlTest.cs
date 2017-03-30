@@ -1209,6 +1209,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         private static byte[] emptyHmacKey = new byte[0];
+        private static byte[] badKey = new byte[3] { 1, 2, 3 };
 
         public static object[][] HmacKeys = new object[][] {
             new object[] { new byte[0] },
@@ -1238,8 +1239,10 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(more256, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void VerifyHMAC_SHA256()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VerifyHMAC_SHA256(bool useGoodKey)
         {
             string xml = "<?xml version=\"1.0\" encoding=\"Windows-1252\"?><foo><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#hmac-sha256\" /><Reference URI=\"\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\" /><DigestValue>sKG2hDPEHiPrzpd3QA8BZ0eMzMbSEPPMh9QqXgkP7Cs=</DigestValue></Reference></SignedInfo><SignatureValue>Faad3KInJdIpaGcBn5e04Zv080u45fSjAKqrgevdWQw=</SignatureValue></Signature></foo>";
             XmlDocument doc = new XmlDocument();
@@ -1249,7 +1252,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA256(emptyHmacKey)));
+            Assert.Equal(useGoodKey, sign.CheckSignature(new HMACSHA256(useGoodKey ? emptyHmacKey : badKey)));
         }
 
         [Theory, MemberData(nameof(HmacKeys))]
@@ -1269,8 +1272,10 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(more512, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void VerifyHMAC_SHA512()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VerifyHMAC_SHA512(bool useGoodKey)
         {
             string xml = "<?xml version=\"1.0\" encoding=\"Windows-1252\"?><foo><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#hmac-sha512\" /><Reference URI=\"\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha512\" /><DigestValue>2dvMkpTUE8Z76ResJG9pwPpVJNYo7t6s2L02V81xUVJ0oF8yJ7v8CTojjuL76s0iVdBxAOhP80Ambd1YaSkwSw==</DigestValue></Reference></SignedInfo><SignatureValue>wFenihRlm1x5/n0cifdX/TDOYqlbg2oVIbD/gyrAc0Q2hiIUTtwfBIMY5rQhKcErSz6YNoIl8RBQBmww/0rv5g==</SignatureValue></Signature></foo>";
             XmlDocument doc = new XmlDocument();
@@ -1280,7 +1285,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA512(emptyHmacKey)));
+            Assert.Equal(useGoodKey, sign.CheckSignature(new HMACSHA512(useGoodKey ? emptyHmacKey : badKey)));
         }
 
         [Theory, MemberData(nameof(HmacKeys))]
@@ -1303,8 +1308,10 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(more384, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void VerifyHMAC_SHA384()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VerifyHMAC_SHA384(bool useGoodKey)
         {
             string xml = "<?xml version=\"1.0\" encoding=\"Windows-1252\"?><foo><Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2001/04/xmldsig-more#hmac-sha384\" /><Reference URI=\"\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /></Transforms><DigestMethod Algorithm=\"SHA384\" /><DigestValue>kH9C0LeZocNVXhjfzpz00M5fc3WJf0QU8gxK4I7pAN7HN602yHo8yYDSlG14b5YS</DigestValue></Reference></SignedInfo><SignatureValue>LgydOfhv8nqpFLFPC+xg3ZnjC8D+V3mpzxv6GOdH1HDdw1r+LH/BFM2U7dntxgf0</SignatureValue></Signature></foo>";
             XmlDocument doc = new XmlDocument();
@@ -1314,7 +1321,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACSHA384(emptyHmacKey)));
+            Assert.Equal(useGoodKey, sign.CheckSignature(new HMACSHA384(useGoodKey ? emptyHmacKey : badKey)));
         }
 
         [Theory, MemberData(nameof(HmacKeys))]
@@ -1337,8 +1344,10 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(moreHmacMD5, sign.SignatureMethod);
         }
 
-        [Fact]
-        public void VerifyHMAC_MD5()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VerifyHMAC_MD5(bool useGoodKey)
         {
             string xml = @"<?xml version=""1.0"" encoding=""Windows-1252""?><foo><Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-md5"" /><Reference URI=""""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /></Transforms><DigestMethod Algorithm=""MD5"" /><DigestValue>TH7ysbozJWVIWh/1K5bP1w==</DigestValue></Reference></SignedInfo><SignatureValue>tJ6m5YVu1jN1WgKWv3AXFQ==</SignatureValue></Signature></foo>";
             XmlDocument doc = new XmlDocument();
@@ -1348,7 +1357,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // verify MS-generated signature
-            Assert.True(sign.CheckSignature(new HMACMD5(emptyHmacKey)));
+            Assert.Equal(useGoodKey, sign.CheckSignature(new HMACMD5(useGoodKey ? emptyHmacKey : badKey)));
         }
 
         // CVE-2009-0217
