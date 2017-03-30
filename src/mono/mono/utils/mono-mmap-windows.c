@@ -71,6 +71,9 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 	int prot = mono_mmap_win_prot_from_flags (flags);
 	/* translate the flags */
 
+	if (!mono_valloc_can_alloc (length))
+		return NULL;
+
 	ptr = VirtualAlloc (addr, length, mflags, prot);
 
 	account_mem (type, (ssize_t)length);
@@ -86,6 +89,9 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 	char *aligned;
 
 	if (!mem)
+		return NULL;
+
+	if (!mono_valloc_can_alloc (length))
 		return NULL;
 
 	aligned = aligned_address (mem, length, alignment);

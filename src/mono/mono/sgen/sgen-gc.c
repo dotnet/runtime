@@ -193,6 +193,7 @@
 #include "mono/utils/hazard-pointer.h"
 
 #include <mono/utils/memcheck.h>
+#include <mono/utils/mono-mmap-internals.h>
 
 #undef pthread_create
 #undef pthread_join
@@ -3215,6 +3216,15 @@ sgen_gc_init (void)
 			} else if (!strcmp (opt, "verify-before-allocs")) {
 				verify_before_allocs = 1;
 				has_per_allocation_action = TRUE;
+			} else if (g_str_has_prefix (opt, "max-valloc-size=")) {
+				size_t max_valloc_size;
+				char *arg = strchr (opt, '=') + 1;
+				if (*opt && mono_gc_parse_environment_string_extract_number (arg, &max_valloc_size)) {
+					mono_valloc_set_limit (max_valloc_size);
+				} else {
+					sgen_env_var_error (MONO_GC_DEBUG_NAME, NULL, "`max-valloc-size` must be an integer.");
+				}
+				continue;
 			} else if (g_str_has_prefix (opt, "verify-before-allocs=")) {
 				char *arg = strchr (opt, '=') + 1;
 				verify_before_allocs = atoi (arg);
@@ -3295,6 +3305,7 @@ sgen_gc_init (void)
 				fprintf (stderr, "Valid <option>s are:\n");
 				fprintf (stderr, "  collect-before-allocs[=<n>]\n");
 				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
+				fprintf (stderr, "  max-valloc-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  check-remset-consistency\n");
 				fprintf (stderr, "  check-mark-bits\n");
 				fprintf (stderr, "  check-nursery-pinned\n");
