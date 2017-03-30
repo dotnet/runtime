@@ -2047,11 +2047,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 type = type.GetGenericTypeDefinition();
             }
 
-            if (_typesWithConversionsLoaded.Contains(type))
+            if (!_typesWithConversionsLoaded.Add(type))
             {
                 return;
             }
-            _typesWithConversionsLoaded.Add(type);
 
             // Always make the aggregate for the type, regardless of whether or not
             // there are any conversions.
