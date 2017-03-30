@@ -885,7 +885,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         return false;
                     }
-                    if (names.Contains(name))
+
+                    if (!names.Add(name))
                     {
                         if (_pDuplicateSpecifiedName == null)
                         {
@@ -893,7 +894,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         return false;
                     }
-                    names.Add(name);
                 }
                 return true;
             }
