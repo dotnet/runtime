@@ -272,6 +272,8 @@ public:
     void    SetManifestResFile(__in __nullterminated char* szFileName, ULONG ulOffset);
     void    SetManifestResAsmRef(__in __nullterminated char* szAsmRefName);
 
+    AsmManAssembly*     GetAsmRefByAsmName(__in __nullterminated const char* szAsmName);
+    
     mdToken             GetFileTokByName(__in __nullterminated char* szFileName);
     mdToken             GetAsmRefTokByName(__in __nullterminated const char* szAsmRefName);
     mdToken             GetAsmTokByName(__in __nullterminated const char* szAsmName)
