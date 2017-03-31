@@ -16,15 +16,13 @@ namespace Microsoft.Extensions.DependencyModel
         private const string DepsJsonExtension = ".deps.json";
 
         private readonly string _entryPointDepsLocation;
-        private readonly string _runtimeDepsLocation;
-        private readonly IEnumerable<string> _extraDepsLocations;
+        private readonly IEnumerable<string> _nonEntryPointDepsPaths;
         private readonly IFileSystem _fileSystem;
         private readonly Func<IDependencyContextReader> _jsonReaderFactory;
 
         public DependencyContextLoader() : this(
             DependencyContextPaths.Current.Application,
-            DependencyContextPaths.Current.SharedRuntime,
-            DependencyContextPaths.Current.ExtraPaths,
+            DependencyContextPaths.Current.NonApplicationPaths,
             FileSystemWrapper.Default,
             () => new DependencyContextJsonReader())
         {
@@ -32,14 +30,12 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal DependencyContextLoader(
             string entryPointDepsLocation,
-            string runtimeDepsLocation,
-            IEnumerable<string> extraDepsLocations,
+            IEnumerable<string> nonEntryPointDepsPaths,
             IFileSystem fileSystem,
             Func<IDependencyContextReader> jsonReaderFactory)
         {
             _entryPointDepsLocation = entryPointDepsLocation;
-            _runtimeDepsLocation = runtimeDepsLocation;
-            _extraDepsLocations = extraDepsLocations;
+            _nonEntryPointDepsPaths = nonEntryPointDepsPaths;
             _fileSystem = fileSystem;
             _jsonReaderFactory = jsonReaderFactory;
         }
@@ -78,13 +74,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (context != null)
                 {
-                    var runtimeContext = LoadRuntimeContext(reader);
-                    if (runtimeContext != null)
-                    {
-                        context = context.Merge(runtimeContext);
-                    }
-
-                    foreach (var extraPath in _extraDepsLocations)
+                    foreach (var extraPath in _nonEntryPointDepsPaths)
                     {
                         var extraContext = LoadContext(reader, extraPath);
                         if (extraContext != null)
@@ -100,11 +90,6 @@ namespace Microsoft.Extensions.DependencyModel
         private DependencyContext LoadEntryAssemblyContext(IDependencyContextReader reader)
         {
             return LoadContext(reader, _entryPointDepsLocation);
-        }
-
-        private DependencyContext LoadRuntimeContext(IDependencyContextReader reader)
-        {
-            return LoadContext(reader, _runtimeDepsLocation);
         }
 
         private DependencyContext LoadContext(IDependencyContextReader reader, string location)

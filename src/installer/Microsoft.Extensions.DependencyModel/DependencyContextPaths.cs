@@ -20,13 +20,16 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string SharedRuntime { get; }
 
-        public IEnumerable<string> ExtraPaths { get; }
+        public IEnumerable<string> NonApplicationPaths { get; }
 
-        public DependencyContextPaths(string application, string sharedRuntime, IEnumerable<string> extraPaths)
+        public DependencyContextPaths(
+            string application,
+            string sharedRuntime,
+            IEnumerable<string> nonApplicationPaths)
         {
             Application = application;
             SharedRuntime = sharedRuntime;
-            ExtraPaths = extraPaths ?? Enumerable.Empty<string>();
+            NonApplicationPaths = nonApplicationPaths ?? Enumerable.Empty<string>();
         }
 
         private static DependencyContextPaths GetCurrent()
@@ -46,15 +49,14 @@ namespace Microsoft.Extensions.DependencyModel
             var files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
             var application = files != null && files.Length > 0 ? files[0] : null;
 
-            var extraPaths = files?
+            var nonApplicationPaths = files?
                 .Skip(1) // the application path
-                .Where(path => path != sharedRuntime)
                 .ToArray();
 
             return new DependencyContextPaths(
                 application,
                 sharedRuntime,
-                extraPaths);
+                nonApplicationPaths);
         }
     }
 }

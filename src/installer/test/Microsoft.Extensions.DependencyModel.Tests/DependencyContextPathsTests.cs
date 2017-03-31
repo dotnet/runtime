@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             paths.Application.Should().BeNull();
             paths.SharedRuntime.Should().BeNull();
-            paths.ExtraPaths.Should().BeEmpty();
+            paths.NonApplicationPaths.Should().BeEmpty();
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             paths.Application.Should().Be("foo.deps.json");
             paths.SharedRuntime.Should().BeNull();
-            paths.ExtraPaths.Should().BeEmpty();
+            paths.NonApplicationPaths.Should().BeEmpty();
         }
 
         [Fact]
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             paths.Application.Should().Be("foo.deps.json");
             paths.SharedRuntime.Should().Be("fx.deps.json");
-            paths.ExtraPaths.Should().BeEmpty();
+            paths.NonApplicationPaths.Should().BeEquivalentTo("fx.deps.json");
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             paths.Application.Should().Be("foo.deps.json");
             paths.SharedRuntime.Should().Be("fx.deps.json");
-            paths.ExtraPaths.Should().BeEquivalentTo("extra.deps.json", "extra2.deps.json");
+            paths.NonApplicationPaths.Should().BeEquivalentTo("fx.deps.json", "extra.deps.json", "extra2.deps.json");
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             paths.Application.Should().Be("foo.deps.json");
             paths.SharedRuntime.Should().Be("fx.deps.json");
-            paths.ExtraPaths.Should().BeEquivalentTo("extra.deps.json", "extra2.deps.json");
+            paths.NonApplicationPaths.Should().BeEquivalentTo("extra.deps.json", "extra2.deps.json");
         }
     }
 }
