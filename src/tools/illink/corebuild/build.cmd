@@ -1,6 +1,6 @@
 @if not defined _echo @echo off
 
-REM build.cmd will bootstrap the cli and ultimately call "dotnet build"..
+REM build.cmd will bootstrap the cli and ultimately call "dotnet build"
 
-@call dotnet.cmd build ..\linker\Mono.Linker.csproj -c netcore_Debug %*
+@call %~dp0dotnet.cmd build %dp0linker.sln %*
 @exit /b %ERRORLEVEL%
