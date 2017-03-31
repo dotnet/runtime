@@ -19,7 +19,9 @@
                 class [mscorlib]System.Reflection.MethodBase staticInt32Method,
                 class [mscorlib]System.Reflection.MethodBase staticMethodT,
                 class [mscorlib]System.Reflection.MethodBase staticMethodU,
-                class [mscorlib]System.Reflection.FieldInfo staticFieldT)
+                class [mscorlib]System.Reflection.FieldInfo staticFieldT,
+                class [mscorlib]System.Reflection.MethodBase weirdoGenericMethod,
+                class [mscorlib]System.Reflection.MethodBase otherWeirdoGenericMethod)
 
   //
   // Type nonGenericHolderType = typeof(NonGenericHolder)
@@ -175,6 +177,118 @@ MethodGenericOwningTypeOK:
   ret
 FieldGenericOwningTypeOK:
 
+  //
+  // if (!infoof(NonGenericHolder.GenericMethod<>).IsGenericMethodDefinition)
+  //     return 8;
+  //
+  ldtoken    method void NonGenericHolder::GenericMethod<[1]>()
+  call       class [mscorlib]System.Reflection.MethodBase 
+                 [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                     valuetype [mscorlib]System.RuntimeMethodHandle)
+  callvirt   instance bool [mscorlib]System.Reflection.MethodBase::get_IsGenericMethodDefinition()
+  brtrue     StaticGenericMethodIsDefinition
+  ldc.i4     8
+  ret
+StaticGenericMethodIsDefinition:
+
+  //
+  // if (infoof(NonGenericHolder.GenericMethod<int>).IsGenericMethodDefinition)
+  //     return 9;
+  //
+  ldtoken    method void NonGenericHolder::GenericMethod<int32>()
+  call       class [mscorlib]System.Reflection.MethodBase 
+                 [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                     valuetype [mscorlib]System.RuntimeMethodHandle)
+  callvirt   instance bool [mscorlib]System.Reflection.MethodBase::get_IsGenericMethodDefinition()
+  brfalse    StaticGenericMethodIsInstantiated
+  ldc.i4     9
+  ret
+StaticGenericMethodIsInstantiated:
+
+  //
+  // if (!infoof(GenericHolder<,>.GenericMethod<>).IsGenericMethodDefinition)
+  //     return 10;
+  //
+  ldtoken    method void GenericHolder`2::GenericMethod<[1]>(!1, !!0)
+  ldtoken    GenericHolder`2
+  call       class [mscorlib]System.Reflection.MethodBase 
+               [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                   valuetype [mscorlib]System.RuntimeMethodHandle,
+                   valuetype [mscorlib]System.RuntimeTypeHandle)
+  callvirt   instance bool [mscorlib]System.Reflection.MethodBase::get_IsGenericMethodDefinition()
+  brtrue     StaticGenericMethodOnGenericTypeIsDefinition
+  ldc.i4     10
+  ret
+StaticGenericMethodOnGenericTypeIsDefinition:
+
+  //
+  // MethodBase weirdoGenericMethod = infoof(GenericHolder<,>.GenericMethod<int>);
+  // if (weirdoGenericMethod.IsGenericMethodDefinition)
+  //     return 11;
+  //
+  ldtoken    method void GenericHolder`2::GenericMethod<int32>(!1, !!0)
+  ldtoken    GenericHolder`2
+  call       class [mscorlib]System.Reflection.MethodBase 
+               [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                   valuetype [mscorlib]System.RuntimeMethodHandle,
+                   valuetype [mscorlib]System.RuntimeTypeHandle)
+  stloc      weirdoGenericMethod
+  ldloc      weirdoGenericMethod
+  callvirt   instance bool [mscorlib]System.Reflection.MethodBase::get_IsGenericMethodDefinition()
+  brfalse    WeirdoGenericMethodIsNotDefinition
+  ldc.i4     11
+  ret
+WeirdoGenericMethodIsNotDefinition:
+
+  //
+  // if (weirdoGenericMethod.DeclaringType != typeof(GenericHolder<,>))
+  //     return 12;
+  //
+  ldloc      weirdoGenericMethod
+  callvirt   instance class [mscorlib]System.Type [mscorlib]System.Reflection.MethodBase::get_DeclaringType()
+  ldtoken    GenericHolder`2
+  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(
+                 valuetype [mscorlib]System.RuntimeTypeHandle)
+  ceq
+  brtrue     WeirdoGenericMethodOwningTypeOK
+  ldc.i4     12
+  ret
+WeirdoGenericMethodOwningTypeOK:
+
+  //
+  // MethodBase otherWeirdoGenericMethod = infoof(GenericHolder<int,int>.GenericMethod<>);
+  // if (!otherWeirdoGenericMethod.IsGenericMethodDefinition)
+  //     return 13;
+  //
+  ldtoken    method void class GenericHolder`2<int32,int32>::GenericMethod<[1]>(!1, !!0)
+  ldtoken    class GenericHolder`2<int32,int32>
+  call       class [mscorlib]System.Reflection.MethodBase 
+               [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(
+                   valuetype [mscorlib]System.RuntimeMethodHandle,
+                   valuetype [mscorlib]System.RuntimeTypeHandle)
+  stloc      otherWeirdoGenericMethod
+  ldloc      otherWeirdoGenericMethod
+  callvirt   instance bool [mscorlib]System.Reflection.MethodBase::get_IsGenericMethodDefinition()
+  brtrue     OtherWeirdoGenericMethodIsDefinition
+  ldc.i4     13
+  ret
+OtherWeirdoGenericMethodIsDefinition:
+
+  //
+  // if (otherWeirdoGenericMethod.DeclaringType != typeof(GenericHolder<int, int>))
+  //     return 14;
+  //
+  ldloc      otherWeirdoGenericMethod
+  callvirt   instance class [mscorlib]System.Type [mscorlib]System.Reflection.MethodBase::get_DeclaringType()
+  ldtoken    class GenericHolder`2<int32,int32>
+  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(
+                 valuetype [mscorlib]System.RuntimeTypeHandle)
+  ceq
+  brtrue     OtherWeirdoGenericMethodOwningTypeOK
+  ldc.i4     14
+  ret
+OtherWeirdoGenericMethodOwningTypeOK:
+
   ldc.i4     100
   ret
 }
@@ -195,6 +309,11 @@ FieldGenericOwningTypeOK:
     ldc.i4.0
     ret
   }
+
+  .method public hidebysig static void GenericMethod<T>()
+  {
+    ret
+  }
 }
 
 .class private auto ansi beforefieldinit GenericHolder`2<T,U>
@@ -208,6 +327,11 @@ FieldGenericOwningTypeOK:
   }
 
   .method public hidebysig static void StaticMethod(!1 x)
+  {
+    ret
+  }
+
+  .method public hidebysig static void GenericMethod<V>(!1 x, !!0 y)
   {
     ret
   }
