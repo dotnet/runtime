@@ -1089,14 +1089,14 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
 
     OutputTables();
 
-	// Create a empty export table.  This makes tools like symchk not think
-	// that native images are resoure-only DLLs.  It is important to NOT
-	// be a resource-only DLL because those DLL's PDBS are not put up on the
-	// symbol server and we want NEN PDBS to be placed there.  
-	ZapPEExports* exports = new(GetHeap()) ZapPEExports(wszOutputFileName);
-	m_pDebugSection->Place(exports);
-	SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT, exports);
-
+    // Create a empty export table.  This makes tools like symchk not think
+    // that native images are resoure-only DLLs.  It is important to NOT
+    // be a resource-only DLL because those DLL's PDBS are not put up on the
+    // symbol server and we want NEN PDBS to be placed there.  
+    ZapPEExports* exports = new(GetHeap()) ZapPEExports(wszOutputFileName);
+    m_pDebugSection->Place(exports);
+    SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT, exports);
+    
     ComputeRVAs();
 
     if (!IsReadyToRunCompilation())
@@ -1610,7 +1610,7 @@ void ZapImage::ProfileDisableInlining()
             // Hot methods can be marked to be excluded from the AOT native image.
             // We also need to disable inlining of such methods.
             //
-            if ((methodProfilingDataFlags & (1 << ExcludeHotMethodCode)) != 0)
+            if ((methodProfilingDataFlags & (1 << DisableInlining)) != 0)
             {
                 // Disable the inlining of this method
                 //
@@ -1685,7 +1685,7 @@ void ZapImage::CompileHotRegion()
                 }
             }
 
-            // Update the 'flags' saved in the profileDataHashTable hash table.
+            // Update the 'flags' and 'compileResult' saved in the profileDataHashTable hash table.
             //
             hashBBUpdateFlagsAndCompileResult(token, methodProfilingDataFlags, compileResult);
         }
@@ -2100,8 +2100,8 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         //
         if ((methodProfilingDataFlags & (1 << ExcludeHotMethodCode)) != 0)
         {
-            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
-            return COMPILE_EXCLUDED;
+            // returning COMPILE_HOT_EXCLUDED excludes this method from the AOT native image
+            return COMPILE_HOT_EXCLUDED;
         }
 
         // Cold methods can be marked to be excluded from the AOT native image.
@@ -2110,8 +2110,8 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         //
         if ((methodProfilingDataFlags & (1 << ExcludeColdMethodCode)) != 0)
         {
-            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
-            return COMPILE_EXCLUDED;
+            // returning COMPILE_COLD_EXCLUDED excludes this method from the AOT native image
+            return COMPILE_COLD_EXCLUDED;
         }
 
         // If the code was never executed based on the profile data
@@ -2131,19 +2131,19 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         //
         if (m_zapper->m_pOpt->m_fPartialNGen)
         {
-            // returning COMPILE_EXCLUDED excludes this method from the AOT native image
-            return COMPILE_EXCLUDED;
+            // returning COMPILE_COLD_EXCLUDED excludes this method from the AOT native image
+            return COMPILE_COLD_EXCLUDED;
         }
 
         // Retrieve any information that we have about a previous compilation attempt of this method
         const ProfileDataHashEntry* pEntry = profileDataHashTable.LookupPtr(md);
 
         if (pEntry != nullptr)
-        {
-            if (pEntry->status == COMPILE_EXCLUDED)
+        { 
+            if ((pEntry->status == COMPILE_HOT_EXCLUDED) || (pEntry->status == COMPILE_COLD_EXCLUDED))
             {
-                // returning COMPILE_EXCLUDED excludes this method from the AOT native image
-                return COMPILE_EXCLUDED;
+                // returning COMPILE_HOT_EXCLUDED excludes this method from the AOT native image
+                return pEntry->status;
             }
         }
     }
