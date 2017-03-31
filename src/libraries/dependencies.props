@@ -185,9 +185,9 @@
     </DependencyBuildInfo>
 
     <!-- project.json files to update -->
-    <ProjectJsonFiles Include="external\**\project.json" />
-    <ProjectJsonFiles Include="external\**\optional.json" />
-    <ProjectJsonFiles Include="external\**\project.json.template" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)external\**\project.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)external\**\optional.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)external\**\project.json.template" />
 
   </ItemGroup>
 </Project>
