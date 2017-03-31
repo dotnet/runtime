@@ -415,7 +415,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 if (!checkLvalue(op1, CheckLvalueKind.Assignment))
                 {
-                    Expr rval = GetExprFactory().CreateAssignment(op1, op2);
+                    var rval = GetExprFactory().CreateAssignment(op1, op2);
                     rval.SetError();
                     return rval;
                 }
@@ -560,7 +560,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // pointer and null is a UIntPtr - which confuses the JIT. We can't just convert
             // temp[0] to UIntPtr with a conv.u instruction because then if a GC occurs between
             // the time of the cast and the assignment to the local, we're toast.
-            ExprWrap wrapArray = WrapShortLivedExpression(array) as ExprWrap;
+            ExprWrap wrapArray = WrapShortLivedExpression(array);
             Expr save = GetExprFactory().CreateSave(wrapArray);
             Expr nullTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), save, GetExprFactory().CreateConstant(wrapArray.Type, ConstVal.Get(0)));
             Expr lenTest;
@@ -659,9 +659,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pName, BSYMMGR.EmptyTypeArray(), mem.SymFirst().getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
 
             Expr pResult = BindMethodGroupToArguments(bindFlags, grp, args);
-            var exprWithObject = pResult as IExprWithObject;
+            IExprWithObject exprWithObject = pResult as IExprWithObject;
             Debug.Assert(exprWithObject != null);
-            if (exprWithObject?.OptionalObject== null)
+            if (exprWithObject?.OptionalObject == null)
             {
                 // We must be in an error scenario where the object was not allowed. 
                 // This can happen if the user tries to access the indexer off the
@@ -1505,7 +1505,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return true;
                     }
 
-                    ExprProperty prop = expr as ExprProperty;
+                    ExprProperty prop = (ExprProperty)expr;
                     if (!prop.MethWithTypeSet)
                     {
                         // Assigning to a property without a setter.
@@ -1557,7 +1557,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.EK_MEMGRP:
                     {
                         ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
-                        ErrorContext.Error(err, (expr as ExprMemberGroup).Name, new ErrArgIds(MessageID.MethodGroup));
+                        ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
                         return false;
                     }
                 default:
@@ -1905,17 +1905,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private void verifyMethodArgs(Expr call, CType callingObjectType)
+        private void verifyMethodArgs(IExprWithArgs call, CType callingObjectType)
         {
-            IExprWithArgs withArgs = call as IExprWithArgs;
-            Debug.Assert(withArgs != null);
-            Expr argsPtr = withArgs.OptionalArguments;
-            SymWithType swt = withArgs.GetSymWithType();
+            Debug.Assert(call != null);
+            Expr argsPtr = call.OptionalArguments;
+            SymWithType swt = call.GetSymWithType();
             MethodOrPropertySymbol mp = swt.Sym.AsMethodOrPropertySymbol();
             TypeArray pTypeArgs = (call as ExprCall)?.MethWithInst.TypeArgs;
             Expr newArgs;
             AdjustCallArgumentsForParams(callingObjectType, swt.GetType(), mp, pTypeArgs, argsPtr, out newArgs);
-            withArgs.OptionalArguments = newArgs;
+            call.OptionalArguments = newArgs;
         }
 
         private void AdjustCallArgumentsForParams(CType callingObjectType, CType type, MethodOrPropertySymbol mp, TypeArray pTypeArgs, Expr argsPtr, out Expr newArgs)
@@ -2582,12 +2581,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             RecordUnsafeUsage(Context);
         }
 
-        private Expr WrapShortLivedExpression(Expr expr)
+        private ExprWrap WrapShortLivedExpression(Expr expr)
         {
             return GetExprFactory().CreateWrap(null, expr);
         }
 
-        private Expr GenerateOptimizedAssignment(Expr op1, Expr op2)
+        private ExprAssignment GenerateOptimizedAssignment(Expr op1, Expr op2)
         {
             return GetExprFactory().CreateAssignment(op1, op2);
         }
