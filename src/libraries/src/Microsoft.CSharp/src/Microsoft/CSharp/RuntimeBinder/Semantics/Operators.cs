@@ -432,7 +432,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             Expr pExpr = BadOperatorTypesError(ek, info.arg1, info.arg2, GetTypes().GetErrorSym());
             pExpr.AssertIsBin();
-            return pExpr as ExprBinOp;
+            return (ExprBinOp)pExpr;
         }
 
         /*
@@ -2058,8 +2058,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (argConst == null)
                 return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_LOGNOT, typeBool, arg);
 
-            bool fRes = (argConst as ExprConstant).Val.Int32Val != 0;
-            return GetExprFactory().CreateConstant(typeBool, ConstVal.Get(!fRes));
+            return GetExprFactory().CreateConstant(typeBool, ConstVal.Get(((ExprConstant)argConst).Val.Int32Val == 0));
         }
 
 
@@ -2248,12 +2247,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr BindEnumUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(ek == ExpressionKind.EK_BITNOT);
-            ExprCast cast = arg as ExprCast;
-            Debug.Assert(cast != null);
-            Debug.Assert(cast.Argument.Type.isEnumType());
+            Debug.Assert((ExprCast)arg != null);
+            Debug.Assert(((ExprCast)arg).Argument.Type.isEnumType());
 
             PredefinedType ptOp;
-            CType typeEnum = cast.Argument.Type;
+            CType typeEnum = ((ExprCast)arg).Argument.Type;
 
             switch (typeEnum.fundType())
             {
@@ -2548,11 +2546,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GetExprFactory().CreateUserLogOpError(typeRet, pCallTF, pCall);
             }
 
-            var list = pCall.OptionalArguments as ExprList;
+            ExprList list = (ExprList)pCall.OptionalArguments;
             Debug.Assert(list != null);
 
             Expr pExpr = list.OptionalElement;
-            Expr pExprWrap = WrapShortLivedExpression(pExpr);
+            ExprWrap pExprWrap = WrapShortLivedExpression(pExpr);
             list.OptionalElement = pExprWrap;
 
             // Reflection load the true and false methods.

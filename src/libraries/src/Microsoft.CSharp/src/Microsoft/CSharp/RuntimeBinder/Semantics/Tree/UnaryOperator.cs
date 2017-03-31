@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public Expr Child { get; set; }
 
-        public Expr OptionalUserDefinedCall { get; set; }
+        public ExprCall OptionalUserDefinedCall { get; set; }
 
         public MethWithInst PredefinedMethodToCall { get; set; }
 

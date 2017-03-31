@@ -630,7 +630,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
                 if (udcall is ExprCall ascall)
                 {
-                    ExprList args = ascall.OptionalArguments as ExprList;
+                    ExprList args = (ExprList)ascall.OptionalArguments;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement;
                     p2 = args.OptionalNextListNode;
@@ -639,9 +639,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     ExprUserLogicalOp userLogOp = udcall as ExprUserLogicalOp;
                     Debug.Assert(userLogOp != null);
-                    ExprList args = userLogOp.OperatorCall.OptionalArguments as ExprList;
+                    ExprList args = (ExprList)userLogOp.OperatorCall.OptionalArguments;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-                    p1 = (args.OptionalElement as ExprWrap).OptionalExpression;
+                    p1 = ((ExprWrap)args.OptionalElement).OptionalExpression;
                     p2 = args.OptionalNextListNode;
                 }
             }
@@ -666,7 +666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
-            ExprCall call = expr.OptionalUserDefinedCall as ExprCall;
+            ExprCall call = expr.OptionalUserDefinedCall;
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined
@@ -736,8 +736,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr p2 = expr.OptionalRightChild;
             if (expr.OptionalUserDefinedCall != null)
             {
-                ExprCall udcall = expr.OptionalUserDefinedCall as ExprCall;
-                ExprList args = udcall.OptionalArguments as ExprList;
+                ExprCall udcall = (ExprCall)expr.OptionalUserDefinedCall;
+                ExprList args = (ExprList)udcall.OptionalArguments;
                 Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
 
                 p1 = args.OptionalElement;
@@ -906,7 +906,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(pUDConversion is ExprUserDefinedConversion);
 
                     // Just recurse.
-                    return GenerateUserDefinedConversion(pUDConversion as ExprUserDefinedConversion, pArgument);
+                    return GenerateUserDefinedConversion((ExprUserDefinedConversion)pUDConversion, pArgument);
                 }
 
                 pConversionSource = Visit(pCastArgument);
@@ -1034,11 +1034,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
             Debug.Assert(expr.Type.isDelegateType());
 
-            ExprList origArgs = expr.OptionalArguments as ExprList;
+            ExprList origArgs = (ExprList)expr.OptionalArguments;
             Debug.Assert(origArgs != null);
             Expr target = origArgs.OptionalElement;
             Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
-            ExprFuncPtr funcptr = origArgs.OptionalNextListNode as ExprFuncPtr;
+            ExprFuncPtr funcptr = (ExprFuncPtr)origArgs.OptionalNextListNode;
             Debug.Assert(funcptr != null);
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
             AggregateType delegateType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_DELEGATE, true);

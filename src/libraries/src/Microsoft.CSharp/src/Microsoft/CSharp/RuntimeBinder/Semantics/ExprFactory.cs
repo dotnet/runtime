@@ -395,7 +395,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pCallTF != null);
             Debug.Assert((pCallOp?.OptionalArguments as ExprList)?.OptionalElement != null);
             ExprUserLogicalOp rval = new ExprUserLogicalOp();
-            Expr leftChild = (pCallOp.OptionalArguments as ExprList).OptionalElement;
+            Expr leftChild = ((ExprList)pCallOp.OptionalArguments).OptionalElement;
             Debug.Assert(leftChild != null);
             if (leftChild is ExprWrap wrap)
             {
@@ -746,7 +746,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (rval);
         }
 
-        public ExprUnaryOp CreateUserDefinedUnaryOperator(ExpressionKind exprKind, CType pType, Expr pOperand, Expr call, MethPropWithInst pmpwi)
+        public ExprUnaryOp CreateUserDefinedUnaryOperator(ExpressionKind exprKind, CType pType, Expr pOperand, ExprCall call, MethPropWithInst pmpwi)
         {
             Debug.Assert(pType != null);
             Debug.Assert(pOperand != null);
@@ -887,7 +887,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             Debug.Assert((last as ExprList)?.OptionalNextListNode != null);
             Debug.Assert((last as ExprList).OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-            ExprList list = last as ExprList;
+            ExprList list = (ExprList)last;
             list.OptionalNextListNode = CreateList(list.OptionalNextListNode, newItem);
             last = list.OptionalNextListNode;
         }

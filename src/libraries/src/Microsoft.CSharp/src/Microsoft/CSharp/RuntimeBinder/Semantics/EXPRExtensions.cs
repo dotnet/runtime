@@ -83,10 +83,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     default:
                         return exprVal;
                     case ExpressionKind.EK_SEQUENCE:
-                        exprVal = (exprVal as ExprBinOp).OptionalRightChild;
+                        exprVal = ((ExprBinOp)exprVal).OptionalRightChild;
                         break;
                     case ExpressionKind.EK_SEQREV:
-                        exprVal = (exprVal as ExprBinOp).OptionalLeftChild;
+                        exprVal = ((ExprBinOp)exprVal).OptionalLeftChild;
                         break;
                 }
             }

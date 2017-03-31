@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // We have a constant decimal that is out of range of the destination type.
                         // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
                         // Decimal is a SimpleType represented in a FT_STRUCT
-                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, (exprConst as ExprConstant).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
+                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
                     else if (simpleConstToSimpleDestination && Context.CheckedConstant)
                     {
@@ -534,13 +534,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (expr_type <= FUNDTYPE.FT_LASTINTEGRAL)
                         {
                             if (expr.Type.isUnsigned())
-                                value = ((ulong)(exprConst as ExprConstant).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
                             else
-                                value = ((long)(exprConst as ExprConstant).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((long)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
                         }
                         else if (expr_type <= FUNDTYPE.FT_LASTNUMERIC)
                         {
-                            value = (exprConst as ExprConstant).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
+                            value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
                         }
                         else
                         {
@@ -1451,7 +1451,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
             bool srcNumeric = (ftSrc <= FUNDTYPE.FT_LASTNUMERIC);
 
-            ExprConstant constSrc = exprSrc.GetConst() as ExprConstant;
+            ExprConstant constSrc = (ExprConstant)exprSrc.GetConst();
             Debug.Assert(constSrc != null);
             if (ftSrc == FUNDTYPE.FT_STRUCT || ftDest == FUNDTYPE.FT_STRUCT)
             {
