@@ -131,6 +131,17 @@ mdToken             AsmMan::GetAsmRefTokByName(__in __nullterminated const char*
     AsmManAssembly* tmp = GetAsmRefByName(szAsmRefName);
     return(tmp ? tmp->tkTok : mdAssemblyRefNil);
 }
+AsmManAssembly*     AsmMan::GetAsmRefByAsmName(__in __nullterminated const char* szAsmName)
+{
+    AsmManAssembly* ret = NULL;
+    if(szAsmName)
+    {
+        for(int i=0; (ret = m_AsmRefLst.PEEK(i))&&
+            (strcmp(ret->szName,szAsmName)); i++);
+    }
+    return ret;
+}
+
 //==============================================================================================================
 void    AsmMan::SetModuleName(__inout_opt __nullterminated char* szName)
 {
