@@ -688,7 +688,7 @@ namespace System
 
             char formatCh = format[0];
             if (formatCh == 'G' || formatCh == 'g')
-                return GetEnumName(rtType, ToUInt64(value));
+                return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString();
 
             if (formatCh == 'D' || formatCh == 'd')
                 return value.ToString();
