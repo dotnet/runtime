@@ -22,11 +22,11 @@ namespace Microsoft.DotNet.Cli.Build
             NuGetIncludePackageType includePackageTypes)
         {
             List<string> paths = new List<string>();
-            if ((includePackageTypes.HasFlag(NuGetIncludePackageType.Standard)))
+            if (includePackageTypes.HasFlag(NuGetIncludePackageType.Standard))
             {
                 paths.AddRange(Directory.GetFiles(packageDirPath, "*.nupkg").Where(p => !p.EndsWith(".symbols.nupkg")));
             }
-            if ((includePackageTypes.HasFlag(NuGetIncludePackageType.Symbols)))
+            if (includePackageTypes.HasFlag(NuGetIncludePackageType.Symbols))
             {
                 paths.AddRange(Directory.GetFiles(packageDirPath, "*.symbols.nupkg"));
             }
