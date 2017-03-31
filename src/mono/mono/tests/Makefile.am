@@ -1507,6 +1507,16 @@ sgen-bridge3-tests-ms-tarjan-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
 sgen-bridge3-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) --testsuite-name $@ --runtime-args "--gc=sgen --gc-debug=bridge=3Bridge --gc-params=major=marksweep,minor=split,bridge-implementation=tarjan" --timeout 900 $(SGEN_BRIDGE3_TESTS)
 
+SGEN_OOM_TESTS_SRC =	\
+	sgen-oom-cementing-stress.cs	\
+	sgen-oom-new-threads-dont-join-stw-2.cs	\
+	sgen-oom-bridge-major-fragmentation.cs
+
+SGEN_OOM_TESTS=$(SGEN_OOM_TESTS_SRC:.cs=.exe)
+
+sgen-oom-tests: $(SGEN_OOM_TESTS) test-runner.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw-2.exe sgen-bridge-major-fragmentation.exe
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --runtime-args "--gc=sgen --gc-debug=max-valloc-size=50M,bridge=Bridge" --disabled "$(DISABLED_TESTS)" --timeout 900 $(SGEN_OOM_TESTS)
+
 
 AOT_CONFIGURATIONS=	\
 	"|regular"	\
