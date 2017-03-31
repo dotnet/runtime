@@ -81,7 +81,7 @@
   <PropertyGroup Condition="'$(IsTestProject)'=='true'">
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)'==''">$(TestSharedFxDir)dotnet.exe</StartProgram>
+    <StartProgram Condition="'$(StartProgram)'==''">$(ArchivePayloadRootDir)dotnet.exe</StartProgram>
     <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
   </PropertyGroup>
 
@@ -198,23 +198,32 @@
       Overwrite="true"
       Encoding="Ascii" />
 
+        <!--======================================================
+                      Section for uapaot ilc test runs
+            ====================================================== -->
     <PropertyGroup Condition="'$(UseDotNetNativeToolchain)' == 'true'">
       <ILCBuildType Condition="'$(ILCBuildType)' == ''">ret</ILCBuildType>
+      <_TestILCFolder>%RUNTIME_PATH%\TestILC</_TestILCFolder>
+      <_Runtime_Path>%RUNTIME_PATH%\ILCInputFolder\</_Runtime_Path>
     </PropertyGroup>
     
-    <!-- For .NET Native compilation, we first need to generate a native executable if possible. -->
     <ItemGroup Condition="'$(UseDotNetNativeToolchain)' == 'true' AND '$(Performance)'!='true'" >
       <IlcInputFolderContents Include="$(ILCFXInputFolder)/*" />
-      <TestCommandLines Include="mklink /H %(IlcInputFolderContents.Filename)%(IlcInputFolderContents.Extension) %(IlcInputFolderContents.FullPath)" />
-      <TestCommandLines Include="copy /y $(TestILCFolder)\default.rd.xml  %EXECUTION_DIR%" />
-      <TestCommandLines Include="call $(TestILCFolder)\ilc.exe -ExeName xunit.console.netcore.exe -in %EXECUTION_DIR% -out %EXECUTION_DIR%\native -usedefaultpinvoke -buildtype $(ILCBuildType) -v diag || exit /b %ERRORLEVEL%"/>
-      <TestCommandLines Include="copy /y $(TestILCFolder)\CRT\vcruntime140_app.dll %EXECUTION_DIR%\native" />
+      <TestCommandLines Include="mklink /H %(IlcInputFolderContents.Filename)%(IlcInputFolderContents.Extension) $(_Runtime_Path)%(IlcInputFolderContents.Filename)%(IlcInputFolderContents.Extension)" />
+      <TestCommandLines Include="copy /y $(_TestILCFolder)\default.rd.xml  %EXECUTION_DIR%" />
+      <TestCommandLines Include="call $(_TestILCFolder)\ilc.exe -ExeName xunit.console.netcore.exe -in %EXECUTION_DIR% -out %EXECUTION_DIR%\native -usedefaultpinvoke -buildtype $(ILCBuildType) -v diag" />
+      <TestCommandLines Include="set ILCERRORLEVEL=%ERRORLEVEL%" />
+      <TestCommandLines Include="if NOT [%ILCERRORLEVEL%] == [0] exit /b %ILCERRORLEVEL%" />
+      <TestCommandLines Include="copy /y $(_TestILCFolder)\CRT\vcruntime140_app.dll %EXECUTION_DIR%\native" />
       <TestCommandLines Include="echo > %EXECUTION_DIR%\native\$(XunitTestAssembly)"/>
       <TestCommandLines Include="cd native"/>
       <PostExecutionTestCommandLines Include="type Xunit.Console.Output.txt" />
       <PostExecutionTestCommandLines Include="copy /y testResults.xml %EXECUTION_DIR%\" />
     </ItemGroup>
 
+        <!--======================================================
+                      Section for uap F5 test runs
+            ====================================================== -->
     <PropertyGroup Condition="'$(BuildingUAPVertical)' == 'true'">
       <!-- The location where the logs will be written by the test runner -->
       <UAP_Results_Path Condition="'$(UAP_Results_Path)'==''">%USERPROFILE%\Documents\TestResults\</UAP_Results_Path>
@@ -229,7 +238,7 @@
 
     <ItemGroup Condition="'$(BuildingUAPVertical)' == 'true'" >
       <!-- Copy the runner files into the test directory -->
-      <RunnerFolderContents Include="$(NETCoreAppTestRootPath)\Runner\**\*" />
+      <RunnerFolderContents Include="$(TestHostRootPath)\Runner\**\*" />
 
       <TestCommandLines Include="mkdir Assets" />
       <TestCommandLines Include="mkdir entrypoint" />
@@ -281,13 +290,13 @@
           >
 
     <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
-    <Error Text="TestILCFolder property is required for running uapaot tests. Please pass in the full path to the directory that contains ilc.exe to msbuild using /p:TestILCFolder=path_to_ilc_dir.exe" Condition="'$(BuildingUAPAOTVertical)' == 'true' AND '$(TestILCFolder)' == ''" />
+    <Error Text="TestILCFolder property is required for running uapaot tests. Please pass in the full path to the directory that contains ilc.exe to msbuild using /p:TestILCFolder=path_to_ilc_dir.exe" Condition="'$(BuildingUAPAOTVertical)' == 'true' AND !Exists('$(TestHostRootPath)\TestILC')" />
 
     <!-- For UAP, make sure the Runner and Launcher folder exist, otherwise the tests cannot run -->
     <Error Text="We cannot run the tests for UAP because either the Runner or the Launcher could not be found. You need to specify the UAPToolsFolder property when calling build.cmd to fix this."
-          Condition="'$(BuildingUAPVertical)'=='true' and (!Exists('$(NETCoreAppTestRootPath)\Runner') or !Exists('$(NETCoreAppTestRootPath)\Launcher'))" />
+          Condition="'$(BuildingUAPVertical)'=='true' and (!Exists('$(TestHostRootPath)\Runner') or !Exists('$(TestHostRootPath)\Launcher'))" />
 
-    <Exec Command="$(TestPath)/$(RunnerScriptName) $(TestSharedFxDir)"
+    <Exec Command="$(TestPath)/$(RunnerScriptName) $(ArchivePayloadRootDir)"
           CustomErrorRegularExpression="Failed: [^0]"
           ContinueOnError="true"
           IgnoreStandardErrorWarningFormat="true"
