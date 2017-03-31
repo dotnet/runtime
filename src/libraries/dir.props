@@ -256,22 +256,25 @@
     <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
 
     <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
-    <NETCoreAppTestRootPath>$(BinDir)testhost/$(BuildConfiguration)/</NETCoreAppTestRootPath>
-    <NETCoreAppTestHostFxrPath>$(NETCoreAppTestRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$(NETCoreAppTestRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
-    <ILCFXInputFolder>$(NETCoreAppTestRootPath)ILCInputFolder</ILCFXInputFolder>
+    <TestHostRootPath>$(BinDir)testhost/$(BuildConfiguration)/</TestHostRootPath>
+    <NETCoreAppTestHostFxrPath>$(TestHostRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$(TestHostRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
+    <ILCFXInputFolder>$(TestHostRootPath)ILCInputFolder</ILCFXInputFolder>
 
     <!-- For UAP, we'll produce the layout and hard-link this into each test's directory --> 	
-    <UAPTestSharedFrameworkPath>$(NETCoreAppTestRootPath)UAPLayout</UAPTestSharedFrameworkPath>	
+    <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>	
 
     <!-- Constructed shared fx path for testing -->
-    <TestSharedFxDir Condition="'$(BinPlaceTestSharedFramework)' == 'true' or '$(BinPlaceUAPFramework)'=='true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>
-    <TestSharedFxDir Condition="'$(BuildingUAPAOTVertical)' == 'true'">$(ILCFXInputFolder)</TestSharedFxDir>
-    <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true' And '$(TestILCFolder)' != ''">true</UseDotNetNativeToolchain>
+    <ArchivePayloadRootDir Condition="'$(BinPlaceTestSharedFramework)' == 'true' or '$(BinPlaceUAPFramework)'=='true' or '$(BinPlaceILCInputFolder)' == 'true'">$(TestHostRootPath)</ArchivePayloadRootDir>
+    <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true'">true</UseDotNetNativeToolchain>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OptionalToolingJsonPath>$(ProjectDir)\external\test-runtime\optional.json</OptionalToolingJsonPath>
   </PropertyGroup>
 
   <PropertyGroup>
