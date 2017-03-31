@@ -3,7 +3,7 @@
     "TargetGroup": {
       "description": "Sets the target framework for the BuildConfiguration you want to build.",
       "valueType": "property",
-      "values": ["netcoreapp", "netstandard", "netfx", "uap"],
+      "values": ["netcoreapp", "netstandard", "netfx", "uap", "mono"],
       "defaultValue": "netcoreapp"
     },
     "OSGroup": {

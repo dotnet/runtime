@@ -3,16 +3,17 @@
   <UsingTask TaskName="LocatePreviousContract" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
   <PropertyGroup>
-    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.$(TargetGroup).txt</ApiCompatBaseline>
-    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.txt</ApiCompatBaseline>
+    <RunApiCompat Condition="'$(RunApiCompat)'==''">false</RunApiCompat>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunApiCompat)' == 'true'">
+    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.$(TargetGroup).txt</ApiCompatBaseline>
+    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.txt</ApiCompatBaseline>
+
     <RunApiCompatForSrc Condition="$(MSBuildProjectDirectory.EndsWith('src'))">true</RunApiCompatForSrc>
     <!-- TODO: Disable the version over version ref compat checks for now because
     we don't have a great way to get the previous version -->
     <RunApiCompatForRef Condition="$(MSBuildProjectDirectory.EndsWith('ref'))">false</RunApiCompatForRef>
-    <RunApiCompat Condition="'$(RunApiCompat)'==''">false</RunApiCompat>
 
     <ResolveMatchingContract Condition="'$(RunApiCompatForSrc)'=='true'">true</ResolveMatchingContract>
     <TargetsTriggeredByCompilation Condition="'$(RunApiCompatForSrc)'=='true'">$(TargetsTriggeredByCompilation);ValidateApiCompatForSrc</TargetsTriggeredByCompilation>
