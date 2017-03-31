@@ -10,10 +10,4 @@
     <OutputType>exe</OutputType>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Collections.NonGeneric" Version="4.3.0" />
-    <PackageReference Include="System.Xml.ReaderWriter" Version="4.3.0" />
-    <PackageReference Include="System.Xml.XPath" Version="4.3.0" />
-  </ItemGroup>
-
 </Project>
