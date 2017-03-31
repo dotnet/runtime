@@ -21,5 +21,5 @@ fi
 
 dotNetExe=$toolsLocalPath/dotnetcli/dotnet
 echo $dotNetExe $@
-$dotNetExe $runExe $@
+$dotNetExe $@
 exit $?
