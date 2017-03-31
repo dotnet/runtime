@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class Expr
@@ -31,12 +29,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public string ErrorString { get; set; }
 
         public CType Type { get; set; }
-
-        public void SetAssignment()
-        {
-            Debug.Assert(!(this is ExprStatement));
-            Flags |= EXPRFLAG.EXF_ASSGOP;
-        }
 
         public bool IsOK => !HasError;
 
