@@ -82,7 +82,11 @@ g_file_test (const gchar *filename, GFileTest test)
 gchar *
 g_mkdtemp (char *tmp_template)
 {
+#ifdef HAVE_MKDTEMP
 	char *template_copy = g_strdup (tmp_template);
 
 	return mkdtemp (template_copy);
+#else
+	g_error("Function not supported");
+#endif
 }

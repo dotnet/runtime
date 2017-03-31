@@ -117,7 +117,7 @@ extern guint64 stat_objects_copied_major;
 		g_error (__VA_ARGS__);	\
 } } while (0)
 
-#ifndef HOST_WIN32
+#ifdef HAVE_LOCALTIME_R
 # define LOG_TIMESTAMP  \
 	do {	\
 		time_t t;									\
