@@ -43,17 +43,6 @@
         {
           "Name": "Core-Setup-Linux",
           "Parameters": {
-            "PB_DockerOS": "fedora.23"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Fedora 23",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
             "PB_DockerOS": "fedora.24"
           },
           "ReportingParameters": {
