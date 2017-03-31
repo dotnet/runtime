@@ -5,6 +5,12 @@
 #define UTILS_H
 
 #include "pal.h"
+struct host_option
+{
+    pal::string_t option;
+    pal::string_t argument;
+    pal::string_t description;
+};
 
 #define _STRINGIFY(s) _X(s)
 #define DOTNET_CORE_URL _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409")
@@ -28,7 +34,7 @@ pal::string_t get_last_known_arg(
 bool parse_known_args(
     const int argc,
     const pal::char_t* argv[],
-    const std::vector<pal::string_t>& known_opts,
+    const std::vector<host_option>& known_opts,
     std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
     int* num_args);
 bool skip_utf8_bom(pal::ifstream_t* stream);
