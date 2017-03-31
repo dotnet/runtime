@@ -466,13 +466,16 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetDecryptionKey_CarriedKeyName()
         {
             using (Aes aes = Aes.Create())
+            using (Aes innerAes = Aes.Create())
             {
+                innerAes.KeySize = 128;
+
                 EncryptedData edata = new EncryptedData();
                 edata.KeyInfo = new KeyInfo();
                 edata.KeyInfo.AddClause(new KeyInfoName("aes"));
 
                 EncryptedKey ekey = new EncryptedKey();
-                byte[] encKeyBytes = EncryptedXml.EncryptKey(aes.Key, aes);
+                byte[] encKeyBytes = EncryptedXml.EncryptKey(innerAes.Key, aes);
                 ekey.CipherData = new CipherData(encKeyBytes);
                 ekey.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 ekey.CarriedKeyName = "aes";
@@ -486,7 +489,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 exml.AddKeyNameMapping("another_aes", aes);
                 SymmetricAlgorithm decryptedAlg = exml.GetDecryptionKey(edata, EncryptedXml.XmlEncAES256Url);
 
-                Assert.Equal(aes.Key, decryptedAlg.Key);
+                Assert.Equal(innerAes.Key, decryptedAlg.Key);
             }
         }
 
@@ -735,12 +738,15 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(xml);
 
             using (Aes aes = Aes.Create())
+            using (Aes innerAes = Aes.Create())
             {
+                innerAes.KeySize = 128;
+
                 EncryptedXml exml = new EncryptedXml(doc);
                 exml.AddKeyNameMapping("aes", aes);
 
                 EncryptedKey ekey = new EncryptedKey();
-                byte[] encKeyBytes = EncryptedXml.EncryptKey(aes.Key, aes);
+                byte[] encKeyBytes = EncryptedXml.EncryptKey(innerAes.Key, aes);
                 ekey.CipherData = new CipherData(encKeyBytes);
                 ekey.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 ekey.Id = "Key_ID";
@@ -755,13 +761,13 @@ namespace System.Security.Cryptography.Xml.Tests
                 ekeyRetrieval.KeyInfo = keyInfoRetrieval;
 
                 byte[] decryptedKey = exml.DecryptEncryptedKey(ekeyRetrieval);
-                Assert.Equal(aes.Key, decryptedKey);
+                Assert.Equal(innerAes.Key, decryptedKey);
 
                 EncryptedData eData = new EncryptedData();
                 eData.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 eData.KeyInfo = keyInfoRetrieval;
                 SymmetricAlgorithm decryptedAlg = exml.GetDecryptionKey(eData, null);
-                Assert.Equal(aes.Key, decryptedAlg.Key);
+                Assert.Equal(innerAes.Key, decryptedAlg.Key);
             }
         }
 
@@ -774,12 +780,17 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(xml);
 
             using (Aes aes = Aes.Create())
+            using (Aes outerAes = Aes.Create())
+            using (Aes innerAes = Aes.Create())
             {
+                outerAes.KeySize = 192;
+                innerAes.KeySize = 128;
+
                 EncryptedXml exml = new EncryptedXml(doc);
                 exml.AddKeyNameMapping("aes", aes);
 
                 EncryptedKey ekey = new EncryptedKey();
-                byte[] encKeyBytes = EncryptedXml.EncryptKey(aes.Key, aes);
+                byte[] encKeyBytes = EncryptedXml.EncryptKey(outerAes.Key, aes);
                 ekey.CipherData = new CipherData(encKeyBytes);
                 ekey.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 ekey.Id = "Key_ID";
@@ -790,7 +801,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 topLevelKeyInfo.AddClause(new KeyInfoEncryptedKey(ekey));
 
                 EncryptedKey ekeyTopLevel = new EncryptedKey();
-                byte[] encTopKeyBytes = EncryptedXml.EncryptKey(aes.Key, aes);
+                byte[] encTopKeyBytes = EncryptedXml.EncryptKey(innerAes.Key, outerAes);
                 ekeyTopLevel.CipherData = new CipherData(encTopKeyBytes);
                 ekeyTopLevel.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 ekeyTopLevel.KeyInfo = topLevelKeyInfo;
@@ -798,13 +809,13 @@ namespace System.Security.Cryptography.Xml.Tests
                 doc.LoadXml(ekeyTopLevel.GetXml().OuterXml);
 
                 byte[] decryptedKey = exml.DecryptEncryptedKey(ekeyTopLevel);
-                Assert.Equal(aes.Key, decryptedKey);
+                Assert.Equal(innerAes.Key, decryptedKey);
 
                 EncryptedData eData = new EncryptedData();
                 eData.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
                 eData.KeyInfo = topLevelKeyInfo;
                 SymmetricAlgorithm decryptedAlg = exml.GetDecryptionKey(eData, null);
-                Assert.Equal(aes.Key, decryptedAlg.Key);
+                Assert.Equal(outerAes.Key, decryptedAlg.Key);
             }
         }
 
