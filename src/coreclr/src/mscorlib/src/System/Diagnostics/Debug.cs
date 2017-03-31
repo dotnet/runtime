@@ -10,7 +10,7 @@ namespace System.Diagnostics
     /// <summary>
     /// Provides a set of properties and methods for debugging code.
     /// </summary>
-    static partial class Debug
+    public static partial class Debug
     {
         private static readonly object s_lock = new object();
 
@@ -105,7 +105,7 @@ namespace System.Diagnostics
                 }
 
                 WriteLine(FormatAssert(stackTrace, message, detailMessage));
-                s_logger.ShowAssertDialog(stackTrace, message, detailMessage);
+                s_ShowAssertDialog(stackTrace, message, detailMessage);
             }
         }
 
@@ -151,7 +151,7 @@ namespace System.Diagnostics
             {
                 if (message == null)
                 {
-                    WriteCore(string.Empty);
+                    s_WriteCore(string.Empty);
                     return;
                 }
                 if (s_needIndent)
@@ -159,7 +159,7 @@ namespace System.Diagnostics
                     message = GetIndentString() + message;
                     s_needIndent = false;
                 }
-                WriteCore(message);
+                s_WriteCore(message);
                 if (message.EndsWith(NewLine))
                 {
                     s_needIndent = true;
@@ -309,17 +309,6 @@ namespace System.Diagnostics
             return s_indentString = new string(' ', indentCount);
         }
 
-        private static void WriteCore(string message)
-        {
-            s_logger.WriteCore(message);
-        }
-
-        internal interface IDebugLogger
-        {
-            void ShowAssertDialog(string stackTrace, string message, string detailMessage);
-            void WriteCore(string message);
-        }
-
         private sealed class DebugAssertException : Exception
         {
             internal DebugAssertException(string message, string detailMessage, string stackTrace) :
@@ -327,5 +316,9 @@ namespace System.Diagnostics
             {
             }
         }
+
+        // internal and not readonly so that the tests can swap this out.
+        internal static Action<string, string, string> s_ShowAssertDialog = ShowAssertDialog;
+        internal static Action<string> s_WriteCore = WriteCore;
     }
 }
