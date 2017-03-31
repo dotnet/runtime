@@ -310,7 +310,8 @@
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\CurrentTimeZone.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CurrentSystemTimeZone.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZone.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ICloneable.cs" />
