@@ -46,7 +46,7 @@ Daily Builds
 |   **Debian 8.2 (x64)**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Host][debian-8.2-host-master]<br>[Host FX Resolver][debian-8.2-hostfxr-master]<br>[Shared Framework][debian-8.2-sharedfx-master]<br>[tar.gz][debian-8.2-targz-master]<br>[Symbols (tar.gz)][debian-8.2-symbols-targz-master]   |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **CentOS 7.1 (x64)**     |   [![][centos-badge-master]][centos-version-master]<br>[tar.gz][centos-targz-master]<br>[Symbols (tar.gz)][centos-symbols-targz-master]   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
 |   **RHEL 7.2 (x64)**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]<br>[Symbols (tar.gz)][rhel-symbols-targz-master]   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
-|   **Fedora 23 (x64)**      |   [![][fedora-23-badge-master]][fedora-23-version-master]<br>[tar.gz][fedora-23-targz-master]<br>[Symbols (tar.gz)][fedora-23-symbols-targz-master]   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
+|   **Fedora 23 (x64)**      |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   [![][fedora-24-badge-master]][fedora-24-version-master]<br>[tar.gz][fedora-24-targz-master]<br>[Symbols (tar.gz)][fedora-24-symbols-targz-master]   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
 |   **OpenSUSE 42.1 (x64)**  |   [![][opensuse-42.1-badge-master]][opensuse-42.1-version-master]<br>[tar.gz][opensuse-42.1-targz-master]<br>[Symbols (tar.gz)][opensuse-42.1-symbols-targz-master]   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 
@@ -252,11 +252,6 @@ Daily Builds
 [rhel-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.rhel.x64.version
 [rhel-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-rhel-x64.latest.tar.gz
 
-
-[fedora-23-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Fedora_23_x64_Release_version_badge.svg
-[fedora-23-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.fedora.23.x64.version
-[fedora-23-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-fedora.23-x64.latest.tar.gz
-[fedora-23-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-fedora.23-x64.latest.tar.gz
 
 [fedora-23-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Fedora_23_x64_Release_version_badge.svg
 [fedora-23-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.23.x64.version
