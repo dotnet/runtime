@@ -450,7 +450,7 @@
       "value": "true"
     },
     "NUGET_FEED_URL": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2"
+      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
     },
     "NUGET_API_KEY": {
       "value": "PassedViaPipeBuild"
@@ -477,7 +477,7 @@
       "value": "false"
     },
     "NUGET_SYMBOLS_FEED_URL": {
-      "value": " https://dotnet.myget.org/F/dotnet-core/symbols/api/v2"
+      "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     }
   },
   "demands": [
