@@ -179,7 +179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case 1:
                 case 2:
-                    name = _BSymmgr.GetNameManager().GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
+                    name = NameManager.GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
                     break;
                 default:
                     name = _BSymmgr.GetNameManager().Add("[X" + args + 1);
@@ -318,7 +318,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pPointer == null)
             {
                 // No existing type. Create a new one.
-                Name namePtr = _BSymmgr.GetNameManager().GetPredefName(PredefinedName.PN_PTR);
+                Name namePtr = NameManager.GetPredefinedName(PredefinedName.PN_PTR);
 
                 pPointer = _typeFactory.CreatePointer(namePtr, baseType);
                 pPointer.InitFromParent();
@@ -341,7 +341,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             NullableType pNullableType = _typeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
             {
-                Name pName = _BSymmgr.GetNameManager().GetPredefName(PredefinedName.PN_NUB);
+                Name pName = NameManager.GetPredefinedName(PredefinedName.PN_NUB);
 
                 pNullableType = _typeFactory.CreateNullable(pName, pUnderlyingType, _BSymmgr, this);
                 pNullableType.InitFromParent();
@@ -360,7 +360,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ParameterModifierType GetParameterModifier(CType paramType, bool isOut)
         {
-            Name name = _BSymmgr.GetNameManager().GetPredefName(isOut ? PredefinedName.PN_OUTPARAM : PredefinedName.PN_REFPARAM);
+            Name name = NameManager.GetPredefinedName(isOut ? PredefinedName.PN_OUTPARAM : PredefinedName.PN_REFPARAM);
             ParameterModifierType pParamModifier = _typeTable.LookupParameterModifier(name, paramType);
 
             if (pParamModifier == null)

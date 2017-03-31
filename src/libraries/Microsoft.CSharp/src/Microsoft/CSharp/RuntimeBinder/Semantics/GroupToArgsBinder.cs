@@ -644,7 +644,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // Otherwise, we generate Type.Missing
 
                             AggregateSymbol agg = symbolLoader.GetOptPredefAgg(PredefinedType.PT_MISSING);
-                            Name name = symbolLoader.GetNameManager().GetPredefinedName(PredefinedName.PN_CAP_VALUE);
+                            Name name = NameManager.GetPredefinedName(PredefinedName.PN_CAP_VALUE);
                             FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol).AsFieldSymbol();
                             FieldWithType fwt = new FieldWithType(field, agg.getThisType());
                             ExprField exprField = exprFactory.CreateField(0, agg.getThisType(), null, 0, fwt, null);
@@ -1269,7 +1269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_pGroup.typeArgs.Count == 0 || _pGroup.sk == SYMKIND.SK_MethodSymbol);
 
                 // if this is a binding to finalize on object, then complain:
-                if (_results.GetBestResult().MethProp().name == GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_DTOR) &&
+                if (_results.GetBestResult().MethProp().name == NameManager.GetPredefinedName(PredefinedName.PN_DTOR) &&
                     _results.GetBestResult().MethProp().getClass().isPredefAgg(PredefinedType.PT_OBJECT))
                 {
                     if (0 != (_pGroup.Flags & EXPRFLAG.EXF_BASECALL))
@@ -1329,7 +1329,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_pGroup.OptionalObject != null &&
                         _pGroup.OptionalObject.Type != null &&
                         _pGroup.OptionalObject.Type.isDelegateType() &&
-                        _pGroup.name == GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INVOKE))
+                        _pGroup.name == NameManager.GetPredefinedName(PredefinedName.PN_INVOKE))
                 {
                     Debug.Assert(!_results.GetBestResult() || _results.GetBestResult().MethProp().getClass().IsDelegate());
                     Debug.Assert(!_results.GetBestResult() || _results.GetBestResult().GetType().getAggregate().IsDelegate());
