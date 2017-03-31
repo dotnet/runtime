@@ -66,8 +66,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             var loader = new DependencyContextLoader(
                 appDepsPath,
-                fxDepsPath,
-                new[] { extraDepsPath },
+                new[] { fxDepsPath, extraDepsPath },
                 fileSystem,
                 () => new DependencyContextJsonReader());
 
