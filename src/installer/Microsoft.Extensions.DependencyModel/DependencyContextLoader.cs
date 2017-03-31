@@ -1,10 +1,11 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 #if !NETSTANDARD1_3
 
@@ -16,12 +17,14 @@ namespace Microsoft.Extensions.DependencyModel
 
         private readonly string _entryPointDepsLocation;
         private readonly string _runtimeDepsLocation;
+        private readonly IEnumerable<string> _extraDepsLocations;
         private readonly IFileSystem _fileSystem;
         private readonly Func<IDependencyContextReader> _jsonReaderFactory;
 
         public DependencyContextLoader() : this(
             DependencyContextPaths.Current.Application,
             DependencyContextPaths.Current.SharedRuntime,
+            DependencyContextPaths.Current.ExtraPaths,
             FileSystemWrapper.Default,
             () => new DependencyContextJsonReader())
         {
@@ -30,11 +33,13 @@ namespace Microsoft.Extensions.DependencyModel
         internal DependencyContextLoader(
             string entryPointDepsLocation,
             string runtimeDepsLocation,
+            IEnumerable<string> extraDepsLocations,
             IFileSystem fileSystem,
             Func<IDependencyContextReader> jsonReaderFactory)
         {
             _entryPointDepsLocation = entryPointDepsLocation;
             _runtimeDepsLocation = runtimeDepsLocation;
+            _extraDepsLocations = extraDepsLocations;
             _fileSystem = fileSystem;
             _jsonReaderFactory = jsonReaderFactory;
         }
@@ -71,12 +76,21 @@ namespace Microsoft.Extensions.DependencyModel
                     context = LoadAssemblyContext(assembly, reader);
                 }
 
-                if (context?.Target.IsPortable == true)
+                if (context != null)
                 {
                     var runtimeContext = LoadRuntimeContext(reader);
                     if (runtimeContext != null)
                     {
                         context = context.Merge(runtimeContext);
+                    }
+
+                    foreach (var extraPath in _extraDepsLocations)
+                    {
+                        var extraContext = LoadContext(reader, extraPath);
+                        if (extraContext != null)
+                        {
+                            context = context.Merge(extraContext);
+                        }
                     }
                 }
             }
@@ -85,23 +99,20 @@ namespace Microsoft.Extensions.DependencyModel
 
         private DependencyContext LoadEntryAssemblyContext(IDependencyContextReader reader)
         {
-            if (!string.IsNullOrEmpty(_entryPointDepsLocation))
-            {
-                Debug.Assert(File.Exists(_entryPointDepsLocation));
-                using (var stream = _fileSystem.File.OpenRead(_entryPointDepsLocation))
-                {
-                    return reader.Read(stream);
-                }
-            }
-            return null;
+            return LoadContext(reader, _entryPointDepsLocation);
         }
 
         private DependencyContext LoadRuntimeContext(IDependencyContextReader reader)
         {
-            if (!string.IsNullOrEmpty(_runtimeDepsLocation))
+            return LoadContext(reader, _runtimeDepsLocation);
+        }
+
+        private DependencyContext LoadContext(IDependencyContextReader reader, string location)
+        {
+            if (!string.IsNullOrEmpty(location))
             {
-                Debug.Assert(File.Exists(_runtimeDepsLocation));
-                using (var stream = _fileSystem.File.OpenRead(_runtimeDepsLocation))
+                Debug.Assert(_fileSystem.File.Exists(location));
+                using (var stream = _fileSystem.File.OpenRead(location))
                 {
                     return reader.Read(stream);
                 }

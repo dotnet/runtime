@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.EnvironmentAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using FluentAssertions;
-
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -20,7 +18,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private static string SharedFxPath = Path.Combine("shared", "fx");
         private static string SharedFxPathRefs = Path.Combine(SharedFxPath, "refs");
 
-        private static DependencyContextPaths DependencyContextPaths = new DependencyContextPaths(null, Path.Combine(SharedFxPath, "deps.json"));
+        private static DependencyContextPaths DependencyContextPaths =
+            new DependencyContextPaths(null, Path.Combine(SharedFxPath, "deps.json"), null);
 
         [Fact]
         public void ResolvesProjectType()
