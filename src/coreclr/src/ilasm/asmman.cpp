@@ -297,9 +297,10 @@ void AsmMan::EmitDebuggableAttribute(mdToken tkOwner)
     else
     {
         AsmManAssembly *pAssembly = GetAsmRefByName("mscorlib");
-        _ASSERTE(pAssembly != NULL);
-        PREFIX_ASSUME(pAssembly != NULL);
-        fOldStyle = (pAssembly->usVerMajor == 1);
+        if(pAssembly != NULL)
+        {
+            fOldStyle = (pAssembly->usVerMajor == 1);
+        }   
     }
 
     bsBytes->appendInt8(1);
