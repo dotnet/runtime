@@ -37,63 +37,6 @@ namespace System
     using System.Diagnostics.Contracts;
     using System.Runtime.ExceptionServices;
 
-    public class ResolveEventArgs : EventArgs
-    {
-        private String _Name;
-        private Assembly _RequestingAssembly;
-
-        public String Name
-        {
-            get
-            {
-                return _Name;
-            }
-        }
-
-        public Assembly RequestingAssembly
-        {
-            get
-            {
-                return _RequestingAssembly;
-            }
-        }
-
-        public ResolveEventArgs(String name)
-        {
-            _Name = name;
-        }
-
-        public ResolveEventArgs(String name, Assembly requestingAssembly)
-        {
-            _Name = name;
-            _RequestingAssembly = requestingAssembly;
-        }
-    }
-
-    public class AssemblyLoadEventArgs : EventArgs
-    {
-        private Assembly _LoadedAssembly;
-
-        public Assembly LoadedAssembly
-        {
-            get
-            {
-                return _LoadedAssembly;
-            }
-        }
-
-        public AssemblyLoadEventArgs(Assembly loadedAssembly)
-        {
-            _LoadedAssembly = loadedAssembly;
-        }
-    }
-
-    [Serializable]
-    public delegate Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
-
-    [Serializable]
-    public delegate void AssemblyLoadEventHandler(Object sender, AssemblyLoadEventArgs args);
-
     [Serializable]
     internal delegate void AppDomainInitializer(string[] args);
 
