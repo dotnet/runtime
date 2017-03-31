@@ -43,7 +43,6 @@ namespace Microsoft.DotNet.Host.Build
             { "rhel.7.3-x64", "rhel.7-x64" },
             { "debian.8-armel", "debian.8-armel" },
             { "debian.8-x64", "debian.8-x64" },
-            { "fedora.23-x64", "fedora.23-x64" },
             { "fedora.24-x64", "fedora.24-x64" },
             { "opensuse.42.1-x64", "opensuse.42.1-x64" },
             { "tizen.4.0.0-armel", "tizen.4.0.0-armel" }
