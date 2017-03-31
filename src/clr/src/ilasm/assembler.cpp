@@ -276,14 +276,22 @@ mdToken Assembler::GetAsmRef(__in __nullterminated const char* szName)
 
 mdToken Assembler::GetBaseAsmRef()
 {
-    if (RidFromToken(m_pManifest->GetAsmRefTokByName("System.Runtime")) != 0)
+    AsmManAssembly* sysRuntime = m_pManifest->GetAsmRefByAsmName("System.Runtime");
+    if(sysRuntime != NULL)
     {
-        return GetAsmRef("System.Runtime");
+        return GetAsmRef(sysRuntime->szAlias ? sysRuntime->szAlias : sysRuntime->szName);
     }
 
-    if (RidFromToken(m_pManifest->GetAsmRefTokByName("netstandard")) != 0)
+    AsmManAssembly* mscorlibAsm = m_pManifest->GetAsmRefByAsmName("mscorlib");
+    if(mscorlibAsm != NULL)
     {
-        return GetAsmRef("netstandard");
+        return GetAsmRef(mscorlibAsm->szAlias ? mscorlibAsm->szAlias : mscorlibAsm->szName);
+    }
+
+    AsmManAssembly* netstandardAsm = m_pManifest->GetAsmRefByAsmName("netstandard");
+    if (netstandardAsm != NULL)
+    {
+        return GetAsmRef(netstandardAsm->szAlias ? netstandardAsm->szAlias : netstandardAsm->szName);
     }
 
     return GetAsmRef("mscorlib");
