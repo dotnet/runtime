@@ -3557,4 +3557,13 @@
   <data name="Word_At" xml:space="preserve">
     <value>at</value>
   </data>
-  </root>
+  <data name="DebugAssertBanner" xml:space="preserve">
+    <value>---- DEBUG ASSERTION FAILED ----</value>
+  </data>
+  <data name="DebugAssertLongMessage" xml:space="preserve">
+    <value>---- Assert Long Message ----</value>
+  </data>
+  <data name="DebugAssertShortMessage" xml:space="preserve">
+    <value>---- Assert Short Message ----</value>
+  </data>
+</root>
