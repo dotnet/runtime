@@ -1510,7 +1510,9 @@ sgen-bridge3-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE3_TESTS) test-runner.exe
 SGEN_OOM_TESTS_SRC =	\
 	sgen-oom-cementing-stress.cs	\
 	sgen-oom-new-threads-dont-join-stw-2.cs	\
-	sgen-oom-bridge-major-fragmentation.cs
+	sgen-oom-bridge-major-fragmentation.cs \
+	gc-oom-handling.exe	\
+	gc-oom-handling2.exe
 
 SGEN_OOM_TESTS=$(SGEN_OOM_TESTS_SRC:.cs=.exe)
 
@@ -1883,18 +1885,6 @@ test-process-exit:
 	@$(RUNTIME) threadpool-in-processexit.exe > threadpool-in-processexit.exe.stdout
 	@diff -w threadpool-in-processexit.exe.stdout $(srcdir)/threadpool-in-processexit.exe.stdout.expected
 endif
-
-OOM_TESTS =	\
-	gc-oom-handling.exe	\
-	gc-oom-handling2.exe
-
-
-test-oom: $(OOM_TESTS)
-	@for fn in $+ ; do	\
-		echo "Testing $$fn ...";	\
-		MONO_GC_PARAMS=max-heap-size=16m MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
-		MONO_GC_PARAMS=max-heap-size=16m                                                  $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
-	done
 
 if HOST_WIN32
 test-unhandled-exception-2:
