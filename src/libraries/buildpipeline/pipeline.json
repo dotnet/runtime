@@ -159,7 +159,8 @@
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
             "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
-            "PB_BuildArguments": "-buildArch=arm -portable",
+            "PB_Architecture": "arm",
+            "PB_BuildArguments": "-portable",
             "PB_SyncArguments": "-p -portable -- /p:ArchGroup=arm",
           },
           "ReportingParameters": {
