@@ -29,12 +29,8 @@ namespace System
 {
     [Obsolete("System.CurrentSystemTimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo.Local instead.")]
     [Serializable]
-    internal class CurrentSystemTimeZone : TimeZone
+    internal partial class CurrentSystemTimeZone : TimeZone
     {
-        // The per-year information is cached in in this instance value. As a result it can
-        // be cleaned up by CultureInfo.ClearCachedData, which will clear the instance of this object
-        private readonly Hashtable m_CachedDaylightChanges = new Hashtable();
-
         // Standard offset in ticks to the Universal time if
         // no daylight saving is in used.
         // E.g. the offset for PST (Pacific Standard time) should be -8 * 60 * 60 * 1000 * 10000.
@@ -152,51 +148,40 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(year), SR.Format(SR.ArgumentOutOfRange_Range, 1, 9999));
             }
-            Contract.EndContractBlock();
 
-            Object objYear = (Object)year;
+            return GetCachedDaylightChanges(year);
+        }
 
-            if (!m_CachedDaylightChanges.Contains(objYear))
+        private static DaylightTime CreateDaylightChanges(int year)
+        {
+            DaylightTime currentDaylightChanges = null;
+
+            if (TimeZoneInfo.Local.SupportsDaylightSavingTime)
             {
-                DaylightTime currentDaylightChanges = null;
+                DateTime start;
+                DateTime end;
+                TimeSpan delta;
 
-                if (TimeZoneInfo.Local.SupportsDaylightSavingTime)
+                foreach (var rule in TimeZoneInfo.Local.GetAdjustmentRules())
                 {
-                    DateTime start;
-                    DateTime end;
-                    TimeSpan delta;
-
-                    foreach (var rule in TimeZoneInfo.Local.GetAdjustmentRules())
+                    if (rule.DateStart.Year <= year && rule.DateEnd.Year >= year && rule.DaylightDelta != TimeSpan.Zero)
                     {
-                        if (rule.DateStart.Year <= year && rule.DateEnd.Year >= year && rule.DaylightDelta != TimeSpan.Zero)
-                        {
-                            start = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
-                            end = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionEnd);
-                            delta = rule.DaylightDelta;
+                        start = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionStart);
+                        end = TimeZoneInfo.TransitionTimeToDateTime(year, rule.DaylightTransitionEnd);
+                        delta = rule.DaylightDelta;
 
-                            currentDaylightChanges = new DaylightTime(start, end, delta);
-                            break;
-                        }
-                    }
-                }
-
-                if (currentDaylightChanges == null)
-                {
-                    currentDaylightChanges = new DaylightTime(DateTime.MinValue, DateTime.MinValue, TimeSpan.Zero);
-                }
-
-                lock (m_CachedDaylightChanges)
-                {
-                    if (!m_CachedDaylightChanges.Contains(objYear))
-                    {
-                        m_CachedDaylightChanges.Add(objYear, currentDaylightChanges);
+                        currentDaylightChanges = new DaylightTime(start, end, delta);
+                        break;
                     }
                 }
             }
 
-            DaylightTime result = (DaylightTime)m_CachedDaylightChanges[objYear];
+            if (currentDaylightChanges == null)
+            {
+                currentDaylightChanges = new DaylightTime(DateTime.MinValue, DateTime.MinValue, TimeSpan.Zero);
+            }
 
-            return result;
+            return currentDaylightChanges;
         }
 
         public override TimeSpan GetUtcOffset(DateTime time)
