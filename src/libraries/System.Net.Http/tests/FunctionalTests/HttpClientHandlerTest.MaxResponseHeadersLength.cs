@@ -14,6 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
     public class HttpClientHandler_MaxResponseHeadersLength_Test : RemoteExecutorTestBase
     {
         [Fact]
