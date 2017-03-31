@@ -9,10 +9,11 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public static class NuGetUtil
     {
+        [Flags]
         public enum NuGetIncludePackageType
         {
             Standard = 1,
-            Symbols
+            Symbols = 2
         }
         public static void PushPackages(
             string packageDirPath,
@@ -21,11 +22,11 @@ namespace Microsoft.DotNet.Cli.Build
             NuGetIncludePackageType includePackageTypes)
         {
             List<string> paths = new List<string>();
-            if ((includePackageTypes & NuGetIncludePackageType.Standard) != 0)
+            if ((includePackageTypes.HasFlag(NuGetIncludePackageType.Standard)))
             {
                 paths.AddRange(Directory.GetFiles(packageDirPath, "*.nupkg").Where(p => !p.EndsWith(".symbols.nupkg")));
             }
-            if ((includePackageTypes & NuGetIncludePackageType.Symbols) != 0)
+            if ((includePackageTypes.HasFlag(NuGetIncludePackageType.Symbols)))
             {
                 paths.AddRange(Directory.GetFiles(packageDirPath, "*.symbols.nupkg"));
             }

@@ -67,10 +67,10 @@ namespace Microsoft.DotNet.Host.Build
 
             string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
             NuGetUtil.PushPackages(Dirs.Packages, nugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Standard);
-            if(IncludeSymbolPackages)
+            if (IncludeSymbolPackages)
             {
                 string symbolsNugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_SYMBOLS_FEED_URL");
-                NuGetUtil.PushPackages(Dirs.PackagesNoRID, symbolsNugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Symbols);
+                NuGetUtil.PushPackages(Dirs.Packages, symbolsNugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Symbols);
             }
 
             return c.Success();
@@ -187,7 +187,7 @@ namespace Microsoft.DotNet.Host.Build
             string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
             NuGetUtil.PushPackages(Dirs.PackagesNoRID, nugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Standard);
             
-            if(IncludeSymbolPackages)
+            if (IncludeSymbolPackages)
             {
                 string symbolsNugetFeedUrl = EnvVars.EnsureVariable("NUGET_SYMBOLS_FEED_URL");
                 NuGetUtil.PushPackages(Dirs.PackagesNoRID, symbolsNugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Symbols);
