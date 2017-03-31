@@ -346,11 +346,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Name GetName(string p)
         {
-            if (p == null)
-            {
-                p = string.Empty;
-            }
-            return GetName(p, _nameManager);
+            return _nameManager.Add(p ?? "");
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -358,25 +354,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         private Name GetName(Type type)
         {
             string name = type.Name;
-            if (type.IsGenericType)
-            {
-                // Trim the name to remove the ` at the end.
-                name = name.Split('`')[0];
-            }
-            return GetName(name, _nameManager);
+            return type.IsGenericType ? _nameManager.Add(name, name.IndexOf('`')) : _nameManager.Add(name);
         }
 
-        /////////////////////////////////////////////////////////////////////////////////
-
-        internal static Name GetName(string p, NameManager nameManager)
-        {
-            Name name = nameManager.Lookup(p);
-            if (name == null)
-            {
-                return nameManager.Add(p);
-            }
-            return name;
-        }
         #endregion
 
         #region TypeParameters
@@ -1525,7 +1505,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // If we got here, it means we couldn't find it in our initial lookup. Means we haven't loaded it from reflection yet.
             // Lets go and do that now.
             // Check if we have constructors or not.
-            if (methodName == _nameManager.GetPredefinedName(PredefinedName.PN_CTOR))
+            if (methodName == NameManager.GetPredefinedName(PredefinedName.PN_CTOR))
             {
                 var ctors = Enumerable.Where(t.GetConstructors(), m => m.Name == methodName.Text);
 

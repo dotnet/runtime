@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             this.m_nameTable = nameMgr;
             this.tableGlobal = new SYMTBL();
-            _symFactory = new SymFactory(this.tableGlobal, this.m_nameTable);
+            _symFactory = new SymFactory(this.tableGlobal);
             _miscSymFactory = new MiscSymFactory(this.tableGlobal);
 
             this.ssetAssembly = new List<AidContainer>();
@@ -66,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             this.bsetGlobalAssemblies = new HashSet<KAID>();
             this.bsetGlobalAssemblies.Add(KAID.kaidThisAssembly);
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
-            _rootNS = _symFactory.CreateNamespace(m_nameTable.Add(""), null);
+            _rootNS = _symFactory.CreateNamespace(m_nameTable.Lookup(""), null);
             GetNsAid(_rootNS, KAID.kaidGlobal);
         }
 

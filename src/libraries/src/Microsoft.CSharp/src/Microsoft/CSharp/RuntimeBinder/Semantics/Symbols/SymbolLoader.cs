@@ -43,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public MethodSymbol LookupInvokeMeth(AggregateSymbol pAggDel)
         {
             Debug.Assert(pAggDel.AggKind() == AggKindEnum.Delegate);
-            for (Symbol pSym = LookupAggMember(GetNameManager().GetPredefName(PredefinedName.PN_INVOKE), pAggDel, symbmask_t.MASK_ALL);
+            for (Symbol pSym = LookupAggMember(NameManager.GetPredefinedName(PredefinedName.PN_INVOKE), pAggDel, symbmask_t.MASK_ALL);
                  pSym != null;
                  pSym = LookupNextSym(pSym, pAggDel, symbmask_t.MASK_ALL))
             {

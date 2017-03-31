@@ -615,7 +615,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (argument.Info.NamedArgument)
             {
                 Debug.Assert(argument.Info.Name != null);
-                arg = _exprFactory.CreateNamedArgumentSpecification(SymbolTable.GetName(argument.Info.Name, _semanticChecker.GetNameManager()), arg);
+                arg = _exprFactory.CreateNamedArgumentSpecification(_semanticChecker.GetNameManager().Add(argument.Info.Name), arg);
             }
 
             // If we have an object that was "dynamic" at compile time, we need
@@ -650,7 +650,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Expr callingObject,
             SYMKIND kind)
         {
-            Name name = SymbolTable.GetName(Name, _semanticChecker.GetNameManager());
+            Name name = _semanticChecker.GetNameManager().Add(Name);
             AggregateType callingType;
 
             if (callingObject.Type.IsArrayType())
@@ -697,7 +697,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // If we have a constructor, only find its type.
-            bool bIsConstructor = name == SymbolLoader.GetNameManager().GetPredefinedName(PredefinedName.PN_CTOR);
+            bool bIsConstructor = name == NameManager.GetPredefinedName(PredefinedName.PN_CTOR);
             for (AggregateType t = callingType; t != null; t = t.GetBaseClass())
             {
                 if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask))
@@ -1041,12 +1041,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Expr addMethArg = _binder.mustConvert(addMethGrp, _symbolTable.GetCTypeFromType(funcType));
 
                 args = _exprFactory.CreateList(addMethArg, removeMethArg, delegateVal);
-                methodName = SymbolLoader.GetNameManager().GetPredefName(PredefinedName.PN_ADDEVENTHANDLER).Text;
+                methodName = NameManager.GetPredefinedName(PredefinedName.PN_ADDEVENTHANDLER).Text;
             }
             else
             {
                 args = _exprFactory.CreateList(removeMethArg, delegateVal);
-                methodName = SymbolLoader.GetNameManager().GetPredefName(PredefinedName.PN_REMOVEEVENTHANDLER).Text;
+                methodName = NameManager.GetPredefinedName(PredefinedName.PN_REMOVEEVENTHANDLER).Text;
             }
 
             // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)

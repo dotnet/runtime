@@ -101,13 +101,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //Debug.Assert(IsValid(op));
             return s_rgOpInfo[op];
         }
-        public static OperatorKind OperatorOfMethodName(NameManager namemgr, Name name)
+        public static OperatorKind OperatorOfMethodName(Name name)
         {
             Debug.Assert(name != null);
 
             for (OperatorKind i = OperatorKind.OP_NONE; i < OperatorKind.OP_LAST; i = (i + 1))
             {
-                if (HasMethodName(i) && (name == GetMethodName(namemgr, i)))
+                if (HasMethodName(i) && (name == NameManager.GetPredefinedName(GetMethodName(i))))
                 {
                     return i;
                 }
@@ -126,12 +126,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             //Debug.Assert(IsValid(op));
             return GetInfo(op).methodName;
-        }
-
-        private static Name GetMethodName(NameManager namemgr, OperatorKind op)
-        {
-            Debug.Assert(HasMethodName(op));
-            return namemgr.GetPredefName(GetMethodName(op));
         }
 
         public static bool HasDisplayName(OperatorKind op)

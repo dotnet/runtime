@@ -148,7 +148,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             CheckDisplayableName(name);
 
-            if (name == GetNameManager().GetPredefName(PredefinedName.PN_INDEXERINTERNAL))
+            if (name == NameManager.GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL))
             {
                 ErrAppendString("this");
             }
@@ -319,7 +319,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 // This is kinda slow, but the alternative is to add bits to methsym.
                 //
                 string operatorName;
-                OperatorKind op = Operators.OperatorOfMethodName(GetNameManager(), meth.name);
+                OperatorKind op = Operators.OperatorOfMethodName(meth.name);
                 if (Operators.HasDisplayName(op))
                 {
                     operatorName = Operators.GetDisplayName(op);
@@ -329,13 +329,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     //
                     // either equals or compare
                     //
-                    if (meth.name == GetNameManager().GetPredefName(PredefinedName.PN_OPEQUALS))
+                    if (meth.name == NameManager.GetPredefinedName(PredefinedName.PN_OPEQUALS))
                     {
                         operatorName = "equals";
                     }
                     else
                     {
-                        Debug.Assert(meth.name == GetNameManager().GetPredefName(PredefinedName.PN_OPCOMPARE));
+                        Debug.Assert(meth.name == NameManager.GetPredefinedName(PredefinedName.PN_OPCOMPARE));
                         operatorName = "compare";
                     }
                 }
@@ -740,7 +740,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     fUserStrings = true;
                     break;
                 case ErrArgKind.Name:
-                    if (parg.name == GetNameManager().GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL))
+                    if (parg.name == NameManager.GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL))
                     {
                         psz = "this";
                     }
@@ -755,7 +755,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
                 case ErrArgKind.PredefName:
                     BeginString();
-                    ErrAppendName(GetNameManager().GetPredefName(parg.pdn));
+                    ErrAppendName(NameManager.GetPredefinedName(parg.pdn));
                     EndString(out psz);
                     break;
                 case ErrArgKind.SymWithType:
@@ -787,7 +787,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private bool IsDisplayableName(Name name)
         {
-            return name != GetNameManager().GetPredefName(PredefinedName.PN_MISSING);
+            return name != NameManager.GetPredefinedName(PredefinedName.PN_MISSING);
         }
 
         private void CheckDisplayableName(Name name)

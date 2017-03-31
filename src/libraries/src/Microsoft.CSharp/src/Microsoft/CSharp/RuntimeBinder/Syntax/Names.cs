@@ -4,23 +4,15 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class Name
+    internal sealed class Name
     {
-        private readonly string _text;
-
         public Name(string text)
         {
-            _text = text;
+            Text = text;
         }
 
-        public string Text
-        {
-            get { return _text; }
-        }
+        public string Text { get; }
 
-        public override string ToString()
-        {
-            return _text;
-        }
+        public override string ToString() => Text;
     }
 }
