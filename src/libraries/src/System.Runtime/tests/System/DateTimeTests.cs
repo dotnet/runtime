@@ -590,7 +590,8 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TryParse_TimeDesignators()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly parses this date")]
+        public static void TryParse_TimeDesignators_NetCore()
         {
             DateTime result;
             Assert.True(DateTime.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
@@ -602,6 +603,26 @@ namespace System.Tests
             Assert.Equal(4, result.Month);
             Assert.Equal(21, result.Day);
             Assert.Equal(17, result.Hour);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr fixed a bug where the .NET framework incorrectly parses this date")]
+        public static void TryParse_TimeDesignators_Netfx()
+        {
+            DateTime result;
+            Assert.True(DateTime.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
+            Assert.Equal(DateTime.Now.Month, result.Month);
+            Assert.Equal(DateTime.Now.Day, result.Day);
+            Assert.Equal(4, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
+
+            Assert.True(DateTime.TryParse("4/21 5pm", new CultureInfo("en-US"), DateTimeStyles.None, out result));
+            Assert.Equal(DateTime.Now.Month, result.Month);
+            Assert.Equal(DateTime.Now.Day, result.Day);
+            Assert.Equal(16, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
         }
 
         [Fact]
