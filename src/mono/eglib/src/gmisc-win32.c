@@ -45,7 +45,7 @@ g_hasenv (const gchar *variable)
 	return g_getenv (variable) != NULL;
 }
 
-const gchar *
+gchar *
 g_getenv(const gchar *variable)
 {
 	gunichar2 *var, *buffer;
