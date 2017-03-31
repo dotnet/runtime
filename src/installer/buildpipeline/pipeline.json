@@ -70,6 +70,7 @@
             "REPO_USER": "dotnet",
             "REPO_SERVER": "azure-apt-cat.cloudapp.net",
             "CLI_NUGET_FEED_URL": "https://dotnet.myget.org/F/cli-deps",
+            "CLI_NUGET_SYMBOLS_FEED_URL": "https://dotnet.myget.org/F/cli-deps/symbols"
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
