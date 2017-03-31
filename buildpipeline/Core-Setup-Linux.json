@@ -234,6 +234,9 @@
     },
     "DockerHost_ToolsDirectory": {
       "value": "$(DockerHost_Sandbox)/Tools"
+    },
+    "NUGET_SYMBOLS_FEED_URL": {
+      "value": " https://dotnet.myget.org/F/dotnet-core/api/v2/package"
     }
   },
   "demands": [
@@ -267,7 +270,9 @@
       "cloneUrl": "https://github.com/dotnet/core-setup.git",
       "refsUrl": "https://api.github.com/repos/dotnet/core-setup/git/refs",
       "gitLfsSupport": "false",
-      "fetchDepth": "0"
+      "skipSyncSource": "false",
+      "fetchDepth": "0",
+      "cleanOptions": "0"
     },
     "id": "https://github.com/dotnet/core-setup.git",
     "type": "GitHub",
@@ -296,6 +301,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097459
+    "revision": 418097620
   }
 }
