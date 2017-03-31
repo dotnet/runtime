@@ -104,6 +104,26 @@
     },
     {
       "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "PackagePkgProjects",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "filePath",
+        "scriptName": "build_projects/dotnet-host-build/build.ps1",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PackagePkgProjects,BuildProjectsForNuGetPackages",
+        "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
+        "workingFolder": "",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "PublishSharedFramework",
@@ -173,26 +193,6 @@
         "msbuildVersion": "15.0",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "PackagePkgProjects",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "filePath",
-        "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PackagePkgProjects,BuildProjectsForNuGetPackages",
-        "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
-        "workingFolder": "",
-        "failOnStandardError": "true"
       }
     },
     {
