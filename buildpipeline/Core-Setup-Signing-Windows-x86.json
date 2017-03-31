@@ -362,6 +362,15 @@
     {
       "enabled": false,
       "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
         "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
       },
       "inputs": {
@@ -439,6 +448,9 @@
     },
     "system.debug": {
       "value": "false"
+    },
+    "NUGET_SYMBOLS_FEED_URL": {
+      "value": " https://dotnet.myget.org/F/dotnet-core/symbols/api/v2"
     }
   },
   "demands": [
@@ -449,7 +461,7 @@
       "branches": [
         "+refs/heads/*"
       ],
-      "artifacts": [ ],
+      "artifacts": [],
       "artifactTypesToDelete": [
         "FilePath",
         "SymbolStore"
@@ -503,6 +515,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097471
+    "revision": 418097620
   }
 }
