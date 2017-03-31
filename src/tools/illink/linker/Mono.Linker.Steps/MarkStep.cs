@@ -565,6 +565,10 @@ namespace Mono.Linker.Steps {
 			if (IsSerializable (type))
 				MarkSerializable (type);
 
+			if (IsEventSource (type)) {
+				MarkEventSource (type);
+			}
+
 			MarkTypeSpecialCustomAttributes (type);
 
 			MarkGenericParameterProvider (type);
@@ -616,6 +620,9 @@ namespace Mono.Linker.Steps {
 				case "System.Diagnostics.DebuggerTypeProxyAttribute":
 					MarkTypeWithDebuggerTypeProxyAttribute (type, attribute);
 					break;
+				case "System.Diagnostics.Tracing.EventDataAttribute":
+					MarkTypeWithEventDataAttribute (type, attribute);
+					break;
 				}
 			}
 		}
@@ -632,6 +639,11 @@ namespace Mono.Linker.Steps {
 					break;
 				}
 			}
+		}
+
+		void MarkTypeWithEventDataAttribute (TypeDefinition type, CustomAttribute attribute)
+		{
+			MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
 		}
 
 		void MarkXmlSchemaProvider (TypeDefinition type, CustomAttribute attribute)
@@ -897,6 +909,33 @@ namespace Mono.Linker.Steps {
 			return td.BaseType != null && td.BaseType.FullName == "System.MulticastDelegate";
 		}
 
+		bool IsEventSource (TypeDefinition td)
+		{
+			TypeReference type = td;
+			do {
+				if (type.FullName == "System.Diagnostics.Tracing.EventSource") {
+					return true;
+				}
+
+				TypeDefinition typeDef = type.Resolve ();
+				if (typeDef == null) {
+					HandleUnresolvedType (type);
+					return false;
+				}
+				type = typeDef.BaseType;
+			} while (type != null);
+			return false;
+		}
+
+		void MarkEventSource (TypeDefinition td)
+		{
+			foreach (var nestedType in td.NestedTypes) {
+				if (nestedType.Name == "Keywords" || nestedType.Name == "Tasks" || nestedType.Name == "Opcodes") {
+					MarkStaticFields (nestedType);
+				}
+			}
+		}
+
 		protected TypeDefinition ResolveTypeDefinition (TypeReference type)
 		{
 			TypeDefinition td = type as TypeDefinition;
@@ -1025,6 +1064,17 @@ namespace Mono.Linker.Steps {
 				if (!includeStatic && field.IsStatic)
 					continue;
 				MarkField (field);
+			}
+		}
+
+		protected void MarkStaticFields(TypeDefinition type)
+		{
+			if (!type.HasFields)
+				return;
+
+			foreach (FieldDefinition field in type.Fields) {
+				if (field.IsStatic)
+					MarkField (field);
 			}
 		}
 
@@ -1221,6 +1271,11 @@ namespace Mono.Linker.Steps {
 		{
 			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||
 				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
+		}
+
+		static internal bool IsPublicInstancePropertyMethod (MethodDefinition md)
+		{
+			return md.IsPublic && !md.IsStatic && IsPropertyMethod (md);
 		}
 
 		static bool IsEventMethod (MethodDefinition md)
