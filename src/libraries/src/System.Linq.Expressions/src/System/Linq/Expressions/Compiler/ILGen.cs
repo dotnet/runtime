@@ -636,10 +636,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            if (typeFrom == typeof(void) || typeTo == typeof(void))
-            {
-                throw ContractUtils.Unreachable;
-            }
+            Debug.Assert(typeFrom != typeof(void) && typeTo != typeof(void));
 
             bool isTypeFromNullable = typeFrom.IsNullableType();
             bool isTypeToNullable = typeTo.IsNullableType();
@@ -757,7 +754,7 @@ namespace System.Linq.Expressions.Compiler
                         case TypeCode.UInt64: method = Decimal_op_Implicit_UInt64; break;
                         case TypeCode.Char:   method = Decimal_op_Implicit_Char;   break;
                         default:
-                            throw Error.UnhandledConvert(typeTo);
+                            throw ContractUtils.Unreachable;
                     }
 
                     il.Emit(OpCodes.Call, method);

@@ -52,7 +52,6 @@
     <Compile Include="System\Net\Sockets\TCPListener.cs" />
     <Compile Include="System\Net\Sockets\TransportType.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
-    <Compile Include="System\Net\Sockets\UDPClient.netstandard.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />

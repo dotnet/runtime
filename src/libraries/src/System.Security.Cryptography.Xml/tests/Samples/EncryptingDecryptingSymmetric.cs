@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Xunit;
+using Xunit.Extensions;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -32,38 +33,12 @@ namespace System.Security.Cryptography.Xml.Tests
             var encryptedData = new EncryptedData()
             {
                 Type = EncryptedXml.XmlEncElementUrl,
-                EncryptionMethod = new EncryptionMethod(GetEncryptionMethodName(key))
+                EncryptionMethod = new EncryptionMethod(TestHelpers.GetEncryptionMethodName(key))
             };
 
             encryptedData.CipherData.CipherValue = encryptedXml.EncryptData(elementToEncrypt, key, false);
 
             EncryptedXml.ReplaceElement(elementToEncrypt, encryptedData, false);
-        }
-
-        private static string GetEncryptionMethodName(SymmetricAlgorithm key)
-        {
-            if (key is TripleDES)
-            {
-                return EncryptedXml.XmlEncTripleDESUrl;
-            }
-            else if (key is DES)
-            {
-                return EncryptedXml.XmlEncDESUrl;
-            }
-            else if (key is Rijndael || key is Aes)
-            {
-                switch (key.KeySize)
-                {
-                    case 128:
-                        return EncryptedXml.XmlEncAES128Url;
-                    case 192:
-                        return EncryptedXml.XmlEncAES192Url;
-                    case 256:
-                        return EncryptedXml.XmlEncAES256Url;
-                }
-            }
-
-            throw new CryptographicException("The specified algorithm is not supported for XML Encryption.");
         }
 
         private static void Decrypt(XmlDocument doc, SymmetricAlgorithm key)
@@ -80,8 +55,16 @@ namespace System.Security.Cryptography.Xml.Tests
             encryptedXml.ReplaceData(encryptedElement, rgbOutput);
         }
 
-        [Fact]
-        public void SymmetricEncryptionRoundtrip()
+        public static IEnumerable<object[]> GetSymmetricAlgorithms()
+        {
+            foreach (var ctor in TestHelpers.GetSymmetricAlgorithms())
+            {
+                yield return new object[] { ctor };
+            }
+        }
+
+        [Theory, MemberData(nameof(GetSymmetricAlgorithms))]
+        public void SymmetricEncryptionRoundtrip(SymmetricAlgorithmFactory algorithmFactory)
         {
             const string testString = "some text node";
             const string ExampleXmlRootElement = "example";
@@ -90,7 +73,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
 
-            using (var key = Aes.Create())
+            using (var key = algorithmFactory.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);

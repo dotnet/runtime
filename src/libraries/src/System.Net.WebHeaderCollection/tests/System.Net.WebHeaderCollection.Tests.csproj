@@ -10,7 +10,6 @@
   <ItemGroup>
     <Compile Include="WebHeaderCollectionTest.cs" />
     <Compile Include="LoggingTest.cs" />
-    <Compile Include="WebHeaderCollectionTest.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

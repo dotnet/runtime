@@ -7,6 +7,4 @@ MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' 
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 10
+Total Issues: 8

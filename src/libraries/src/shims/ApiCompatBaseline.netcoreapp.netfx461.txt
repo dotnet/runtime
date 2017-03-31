@@ -1,8 +1,9 @@
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 Compat issues with assembly mscorlib:
 MembersMustExist : Member 'Microsoft.Win32.RegistryKey Microsoft.Win32.Registry.DynData' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.Win32.RegistryHive Microsoft.Win32.RegistryHive.DynData' does not exist in the implementation but it does exist in the contract.
@@ -1233,6 +1234,47 @@ TypesMustExist : Type 'System.ComponentModel.Composition.Primitives.ImportCardin
 TypesMustExist : Type 'System.ComponentModel.Composition.Primitives.ImportDefinition' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ComponentModel.DataAnnotations:
+TypesMustExist : Type 'System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.AssociationAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.ComponentModel.DataAnnotations.BindableTypeAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.CompareAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.ConcurrencyCheckAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.CreditCardAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.CustomValidationAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.DataTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.DisplayAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.DisplayColumnAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.EditableAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.EmailAddressAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.EnumDataTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.FileExtensionsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.FilterUIHintAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.KeyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.MaxLengthAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.ComponentModel.DataAnnotations.MetadataTypeAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.MinLengthAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.PhoneAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.RangeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.RegularExpressionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.RequiredAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.ScaffoldColumnAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.ComponentModel.DataAnnotations.ScaffoldTableAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.StringLengthAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.TimestampAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.UIHintAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.UrlAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.ValidationAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.ValidationContext.ServiceContainer.get()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.ValidationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.ColumnAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.ComplexTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.ForeignKeyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.InversePropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.DataAnnotations.Schema.TableAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 Compat issues with assembly System.Core:
 CannotRemoveBaseTypeOrInterface : Type 'System.InvalidTimeZoneException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -1724,6 +1766,74 @@ TypesMustExist : Type 'System.Drawing.Text.HotkeyPrefix' does not exist in the i
 TypesMustExist : Type 'System.Drawing.Text.InstalledFontCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.Text.PrivateFontCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.Text.TextRenderingHint' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Net:
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.CookieException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Net.HttpWebRequest..ctor()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.INetworkProgress' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.IPEndPointCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.IUnsafeWebRequestCreate' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.ProtocolViolationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Net.UiSynchronizationContext' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.WebException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Net.WebRequest.CreatorInstance.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.WebRequest.RegisterPortableWebRequestCreator(System.Net.IWebRequestCreate)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Cloud' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.CloudCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerName' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecord' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecordCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRegistration' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameResolver' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PeerToPeerException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PnrpPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PnrpPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.PnrpScope' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.ResolveCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.ResolveProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ApplicationChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ContactManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.CreateContactCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.InviteCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.NameChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ObjectChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.Peer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplication' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationLaunchInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationRegistrationType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerChangeType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaboration' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContact' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContactCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPoint' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPointCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponseType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMe' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObject' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObjectCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceStatus' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerScope' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PresenceChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.RefreshDataCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscribeCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionListChangedEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Sockets.HttpPolicyDownloaderProtocol' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Sockets.SecurityCriticalAction' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SocketClientAccessPolicyProtocol.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SocketClientAccessPolicyProtocol.set(System.Net.Sockets.SocketClientAccessPolicyProtocol)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.SocketException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Net.Sockets.SocketPolicy' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Sockets.UdpAnySourceMulticastClient' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Sockets.UdpSingleSourceMulticastClient' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime.Serialization:
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.CollectionDataContractAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.ContractNamespaceAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -3220,4 +3330,24 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3207
+Compat issues with assembly System.Xml.Serialization:
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlAnyAttributeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlAnyElementAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlArrayAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlArrayItemAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlAttributeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlChoiceIdentifierAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlElementAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlEnumAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlIgnoreAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlIncludeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlRootAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlSchemaProviderAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer..ctor(System.Type, System.Xml.Serialization.XmlAttributeOverrides, System.Type[], System.Xml.Serialization.XmlRootAttribute, System.String, System.String, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.FromMappings(System.Xml.Serialization.XmlMapping[], System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.CodeDom.Compiler.CompilerParameters)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+Total Issues: 3333

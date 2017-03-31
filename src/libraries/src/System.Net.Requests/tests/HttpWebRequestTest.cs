@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -607,6 +608,18 @@ namespace System.Net.Tests
             catch (Exception ex)
             {
                 _savedResponseException = ex;
+            }
+        }
+
+        [Fact]
+        public void HttpWebRequest_Serialize_Fails()
+        {
+            using (MemoryStream fs = new MemoryStream())
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                var hwr = HttpWebRequest.CreateHttp("http://localhost");
+
+                Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
             }
         }
     }

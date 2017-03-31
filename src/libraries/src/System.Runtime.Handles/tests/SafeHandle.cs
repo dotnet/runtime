@@ -61,4 +61,24 @@ public partial class SafeHandle_4000_Tests
         Assert.False(mch.IsInvalid);
         Assert.True(mch.IsReleased);
     }
+
+    [Fact]
+    public static void SafeHandle_invalid_close()
+    {
+        MySafeHandle mch = new MySafeHandle();
+        mch.Close();
+        Assert.True(mch.IsClosed);
+        Assert.True(mch.IsInvalid);
+        Assert.False(mch.IsReleased);
+    }
+
+    [Fact]
+    public static void SafeHandle_valid_close()
+    {
+        MySafeHandle mch = new MySafeHandle(new IntPtr(1));
+        mch.Close();
+        Assert.True(mch.IsClosed);
+        Assert.False(mch.IsInvalid);
+        Assert.True(mch.IsReleased);
+    }
 }

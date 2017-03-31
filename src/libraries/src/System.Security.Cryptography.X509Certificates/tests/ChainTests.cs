@@ -584,5 +584,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        [Fact]
+        public static void Create()
+        {
+            using (var chain = X509Chain.Create())
+                Assert.NotNull(chain);
+        }
     }
 }

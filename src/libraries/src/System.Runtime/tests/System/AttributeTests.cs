@@ -212,5 +212,14 @@ namespace System.Tests
 
         [AttributeUsage(AttributeTargets.Method)]
         private sealed class EmptyAttribute : Attribute { }
+
+        [Fact]
+        public static void ValidateDefaults()
+        {
+            StringValueAttribute sav =  new StringValueAttribute("test");
+            Assert.Equal(false, sav.IsDefaultAttribute());
+            Assert.Equal(sav.GetType(), sav.TypeId);
+            Assert.Equal(true, sav.Match(sav));
+        }
     }
 }

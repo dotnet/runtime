@@ -28,7 +28,6 @@
     <Compile Include="SerializationTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
-    <Compile Include="NetworkCredentialTest.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
