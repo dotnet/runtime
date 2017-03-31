@@ -125,7 +125,7 @@
       },
       "inputs": {
         "scriptPath": "$(PB_RepoName)/scripts/docker-as-current-user.sh",
-        "args": "run --name $(PB_DockerContainerName) --rm --privileged -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) -w $(PB_GitDirectory) -e HOME -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerImageName) ./build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
+        "args": "run --name $(PB_DockerContainerName) --rm --privileged -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) -w $(PB_GitDirectory) -e HOME -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_SYMBOLS_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_SYMBOLS_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerImageName) ./build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
         "disableAutoCwd": "false",
         "cwd": "",
         "failOnStandardError": "false"
@@ -169,6 +169,15 @@
     }
   ],
   "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
     {
       "enabled": false,
       "definition": {
@@ -297,6 +306,9 @@
     },
     "PB_CleanAgent": {
       "value": "true"
+    },
+    "NUGET_SYMBOLS_FEED_URL": {
+      "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2"
     }
   },
   "demands": [
@@ -361,6 +373,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097529
+    "revision": 418097620
   }
 }
