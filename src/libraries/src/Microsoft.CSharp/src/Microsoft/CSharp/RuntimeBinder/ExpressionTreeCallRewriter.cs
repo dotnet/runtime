@@ -871,104 +871,100 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private object GetObject(Expr pExpr)
         {
-            while (pExpr is ExprCast cast)
+            for (;;)
             {
-                pExpr = cast.Argument;
-            }
-
-            if (pExpr is ExprTypeOf typeOf)
-            {
-                return typeOf.SourceType.Type.AssociatedSystemType;
-            }
-
-            if (pExpr is ExprMethodInfo methodInfo)
-            {
-                return GetMethodInfoFromExpr(methodInfo);
-            }
-
-            if (pExpr is ExprConstant constant)
-            {
-                ConstVal val = constant.Val;
-                CType underlyingType = pExpr.Type;
-                object objval;
-
-                if (pExpr.Type.IsNullType())
+                if (pExpr is ExprCast cast)
                 {
-                    return null;
+                    pExpr = cast.Argument;
                 }
-
-                if (pExpr.Type.isEnumType())
+                else if (pExpr is ExprTypeOf typeOf)
                 {
-                    underlyingType = underlyingType.getAggregate().GetUnderlyingType();
+                    return typeOf.SourceType.Type.AssociatedSystemType;
                 }
-
-                switch (Type.GetTypeCode(underlyingType.AssociatedSystemType))
+                else if (pExpr is ExprMethodInfo methodInfo)
                 {
-                    case TypeCode.Boolean:
-                        objval = val.BooleanVal;
-                        break;
-                    case TypeCode.SByte:
-                        objval = val.SByteVal;
-                        break;
-                    case TypeCode.Byte:
-                        objval = val.ByteVal;
-                        break;
-                    case TypeCode.Int16:
-                        objval = val.Int16Val;
-                        break;
-                    case TypeCode.UInt16:
-                        objval = val.UInt16Val;
-                        break;
-                    case TypeCode.Int32:
-                        objval = val.Int32Val;
-                        break;
-                    case TypeCode.UInt32:
-                        objval = val.UInt32Val;
-                        break;
-                    case TypeCode.Int64:
-                        objval = val.Int64Val;
-                        break;
-                    case TypeCode.UInt64:
-                        objval = val.UInt64Val;
-                        break;
-                    case TypeCode.Single:
-                        objval = val.SingleVal;
-                        break;
-                    case TypeCode.Double:
-                        objval = val.DoubleVal;
-                        break;
-                    case TypeCode.Decimal:
-                        objval = val.DecimalVal;
-                        break;
-                    case TypeCode.Char:
-                        objval = val.CharVal;
-                        break;
-                    case TypeCode.String:
-                        objval = val.StringVal;
-                        break;
-                    default:
-                        objval = val.ObjectVal;
-                        break;
+                    return GetMethodInfoFromExpr(methodInfo);
                 }
-
-                if (pExpr.Type.isEnumType())
+                else if (pExpr is ExprConstant constant)
                 {
-                    objval = Enum.ToObject(pExpr.Type.AssociatedSystemType, objval);
-                }
+                    ConstVal val = constant.Val;
+                    CType underlyingType = pExpr.Type;
+                    object objval;
 
-                return objval;
+                    if (pExpr.Type.IsNullType())
+                    {
+                        return null;
+                    }
+
+                    if (pExpr.Type.isEnumType())
+                    {
+                        underlyingType = underlyingType.getAggregate().GetUnderlyingType();
+                    }
+
+                    switch (Type.GetTypeCode(underlyingType.AssociatedSystemType))
+                    {
+                        case TypeCode.Boolean:
+                            objval = val.BooleanVal;
+                            break;
+                        case TypeCode.SByte:
+                            objval = val.SByteVal;
+                            break;
+                        case TypeCode.Byte:
+                            objval = val.ByteVal;
+                            break;
+                        case TypeCode.Int16:
+                            objval = val.Int16Val;
+                            break;
+                        case TypeCode.UInt16:
+                            objval = val.UInt16Val;
+                            break;
+                        case TypeCode.Int32:
+                            objval = val.Int32Val;
+                            break;
+                        case TypeCode.UInt32:
+                            objval = val.UInt32Val;
+                            break;
+                        case TypeCode.Int64:
+                            objval = val.Int64Val;
+                            break;
+                        case TypeCode.UInt64:
+                            objval = val.UInt64Val;
+                            break;
+                        case TypeCode.Single:
+                            objval = val.SingleVal;
+                            break;
+                        case TypeCode.Double:
+                            objval = val.DoubleVal;
+                            break;
+                        case TypeCode.Decimal:
+                            objval = val.DecimalVal;
+                            break;
+                        case TypeCode.Char:
+                            objval = val.CharVal;
+                            break;
+                        case TypeCode.String:
+                            objval = val.StringVal;
+                            break;
+                        default:
+                            objval = val.ObjectVal;
+                            break;
+                    }
+
+                    return pExpr.Type.isEnumType() ? Enum.ToObject(pExpr.Type.AssociatedSystemType, objval) : objval;
+                }
+                else if (pExpr is ExprZeroInit zeroInit)
+                {
+                    if ((pExpr = zeroInit.OptionalArgument) == null)
+                    {
+                        return Activator.CreateInstance(zeroInit.Type.AssociatedSystemType);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(false, "Invalid Expr in GetObject");
+                    throw Error.InternalCompilerError();
+                }
             }
-            else if (pExpr is ExprZeroInit zeroInit)
-            {
-                if (zeroInit.OptionalArgument != null)
-                {
-                    return GetObject(zeroInit.OptionalArgument);
-                }
-                return Activator.CreateInstance(pExpr.Type.AssociatedSystemType);
-            }
-
-            Debug.Assert(false, "Invalid Expr in GetObject");
-            throw Error.InternalCompilerError();
         }
 
         /////////////////////////////////////////////////////////////////////////////////
