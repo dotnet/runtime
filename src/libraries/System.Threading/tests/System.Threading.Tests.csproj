@@ -35,9 +35,8 @@
     <Compile Include="SpinWaitTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="ExecutionContextTests.netstandard.cs" />
-    <Compile Include="MonitorTests.netstandard.cs" />
-    <Compile Include="SynchronizationContextTests.netstandard.cs" />
+    <Compile Include="ExecutionContextTests.cs" />
+    <Compile Include="SynchronizationContextTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>CommonTest\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

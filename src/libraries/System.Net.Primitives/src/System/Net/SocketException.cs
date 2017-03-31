@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Runtime.Serialization;
 
 namespace System.Net.Sockets
 {
     /// <summary>Provides socket exceptions to the application.</summary>
+    [Serializable]
     public partial class SocketException : Win32Exception
     {
         /// <summary>The SocketError or Int32 specified when constructing the exception.</summary>
@@ -38,5 +40,13 @@ namespace System.Net.Sockets
         public override string Message => base.Message;
 
         public SocketError SocketErrorCode => _errorCode;
+
+        protected SocketException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{NativeErrorCode}:{Message}");
+        }
+
+        public override int ErrorCode => base.NativeErrorCode;
     }
 }

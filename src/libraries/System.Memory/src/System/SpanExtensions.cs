@@ -10,7 +10,7 @@ namespace System
     /// <summary>
     /// Extension methods for Span&lt;T&gt;.
     /// </summary>
-    public static class SpanExtensions
+    public static partial class SpanExtensions
     {
         /// <summary>
         /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
@@ -259,6 +259,24 @@ namespace System
         {
             int valueLength = value.Length;
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref span.DangerousGetPinnableReference(), ref value.DangerousGetPinnableReference(), valueLength);
+        }
+
+        /// <summary>
+        /// Creates a new  span over the portion of the target array.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this T[] array)
+        {
+            return new Span<T>(array);
+        }
+
+        /// <summary>
+        /// Creates a new  span over the portion of the target array segment.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment)
+        {
+            return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
         }
     }
 }

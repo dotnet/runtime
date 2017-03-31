@@ -4,10 +4,10 @@
 
 using System.Runtime.Remoting.Messaging;
 using System.Security;
-using System.Threading;
 
 namespace System.Diagnostics
 {
+    [Serializable]
     public partial class Activity
     {
         /// <summary>
@@ -34,7 +34,13 @@ namespace System.Diagnostics
         }
 
 #region private
-        private static readonly string FieldKey = $"{typeof(Activity).FullName}.Value.{AppDomain.CurrentDomain.Id}";
+        
+        [Serializable]
+        private partial class KeyValueListNode
+        {
+        }
+
+        private static readonly string FieldKey = $"{typeof(Activity).FullName}";
 #endregion
     }
 }

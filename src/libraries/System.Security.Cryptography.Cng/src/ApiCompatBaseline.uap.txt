@@ -1,3 +1,0 @@
-Compat issues with assembly System.Security.Cryptography.Cng:
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1

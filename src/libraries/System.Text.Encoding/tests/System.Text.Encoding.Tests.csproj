@@ -75,10 +75,10 @@
     <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF8Encoding\UTF8EncodingTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
-    <Compile Include="Encoding\Encoding.netstandard.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard.cs" />
-    <Compile Include="Decoder\Decoder.netstandard.cs" />
-    <Compile Include="Encoder\Encoder.netstandard.cs" />
+    <Compile Include="Encoding\Encoding.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncoding.cs" />
+    <Compile Include="Decoder\Decoder.cs" />
+    <Compile Include="Encoder\Encoder.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
