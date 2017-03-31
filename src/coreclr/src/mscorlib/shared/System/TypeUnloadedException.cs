@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for attempt to access an unloaded class
-**
-**
-=============================================================================*/
-
-
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +15,13 @@ namespace System
             SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
         }
 
-        public TypeUnloadedException(String message)
+        public TypeUnloadedException(string message)
             : base(message)
         {
             SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
         }
 
-        public TypeUnloadedException(String message, Exception innerException)
+        public TypeUnloadedException(string message, Exception innerException)
             : base(message, innerException)
         {
             SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
@@ -40,7 +30,8 @@ namespace System
         //
         // This constructor is required for serialization;
         //
-        protected TypeUnloadedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected TypeUnloadedException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }
