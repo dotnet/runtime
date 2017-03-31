@@ -182,9 +182,9 @@ namespace Microsoft.DotNet.Host.Build
             Directory.CreateDirectory(Dirs.PackagesNoRID);
             AzurePublisherTool.DownloadFilesWithExtension(hostBlob, ".nupkg", Dirs.PackagesNoRID);
 
-            string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
-
             string apiKey = EnvVars.EnsureVariable("NUGET_API_KEY");
+
+            string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
             NuGetUtil.PushPackages(Dirs.PackagesNoRID, nugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Standard);
             
             if(IncludeSymbolPackages)
