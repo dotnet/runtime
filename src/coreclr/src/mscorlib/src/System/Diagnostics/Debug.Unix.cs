@@ -84,33 +84,30 @@ namespace System.Diagnostics
                     int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle fileHandle = SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)))
+                    while (i < message.Length)
                     {
-                        while (i < message.Length)
+                        for (bufCount = 0; bufCount < BufferLength && i < message.Length; i++)
                         {
-                            for (bufCount = 0; bufCount < BufferLength && i < message.Length; i++)
+                            if (message[i] <= 0x7F)
                             {
-                                if (message[i] <= 0x7F)
-                                {
-                                    buf[bufCount] = (byte)message[i];
-                                    bufCount++;
-                                }
+                                buf[bufCount] = (byte)message[i];
+                                bufCount++;
+                            }
+                        }
+
+                        int totalBytesWritten = 0;
+                        while (bufCount > 0)
+                        {
+                            int bytesWritten = Interop.Sys.Write(2 /* stderr */, buf + totalBytesWritten, bufCount);
+                            if (bytesWritten < 0)
+                            {
+                                // On error, simply stop writing the debug output.  This could commonly happen if stderr
+                                // was piped to a program that ended before this program did, resulting in EPIPE errors.
+                                return;
                             }
 
-                            int totalBytesWritten = 0;
-                            while (bufCount > 0)
-                            {
-                                int bytesWritten = Interop.Sys.Write(fileHandle, buf + totalBytesWritten, bufCount);
-                                if (bytesWritten < 0)
-                                {
-                                    // On error, simply stop writing the debug output.  This could commonly happen if stderr
-                                    // was piped to a program that ended before this program did, resulting in EPIPE errors.
-                                    return;
-                                }
-
-                                bufCount -= bytesWritten;
-                                totalBytesWritten += bytesWritten;
-                            }
+                            bufCount -= bytesWritten;
+                            totalBytesWritten += bytesWritten;
                         }
                     }
                 }
