@@ -13,7 +13,12 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
             yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
-            yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
+
+            // Culture does not exist on Windows 7
+            if (!PlatformDetection.IsWindows7)
+            {
+                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
+            }
         }
 
         [Theory]
