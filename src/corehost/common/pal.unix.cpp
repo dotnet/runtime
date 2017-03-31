@@ -383,13 +383,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
                 if (fFoundID && fFoundVersion)
                 {
-                    // Form the RID using the values we got
-                    ridOS.append(valID);
-                    ridOS.append(_X("."));
-                    ridOS.append(valVersionID);
-
-                    // Remove any double-quotes
-                    ridOS = trim_quotes(ridOS);
+                    // We have everything we need to form the RID - break out of the loop.
                     break;
                 }
 
@@ -399,6 +393,23 @@ pal::string_t pal::get_current_os_rid_platform()
 
             // Close the file now that we are done with it.
             fsVersionFile.close();
+
+            if (fFoundID)
+            {
+                ridOS.append(valID);
+            }
+            
+            if (fFoundVersion)
+            {
+                ridOS.append(_X("."));
+                ridOS.append(valVersionID);
+            }
+
+            if (fFoundID || fFoundVersion)
+            {
+                // Remove any double-quotes
+                ridOS = trim_quotes(ridOS);
+            }
         }
     }
 
