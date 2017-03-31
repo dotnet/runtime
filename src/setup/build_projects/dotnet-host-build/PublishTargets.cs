@@ -63,9 +63,15 @@ namespace Microsoft.DotNet.Host.Build
         [BuildArchitectures(BuildArchitecture.x64)]
         public static BuildTargetResult PublishDotnetDebToolPackage(BuildTargetContext c)
         {
-            string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
             string apiKey = EnvVars.EnsureVariable("CLI_NUGET_API_KEY");
-            NuGetUtil.PushPackages(Dirs.Packages, nugetFeedUrl, apiKey, IncludeSymbolPackages);
+
+            string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
+            NuGetUtil.PushPackages(Dirs.Packages, nugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Standard);
+            if(IncludeSymbolPackages)
+            {
+                string symbolsNugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_SYMBOLS_FEED_URL");
+                NuGetUtil.PushPackages(Dirs.PackagesNoRID, symbolsNugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Symbols);
+            }
 
             return c.Success();
         }
@@ -177,8 +183,15 @@ namespace Microsoft.DotNet.Host.Build
             AzurePublisherTool.DownloadFilesWithExtension(hostBlob, ".nupkg", Dirs.PackagesNoRID);
 
             string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
+
             string apiKey = EnvVars.EnsureVariable("NUGET_API_KEY");
-            NuGetUtil.PushPackages(Dirs.PackagesNoRID, nugetFeedUrl, apiKey, IncludeSymbolPackages);
+            NuGetUtil.PushPackages(Dirs.PackagesNoRID, nugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Standard);
+            
+            if(IncludeSymbolPackages)
+            {
+                string symbolsNugetFeedUrl = EnvVars.EnsureVariable("NUGET_SYMBOLS_FEED_URL");
+                NuGetUtil.PushPackages(Dirs.PackagesNoRID, symbolsNugetFeedUrl, apiKey, NuGetUtil.NuGetIncludePackageType.Symbols);
+            }
 
             string githubAuthToken = EnvVars.EnsureVariable("GITHUB_PASSWORD");
             VersionRepoUpdater repoUpdater = new VersionRepoUpdater(githubAuthToken);
