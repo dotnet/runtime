@@ -12,11 +12,11 @@
 
 using System;
 using System.Collections;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Threading;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Security.AccessControl
 {
@@ -85,13 +85,6 @@ namespace System.Security.AccessControl
         {
         }
 
-        /*  // Not in the spec
-        public SemaphoreAuditRule(string identity, SemaphoreRights eventRights, AuditFlags flags)
-            : this(new NTAccount(identity), (int) eventRights, false, InheritanceFlags.None, PropagationFlags.None, flags)
-        {
-        }
-        */
-
         internal SemaphoreAuditRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, flags)
         {
@@ -111,18 +104,18 @@ namespace System.Security.AccessControl
         }
 
         public SemaphoreSecurity(String name, AccessControlSections includeSections)
-            : base(true, ResourceType.KernelObject, name, includeSections, _HandleErrorCode, null)
+            : base(true, ResourceType.KernelObject, name, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
         internal SemaphoreSecurity(SafeWaitHandle handle, AccessControlSections includeSections)
-            : base(true, ResourceType.KernelObject, handle, includeSections, _HandleErrorCode, null)
+            : base(true, ResourceType.KernelObject, handle, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
-        private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
         {
             System.Exception exception = null;
 
@@ -135,9 +128,6 @@ namespace System.Security.AccessControl
                         exception = new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
                     else
                         exception = new WaitHandleCannotBeOpenedException();
-                    break;
-
-                default:
                     break;
             }
 
@@ -158,7 +148,7 @@ namespace System.Security.AccessControl
         {
             AccessControlSections persistRules = AccessControlSections.None;
             if (AccessRulesModified)
-                persistRules = AccessControlSections.Access;
+                persistRules |= AccessControlSections.Access;
             if (AuditRulesModified)
                 persistRules |= AccessControlSections.Audit;
             if (OwnerModified)

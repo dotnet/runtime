@@ -13,12 +13,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.netstandard.cs" />
-    <Compile Include="PipeTest.netstandard.cs" />
-    <Compile Include="PipeTest.Read.netstandard.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="NamedPipeTests\NamedPipeTest.cs" />
+    <Compile Include="PipeTest.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />

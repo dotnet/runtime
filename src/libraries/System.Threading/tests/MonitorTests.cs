@@ -219,5 +219,41 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.Wait(null, -1));
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(null, TimeSpan.FromMilliseconds(-1)));
         }
+
+        [Fact]
+        public static void WaitTest()
+        {
+            var obj = new object();
+            var waitTests =
+                new Func<bool>[]
+                {
+                    () => Monitor.Wait(obj, FailTimeoutMilliseconds, false),
+                    () => Monitor.Wait(obj, FailTimeoutMilliseconds, true),
+                    () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(FailTimeoutMilliseconds), false),
+                    () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(FailTimeoutMilliseconds), true),
+                };
+
+            var t =
+                new Thread(() =>
+                {
+                    Monitor.Enter(obj);
+                    for (int i = 0; i < waitTests.Length; ++i)
+                    {
+                        Monitor.Pulse(obj);
+                        Monitor.Wait(obj, FailTimeoutMilliseconds);
+                    }
+                    Monitor.Exit(obj);
+                });
+            t.IsBackground = true;
+
+            Monitor.Enter(obj);
+            t.Start();
+            foreach (var waitTest in waitTests)
+            {
+                Assert.True(waitTest());
+                Monitor.Pulse(obj);
+            }
+            Monitor.Exit(obj);
+        }
     }
 }

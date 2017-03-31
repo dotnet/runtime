@@ -49,5 +49,11 @@ namespace System.ComponentModel.Tests
             Assert.Equal(1, (int)EditorBrowsableState.Never);
             Assert.Equal(2, (int)EditorBrowsableState.Advanced);
         }
+
+        [Fact]
+        public static void DefaultCtor_EditableBrowserState()
+        {
+            Assert.Equal(EditorBrowsableState.Always, new EditorBrowsableAttribute().State);
+        }
     }
 }

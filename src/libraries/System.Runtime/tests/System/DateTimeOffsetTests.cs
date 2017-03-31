@@ -816,18 +816,43 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void TryParse_TimeDesignators()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly parses this date")]
+        public static void TryParse_TimeDesignators_NetCore()
         {
             DateTimeOffset result;
             Assert.True(DateTimeOffset.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
             Assert.Equal(4, result.Month);
             Assert.Equal(21, result.Day);
             Assert.Equal(5, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
 
             Assert.True(DateTimeOffset.TryParse("4/21 5pm", new CultureInfo("en-US"), DateTimeStyles.None, out result));
             Assert.Equal(4, result.Month);
             Assert.Equal(21, result.Day);
             Assert.Equal(17, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr fixed a bug where the .NET framework incorrectly parses this date")]
+        public static void TryParse_TimeDesignators_Netfx()
+        {
+            DateTimeOffset result;
+            Assert.True(DateTimeOffset.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
+            Assert.Equal(DateTimeOffset.Now.Month, result.Month);
+            Assert.Equal(DateTimeOffset.Now.Day, result.Day);
+            Assert.Equal(4, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
+
+            Assert.True(DateTimeOffset.TryParse("4/21 5pm", new CultureInfo("en-US"), DateTimeStyles.None, out result));
+            Assert.Equal(DateTimeOffset.Now.Month, result.Month);
+            Assert.Equal(DateTimeOffset.Now.Day, result.Day);
+            Assert.Equal(16, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
         }
 
         [Fact]
@@ -1022,6 +1047,13 @@ namespace System.Tests
             public DateTimeOffset DateTimeOffset { get; private set; }
             public long UnixTimeMilliseconds { get; private set; }
             public long UnixTimeSeconds { get; private set; }
+        }
+
+        [Fact]
+        public static void Ctor_Calendar_TimeSpan()
+        {
+            var dateTimeOffset = new DateTimeOffset(1, 1, 1, 0, 0, 0, 0, new GregorianCalendar(),TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
         }
     }
 }

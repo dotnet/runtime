@@ -278,4 +278,31 @@ namespace System.IO.Tests
             throw new InvalidOperationException("Exception from FlushAsync");
         }
     }
+
+    public class BufferedStream_NS17
+    {
+        protected Stream CreateStream()
+        {
+            return new BufferedStream(new MemoryStream());
+        }
+
+        public void EndCallback(IAsyncResult ar)
+        { }
+
+        [Fact]
+        public void BeginEndReadTest()
+        {
+            Stream stream = CreateStream();
+            IAsyncResult result = stream.BeginRead(new byte[1], 0, 1, new AsyncCallback(EndCallback), new object());
+            stream.EndRead(result);
+        }
+
+        [Fact]
+        public void BeginEndWriteTest()
+        {
+            Stream stream = CreateStream();
+            IAsyncResult result = stream.BeginWrite(new byte[1], 0, 1, new AsyncCallback(EndCallback), new object());
+            stream.EndWrite(result);
+        }
+    }
 }

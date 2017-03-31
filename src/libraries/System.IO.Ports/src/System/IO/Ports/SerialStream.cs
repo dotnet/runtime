@@ -714,10 +714,13 @@ namespace System.IO.Ports
 
                 // prep. for starting event cycle.
                 _eventRunner = new EventLoopRunner(this);
-                Thread eventLoopThread = new Thread(new ThreadStart(_eventRunner.WaitForCommEvent));
+
+                // We should consider migrating to a Task here rather than simple background Thread
+                // This would let any exceptions be marshalled back to the owner of the SerialPort
+                // Some discussion in GH issue #17666
+                Thread eventLoopThread = new Thread(_eventRunner.SafelyWaitForCommEvent);
                 eventLoopThread.IsBackground = true;
                 eventLoopThread.Start();
-
             }
             catch
             {
@@ -1681,9 +1684,36 @@ namespace System.IO.Ports
                 }
             }
 
+            /// <summary>
+            /// Call WaitForCommEvent (which is a thread function for a background thread)
+            /// within an exception handler, so that unhandled exceptions in WaitForCommEvent
+            /// don't cause process termination
+            /// Ultimately it would be good to migrate to a Task here rather than simple background Thread
+            /// This would let any exceptions be marshalled back to the owner of the SerialPort
+            /// Some discussion in GH issue #17666
+            /// </summary>
+            internal void SafelyWaitForCommEvent()
+            {
+                try
+                {
+                    WaitForCommEvent();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // These can happen in some messy tear-down situations (e.g. unexpected USB unplug)
+                    // See GH issue #17661
+                }
+                catch (Exception ex)
+                {
+                    // We don't know of any reason why this should happen, but we still
+                    // don't want process termination
+                    Debug.Fail("Unhandled exception thrown from WaitForCommEvent", ex.ToString());
+                }
+            }
+
             // This is the blocking method that waits for an event to occur.  It wraps the SDK's WaitCommEvent function.
             [SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Justification = "this is debug-only code")]
-            internal unsafe void WaitForCommEvent()
+            private unsafe void WaitForCommEvent()
             {
                 int unused = 0;
                 bool doCleanup = false;
