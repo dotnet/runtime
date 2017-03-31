@@ -35,5 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public CType ParentType { get; set; }
 
         public bool IsDelegate => (Flags & EXPRFLAG.EXF_DELEGATE) != 0;
+
+        public void SetInaccessibleBit() => SetError();
     }
 }

@@ -16,11 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsOptionalArgument { get; set; }
 
-        public void SetInaccessibleBit()
-        {
-            HasError = true;
-        }
-
         public virtual void SetMismatchedStaticBit()
         {
             HasError = true;
