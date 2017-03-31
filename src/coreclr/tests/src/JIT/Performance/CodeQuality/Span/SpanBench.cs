@@ -1009,7 +1009,7 @@ namespace Span
                 Array.Clear(array, 0, length);
         }
         #endregion
-
+#if false
         #region TestSpanAsBytes<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
@@ -1109,6 +1109,7 @@ namespace Span
         #endregion
 
         #region TestSpanSliceStringChar<T>
+        
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
         [InlineData(10)]
@@ -1137,15 +1138,16 @@ namespace Span
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var charSpan = s.Slice();
+                var charSpan = s.AsSpan();
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'charSpan' to make sure it's not dead, and an assignment
                 // to 's' so the AsBytes call won't get hoisted.
                 if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to Slice()"; }
             }
         }
-        #endregion
 
+        #endregion      
+ #endif
         #endregion // TestSpanAPIs
 
 
