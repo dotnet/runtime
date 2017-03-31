@@ -70,19 +70,7 @@ namespace System
         public T[] ToArray() { throw null; }
         public bool TryCopyTo(Span<T> destination) { throw null; }
     }
-
-    public static class Span
-    {
-        public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
-        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
-
-        public static ReadOnlySpan<char> Slice(this string text) { throw null; }
-        public static ReadOnlySpan<char> Slice(this string text, int start) { throw null; }
-        public static ReadOnlySpan<char> Slice(this string text, int start, int length) { throw null; }
-    }
-
+    
     public static class SpanExtensions
     {
          public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
@@ -115,6 +103,16 @@ namespace System
 
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
         public static bool StartsWith(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+
+        public static ReadOnlySpan<char> AsSpan(this string text) { throw null; }
+        public static Span<T> AsSpan<T>(this T[] array) { throw null; }
+        public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment) { throw null; }
+
+        public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
+
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
     }
 }
 

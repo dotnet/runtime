@@ -48,7 +48,6 @@
     <Compile Include="LoggingTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebRequestHeaderTest.cs" />
-    <Compile Include="HttpWebRequestTest.netstandard.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

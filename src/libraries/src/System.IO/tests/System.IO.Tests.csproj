@@ -15,13 +15,12 @@
     <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
-    <Compile Include="Stream\Stream.netstandard.cs" />
-    <Compile Include="StreamReader\StreamReader.netstandard.cs" />
+    <Compile Include="Stream\Stream.cs" />
+    <Compile Include="StreamReader\StreamReader.cs" />
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
-    <Compile Include="StreamWriter\StreamWriter.netstandard.cs" />
+    <Compile Include="StreamWriter\StreamWriter.cs" />
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="Stream\Stream.APMMethodsTests.cs" />
-    <Compile Include="BufferedStream\BufferedStreamTests.netstandard.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />

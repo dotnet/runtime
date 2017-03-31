@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Xunit;
 
@@ -698,6 +699,21 @@ namespace System.Tests
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "D", typeof(FormatException) }; // Hex values
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "B", typeof(FormatException) }; // Hex values
             yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "P", typeof(FormatException) }; // Hex values
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void ToString_Provider(Guid guid, string format, string expected)
+        {
+            // Format provider parameter is ignored
+            Assert.Equal(expected, guid.ToString(format, CultureInfo.CurrentCulture));
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareTo_TestData))]
+        public static void CompareTo_Object(Guid guid, object obj, int expected)
+        {
+            Assert.Equal(expected, Math.Sign(guid.CompareTo(obj)));
         }
     }
 }

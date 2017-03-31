@@ -61,4 +61,24 @@ public partial class CriticalHandle_4000_Tests
         Assert.False(mch.IsInvalid);
         Assert.True(mch.IsReleased);
     }
+
+    [Fact]
+    public static void CriticalHandle_invalid_close()
+    {
+        MyCriticalHandle mch = new MyCriticalHandle();
+        mch.Close();
+        Assert.True(mch.IsClosed);
+        Assert.True(mch.IsInvalid);
+        Assert.False(mch.IsReleased);
+    }
+
+    [Fact]
+    public static void CriticalHandle_valid_close()
+    {
+        MyCriticalHandle mch = new MyCriticalHandle(new IntPtr(1));
+        mch.Close();
+        Assert.True(mch.IsClosed);
+        Assert.False(mch.IsInvalid);
+        Assert.True(mch.IsReleased);
+    }
 }

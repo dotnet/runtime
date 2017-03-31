@@ -67,4 +67,26 @@ namespace System.IO.Pipes.Tests
         // InOut pipes can be written/read from either direction
         public override void WriteToReadOnlyPipe_Throws_NotSupportedException() { }
     }
+
+    public class NamedPipeTest_Read_ServerInOut_ClientInOut_APMWaitForConnection : PipeTest_Read
+    {
+        protected override ServerClientPair CreateServerClientPair()
+        {
+            ServerClientPair ret = new ServerClientPair();
+            string pipeName = GetUniquePipeName();
+            var readablePipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            var writeablePipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+
+            Task serverConnect = Task.Factory.FromAsync(readablePipe.BeginWaitForConnection, readablePipe.EndWaitForConnection, null);
+            writeablePipe.Connect();
+            serverConnect.Wait();
+
+            ret.readablePipe = readablePipe;
+            ret.writeablePipe = writeablePipe;
+            return ret;
+        }
+
+        // InOut pipes can be written/read from either direction
+        public override void WriteToReadOnlyPipe_Throws_NotSupportedException() { }
+    }
 }

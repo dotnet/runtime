@@ -751,7 +751,7 @@ namespace System.Linq.Expressions.Compiler
                     EmitVariableAssignment(node, emitAs);
                     return;
                 default:
-                    throw Error.InvalidLvalue(node.Left.NodeType);
+                    throw ContractUtils.Unreachable;
             }
         }
 
@@ -965,22 +965,14 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberAssignment(MemberAssignment binding, Type objectType)
         {
             EmitExpression(binding.Expression);
-            FieldInfo fi = binding.Member as FieldInfo;
-            if (fi != null)
+            if (binding.Member is FieldInfo fi)
             {
                 _ilg.Emit(OpCodes.Stfld, fi);
             }
             else
             {
-                PropertyInfo pi = binding.Member as PropertyInfo;
-                if (pi != null)
-                {
-                    EmitCall(objectType, pi.GetSetMethod(nonPublic: true));
-                }
-                else
-                {
-                    throw Error.UnhandledBinding();
-                }
+                Debug.Assert(binding.Member is PropertyInfo);
+                EmitCall(objectType, (binding.Member as PropertyInfo).GetSetMethod(nonPublic: true));
             }
         }
 
@@ -1117,11 +1109,8 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type GetMemberType(MemberInfo member)
         {
-            FieldInfo fi = member as FieldInfo;
-            if (fi != null) return fi.FieldType;
-            PropertyInfo pi = member as PropertyInfo;
-            if (pi != null) return pi.PropertyType;
-            throw Error.MemberNotFieldOrProperty(member, nameof(member));
+            Debug.Assert(member is FieldInfo || member is PropertyInfo);
+            return member is FieldInfo fi ? fi.FieldType : (member as PropertyInfo).PropertyType;
         }
 
         #endregion

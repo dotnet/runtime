@@ -1,0 +1,7 @@
+// TypeInfo ctor is defined internal in System.Runtime refs and therefore not accessible in System.Reflection.Emit. Decision to change this behaviour is postponed for netcore20 release. See here: https://github.com/dotnet/corefx/pull/17603
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.GenericTypeParameterBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.

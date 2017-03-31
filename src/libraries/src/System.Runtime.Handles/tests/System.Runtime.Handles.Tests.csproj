@@ -12,8 +12,6 @@
     <Compile Include="SafeHandle.cs" />
     <Compile Include="SafeWaitHandle.cs" />
     <Compile Include="SafeWaitHandleExtensions.cs" />
-    <Compile Include="CriticalHandle.netstandard.cs" />
-    <Compile Include="SafeHandle.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

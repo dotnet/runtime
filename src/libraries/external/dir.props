@@ -2,9 +2,11 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <IntermediateOutputPath>$(IntermediateOutputPath)$(OSGroup)-$(ArchGroup)/</IntermediateOutputPath>
+    <!-- TODO: Enable this when Core-Setup is also publishing packages for portable RIDs.
     <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Windows_NT'">win</RuntimeOS>
     <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'OSX'">osx</RuntimeOS>
     <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Linux'">linux</RuntimeOS>
+    -->
     <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
   </PropertyGroup>
 </Project>

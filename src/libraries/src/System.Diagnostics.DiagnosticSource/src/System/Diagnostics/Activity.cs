@@ -420,10 +420,11 @@ namespace System.Diagnostics
 
         private const int RequestIdMaxLength = 1024;
         private const char RootIdPrefix = '|';
+
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
         /// </summary>
-        private class KeyValueListNode
+        private partial class KeyValueListNode
         {
             public KeyValuePair<string, string> keyValue;
             public KeyValueListNode Next;

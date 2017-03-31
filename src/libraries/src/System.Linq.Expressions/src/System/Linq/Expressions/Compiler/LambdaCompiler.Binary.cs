@@ -137,23 +137,13 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull)
         {
-            bool leftIsNullable = leftType.IsNullableType();
-            bool rightIsNullable = rightType.IsNullableType();
-
-            switch (op)
+            Debug.Assert(op != ExpressionType.Coalesce);
+            if (op == ExpressionType.ArrayIndex)
             {
-                case ExpressionType.ArrayIndex:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
-                    EmitGetArrayElement(leftType);
-                    return;
-                case ExpressionType.Coalesce:
-                    throw Error.UnexpectedCoalesceOperator();
+                Debug.Assert(rightType == typeof(int));
+                EmitGetArrayElement(leftType);
             }
-
-            if (leftIsNullable || rightIsNullable)
+            else if (leftType.IsNullableType() || rightType.IsNullableType())
             {
                 EmitLiftedBinaryOp(op, leftType, rightType, resultType, liftedToNull);
             }
@@ -175,10 +165,8 @@ namespace System.Linq.Expressions.Compiler
                 EmitUnliftedEquality(op, leftType);
                 return;
             }
-            if (!leftType.IsPrimitive)
-            {
-                throw Error.OperatorNotImplementedForType(op, leftType);
-            }
+
+            Debug.Assert(leftType.IsPrimitive);
 
             switch (op)
             {
@@ -277,24 +265,18 @@ namespace System.Linq.Expressions.Compiler
                     // Not an arithmetic operation: no conversion
                     return;
                 case ExpressionType.LeftShift:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
+                    Debug.Assert(rightType == typeof(int));
                     EmitShiftMask(leftType);
                     _ilg.Emit(OpCodes.Shl);
                     break;
                 case ExpressionType.RightShift:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
+                    Debug.Assert(rightType == typeof(int));
                     EmitShiftMask(leftType);
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
                     // Guaranteed to fit within result type: no conversion
                     return;
                 default:
-                    throw Error.UnhandledBinary(op, nameof(op));
+                    throw ContractUtils.Unreachable;
             }
 
             EmitConvertArithmeticResult(op, leftType);
@@ -338,10 +320,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitUnliftedEquality(ExpressionType op, Type type)
         {
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
-            if (!type.IsPrimitive && type.IsValueType && !type.IsEnum)
-            {
-                throw Error.OperatorNotImplementedForType(op, type);
-            }
+            Debug.Assert(type.IsPrimitive || !type.IsValueType || type.IsEnum);
             _ilg.Emit(OpCodes.Ceq);
             if (op == ExpressionType.NotEqual)
             {

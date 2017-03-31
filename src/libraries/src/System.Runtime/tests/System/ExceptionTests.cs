@@ -37,4 +37,16 @@ namespace System.Tests
             Assert.True(caught);
         }
     }
+
+    public class ExceptionDerivedTests: Exception
+    {
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Exception_SerializeObjectState()
+        {
+            var excp = new ExceptionDerivedTests();
+            Assert.Throws<PlatformNotSupportedException>( () => excp.SerializeObjectState += (exception, eventArgs) => eventArgs.AddSerializedState(null));
+            Assert.Throws<PlatformNotSupportedException>( () => excp.SerializeObjectState -= (exception, eventArgs) => eventArgs.AddSerializedState(null));
+        }
+    }
 }

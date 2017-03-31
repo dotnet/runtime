@@ -711,5 +711,15 @@ namespace System.IO.Tests
         // Windows-only P/Invoke to create 8.3 short names from long names
         [DllImport("kernel32.dll", EntryPoint = "GetShortPathNameW" ,CharSet = CharSet.Unicode)]
         private static extern uint GetShortPathName(string lpszLongPath, StringBuilder lpszShortPath, int cchBuffer);
+
+        [Fact]
+        public static void InvalidPathChars_MatchesGetInvalidPathChars()
+        {
+#pragma warning disable 0618
+            Assert.NotNull(Path.InvalidPathChars);
+            Assert.Equal(Path.GetInvalidPathChars(), Path.InvalidPathChars);
+            Assert.Same(Path.InvalidPathChars, Path.InvalidPathChars);
+#pragma warning restore 0618
+        }
     }
 }

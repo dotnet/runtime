@@ -922,13 +922,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.TypeNotIEnumerable(p0), paramName);
         }
-        /// <summary>
-        /// InvalidOperationException with message like "Unexpected coalesce operator."
-        /// </summary>
-        internal static Exception UnexpectedCoalesceOperator()
-        {
-            return new InvalidOperationException(Strings.UnexpectedCoalesceOperator);
-        }
+
         /// <summary>
         /// InvalidOperationException with message like "Cannot cast from type '{0}' to type '{1}"
         /// </summary>
@@ -957,13 +951,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.UnhandledBindingType(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "Unhandled convert: {0}"
-        /// </summary>
-        internal static Exception UnhandledConvert(object p0)
-        {
-            return new ArgumentException(Strings.UnhandledConvert(p0));
-        }
+
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
@@ -1267,16 +1255,6 @@ namespace System.Linq.Expressions
         {
             return new NotSupportedException();
         }
-
-#if FEATURE_COMPILE
-        /// <summary>
-        /// NotImplementedException with message like "The operator '{0}' is not implemented for type '{1}'"
-        /// </summary>
-        internal static Exception OperatorNotImplementedForType(object p0, object p1)
-        {
-            return NotImplemented.ByDesignWithMessage(Strings.OperatorNotImplementedForType(p0, p1));
-        }
-#endif
 
         /// <summary>
         /// ArgumentException with message like "The constructor should not be static"

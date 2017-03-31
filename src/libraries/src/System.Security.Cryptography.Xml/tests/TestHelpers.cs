@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -126,6 +127,61 @@ namespace System.Security.Cryptography.Xml.Tests
 
             string path = Path.Combine(Directory.GetCurrentDirectory(), fileName);
             return new Uri("file://" + (path[0] == '/' ? path : '/' + path));
+        }
+
+        /// <summary>
+        /// Get specification URL from algorithm implementation
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static string GetEncryptionMethodName(SymmetricAlgorithm key, bool keyWrap = false)
+        {
+            if (key is TripleDES)
+            {
+                return keyWrap ? EncryptedXml.XmlEncTripleDESKeyWrapUrl : EncryptedXml.XmlEncTripleDESUrl;
+            }
+            else if (key is DES)
+            {
+                return keyWrap ? EncryptedXml.XmlEncTripleDESKeyWrapUrl : EncryptedXml.XmlEncDESUrl;
+            }
+            else if (key is Rijndael || key is Aes)
+            {
+                switch (key.KeySize)
+                {
+                    case 128:
+                        return keyWrap ? EncryptedXml.XmlEncAES128KeyWrapUrl : EncryptedXml.XmlEncAES128Url;
+                    case 192:
+                        return keyWrap ? EncryptedXml.XmlEncAES192KeyWrapUrl : EncryptedXml.XmlEncAES192Url;
+                    case 256:
+                        return keyWrap ? EncryptedXml.XmlEncAES256KeyWrapUrl : EncryptedXml.XmlEncAES256Url;
+                }
+            }
+
+            throw new ArgumentException($"The specified algorithm `{key.GetType().FullName}` is not supported for XML Encryption.");
+        }
+
+        /// <summary>
+        /// Lists functions creating symmetric algorithms
+        /// </summary>
+        /// <returns></returns>
+        public static IEnumerable<SymmetricAlgorithmFactory> GetSymmetricAlgorithms(bool skipDes = false)
+        {
+            if (!skipDes)
+            {
+                yield return new SymmetricAlgorithmFactory("DES", () => DES.Create());
+            }
+
+            yield return new SymmetricAlgorithmFactory("TripleDES", () => TripleDES.Create());
+
+            foreach (var keySize in new[] { 128, 192, 256 })
+            {
+                yield return new SymmetricAlgorithmFactory($"AES{keySize}", () =>
+                {
+                    Aes aes = Aes.Create();
+                    aes.KeySize = keySize;
+                    return aes;
+                });
+            }
         }
 
         private static readonly byte[] SamplePfx = Convert.FromBase64String(

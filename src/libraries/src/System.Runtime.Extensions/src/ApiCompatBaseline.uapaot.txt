@@ -39,11 +39,6 @@ MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System
 MembersMustExist : Member 'System.Math.DivRem(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.MathF' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ResolveEventHandler' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.StringComparer.Compare(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.StringComparer.Create(System.Globalization.CultureInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.StringComparer.GetHashCode(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-Total Issues: 47
+Total Issues: 42

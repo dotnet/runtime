@@ -11,9 +11,6 @@
     <Compile Include="TimerConstructorTests.cs" />
     <Compile Include="TimerChangeTests.cs" />
     <Compile Include="TimerFiringTests.cs" />
-    <Compile Include="TimerConstructorTests.netstandard.cs" />
-    <Compile Include="TimerChangeTests.netstandard.cs" />
-    <Compile Include="TimerFiringTests.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
