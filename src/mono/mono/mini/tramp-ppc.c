@@ -127,7 +127,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 	addr = mono_get_addr_from_ftnptr (addr);
 
-	/* Compute size of code needed to emit mrgctx */
+	/* Compute size of code needed to emit the arg */
 	p = imm_buf;
 	ppc_load_ptr (p, MONO_ARCH_RGCTX_REG, arg);
 	imm_size = p - imm_buf;
@@ -141,12 +141,12 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
-		ppc_load_ptr (code, MONO_ARCH_RGCTX_REG, mrgctx);
+		ppc_load_ptr (code, MONO_ARCH_RGCTX_REG, arg);
 		ppc_emit32 (code, short_branch);
 	} else {
 		ppc_load_ptr (code, ppc_r0, addr);
 		ppc_mtctr (code, ppc_r0);
-		ppc_load_ptr (code, MONO_ARCH_RGCTX_REG, mrgctx);
+		ppc_load_ptr (code, MONO_ARCH_RGCTX_REG, arg);
 		ppc_bcctr (code, 20, 0);
 	}
 	mono_arch_flush_icache (start, code - start);
