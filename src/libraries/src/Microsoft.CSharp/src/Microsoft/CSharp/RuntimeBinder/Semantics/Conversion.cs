@@ -1393,27 +1393,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void MarkAsIntermediateConversion(Expr pExpr)
         {
-            Debug.Assert(pExpr != null);
-            if (pExpr is ExprCall call)
+            for (;;)
             {
-                switch (call.NullableCallLiftKind)
+                Debug.Assert(pExpr != null);
+                if (pExpr is ExprCall call)
                 {
-                    default:
-                        break;
-                    case NullableCallLiftKind.NotLifted:
-                        call.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
-                        break;
-                    case NullableCallLiftKind.NullableConversion:
-                        call.NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
-                        break;
-                    case NullableCallLiftKind.NullableConversionConstructor:
-                        MarkAsIntermediateConversion(call.OptionalArguments);
-                        break;
+                    switch (call.NullableCallLiftKind)
+                    {
+                        case NullableCallLiftKind.NotLifted:
+                            call.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
+                            break;
+                        case NullableCallLiftKind.NullableConversion:
+                            call.NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
+                            break;
+                        case NullableCallLiftKind.NullableConversionConstructor:
+                            pExpr = call.OptionalArguments;
+                            continue;
+                    }
                 }
-            }
-            else if (pExpr is ExprUserDefinedConversion udc)
-            {
-                MarkAsIntermediateConversion(udc.UserDefinedCall);
+                else if (pExpr is ExprUserDefinedConversion udc)
+                {
+                    pExpr = udc.UserDefinedCall;
+                    continue;
+                }
+
+                return;
             }
         }
 
