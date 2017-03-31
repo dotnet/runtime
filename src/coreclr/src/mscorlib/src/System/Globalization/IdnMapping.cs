@@ -24,6 +24,7 @@
 //  RFC 3491 - Nameprep: A Stringprep Profile for Internationalized Domain Names (IDN)
 //  RFC 3492 - Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Text;
 
