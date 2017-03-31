@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,25 +10,26 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public static class NuGetUtil
     {
+        [Flags]
+        public enum NuGetIncludePackageType
+        {
+            Standard = 1,
+            Symbols = 2
+        }
         public static void PushPackages(
             string packageDirPath,
             string destinationUrl,
             string apiKey,
-            bool includeSymbolPackages)
+            NuGetIncludePackageType includePackageTypes)
         {
-            string[] paths;
-            if (includeSymbolPackages)
+            List<string> paths = new List<string>();
+            if (includePackageTypes.HasFlag(NuGetIncludePackageType.Standard))
             {
-                paths = new[]
-                {
-                    Path.Combine(packageDirPath, "*.nupkg")
-                };
+                paths.AddRange(Directory.GetFiles(packageDirPath, "*.nupkg").Where(p => !p.EndsWith(".symbols.nupkg")));
             }
-            else
+            if (includePackageTypes.HasFlag(NuGetIncludePackageType.Symbols))
             {
-                paths = Directory.GetFiles(packageDirPath, "*.nupkg")
-                    .Where(path => !path.EndsWith(".symbols.nupkg"))
-                    .ToArray();
+                paths.AddRange(Directory.GetFiles(packageDirPath, "*.symbols.nupkg"));
             }
 
             foreach (var path in paths)
