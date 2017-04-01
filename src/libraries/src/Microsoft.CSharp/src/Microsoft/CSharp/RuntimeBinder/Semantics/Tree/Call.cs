@@ -33,5 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MemberGroup?.SetMismatchedStaticBit();
             base.SetMismatchedStaticBit();
         }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_CALL;
     }
 }

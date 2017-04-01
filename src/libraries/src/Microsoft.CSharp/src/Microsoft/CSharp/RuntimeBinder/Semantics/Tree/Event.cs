@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr OptionalObject { get; set; }
 
         public EventWithType EventWithType { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_EVENT;
     }
 }

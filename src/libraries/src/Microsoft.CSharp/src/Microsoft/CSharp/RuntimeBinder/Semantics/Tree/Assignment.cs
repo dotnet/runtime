@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr LHS { get; set; }
 
         public Expr RHS { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_ASSIGNMENT;
     }
 }

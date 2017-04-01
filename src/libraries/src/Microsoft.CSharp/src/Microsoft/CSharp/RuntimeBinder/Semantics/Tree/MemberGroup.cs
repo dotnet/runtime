@@ -37,5 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsDelegate => (Flags & EXPRFLAG.EXF_DELEGATE) != 0;
 
         public void SetInaccessibleBit() => SetError();
+
+        public override ExpressionKind Kind => ExpressionKind.EK_MEMGRP;
     }
 }

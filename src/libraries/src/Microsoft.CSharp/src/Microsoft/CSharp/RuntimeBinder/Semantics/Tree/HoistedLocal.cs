@@ -6,5 +6,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprHoistedLocalExpr : Expr
     {
+        public override ExpressionKind Kind => ExpressionKind.EK_HOISTEDLOCALEXPR;
     }
 }

@@ -666,7 +666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
-            ExprCall call = expr.OptionalUserDefinedCall;
+            ExprCall call = (ExprCall)expr.OptionalUserDefinedCall;
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined

@@ -11,5 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprCall OperatorCall { get; set; }
 
         public Expr FirstOperandToExamine { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_USERLOGOP;
     }
 }

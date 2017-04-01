@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr FirstArgument { get; set; }
 
         public Expr SecondArgument { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_CONCAT;
     }
 }

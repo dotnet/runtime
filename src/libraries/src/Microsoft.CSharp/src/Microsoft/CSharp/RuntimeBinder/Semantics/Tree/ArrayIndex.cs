@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr Array { get; set; }
 
         public Expr Index { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_ARRAYINDEX;
     }
 }

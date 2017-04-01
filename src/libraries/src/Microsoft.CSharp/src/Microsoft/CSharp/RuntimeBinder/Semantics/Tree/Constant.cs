@@ -39,5 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
         }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_CONSTANT;
     }
 }

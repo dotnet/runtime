@@ -11,5 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Name Name { get; set; }
 
         public Expr Value { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_NamedArgumentSpecification;
     }
 }

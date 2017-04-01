@@ -7,5 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprTypeOf : Expr
     {
         public ExprTypeOrNamespace SourceType { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_TYPEOF;
     }
 }

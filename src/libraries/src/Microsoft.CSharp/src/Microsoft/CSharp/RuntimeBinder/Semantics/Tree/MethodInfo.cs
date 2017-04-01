@@ -6,6 +6,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprMethodInfo : Expr
     {
-        public MethWithInst Method;
+        public MethWithInst Method { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_METHODINFO;
     }
 }

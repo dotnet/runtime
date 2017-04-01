@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public MethWithInst MethWithInst { get; set; }
 
         public Expr OptionalObject { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_FUNCPTR;
     }
 }
