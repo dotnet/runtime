@@ -5,9 +5,6 @@
       netcoreapp-OSX;
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
-      netstandard-OSX;
-      netstandard-Unix;
-      netstandard-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
