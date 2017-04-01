@@ -798,7 +798,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return expr;
         }
 
-        public Expr CreateNull()
+        public ExprConstant CreateNull()
         {
             return CreateConstant(GetTypes().GetNullType(), default(ConstVal));
         }
