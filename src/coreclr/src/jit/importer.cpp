@@ -18488,6 +18488,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
     const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
 
+#if !defined(FEATURE_CORECLR)
+    // If base class is not beforefieldinit then devirtualizing may
+    // cause us to miss a base class init trigger. Spec says we don't
+    // need a trigger for ref class callvirts but desktop seems to
+    // have one anyways. So defer.
+    if ((baseClassAttribs & CORINFO_FLG_BEFOREFIELDINIT) == 0)
+    {
+        JITDUMP("\nimpDevirtualizeCall: base class has precise initialization, sorry\n");
+        return;
+    }
+#endif // FEATURE_CORECLR
+
     // Is the call an interface call?
     const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
 
