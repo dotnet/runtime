@@ -22,3 +22,13 @@ void GCHandleTable::Shutdown()
 {
     Ref_Shutdown();
 }
+
+void* GCHandleTable::GetHandleTableContext(void* handleTable)
+{
+    return (void*)((uintptr_t)::HndGetHandleTableADIndex((HHANDLETABLE)handleTable).m_dwIndex);
+}
+
+void* GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
+{
+    return (void*)::HndGetHandleTable(handle);
+}

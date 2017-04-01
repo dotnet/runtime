@@ -134,7 +134,7 @@ public:
         return m_pPrevNestedInfo;
     }
     
-    // Returns the throwble associated with the tracker
+    // Returns the throwable associated with the tracker
     inline OBJECTREF GetThrowable()
     {
         LIMITED_METHOD_CONTRACT;
