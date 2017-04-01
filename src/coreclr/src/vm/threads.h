@@ -5555,6 +5555,7 @@ private:
 private:
     static LONG s_DeadThreadCountThresholdForGCTrigger;
     static DWORD s_DeadThreadGCTriggerPeriodMilliseconds;
+    static SIZE_T *s_DeadThreadGenerationCounts;
 
 public:
 

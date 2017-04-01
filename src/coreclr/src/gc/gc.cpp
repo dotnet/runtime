@@ -36946,10 +36946,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
     gcDacVars->generation_size = sizeof(generation);
-#ifdef FEATURE_SVR_GC
-    gcDacVars->gc_heap_type = &IGCHeap::gcHeapType;
-#endif // FEATURE_SVR_GC
-    gcDacVars->max_gen = &IGCHeap::maxGeneration;
+    gcDacVars->max_gen = &g_max_generation;
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);

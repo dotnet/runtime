@@ -1016,6 +1016,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 {
     {
         ProfilingScanContext SC(fProfilerPinned);
+        unsigned max_generation = GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 
         // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
         if (fProfilerPinned || fShouldWalkHeapRootsForEtw)
