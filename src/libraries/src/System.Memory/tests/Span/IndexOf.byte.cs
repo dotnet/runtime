@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Numerics;
+using System.Text;
 using Xunit;
 
 namespace System.SpanTests
@@ -176,6 +177,55 @@ namespace System.SpanTests
                     Assert.Equal(0, idx);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("a", "a", 'a', 0)]
+        [InlineData("ab", "a", 'a', 0)]
+        [InlineData("aab", "a", 'a', 0)]
+        [InlineData("acab", "a", 'a', 0)]
+        [InlineData("acab", "c", 'c', 1)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "lo", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "ol", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "ll", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "lmr", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "rml", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", "mlr", 'l', 11)]
+        [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", "lmr", 'l', 11)]
+        [InlineData("aaaaaaaaaaalmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", "lmr", 'l', 11)]
+        [InlineData("aaaaaaaaaaacmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", "lmr", 'm', 12)]
+        [InlineData("aaaaaaaaaaarmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", "lmr", 'r', 11)]
+        [InlineData("/localhost:5000/PATH/%2FPATH2/ HTTP/1.1", " %?", '%', 21)]
+        [InlineData("/localhost:5000/PATH/%2FPATH2/?key=value HTTP/1.1", " %?", '%', 21)]
+        [InlineData("/localhost:5000/PATH/PATH2/?key=value HTTP/1.1", " %?", '?', 27)]
+        [InlineData("/localhost:5000/PATH/PATH2/ HTTP/1.1", " %?", ' ', 27)]
+        public static void SeekTest(string raw, string search, char expectResult, int expectIndex)
+        {
+            var buffers = Encoding.UTF8.GetBytes(raw);
+            var span = new Span<byte>(buffers);
+            var searchFor = search.ToCharArray();
+
+            var index = -1;
+            if (searchFor.Length == 1)
+            {
+                index = span.IndexOf((byte)searchFor[0]);
+            }
+            else if (searchFor.Length == 2)
+            {
+                index = span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1]);
+            }
+            else if (searchFor.Length == 3)
+            {
+                index = span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]);
+            }
+            else
+            {
+                Assert.False(true, "Invalid test sample.");
+            }
+            
+            var found = span[index];
+            Assert.Equal((byte)expectResult, (byte)found);
+            Assert.Equal(expectIndex, index);
         }
 
         [Fact]
