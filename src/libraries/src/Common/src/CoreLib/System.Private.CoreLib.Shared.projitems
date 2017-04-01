@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup Condition="$(TargetsWindows)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.BOOL.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Errors.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Libraries.cs"/>
@@ -40,6 +41,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetErrorMode.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs"/>
   </ItemGroup>
@@ -47,6 +49,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.IOErrors.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Libraries.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Casing.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Locale.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Utils.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Close.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FLock.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FSync.cs"/>
