@@ -253,6 +253,12 @@
         "4.0.2.0": "4.4.0"
       }
     },
+    "Microsoft.XmlSerializer.Generator": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "1.0.0.0": "1.0.0"
+      }
+    },
     "Microsoft.Xna.Framework": {
       "InboxOn": {
         "wp8": "4.0.0.0"

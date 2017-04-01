@@ -7,6 +7,17 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
+#if XMLSERIALIZERGENERATOR
+    internal abstract class IncrementalReadDecoder
+    {
+        internal abstract int DecodedCount { get; }
+        internal abstract bool IsFull { get; }
+        internal abstract void SetNextOutputBuffer(Array array, int offset, int len);
+        internal abstract int Decode(char[] chars, int startPos, int len);
+        internal abstract int Decode(string str, int startPos, int len);
+        internal abstract void Reset();
+    }
+#endif
     internal class BinHexDecoder : IncrementalReadDecoder
     {
         //
@@ -164,7 +175,11 @@ namespace System.Xml
 
             if (hasHalfByteCached && !allowOddChars)
             {
+#if XMLSERIALIZERGENERATOR
+                throw new XmlException(SR.Format(SR.Xml_InvalidBinHexValueOddCount, new string(chars)));
+#else
                 throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, new string(chars));
+#endif
             }
 
             if (bytesDecoded < bytes.Length)
@@ -218,7 +233,11 @@ namespace System.Xml
                 }
                 else
                 {
+#if XMLSERIALIZERGENERATOR
+                    throw new XmlException(SR.Format(SR.Xml_InvalidBinHexValue, new string(pChars, 0, (int)(pCharsEndPos - pChars))));
+#else
                     throw new XmlException(SR.Xml_InvalidBinHexValue, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
+#endif
                 }
 
                 if (hasHalfByteCached)

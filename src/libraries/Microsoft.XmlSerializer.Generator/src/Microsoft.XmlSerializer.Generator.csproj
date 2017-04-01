@@ -1,0 +1,244 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{80958E8B-2FEB-4F95-83F9-825CA1ED26F8}</ProjectGuid>
+    <AssemblyName>Microsoft.XmlSerializer.Generator</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
+    <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATOR</DefineConstants>
+    <SourceDir>..\..\System.Private.Xml\src</SourceDir>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
+    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(SourceDir)\System\Xml\BinHexDecoder.cs">
+      <Link>System\Xml\BinHexDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\BinHexEncoder.cs">
+      <Link>System\Xml\BinHexEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Core\LocalAppContextSwitches.cs">
+      <Link>System\Xml\Core\LocalAppContextSwitches.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Extensions\ExtensionMethods.cs">
+      <Link>System\Xml\Extensions\ExtensionMethods.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\CodeGenerationoptions.cs">
+      <Link>System\Xml\Serialization\CodeGenerationoptions.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\CodeIdentifier.cs">
+      <Link>System\Xml\Serialization\CodeIdentifier.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\CodeIdentifiers.cs">
+      <Link>System\Xml\Serialization\CodeIdentifiers.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Compilation.cs">
+      <Link>System\Xml\Serialization\Compilation.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Compiler.cs">
+      <Link>System\Xml\Serialization\Compiler.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs">
+      <Link>System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Globals.cs">
+      <Link>System\Xml\Serialization\Globals.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\indentedWriter.cs">
+      <Link>System\Xml\Serialization\indentedWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\IXmlSerializable.cs">
+      <Link>System\Xml\Serialization\IXmlSerializable.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\IXmlTextParser.cs">
+      <Link>System\Xml\Serialization\IXmlTextParser.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Mappings.cs">
+      <Link>System\Xml\Serialization\Mappings.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Models.cs">
+      <Link>System\Xml\Serialization\Models.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\NameTable.cs">
+      <Link>System\Xml\Serialization\NameTable.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\PrimitiveXmlSerializers.cs">
+      <Link>System\Xml\Serialization\PrimitiveXmlSerializers.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\ReflectionXmlSerializationReader.cs">
+      <Link>System\Xml\Serialization\ReflectionXmlSerializationReader.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\ReflectionXmlSerializationWriter.cs">
+      <Link>System\Xml\Serialization\ReflectionXmlSerializationWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapAttributeAttribute.cs">
+      <Link>System\Xml\Serialization\SoapAttributeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapAttributeOverrides.cs">
+      <Link>System\Xml\Serialization\SoapAttributeOverrides.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapAttributes.cs">
+      <Link>System\Xml\Serialization\SoapAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapElementAttribute.cs">
+      <Link>System\Xml\Serialization\SoapElementAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapEnumAttribute.cs">
+      <Link>System\Xml\Serialization\SoapEnumAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapIgnoreAttribute.cs">
+      <Link>System\Xml\Serialization\SoapIgnoreAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapIncludeAttribute.cs">
+      <Link>System\Xml\Serialization\SoapIncludeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapReflectionImporter.cs">
+      <Link>System\Xml\Serialization\SoapReflectionImporter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapSchemamember.cs">
+      <Link>System\Xml\Serialization\SoapSchemamember.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapTypeAttribute.cs">
+      <Link>System\Xml\Serialization\SoapTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\TypeCode.cs">
+      <Link>System\Xml\Serialization\TypeCode.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\TypeExtensions.cs">
+      <Link>System\Xml\Serialization\TypeExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Types.cs">
+      <Link>System\Xml\Serialization\Types.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAnyAttributeAttribute.cs">
+      <Link>System\Xml\Serialization\XmlAnyAttributeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAnyElementAttribute.cs">
+      <Link>System\Xml\Serialization\XmlAnyElementAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAnyElementAttributes.cs">
+      <Link>System\Xml\Serialization\XmlAnyElementAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlArrayAttribute.cs">
+      <Link>System\Xml\Serialization\XmlArrayAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlArrayItemAttribute.cs">
+      <Link>System\Xml\Serialization\XmlArrayItemAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlArrayItemAttributes.cs">
+      <Link>System\Xml\Serialization\XmlArrayItemAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAttributeAttribute.cs">
+      <Link>System\Xml\Serialization\XmlAttributeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAttributeOverrides.cs">
+      <Link>System\Xml\Serialization\XmlAttributeOverrides.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlAttributes.cs">
+      <Link>System\Xml\Serialization\XmlAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlChoiceIdentifierAttribute.cs">
+      <Link>System\Xml\Serialization\XmlChoiceIdentifierAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlCountingReader.cs">
+      <Link>System\Xml\Serialization\XmlCountingReader.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\Xmlcustomformatter.cs">
+      <Link>System\Xml\Serialization\Xmlcustomformatter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlElementAttribute.cs">
+      <Link>System\Xml\Serialization\XmlElementAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlElementAttributes.cs">
+      <Link>System\Xml\Serialization\XmlElementAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlEnumAttribute.cs">
+      <Link>System\Xml\Serialization\XmlEnumAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlIgnoreAttribute.cs">
+      <Link>System\Xml\Serialization\XmlIgnoreAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlIncludeAttribute.cs">
+      <Link>System\Xml\Serialization\XmlIncludeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlMapping.cs">
+      <Link>System\Xml\Serialization\XmlMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlMemberMapping.cs">
+      <Link>System\Xml\Serialization\XmlMemberMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlMembersMapping.cs">
+      <Link>System\Xml\Serialization\XmlMembersMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlNamespaceDeclarationsAttribute.cs">
+      <Link>System\Xml\Serialization\XmlNamespaceDeclarationsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlReflectionImporter.cs">
+      <Link>System\Xml\Serialization\XmlReflectionImporter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlReflectionMember.cs">
+      <Link>System\Xml\Serialization\XmlReflectionMember.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlRootAttribute.cs">
+      <Link>System\Xml\Serialization\XmlRootAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSchemaProviderAttribute.cs">
+      <Link>System\Xml\Serialization\XmlSchemaProviderAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializationGeneratedCode.cs">
+      <Link>System\Xml\Serialization\XmlSerializationGeneratedCode.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializationReader.cs">
+      <Link>System\Xml\Serialization\XmlSerializationReader.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializationWriter.cs">
+      <Link>System\Xml\Serialization\XmlSerializationWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializer.cs">
+      <Link>System\Xml\Serialization\XmlSerializer.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializerFactory.cs">
+      <Link>System\Xml\Serialization\XmlSerializerFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializerNamespaces.cs">
+      <Link>System\Xml\Serialization\XmlSerializerNamespaces.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTextAttribute.cs">
+      <Link>System\Xml\Serialization\XmlTextAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTypeAttribute.cs">
+      <Link>System\Xml\Serialization\XmlTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTypeMapping.cs">
+      <Link>System\Xml\Serialization\XmlTypeMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\Serialization\_Events.cs">
+      <Link>System\Xml\Serialization\_Events.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\XmlCharType.cs">
+      <Link>System\Xml\XmlCharType.cs</Link>
+    </Compile>
+    <Compile Include="$(SourceDir)\System\Xml\XmlReservedNs.cs">
+      <Link>System\Xml\XmlReservedNs.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft\XmlSerializer\Generator\XmlSerializationGeneratedCode.cs" />
+    <Compile Include="Microsoft\XmlSerializer\Generator\XmlSerializationReader.cs" />
+    <Compile Include="Microsoft\XmlSerializer\Generator\XmlSerializationWriter.cs" />
+    <Compile Include="Sgen.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
