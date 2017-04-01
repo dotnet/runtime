@@ -2306,6 +2306,15 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
     noway_assert(varNum < lvaCount);
+
+    // If we are just importing, we cannot reliably track local ref types,
+    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
+    if (compIsForImportOnly())
+    {
+        return;
+    }
+
+    // Else we should have a type handle.
     assert(clsHnd != nullptr);
 
     LclVarDsc* varDsc = &lvaTable[varNum];
@@ -2378,6 +2387,15 @@ void Compiler::lvaSetClass(unsigned varNum, GenTreePtr tree, CORINFO_CLASS_HANDL
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
     noway_assert(varNum < lvaCount);
+
+    // If we are just importing, we cannot reliably track local ref types,
+    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
+    if (compIsForImportOnly())
+    {
+        return;
+    }
+
+    // Else we should have a class handle to consider
     assert(clsHnd != nullptr);
 
     LclVarDsc* varDsc = &lvaTable[varNum];
@@ -2386,12 +2404,22 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // We should already have a class
     assert(varDsc->lvClassHnd != nullptr);
 
-    // This should be the first and only update for this var
-    assert(!varDsc->lvClassInfoUpdated);
-
 #if defined(DEBUG)
+
+    // In general we only expect one update per local var. However if
+    // a block is re-imported and that block has the only STLOC for
+    // the var, we may see multiple updates. All subsequent updates
+    // should agree on the type, since reimportation is triggered by
+    // type mismatches for things other than ref types.
+    if (varDsc->lvClassInfoUpdated)
+    {
+        assert(varDsc->lvClassHnd == clsHnd);
+        assert(varDsc->lvClassIsExact == isExact);
+    }
+
     // This counts as an update, even if nothing changes.
     varDsc->lvClassInfoUpdated = true;
+
 #endif // defined(DEBUG)
 
     // If previous type was exact, there is nothing to update.  Would
