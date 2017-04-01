@@ -23375,6 +23375,7 @@ void Compiler::fgRemoveEmptyTry()
         // Handler index of any nested blocks will update when we
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
+        // Decrement nesting level of enclosed GT_END_LFINs.
         for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
         {
             if (block == firstHandlerBlock)
@@ -23404,6 +23405,22 @@ void Compiler::fgRemoveEmptyTry()
                     fgAddRefPred(continuation, block);
                 }
             }
+
+#if !FEATURE_EH_FUNCLETS
+            // If we're in a non-funclet model, decrement the nesting
+            // level of any GT_END_LFIN we find in the handler region,
+            // since we're removing the enclosing handler.
+            for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+            {
+                GenTreePtr expr = stmt->gtStmtExpr;
+                if (expr->gtOper == GT_END_LFIN)
+                {
+                    const unsigned nestLevel = expr->gtVal.gtVal1;
+                    assert(nestLevel > 0);
+                    expr->gtVal.gtVal1 = nestLevel - 1;
+                }
+            }
+#endif // !FEATURE_EH_FUNCLETS
         }
 
         // (6) Remove the try-finally EH region. This will compact the
