@@ -7,7 +7,11 @@ using System.Xml.Schema;
 using System.Reflection;
 
 
+#if XMLSERIALIZERGENERATOR
+namespace Microsoft.XmlSerializer.Generator
+#else
 namespace System.Xml.Serialization
+#endif
 {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>

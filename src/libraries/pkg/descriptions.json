@@ -144,6 +144,11 @@
     ]
   },
   {
+    "Name": "Microsoft.XmlSerializer.Generator",
+    "Description": "Provides SGen tool to generate Xml serialization code for types in a specified assembly in order to improve the startup performance of a XmlSerializer when it serializes or deserializes objects of the specified types",
+    "CommonTypes": []
+  },
+  {
     "Name": "NETStandard.Library",
     "Description": "A set of standard .NET APIs that are prescribed to be used and supported together. This includes all of the APIs in the NETStandard.Platform package plus additional libraries that are core to .NET but built on top of NETStandard.Platform.",
     "CommonTypes": [
