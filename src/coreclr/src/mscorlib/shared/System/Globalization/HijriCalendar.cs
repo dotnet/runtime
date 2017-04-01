@@ -2,66 +2,87 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
     ////////////////////////////////////////////////////////////////////////////
     //
-    //  Notes about PersianCalendar
+    //  Rules for the Hijri calendar:
+    //    - The Hijri calendar is a strictly Lunar calendar.
+    //    - Days begin at sunset.
+    //    - Islamic Year 1 (Muharram 1, 1 A.H.) is equivalent to absolute date
+    //        227015 (Friday, July 16, 622 C.E. - Julian).
+    //    - Leap Years occur in the 2, 5, 7, 10, 13, 16, 18, 21, 24, 26, & 29th
+    //        years of a 30-year cycle.  Year = leap iff ((11y+14) mod 30 < 11).
+    //    - There are 12 months which contain alternately 30 and 29 days.
+    //    - The 12th month, Dhu al-Hijjah, contains 30 days instead of 29 days
+    //        in a leap year.
+    //    - Common years have 354 days.  Leap years have 355 days.
+    //    - There are 10,631 days in a 30-year cycle.
+    //    - The Islamic months are:
+    //        1.  Muharram   (30 days)     7.  Rajab          (30 days)
+    //        2.  Safar      (29 days)     8.  Sha'ban        (29 days)
+    //        3.  Rabi I     (30 days)     9.  Ramadan        (30 days)
+    //        4.  Rabi II    (29 days)     10. Shawwal        (29 days)
+    //        5.  Jumada I   (30 days)     11. Dhu al-Qada    (30 days)
+    //        6.  Jumada II  (29 days)     12. Dhu al-Hijjah  (29 days) {30}
+    //
+    //  NOTENOTE
+    //      The calculation of the HijriCalendar is based on the absolute date.  And the
+    //      absolute date means the number of days from January 1st, 1 A.D.
+    //      Therefore, we do not support the days before the January 1st, 1 A.D.
     //
     ////////////////////////////////////////////////////////////////////////////
-    // Modern Persian calendar is a solar observation based calendar. Each new year begins on the day when the vernal equinox occurs before noon.
-    // The epoch is the date of the vernal equinox prior to the epoch of the Islamic calendar (March 19, 622 Julian or March 22, 622 Gregorian)
-
-    // There is no Persian year 0. Ordinary years have 365 days. Leap years have 366 days with the last month (Esfand) gaining the extra day.
     /*
-     **  Calendar support range:
-     **      Calendar    Minimum     Maximum
-     **      ==========  ==========  ==========
-     **      Gregorian   0622/03/22   9999/12/31
-     **      Persian     0001/01/01   9378/10/13
-     */
+    **  Calendar support range:
+    **      Calendar    Minimum     Maximum
+    **      ==========  ==========  ==========
+    **      Gregorian   0622/07/18   9999/12/31
+    **      Hijri       0001/01/01   9666/04/03
+    */
 
     [Serializable]
-    public class PersianCalendar : Calendar
+    public partial class HijriCalendar : Calendar
     {
-        public static readonly int PersianEra = 1;
-
-        internal static long PersianEpoch = new DateTime(622, 3, 22).Ticks / GregorianCalendar.TicksPerDay;
-        private const int ApproximateHalfYear = 180;
+        public static readonly int HijriEra = 1;
 
         internal const int DatePartYear = 0;
         internal const int DatePartDayOfYear = 1;
         internal const int DatePartMonth = 2;
         internal const int DatePartDay = 3;
-        internal const int MonthsPerYear = 12;
 
-        internal static int[] DaysToMonth = { 0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366 };
+        internal const int MinAdvancedHijri = -2;
+        internal const int MaxAdvancedHijri = 2;
 
-        internal const int MaxCalendarYear = 9378;
-        internal const int MaxCalendarMonth = 10;
-        internal const int MaxCalendarDay = 13;
+        internal static readonly int[] HijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
 
-        // Persian calendar (year: 1, month: 1, day:1 ) = Gregorian (year: 622, month: 3, day: 22)
-        // This is the minimal Gregorian date that we support in the PersianCalendar.
-        internal static DateTime minDate = new DateTime(622, 3, 22);
-        internal static DateTime maxDate = DateTime.MaxValue;
+        private int _hijriAdvance = Int32.MinValue;
+
+        // DateTime.MaxValue = Hijri calendar (year:9666, month: 4, day: 3).
+        internal const int MaxCalendarYear = 9666;
+        internal const int MaxCalendarMonth = 4;
+        internal const int MaxCalendarDay = 3;
+        // Hijri calendar (year: 1, month: 1, day:1 ) = Gregorian (year: 622, month: 7, day: 18)
+        // This is the minimal Gregorian date that we support in the HijriCalendar.
+        internal static readonly DateTime calendarMinValue = new DateTime(622, 7, 18);
+        internal static readonly DateTime calendarMaxValue = DateTime.MaxValue;
+
 
         public override DateTime MinSupportedDateTime
         {
             get
             {
-                return (minDate);
+                return (calendarMinValue);
             }
         }
+
 
         public override DateTime MaxSupportedDateTime
         {
             get
             {
-                return (maxDate);
+                return (calendarMaxValue);
             }
         }
 
@@ -69,72 +90,139 @@ namespace System.Globalization
         {
             get
             {
-                return CalendarAlgorithmType.SolarCalendar;
+                return CalendarAlgorithmType.LunarCalendar;
             }
         }
 
-        // Construct an instance of Persian calendar.
-
-        public PersianCalendar()
+        public HijriCalendar()
         {
-        }
-
-
-        internal override CalendarId BaseCalendarID
-        {
-            get
-            {
-                return CalendarId.GREGORIAN;
-            }
         }
 
         internal override CalendarId ID
         {
             get
             {
-                return CalendarId.PERSIAN;
+                return CalendarId.HIJRI;
+            }
+        }
+
+        protected override int DaysInYearBeforeMinSupportedYear
+        {
+            get
+            {
+                // the year before the 1st year of the cycle would have been the 30th year
+                // of the previous cycle which is not a leap year. Common years have 354 days.
+                return 354;
             }
         }
 
 
-        /*=================================GetAbsoluteDatePersian==========================
-        **Action: Gets the Absolute date for the given Persian date.  The absolute date means
+
+        /*=================================GetAbsoluteDateHijri==========================
+        **Action: Gets the Absolute date for the given Hijri date.  The absolute date means
         **       the number of days from January 1st, 1 A.D.
         **Returns:
         **Arguments:
         **Exceptions:
         ============================================================================*/
 
-        private long GetAbsoluteDatePersian(int year, int month, int day)
+        private long GetAbsoluteDateHijri(int y, int m, int d)
         {
-            if (year >= 1 && year <= MaxCalendarYear && month >= 1 && month <= 12)
+            return (long)(DaysUpToHijriYear(y) + HijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
+        }
+
+        /*=================================DaysUpToHijriYear==========================
+        **Action: Gets the total number of days (absolute date) up to the given Hijri Year.
+        **       The absolute date means the number of days from January 1st, 1 A.D.
+        **Returns: Gets the total number of days (absolute date) up to the given Hijri Year.
+        **Arguments: HijriYear year value in Hijri calendar.
+        **Exceptions: None
+        **Notes:
+        ============================================================================*/
+
+        private long DaysUpToHijriYear(int HijriYear)
+        {
+            long NumDays;           // number of absolute days
+            int NumYear30;         // number of years up to current 30 year cycle
+            int NumYearsLeft;      // number of years into 30 year cycle
+
+            //
+            //  Compute the number of years up to the current 30 year cycle.
+            //
+            NumYear30 = ((HijriYear - 1) / 30) * 30;
+
+            //
+            //  Compute the number of years left.  This is the number of years
+            //  into the 30 year cycle for the given year.
+            //
+            NumYearsLeft = HijriYear - NumYear30 - 1;
+
+            //
+            //  Compute the number of absolute days up to the given year.
+            //
+            NumDays = ((NumYear30 * 10631L) / 30L) + 227013L;
+            while (NumYearsLeft > 0)
             {
-                int ordinalDay = DaysInPreviousMonths(month) + day - 1; // day is one based, make 0 based since this will be the number of days we add to beginning of year below
-                int approximateDaysFromEpochForYearStart = (int)(CalendricalCalculationsHelper.MeanTropicalYearInDays * (year - 1));
-                long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(PersianEpoch + approximateDaysFromEpochForYearStart + ApproximateHalfYear);
-                yearStart += ordinalDay;
-                return yearStart;
+                // Common year is 354 days, and leap year is 355 days.
+                NumDays += 354 + (IsLeapYear(NumYearsLeft, CurrentEra) ? 1 : 0);
+                NumYearsLeft--;
             }
-            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
+
+            //
+            //  Return the number of absolute days.
+            //
+            return (NumDays);
+        }
+
+        public int HijriAdjustment
+        {
+            get
+            {
+                if (_hijriAdvance == Int32.MinValue)
+                {
+                    // Never been set before.  Use the system value from registry.
+                    _hijriAdvance = GetHijriDateAdjustment();
+                }
+                return (_hijriAdvance);
+            }
+
+            set
+            {
+                // NOTE: Check the value of Min/MaxAdavncedHijri with Arabic speakers to see if the assumption is good.
+                if (value < MinAdvancedHijri || value > MaxAdvancedHijri)
+                {
+                    throw new ArgumentOutOfRangeException(
+                                "HijriAdjustment",
+                                String.Format(
+                                    CultureInfo.CurrentCulture,
+                                    SR.ArgumentOutOfRange_Bounds_Lower_Upper,
+                                    MinAdvancedHijri,
+                                    MaxAdvancedHijri));
+                }
+                Contract.EndContractBlock();
+                VerifyWritable();
+
+                _hijriAdvance = value;
+            }
         }
 
         internal static void CheckTicksRange(long ticks)
         {
-            if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
+            if (ticks < calendarMinValue.Ticks || ticks > calendarMaxValue.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
                             "time",
                             String.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,
-                                minDate,
-                                maxDate));
+                                calendarMinValue,
+                                calendarMaxValue));
             }
         }
 
         internal static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != PersianEra)
+            if (era != CurrentEra && era != HijriEra)
             {
                 throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
@@ -178,33 +266,24 @@ namespace System.Globalization
             }
         }
 
-        private static int MonthFromOrdinalDay(int ordinalDay)
-        {
-            Debug.Assert(ordinalDay <= 366);
-            int index = 0;
-            while (ordinalDay > DaysToMonth[index])
-                index++;
-
-            return index;
-        }
-
-        private static int DaysInPreviousMonths(int month)
-        {
-            Debug.Assert(1 <= month && month <= 12);
-            --month; // months are one based but for calculations use 0 based
-            return DaysToMonth[month];
-        }
-
         /*=================================GetDatePart==========================
         **Action: Returns a given date part of this <i>DateTime</i>. This method is used
         **       to compute the year, day-of-year, month, or day part.
         **Returns:
         **Arguments:
         **Exceptions:  ArgumentException if part is incorrect.
+        **Notes:
+        **      First, we get the absolute date (the number of days from January 1st, 1 A.C) for the given ticks.
+        **      Use the formula (((AbsoluteDate - 227013) * 30) / 10631) + 1, we can a rough value for the Hijri year.
+        **      In order to get the exact Hijri year, we compare the exact absolute date for HijriYear and (HijriYear + 1).
+        **      From here, we can get the correct Hijri year.
         ============================================================================*/
 
-        internal int GetDatePart(long ticks, int part)
+        internal virtual int GetDatePart(long ticks, int part)
         {
+            int HijriYear;                   // Hijri year
+            int HijriMonth;                  // Hijri month
+            int HijriDay;                    // Hijri day
             long NumDays;                 // The calculation buffer in number of days.
 
             CheckTicksRange(ticks);
@@ -216,50 +295,73 @@ namespace System.Globalization
             NumDays = ticks / GregorianCalendar.TicksPerDay + 1;
 
             //
-            //  Calculate the appromixate Persian Year.
+            //  See how much we need to backup or advance
             //
+            NumDays += HijriAdjustment;
 
-            long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(NumDays);
-            int y = (int)(Math.Floor(((yearStart - PersianEpoch) / CalendricalCalculationsHelper.MeanTropicalYearInDays) + 0.5)) + 1;
-            Debug.Assert(y >= 1);
+            //
+            //  Calculate the appromixate Hijri Year from this magic formula.
+            //
+            HijriYear = (int)(((NumDays - 227013) * 30) / 10631) + 1;
 
+            long daysToHijriYear = DaysUpToHijriYear(HijriYear);            // The absoulte date for HijriYear
+            long daysOfHijriYear = GetDaysInYear(HijriYear, CurrentEra);    // The number of days for (HijriYear+1) year.
+
+            if (NumDays < daysToHijriYear)
+            {
+                daysToHijriYear -= daysOfHijriYear;
+                HijriYear--;
+            }
+            else if (NumDays == daysToHijriYear)
+            {
+                HijriYear--;
+                daysToHijriYear -= GetDaysInYear(HijriYear, CurrentEra);
+            }
+            else
+            {
+                if (NumDays > daysToHijriYear + daysOfHijriYear)
+                {
+                    daysToHijriYear += daysOfHijriYear;
+                    HijriYear++;
+                }
+            }
             if (part == DatePartYear)
             {
-                return y;
+                return (HijriYear);
             }
 
             //
-            //  Calculate the Persian Month.
+            //  Calculate the Hijri Month.
             //
 
-            int ordinalDay = (int)(NumDays - CalendricalCalculationsHelper.GetNumberOfDays(this.ToDateTime(y, 1, 1, 0, 0, 0, 0, 1)));
+            HijriMonth = 1;
+            NumDays -= daysToHijriYear;
 
             if (part == DatePartDayOfYear)
             {
-                return ordinalDay;
+                return ((int)NumDays);
             }
 
-            int m = MonthFromOrdinalDay(ordinalDay);
-            Debug.Assert(ordinalDay >= 1);
-            Debug.Assert(m >= 1 && m <= 12);
+            while ((HijriMonth <= 12) && (NumDays > HijriMonthDays[HijriMonth - 1]))
+            {
+                HijriMonth++;
+            }
+            HijriMonth--;
+
             if (part == DatePartMonth)
             {
-                return m;
+                return (HijriMonth);
             }
 
-            int d = ordinalDay - DaysInPreviousMonths(m);
-            Debug.Assert(1 <= d);
-            Debug.Assert(d <= 31);
-
             //
-            //  Calculate the Persian Day.
+            //  Calculate the Hijri Day.
             //
+            HijriDay = (int)(NumDays - HijriMonthDays[HijriMonth - 1]);
 
             if (part == DatePartDay)
             {
-                return (d);
+                return (HijriDay);
             }
-
             // Incorrect part value.
             throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
@@ -282,7 +384,6 @@ namespace System.Globalization
         // y1.
         //
 
-
         public override DateTime AddMonths(DateTime time, int months)
         {
             if (months < -120000 || months > 120000)
@@ -296,7 +397,7 @@ namespace System.Globalization
                                 120000));
             }
             Contract.EndContractBlock();
-            // Get the date in Persian calendar.
+            // Get the date in Hijri calendar.
             int y = GetDatePart(time.Ticks, DatePartYear);
             int m = GetDatePart(time.Ticks, DatePartMonth);
             int d = GetDatePart(time.Ticks, DatePartDay);
@@ -316,7 +417,7 @@ namespace System.Globalization
             {
                 d = days;
             }
-            long ticks = GetAbsoluteDatePersian(y, m, d) * TicksPerDay + time.Ticks % TicksPerDay;
+            long ticks = GetAbsoluteDateHijri(y, m, d) * TicksPerDay + (time.Ticks % TicksPerDay);
             Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return (new DateTime(ticks));
         }
@@ -330,7 +431,6 @@ namespace System.Globalization
         // parts of the result are the same as those of the specified DateTime.
         //
 
-
         public override DateTime AddYears(DateTime time, int years)
         {
             return (AddMonths(time, years * 12));
@@ -339,7 +439,6 @@ namespace System.Globalization
         // Returns the day-of-month part of the specified DateTime. The returned
         // value is an integer between 1 and 31.
         //
-
 
         public override int GetDayOfMonth(DateTime time)
         {
@@ -352,7 +451,6 @@ namespace System.Globalization
         // Thursday, 5 indicates Friday, and 6 indicates Saturday.
         //
 
-
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
             return ((DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7));
@@ -362,7 +460,6 @@ namespace System.Globalization
         // is an integer between 1 and 366.
         //
 
-
         public override int GetDayOfYear(DateTime time)
         {
             return (GetDatePart(time.Ticks, DatePartDayOfYear));
@@ -371,24 +468,17 @@ namespace System.Globalization
         // Returns the number of days in the month given by the year and
         // month arguments.
         //
-
-
+        [Pure]
         public override int GetDaysInMonth(int year, int month, int era)
         {
             CheckYearMonthRange(year, month, era);
-
-            if ((month == MaxCalendarMonth) && (year == MaxCalendarYear))
+            if (month == 12)
             {
-                return MaxCalendarDay;
+                // For the 12th month, leap year has 30 days, and common year has 29 days.
+                return (IsLeapYear(year, CurrentEra) ? 30 : 29);
             }
-
-            int daysInMonth = DaysToMonth[month] - DaysToMonth[month - 1];
-            if ((month == MonthsPerYear) && !IsLeapYear(year))
-            {
-                Debug.Assert(daysInMonth == 30);
-                --daysInMonth;
-            }
-            return daysInMonth;
+            // Other months contain 30 and 29 days alternatively.  The 1st month has 30 days.
+            return (((month % 2) == 1) ? 30 : 29);
         }
 
         // Returns the number of days in the year given by the year argument for the current era.
@@ -397,37 +487,30 @@ namespace System.Globalization
         public override int GetDaysInYear(int year, int era)
         {
             CheckYearRange(year, era);
-            if (year == MaxCalendarYear)
-            {
-                return DaysToMonth[MaxCalendarMonth - 1] + MaxCalendarDay;
-            }
-            // Common years have 365 days.  Leap years have 366 days.
-            return (IsLeapYear(year, CurrentEra) ? 366 : 365);
+            // Common years have 354 days.  Leap years have 355 days.
+            return (IsLeapYear(year, CurrentEra) ? 355 : 354);
         }
 
         // Returns the era for the specified DateTime value.
 
-
         public override int GetEra(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            return (PersianEra);
+            return (HijriEra);
         }
-
 
 
         public override int[] Eras
         {
             get
             {
-                return (new int[] { PersianEra });
+                return (new int[] { HijriEra });
             }
         }
 
         // Returns the month part of the specified DateTime. The returned value is an
         // integer between 1 and 12.
         //
-
 
         public override int GetMonth(DateTime time)
         {
@@ -436,21 +519,15 @@ namespace System.Globalization
 
         // Returns the number of months in the specified year and era.
 
-
         public override int GetMonthsInYear(int year, int era)
         {
             CheckYearRange(year, era);
-            if (year == MaxCalendarYear)
-            {
-                return MaxCalendarMonth;
-            }
             return (12);
         }
 
         // Returns the year part of the specified DateTime. The returned value is an
         // integer between 1 and MaxCalendarYear.
         //
-
 
         public override int GetYear(DateTime time)
         {
@@ -460,7 +537,6 @@ namespace System.Globalization
         // Checks whether a given day in the specified era is a leap day. This method returns true if
         // the date is a leap day, or false if not.
         //
-
 
         public override bool IsLeapDay(int year, int month, int day, int era)
         {
@@ -483,7 +559,6 @@ namespace System.Globalization
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-
         public override int GetLeapMonth(int year, int era)
         {
             CheckYearRange(year, era);
@@ -493,7 +568,6 @@ namespace System.Globalization
         // Checks whether a given month in the specified era is a leap month. This method returns true if
         // month is a leap month, or false if not.
         //
-
 
         public override bool IsLeapMonth(int year, int month, int era)
         {
@@ -508,18 +582,11 @@ namespace System.Globalization
         public override bool IsLeapYear(int year, int era)
         {
             CheckYearRange(year, era);
-
-            if (year == MaxCalendarYear)
-            {
-                return false;
-            }
-
-            return (GetAbsoluteDatePersian(year + 1, 1, 1) - GetAbsoluteDatePersian(year, 1, 1)) == 366;
+            return ((((year * 11) + 14) % 30) < 11);
         }
 
         // Returns the date and time converted to a DateTime value.  Throws an exception if the n-tuple is invalid.
         //
-
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
@@ -527,7 +594,6 @@ namespace System.Globalization
             int daysInMonth = GetDaysInMonth(year, month, era);
             if (day < 1 || day > daysInMonth)
             {
-                // BCLDebug.Log("year = " + year + ", month = " + month + ", day = " + day);
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
                             String.Format(
@@ -537,7 +603,7 @@ namespace System.Globalization
                                 month));
             }
 
-            long lDate = GetAbsoluteDatePersian(year, month, day);
+            long lDate = GetAbsoluteDateHijri(year, month, day);
 
             if (lDate >= 0)
             {
@@ -549,7 +615,8 @@ namespace System.Globalization
             }
         }
 
-        private const int DEFAULT_TWO_DIGIT_YEAR_MAX = 1410;
+        private const int DEFAULT_TWO_DIGIT_YEAR_MAX = 1451;
+
 
         public override int TwoDigitYearMax
         {
@@ -578,7 +645,6 @@ namespace System.Globalization
                 twoDigitYearMax = value;
             }
         }
-
 
 
         public override int ToFourDigitYear(int year)

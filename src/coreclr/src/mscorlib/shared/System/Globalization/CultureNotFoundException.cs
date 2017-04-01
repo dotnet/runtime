@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.Serialization;
-using System.Threading;
 
 namespace System.Globalization
 {
     [Serializable]
-    public class CultureNotFoundException : ArgumentException, ISerializable
+    public class CultureNotFoundException : ArgumentException
     {
         private string _invalidCultureName; // unrecognized culture name
         private int? _invalidCultureId;     // unrecognized culture Lcid

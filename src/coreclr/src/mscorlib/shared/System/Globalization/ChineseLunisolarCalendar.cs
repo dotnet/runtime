@@ -2,51 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-    ////////////////////////////////////////////////////////////////////////////
-    //
-    //  Notes about TaiwanLunisolarCalendar
-    //
-    ////////////////////////////////////////////////////////////////////////////
     /*
     **  Calendar support range:
     **      Calendar               Minimum             Maximum
     **      ==========     ==========  ==========
-    **      Gregorian              1912/02/18          2051/02/10
-    **      TaiwanLunisolar     1912/01/01          2050/13/29
+    **      Gregorian              1901/02/19          2101/01/28
+    **      ChineseLunisolar   1901/01/01          2100/12/29
     */
 
     [Serializable]
-    public class TaiwanLunisolarCalendar : EastAsianLunisolarCalendar
+    public class ChineseLunisolarCalendar : EastAsianLunisolarCalendar
     {
-        // Since
-        //    Gregorian Year = Era Year + yearOffset
-        // When Gregorian Year 1912 is year 1, so that
-        //    1912 = 1 + yearOffset
-        //  So yearOffset = 1911
-        //m_EraInfo[0] = new EraInfo(1, new DateTime(1912, 1, 1).Ticks, 1911, 1, GregorianCalendar.MaxYear - 1911);
+        //
+        // The era value for the current era.
+        //
 
-        // Initialize our era info.
-        internal static EraInfo[] taiwanLunisolarEraInfo = new EraInfo[] {
-            new EraInfo( 1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear 
-        };
+        public const int ChineseEra = 1;
 
-        internal GregorianCalendarHelper helper;
+        internal const int MIN_LUNISOLAR_YEAR = 1901;
+        internal const int MAX_LUNISOLAR_YEAR = 2100;
 
-        internal const int MIN_LUNISOLAR_YEAR = 1912;
-        internal const int MAX_LUNISOLAR_YEAR = 2050;
-
-        internal const int MIN_GREGORIAN_YEAR = 1912;
+        internal const int MIN_GREGORIAN_YEAR = 1901;
         internal const int MIN_GREGORIAN_MONTH = 2;
-        internal const int MIN_GREGORIAN_DAY = 18;
+        internal const int MIN_GREGORIAN_DAY = 19;
 
-        internal const int MAX_GREGORIAN_YEAR = 2051;
-        internal const int MAX_GREGORIAN_MONTH = 2;
-        internal const int MAX_GREGORIAN_DAY = 10;
+        internal const int MAX_GREGORIAN_YEAR = 2101;
+        internal const int MAX_GREGORIAN_MONTH = 1;
+        internal const int MAX_GREGORIAN_DAY = 28;
 
         internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
         internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
@@ -58,7 +44,6 @@ namespace System.Globalization
                 return (minDate);
             }
         }
-
 
 
         public override DateTime MaxSupportedDateTime
@@ -73,16 +58,28 @@ namespace System.Globalization
         {
             get
             {
-                // 1911 from ChineseLunisolarCalendar
+                // 1900: 1-29 2-30 3-29 4-29 5-30 6-29 7-30 8-30 Leap8-29 9-30 10-30 11-29 12-30 from Calendrical Tabulations
                 return 384;
             }
         }
 
+
         private static readonly int[,] s_yinfo =
         {
             /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
-            1912    */
-          {    0    ,    2    ,    18    ,    42192    },/*    30    29    30    29    29    30    29    29    30    30    29    30    0    354
+           1901    */
+          {    0    ,    2    ,    19    ,    19168    },/*    29    30    29    29    30    29    30    29    30    30    30    29    0    354
+1902    */{    0    ,    2    ,    8    ,    42352    },/*    30    29    30    29    29    30    29    30    29    30    30    30    0    355
+1903    */{    5    ,    1    ,    29    ,    21096    },/*    29    30    29    30    29    29    30    29    29    30    30    29    30    383
+1904    */{    0    ,    2    ,    16    ,    53856    },/*    30    30    29    30    29    29    30    29    29    30    30    29    0    354
+1905    */{    0    ,    2    ,    4    ,    55632    },/*    30    30    29    30    30    29    29    30    29    30    29    30    0    355
+1906    */{    4    ,    1    ,    25    ,    27304    },/*    29    30    30    29    30    29    30    29    30    29    30    29    30    384
+1907    */{    0    ,    2    ,    13    ,    22176    },/*    29    30    29    30    29    30    30    29    30    29    30    29    0    354
+1908    */{    0    ,    2    ,    2    ,    39632    },/*    30    29    29    30    30    29    30    29    30    30    29    30    0    355
+1909    */{    2    ,    1    ,    22    ,    19176    },/*    29    30    29    29    30    29    30    29    30    30    30    29    30    384
+1910    */{    0    ,    2    ,    10    ,    19168    },/*    29    30    29    29    30    29    30    29    30    30    30    29    0    354
+1911    */{    6    ,    1    ,    30    ,    42200    },/*    30    29    30    29    29    30    29    29    30    30    29    30    30    384
+1912    */{    0    ,    2    ,    18    ,    42192    },/*    30    29    30    29    29    30    29    29    30    30    29    30    0    354
 1913    */{    0    ,    2    ,    6    ,    53840    },/*    30    30    29    30    29    29    30    29    29    30    29    30    0    354
 1914    */{    5    ,    1    ,    26    ,    54568    },/*    30    30    29    30    29    30    29    30    29    29    30    29    30    384
 1915    */{    0    ,    2    ,    14    ,    46400    },/*    30    29    30    30    29    30    29    30    29    30    29    29    0    354
@@ -221,6 +218,56 @@ namespace System.Globalization
 2048    */{    0    ,    2    ,    14    ,    27936    },/*    29    30    30    29    30    30    29    30    29    29    30    29    0    354
 2049    */{    0    ,    2    ,    2    ,    44448    },/*    30    29    30    29    30    30    29    30    30    29    30    29    0    355
 2050    */{    3    ,    1    ,    23    ,    21936    },/*    29    30    29    30    29    30    29    30    30    29    30    30    29    384
+2051    */{    0    ,    2    ,    11    ,    37744    },/*    30    29    29    30    29    29    30    30    29    30    30    30    0    355
+2052    */{    8    ,    2    ,    1    ,    18808    },/*    29    30    29    29    30    29    29    30    29    30    30    30    30    384
+2053    */{    0    ,    2    ,    19    ,    18800    },/*    29    30    29    29    30    29    29    30    29    30    30    30    0    354
+2054    */{    0    ,    2    ,    8    ,    25776    },/*    29    30    30    29    29    30    29    29    30    29    30    30    0    354
+2055    */{    6    ,    1    ,    28    ,    27216    },/*    29    30    30    29    30    29    30    29    29    30    29    30    29    383
+2056    */{    0    ,    2    ,    15    ,    59984    },/*    30    30    30    29    30    29    30    29    29    30    29    30    0    355
+2057    */{    0    ,    2    ,    4    ,    27424    },/*    29    30    30    29    30    29    30    30    29    29    30    29    0    354
+2058    */{    4    ,    1    ,    24    ,    43872    },/*    30    29    30    29    30    29    30    30    29    30    30    29    29    384
+2059    */{    0    ,    2    ,    12    ,    43744    },/*    30    29    30    29    30    29    30    29    30    30    30    29    0    355
+2060    */{    0    ,    2    ,    2    ,    37600    },/*    30    29    29    30    29    29    30    29    30    30    30    29    0    354
+2061    */{    3    ,    1    ,    21    ,    51568    },/*    30    30    29    29    30    29    29    30    29    30    30    30    29    384
+2062    */{    0    ,    2    ,    9    ,    51552    },/*    30    30    29    29    30    29    29    30    29    30    30    29    0    354
+2063    */{    7    ,    1    ,    29    ,    54440    },/*    30    30    29    30    29    30    29    29    30    29    30    29    30    384
+2064    */{    0    ,    2    ,    17    ,    54432    },/*    30    30    29    30    29    30    29    29    30    29    30    29    0    354
+2065    */{    0    ,    2    ,    5    ,    55888    },/*    30    30    29    30    30    29    30    29    29    30    29    30    0    355
+2066    */{    5    ,    1    ,    26    ,    23208    },/*    29    30    29    30    30    29    30    29    30    29    30    29    30    384
+2067    */{    0    ,    2    ,    14    ,    22176    },/*    29    30    29    30    29    30    30    29    30    29    30    29    0    354
+2068    */{    0    ,    2    ,    3    ,    42704    },/*    30    29    30    29    29    30    30    29    30    30    29    30    0    355
+2069    */{    4    ,    1    ,    23    ,    21224    },/*    29    30    29    30    29    29    30    29    30    30    30    29    30    384
+2070    */{    0    ,    2    ,    11    ,    21200    },/*    29    30    29    30    29    29    30    29    30    30    29    30    0    354
+2071    */{    8    ,    1    ,    31    ,    43352    },/*    30    29    30    29    30    29    29    30    29    30    29    30    30    384
+2072    */{    0    ,    2    ,    19    ,    43344    },/*    30    29    30    29    30    29    29    30    29    30    29    30    0    354
+2073    */{    0    ,    2    ,    7    ,    46240    },/*    30    29    30    30    29    30    29    29    30    29    30    29    0    354
+2074    */{    6    ,    1    ,    27    ,    46416    },/*    30    29    30    30    29    30    29    30    29    30    29    30    29    384
+2075    */{    0    ,    2    ,    15    ,    44368    },/*    30    29    30    29    30    30    29    30    29    30    29    30    0    355
+2076    */{    0    ,    2    ,    5    ,    21920    },/*    29    30    29    30    29    30    29    30    30    29    30    29    0    354
+2077    */{    4    ,    1    ,    24    ,    42448    },/*    30    29    30    29    29    30    29    30    30    30    29    30    29    384
+2078    */{    0    ,    2    ,    12    ,    42416    },/*    30    29    30    29    29    30    29    30    30    29    30    30    0    355
+2079    */{    0    ,    2    ,    2    ,    21168    },/*    29    30    29    30    29    29    30    29    30    29    30    30    0    354
+2080    */{    3    ,    1    ,    22    ,    43320    },/*    30    29    30    29    30    29    29    30    29    29    30    30    30    384
+2081    */{    0    ,    2    ,    9    ,    26928    },/*    29    30    30    29    30    29    29    30    29    29    30    30    0    354
+2082    */{    7    ,    1    ,    29    ,    29336    },/*    29    30    30    30    29    29    30    29    30    29    29    30    30    384
+2083    */{    0    ,    2    ,    17    ,    27296    },/*    29    30    30    29    30    29    30    29    30    29    30    29    0    354
+2084    */{    0    ,    2    ,    6    ,    44368    },/*    30    29    30    29    30    30    29    30    29    30    29    30    0    355
+2085    */{    5    ,    1    ,    26    ,    19880    },/*    29    30    29    29    30    30    29    30    30    29    30    29    30    384
+2086    */{    0    ,    2    ,    14    ,    19296    },/*    29    30    29    29    30    29    30    30    29    30    30    29    0    354
+2087    */{    0    ,    2    ,    3    ,    42352    },/*    30    29    30    29    29    30    29    30    29    30    30    30    0    355
+2088    */{    4    ,    1    ,    24    ,    21104    },/*    29    30    29    30    29    29    30    29    29    30    30    30    29    383
+2089    */{    0    ,    2    ,    10    ,    53856    },/*    30    30    29    30    29    29    30    29    29    30    30    29    0    354
+2090    */{    8    ,    1    ,    30    ,    59696    },/*    30    30    30    29    30    29    29    30    29    29    30    30    29    384
+2091    */{    0    ,    2    ,    18    ,    54560    },/*    30    30    29    30    29    30    29    30    29    29    30    29    0    354
+2092    */{    0    ,    2    ,    7    ,    55968    },/*    30    30    29    30    30    29    30    29    30    29    30    29    0    355
+2093    */{    6    ,    1    ,    27    ,    27472    },/*    29    30    30    29    30    29    30    30    29    30    29    30    29    384
+2094    */{    0    ,    2    ,    15    ,    22224    },/*    29    30    29    30    29    30    30    29    30    30    29    30    0    355
+2095    */{    0    ,    2    ,    5    ,    19168    },/*    29    30    29    29    30    29    30    29    30    30    30    29    0    354
+2096    */{    4    ,    1    ,    25    ,    42216    },/*    30    29    30    29    29    30    29    29    30    30    30    29    30    384
+2097    */{    0    ,    2    ,    12    ,    42192    },/*    30    29    30    29    29    30    29    29    30    30    29    30    0    354
+2098    */{    0    ,    2    ,    1    ,    53584    },/*    30    30    29    30    29    29    29    30    29    30    29    30    0    354
+2099    */{    2    ,    1    ,    21    ,    55592    },/*    30    30    29    30    30    29    29    30    29    29    30    29    30    384
+2100    */{    0    ,    2    ,    9    ,    54560    },/*    30    30    29    30    29    30    29    30    29    29    30    29    0    354
         */};
 
 
@@ -260,7 +307,7 @@ namespace System.Globalization
         {
             get
             {
-                return (taiwanLunisolarEraInfo);
+                return (null);
             }
         }
 
@@ -272,9 +319,7 @@ namespace System.Globalization
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range,
-                                MIN_LUNISOLAR_YEAR,
-                                MAX_LUNISOLAR_YEAR));
+                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
@@ -283,47 +328,62 @@ namespace System.Globalization
 
         internal override int GetYear(int year, DateTime time)
         {
-            return helper.GetYear(year, time);
+            return year;
         }
 
         internal override int GetGregorianYear(int year, int era)
         {
-            return helper.GetGregorianYear(year, era);
+            if (era != CurrentEra && era != ChineseEra)
+            {
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
+            }
+
+            if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
+            {
+                throw new ArgumentOutOfRangeException(
+                            nameof(year),
+                            String.Format(
+                                CultureInfo.CurrentCulture,
+                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+            }
+            Contract.EndContractBlock();
+
+            return year;
         }
 
-        public TaiwanLunisolarCalendar()
+        public ChineseLunisolarCalendar()
         {
-            helper = new GregorianCalendarHelper(this, taiwanLunisolarEraInfo);
         }
 
         public override int GetEra(DateTime time)
         {
-            return (helper.GetEra(time));
-        }
-
-        internal override CalendarId BaseCalendarID
-        {
-            get
-            {
-                return (CalendarId.TAIWAN);
-            }
+            CheckTicksRange(time.Ticks);
+            return (ChineseEra);
         }
 
         internal override CalendarId ID
         {
             get
             {
-                return (CalendarId.TAIWANLUNISOLAR);
+                return (CalendarId.CHINESELUNISOLAR);
             }
         }
 
+        internal override CalendarId BaseCalendarID
+        {
+            get
+            {
+                //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
+                return (CalendarId.GREGORIAN);
+            }
+        }
 
 
         public override int[] Eras
         {
             get
             {
-                return (helper.Eras);
+                return (new int[] { ChineseEra });
             }
         }
     }

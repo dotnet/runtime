@@ -138,10 +138,39 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormatException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarWeekRule.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendricalCalculationsHelper.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ChineseLunisolarCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureNotFoundException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureTypes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormat.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfo.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfoScanner.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeParse.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeStyles.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DaylightTime.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DigitShapes.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\EastAsianLunisolarCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendarTypes.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewNumber.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\InternalGlobalizationHelper.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseLunisolarCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JulianCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\KoreanCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\KoreanLunisolarCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberStyles.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\PersianCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\SortVersion.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanLunisolarCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanStyles.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UnicodeCategory.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IConvertible.cs"/>
@@ -339,6 +368,7 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\LocaleData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs"/>
