@@ -1009,12 +1009,19 @@ HRESULT ZapInfo::getBBProfileData (
     }
 
     // The md must match.
-    _ASSERTE(foundEntry->md == md); 
+    _ASSERTE(foundEntry->md == md);
 
+    if (foundEntry->pos == 0)
+    {
+        // We might not have profile data and instead only have CompileStatus and flags
+        assert(foundEntry->size == 0);
+        return E_FAIL;
+    }
+
+    //
     //
     // We found the md. Let's retrieve the profile data.
     //
-    _ASSERTE(foundEntry->pos > 0);                                   // The target position cannot be 0.
     _ASSERTE(foundEntry->size >= sizeof(CORBBTPROF_METHOD_HEADER));   // The size must at least this
 
     ProfileReader profileReader(DataSection_MethodBlockCounts->pData, DataSection_MethodBlockCounts->dataSize);
