@@ -213,6 +213,12 @@ ALWAYS_INLINE void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     g_theGCToCLR->HandleFatalError(exitCode);
 }
 
+ALWAYS_INLINE bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->ShouldFinalizeObjectForUnload(pDomain, obj);
+}
+
 #undef ALWAYS_INLINE
 
 #endif // __GCTOENV_EE_STANDALONE_INL__
