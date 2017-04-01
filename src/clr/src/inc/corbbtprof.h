@@ -178,6 +178,7 @@ enum MethodProfilingDataFlags
     WriteMethodPrecode            = 12, // 0x01000
     ExcludeHotMethodCode          = 13, // 0x02000  // Hot method should be excluded from the ReadyToRun image
     ExcludeColdMethodCode         = 14, // 0x04000  // Cold method should be excluded from the ReadyToRun image
+    DisableInlining               = 15, // 0x08000  // Disable inlining of this method in optimized AOT native code
 };
 
 enum GeneralProfilingDataFlags
