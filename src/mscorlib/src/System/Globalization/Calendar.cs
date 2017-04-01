@@ -839,7 +839,7 @@ namespace System.Globalization
                                     CultureInfo.InvariantCulture,
                                     SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1)));
                 }
-                return InternalGloablizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
+                return InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
             }
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }

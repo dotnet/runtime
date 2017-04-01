@@ -12,11 +12,8 @@
 **
 ===========================================================*/
 
-using System;
-
 namespace System.Globalization
 {
-    [Serializable]
     [Flags]
     public enum NumberStyles
     {

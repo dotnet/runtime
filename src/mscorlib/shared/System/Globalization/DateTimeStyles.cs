@@ -14,7 +14,6 @@
 
 namespace System.Globalization
 {
-    [Serializable]
     [Flags]
     public enum DateTimeStyles
     {
