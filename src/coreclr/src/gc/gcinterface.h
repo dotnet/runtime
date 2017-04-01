@@ -149,10 +149,18 @@ struct segment_info
     void * pvMem; // base of the allocation, not the first object (must add ibFirstObject)
     size_t ibFirstObject;   // offset to the base of the first object in the segment
     size_t ibAllocated; // limit of allocated memory in the segment (>= firstobject)
-    size_t ibCommit; // limit of committed memory in the segment (>= alllocated)
+    size_t ibCommit; // limit of committed memory in the segment (>= allocated)
     size_t ibReserved; // limit of reserved memory in the segment (>= commit)
 };
 
+
+/*
+ * handle to handle table
+ */
+typedef DPTR(struct HandleTable) PTR_HandleTable;
+typedef DPTR(PTR_HandleTable) PTR_PTR_HandleTable;
+typedef PTR_HandleTable HHANDLETABLE;
+typedef PTR_PTR_HandleTable PTR_HHANDLETABLE;
 #ifdef PROFILING_SUPPORTED
 #define GC_PROFILING       //Turn on profiling
 #endif // PROFILING_SUPPORTED
@@ -391,6 +399,10 @@ public:
     virtual bool Initialize() = 0;
 
     virtual void Shutdown() = 0;
+
+    virtual void* GetHandleTableContext(HHANDLETABLE hTable) = 0;
+
+    virtual HHANDLETABLE GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
