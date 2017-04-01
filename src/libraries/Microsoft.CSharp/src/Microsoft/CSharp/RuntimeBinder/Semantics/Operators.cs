@@ -1614,7 +1614,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private Expr BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
+        private ExprOperator BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
         {
             NullableType type = uofs.GetType().AsNullableType();
             Debug.Assert(arg?.Type != null);
@@ -1674,7 +1674,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles standard binary integer based operators.
         */
-        private Expr BindIntBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprOperator BindIntBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(arg1.Type.isPredefined() && arg2.Type.isPredefined() && arg1.Type.getPredefType() == arg2.Type.getPredefType());
             return BindIntOp(ek, flags, arg1, arg2, arg1.Type.getPredefType());
@@ -1684,7 +1684,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles standard unary integer based operators.
         */
-        private Expr BindIntUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
+        private ExprOperator BindIntUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(arg.Type.isPredefined());
             return BindIntOp(ek, flags, arg, null, arg.Type.getPredefType());
@@ -1694,7 +1694,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles standard binary floating point (float, double) based operators.
         */
-        private Expr BindRealBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprOperator BindRealBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(arg1.Type.isPredefined() && arg2.Type.isPredefined() && arg1.Type.getPredefType() == arg2.Type.getPredefType());
             return bindFloatOp(ek, flags, arg1, arg2);
@@ -1704,7 +1704,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles standard unary floating point (float, double) based operators.
         */
-        private Expr BindRealUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
+        private ExprOperator BindRealUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(arg.Type.isPredefined());
             return bindFloatOp(ek, flags, arg, null);
@@ -1891,7 +1891,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             This function is called twice by the EE for every binary operator it evaluates
             Here is how it works.
         */
-        private Expr BindDecBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprBinOp BindDecBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(arg1.Type.isPredefType(PredefinedType.PT_DECIMAL) && arg2.Type.isPredefType(PredefinedType.PT_DECIMAL));
 
@@ -1939,7 +1939,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles standard unary decimal based operators.
         */
-        private Expr BindDecUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
+        private ExprUnaryOp BindDecUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(arg.Type.isPredefType(PredefinedType.PT_DECIMAL));
             Debug.Assert(ek == ExpressionKind.EK_NEG || ek == ExpressionKind.EK_UPLUS);
@@ -1971,7 +1971,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Bind a shift operator: <<, >>. These can have integer or long first operands,
             and second operand must be int.
         */
-        private Expr BindShiftOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprBinOp BindShiftOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.EK_LSHIFT || ek == ExpressionKind.EK_RSHIFT);
             Debug.Assert(arg1.Type.isPredefined());
@@ -2065,7 +2065,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles string equality.
         */
-        private Expr BindStrCmpOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprBinOp BindStrCmpOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.EK_EQ || ek == ExpressionKind.EK_NE);
             Debug.Assert(arg1.Type.isPredefType(PredefinedType.PT_STRING) && arg2.Type.isPredefType(PredefinedType.PT_STRING));
@@ -2082,7 +2082,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles reference equality operators. Type variables come through here.
         */
-        private Expr BindRefCmpOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprBinOp BindRefCmpOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.EK_EQ || ek == ExpressionKind.EK_NE);
 
@@ -2476,7 +2476,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return exprRes;
         }
 
-        private Expr bindStringConcat(Expr op1, Expr op2)
+        private ExprConcat bindStringConcat(Expr op1, Expr op2)
         {
             // If the concatenation consists solely of two constants then we must
             // realize the concatenation into a single constant node at this time.
