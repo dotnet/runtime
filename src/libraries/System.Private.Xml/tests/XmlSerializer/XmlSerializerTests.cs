@@ -1885,7 +1885,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <StringProperty>TestString</StringProperty>
   <IntProperty>5</IntProperty>
-  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
   <ListProperty>
     <string>one</string>
     <string>two</string>
