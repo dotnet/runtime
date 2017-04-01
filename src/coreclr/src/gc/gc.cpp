@@ -36102,43 +36102,15 @@ CFinalize::FinalizeSegForAppDomain (AppDomain *pDomain,
         // if it has the index we are looking for. If the methodtable is null, it can't be from the
         // unloading domain, so skip it.
         if (method_table(obj) == NULL)
-            continue;
-
-        // eagerly finalize all objects except those that may be agile.
-        if (obj->GetAppDomainIndex() != pDomain->GetIndex())
-            continue;
-
-#ifndef FEATURE_REDHAWK
-        if (method_table(obj)->IsAgileAndFinalizable())
         {
-            // If an object is both agile & finalizable, we leave it in the
-            // finalization queue during unload.  This is OK, since it's agile.
-            // Right now only threads can be this way, so if that ever changes, change
-            // the assert to just continue if not a thread.
-            _ASSERTE(method_table(obj) == g_pThreadClass);
-
-            if (method_table(obj) == g_pThreadClass)
-            {
-                // However, an unstarted thread should be finalized. It could be holding a delegate
-                // in the domain we want to unload. Once the thread has been started, its
-                // delegate is cleared so only unstarted threads are a problem.
-                Thread *pThread = ((THREADBASEREF)ObjectToOBJECTREF(obj))->GetInternal();
-                if (! pThread || ! pThread->IsUnstarted())
-                {
-                    // This appdomain is going to be gone soon so let us assign
-                    // it the appdomain that's guaranteed to exist
-                    // The object is agile and the delegate should be null so we can do it
-                    obj->GetHeader()->ResetAppDomainIndexNoFailure(SystemDomain::System()->DefaultDomain()->GetIndex());
-                    continue;
-                }
-            }
-            else
-            {
-                obj->GetHeader()->ResetAppDomainIndexNoFailure(SystemDomain::System()->DefaultDomain()->GetIndex());
-                continue;
-            }
+            continue;
         }
-#endif //!FEATURE_REDHAWK
+
+        // does the EE actually want us to finalize this object?
+        if (!GCToEEInterface::ShouldFinalizeObjectForUnload(pDomain, obj))
+        {
+            continue;
+        }
 
         if (!fRunFinalizers || (obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN)
         {
