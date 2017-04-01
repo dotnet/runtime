@@ -315,7 +315,7 @@ namespace System.Globalization
                                     0,
                                     MillisPerSecond - 1));
                 }
-                return (InternalGloablizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond); ;
+                return (InternalGlobalizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond); ;
             }
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }

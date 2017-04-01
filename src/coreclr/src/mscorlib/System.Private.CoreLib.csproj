@@ -506,54 +506,25 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\HebrewNumber.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\JulianCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\PersianCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\UnicodeCategory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
@@ -588,7 +559,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Threading\AbandonedMutexException.cs" />

@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Globalization
 {
-    internal class InternalGloablizationHelper
+    internal class InternalGlobalizationHelper
     {
         // Copied from the TimeSpan to be used inside the globalization code and avoid internal dependancy on TimeSpan class
         internal static long TimeToTicks(int hour, int minute, int second)
