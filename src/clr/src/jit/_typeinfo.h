@@ -27,8 +27,7 @@ enum ti_types
 #define DEF_TI(ti, nm) ti,
 #include "titypes.h"
 #undef DEF_TI
-    TI_ONLY_ENUM = TI_METHOD, // Enum values above this are completely described by the enumeration
-    TI_COUNT
+    TI_ONLY_ENUM = TI_METHOD, // Enum values with greater value are completely described by the enumeration.
 };
 
 #if defined(_TARGET_64BIT_)
@@ -190,8 +189,6 @@ inline ti_types JITtype2tiType(CorInfoType type)
  *
  */
 
-// TI_COUNT is less than or equal to TI_FLAG_DATA_MASK
-
 #define TI_FLAG_DATA_BITS 6
 #define TI_FLAG_DATA_MASK ((1 << TI_FLAG_DATA_BITS) - 1)
 
@@ -287,7 +284,7 @@ private:
     union {
         struct
         {
-            ti_types type : 6;
+            ti_types type : TI_FLAG_DATA_BITS;
             unsigned uninitobj : 1;        // used
             unsigned byref : 1;            // used
             unsigned byref_readonly : 1;   // used
