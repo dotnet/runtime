@@ -270,6 +270,11 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     abort();
 }
 
+bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+{
+    return true;
+}
+
 bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC
