@@ -317,12 +317,10 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pSuspensionThread.EnumMem(); )
     
-#ifdef FEATURE_SVR_GC
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        IGCHeap::gcHeapType.EnumMem();
+        g_heap_type.EnumMem();
     );
-#endif // FEATURE_SVR_GC
 
     m_dumpStats.m_cbClrStatics = m_cbMemoryReported - cbMemoryReported;
 
