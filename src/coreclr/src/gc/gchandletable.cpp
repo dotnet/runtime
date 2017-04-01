@@ -23,12 +23,12 @@ void GCHandleTable::Shutdown()
     Ref_Shutdown();
 }
 
-void* GCHandleTable::GetHandleTableContext(HHANDLETABLE hTable)
+void* GCHandleTable::GetHandleTableContext(void* handleTable)
 {
-    return (void*)((uintptr_t)::HndGetHandleTableADIndex(hTable).m_dwIndex);
+    return (void*)((uintptr_t)::HndGetHandleTableADIndex((HHANDLETABLE)handleTable).m_dwIndex);
 }
 
-HHANDLETABLE GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
+void* GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
 {
-    return ::HndGetHandleTable(handle);
+    return (void*)::HndGetHandleTable(handle);
 }

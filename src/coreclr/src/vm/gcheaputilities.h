@@ -209,5 +209,22 @@ private:
     GCHeapUtilities() = delete;
 };
 
+// Handle-related utilities.
+
+void ValidateHandleAndAppDomain(OBJECTHANDLE handle);
+
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+#ifdef _DEBUG_IMPL
+    ValidateHandleAndAppDomain(handle);
+#endif // _DEBUG_IMPL
+
+    // Wrap the raw OBJECTREF and return it
+    return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
+}
+
 #endif // _GCHEAPUTILITIES_H_
 
