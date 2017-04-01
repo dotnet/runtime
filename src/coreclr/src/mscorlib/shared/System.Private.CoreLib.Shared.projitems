@@ -157,9 +157,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidProgramException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidTimeZoneException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Error.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamHelpers.CopyValidation.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs"/>
@@ -282,6 +283,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\PartialTrustVisibilityLevel.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityCriticalAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityCriticalScope.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityException.cs"/>
@@ -302,6 +304,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExtensions.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskSchedulerException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadStaticAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeoutException.cs"/>
@@ -337,6 +342,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix) and $(TargetsOSX)">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs"/>
