@@ -52,7 +52,6 @@ namespace System
 
         // Constants from fusionsetup.h.
         private const string LOADER_OPTIMIZATION = "LOADER_OPTIMIZATION";
-        private const string CONFIGURATION_EXTENSION = ".config";
 
         private const string ACTAG_APP_BASE_URL = "APPBASE";
 
@@ -131,7 +130,7 @@ namespace System
                 else
                     _AppDomainInitializer = null;
 
-                _ConfigurationBytes = copy.GetConfigurationBytes();
+                _ConfigurationBytes = null; 
 #if FEATURE_COMINTEROP
                 _DisableInterfaceCache = copy._DisableInterfaceCache;
 #endif // FEATURE_COMINTEROP
@@ -178,7 +177,6 @@ namespace System
                 else
                     ApplicationBase = appBase;
             }
-            ConfigurationFile = ApplicationName + AppDomainSetup.ConfigurationExtension;
         }
 
         internal string[] Value
@@ -189,11 +187,6 @@ namespace System
                     _Entries = new String[(int)LoaderInformation.LoaderMaximum];
                 return _Entries;
             }
-        }
-
-        internal String GetUnsecureApplicationBase()
-        {
-            return Value[(int)LoaderInformation.ApplicationBaseValue];
         }
 
         public string AppDomainManagerAssembly
@@ -213,246 +206,15 @@ namespace System
             [Pure]
             get
             {
-                return VerifyDir(GetUnsecureApplicationBase(), false);
+                return Value[(int)LoaderInformation.ApplicationBaseValue];
             }
 
             set
             {
-                Value[(int)LoaderInformation.ApplicationBaseValue] = NormalizePath(value, false);
+                Value[(int)LoaderInformation.ApplicationBaseValue] = (value == null || value.Length == 0)?null:Path.GetFullPath(value);
             }
         }
-
-        private String NormalizePath(String path, bool useAppBase)
-        {
-            if (path == null)
-                return null;
-
-            // If we add very long file name support ("\\?\") to the Path class then this is unnecesary,
-            // but we do not plan on doing this for now.
-
-            // Long path checks can be quirked, and as loading default quirks too early in the setup of an AppDomain is risky
-            // we'll avoid checking path lengths- we'll still fail at MAX_PATH later if we're !useAppBase when we call Path's
-            // NormalizePath.
-            if (!useAppBase)
-                path = Security.Util.URLString.PreProcessForExtendedPathRemoval(
-                    checkPathLength: false,
-                    url: path,
-                    isFileUrl: false);
-
-
-            int len = path.Length;
-            if (len == 0)
-                return null;
-
-#if !PLATFORM_UNIX
-            bool UNCpath = false;
-#endif // !PLATFORM_UNIX
-
-            if ((len > 7) &&
-                (String.Compare(path, 0, "file:", 0, 5, StringComparison.OrdinalIgnoreCase) == 0))
-            {
-                int trim;
-
-                if (path[6] == '\\')
-                {
-                    if ((path[7] == '\\') || (path[7] == '/'))
-                    {
-                        // Don't allow "file:\\\\", because we can't tell the difference
-                        // with it for "file:\\" + "\\server" and "file:\\\" + "\localpath"
-                        if ((len > 8) &&
-                             ((path[8] == '\\') || (path[8] == '/')))
-                            throw new ArgumentException(SR.Argument_InvalidPathChars);
-
-                        // file:\\\ means local path
-                        else
-#if !PLATFORM_UNIX
-                            trim = 8;
-#else
-                            // For Unix platform, trim the first 7 characters only.
-                            // Trimming the first 8 characters will cause
-                            // the root path separator to be trimmed away,
-                            // and the absolute local path becomes a relative local path.
-                            trim = 7;
-#endif // !PLATFORM_UNIX
-                    }
-
-                    // file:\\ means remote server
-                    else
-                    {
-                        trim = 5;
-#if !PLATFORM_UNIX
-                        UNCpath = true;
-#endif // !PLATFORM_UNIX
-                    }
-                }
-
-                // local path
-                else if (path[7] == '/')
-#if !PLATFORM_UNIX
-                    trim = 8;
-#else
-                    // For Unix platform, trim the first 7 characters only.
-                    // Trimming the first 8 characters will cause
-                    // the root path separator to be trimmed away,
-                    // and the absolute local path becomes a relative local path.
-                    trim = 7;
-#endif // !PLATFORM_UNIX
-
-                // remote
-                else
-                {
-                    // file://\\remote
-                    if ((len > 8) && (path[7] == '\\') && (path[8] == '\\'))
-                        trim = 7;
-                    else
-                    { // file://remote
-                        trim = 5;
-#if !PLATFORM_UNIX
-                        // Create valid UNC path by changing
-                        // all occurences of '/' to '\\' in path
-                        System.Text.StringBuilder winPathBuilder =
-                            new System.Text.StringBuilder(len);
-                        for (int i = 0; i < len; i++)
-                        {
-                            char c = path[i];
-                            if (c == '/')
-                                winPathBuilder.Append('\\');
-                            else
-                                winPathBuilder.Append(c);
-                        }
-                        path = winPathBuilder.ToString();
-#endif // !PLATFORM_UNIX
-                    }
-#if !PLATFORM_UNIX
-                    UNCpath = true;
-#endif // !PLATFORM_UNIX
-                }
-
-                path = path.Substring(trim);
-                len -= trim;
-            }
-
-#if !PLATFORM_UNIX
-            bool localPath;
-
-            // UNC
-            if (UNCpath ||
-                ((len > 1) &&
-                  ((path[0] == '/') || (path[0] == '\\')) &&
-                  ((path[1] == '/') || (path[1] == '\\'))))
-                localPath = false;
-
-            else
-            {
-                int colon = path.IndexOf(':') + 1;
-
-                // protocol other than file:
-                if ((colon != 0) &&
-                    (len > colon + 1) &&
-                    ((path[colon] == '/') || (path[colon] == '\\')) &&
-                    ((path[colon + 1] == '/') || (path[colon + 1] == '\\')))
-                    localPath = false;
-
-                else
-                    localPath = true;
-            }
-
-            if (localPath)
-#else
-            if ( (len == 1) ||
-                 ( (path[0] != '/') && (path[0] != '\\') ) ) 
-#endif // !PLATFORM_UNIX
-            {
-                if (useAppBase &&
-                    ((len == 1) || (path[1] != ':')))
-                {
-                    String appBase = Value[(int)LoaderInformation.ApplicationBaseValue];
-
-                    if ((appBase == null) || (appBase.Length == 0))
-                        throw new MemberAccessException(SR.AppDomain_AppBaseNotSet);
-
-                    StringBuilder result = StringBuilderCache.Acquire();
-
-                    bool slash = false;
-                    if ((path[0] == '/') || (path[0] == '\\'))
-                    {
-                        string pathRoot = AppDomain.NormalizePath(appBase, fullCheck: false);
-                        pathRoot = pathRoot.Substring(0, IO.PathInternal.GetRootLength(pathRoot));
-
-                        if (pathRoot.Length == 0)
-                        { // URL
-                            int index = appBase.IndexOf(":/", StringComparison.Ordinal);
-                            if (index == -1)
-                                index = appBase.IndexOf(":\\", StringComparison.Ordinal);
-
-                            // Get past last slashes of "url:http://"
-                            int urlLen = appBase.Length;
-                            for (index += 1;
-                                 (index < urlLen) && ((appBase[index] == '/') || (appBase[index] == '\\'));
-                                 index++) ;
-
-                            // Now find the next slash to get domain name
-                            for (; (index < urlLen) && (appBase[index] != '/') && (appBase[index] != '\\');
-                                index++) ;
-
-                            pathRoot = appBase.Substring(0, index);
-                        }
-
-                        result.Append(pathRoot);
-                        slash = true;
-                    }
-                    else
-                        result.Append(appBase);
-
-                    // Make sure there's a slash separator (and only one)
-                    int aLen = result.Length - 1;
-                    if ((result[aLen] != '/') &&
-                        (result[aLen] != '\\'))
-                    {
-                        if (!slash)
-                        {
-#if !PLATFORM_UNIX
-                            if (appBase.IndexOf(":/", StringComparison.Ordinal) == -1)
-                                result.Append('\\');
-                            else
-#endif // !PLATFORM_UNIX
-                                result.Append('/');
-                        }
-                    }
-                    else if (slash)
-                        result.Remove(aLen, 1);
-
-                    result.Append(path);
-                    path = StringBuilderCache.GetStringAndRelease(result);
-                }
-                else
-                    path = AppDomain.NormalizePath(path, fullCheck: true);
-            }
-
-            return path;
-        }
-
-        public String ConfigurationFile
-        {
-            get
-            {
-                return VerifyDir(Value[(int)LoaderInformation.ConfigurationFileValue], true);
-            }
-
-            set
-            {
-                Value[(int)LoaderInformation.ConfigurationFileValue] = value;
-            }
-        }
-
-        public byte[] GetConfigurationBytes()
-        {
-            if (_ConfigurationBytes == null)
-                return null;
-
-            return (byte[])_ConfigurationBytes.Clone();
-        }
-
+        
         // only needed by AppDomain.Setup(). Not really needed by users. 
         internal Dictionary<string, object> GetCompatibilityFlags()
         {
@@ -495,22 +257,6 @@ namespace System
             {
                 _TargetFrameworkName = value;
             }
-        }
-
-        private String VerifyDir(String dir, bool normalize)
-        {
-            if (dir != null)
-            {
-                if (dir.Length == 0)
-                    dir = null;
-                else
-                {
-                    if (normalize)
-                        dir = NormalizePath(dir, true);
-                }
-            }
-
-            return dir;
         }
 
         public String ApplicationName
@@ -591,14 +337,6 @@ namespace System
             get
             {
                 return LOADER_OPTIMIZATION;
-            }
-        }
-
-        internal static string ConfigurationExtension
-        {
-            get
-            {
-                return CONFIGURATION_EXTENSION;
             }
         }
 
