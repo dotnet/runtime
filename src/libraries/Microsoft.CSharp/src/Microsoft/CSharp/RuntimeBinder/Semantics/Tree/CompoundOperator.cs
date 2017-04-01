@@ -7,6 +7,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMultiGet : Expr
     {
         public ExprMulti OptionalMulti { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_MULTIGET;
     }
 
     internal sealed class ExprMulti : Expr
@@ -14,5 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr Left { get; set; }
 
         public Expr Operator { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_MULTI;
     }
 }

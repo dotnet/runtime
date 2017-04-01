@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -22,6 +23,16 @@ namespace Microsoft.CSharp.RuntimeBinder
             public ExpressionExpr(Expression e)
             {
                 Expression = e;
+            }
+
+            [ExcludeFromCodeCoverage]
+            public override ExpressionKind Kind
+            {
+                get
+                {
+                    Debug.Fail("Should not be called");
+                    return 0;
+                }
             }
         }
 

@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         internal CType RuntimeObjectActualType { get; set; }
 
-        public ExpressionKind Kind { get; set; }
+        public abstract ExpressionKind Kind { get; }
 
         public EXPRFLAG Flags { get; set; }
 

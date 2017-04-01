@@ -6,5 +6,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprClass : ExprTypeOrNamespace
     {
+        public override ExpressionKind Kind => ExpressionKind.EK_CLASS;
     }
 }

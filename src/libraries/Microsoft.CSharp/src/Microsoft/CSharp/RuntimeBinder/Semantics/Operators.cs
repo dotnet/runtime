@@ -90,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly UnaOpSig[] g_rguos;
 
-        private Expr bindUserDefinedBinOp(ExpressionKind ek, BinOpArgInfo info)
+        private ExprBinOp BindUserDefinedBinOp(ExpressionKind ek, BinOpArgInfo info)
         {
             MethPropWithInst pmpwi = null;
             if (info.pt1 <= PredefinedType.PT_ULONG && info.pt2 <= PredefinedType.PT_ULONG)
@@ -460,7 +460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int bestBinopSignature = -1;
 
             // First check if this is a user defined binop. If it is, return it.
-            Expr exprUD = bindUserDefinedBinOp(ek, info);
+            ExprBinOp exprUD = BindUserDefinedBinOp(ek, info);
             if (exprUD != null)
             {
                 return exprUD;
@@ -552,9 +552,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 return BindLiftedEnumArithmeticBinOp(ek, flags, expr1, expr2);
             }
+
             return BindLiftedStandardBinOp(info, bofs, ek, flags);
         }
-        private Expr BindLiftedStandardBinOp(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
+
+        private ExprBinOp BindLiftedStandardBinOp(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
         {
             Debug.Assert(bofs.Type1().IsNullableType() || bofs.Type2().IsNullableType());
 
@@ -1985,19 +1987,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Bind a bool binary operator: ==, !=, &&, ||, , |, ^. If both operands are constant, the
             result will be a constant also.
         */
-        private Expr BindBoolBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private ExprBinOp BindBoolBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(arg1 != null);
             Debug.Assert(arg2 != null);
             Debug.Assert(arg1.Type.isPredefType(PredefinedType.PT_BOOL) || (arg1.Type.IsNullableType() && arg2.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
             Debug.Assert(arg2.Type.isPredefType(PredefinedType.PT_BOOL) || (arg2.Type.IsNullableType() && arg2.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
 
-            Expr exprRes = GetExprFactory().CreateBinop(ek, GetReqPDT(PredefinedType.PT_BOOL), arg1, arg2);
-
-            return exprRes;
+            return GetExprFactory().CreateBinop(ek, GetReqPDT(PredefinedType.PT_BOOL), arg1, arg2);
         }
 
-        private Expr BindBoolBitwiseOp(ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2, BinOpFullSig bofs)
+        private ExprOperator BindBoolBitwiseOp(ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2, BinOpFullSig bofs)
         {
             Debug.Assert(ek == ExpressionKind.EK_BITAND || ek == ExpressionKind.EK_BITOR);
             Debug.Assert(expr1.Type.isPredefType(PredefinedType.PT_BOOL) || expr1.Type.IsNullableType() && expr1.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL));
@@ -2379,7 +2379,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Convert an expression involving I4, U4, I8 or U8 operands. The operands are
             assumed to be already converted to the correct types.
         */
-        private Expr BindIntOp(ExpressionKind kind, EXPRFLAG flags, Expr op1, Expr op2, PredefinedType ptOp)
+        private ExprOperator BindIntOp(ExpressionKind kind, EXPRFLAG flags, Expr op1, Expr op2, PredefinedType ptOp)
         {
             //Debug.Assert(kind.isRelational() || kind.isArithmetic() || kind.isBitwise());
             Debug.Assert(ptOp == PredefinedType.PT_INT || ptOp == PredefinedType.PT_UINT || ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG);
@@ -2396,13 +2396,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType typeDest = kind.isRelational() ? GetReqPDT(PredefinedType.PT_BOOL) : typeOp;
 
-            Expr exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
+            ExprOperator exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
             exprRes.Flags |= flags;
             Debug.Assert((exprRes.Flags & EXPRFLAG.EXF_LVALUE) == 0);
             return exprRes;
         }
 
-        private Expr BindIntegerNeg(EXPRFLAG flags, Expr op, PredefinedType ptOp)
+        private ExprOperator BindIntegerNeg(EXPRFLAG flags, Expr op, PredefinedType ptOp)
         {
             // 14.6.2 Unary minus operator
             // For an operation of the form -x, unary operator overload resolution (14.2.3) is applied to select
@@ -2450,7 +2450,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 op = mustConvertCore(op, exprObj, CONVERTTYPE.NOUDC);
             }
 
-            Expr exprRes = GetExprFactory().CreateNeg(flags, op);
+            ExprOperator exprRes = GetExprFactory().CreateNeg(flags, op);
             Debug.Assert(0 == (exprRes.Flags & EXPRFLAG.EXF_LVALUE));
             return exprRes;
         }
@@ -2460,7 +2460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
           will be a constant also. op2 can be null for a unary operator. The operands are assumed
           to be already converted to the correct type.
          */
-        private Expr bindFloatOp(ExpressionKind kind, EXPRFLAG flags, Expr op1, Expr op2)
+        private ExprOperator bindFloatOp(ExpressionKind kind, EXPRFLAG flags, Expr op1, Expr op2)
         {
             //Debug.Assert(kind.isRelational() || kind.isArithmetic());
             Debug.Assert(op2 == null || op1.Type == op2.Type);
@@ -2469,7 +2469,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Allocate the result expression.
             CType typeDest = kind.isRelational() ? GetReqPDT(PredefinedType.PT_BOOL) : op1.Type;
 
-            Expr exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
+            ExprOperator exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
             flags = ~EXPRFLAG.EXF_CHECKOVERFLOW;
             exprRes.Flags |= flags;
 
@@ -2502,7 +2502,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
           Report an ambiguous operator types error.
          */
-        private Expr ambiguousOperatorError(ExpressionKind ek, Expr op1, Expr op2)
+        private ExprOperator ambiguousOperatorError(ExpressionKind ek, Expr op1, Expr op2)
         {
             RETAILVERIFY(op1 != null);
 
@@ -2520,7 +2520,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 GetErrorContext().Error(ErrorCode.ERR_AmbigUnaryOp, strOp, op1.Type);
             }
 
-            Expr rval = GetExprFactory().CreateOperator(ek, null, op1, op2);
+            ExprOperator rval = GetExprFactory().CreateOperator(ek, null, op1, op2);
             rval.SetError();
             return rval;
         }

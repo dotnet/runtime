@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprStatement OptionalStatements { get; set; }
 
         public Scope OptionalScopeSymbol { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_BLOCK;
     }
 }

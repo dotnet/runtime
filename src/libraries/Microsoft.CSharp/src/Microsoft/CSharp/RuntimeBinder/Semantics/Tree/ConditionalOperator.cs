@@ -9,5 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr TestExpression { get; set; }
 
         public ExprBinOp Consequence { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_QUESTIONMARK;
     }
 }

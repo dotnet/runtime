@@ -11,5 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr UserDefinedCall { get; set; }
 
         public MethWithInst UserDefinedCallMethod { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_USERDEFINEDCONVERSION;
     }
 }

@@ -7,5 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprArrayLength : Expr
     {
         public Expr Array { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_ARRAYLENGTH;
     }
 }

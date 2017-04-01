@@ -7,5 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal class ExprLocal : Expr
     {
         public LocalVariableSymbol Local { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_LOCAL;
     }
 }

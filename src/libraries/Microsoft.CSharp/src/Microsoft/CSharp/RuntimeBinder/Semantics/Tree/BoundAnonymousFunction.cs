@@ -30,5 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _argumentScope = value;
             }
         }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_BOUNDLAMBDA;
     }
 }

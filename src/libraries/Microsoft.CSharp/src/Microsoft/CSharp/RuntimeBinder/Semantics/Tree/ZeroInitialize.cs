@@ -11,5 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr OptionalConstructorCall { get; set; }
 
         public bool IsConstructor { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_ZEROINIT;
     }
 }

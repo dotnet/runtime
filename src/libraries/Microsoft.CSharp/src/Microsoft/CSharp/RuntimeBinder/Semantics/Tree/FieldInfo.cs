@@ -15,5 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public FieldSymbol Field { get; }
 
         public AggregateType FieldType { get; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_FIELDINFO;
     }
 }

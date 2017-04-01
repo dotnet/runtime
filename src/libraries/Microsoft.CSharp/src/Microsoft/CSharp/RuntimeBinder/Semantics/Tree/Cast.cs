@@ -11,5 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprTypeOrNamespace DestinationType { get; set; }
 
         public bool IsBoxingCast => (Flags & (EXPRFLAG.EXF_BOX | EXPRFLAG.EXF_FORCE_BOX)) != 0;
+
+        public override ExpressionKind Kind => ExpressionKind.EK_CAST;
     }
 }

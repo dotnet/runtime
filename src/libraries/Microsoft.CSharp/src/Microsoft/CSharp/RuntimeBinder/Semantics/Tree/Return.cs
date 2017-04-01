@@ -8,5 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         // Return object is optional because of void returns.
         public Expr OptionalObject { get; set; }
+
+        public override ExpressionKind Kind => ExpressionKind.EK_RETURN;
     }
 }
