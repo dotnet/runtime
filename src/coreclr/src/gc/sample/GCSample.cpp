@@ -207,24 +207,24 @@ int __cdecl main(int argc, char* argv[])
 
     for (int i = 0; i < 1000000; i++)
     {
-        Object * pBefore = ((My *)ObjectFromHandle(oh))->m_pOther1;
+        Object * pBefore = ((My *)HndFetchHandle(oh))->m_pOther1;
 
         // Allocate more instances of the same object
         Object * p = AllocateObject(pMyMethodTable);
         if (p == NULL)
             return -1;
 
-        Object * pAfter = ((My *)ObjectFromHandle(oh))->m_pOther1;
+        Object * pAfter = ((My *)HndFetchHandle(oh))->m_pOther1;
 
         // Uncomment this assert to see how GC triggered inside AllocateObject moved objects around
         // assert(pBefore == pAfter);
 
         // Store the newly allocated object into a field using WriteBarrier
-        WriteBarrier(&(((My *)ObjectFromHandle(oh))->m_pOther1), p);
+        WriteBarrier(&(((My *)HndFetchHandle(oh))->m_pOther1), p);
     }
 
     // Create weak handle that points to our object
-    OBJECTHANDLE ohWeak = CreateGlobalWeakHandle(ObjectFromHandle(oh));
+    OBJECTHANDLE ohWeak = CreateGlobalWeakHandle(HndFetchHandle(oh));
     if (ohWeak == NULL)
         return -1;
 
@@ -235,7 +235,7 @@ int __cdecl main(int argc, char* argv[])
     pGCHeap->GarbageCollect();
 
     // Verify that the weak handle got cleared by the GC
-    assert(ObjectFromHandle(ohWeak) == NULL);
+    assert(HndFetchHandle(ohWeak) == NULL);
 
     printf("Done\n");
 

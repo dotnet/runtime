@@ -27,7 +27,6 @@
  * non-NULL.  In other words, if this handle is being initialized for the first
  * time.
  */
-#define ObjectFromHandle(handle)                   HndFetchHandle(handle)
 #define StoreObjectInHandle(handle, object)        HndAssignHandle(handle, object)
 #define InterlockedCompareExchangeObjectInHandle(handle, object, oldObj)        HndInterlockedCompareExchangeHandle(handle, object, oldObj)
 #define StoreFirstObjectInHandle(handle, object)   HndFirstAssignHandle(handle, object)
@@ -119,7 +118,7 @@ inline OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) {
     WRAPPER_NO_CONTRACT;
 
     // Create a new STRONG handle in the same table as an existing handle.  
-    return HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, ObjectFromHandle(handle));
+    return HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, HndFetchHandle(handle));
 }
 
 
