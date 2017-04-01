@@ -16,6 +16,7 @@ extern "C" {
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
+GVAL_DECL(GCHeapType, g_heap_type);
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
@@ -120,10 +121,11 @@ public:
     inline static bool IsServerHeap()
     {
         LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_SVR_GC
-        _ASSERTE(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-        return (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR);
-#else // FEATURE_SVR_GC
+        _ASSERTE(g_heap_type != GC_HEAP_INVALID);
+        return g_heap_type == GC_HEAP_SVR;
+#else
         return false;
 #endif // FEATURE_SVR_GC
     }

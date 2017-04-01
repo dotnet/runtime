@@ -87,6 +87,7 @@ class IGCHeapInternal;
 
 /* misc defines */
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
+#define max_generation 2
 
 #ifdef GC_CONFIG_DRIVEN
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
@@ -110,6 +111,8 @@ extern "C" uint32_t* g_gc_card_bundle_table;
 extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
+extern "C" GCHeapType g_gc_heap_type;
+extern "C" uint32_t g_max_generation;
 
 ::IGCHandleTable*  CreateGCHandleTable();
 
@@ -219,7 +222,7 @@ public:
 
     unsigned GetMaxGeneration()
     {
-        return IGCHeap::maxGeneration;
+        return max_generation;
     }
 
     bool IsValidSegmentSize(size_t cbSize)
@@ -235,8 +238,6 @@ public:
 
     BOOL IsLargeObject(MethodTable *mt)
     {
-        WRAPPER_NO_CONTRACT;
-
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
     }
 
@@ -270,18 +271,15 @@ extern IGCHandleTable* g_theGCHandleTable;
 #ifndef DACCESS_COMPILE
 inline bool IsGCInProgress(bool bConsiderGCStart = false)
 {
-    WRAPPER_NO_CONTRACT;
-
     return g_theGCHeap != nullptr ? g_theGCHeap->IsGCInProgressHelper(bConsiderGCStart) : false;
 }
 #endif // DACCESS_COMPILE
 
 inline bool IsServerHeap()
 {
-    LIMITED_METHOD_CONTRACT;
 #ifdef FEATURE_SVR_GC
-    _ASSERTE(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-    return (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR);
+    assert(g_gc_heap_type != GC_HEAP_INVALID);
+    return g_gc_heap_type == GC_HEAP_SVR;
 #else // FEATURE_SVR_GC
     return false;
 #endif // FEATURE_SVR_GC

@@ -2929,31 +2929,33 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
 
     SOSDacEnter();
 
-    // for server GC-capable builds only, we need to check and see if IGCHeap::gcHeapType
+    // we need to check and see if g_heap_type
     // is GC_HEAP_INVALID, in which case we fail.
-    // IGCHeap::gcHeapType doesn't exist on non-server-GC capable builds.
-#ifdef FEATURE_SVR_GC
-    ULONG32 gcHeapValue = *g_gcDacGlobals->gc_heap_type;
+    ULONG32 gcHeapValue = g_heap_type;
 
     // GC_HEAP_TYPE has three possible values:
     //       GC_HEAP_INVALID = 0,
     //       GC_HEAP_WKS     = 1,
     //       GC_HEAP_SVR     = 2
     // If we get something other than that, we probably read the wrong location.
-    _ASSERTE(gcHeapValue >= IGCHeap::GC_HEAP_INVALID && gcHeapValue <= IGCHeap::GC_HEAP_SVR);
+    _ASSERTE(gcHeapValue >= GC_HEAP_INVALID && gcHeapValue <= GC_HEAP_SVR);
 
-    // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done
-    if (gcHeapValue == IGCHeap::GC_HEAP_INVALID)
+    // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done - we haven't
+    // initialized the heap yet.
+    if (gcHeapValue == GC_HEAP_INVALID)
     {
         hr = E_FAIL;
         goto cleanup;
     }
-#endif
 
     // Now we can get other important information about the heap
+    // We can use GCHeapUtilities::IsServerHeap here because we have already validated
+    // that the heap is in a valid state. We couldn't use it above, because IsServerHeap
+    // asserts if the heap type is GC_HEAP_INVALID.
     gcheapData->g_max_generation = *g_gcDacGlobals->max_gen;
-    gcheapData->bServerMode = gcHeapValue == IGCHeap::GC_HEAP_SVR;
+    gcheapData->bServerMode = GCHeapUtilities::IsServerHeap();
     gcheapData->bGcStructuresValid = *g_gcDacGlobals->gc_structures_invalid_cnt == 0;
+
     if (GCHeapUtilities::IsServerHeap())
     {
 #if !defined (FEATURE_SVR_GC)
@@ -2968,10 +2970,8 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
         gcheapData->HeapCount = 1;
     }
 
-#ifdef FEATURE_SVR_GC
 cleanup:
     ;
-#endif
 
     SOSDacLeave();
     return hr;
@@ -3069,7 +3069,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     SOSDacEnter();
     memset(data, 0, sizeof(DacpGCInterestingInfoData));
 
-    if (*g_gcDacGlobals->gc_heap_type != IGCHeap::GC_HEAP_SVR)
+    if (g_heap_type != GC_HEAP_SVR)
     {
         for (int i = 0; i < NUM_GC_DATA_POINTS; i++)
             data->interestingDataPoints[i] = g_gcDacGlobals->interesting_data_per_heap[i];

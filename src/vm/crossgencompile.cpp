@@ -133,9 +133,7 @@ BOOL g_fEEComActivatedStartup=FALSE;
 
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
-#ifdef FEATURE_SVR_GC
-SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_WKS);
-#endif
+GVAL_IMPL_INIT(GCHeapType, g_heap_type, GC_HEAP_WKS);
 
 void UpdateGCSettingFromHost()
 {
