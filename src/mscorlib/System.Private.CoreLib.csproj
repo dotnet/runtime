@@ -579,20 +579,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ICU.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
@@ -903,9 +895,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.Windows.cs" />
     <!-- Interop sources -->
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
   </ItemGroup>
