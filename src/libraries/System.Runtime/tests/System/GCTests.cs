@@ -57,21 +57,19 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Collect_Int_GCCollectionMode_Invalid()
+        public static void Collect_NegativeGenerationCount_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default)); // Generation < 0
-
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Default - 1)); // Invalid collection mode
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Optimized + 1)); // Invalid collection mode
+            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default));
+            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false));
         }
 
-        [Fact]
-        public static void Collect_Int_GCCollectionMode_Bool_Invalid()
+        [Theory]
+        [InlineData(GCCollectionMode.Default - 1)]
+        [InlineData(GCCollectionMode.Optimized + 1)]
+        public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false)); // Generation < 0
-
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Default - 1, false)); // Invalid collection mode
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Optimized + 1, false)); // Invalid collection mode
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", "Enum value was out of legal range.", () => GC.Collect(2, mode));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", "Enum value was out of legal range.", () => GC.Collect(2, mode, false)); 
         }
 
         [Fact]
