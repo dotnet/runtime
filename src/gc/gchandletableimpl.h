@@ -13,6 +13,10 @@ public:
     virtual bool Initialize();
 
     virtual void Shutdown();
+
+    virtual void* GetHandleTableContext(HHANDLETABLE hTable);
+
+    virtual HHANDLETABLE GetHandleTableForHandle(OBJECTHANDLE handle);
 };
 
 #endif  // GCHANDLETABLE_H_
