@@ -2903,10 +2903,6 @@ protected:
     void impHandleAccessAllowed(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
     void impHandleAccessAllowedInternal(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
 
-    void impInsertCalloutForDelegate(CORINFO_METHOD_HANDLE callerMethodHnd,
-                                     CORINFO_METHOD_HANDLE calleeMethodHnd,
-                                     CORINFO_CLASS_HANDLE  delegateTypeHnd);
-
     var_types impImportCall(OPCODE                  opcode,
                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call on a
