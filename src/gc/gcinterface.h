@@ -153,14 +153,6 @@ struct segment_info
     size_t ibReserved; // limit of reserved memory in the segment (>= commit)
 };
 
-
-/*
- * handle to handle table
- */
-typedef DPTR(struct HandleTable) PTR_HandleTable;
-typedef DPTR(PTR_HandleTable) PTR_PTR_HandleTable;
-typedef PTR_HandleTable HHANDLETABLE;
-typedef PTR_PTR_HandleTable PTR_HHANDLETABLE;
 #ifdef PROFILING_SUPPORTED
 #define GC_PROFILING       //Turn on profiling
 #endif // PROFILING_SUPPORTED
@@ -400,9 +392,9 @@ public:
 
     virtual void Shutdown() = 0;
 
-    virtual void* GetHandleTableContext(HHANDLETABLE hTable) = 0;
+    virtual void* GetHandleTableContext(void* handleTable) = 0;
 
-    virtual HHANDLETABLE GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
+    virtual void* GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.

@@ -4,6 +4,8 @@
 
 #include "common.h"
 #include "gcheaputilities.h"
+#include "appdomain.hpp"
+
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility
@@ -35,3 +37,38 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 gc_alloc_context g_global_alloc_context = {};
+
+// Debug-only validation for handle.
+void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
+{
+#ifdef _DEBUG_IMPL
+    OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
+    VALIDATEOBJECTREF(objRef);
+
+    IGCHandleTable *pHandleTable = GCHeapUtilities::GetGCHandleTable();
+
+    void* handleTable = pHandleTable->GetHandleTableForHandle(handle);
+    DWORD context = (DWORD)pHandleTable->GetHandleTableContext(handleTable);
+
+    ADIndex appDomainIndex = ADIndex(context);
+    AppDomain *domain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
+
+    // Access to a handle in an unloaded domain is not allowed
+    assert(domain != nullptr);
+    assert(!domain->NoAccessToHandleTable());
+
+#if CHECK_APP_DOMAIN_LEAKS
+    if (g_pConfig->AppDomainLeaks() && objRef != NULL)
+    {
+        if (appDomainIndex.m_dwIndex)
+        {
+            objRef->TryAssignAppDomain(domain);
+        }
+        else
+        {
+            objRef->TrySetAppDomainAgile();
+        }
+    }
+#endif // CHECK_APP_DOMAIN_LEAKS
+#endif // _DEBUG_IMPL
+}
