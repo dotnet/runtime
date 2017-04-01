@@ -177,8 +177,11 @@ BOOL HndFirstAssignHandle(OBJECTHANDLE handle, OBJECTREF objref);
 
 /*
  * inline handle dereferencing
+ *
+ * NOTE: Changes to this implementation should be kept in sync with ObjectFromHandle
+ *       on the VM side.
+ *
  */
-
 FORCEINLINE OBJECTREF HndFetchHandle(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
