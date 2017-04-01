@@ -5750,6 +5750,7 @@ void ThreadStore::InitThreadStore()
     }
     s_DeadThreadGCTriggerPeriodMilliseconds =
         CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds);
+    s_DeadThreadGenerationCounts = nullptr;
 }
 
 // Enter and leave the critical section around the thread store.  Clients should
@@ -5986,6 +5987,7 @@ void ThreadStore::TransferStartedThread(Thread *thread, BOOL bRequiresTSL)
 
 LONG ThreadStore::s_DeadThreadCountThresholdForGCTrigger = 0;
 DWORD ThreadStore::s_DeadThreadGCTriggerPeriodMilliseconds = 0;
+SIZE_T *ThreadStore::s_DeadThreadGenerationCounts = nullptr;
 
 void ThreadStore::IncrementDeadThreadCountForGCTrigger()
 {
@@ -6012,7 +6014,7 @@ void ThreadStore::IncrementDeadThreadCountForGCTrigger()
         return;
     }
 
-    SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(max_generation);
+    SIZE_T gcLastMilliseconds = gcHeap->GetLastGCStartTime(gcHeap->GetMaxGeneration());
     SIZE_T gcNowMilliseconds = gcHeap->GetNow();
     if (gcNowMilliseconds - gcLastMilliseconds < s_DeadThreadGCTriggerPeriodMilliseconds)
     {
@@ -6088,11 +6090,22 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
         return;
     }
 
-    int gcGenerationToTrigger = 0;
+    unsigned gcGenerationToTrigger = 0;
     IGCHeap *gcHeap = GCHeapUtilities::GetGCHeap();
     _ASSERTE(gcHeap != nullptr);
     SIZE_T generationCountThreshold = static_cast<SIZE_T>(s_DeadThreadCountThresholdForGCTrigger) / 2;
-    SIZE_T newDeadThreadGenerationCounts[max_generation + 1] = {0};
+    unsigned maxGeneration = gcHeap->GetMaxGeneration();
+    if (!s_DeadThreadGenerationCounts)
+    {
+        // initialize this field on first use with an entry for every table.
+        s_DeadThreadGenerationCounts = new (nothrow) SIZE_T[maxGeneration + 1];
+        if (!s_DeadThreadGenerationCounts)
+        {
+            return;
+        }
+    }
+
+    memset(s_DeadThreadGenerationCounts, 0, sizeof(SIZE_T) * (maxGeneration + 1));
     {
         ThreadStoreLockHolder threadStoreLockHolder;
         GCX_COOP();
@@ -6114,12 +6127,12 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
                 continue;
             }
 
-            int exposedObjectGeneration = gcHeap->WhichGeneration(exposedObject);
-            SIZE_T newDeadThreadGenerationCount = ++newDeadThreadGenerationCounts[exposedObjectGeneration];
+            unsigned exposedObjectGeneration = gcHeap->WhichGeneration(exposedObject);
+            SIZE_T newDeadThreadGenerationCount = ++s_DeadThreadGenerationCounts[exposedObjectGeneration];
             if (exposedObjectGeneration > gcGenerationToTrigger && newDeadThreadGenerationCount >= generationCountThreshold)
             {
                 gcGenerationToTrigger = exposedObjectGeneration;
-                if (gcGenerationToTrigger >= max_generation)
+                if (gcGenerationToTrigger >= maxGeneration)
                 {
                     break;
                 }
@@ -6153,8 +6166,8 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
                 continue;
             }
 
-            if (gcGenerationToTrigger < max_generation &&
-                static_cast<int>(gcHeap->WhichGeneration(exposedObject)) > gcGenerationToTrigger)
+            if (gcGenerationToTrigger < maxGeneration &&
+                gcHeap->WhichGeneration(exposedObject) > gcGenerationToTrigger)
             {
                 continue;
             }

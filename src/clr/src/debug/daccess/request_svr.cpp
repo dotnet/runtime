@@ -240,7 +240,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 DWORD DacGetNumHeaps()
 {
-    if (g_gcDacGlobals->gc_heap_type == IGCHeap::GC_HEAP_SVR)
+    if (g_heap_type == GC_HEAP_SVR)
         return (DWORD)*g_gcDacGlobals->n_heaps;
 
     // workstation gc

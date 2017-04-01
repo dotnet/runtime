@@ -18,12 +18,6 @@
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
 #define NUMBERGENERATIONS              4
 
-// TODO(segilles) - Implement this scheme for Server GC
-namespace SVR {
-    class heap_segment;
-    class gc_heap;
-}
-
 // Analogue for the GC heap_segment class, containing information regarding a single
 // heap segment.
 class dac_heap_segment {

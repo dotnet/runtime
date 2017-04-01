@@ -14,6 +14,7 @@
 GPTR_IMPL_INIT(uint32_t, g_card_table,      nullptr);
 GPTR_IMPL_INIT(uint8_t,  g_lowest_address,  nullptr);
 GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
+GVAL_IMPL_INIT(GCHeapType, g_heap_type,     GC_HEAP_INVALID);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
 
