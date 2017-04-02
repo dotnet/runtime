@@ -1078,7 +1078,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr newIndex = it.Current();
                 if (newIndex.Type != intType)
                 {
-                    ExprClass exprType = expressionFactory.CreateClass(intType, null, null);
+                    ExprClass exprType = expressionFactory.CreateClass(intType, null);
                     newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
                     newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }

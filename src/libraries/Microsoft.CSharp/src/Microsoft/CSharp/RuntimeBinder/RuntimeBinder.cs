@@ -509,7 +509,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             boundLambda.ArgumentScope = pScope;
 
             ExprReturn returnStatement = _exprFactory.CreateReturn(0, pScope, call);
-            ExprBlock block = _exprFactory.CreateBlock(null, returnStatement, pScope);
+            ExprBlock block = _exprFactory.CreateBlock(returnStatement, pScope);
             boundLambda.OptionalBody = block;
             return boundLambda;
         }
@@ -860,7 +860,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     throw Error.InternalCompilerError();
                 }
 
-                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), null, t.ContainsGenericParameters ?
+                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), t.ContainsGenericParameters ?
                         _exprFactory.CreateTypeArguments(SymbolLoader.getBSymmgr().AllocParams(_symbolTable.GetCTypeArrayFromTypes(t.GetGenericArguments())), null) : null);
             }
             else
@@ -1052,7 +1052,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)
             Type windowsRuntimeMarshalType = SymbolTable.WindowsRuntimeMarshalType;
             _symbolTable.PopulateSymbolTableWithName(methodName, new List<Type> { evtType }, windowsRuntimeMarshalType);
-            ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType), null, null);
+            ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType), null);
             ExprMemberGroup addEventGrp = CreateMemberGroupEXPR(methodName, new List<Type> { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
             Expr expr = _binder.BindMethodGroupToArguments(
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY,
@@ -1387,7 +1387,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // If our argument is a static type, then we're calling a static property.
             Expr callingObject = argument.Info.IsStaticType ?
-                _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(argument.Value as Type), null, null) :
+                _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(argument.Value as Type), null) :
                 CreateLocal(argument.Type, argument.Info.IsOut, local);
 
             if (!argument.Info.UseCompileTimeType && argument.Value == null)
