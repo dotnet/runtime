@@ -88,7 +88,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\InputFile.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ITypeOrNamespace.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\LangCompiler.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
@@ -166,7 +165,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\This.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeArguments.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOf.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOrNamespace.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnaryOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnboundAnonymousFunction.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedConversion.cs" />
