@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return rval;
         }
 
-        public ExprField CreateField(EXPRFLAG nFlags, CType pType, Expr pOptionalObject, uint nOffset, FieldWithType FWT, Expr pOptionalLHS)
+        public ExprField CreateField(EXPRFLAG nFlags, CType pType, Expr pOptionalObject, FieldWithType FWT)
         {
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_MEMBERSET | EXPRFLAG.EXF_MASK_ANY)));
             ExprField rval = new ExprField(pType);
@@ -158,7 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprCast CreateCast(EXPRFLAG nFlags, CType pType, Expr pArg)
         {
-            return CreateCast(nFlags, CreateClass(pType, null, null), pArg);
+            return CreateCast(nFlags, CreateClass(pType, null), pArg);
         }
 
         public ExprCast CreateCast(EXPRFLAG nFlags, ExprTypeOrNamespace pType, Expr pArg)
@@ -174,11 +174,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public ExprReturn CreateReturn(EXPRFLAG nFlags, Scope pCurrentScope, Expr pOptionalObject)
-        {
-            return CreateReturn(nFlags, pCurrentScope, pOptionalObject, pOptionalObject);
-        }
-
-        private ExprReturn CreateReturn(EXPRFLAG nFlags, Scope pCurrentScope, Expr pOptionalObject, Expr pOptionalOriginalObject)
         {
             Debug.Assert(0 == (nFlags &
                        ~(EXPRFLAG.EXF_ASLEAVE | EXPRFLAG.EXF_FINALLYBLOCKED | EXPRFLAG.EXF_RETURNISYIELD |
@@ -458,11 +453,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprConstant CreateConstant(CType pType, ConstVal constVal)
         {
-            return CreateConstant(pType, constVal, null);
-        }
-
-        private ExprConstant CreateConstant(CType pType, ConstVal constVal, Expr pOriginal)
-        {
             ExprConstant rval = CreateConstant(pType);
             rval.Val = constVal;
             return rval;
@@ -481,7 +471,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return CreateConstant(GetTypes().GetReqPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
         }
-        public ExprBlock CreateBlock(ExprBlock pOptionalCurrentBlock, ExprStatement pOptionalStatements, Scope pOptionalScope)
+
+        public ExprBlock CreateBlock(ExprStatement pOptionalStatements, Scope pOptionalScope)
         {
             ExprBlock rval = new ExprBlock();
             rval.OptionalStatements = pOptionalStatements;
@@ -723,7 +714,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return rval;
         }
 
-        public ExprClass CreateClass(CType pType, Expr pOptionalLHS, ExprTypeArguments pOptionalTypeArguments)
+        public ExprClass CreateClass(CType pType, ExprTypeArguments pOptionalTypeArguments)
         {
             Debug.Assert(pType != null);
             ExprClass rval = new ExprClass();
@@ -734,7 +725,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprClass MakeClass(CType pType)
         {
             Debug.Assert(pType != null);
-            return CreateClass(pType, null/* LHS */, null/* type arguments */);
+            return CreateClass(pType, null/* type arguments */);
         }
     }
 }

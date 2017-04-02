@@ -797,26 +797,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Construct the Expr node which corresponds to a field expression
         // for a given field and pObject pointer.
 
-        internal Expr BindToField(Expr pObject, FieldWithType fwt, BindingFlag bindFlags)
-        {
-            return BindToField(pObject, fwt, bindFlags, null/*OptionalLHS*/);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-
-        private Expr BindToField(Expr pOptionalObject, FieldWithType fwt, BindingFlag bindFlags, Expr pOptionalLHS)
+        internal Expr BindToField(Expr pOptionalObject, FieldWithType fwt, BindingFlag bindFlags)
         {
             Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().getAggregate());
 
             CType pFieldType = GetTypes().SubstType(fwt.Field().GetType(), fwt.GetType());
             if (pOptionalObject != null && !pOptionalObject.IsOK)
             {
-                ExprField pField = GetExprFactory().CreateField(0, pFieldType, pOptionalObject, 0, fwt, pOptionalLHS);
+                ExprField pField = GetExprFactory().CreateField(0, pFieldType, pOptionalObject, fwt);
                 pField.SetError();
                 return pField;
             }
 
-            Expr pOriginalObject = pOptionalObject;
             bool bIsMatchingStatic;
             bool pfConstrained;
             pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out pfConstrained, out bIsMatchingStatic);
@@ -858,7 +850,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprField pResult = GetExprFactory()
-                .CreateField(isLValue ? EXPRFLAG.EXF_LVALUE : 0, pFieldType, pOptionalObject, 0, fwt, pOptionalLHS);
+                .CreateField(isLValue ? EXPRFLAG.EXF_LVALUE : 0, pFieldType, pOptionalObject, fwt);
             if (!bIsMatchingStatic)
             {
                 pResult.SetMismatchedStaticBit();
