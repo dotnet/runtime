@@ -55,10 +55,5 @@ namespace System
                 return AppDomain.CurrentDomain.DomainManager;
             }
         }
-
-        public virtual bool CheckSecuritySettings(SecurityState state)
-        {
-            return false;
-        }
     }
 }
