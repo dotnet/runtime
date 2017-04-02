@@ -136,11 +136,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Name pName = mwi.Sym?.name;
             MethodOrPropertySymbol methProp = mwi.MethProp();
 
-            CType pType = mwi.GetType();
-            if (pType == null)
-            {
-                pType = GetTypes().GetErrorSym();
-            }
+            CType pType = mwi.GetType() ?? (CType)GetTypes().GetErrorSym();
 
             return CreateMemGroup(0, pName, mwi.TypeArgs, methProp?.getKind() ?? SYMKIND.SK_MethodSymbol, mwi.GetType(), methProp, pObject, new CMemberLookupResults(GetGlobalSymbols().AllocParams(1, new CType[] { pType }), pName));
         }
