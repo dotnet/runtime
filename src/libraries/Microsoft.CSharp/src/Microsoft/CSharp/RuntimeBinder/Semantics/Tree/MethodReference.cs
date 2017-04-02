@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprFuncPtr : Expr
+    internal sealed class ExprFuncPtr : Expr, IExprWithObject
     {
         public MethWithInst MethWithInst { get; set; }
 

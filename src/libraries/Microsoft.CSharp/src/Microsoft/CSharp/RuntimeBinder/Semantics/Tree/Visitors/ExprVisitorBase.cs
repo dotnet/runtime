@@ -21,9 +21,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return pResult;
             }
 
-            if (pExpr.isSTMT())
+            if (pExpr is ExprStatement statement)
             {
-                return CacheExprMapping(pExpr, DispatchStatementList(pExpr.asSTMT()));
+                return CacheExprMapping(pExpr, DispatchStatementList(statement));
             }
 
             return CacheExprMapping(pExpr, Dispatch(pExpr));
@@ -50,16 +50,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Unhook the next one.
                 pexpr.OptionalNextStatement = null;
 
-                Expr result = Dispatch(pexpr);
-                Debug.Assert(result == null || result.isSTMT());
+                ExprStatement result = Dispatch(pexpr) as ExprStatement;
 
                 if (pexpr == first)
                 {
-                    first = result?.asSTMT();
+                    first = result;
                 }
                 else
                 {
-                    pexpr.OptionalNextStatement = result?.asSTMT();
+                    pexpr.OptionalNextStatement = result;
                 }
 
                 // A transformation may return back a list of statements (or
@@ -174,93 +173,93 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Binary operators
                 case ExpressionKind.EK_EQUALS:
-                    return VisitEQUALS(pExpr.asBIN());
+                    return VisitEQUALS(pExpr as ExprBinOp);
                 case ExpressionKind.EK_COMPARE:
-                    return VisitCOMPARE(pExpr.asBIN());
+                    return VisitCOMPARE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_NE:
-                    return VisitNE(pExpr.asBIN());
+                    return VisitNE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_LT:
-                    return VisitLT(pExpr.asBIN());
+                    return VisitLT(pExpr as ExprBinOp);
                 case ExpressionKind.EK_LE:
-                    return VisitLE(pExpr.asBIN());
+                    return VisitLE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_GT:
-                    return VisitGT(pExpr.asBIN());
+                    return VisitGT(pExpr as ExprBinOp);
                 case ExpressionKind.EK_GE:
-                    return VisitGE(pExpr.asBIN());
+                    return VisitGE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_ADD:
-                    return VisitADD(pExpr.asBIN());
+                    return VisitADD(pExpr as ExprBinOp);
                 case ExpressionKind.EK_SUB:
-                    return VisitSUB(pExpr.asBIN());
+                    return VisitSUB(pExpr as ExprBinOp);
                 case ExpressionKind.EK_MUL:
-                    return VisitMUL(pExpr.asBIN());
+                    return VisitMUL(pExpr as ExprBinOp);
                 case ExpressionKind.EK_DIV:
-                    return VisitDIV(pExpr.asBIN());
+                    return VisitDIV(pExpr as ExprBinOp);
                 case ExpressionKind.EK_MOD:
-                    return VisitMOD(pExpr.asBIN());
+                    return VisitMOD(pExpr as ExprBinOp);
                 case ExpressionKind.EK_BITAND:
-                    return VisitBITAND(pExpr.asBIN());
+                    return VisitBITAND(pExpr as ExprBinOp);
                 case ExpressionKind.EK_BITOR:
-                    return VisitBITOR(pExpr.asBIN());
+                    return VisitBITOR(pExpr as ExprBinOp);
                 case ExpressionKind.EK_BITXOR:
-                    return VisitBITXOR(pExpr.asBIN());
+                    return VisitBITXOR(pExpr as ExprBinOp);
                 case ExpressionKind.EK_LSHIFT:
-                    return VisitLSHIFT(pExpr.asBIN());
+                    return VisitLSHIFT(pExpr as ExprBinOp);
                 case ExpressionKind.EK_RSHIFT:
-                    return VisitRSHIFT(pExpr.asBIN());
+                    return VisitRSHIFT(pExpr as ExprBinOp);
                 case ExpressionKind.EK_LOGAND:
-                    return VisitLOGAND(pExpr.asBIN());
+                    return VisitLOGAND(pExpr as ExprBinOp);
                 case ExpressionKind.EK_LOGOR:
-                    return VisitLOGOR(pExpr.asBIN());
+                    return VisitLOGOR(pExpr as ExprBinOp);
                 case ExpressionKind.EK_SEQUENCE:
-                    return VisitSEQUENCE(pExpr.asBIN());
+                    return VisitSEQUENCE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_SEQREV:
-                    return VisitSEQREV(pExpr.asBIN());
+                    return VisitSEQREV(pExpr as ExprBinOp);
                 case ExpressionKind.EK_SAVE:
-                    return VisitSAVE(pExpr.asBIN());
+                    return VisitSAVE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_SWAP:
-                    return VisitSWAP(pExpr.asBIN());
+                    return VisitSWAP(pExpr as ExprBinOp);
                 case ExpressionKind.EK_INDIR:
-                    return VisitINDIR(pExpr.asBIN());
+                    return VisitINDIR(pExpr as ExprBinOp);
                 case ExpressionKind.EK_STRINGEQ:
-                    return VisitSTRINGEQ(pExpr.asBIN());
+                    return VisitSTRINGEQ(pExpr as ExprBinOp);
                 case ExpressionKind.EK_STRINGNE:
-                    return VisitSTRINGNE(pExpr.asBIN());
+                    return VisitSTRINGNE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_DELEGATEEQ:
-                    return VisitDELEGATEEQ(pExpr.asBIN());
+                    return VisitDELEGATEEQ(pExpr as ExprBinOp);
                 case ExpressionKind.EK_DELEGATENE:
-                    return VisitDELEGATENE(pExpr.asBIN());
+                    return VisitDELEGATENE(pExpr as ExprBinOp);
                 case ExpressionKind.EK_DELEGATEADD:
-                    return VisitDELEGATEADD(pExpr.asBIN());
+                    return VisitDELEGATEADD(pExpr as ExprBinOp);
                 case ExpressionKind.EK_DELEGATESUB:
-                    return VisitDELEGATESUB(pExpr.asBIN());
+                    return VisitDELEGATESUB(pExpr as ExprBinOp);
                 case ExpressionKind.EK_EQ:
-                    return VisitEQ(pExpr.asBIN());
+                    return VisitEQ(pExpr as ExprBinOp);
 
                 // Unary operators
                 case ExpressionKind.EK_TRUE:
-                    return VisitTRUE(pExpr.asUnaryOperator());
+                    return VisitTRUE(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_FALSE:
-                    return VisitFALSE(pExpr.asUnaryOperator());
+                    return VisitFALSE(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_INC:
-                    return VisitINC(pExpr.asUnaryOperator());
+                    return VisitINC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DEC:
-                    return VisitDEC(pExpr.asUnaryOperator());
+                    return VisitDEC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_LOGNOT:
-                    return VisitLOGNOT(pExpr.asUnaryOperator());
+                    return VisitLOGNOT(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_NEG:
-                    return VisitNEG(pExpr.asUnaryOperator());
+                    return VisitNEG(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_UPLUS:
-                    return VisitUPLUS(pExpr.asUnaryOperator());
+                    return VisitUPLUS(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_BITNOT:
-                    return VisitBITNOT(pExpr.asUnaryOperator());
+                    return VisitBITNOT(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_ADDR:
-                    return VisitADDR(pExpr.asUnaryOperator());
+                    return VisitADDR(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALNEG:
-                    return VisitDECIMALNEG(pExpr.asUnaryOperator());
+                    return VisitDECIMALNEG(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALINC:
-                    return VisitDECIMALINC(pExpr.asUnaryOperator());
+                    return VisitDECIMALINC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALDEC:
-                    return VisitDECIMALDEC(pExpr.asUnaryOperator());
+                    return VisitDECIMALDEC(pExpr as ExprUnaryOp);
                 default:
                     throw Error.InternalCompilerError();
             }
@@ -273,33 +272,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Lists are a special case.  We treat a list not as a
             // binary node but rather as a node with n children.
-            if (pExpr.isLIST())
+            if (pExpr is ExprList list)
             {
-                ExprList list = pExpr.asLIST();
                 while (true)
                 {
                     list.OptionalElement = Visit(list.OptionalElement);
-                    if (list.OptionalNextListNode== null)
+                    Expr nextNode = list.OptionalNextListNode;
+                    if (nextNode == null)
                     {
                         return;
                     }
-                    if (!list.OptionalNextListNode.isLIST())
+
+                    if (!(nextNode is ExprList next))
                     {
-                        list.OptionalNextListNode = Visit(list.OptionalNextListNode);
+                        list.OptionalNextListNode = Visit(nextNode);
                         return;
                     }
-                    list = list.OptionalNextListNode.asLIST();
+
+                    list = next;
                 }
             }
 
             switch (pExpr.Kind)
             {
                 default:
-                    if (pExpr.isUnaryOperator())
-                    {
-                        goto VISIT_EXPRUNARYOP;
-                    }
-                    Debug.Assert(pExpr.isBIN());
+                    pExpr.AssertIsBin();
                     goto VISIT_EXPRBINOP;
 
                 VISIT_EXPR:
@@ -381,6 +378,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_BASE_EXPRARRAYLENGTH;
 
                 case ExpressionKind.EK_UNARYOP:
+                case ExpressionKind.EK_TRUE:
+                case ExpressionKind.EK_FALSE:
+                case ExpressionKind.EK_INC:
+                case ExpressionKind.EK_DEC:
+                case ExpressionKind.EK_LOGNOT:
+                case ExpressionKind.EK_NEG:
+                case ExpressionKind.EK_UPLUS:
+                case ExpressionKind.EK_BITNOT:
+                case ExpressionKind.EK_ADDR:
+                case ExpressionKind.EK_DECIMALNEG:
+                case ExpressionKind.EK_DECIMALINC:
+                case ExpressionKind.EK_DECIMALDEC:
                     goto VISIT_EXPRUNARYOP;
                 VISIT_BASE_EXPRUNARYOP:
                     goto VISIT_EXPR;

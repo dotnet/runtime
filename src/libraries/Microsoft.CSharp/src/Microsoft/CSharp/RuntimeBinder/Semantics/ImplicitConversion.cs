@@ -172,10 +172,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         VSFAIL("Bad type symbol kind");
                         break;
                     case TypeKind.TK_MethodGroupType:
-                        if (_exprSrc.isMEMGRP())
+                        if (_exprSrc is ExprMemberGroup memGrp)
                         {
                             ExprCall outExpr;
-                            bool retVal = _binder.BindGrpConversion(_exprSrc.asMEMGRP(), _typeDest, _needsExprDest, out outExpr, false);
+                            bool retVal = _binder.BindGrpConversion(memGrp, _typeDest, _needsExprDest, out outExpr, false);
                             _exprDest = outExpr;
                             return retVal;
                         }
@@ -377,7 +377,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         if (_needsExprDest)
                         {
-                            ExprUserDefinedConversion exprUDC = exprTmp.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION ? exprTmp.asUSERDEFINEDCONVERSION() : null;
+                            ExprUserDefinedConversion exprUDC = exprTmp as ExprUserDefinedConversion;
                             if (exprUDC != null)
                             {
                                 exprTmp = exprUDC.UserDefinedCall;
@@ -388,8 +388,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                             for (int i = 0; i < cnubDst; i++)
                             {
-                                exprTmp = _binder.BindNubNew(exprTmp);
-                                exprTmp.asCALL().NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
+                                ExprCall call = _binder.BindNubNew(exprTmp);
+                                exprTmp = call;
+                                call.NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
                             }
                             if (exprUDC != null)
                             {
@@ -702,7 +703,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (
                     aggTypeSrc.getAggregate().GetPredefType() != PredefinedType.PT_BOOL &&
                     _exprSrc != null &&
-                    _exprSrc.isZero() &&
+                    _exprSrc.IsZero() &&
                     _exprSrc.Type.isNumericType() &&
                     /*(exprSrc.flags & EXF_LITERALCONST) &&*/
                     0 == (_flags & CONVERTTYPE.STANDARD))
@@ -744,10 +745,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // *   A constant-expression of type long can be converted to type ulong, provided the value of
                 //     the constant-expression is not negative.
                 // Note: Don't use GetConst here since the conversion only applies to bona-fide compile time constants.
-                if (_exprSrc != null && _exprSrc.isCONSTANT_OK() &&
+                if (_exprSrc is ExprConstant constant && _exprSrc.IsOK &&
                     ((ptSrc == PredefinedType.PT_INT && ptDest != PredefinedType.PT_BOOL && ptDest != PredefinedType.PT_CHAR) ||
                     (ptSrc == PredefinedType.PT_LONG && ptDest == PredefinedType.PT_ULONG)) &&
-                    isConstantInRange(_exprSrc.asCONSTANT(), _typeDest))
+                    isConstantInRange(constant, _typeDest))
                 {
                     // Special case (CLR 6.1.6): if integral constant is in range, the conversion is a legal implicit conversion.
                     convertKind = ConvKind.Implicit;

@@ -72,28 +72,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             bool isNested = false; // Did we recurse on a field or property to give a better error?
 
-            Expr walk = expr;
             while (true)
             {
-                Debug.Assert(walk != null);
+                Debug.Assert(expr != null);
 
-                if (walk.isANYLOCAL_OK())
+                if (expr is ExprLocal local && local.IsOK)
                 {
-                    ReportLocalError(walk.asANYLOCAL().Local, kind, isNested);
+                    ReportLocalError(local.Local, kind, isNested);
                     return true;
                 }
 
                 Expr pObject = null;
 
-                if (walk.isPROP())
+                if (expr is ExprProperty prop)
                 {
                     // We've already reported read-only-property errors.
-                    Debug.Assert(walk.asPROP().MethWithTypeSet != null);
-                    pObject = walk.asPROP().MemberGroup.OptionalObject;
+                    Debug.Assert(prop.MethWithTypeSet != null);
+                    pObject = prop.MemberGroup.OptionalObject;
                 }
-                else if (walk.isFIELD())
+                else if (expr is ExprField field)
                 {
-                    ExprField field = walk.asFIELD();
                     if (field.FieldWithType.Field().isReadOnly)
                     {
                         ReportReadOnlyError(field, kind, isNested);
@@ -107,14 +105,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pObject != null && pObject.Type.isStructOrEnum())
                 {
-                    if (pObject.isCALL() || pObject.isPROP())
+                    if (pObject is IExprWithArgs withArgs)
                     {
                         // assigning to RHS of method or property getter returning a value-type on the stack or
                         // passing RHS of method or property getter returning a value-type on the stack, as ref or out
-                        ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, pObject.GetSymWithType());
+                        ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, withArgs.GetSymWithType());
                         return true;
                     }
-                    if (pObject.isCAST())
+                    if (pObject is ExprCast)
                     {
                         // An unboxing conversion.
                         //
@@ -129,10 +127,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // everything else
-                if (pObject != null && !pObject.isLvalue() && (walk.isFIELD() || (!isNested && walk.isPROP())))
+                if (pObject != null && !pObject.isLvalue() && (expr is ExprField || (!isNested && expr is ExprProperty)))
                 {
                     Debug.Assert(pObject.Type.isStructOrEnum());
-                    walk = pObject;
+                    expr = pObject;
                 }
                 else
                 {

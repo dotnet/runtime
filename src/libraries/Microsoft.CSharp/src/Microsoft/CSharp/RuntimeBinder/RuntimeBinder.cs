@@ -760,7 +760,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 flags, name, typeArgumentsAsTypeArray, kind, callingType, null, null, new CMemberLookupResults(
                     _semanticChecker.getBSymmgr().AllocParams(callingTypes.Count, callingTypes.ToArray()),
                     name));
-            if (callingObject.isCLASS())
+            if (callingObject is ExprClass)
             {
                 memgroup.OptionalLHS = callingObject;
             }
@@ -787,7 +787,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
             return _binder.BindToProperty(// For a static property instance, don't set the object.
-                    callingObject.isCLASS() ? null : callingObject, pwt, flags, null, null, pMemGroup);
+                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, null, pMemGroup);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -822,7 +822,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             AggregateType fieldType = swt.GetType();
             FieldWithType fwt = new FieldWithType(fieldSymbol, fieldType);
 
-            Expr field = _binder.BindToField(callingObject.isCLASS() ? null : callingObject, fwt, 0);
+            Expr field = _binder.BindToField(callingObject is ExprClass ? null : callingObject, fwt, 0);
             return field;
         }
 
@@ -875,7 +875,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     CreateArgumentEXPR(arguments[0], locals[0]),
                     _symbolTable.GetCTypeFromType(arguments[0].Type));
 
-                if (arguments[0].Type.IsValueType && callingObject.isCAST())
+                if (arguments[0].Type.IsValueType && callingObject is ExprCast)
                 {
                     // If we have a struct type, unbox it.
                     callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
@@ -1064,13 +1064,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private static void CheckForConditionalMethodError(Expr pExpr)
         {
-            Debug.Assert(pExpr.isCALL());
-            if (pExpr.isCALL())
+            if (pExpr is ExprCall call)
             {
                 // This mimics the behavior of the native CompilerSymbolLoader in GetConditionalSymbols. Override
                 // methods cannot have the conditional attribute, but implicitly acquire it from their slot.
-
-                ExprCall call = pExpr.asCALL();
 
                 MethodSymbol method = call.MethWithInst.Meth();
                 if (method.isOverride)
@@ -1084,20 +1081,25 @@ namespace Microsoft.CSharp.RuntimeBinder
                     throw Error.BindCallToConditionalMethod(method.name);
                 }
             }
+            else
+            {
+                Debug.Fail("Should be unreachable");
+            }
         }
 
         private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
         {
-            Expr arguments;
+            IExprWithArgs result = pResult as IExprWithArgs;
+            Debug.Assert(result != null);
+
+            Expr arguments = result.OptionalArguments;
             AggregateType type;
             MethodOrPropertySymbol methprop;
             ExprMemberGroup memgroup;
             TypeArray typeArgs;
 
-            if (pResult.isCALL())
+            if (pResult is ExprCall call)
             {
-                ExprCall call = pResult.asCALL();
-                arguments = call.OptionalArguments;
                 type = call.MethWithInst.Ats;
                 methprop = call.MethWithInst.Meth();
                 memgroup = call.MemberGroup;
@@ -1105,9 +1107,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else
             {
-                Debug.Assert(pResult.isPROP());
-                ExprProperty prop = pResult.asPROP();
-                arguments = prop.OptionalArguments;
+                ExprProperty prop = pResult as ExprProperty;
+                Debug.Assert(prop != null);
                 type = prop.PropWithTypeSlot.Ats;
                 methprop = prop.PropWithTypeSlot.Prop();
                 memgroup = prop.MemberGroup;
@@ -1157,27 +1158,21 @@ namespace Microsoft.CSharp.RuntimeBinder
                         pList = _exprFactory.CreateList(pArg, pList);
                     }
                 }
-                if (pResult.isCALL())
-                {
-                    pResult.asCALL().OptionalArguments = pList;
-                }
-                else
-                {
-                    pResult.asPROP().OptionalArguments = pList;
-                }
+
+                result.OptionalArguments = pList;
             }
             return pResult;
         }
 
         private Expr StripNamedArgument(Expr pArg)
         {
-            if (pArg.isNamedArgumentSpecification())
+            if (pArg is ExprNamedArgumentSpecification named)
             {
-                pArg = pArg.asNamedArgumentSpecification().Value;
+                pArg = named.Value;
             }
-            else if (pArg.isARRINIT())
+            else if (pArg is ExprArrayInit init)
             {
-                pArg.asARRINIT().OptionalArguments = StripNamedArguments(pArg.asARRINIT().OptionalArguments);
+                init.OptionalArguments = StripNamedArguments(init.OptionalArguments);
             }
 
             return pArg;
@@ -1185,16 +1180,15 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr StripNamedArguments(Expr pArg)
         {
-            if (pArg.isLIST())
+            if (pArg is ExprList list)
             {
-                ExprList list = pArg.asLIST();
-                while (list != null)
+                for(;;)
                 {
                     list.OptionalElement = StripNamedArgument(list.OptionalElement);
 
-                    if (list.OptionalNextListNode.isLIST())
+                    if (list.OptionalNextListNode is ExprList next)
                     {
-                        list = list.OptionalNextListNode.asLIST();
+                        list = next;
                     }
                     else
                     {
@@ -1203,6 +1197,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
                 }
             }
+
             return StripNamedArgument(pArg);
         }
         #endregion
@@ -1401,7 +1396,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // If our argument is a struct type, unbox it.
-            if (argument.Type.IsValueType && callingObject.isCAST())
+            if (argument.Type.IsValueType && callingObject is ExprCast)
             {
                 // If we have a struct type, unbox it.
                 callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;

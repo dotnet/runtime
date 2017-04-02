@@ -33,10 +33,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr exprCur = expr;
             while (exprCur != null)
             {
-                if (exprCur.isLIST())
+                if (exprCur is ExprList list)
                 {
-                    yield return exprCur.asLIST().OptionalElement;
-                    exprCur = exprCur.asLIST().OptionalNextListNode;
+                    yield return list.OptionalElement;
+                    exprCur = list.OptionalNextListNode;
                 }
                 else
                 {
@@ -45,47 +45,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
         }
-        public static bool isSTMT(this Expr expr)
-        {
-            return (expr == null) ? false : expr.Kind < ExpressionKind.EK_StmtLim;
-        }
-        public static ExprStatement asSTMT(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.Kind < ExpressionKind.EK_StmtLim);
-            return (ExprStatement)expr;
-        }
-        public static bool isBIN(this Expr expr)
-        {
-            return (expr == null) ? false : (expr.Kind >= ExpressionKind.EK_TypeLim) &&
-                (0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
-        }
-        public static bool isUnaryOperator(this Expr expr)
-        {
-            if (expr != null)
-            {
-                switch (expr.Kind)
-                {
-                    case ExpressionKind.EK_UNARYOP:
-                    case ExpressionKind.EK_TRUE:
-                    case ExpressionKind.EK_FALSE:
-                    case ExpressionKind.EK_INC:
-                    case ExpressionKind.EK_DEC:
-                    case ExpressionKind.EK_LOGNOT:
-                    case ExpressionKind.EK_NEG:
-                    case ExpressionKind.EK_UPLUS:
-                    case ExpressionKind.EK_BITNOT:
-                    case ExpressionKind.EK_ADDR:
-                    case ExpressionKind.EK_DECIMALNEG:
-                    case ExpressionKind.EK_DECIMALINC:
-                    case ExpressionKind.EK_DECIMALDEC:
-                        return true;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
 
+        [Conditional("DEBUG")]
+        public static void AssertIsBin(this Expr expr)
+        {
+            Debug.Assert(expr?.Kind >= ExpressionKind.EK_TypeLim && 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
+        }
         public static bool isLvalue(this Expr expr)
         {
             return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_LVALUE);
@@ -94,37 +59,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_CHECKOVERFLOW);
         }
-        public static ExprBinOp asBIN(this Expr expr)
-        {
-            Debug.Assert(expr == null || 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
-            return (ExprBinOp)expr;
-        }
-        public static ExprUnaryOp asUnaryOperator(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.isUnaryOperator());
-            return (ExprUnaryOp)expr;
-        }
-        public static bool isANYLOCAL(this Expr expr)
-        {
-            return (expr == null) ? false : expr.Kind == ExpressionKind.EK_LOCAL || expr.Kind == ExpressionKind.EK_THISPOINTER;
-        }
-        public static ExprLocal asANYLOCAL(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.isANYLOCAL());
-            return (ExprLocal)expr;
-        }
-        public static bool isANYLOCAL_OK(this Expr expr)
-        {
-            return expr.isANYLOCAL() && expr.IsOK;
-        }
         public static bool isNull(this Expr expr)
         {
-            return expr.isCONSTANT_OK() && (expr.Type.fundType() == FUNDTYPE.FT_REF) && expr.asCONSTANT().Val.IsNullRef;
+            return expr is ExprConstant constant && constant.IsOK && (expr.Type.fundType() == FUNDTYPE.FT_REF) && constant.Val.IsNullRef;
         }
 
-        public static bool isZero(this Expr expr)
+        public static bool IsZero(this Expr expr)
         {
-            return (expr.isCONSTANT_OK()) && (expr.asCONSTANT().IsZero);
+            return expr is ExprConstant constant && constant.IsOK && constant.IsZero;
         }
 
         private static Expr GetSeqVal(this Expr expr)
@@ -134,17 +76,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return null;
 
             Expr exprVal = expr;
-            for (; ;)
+            for (;;)
             {
                 switch (exprVal.Kind)
                 {
                     default:
                         return exprVal;
                     case ExpressionKind.EK_SEQUENCE:
-                        exprVal = exprVal.asBIN().OptionalRightChild;
+                        exprVal = ((ExprBinOp)exprVal).OptionalRightChild;
                         break;
                     case ExpressionKind.EK_SEQREV:
-                        exprVal = exprVal.asBIN().OptionalLeftChild;
+                        exprVal = ((ExprBinOp)exprVal).OptionalLeftChild;
                         break;
                 }
             }
@@ -163,54 +105,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return exprVal;
         }
 
-        private static void RETAILVERIFY(bool f)
-        {
-            if (!f)
-                Debug.Assert(false, "Panic!");
-        }
-
-        public static ExprReturn asRETURN(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_RETURN); return (ExprReturn)expr; }
-        public static ExprBinOp asBINOP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_BINOP); return (ExprBinOp)expr; }
-        public static ExprList asLIST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_LIST); return (ExprList)expr; }
-        public static ExprArrayIndex asARRAYINDEX(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRAYINDEX); return (ExprArrayIndex)expr; }
-        public static ExprCall asCALL(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CALL); return (ExprCall)expr; }
-        public static ExprEvent asEVENT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_EVENT); return (ExprEvent)expr; }
-        public static ExprField asFIELD(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELD); return (ExprField)expr; }
-        public static ExprConstant asCONSTANT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CONSTANT); return (ExprConstant)expr; }
-        public static ExprFuncPtr asFUNCPTR(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FUNCPTR); return (ExprFuncPtr)expr; }
-        public static ExprProperty asPROP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_PROP); return (ExprProperty)expr; }
-        public static ExprWrap asWRAP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_WRAP); return (ExprWrap)expr; }
-        public static ExprArrayInit asARRINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRINIT); return (ExprArrayInit)expr; }
-        public static ExprCast asCAST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CAST); return (ExprCast)expr; }
-        public static ExprUserDefinedConversion asUSERDEFINEDCONVERSION(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); return (ExprUserDefinedConversion)expr; }
-        public static ExprTypeOf asTYPEOF(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_TYPEOF); return (ExprTypeOf)expr; }
-        public static ExprZeroInit asZEROINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ZEROINIT); return (ExprZeroInit)expr; }
-        public static ExprUserLogicalOp asUSERLOGOP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERLOGOP); return (ExprUserLogicalOp)expr; }
-        public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
-        public static ExprFieldInfo asFIELDINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELDINFO); return (ExprFieldInfo)expr; }
-        public static ExprMethodInfo asMETHODINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_METHODINFO); return (ExprMethodInfo)expr; }
-        public static ExprPropertyInfo asPropertyInfo(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_PROPERTYINFO); return (ExprPropertyInfo)expr; }
-        public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
-
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
-        public static bool isRETURN(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_RETURN); }
-        public static bool isLIST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_LIST); }
-        public static bool isARRAYINDEX(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ARRAYINDEX); }
-        public static bool isCALL(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CALL); }
-        public static bool isFIELD(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_FIELD); }
-        public static bool isCONSTANT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT); }
-        public static bool isCLASS(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CLASS); }
-        public static bool isPROP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_PROP); }
-        public static bool isWRAP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_WRAP); }
-        public static bool isARRINIT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ARRINIT); }
-        public static bool isCAST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CAST); }
-        public static bool isUSERDEFINEDCONVERSION(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); }
-        public static bool isTYPEOF(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_TYPEOF); }
-        public static bool isZEROINIT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ZEROINIT); }
-        public static bool isMEMGRP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_MEMGRP); }
-        public static bool isBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_BOUNDLAMBDA); }
-        public static bool isUNBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_UNBOUNDLAMBDA); }
-        public static bool isMETHODINFO(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_METHODINFO); }
-        public static bool isNamedArgumentSpecification(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); }
     }
 }
