@@ -8,6 +8,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public LocalVariableSymbol Local { get; set; }
 
+        public override CType Type => Local?.GetType();
+
         public override ExpressionKind Kind => ExpressionKind.EK_LOCAL;
     }
 }

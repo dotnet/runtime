@@ -36,8 +36,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                )
               ));
 
-            ExprCall rval = new ExprCall();
-            rval.Type = pType;
+            ExprCall rval = new ExprCall(pType);
             rval.Flags = nFlags;
             rval.OptionalArguments = pOptionalArguments;
             rval.MemberGroup = pMemberGroup;
@@ -45,49 +44,39 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.CastOfNonLiftedResultToLiftedType = null;
 
             rval.MethWithInst = MWI;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprField CreateField(EXPRFLAG nFlags, CType pType, Expr pOptionalObject, uint nOffset, FieldWithType FWT, Expr pOptionalLHS)
         {
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_MEMBERSET | EXPRFLAG.EXF_MASK_ANY)));
-            ExprField rval = new ExprField();
-            rval.Type = pType;
+            ExprField rval = new ExprField(pType);
             rval.Flags = nFlags;
             rval.OptionalObject = pOptionalObject;
-            if (FWT != null)
-            {
-                rval.FieldWithType = FWT;
-            }
-            Debug.Assert(rval != null);
-            return (rval);
+            rval.FieldWithType = FWT;
+            return rval;
         }
 
         public ExprFuncPtr CreateFunctionPointer(EXPRFLAG nFlags, CType pType, Expr pObject, MethWithInst MWI)
         {
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_BASECALL)));
-            ExprFuncPtr rval = new ExprFuncPtr();
-            rval.Type = pType;
+            ExprFuncPtr rval = new ExprFuncPtr(pType);
             rval.Flags = nFlags;
             rval.OptionalObject = pObject;
             rval.MethWithInst = new MethWithInst(MWI);
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprArrayInit CreateArrayInit(EXPRFLAG nFlags, CType pType, Expr pOptionalArguments, Expr pOptionalArgumentDimensions, int[] pDimSizes)
         {
             Debug.Assert(0 == (nFlags &
                        ~(EXPRFLAG.EXF_MASK_ANY | EXPRFLAG.EXF_ARRAYCONST | EXPRFLAG.EXF_ARRAYALLCONST)));
-            ExprArrayInit rval = new ExprArrayInit();
-            rval.Type = pType;
+            ExprArrayInit rval = new ExprArrayInit(pType);
             rval.OptionalArguments = pOptionalArguments;
             rval.OptionalArgumentDimensions = pOptionalArgumentDimensions;
             rval.DimensionSizes = pDimSizes;
             rval.DimensionSize = pDimSizes?.Length ?? 0;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprProperty CreateProperty(CType pType, Expr pOptionalObject)
@@ -99,8 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprProperty CreateProperty(CType pType, Expr pOptionalObjectThrough, Expr pOptionalArguments, ExprMemberGroup pMemberGroup, PropWithType pwtSlot, MethWithType mwtGet, MethWithType mwtSet)
         {
-            ExprProperty rval = new ExprProperty();
-            rval.Type = pType;
+            ExprProperty rval = new ExprProperty(pType);
             rval.Flags = 0;
             rval.OptionalObjectThrough = pOptionalObjectThrough;
             rval.OptionalArguments = pOptionalArguments;
@@ -114,22 +102,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 rval.MethWithTypeSet = mwtSet;
             }
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprEvent CreateEvent(CType pType, Expr pOptionalObject, EventWithType EWT)
         {
-            ExprEvent rval = new ExprEvent();
-            rval.Type = pType;
+            ExprEvent rval = new ExprEvent(pType);
             rval.Flags = 0;
             rval.OptionalObject = pOptionalObject;
-            if (EWT != null)
-            {
-                rval.EventWithType = EWT;
-            }
-            Debug.Assert(rval != null);
-            return (rval);
+            rval.EventWithType = EWT;
+            return rval;
         }
 
         public ExprMemberGroup CreateMemGroup(EXPRFLAG nFlags, Name pName, TypeArray pTypeArgs, SYMKIND symKind, CType pTypePar, MethodOrPropertySymbol pMPS, Expr pObject, CMemberLookupResults memberLookupResults)
@@ -139,22 +121,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                            EXPRFLAG.EXF_BASECALL | EXPRFLAG.EXF_DELEGATE | EXPRFLAG.EXF_USERCALLABLE | EXPRFLAG.EXF_MASK_ANY
                        )
                       ));
-            ExprMemberGroup rval = new ExprMemberGroup();
-            rval.Type = GetTypes().GetMethGrpType();
+            ExprMemberGroup rval = new ExprMemberGroup(GetTypes().GetMethGrpType());
             rval.Flags = nFlags;
             rval.Name = pName;
-            rval.TypeArgs = pTypeArgs;
+            rval.TypeArgs = pTypeArgs ?? BSYMMGR.EmptyTypeArray();
             rval.SymKind = symKind;
             rval.ParentType = pTypePar;
             rval.OptionalObject = pObject;
             rval.MemberLookupResults = memberLookupResults;
             rval.OptionalLHS = null;
-            if (rval.TypeArgs == null)
-            {
-                rval.TypeArgs = BSYMMGR.EmptyTypeArray();
-            }
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprMemberGroup CreateMemGroup(
@@ -178,7 +154,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(arg != null);
             Debug.Assert(call != null);
             ExprUserDefinedConversion rval = new ExprUserDefinedConversion();
-            rval.Type = call.Type;
             rval.Flags = 0;
             rval.Argument = arg;
             rval.UserDefinedCall = call;
@@ -187,7 +162,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 rval.SetError();
             }
-            Debug.Assert(rval != null);
             return rval;
         }
 
@@ -202,12 +176,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pType != null);
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_CAST_ALL | EXPRFLAG.EXF_MASK_ANY)));
             ExprCast rval = new ExprCast();
-            rval.Type = pType.TypeOrNamespace as CType;
             rval.Argument = pArg;
             rval.Flags = nFlags;
             rval.DestinationType = pType;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprReturn CreateReturn(EXPRFLAG nFlags, Scope pCurrentScope, Expr pOptionalObject)
@@ -224,84 +196,59 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         )
                       ));
             ExprReturn rval = new ExprReturn();
-            rval.Type = null;
             rval.Flags = nFlags;
             rval.OptionalObject = pOptionalObject;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprLocal CreateLocal(EXPRFLAG nFlags, LocalVariableSymbol pLocal)
         {
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_MASK_ANY)));
-
-            CType type = null;
-            if (pLocal != null)
-            {
-                type = pLocal.GetType();
-            }
-
             ExprLocal rval = new ExprLocal();
-            rval.Type = type;
             rval.Flags = nFlags;
             rval.Local = pLocal;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprThisPointer CreateThis(LocalVariableSymbol pLocal, bool fImplicit)
         {
             Debug.Assert(pLocal == null || pLocal.isThis);
 
-            CType type = null;
-            if (pLocal != null)
-            {
-                type = pLocal.GetType();
-            }
-
             EXPRFLAG flags = EXPRFLAG.EXF_CANTBENULL;
             if (fImplicit)
             {
                 flags |= EXPRFLAG.EXF_IMPLICITTHIS;
             }
-            if (type != null && type.isStructType())
+            if (pLocal != null && pLocal.GetType().isStructType())
             {
                 flags |= EXPRFLAG.EXF_LVALUE;
             }
 
             ExprThisPointer rval = new ExprThisPointer();
-            rval.Type = type;
             rval.Flags = flags;
             rval.Local = pLocal;
-            Debug.Assert(rval != null);
             return (rval);
         }
 
         public ExprBoundLambda CreateAnonymousMethod(AggregateType delegateType)
         {
             Debug.Assert(delegateType == null || delegateType.isDelegateType());
-            ExprBoundLambda rval = new ExprBoundLambda();
-            rval.Type = delegateType;
+            ExprBoundLambda rval = new ExprBoundLambda(delegateType);
             rval.Flags = 0;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUnboundLambda CreateLambda()
         {
-            CType type = GetTypes().GetAnonMethType();
-            ExprUnboundLambda rval = new ExprUnboundLambda();
-            rval.Type = type;
+            ExprUnboundLambda rval = new ExprUnboundLambda(GetTypes().GetAnonMethType());
             rval.Flags = 0;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprHoistedLocalExpr CreateHoistedLocalInExpression(ExprLocal localToHoist)
         {
             Debug.Assert(localToHoist != null);
-            ExprHoistedLocalExpr rval = new ExprHoistedLocalExpr();
-            rval.Type = GetTypes().GetOptPredefAgg(PredefinedType.PT_EXPRESSION).getThisType();
+            ExprHoistedLocalExpr rval = new ExprHoistedLocalExpr(GetTypes().GetOptPredefAgg(PredefinedType.PT_EXPRESSION).getThisType());
             rval.Flags = 0;
             return rval;
         }
@@ -315,8 +262,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(method != null);
             Debug.Assert(methodType != null);
-            ExprMethodInfo methodInfo = new ExprMethodInfo();
-            methodInfo.Type = GetTypes().GetOptPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType();
+            ExprMethodInfo methodInfo = new ExprMethodInfo(
+                GetTypes().GetOptPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType());
             methodInfo.Flags = 0;
             methodInfo.Method = new MethWithInst(method, methodType, methodParameters);
             return methodInfo;
@@ -326,8 +273,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(prop != null);
             Debug.Assert(propertyType != null);
-            ExprPropertyInfo propInfo = new ExprPropertyInfo();
-            propInfo.Type = GetTypes().GetOptPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType();
+            ExprPropertyInfo propInfo = new ExprPropertyInfo(GetTypes().GetOptPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType());
             propInfo.Flags = 0;
             propInfo.Property = new PropWithType(prop, propertyType);
 
@@ -338,20 +284,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(field != null);
             Debug.Assert(fieldType != null);
-            ExprFieldInfo rval = new ExprFieldInfo(field, fieldType);
-            rval.Type = GetTypes().GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType();
+            ExprFieldInfo rval = new ExprFieldInfo(field, fieldType, GetTypes().GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
             rval.Flags = 0;
             return rval;
         }
 
         private ExprTypeOf CreateTypeOf(ExprTypeOrNamespace pSourceType)
         {
-            ExprTypeOf rval = new ExprTypeOf();
-            rval.Type = GetTypes().GetReqPredefAgg(PredefinedType.PT_TYPE).getThisType();
+            ExprTypeOf rval = new ExprTypeOf(GetTypes().GetReqPredefAgg(PredefinedType.PT_TYPE).getThisType());
             rval.Flags = EXPRFLAG.EXF_CANTBENULL;
             rval.SourceType = pSourceType;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
         public ExprTypeOf CreateTypeOf(CType pSourceType)
         {
@@ -362,7 +305,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pCallTF != null);
             Debug.Assert((pCallOp?.OptionalArguments as ExprList)?.OptionalElement != null);
-            ExprUserLogicalOp rval = new ExprUserLogicalOp();
+            ExprUserLogicalOp rval = new ExprUserLogicalOp(pType);
             Expr leftChild = ((ExprList)pCallOp.OptionalArguments).OptionalElement;
             Debug.Assert(leftChild != null);
             if (leftChild is ExprWrap wrap)
@@ -371,7 +314,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 leftChild = wrap.OptionalExpression;
                 Debug.Assert(leftChild != null);
             }
-            rval.Type = pType;
             rval.Flags = EXPRFLAG.EXF_ASSGOP;
             rval.TrueFalseCall = pCallTF;
             rval.OperatorCall = pCallOp;
@@ -400,13 +342,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(type.isPredefType(PredefinedType.PT_STRING));
 
-            ExprConcat rval = new ExprConcat();
-            rval.Type = type;
+            ExprConcat rval = new ExprConcat(type);
             rval.Flags = 0;
             rval.FirstArgument = op1;
             rval.SecondArgument = op2;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprConstant CreateStringConstant(string str)
@@ -417,26 +357,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprMultiGet CreateMultiGet(EXPRFLAG nFlags, CType pType, ExprMulti pOptionalMulti)
         {
             Debug.Assert(0 == (nFlags & ~(EXPRFLAG.EXF_MASK_ANY)));
-            ExprMultiGet rval = new ExprMultiGet();
-
-            rval.Type = pType;
+            ExprMultiGet rval = new ExprMultiGet(pType);
             rval.Flags = nFlags;
             rval.OptionalMulti = pOptionalMulti;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprMulti CreateMulti(EXPRFLAG nFlags, CType pType, Expr pLeft, Expr pOp)
         {
             Debug.Assert(pLeft != null);
             Debug.Assert(pOp != null);
-            ExprMulti rval = new ExprMulti();
-            rval.Type = pType;
+            ExprMulti rval = new ExprMulti(pType);
             rval.Flags = nFlags;
             rval.Left = pLeft;
             rval.Operator = pOp;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -528,8 +463,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
             }
 
-            ExprZeroInit rval = new ExprZeroInit();
-            rval.Type = pType;
+            ExprZeroInit rval = new ExprZeroInit(pType);
             rval.Flags = 0;
             rval.OptionalConstructorCall = pOptionalOriginalConstructorCall;
             rval.IsConstructor = isConstructor;
@@ -539,8 +473,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 rval.SetError();
             }
 
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprConstant CreateConstant(CType pType, ConstVal constVal)
@@ -552,14 +485,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             ExprConstant rval = CreateConstant(pType);
             rval.Val = constVal;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         private ExprConstant CreateConstant(CType pType)
         {
-            ExprConstant rval = new ExprConstant();
-            rval.Type = pType;
+            ExprConstant rval = new ExprConstant(pType);
             rval.Flags = 0;
             return rval;
         }
@@ -575,12 +506,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprBlock CreateBlock(ExprBlock pOptionalCurrentBlock, ExprStatement pOptionalStatements, Scope pOptionalScope)
         {
             ExprBlock rval = new ExprBlock();
-            rval.Type = null;
             rval.Flags = 0;
             rval.OptionalStatements = pOptionalStatements;
             rval.OptionalScopeSymbol = pOptionalScope;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprQuestionMark CreateQuestionMark(Expr pTestExpression, ExprBinOp pConsequence)
@@ -588,19 +517,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pTestExpression != null);
             Debug.Assert(pConsequence != null);
 
-            CType pType = pConsequence.Type;
-            if (pType == null)
-            {
-                Debug.Assert(pConsequence.OptionalLeftChild != null);
-                pType = pConsequence.OptionalLeftChild.Type;
-                Debug.Assert(pType != null);
-            }
             ExprQuestionMark pResult = new ExprQuestionMark();
-            pResult.Type = pType;
             pResult.Flags = 0;
             pResult.TestExpression = pTestExpression;
             pResult.Consequence = pConsequence;
-            Debug.Assert(pResult != null);
             return pResult;
         }
 
@@ -616,8 +536,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 pType = GetTypes().GetReqPredefAgg(PredefinedType.PT_INT).getThisType();
             }
-            ExprArrayIndex pResult = new ExprArrayIndex();
-            pResult.Type = pType;
+            ExprArrayIndex pResult = new ExprArrayIndex(pType);
             pResult.Flags = 0;
             pResult.Array = pArray;
             pResult.Index = pIndex;
@@ -626,8 +545,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprArrayLength CreateArrayLength(Expr pArray)
         {
-            ExprArrayLength pResult = new ExprArrayLength();
-            pResult.Type = GetTypes().GetReqPredefAgg(PredefinedType.PT_INT).getThisType();
+            ExprArrayLength pResult = new ExprArrayLength(GetTypes().GetReqPredefAgg(PredefinedType.PT_INT).getThisType());
             pResult.Flags = 0;
             pResult.Array = pArray;
             return pResult;
@@ -636,30 +554,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprBinOp CreateBinop(ExpressionKind exprKind, CType pType, Expr p1, Expr p2)
         {
             //Debug.Assert(exprKind.isBinaryOperator());
-            ExprBinOp rval = new ExprBinOp(exprKind);
-            rval.Type = pType;
+            ExprBinOp rval = new ExprBinOp(exprKind, pType);
             rval.Flags = EXPRFLAG.EXF_BINOP;
             rval.OptionalLeftChild = p1;
             rval.OptionalRightChild = p2;
             rval.IsLifted = false;
             rval.OptionalUserDefinedCall = null;
             rval.UserDefinedCallMethod = null;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUnaryOp CreateUnaryOp(ExpressionKind exprKind, CType pType, Expr pOperand)
         {
             Debug.Assert(exprKind.isUnaryOperator());
             Debug.Assert(pOperand != null);
-            ExprUnaryOp rval = new ExprUnaryOp(exprKind);
-            rval.Type = pType;
+            ExprUnaryOp rval = new ExprUnaryOp(exprKind, pType);
             rval.Flags = 0;
             rval.Child = pOperand;
             rval.OptionalUserDefinedCall = null;
             rval.UserDefinedCallMethod = null;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprOperator CreateOperator(ExpressionKind exprKind, CType pType, Expr pArg1, Expr pOptionalArg2)
@@ -677,8 +591,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(p1 != null);
             Debug.Assert(p2 != null);
             Debug.Assert(call != null);
-            ExprBinOp rval = new ExprBinOp(exprKind);
-            rval.Type = pType;
+            ExprBinOp rval = new ExprBinOp(exprKind, pType);
             rval.Flags = EXPRFLAG.EXF_BINOP;
             rval.OptionalLeftChild = p1;
             rval.OptionalRightChild = p2;
@@ -690,8 +603,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 rval.SetError();
             }
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUnaryOp CreateUserDefinedUnaryOperator(ExpressionKind exprKind, CType pType, Expr pOperand, ExprCall call, MethPropWithInst pmpwi)
@@ -700,8 +612,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pOperand != null);
             Debug.Assert(call != null);
             Debug.Assert(pmpwi != null);
-            ExprUnaryOp rval = new ExprUnaryOp(exprKind);
-            rval.Type = pType;
+            ExprUnaryOp rval = new ExprUnaryOp(exprKind, pType);
             rval.Flags = 0;
             rval.Child = pOperand;
             // The call may be lifted, but we do not mark the outer binop as lifted.
@@ -711,8 +622,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 rval.SetError();
             }
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUnaryOp CreateNeg(EXPRFLAG nFlags, Expr pOperand)
@@ -746,7 +656,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprAssignment CreateAssignment(Expr pLHS, Expr pRHS)
         {
             ExprAssignment pAssignment = new ExprAssignment();
-            pAssignment.Type = pLHS.Type;
             pAssignment.Flags = EXPRFLAG.EXF_ASSGOP;
             pAssignment.LHS = pLHS;
             pAssignment.RHS = pRHS;
@@ -758,7 +667,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprNamedArgumentSpecification CreateNamedArgumentSpecification(Name pName, Expr pValue)
         {
             ExprNamedArgumentSpecification pResult = new ExprNamedArgumentSpecification();
-            pResult.Type = pValue.Type;
             pResult.Flags = 0;
             pResult.Value = pValue;
             pResult.Name = pName;
@@ -773,17 +681,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         )
         {
             ExprWrap rval = new ExprWrap();
-            rval.Type = null;
-            rval.Flags = 0;
             rval.OptionalExpression = pOptionalExpression;
-            if (pOptionalExpression != null)
-            {
-                rval.Type = pOptionalExpression.Type;
-            }
-            rval.Flags |= EXPRFLAG.EXF_LVALUE;
+            rval.Flags = EXPRFLAG.EXF_LVALUE;
 
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
         public ExprWrap CreateWrapNoAutoFree(Scope pCurrentScope, Expr pOptionalWrap)
         {
@@ -838,12 +739,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprList CreateList(Expr op1, Expr op2)
         {
             ExprList rval = new ExprList();
-            rval.Type = null;
             rval.Flags = 0;
             rval.OptionalElement = op1;
             rval.OptionalNextListNode = op2;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
         public ExprList CreateList(Expr op1, Expr op2, Expr op3)
         {
@@ -857,7 +756,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pTypeArray != null);
             ExprTypeArguments rval = new ExprTypeArguments();
-            rval.Type = null;
             rval.Flags = 0;
             rval.OptionalElements = pOptionalElements;
             return rval;
@@ -867,10 +765,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pType != null);
             ExprClass rval = new ExprClass();
-            rval.Type = pType;
             rval.TypeOrNamespace = pType;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprClass MakeClass(CType pType)

@@ -10,6 +10,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr RHS { get; set; }
 
+        public override CType Type => LHS.Type;
+
         public override ExpressionKind Kind => ExpressionKind.EK_ASSIGNMENT;
     }
 }

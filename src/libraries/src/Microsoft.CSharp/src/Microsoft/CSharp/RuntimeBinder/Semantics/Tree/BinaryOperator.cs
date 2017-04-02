@@ -8,8 +8,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprBinOp : ExprOperator
     {
-        public ExprBinOp(ExpressionKind kind)
-            : base(kind)
+        public ExprBinOp(ExpressionKind kind, CType type)
+            : base(kind, type)
         {
             Debug.Assert(kind > ExpressionKind.EK_TypeLim);
         }

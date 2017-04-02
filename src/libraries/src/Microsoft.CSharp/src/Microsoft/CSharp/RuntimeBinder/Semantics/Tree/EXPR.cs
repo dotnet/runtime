@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public string ErrorString { get; set; }
 
-        public CType Type { get; set; }
+        public virtual CType Type => null;
 
         public bool IsOK => !HasError;
 

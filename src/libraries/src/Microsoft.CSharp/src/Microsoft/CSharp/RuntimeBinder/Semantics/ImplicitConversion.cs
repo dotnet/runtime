@@ -395,7 +395,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             if (exprUDC != null)
                             {
                                 exprUDC.UserDefinedCall = exprTmp;
-                                exprUDC.Type = (CType)exprTmp.Type;
                                 exprTmp = exprUDC;
                             }
                             Debug.Assert(exprTmp.Type == nubDst);

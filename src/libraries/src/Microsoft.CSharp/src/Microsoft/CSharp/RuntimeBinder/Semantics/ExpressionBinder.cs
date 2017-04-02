@@ -823,85 +823,91 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
-            ExprField pResult;
+            bool isLValue = (pOptionalObject != null && pOptionalObject.Type.IsPointerType()) || objectIsLvalue(pOptionalObject);
+
+            // Exception: a readonly field is not an lvalue unless we're in the constructor/static constructor appropriate
+            // for the field.
+            if (RespectReadonly() && fwt.Field().isReadOnly)
             {
-                bool isLValue = false;
-                if ((pOptionalObject != null && pOptionalObject.Type.IsPointerType()) || objectIsLvalue(pOptionalObject))
+                if (ContainingAgg() == null || !InMethod() || !InConstructor()
+                    || fwt.Field().getClass() != ContainingAgg() || InStaticMethod() != fwt.Field().isStatic
+                    || (pOptionalObject != null && !isThisPointer(pOptionalObject)) || InAnonymousMethod())
                 {
-                    isLValue = true;
+                    isLValue = false;
                 }
-                // Exception: a readonly field is not an lvalue unless we're in the constructor/static constructor appropriate
-                // for the field.
-                if (RespectReadonly() && fwt.Field().isReadOnly)
-                {
-                    if (ContainingAgg() == null ||
-                        !InMethod() || !InConstructor() ||
-                        fwt.Field().getClass() != ContainingAgg() ||
-                        InStaticMethod() != fwt.Field().isStatic ||
-                        (pOptionalObject != null && !isThisPointer(pOptionalObject)) ||
-                        InAnonymousMethod())
-                    {
-                        isLValue = false;
-                    }
-                }
-
-                pResult = GetExprFactory().CreateField(isLValue ? EXPRFLAG.EXF_LVALUE : 0, pFieldType, pOptionalObject, 0, fwt, pOptionalLHS);
-                if (!bIsMatchingStatic)
-                {
-                    pResult.SetMismatchedStaticBit();
-                }
-
-                if (pFieldType.IsErrorType())
-                {
-                    pResult.SetError();
-                }
-                Debug.Assert(BindingFlag.BIND_MEMBERSET == (BindingFlag)EXPRFLAG.EXF_MEMBERSET);
-                pResult.Flags |= (EXPRFLAG)(bindFlags & BindingFlag.BIND_MEMBERSET);
             }
 
+            CType fieldType = null;
             // If this field is the backing field of a WindowsRuntime event then we need to bind to its
             // invocationlist property which is a delegate containing all the handlers.
-            if (fwt.Field().isEvent &&
-                fwt.Field().getEvent(GetSymbolLoader()) != null &&
-                fwt.Field().getEvent(GetSymbolLoader()).IsWindowsRuntimeEvent)
+            if (fwt.Field().isEvent && fwt.Field().getEvent(GetSymbolLoader()) != null
+                && fwt.Field().getEvent(GetSymbolLoader()).IsWindowsRuntimeEvent)
             {
-                CType fieldType = fwt.Field().GetType();
+                fieldType = fwt.Field().GetType();
                 if (fieldType.IsAggregateType())
                 {
                     // Access event backing field (EventRegistrationTokenTable<T>) using
                     // EventRegistrationTokenTable<T>.GetOrCreateEventRegistrationTokenTable()
                     // to ensure non-null
-                    pResult.Type = GetTypes().GetParameterModifier(pResult.Type, false);
-
-                    Name getOrCreateMethodName = NameManager.GetPredefinedName(PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE);
-                    GetSymbolLoader().RuntimeBinderSymbolTable.PopulateSymbolTableWithName(getOrCreateMethodName.Text, null, fieldType.AssociatedSystemType);
-                    MethodSymbol getOrCreateMethod = GetSymbolLoader().LookupAggMember(getOrCreateMethodName, fieldType.getAggregate(), symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
-
-                    MethPropWithInst getOrCreatempwi = new MethPropWithInst(getOrCreateMethod, fieldType.AsAggregateType());
-                    ExprMemberGroup getOrCreateGrp = GetExprFactory().CreateMemGroup(null, getOrCreatempwi);
-
-                    Expr getOrCreateCall = BindToMethod(new MethWithInst(getOrCreatempwi),
-                                                        pResult,
-                                                        getOrCreateGrp,
-                                                        (MemLookFlags)MemLookFlags.None);
-
-                    AggregateSymbol fieldTypeSymbol = fieldType.AsAggregateType().GetOwningAggregate();
-                    Name invocationListName = NameManager.GetPredefinedName(PredefinedName.PN_INVOCATIONLIST);
-
-                    // InvocationList might not be populated in the symbol table as no one would have called it.
-                    GetSymbolLoader().RuntimeBinderSymbolTable.PopulateSymbolTableWithName(invocationListName.Text, null, fieldType.AssociatedSystemType);
-                    PropertySymbol invocationList = GetSymbolLoader().LookupAggMember(
-                                                        invocationListName,
-                                                        fieldTypeSymbol,
-                                                        symbmask_t.MASK_PropertySymbol).AsPropertySymbol();
-
-                    MethPropWithInst mpwi = new MethPropWithInst(invocationList, fieldType.AsAggregateType());
-                    ExprMemberGroup memGroup = GetExprFactory().CreateMemGroup(getOrCreateCall, mpwi);
-
-                    PropWithType pwt = new PropWithType(invocationList, fieldType.AsAggregateType());
-                    Expr propertyExpr = BindToProperty(getOrCreateCall, pwt, bindFlags, null, null, memGroup);
-                    return propertyExpr;
+                    pFieldType = GetTypes().GetParameterModifier(pFieldType, false);
                 }
+                else
+                {
+                    fieldType = null;
+                }
+            }
+
+            ExprField pResult = GetExprFactory()
+                .CreateField(isLValue ? EXPRFLAG.EXF_LVALUE : 0, pFieldType, pOptionalObject, 0, fwt, pOptionalLHS);
+            if (!bIsMatchingStatic)
+            {
+                pResult.SetMismatchedStaticBit();
+            }
+
+            if (pFieldType.IsErrorType())
+            {
+                pResult.SetError();
+            }
+
+            Debug.Assert(BindingFlag.BIND_MEMBERSET == (BindingFlag)EXPRFLAG.EXF_MEMBERSET);
+            pResult.Flags |= (EXPRFLAG)(bindFlags & BindingFlag.BIND_MEMBERSET);
+
+            if (fieldType != null)
+            {
+                Name getOrCreateMethodName =
+                    NameManager.GetPredefinedName(PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE);
+                GetSymbolLoader()
+                    .RuntimeBinderSymbolTable.PopulateSymbolTableWithName(
+                        getOrCreateMethodName.Text, null, fieldType.AssociatedSystemType);
+                MethodSymbol getOrCreateMethod =
+                    GetSymbolLoader()
+                        .LookupAggMember(getOrCreateMethodName, fieldType.getAggregate(), symbmask_t.MASK_MethodSymbol)
+                        .AsMethodSymbol();
+
+                MethPropWithInst getOrCreatempwi = new MethPropWithInst(getOrCreateMethod, fieldType.AsAggregateType());
+                ExprMemberGroup getOrCreateGrp = GetExprFactory().CreateMemGroup(null, getOrCreatempwi);
+
+                Expr getOrCreateCall = BindToMethod(
+                    new MethWithInst(getOrCreatempwi), pResult, getOrCreateGrp, (MemLookFlags)MemLookFlags.None);
+
+                AggregateSymbol fieldTypeSymbol = fieldType.AsAggregateType().GetOwningAggregate();
+                Name invocationListName = NameManager.GetPredefinedName(PredefinedName.PN_INVOCATIONLIST);
+
+                // InvocationList might not be populated in the symbol table as no one would have called it.
+                GetSymbolLoader()
+                    .RuntimeBinderSymbolTable.PopulateSymbolTableWithName(
+                        invocationListName.Text, null, fieldType.AssociatedSystemType);
+                PropertySymbol invocationList =
+                    GetSymbolLoader()
+                        .LookupAggMember(invocationListName, fieldTypeSymbol, symbmask_t.MASK_PropertySymbol)
+                        .AsPropertySymbol();
+
+                MethPropWithInst mpwi = new MethPropWithInst(invocationList, fieldType.AsAggregateType());
+                ExprMemberGroup memGroup = GetExprFactory().CreateMemGroup(getOrCreateCall, mpwi);
+
+                PropWithType pwt = new PropWithType(invocationList, fieldType.AsAggregateType());
+                Expr propertyExpr = BindToProperty(getOrCreateCall, pwt, bindFlags, null, null, memGroup);
+                return propertyExpr;
             }
 
             return pResult;
@@ -1725,10 +1731,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 ExprThisPointer thisExpr = GetExprFactory().CreateThis(Context.GetThisPointer(), true);
                 thisExpr.SetMismatchedStaticBit();
-                if (thisExpr.Type == null)
-                {
-                    thisExpr.Type = GetTypes().GetErrorSym();
-                }
                 return thisExpr;
             }
 

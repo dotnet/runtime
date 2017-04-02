@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprUnboundLambda : Expr
+    internal sealed class ExprUnboundLambda : ExprWithType
     {
+        public ExprUnboundLambda(CType type)
+            : base(type)
+        {
+        }
+
         public override ExpressionKind Kind => ExpressionKind.EK_UNBOUNDLAMBDA;
     }
 }
