@@ -149,16 +149,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.Kind = ExpressionKind.EK_MEMGRP;
             rval.Type = GetTypes().GetMethGrpType();
             rval.Flags = nFlags;
-            rval.name = pName;
-            rval.typeArgs = pTypeArgs;
-            rval.sk = symKind;
+            rval.Name = pName;
+            rval.TypeArgs = pTypeArgs;
+            rval.SymKind = symKind;
             rval.ParentType = pTypePar;
             rval.OptionalObject = pObject;
             rval.MemberLookupResults = memberLookupResults;
             rval.OptionalLHS = null;
-            if (rval.typeArgs == null)
+            if (rval.TypeArgs == null)
             {
-                rval.typeArgs = BSYMMGR.EmptyTypeArray();
+                rval.TypeArgs = BSYMMGR.EmptyTypeArray();
             }
             Debug.Assert(rval != null);
             return (rval);
@@ -393,17 +393,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprUserLogicalOp CreateUserLogOp(CType pType, Expr pCallTF, ExprCall pCallOp)
         {
             Debug.Assert(pCallTF != null);
-            Debug.Assert(pCallOp != null);
-            Debug.Assert(pCallOp.OptionalArguments != null);
-            Debug.Assert(pCallOp.OptionalArguments.isLIST());
-            Debug.Assert(pCallOp.OptionalArguments.asLIST().OptionalElement != null);
+            Debug.Assert((pCallOp?.OptionalArguments as ExprList)?.OptionalElement != null);
             ExprUserLogicalOp rval = new ExprUserLogicalOp();
-            Expr leftChild = pCallOp.OptionalArguments.asLIST().OptionalElement;
+            Expr leftChild = ((ExprList)pCallOp.OptionalArguments).OptionalElement;
             Debug.Assert(leftChild != null);
-            if (leftChild.isWRAP())
+            if (leftChild is ExprWrap wrap)
             {
                 // In the EE case, we don't create WRAPEXPRs.
-                leftChild = leftChild.asWRAP().OptionalExpression;
+                leftChild = wrap.OptionalExpression;
                 Debug.Assert(leftChild != null);
             }
             rval.Kind = ExpressionKind.EK_USERLOGOP;
@@ -412,8 +409,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.TrueFalseCall = pCallTF;
             rval.OperatorCall = pCallOp;
             rval.FirstOperandToExamine = leftChild;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUserLogicalOp CreateUserLogOpError(CType pType, Expr pCallTF, ExprCall pCallOp)
@@ -750,7 +746,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (rval);
         }
 
-        public ExprUnaryOp CreateUserDefinedUnaryOperator(ExpressionKind exprKind, CType pType, Expr pOperand, Expr call, MethPropWithInst pmpwi)
+        public ExprUnaryOp CreateUserDefinedUnaryOperator(ExpressionKind exprKind, CType pType, Expr pOperand, ExprCall call, MethPropWithInst pmpwi)
         {
             Debug.Assert(pType != null);
             Debug.Assert(pOperand != null);
@@ -889,11 +885,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 last = first;
                 return;
             }
-            Debug.Assert(last.Kind == ExpressionKind.EK_LIST);
-            Debug.Assert(last.asLIST().OptionalNextListNode != null);
-            Debug.Assert(last.asLIST().OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-            last.asLIST().OptionalNextListNode = CreateList(last.asLIST().OptionalNextListNode, newItem);
-            last = last.asLIST().OptionalNextListNode;
+            Debug.Assert((last as ExprList)?.OptionalNextListNode != null);
+            Debug.Assert((last as ExprList).OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+            ExprList list = (ExprList)last;
+            list.OptionalNextListNode = CreateList(list.OptionalNextListNode, newItem);
+            last = list.OptionalNextListNode;
         }
 
         public ExprList CreateList(Expr op1, Expr op2)

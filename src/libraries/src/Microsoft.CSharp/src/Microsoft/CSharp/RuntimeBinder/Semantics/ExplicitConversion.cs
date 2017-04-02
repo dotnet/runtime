@@ -207,9 +207,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             VSFAIL("BindExplicitConversion failed unexpectedly");
                             return false;
                         }
-                        if (_exprDest.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION)
+                        if (_exprDest is ExprUserDefinedConversion udc)
                         {
-                            _exprDest.asUSERDEFINEDCONVERSION().Argument = _exprSrc;
+                            udc.Argument = _exprSrc;
                         }
                     }
                     return true;

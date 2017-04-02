@@ -668,23 +668,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC: input types of E with CType T.
 
             pDest = pDest.GetDelegateTypeOfPossibleExpression();
-            if (!pDest.isDelegateType())
+            if (pDest.isDelegateType())
             {
-                return false; // No input types.
+                switch (pSource.Kind)
+                {
+                    case ExpressionKind.EK_MEMGRP:
+                    case ExpressionKind.EK_BOUNDLAMBDA:
+                        TypeArray pDelegateParameters = pDest.AsAggregateType().GetDelegateParameters(GetSymbolLoader());
+                        if (pDelegateParameters != null)
+                        {
+                            return TypeManager.ParametersContainTyVar(pDelegateParameters, pParam);
+                        }
+
+                        break;
+                }
             }
 
-            if (!pSource.isUNBOUNDLAMBDA() && !pSource.isMEMGRP())
-            {
-                return false; // No input types.
-            }
-
-            TypeArray pDelegateParameters =
-                pDest.AsAggregateType().GetDelegateParameters(GetSymbolLoader());
-            if (pDelegateParameters == null)
-            {
-                return false;
-            }
-            return TypeManager.ParametersContainTyVar(pDelegateParameters, pParam);
+            return false;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -709,30 +709,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Output types
         //
-        private bool DoesOutputTypeContain(Expr pSource, CType pDest,
-            TypeParameterType pParam)
+        private bool DoesOutputTypeContain(Expr pSource, CType pDest, TypeParameterType pParam)
         {
             // SPEC: If E is a method group or an anonymous function and T is a delegate
             // SPEC: CType or expression tree CType then the return CType of T is an output CType
             // SPEC: of E with CType T.
 
             pDest = pDest.GetDelegateTypeOfPossibleExpression();
-            if (!pDest.isDelegateType())
+            if (pDest.isDelegateType())
             {
-                return false;
+                switch (pSource.Kind)
+                {
+                    case ExpressionKind.EK_MEMGRP:
+                    case ExpressionKind.EK_BOUNDLAMBDA:
+                        CType pDelegateReturn = pDest.AsAggregateType().GetDelegateReturnType(GetSymbolLoader());
+                        if (pDelegateReturn != null)
+                        {
+                            return TypeManager.TypeContainsType(pDelegateReturn, pParam);
+                        }
+
+                        break;
+                }
             }
 
-            if (!pSource.isUNBOUNDLAMBDA() && !pSource.isMEMGRP())
-            {
-                return false;
-            }
-
-            CType pDelegateReturn = pDest.AsAggregateType().GetDelegateReturnType(GetSymbolLoader());
-            if (pDelegateReturn == null)
-            {
-                return false;
-            }
-            return TypeManager.TypeContainsType(pDelegateReturn, pParam);
+            return false;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1064,7 +1064,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   yields a single method with return CType U then a lower-bound
             // SPEC:   inference is made from U to Tb.
 
-            if (!pSource.isMEMGRP())
+            if (!(pSource is ExprMemberGroup memGrp))
             {
                 return false;
             }
@@ -1094,7 +1094,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ArgInfos argInfo = new ArgInfos() { carg = pDelegateParameters.Count, types = pDelegateParameters, fHasExprs = false, prgexpr = null };
 
-            var argsBinder = new ExpressionBinder.GroupToArgsBinder(_binder, 0/* flags */, pSource.asMEMGRP(), argInfo, null, false, pDelegateType);
+            var argsBinder = new ExpressionBinder.GroupToArgsBinder(_binder, 0/* flags */, memGrp, argInfo, null, false, pDelegateType);
 
             bool success = argsBinder.Bind(false);
             if (!success)

@@ -6,11 +6,13 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprMemberGroup : Expr
+    internal sealed class ExprMemberGroup : Expr, IExprWithObject
     {
-        public Name name;
-        public TypeArray typeArgs;
-        public SYMKIND sk;
+        public Name Name { get; set; }
+
+        public TypeArray TypeArgs { get; set; }
+
+        public SYMKIND SymKind { get; set; }
         // The type containing the members. This may be a TypeParameterType or an AggregateType.
         // This may be NULL (if types is not NULL).
 
@@ -33,5 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public CType ParentType { get; set; }
 
         public bool IsDelegate => (Flags & EXPRFLAG.EXF_DELEGATE) != 0;
+
+        public void SetInaccessibleBit() => SetError();
     }
 }

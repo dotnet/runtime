@@ -4,9 +4,8 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprReturn : ExprStatement, IExprWithObject
+    internal interface IExprWithObject
     {
-        // Return object is optional because of void returns.
-        public Expr OptionalObject { get; set; }
+        Expr OptionalObject { get; set; }
     }
 }

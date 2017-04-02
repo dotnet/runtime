@@ -17,5 +17,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsLifted { get; set; }
 
         public MethPropWithInst UserDefinedCallMethod { get; set; }
+
+        public void SetAssignment()
+        {
+            Flags |= EXPRFLAG.EXF_ASSGOP;
+        }
     }
 }

@@ -391,14 +391,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 FUNDTYPE ftSrc = expr.Type.fundType();
                 FUNDTYPE ftDest = dest.fundType();
 
-                if (expr.isCONSTANT_OK() &&
+                if (expr is ExprConstant constant && constant.IsOK &&
                     expr.Type.isSimpleType() && dest.isSimpleType())
                 {
                     if ((ftSrc == FUNDTYPE.FT_I4 && (ftDest <= FUNDTYPE.FT_LASTNONLONG || ftDest == FUNDTYPE.FT_U8)) ||
                         (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
                     {
                         // Failed because value was out of range. Report nifty error message.
-                        string value = expr.asCONSTANT().Int64Value.ToString(CultureInfo.InvariantCulture);
+                        string value = constant.Int64Value.ToString(CultureInfo.InvariantCulture);
                         ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, value, dest);
                         exprResult = ExprFactory.CreateCast(0, destExpr, expr);
                         exprResult.SetError();
@@ -421,9 +421,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     ErrorContext.Error(dest is TypeParameterType ? ErrorCode.ERR_TypeVarCantBeNull : ErrorCode.ERR_ValueCantBeNull, dest);
                 }
 
-                else if (expr.isMEMGRP())
+                else if (expr is ExprMemberGroup memGrp)
                 {
-                    BindGrpConversion(expr.asMEMGRP(), dest, true);
+                    BindGrpConversion(memGrp, dest, true);
                 }
                 else if (!TypeManager.TypeContainsAnonymousTypes(dest) && canCast(expr.Type, dest, flags))
                 {
@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // We have a constant decimal that is out of range of the destination type.
                         // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
                         // Decimal is a SimpleType represented in a FT_STRUCT
-                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, exprConst.asCONSTANT().Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
+                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, ((ExprConstant)exprConst).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
                     else if (simpleConstToSimpleDestination && Context.CheckedConstant)
                     {
@@ -534,13 +534,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (expr_type <= FUNDTYPE.FT_LASTINTEGRAL)
                         {
                             if (expr.Type.isUnsigned())
-                                value = ((ulong)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
                             else
-                                value = ((long)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((long)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
                         }
                         else if (expr_type <= FUNDTYPE.FT_LASTNUMERIC)
                         {
-                            value = (exprConst.asCONSTANT()).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
+                            value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
                         }
                         else
                         {
@@ -555,9 +555,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
                     }
-                    else if (expr.isMEMGRP())
+                    else if (expr is ExprMemberGroup memGrp)
                     {
-                        BindGrpConversion(expr.asMEMGRP(), dest, true);
+                        BindGrpConversion(memGrp, dest, true);
                     }
                     else
                     {
@@ -665,7 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!typeDst.isDelegateType())
             {
                 if (fReportErrors)
-                    ErrorContext.Error(ErrorCode.ERR_MethGrpToNonDel, grp.name, typeDst);
+                    ErrorContext.Error(ErrorCode.ERR_MethGrpToNonDel, grp.Name, typeDst);
                 return false;
             }
             AggregateType type = typeDst.AsAggregateType();
@@ -1323,14 +1323,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Need to lift over the null.
                 Debug.Assert(fLiftSrc || fLiftDst);
-                exprDst = ExprFactory.CreateCall(0, typeDst, exprSrc, pMemGroup, mwiBest);
-                Debug.Assert(exprDst.isCALL());
+                ExprCall call = ExprFactory.CreateCall(0, typeDst, exprSrc, pMemGroup, mwiBest);
+                exprDst = call;
 
                 // We want to bind the unlifted conversion first.
                 Expr nonLiftedArg = mustCast(exprSrc, typeFrom);
                 MarkAsIntermediateConversion(nonLiftedArg);
                 Expr nonLiftedResult = BindUDConversionCore(nonLiftedArg, typeFrom, typeTo, typeDst, mwiBest);
-                ExprCall call = exprDst.asCALL();
 
                 call.CastOfNonLiftedResultToLiftedType = mustCast(nonLiftedResult, typeDst);
                 call.NullableCallLiftKind = NullableCallLiftKind.UserDefinedConversion;
@@ -1361,9 +1360,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
                     Debug.Assert(pConversionArgument != null);
-                    Expr pConversionCall = ExprFactory.CreateCall(0, typeDst, pConversionArgument, pMemGroup, mwiBest);
-                    Debug.Assert(pConversionCall.isCALL());
-                    pConversionCall.asCALL().NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
+                    ExprCall pConversionCall = ExprFactory.CreateCall(0, typeDst, pConversionArgument, pMemGroup, mwiBest);
+                    pConversionCall.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
                     call.PConversions = pConversionCall;
                 }
                 else
@@ -1395,27 +1393,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void MarkAsIntermediateConversion(Expr pExpr)
         {
-            Debug.Assert(pExpr != null);
-            if (pExpr.isCALL())
+            for (;;)
             {
-                switch (pExpr.asCALL().NullableCallLiftKind)
+                Debug.Assert(pExpr != null);
+                if (pExpr is ExprCall call)
                 {
-                    default:
-                        break;
-                    case NullableCallLiftKind.NotLifted:
-                        pExpr.asCALL().NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
-                        break;
-                    case NullableCallLiftKind.NullableConversion:
-                        pExpr.asCALL().NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
-                        break;
-                    case NullableCallLiftKind.NullableConversionConstructor:
-                        MarkAsIntermediateConversion(pExpr.asCALL().OptionalArguments);
-                        break;
+                    switch (call.NullableCallLiftKind)
+                    {
+                        case NullableCallLiftKind.NotLifted:
+                            call.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
+                            break;
+                        case NullableCallLiftKind.NullableConversion:
+                            call.NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
+                            break;
+                        case NullableCallLiftKind.NullableConversionConstructor:
+                            pExpr = call.OptionalArguments;
+                            continue;
+                    }
                 }
-            }
-            else if (pExpr.isUSERDEFINEDCONVERSION())
-            {
-                MarkAsIntermediateConversion(pExpr.asUSERDEFINEDCONVERSION().UserDefinedCall);
+                else if (pExpr is ExprUserDefinedConversion udc)
+                {
+                    pExpr = udc.UserDefinedCall;
+                    continue;
+                }
+
+                return;
             }
         }
 
@@ -1453,7 +1455,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
             bool srcNumeric = (ftSrc <= FUNDTYPE.FT_LASTNUMERIC);
 
-            ExprConstant constSrc = exprSrc.GetConst().asCONSTANT();
+            ExprConstant constSrc = (ExprConstant)exprSrc.GetConst();
             Debug.Assert(constSrc != null);
             if (ftSrc == FUNDTYPE.FT_STRUCT || ftDest == FUNDTYPE.FT_STRUCT)
             {

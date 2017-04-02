@@ -431,8 +431,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
             Expr pExpr = BadOperatorTypesError(ek, info.arg1, info.arg2, GetTypes().GetErrorSym());
-            Debug.Assert(pExpr.isBIN());
-            return pExpr.asBIN();
+            pExpr.AssertIsBin();
+            return (ExprBinOp)pExpr;
         }
 
         /*
@@ -2058,10 +2058,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (argConst == null)
                 return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_LOGNOT, typeBool, arg);
 
-            bool fRes = argConst.asCONSTANT().Val.Int32Val != 0;
-            Expr rval = GetExprFactory().CreateConstant(typeBool, ConstVal.Get(!fRes));
-
-            return rval;
+            return GetExprFactory().CreateConstant(typeBool, ConstVal.Get(((ExprConstant)argConst).Val.Int32Val == 0));
         }
 
 
@@ -2250,11 +2247,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr BindEnumUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(ek == ExpressionKind.EK_BITNOT);
-            Debug.Assert(arg.isCAST());
-            Debug.Assert(arg.asCAST().Argument.Type.isEnumType());
+            Debug.Assert((ExprCast)arg != null);
+            Debug.Assert(((ExprCast)arg).Argument.Type.isEnumType());
 
             PredefinedType ptOp;
-            CType typeEnum = arg.asCAST().Argument.Type;
+            CType typeEnum = ((ExprCast)arg).Argument.Type;
 
             switch (typeEnum.fundType())
             {
@@ -2549,11 +2546,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GetExprFactory().CreateUserLogOpError(typeRet, pCallTF, pCall);
             }
 
-            Debug.Assert(pCall.OptionalArguments.isLIST());
+            ExprList list = (ExprList)pCall.OptionalArguments;
+            Debug.Assert(list != null);
 
-            Expr pExpr = pCall.OptionalArguments.asLIST().OptionalElement;
-            Expr pExprWrap = WrapShortLivedExpression(pExpr);
-            pCall.OptionalArguments.asLIST().OptionalElement = pExprWrap;
+            Expr pExpr = list.OptionalElement;
+            ExprWrap pExprWrap = WrapShortLivedExpression(pExpr);
+            list.OptionalElement = pExprWrap;
 
             // Reflection load the true and false methods.
             SymbolLoader.RuntimeBinderSymbolTable.PopulateSymbolTableWithName(SpecialNames.CLR_True, null, pExprWrap.Type.AssociatedSystemType);

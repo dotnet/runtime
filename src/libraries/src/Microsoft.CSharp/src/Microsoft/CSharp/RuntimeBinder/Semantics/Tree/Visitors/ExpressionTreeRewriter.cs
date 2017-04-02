@@ -54,10 +54,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // For assignments, we either have a member assignment or an indexed assignment.
             //Debug.Assert(assignment.GetLHS().isPROP() || assignment.GetLHS().isFIELD() || assignment.GetLHS().isARRAYINDEX() || assignment.GetLHS().isLOCAL());
             Expr lhs;
-            if (assignment.LHS.isPROP())
+            if (assignment.LHS is ExprProperty prop)
             {
-                ExprProperty prop = assignment.LHS.asPROP();
-
                 if (prop.OptionalArguments== null)
                 {
                     // Regular property.
@@ -118,9 +116,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr args = GetExprFactory().CreateList(body, parameters);
             CType typeRet = GetSymbolLoader().GetTypeManager().SubstType(mwi.Meth().RetType, mwi.GetType(), mwi.TypeArgs);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            Expr callLambda = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
+            Expr callLambda = call;
 
-            callLambda.asCALL().PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
+            call.PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
 
             currentAnonMeth = prevAnonMeth;
             if (createParameters != null)
@@ -203,7 +202,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // a EXPRBOUNDLAMBDA that is an expression tree, then just visit the expression tree.
             if (pExpr.Type != null &&
                     pExpr.Type.isPredefType(PredefinedType.PT_G_EXPRESSION) &&
-                    pArgument.isBOUNDLAMBDA())
+                    pArgument is ExprBoundLambda)
             {
                 return Visit(pArgument);
             }
@@ -267,7 +266,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr arr = Visit(pExpr.Array);
             Expr args = GenerateIndexList(pExpr.Index);
-            if (args.isLIST())
+            if (args is ExprList)
             {
                 Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2, arr, Params);
@@ -283,8 +282,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr p1 = Visit(pExpr.TestExpression);
-            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalLeftChild);
-            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalRightChild);
+            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalLeftChild);
+            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalRightChild);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONDITION, p1, p2, p3);
         }
         protected override Expr VisitCALL(ExprCall expr)
@@ -338,9 +337,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // can handle in the general case all implicit boxing conversions. Right now it 
                 // requires that all arguments to a call that need to be boxed be explicitly boxed.
 
-                if (pObject != null && pObject.isCAST() && pObject.asCAST().IsBoxingCast)
+                if (pObject != null && pObject is ExprCast cast && cast.IsBoxingCast)
                 {
-                    pObject = pObject.asCAST().Argument;
+                    pObject = cast.Argument;
                 }
                 pObject = Visit(pObject);
             }
@@ -411,9 +410,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pExpr != null);
             // We must not optimize away compiler-generated reference casts because
             // the expression tree API insists that the CType of both sides be identical.
-            if (pExpr.isCAST())
+            if (pExpr is ExprCast cast)
             {
-                return GenerateConversion(pExpr.asCAST().Argument, pExpr.Type, pExpr.isChecked());
+                return GenerateConversion(cast.Argument, pExpr.Type, pExpr.isChecked());
             }
             return Visit(pExpr);
         }
@@ -629,18 +628,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (udcall != null)
             {
                 Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
-                if (udcall.Kind == ExpressionKind.EK_CALL)
+                if (udcall is ExprCall ascall)
                 {
-                    ExprList args = udcall.asCALL().OptionalArguments.asLIST();
+                    ExprList args = (ExprList)ascall.OptionalArguments;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement;
                     p2 = args.OptionalNextListNode;
                 }
                 else
                 {
-                    ExprList args = udcall.asUSERLOGOP().OperatorCall.OptionalArguments.asLIST();
+                    ExprUserLogicalOp userLogOp = udcall as ExprUserLogicalOp;
+                    Debug.Assert(userLogOp != null);
+                    ExprList args = (ExprList)userLogOp.OperatorCall.OptionalArguments;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-                    p1 = args.OptionalElement.asWRAP().OptionalExpression;
+                    p1 = ((ExprWrap)args.OptionalElement).OptionalExpression;
                     p2 = args.OptionalNextListNode;
                 }
             }
@@ -665,7 +666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
-            ExprCall call = expr.OptionalUserDefinedCall.asCALL();
+            ExprCall call = expr.OptionalUserDefinedCall;
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined
@@ -735,8 +736,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr p2 = expr.OptionalRightChild;
             if (expr.OptionalUserDefinedCall != null)
             {
-                ExprCall udcall = expr.OptionalUserDefinedCall.asCALL();
-                ExprList args = udcall.OptionalArguments.asLIST();
+                ExprCall udcall = (ExprCall)expr.OptionalUserDefinedCall;
+                ExprList args = (ExprList)udcall.OptionalArguments;
                 Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
 
                 p1 = args.OptionalElement;
@@ -761,10 +762,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprBlock body = anonmeth.OptionalBody;
 
             // The most likely case:
-            if (body.OptionalStatements.isRETURN())
+            if (body.OptionalStatements is ExprReturn ret)
             {
-                Debug.Assert(body.OptionalStatements.asRETURN().OptionalObject != null);
-                return Visit(body.OptionalStatements.asRETURN().OptionalObject);
+                Debug.Assert(ret.OptionalObject != null);
+                return Visit(ret.OptionalObject);
             }
             // This can only if it is a void delegate and this is a void expression, such as a call to a void method
             // or something like Expression<Action<Foo>> e = (Foo f) => f.MyEvent += MyDelegate;
@@ -870,43 +871,47 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Expr pCastCall = pExpr.UserDefinedCall;
             Expr pCastArgument = pExpr.Argument;
-            Expr pConversionSource = null;
+            Expr pConversionSource;
 
-            if (!isEnumToDecimalConversion(pArgument.Type, pExpr.Type) && IsNullableValueAccess(pCastArgument, pArgument))
+            if (!isEnumToDecimalConversion(pArgument.Type, pExpr.Type)
+                && IsNullableValueAccess(pCastArgument, pArgument))
             {
                 // We have an implicit conversion of nullable CType to the value CType, generate a convert node for it.
                 pConversionSource = GenerateValueAccessConversion(pArgument);
             }
-            else if (pCastCall.isCALL() && pCastCall.asCALL().PConversions != null)
+            else
             {
-                Expr pUDConversion = pCastCall.asCALL().PConversions;
-                if (pUDConversion.isCALL())
+                ExprCall call = pCastCall as ExprCall;
+                Expr pUDConversion = call?.PConversions;
+                if (pUDConversion != null)
                 {
-                    Expr pUDConversionArgument = pUDConversion.asCALL().OptionalArguments;
-                    if (IsNullableValueAccess(pUDConversionArgument, pArgument))
+                    if (pUDConversion is ExprCall convCall)
                     {
-                        pConversionSource = GenerateValueAccessConversion(pArgument);
+                        Expr pUDConversionArgument = convCall.OptionalArguments;
+                        if (IsNullableValueAccess(pUDConversionArgument, pArgument))
+                        {
+                            pConversionSource = GenerateValueAccessConversion(pArgument);
+                        }
+                        else
+                        {
+                            pConversionSource = Visit(pUDConversionArgument);
+                        }
+
+                        return GenerateConversionWithSource(pConversionSource, pCastCall.Type, call.isChecked());
                     }
-                    else
-                    {
-                        pConversionSource = Visit(pUDConversionArgument);
-                    }
-                    return GenerateConversionWithSource(pConversionSource, pCastCall.Type, pCastCall.asCALL().isChecked());
-                }
-                else
-                {
+
                     // This can happen if we have a UD conversion from C to, say, int, 
                     // and we have an explicit cast to decimal?. The conversion should
                     // then be bound as two chained user-defined conversions.
-                    Debug.Assert(pUDConversion.isUSERDEFINEDCONVERSION());
+                    Debug.Assert(pUDConversion is ExprUserDefinedConversion);
+
                     // Just recurse.
-                    return GenerateUserDefinedConversion(pUDConversion.asUSERDEFINEDCONVERSION(), pArgument);
+                    return GenerateUserDefinedConversion((ExprUserDefinedConversion)pUDConversion, pArgument);
                 }
-            }
-            else
-            {
+
                 pConversionSource = Visit(pCastArgument);
             }
+
             return GenerateUserDefinedConversion(pCastArgument, pExpr.Type, pConversionSource, pExpr.UserDefinedCallMethod);
         }
 
@@ -1028,12 +1033,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr != null);
             Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
             Debug.Assert(expr.Type.isDelegateType());
-            Debug.Assert(expr.OptionalArguments != null);
-            Debug.Assert(expr.OptionalArguments.isLIST());
-            ExprList origArgs = expr.OptionalArguments.asLIST();
+
+            ExprList origArgs = (ExprList)expr.OptionalArguments;
+            Debug.Assert(origArgs != null);
             Expr target = origArgs.OptionalElement;
             Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
-            ExprFuncPtr funcptr = origArgs.OptionalNextListNode.asFUNCPTR();
+            ExprFuncPtr funcptr = (ExprFuncPtr)origArgs.OptionalNextListNode;
+            Debug.Assert(funcptr != null);
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
             AggregateType delegateType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_DELEGATE, true);
             MethWithInst mwi = new MethWithInst(createDelegateMethod, delegateType);
@@ -1263,23 +1269,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool IsNullableValueAccess(Expr pExpr, Expr pObject)
         {
             Debug.Assert(pExpr != null);
-            return pExpr.isPROP() && (pExpr.asPROP().MemberGroup.OptionalObject== pObject) && pObject.Type.IsNullableType();
+            return pExpr is ExprProperty prop && prop.MemberGroup.OptionalObject == pObject && pObject.Type.IsNullableType();
         }
 
         private bool IsDelegateConstructorCall(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
-            if (!pExpr.isCALL())
+            if (!(pExpr is ExprCall pCall))
             {
                 return false;
             }
-            ExprCall pCall = pExpr.asCALL();
+
             return pCall.MethWithInst.Meth() != null &&
                 pCall.MethWithInst.Meth().IsConstructor() &&
                 pCall.Type.isDelegateType() &&
                 pCall.OptionalArguments != null &&
-                pCall.OptionalArguments.isLIST() &&
-                pCall.OptionalArguments.asLIST().OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
+                pCall.OptionalArguments is ExprList list &&
+                list.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
         }
         private static bool isEnumToDecimalConversion(CType argtype, CType desttype)
         {
