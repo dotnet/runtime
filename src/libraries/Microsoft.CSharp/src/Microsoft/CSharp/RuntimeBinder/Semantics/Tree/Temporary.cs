@@ -8,6 +8,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public Expr OptionalExpression { get; set; }
 
+        public override CType Type => OptionalExpression?.Type;
+
         public override ExpressionKind Kind => ExpressionKind.EK_WRAP;
     }
 }

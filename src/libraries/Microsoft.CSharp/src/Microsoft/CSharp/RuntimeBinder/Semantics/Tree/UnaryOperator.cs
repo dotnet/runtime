@@ -8,8 +8,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprUnaryOp : ExprOperator
     {
-        public ExprUnaryOp(ExpressionKind kind)
-            : base(kind)
+        public ExprUnaryOp(ExpressionKind kind, CType type)
+            : base(kind, type)
         {
             Debug.Assert(kind.isUnaryOperator());
         }

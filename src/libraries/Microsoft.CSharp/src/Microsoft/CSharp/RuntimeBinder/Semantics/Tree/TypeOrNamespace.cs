@@ -12,5 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal abstract class ExprTypeOrNamespace : Expr
     {
         public ITypeOrNamespace TypeOrNamespace;
+
+        public override CType Type => TypeOrNamespace as CType;
     }
 }

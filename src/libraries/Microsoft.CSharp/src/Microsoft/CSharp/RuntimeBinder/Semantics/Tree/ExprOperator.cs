@@ -6,11 +6,12 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal abstract class ExprOperator : Expr
+    internal abstract class ExprOperator : ExprWithType
     {
         public override ExpressionKind Kind { get; }
 
-        protected ExprOperator(ExpressionKind kind)
+        protected ExprOperator(ExpressionKind kind, CType type)
+            : base(type)
         {
             Debug.Assert(kind.isUnaryOperator() || kind > ExpressionKind.EK_TypeLim);
             Kind = kind;

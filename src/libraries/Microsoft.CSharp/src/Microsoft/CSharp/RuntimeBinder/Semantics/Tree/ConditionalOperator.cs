@@ -10,6 +10,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprBinOp Consequence { get; set; }
 
+        public override CType Type => Consequence.Type ?? Consequence.OptionalLeftChild.Type;
+
         public override ExpressionKind Kind => ExpressionKind.EK_QUESTIONMARK;
     }
 }
