@@ -7,32 +7,35 @@ using System.Security;
 
 namespace System.Diagnostics
 {
+    // We know of no way to achieve this on Unix, particularly providing the password
+    // without a prompt. If we find a way, we should implement it. It may make more sense to provide
+    // similar functionality through an API specific to Unix.
     public sealed partial class ProcessStartInfo
     {
         private const bool CaseSensitiveEnvironmentVariables = true;
 
         public string UserName
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
         }
 
         public string PasswordInClearText
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
         }
 
         public string Domain
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
         }
 
         public bool LoadUserProfile
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
         }
 
         public bool UseShellExecute { get; set; }
@@ -42,8 +45,8 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         public SecureString Password
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ProcessStartIdentityNotSupported); }
         }
     }
 }

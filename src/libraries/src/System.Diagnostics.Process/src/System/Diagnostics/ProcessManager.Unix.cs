@@ -82,7 +82,7 @@ namespace System.Diagnostics
         }
         public static IntPtr GetMainWindowHandle(int processId)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // Window handle is a Windows concept
         }
     }
 }
