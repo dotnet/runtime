@@ -128,6 +128,11 @@ done:
     return retval;
 }
 
+UINT GetExponent(double d)
+{
+    return (*((UINT*)&d + 1) >> 20) & 0x000007ff;
+}
+
 /**
 Function:
 
@@ -150,250 +155,143 @@ NOTES:
 char * __cdecl
 _ecvt( double value, int count, int * dec, int * sign )
 {
-    CONST CHAR * FORMAT_STRING = "%.348e";
-    CHAR TempBuffer[ ECVT_MAX_BUFFER_SIZE ];
-    CPalThread *pThread = NULL;
-    LPSTR lpReturnBuffer = NULL;
-    LPSTR lpStartOfReturnBuffer = NULL;
-    LPSTR lpTempBuffer = NULL;
-    LPSTR lpEndOfTempBuffer = NULL;
-    INT nTempBufferLength = 0;
-    CHAR ExponentBuffer[ 6 ];
-    INT nExponentValue = 0;
-    INT LoopIndex = 0;
-
     PERF_ENTRY(_ecvt);
     ENTRY( "_ecvt( value=%.30g, count=%d, dec=%p, sign=%p )\n",
            value, count, dec, sign );
+    
+    _ASSERTE(dec != nullptr && sign != nullptr);
+    CPalThread *pThread = InternalGetCurrentThread();
+    LPSTR lpStartOfReturnBuffer = pThread->crtInfo.ECVTBuffer;
 
-    /* Get the per-thread buffer from the thread structure. */
-    pThread = InternalGetCurrentThread();
-
-    lpStartOfReturnBuffer = lpReturnBuffer = pThread->crtInfo.ECVTBuffer;
-
-    /* Sanity checks */
-    if ( !dec || !sign )
-    {
-        ERROR( "dec and sign have to be valid pointers.\n" );
-        *lpReturnBuffer = '\0';
-        goto done;
-    }
-    else
-    {
-        *dec = *sign = 0;
-    }
-
-    if ( value < 0.0 )
-    {
-        *sign = 1;
-    }
-
-    if ( count > ECVT_MAX_COUNT_SIZE )
+    if (count > ECVT_MAX_COUNT_SIZE)
     {
         count = ECVT_MAX_COUNT_SIZE;
     }
 
-    /* Get the string to work with. */
-    sprintf_s( TempBuffer, sizeof(TempBuffer), FORMAT_STRING, value );
+    // the caller of _ecvt should already checked the Infinity and NAN values
+    _ASSERTE(GetExponent(value) != 0x7ff);
 
-    /* Check to see if value was a valid number. */
-    if ( strcmp( "NaN", TempBuffer ) == 0 || strcmp( "-NaN", TempBuffer ) == 0 )
+    CHAR TempBuffer[ECVT_MAX_BUFFER_SIZE];
+   
+    *dec = *sign = 0;
+
+    if (value < 0.0)
     {
-        TRACE( "value was not a number!\n" );
-        if (strcpy_s( lpStartOfReturnBuffer, ECVT_MAX_BUFFER_SIZE, "1#QNAN0" ) != SAFECRT_SUCCESS)
-        {
-            ERROR( "strcpy_s failed!\n" );
-            *lpStartOfReturnBuffer = '\0';
-            goto done;
-        }
-
-        *dec = 1;
-        goto done;
-    }
-
-    /* Check to see if it is infinite. */
-    if ( strcmp( "Inf", TempBuffer ) == 0 || strcmp( "-Inf", TempBuffer ) == 0 )
-    {
-        TRACE( "value is infinite!\n" );
-        if (strcpy_s( lpStartOfReturnBuffer, ECVT_MAX_BUFFER_SIZE, "1#INF00" ) != SAFECRT_SUCCESS)
-        {
-            ERROR( "strcpy_s failed!\n" );
-            *lpStartOfReturnBuffer = '\0';
-            goto done;
-        }
-
-        *dec = 1;
-        if ( *TempBuffer == '-' )
-        {
-            *sign = 1;
-        }
-        goto done;
-    }
-
-    nTempBufferLength = strlen( TempBuffer );
-    lpEndOfTempBuffer = &(TempBuffer[ nTempBufferLength ]);
-
-    /* Extract the exponent, and convert it to integer. */
-    while ( *lpEndOfTempBuffer != 'e' && nTempBufferLength > 0 )
-    {
-        nTempBufferLength--;
-        lpEndOfTempBuffer--;
+        *sign = 1;
     }
     
-    ExponentBuffer[ 0 ] = '\0';
-    if (strncat_s( ExponentBuffer, sizeof(ExponentBuffer), lpEndOfTempBuffer + 1, 5 ) != SAFECRT_SUCCESS)
     {
-        ERROR( "strncat_s failed!\n" );
-        *lpStartOfReturnBuffer = '\0';
-        goto done;
-    }
-
-    nExponentValue = atoi( ExponentBuffer );
-
-    /* End the string at the 'e' */
-    *lpEndOfTempBuffer = '\0';
-    nTempBufferLength--;
-
-    /* Determine decimal location. */
-    if ( nExponentValue == 0 )
-    {
-        *dec = 1;
-    }
-    else
-    {
-        *dec = nExponentValue + 1;
-    }
-
-    if ( value == 0.0 )
-    {
-        *dec = 0;
-    }
-    /* Copy the string from the temp buffer upto count characters, 
-    removing the sign, and decimal as required. */
-    lpTempBuffer = TempBuffer;
-    *lpReturnBuffer = '0';
-    lpReturnBuffer++;
-
-    while ( LoopIndex < ECVT_MAX_COUNT_SIZE )
-    {
-        if ( isdigit(*lpTempBuffer) )
+        // we have issue #10290 tracking fixing the sign of 0.0 across the platforms
+        if (value == 0.0)
         {
-            *lpReturnBuffer = *lpTempBuffer;
-            LoopIndex++;
-            lpReturnBuffer++;
+            for (int j = 0; j < count; j++)
+            {
+                lpStartOfReturnBuffer[j] = '0';
+            }
+            lpStartOfReturnBuffer[count] = '\0';
+            goto done;
+        } 
+        
+        int tempBufferLength = snprintf(TempBuffer, ECVT_MAX_BUFFER_SIZE, "%.40e", value);
+        _ASSERTE(tempBufferLength > 0 && ECVT_MAX_BUFFER_SIZE > tempBufferLength);
+        
+        //
+        // Calculate the exponent value
+        //
+
+        int exponentIndex = strrchr(TempBuffer, 'e') - TempBuffer; 
+        _ASSERTE(exponentIndex > 0 && (exponentIndex < tempBufferLength - 1));
+
+        int i = exponentIndex + 1;
+        int exponentSign = 1;
+        if (TempBuffer[i] == '-')
+        {
+            exponentSign = -1;
+            i++;
         }
-        lpTempBuffer++;
-
-        if ( LoopIndex == count + 1 )
+        else if (TempBuffer[i] == '+')
         {
-            break;
+            i++;
         }
-    }
 
-    *lpReturnBuffer = '\0';
-
-    /* Round if needed. If count is less then 0 
-    then windows does not round for some reason.*/
-    nTempBufferLength = strlen( lpStartOfReturnBuffer ) - 1;
-    
-    /* Add one for the preceeding zero. */
-    lpReturnBuffer = ( lpStartOfReturnBuffer + 1 );
-
-    if ( nTempBufferLength >= count && count >= 0 )
-    {
-        /* Determine whether I need to round up. */
-        if ( *(lpReturnBuffer + count) >= '5' )
+        int exponentValue = 0;
+        while (i < tempBufferLength)
         {
-            CHAR cNumberToBeRounded;
-            if ( count != 0 )
-            {
-                cNumberToBeRounded = *(lpReturnBuffer + count - 1);
-            }
-            else
-            {
-                cNumberToBeRounded = *lpReturnBuffer;
-            }
-            
-            if ( cNumberToBeRounded < '9' )
-            {
-                if ( count > 0 )
-                {
-                    /* Add one to the character. */
-                    (*(lpReturnBuffer + count - 1))++;
-                }
-                else
-                {
-                    if ( cNumberToBeRounded >= '5' )
-                    {
-                        (*dec)++;
-                    }
-                }
-            }
-            else
-            {
-                LPSTR lpRounding = NULL;
+            _ASSERTE(TempBuffer[i] >= '0' && TempBuffer[i] <= '9');
+            exponentValue = exponentValue * 10 + ((BYTE) TempBuffer[i] - (BYTE) '0');
+            i++;
+        }
+        exponentValue *= exponentSign;
+        
+        //
+        // Determine decimal location.
+        // 
 
-                if ( count > 0 )
-                {
-                    lpRounding = lpReturnBuffer + count - 1;
-                }
-                else
-                {
-                    lpRounding = lpReturnBuffer + count;
-                }
-
-                while ( cNumberToBeRounded == '9' )
-                {
-                    cNumberToBeRounded = *lpRounding;
-                    
-                    if ( cNumberToBeRounded == '9' )
-                    {
-                        *lpRounding = '0';
-                        lpRounding--;
-                    }
-                }
-                
-                if ( lpRounding == lpStartOfReturnBuffer )
-                {
-                    /* Overflow. number is a whole number now. */
-                    *lpRounding = '1';
-                    memset( ++lpRounding, '0', count);
-
-                    /* The decimal has moved. */
-                    (*dec)++;
-                }
-                else
-                {
-                    *lpRounding = ++cNumberToBeRounded;
-                }
-            }
+        if (exponentValue == 0)
+        {
+            *dec = 1;
         }
         else
         {
-            /* Get rid of the preceding 0 */
-            lpStartOfReturnBuffer++;
+            *dec = exponentValue + 1;
         }
-    }
+        
+        //
+        // Copy the string from the temp buffer upto precision characters, removing the sign, and decimal as required.
+        // 
 
-    if ( *lpStartOfReturnBuffer == '0' )
-    {
-        lpStartOfReturnBuffer++;
-    }
+        i = 0;
+        int mantissaIndex = 0;
+        while (i < count && mantissaIndex < exponentIndex)
+        {
+            if (TempBuffer[mantissaIndex] >= '0' && TempBuffer[mantissaIndex] <= '9')
+            {
+                lpStartOfReturnBuffer[i] = TempBuffer[mantissaIndex];
+                i++;
+            }
+            mantissaIndex++;
+        }
 
-    if ( count >= 0 )
-    {
-        *(lpStartOfReturnBuffer + count) = '\0';
-    }
-    else
-    {
-        *lpStartOfReturnBuffer = '\0';
+        while (i < count)
+        {
+            lpStartOfReturnBuffer[i] = '0'; // append zeros as needed
+            i++;
+        }
+
+        lpStartOfReturnBuffer[i] = '\0';
+        
+        //
+        // Round if needed
+        //
+
+        if (mantissaIndex >= exponentIndex || TempBuffer[mantissaIndex] < '5')
+        {
+            goto done;
+        }
+
+        i = count - 1;
+        while (lpStartOfReturnBuffer[i] == '9' && i > 0)
+        {
+            lpStartOfReturnBuffer[i] = '0';
+            i--;
+        }
+
+        if (i == 0 && lpStartOfReturnBuffer[i] == '9')
+        {
+            lpStartOfReturnBuffer[i] = '1';
+            (*dec)++;
+        }
+        else
+        {
+            lpStartOfReturnBuffer[i]++;
+        }    
     }
 
 done:
 
     LOGEXIT( "_ecvt returning %p (%s)\n", lpStartOfReturnBuffer , lpStartOfReturnBuffer );
     PERF_EXIT(_ecvt);
-
+    
     return lpStartOfReturnBuffer;
 }
 
