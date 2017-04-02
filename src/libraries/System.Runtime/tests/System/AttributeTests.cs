@@ -18,7 +18,7 @@ namespace System.Tests
             var a1 = new ParentAttribute { Prop = 1 };
             var a2 = new ParentAttribute { Prop = 42 };
             var a3 = new ParentAttribute { Prop = 1 };
-            
+
             var d1 = new ChildAttribute { Prop = 1 };
             var d2 = new ChildAttribute { Prop = 42 };
             var d3 = new ChildAttribute { Prop = 1 };
@@ -29,22 +29,27 @@ namespace System.Tests
 
             var f1 = new ChildAttributeWithField { Prop = 1 };
             var f2 = new ChildAttributeWithField { Prop = 42 };
-            var f3 = new ChildAttributeWithField { Prop = 1 };            
+            var f3 = new ChildAttributeWithField { Prop = 1 };
 
             Assert.NotEqual(a1, a2);
             Assert.NotEqual(a2, a3);
             Assert.Equal(a1, a3);
 
-            Assert.NotEqual(d1, d2);
-            Assert.NotEqual(d2, d3);
+            // The implementation of Attribute.Equals uses reflection to
+            // enumerate fields. On .NET core, we add `BindingFlags.DeclaredOnly`
+            // to fix a bug where an instance of a subclass of an attribute can
+            // be equal to an instance of the parent class.
+            // See https://github.com/dotnet/coreclr/pull/6240
+            Assert.Equal(PlatformDetection.IsFullFramework, d1.Equals(d2));
+            Assert.Equal(PlatformDetection.IsFullFramework, d2.Equals(d3));
             Assert.Equal(d1, d3);
 
-            Assert.NotEqual(s1, s2);
-            Assert.NotEqual(s2, s3);
+            Assert.Equal(PlatformDetection.IsFullFramework, s1.Equals(s2));
+            Assert.Equal(PlatformDetection.IsFullFramework, s2.Equals(s3));
             Assert.Equal(s1, s3);
 
-            Assert.NotEqual(f1, f2);
-            Assert.NotEqual(f2, f3);
+            Assert.Equal(PlatformDetection.IsFullFramework, f1.Equals(f2));
+            Assert.Equal(PlatformDetection.IsFullFramework, f2.Equals(f3));
             Assert.Equal(f1, f3);
 
             Assert.NotEqual(d1, a1);
@@ -102,35 +107,40 @@ namespace System.Tests
             Assert.NotEqual(a2.GetHashCode(), a3.GetHashCode());
             Assert.Equal(a1.GetHashCode(), a3.GetHashCode());
 
-            Assert.NotEqual(s1.GetHashCode(), s2.GetHashCode());
-            Assert.NotEqual(s2.GetHashCode(), s3.GetHashCode());
+            // The implementation of Attribute.GetHashCode uses reflection to
+            // enumerate fields. On .NET core, we add `BindingFlags.DeclaredOnly`
+            // to fix a bug where the hash code of a a subclass of an attribute can
+            // be equal to an instance of the parent class.
+            // See https://github.com/dotnet/coreclr/pull/6240
+            Assert.Equal(PlatformDetection.IsFullFramework, s1.GetHashCode().Equals(s2.GetHashCode()));
+            Assert.Equal(PlatformDetection.IsFullFramework, s2.GetHashCode().Equals(s3.GetHashCode()));
             Assert.Equal(s1.GetHashCode(), s3.GetHashCode());
 
-            Assert.NotEqual(d1.GetHashCode(), d2.GetHashCode());
-            Assert.NotEqual(d2.GetHashCode(), d3.GetHashCode());
+            Assert.Equal(PlatformDetection.IsFullFramework, d1.GetHashCode().Equals(d2.GetHashCode()));
+            Assert.Equal(PlatformDetection.IsFullFramework, d2.GetHashCode().Equals(d3.GetHashCode()));
             Assert.Equal(d1.GetHashCode(), d3.GetHashCode());
 
             Assert.Equal(f1.GetHashCode(), f2.GetHashCode());
             Assert.Equal(f2.GetHashCode(), f3.GetHashCode());
             Assert.Equal(f1.GetHashCode(), f3.GetHashCode());
 
-            Assert.Equal(d1.GetHashCode(), a1.GetHashCode());
-            Assert.Equal(d2.GetHashCode(), a2.GetHashCode());
-            Assert.Equal(d3.GetHashCode(), a3.GetHashCode());
-            Assert.Equal(d1.GetHashCode(), a3.GetHashCode());
-            Assert.Equal(d3.GetHashCode(), a1.GetHashCode());
-            
-            Assert.Equal(d1.GetHashCode(), s1.GetHashCode());
-            Assert.Equal(d2.GetHashCode(), s2.GetHashCode());
-            Assert.Equal(d3.GetHashCode(), s3.GetHashCode());
-            Assert.Equal(d1.GetHashCode(), s3.GetHashCode());
-            Assert.Equal(d3.GetHashCode(), s1.GetHashCode());
+            Assert.Equal(!PlatformDetection.IsFullFramework, d1.GetHashCode().Equals(a1.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d2.GetHashCode().Equals(a2.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d3.GetHashCode().Equals(a3.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d1.GetHashCode().Equals(a3.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d3.GetHashCode().Equals(a1.GetHashCode()));
+
+            Assert.Equal(!PlatformDetection.IsFullFramework, d1.GetHashCode().Equals(s1.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d2.GetHashCode().Equals(s2.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d3.GetHashCode().Equals(s3.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d1.GetHashCode().Equals(s3.GetHashCode()));
+            Assert.Equal(!PlatformDetection.IsFullFramework, d3.GetHashCode().Equals(s1.GetHashCode()));
 
             Assert.NotEqual(f1.GetHashCode(), a1.GetHashCode());
             Assert.NotEqual(f2.GetHashCode(), a2.GetHashCode());
             Assert.NotEqual(f3.GetHashCode(), a3.GetHashCode());
             Assert.NotEqual(f1.GetHashCode(), a3.GetHashCode());
-            Assert.NotEqual(f3.GetHashCode(), a1.GetHashCode());            
+            Assert.NotEqual(f3.GetHashCode(), a1.GetHashCode());
         }
 
         class ParentAttribute : Attribute
