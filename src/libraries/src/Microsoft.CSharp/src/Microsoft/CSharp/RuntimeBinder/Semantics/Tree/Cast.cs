@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         public Expr Argument { get; set; }
 
-        public ExprTypeOrNamespace DestinationType { get; set; }
+        public ExprClass DestinationType { get; set; }
 
         public override CType Type => DestinationType.Type;
 

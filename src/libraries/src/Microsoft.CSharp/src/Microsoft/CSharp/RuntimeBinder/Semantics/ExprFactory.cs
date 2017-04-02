@@ -161,7 +161,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CreateCast(nFlags, CreateClass(pType, null), pArg);
         }
 
-        public ExprCast CreateCast(EXPRFLAG nFlags, ExprTypeOrNamespace pType, Expr pArg)
+        public ExprCast CreateCast(EXPRFLAG nFlags, ExprClass pType, Expr pArg)
         {
             Debug.Assert(pArg != null);
             Debug.Assert(pType != null);
@@ -266,7 +266,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return new ExprFieldInfo(field, fieldType, GetTypes().GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
         }
 
-        private ExprTypeOf CreateTypeOf(ExprTypeOrNamespace pSourceType)
+        private ExprTypeOf CreateTypeOf(ExprClass pSourceType)
         {
             ExprTypeOf rval = new ExprTypeOf(GetTypes().GetReqPredefAgg(PredefinedType.PT_TYPE).getThisType());
             rval.Flags = EXPRFLAG.EXF_CANTBENULL;
@@ -364,15 +364,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CreateZeroInit(exprClass);
         }
 
-        private Expr CreateZeroInit(ExprTypeOrNamespace pTypeExpr)
+        private Expr CreateZeroInit(ExprClass pTypeExpr)
         {
             return CreateZeroInit(pTypeExpr, null, false);
         }
 
-        private Expr CreateZeroInit(ExprTypeOrNamespace pTypeExpr, Expr pOptionalOriginalConstructorCall, bool isConstructor)
+        private Expr CreateZeroInit(ExprClass pTypeExpr, Expr pOptionalOriginalConstructorCall, bool isConstructor)
         {
             Debug.Assert(pTypeExpr != null);
-            CType pType = pTypeExpr.TypeOrNamespace.AsType();
+            CType pType = pTypeExpr.Type;
             bool bIsError = false;
 
             if (pType.isEnumType())
@@ -717,8 +717,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprClass CreateClass(CType pType, ExprTypeArguments pOptionalTypeArguments)
         {
             Debug.Assert(pType != null);
-            ExprClass rval = new ExprClass();
-            rval.TypeOrNamespace = pType;
+            ExprClass rval = new ExprClass(pType);
             return rval;
         }
 

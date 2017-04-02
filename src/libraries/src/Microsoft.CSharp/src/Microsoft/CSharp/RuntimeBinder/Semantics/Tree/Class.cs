@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprClass : ExprTypeOrNamespace
+    internal sealed class ExprClass : ExprWithType
     {
+        public ExprClass(CType type)
+            : base(type)
+        {
+        }
+
         public override ExpressionKind Kind => ExpressionKind.EK_CLASS;
     }
 }

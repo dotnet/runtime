@@ -679,17 +679,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a cast node with the given expression flags. 
-        private void bindSimpleCast(Expr exprSrc, ExprTypeOrNamespace typeDest, out Expr pexprDest)
+        private void bindSimpleCast(Expr exprSrc, ExprClass typeDest, out Expr pexprDest)
         {
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
         }
 
-        private void bindSimpleCast(Expr exprSrc, ExprTypeOrNamespace exprTypeDest, out Expr pexprDest, EXPRFLAG exprFlags)
+        private void bindSimpleCast(Expr exprSrc, ExprClass exprTypeDest, out Expr pexprDest, EXPRFLAG exprFlags)
         {
             Debug.Assert(exprTypeDest != null);
-            Debug.Assert(exprTypeDest.TypeOrNamespace != null);
-            Debug.Assert(exprTypeDest.TypeOrNamespace.IsType);
-            CType typeDest = exprTypeDest.TypeOrNamespace.AsType();
+            Debug.Assert(exprTypeDest.Type != null);
+            CType typeDest = exprTypeDest.Type;
             pexprDest = null;
             // If the source is a constant, and cast is really simple (no change in fundamental
             // type, no flags), then create a new constant node with the new type instead of

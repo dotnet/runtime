@@ -130,8 +130,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitCONSTANT(pExpr as ExprConstant);
                 case ExpressionKind.EK_TYPEARGUMENTS:
                     return VisitTYPEARGUMENTS(pExpr as ExprTypeArguments);
-                case ExpressionKind.EK_TYPEORNAMESPACE:
-                    return VisitTYPEORNAMESPACE(pExpr as ExprTypeOrNamespace);
                 case ExpressionKind.EK_CLASS:
                     return VisitCLASS(pExpr as ExprClass);
                 case ExpressionKind.EK_FUNCPTR:
@@ -361,7 +359,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case ExpressionKind.EK_TYPEOF:
                     exprRet = Visit((pExpr as ExprTypeOf).SourceType);
-                    (pExpr as ExprTypeOf).SourceType = exprRet as ExprTypeOrNamespace;
+                    (pExpr as ExprTypeOf).SourceType = exprRet as ExprClass;
                     break;
 
                 case ExpressionKind.EK_CAST:
@@ -369,7 +367,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprCast).Argument = exprRet;
                     exprRet = Visit((pExpr as ExprCast).DestinationType);
-                    (pExpr as ExprCast).DestinationType = exprRet as ExprTypeOrNamespace;
+                    (pExpr as ExprCast).DestinationType = exprRet as ExprClass;
                     break;
 
                 case ExpressionKind.EK_USERDEFINEDCONVERSION:
@@ -502,7 +500,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case ExpressionKind.EK_LOCAL:
                 case ExpressionKind.EK_THISPOINTER:
-                case ExpressionKind.EK_TYPEORNAMESPACE:
                 case ExpressionKind.EK_CLASS:
                 case ExpressionKind.EK_FUNCPTR:
                 case ExpressionKind.EK_MULTIGET:
@@ -543,7 +540,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         protected virtual Expr VisitCLASS(ExprClass pExpr)
         {
-            return VisitTYPEORNAMESPACE(pExpr);
+            return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitSTMT(ExprStatement pExpr)
         {
@@ -626,10 +623,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitTYPEARGUMENTS(ExprTypeArguments pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
-        protected virtual Expr VisitTYPEORNAMESPACE(ExprTypeOrNamespace pExpr)
         {
             return VisitEXPR(pExpr);
         }
