@@ -45,10 +45,7 @@ namespace System
         /// </summary>
         /// <param name="text">The target string.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
-        public static ReadOnlySpan<char> AsSpan(this string text)
-        {
-            throw new NotImplementedException();
-        }
+        public static ReadOnlySpan<char> AsSpan(this string text) => Span.AsSpan(text);
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
