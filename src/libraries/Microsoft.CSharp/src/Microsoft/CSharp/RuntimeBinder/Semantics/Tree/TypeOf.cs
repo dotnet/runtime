@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        public ExprTypeOrNamespace SourceType { get; set; }
+        public ExprClass SourceType { get; set; }
 
         public override ExpressionKind Kind => ExpressionKind.EK_TYPEOF;
     }
