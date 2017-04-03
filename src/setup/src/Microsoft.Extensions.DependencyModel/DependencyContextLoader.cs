@@ -1,10 +1,11 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 #if !NETSTANDARD1_3
 
@@ -15,13 +16,13 @@ namespace Microsoft.Extensions.DependencyModel
         private const string DepsJsonExtension = ".deps.json";
 
         private readonly string _entryPointDepsLocation;
-        private readonly string _runtimeDepsLocation;
+        private readonly IEnumerable<string> _nonEntryPointDepsPaths;
         private readonly IFileSystem _fileSystem;
         private readonly Func<IDependencyContextReader> _jsonReaderFactory;
 
         public DependencyContextLoader() : this(
             DependencyContextPaths.Current.Application,
-            DependencyContextPaths.Current.SharedRuntime,
+            DependencyContextPaths.Current.NonApplicationPaths,
             FileSystemWrapper.Default,
             () => new DependencyContextJsonReader())
         {
@@ -29,24 +30,24 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal DependencyContextLoader(
             string entryPointDepsLocation,
-            string runtimeDepsLocation,
+            IEnumerable<string> nonEntryPointDepsPaths,
             IFileSystem fileSystem,
             Func<IDependencyContextReader> jsonReaderFactory)
         {
             _entryPointDepsLocation = entryPointDepsLocation;
-            _runtimeDepsLocation = runtimeDepsLocation;
+            _nonEntryPointDepsPaths = nonEntryPointDepsPaths;
             _fileSystem = fileSystem;
             _jsonReaderFactory = jsonReaderFactory;
         }
 
         public static DependencyContextLoader Default { get; } = new DependencyContextLoader();
 
-        internal virtual bool IsEntryAssembly(Assembly assembly)
+        private static bool IsEntryAssembly(Assembly assembly)
         {
             return assembly.Equals(Assembly.GetEntryAssembly());
         }
 
-        internal virtual Stream GetResourceStream(Assembly assembly, string name)
+        private static Stream GetResourceStream(Assembly assembly, string name)
         {
             return assembly.GetManifestResourceStream(name);
         }
@@ -71,12 +72,15 @@ namespace Microsoft.Extensions.DependencyModel
                     context = LoadAssemblyContext(assembly, reader);
                 }
 
-                if (context?.Target.IsPortable == true)
+                if (context != null)
                 {
-                    var runtimeContext = LoadRuntimeContext(reader);
-                    if (runtimeContext != null)
+                    foreach (var extraPath in _nonEntryPointDepsPaths)
                     {
-                        context = context.Merge(runtimeContext);
+                        var extraContext = LoadContext(reader, extraPath);
+                        if (extraContext != null)
+                        {
+                            context = context.Merge(extraContext);
+                        }
                     }
                 }
             }
@@ -85,23 +89,15 @@ namespace Microsoft.Extensions.DependencyModel
 
         private DependencyContext LoadEntryAssemblyContext(IDependencyContextReader reader)
         {
-            if (!string.IsNullOrEmpty(_entryPointDepsLocation))
-            {
-                Debug.Assert(File.Exists(_entryPointDepsLocation));
-                using (var stream = _fileSystem.File.OpenRead(_entryPointDepsLocation))
-                {
-                    return reader.Read(stream);
-                }
-            }
-            return null;
+            return LoadContext(reader, _entryPointDepsLocation);
         }
 
-        private DependencyContext LoadRuntimeContext(IDependencyContextReader reader)
+        private DependencyContext LoadContext(IDependencyContextReader reader, string location)
         {
-            if (!string.IsNullOrEmpty(_runtimeDepsLocation))
+            if (!string.IsNullOrEmpty(location))
             {
-                Debug.Assert(File.Exists(_runtimeDepsLocation));
-                using (var stream = _fileSystem.File.OpenRead(_runtimeDepsLocation))
+                Debug.Assert(_fileSystem.File.Exists(location));
+                using (var stream = _fileSystem.File.OpenRead(location))
                 {
                     return reader.Read(stream);
                 }
