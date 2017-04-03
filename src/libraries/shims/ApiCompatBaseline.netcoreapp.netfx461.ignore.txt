@@ -13,6 +13,11 @@ MembersMustExist : Member 'System.Net.HttpVersion..ctor()' does not exist in the
 CannotMakeTypeAbstract : Type 'System.Runtime.InteropServices.RuntimeEnvironment' is abstract in the implementation but is not abstract in the contract.
 CannotSealType : Type 'System.Runtime.InteropServices.RuntimeEnvironment' is sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment..ctor()' does not exist in the implementation but it does exist in the contract.
+// Activator changed to static class intentionally. See here: https://github.com/dotnet/corefx/issues/11869
+CannotMakeTypeAbstract : Type 'System.Activator' is abstract in the implementation but is not abstract in the contract.
+// Debugger changed to static class intentionally. See here: https://github.com/dotnet/standard/commit/d5fbcbeeeb7f15102fdac111bc8d7d5d72c32036#diff-2856a41639a1f4feb4e95ae667e069b7R10012
+CannotMakeTypeAbstract : Type 'System.Diagnostics.Debugger' is abstract in the implementation but is not abstract in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debugger..ctor()' does not exist in the implementation but it does exist in the contract.
 // Interfaces were intentional removals
 TypesMustExist : Type 'System.Runtime.InteropServices._Activator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices._Assembly' does not exist in the implementation but it does exist in the contract.
