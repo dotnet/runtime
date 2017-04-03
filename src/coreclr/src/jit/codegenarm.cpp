@@ -40,14 +40,6 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
 }
 
 //------------------------------------------------------------------------
-// genEmitGSCookieCheck: Generate code to check that the GS cookie wasn't thrashed by a buffer overrun.
-//
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
-{
-    NYI("ARM genEmitGSCookieCheck");
-}
-
-//------------------------------------------------------------------------
 // genCallFinally: Generate a call to the finally block.
 //
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
