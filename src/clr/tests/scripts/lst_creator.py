@@ -34,6 +34,7 @@ PARSER.add_argument("-lst_file", dest="old_list_file", nargs='?', default=None)
 PARSER.add_argument("-test_dir", dest="test_dir", nargs='?', default=None)
 PARSER.add_argument("-commit_hash", dest="commit_hash", nargs='?', default=None)
 PARSER.add_argument("-failures_csv", dest="failures_csv", nargs='?', default=None)
+PARSER.add_argument("--unset_new", dest="unset_new", action="store_true", default=False)
 ARGS = PARSER.parse_args(sys.argv[1:])
 
 ################################################################################
@@ -61,12 +62,12 @@ def create_list_file(file_name, metadata):
     old_metadata = [item for item in metadata if item[1] != -1]
 
     with open(file_name, "w") as file_handle:
-        file_handle.write("## This list file has been produced automatically. Any changes\n")
-        file_handle.write("## are subject to being overwritten when reproducing this file.\n")
-        file_handle.write("## \n")
-        file_handle.write("## Last Updated: %s\n" % current_time_str)
-        file_handle.write("## Commit: %s\n" % ARGS.commit_hash)
-        file_handle.write("## \n")
+        file_handle.write("## This list file has been produced automatically. Any changes" + os.pathsep)
+        file_handle.write("## are subject to being overwritten when reproducing this file." + os.pathsep))
+        file_handle.write("## " + os.pathsep))
+        file_handle.write("## Last Updated: %s%s" % (current_time_str, os.pathsep))
+        file_handle.write("## Commit: %s%s" % (ARGS.commit_hash, os.pathsep))
+        file_handle.write("## " + os.pathsep))
 
         order = ["RelativePath", "WorkingDir", "Expected", 
                 "MaxAllowedDurationSeconds", "Categories", "HostStyle"]
@@ -87,9 +88,9 @@ def create_list_file(file_name, metadata):
 
                 attribute_str = ""
                 for key in order:
-                    attribute_str += "%s=%s\n" % (key, item[key])
+                    attribute_str += "%s=%s%s" % (key, item[key], os.pathsep))
 
-                file_handle.write(attribute_str + "\n")
+                file_handle.write(attribute_str + os.pathsep))
 
         write_metadata(old_metadata)
         write_metadata(new_metadata, old_metadata[-1][1] + 1)
@@ -273,6 +274,7 @@ def main(args):
     test_dir = args.test_dir
     old_list_file = args.old_list_file
     commit_hash = args.commit_hash
+    unset_new = args.unset_new
 
     if commit_hash is None:
         print "Error please provide a commit hash."
@@ -332,8 +334,9 @@ def main(args):
                         new_split = new_metadata["Categories"].split(";")
                         old_split = old_metadata["Categories"].split(";")
 
-                        if "NEW" in old_split:
-                            old_split.remove("NEW")
+                        if unset_new:
+                            if "NEW" in old_split:
+                                old_split.remove("NEW")
 
                         # If an old test is marked as a failing test. Make
                         # sure that we carry that information along.
@@ -348,7 +351,14 @@ def main(args):
                         joined_categories = set(old_split + new_split)
 
                         overwritten = True
-                        old_metadata[attribute] = ";".join(joined_categories)
+                        ordered_categories = []
+                        for item in old_split:
+                            if item in joined_categories:
+                                ordered_categories.append(item)
+                                joined_categories.remove(item)
+
+                        old_metadata[attribute] = ";".join(ordered_categories)
+                        old_metadata[attribute] = old_metadata[attribute] + ";" + ";".join(joined_categories) if len(joined_categories) > 0 else old_metadata[attribute]
                         old_test_metadata[test_name] = (old_metadata, index)
 
                     elif new_metadata[attribute] != old_metadata[attribute]:
@@ -364,7 +374,19 @@ def main(args):
                     if overwritten:
                         update_count += 1
 
+        tests_removed = 0
+        tests_to_remove = []
+        for old_test_name in old_test_metadata:
+            # Remove all old unreferenced tests
+            if old_test_name not in test_metadata:
+                tests_to_remove.append(old_test_name)
+                tests_removed += 1
+
+        for test_name in tests_to_remove:
+            old_test_metadata.pop(test_name)
+
         print "Added %d tests." % new_test_count
+        print "Removed %d tests." % tests_removed
         print "Finished join. %d tests updated." % update_count
 
         test_metadata = old_test_metadata
