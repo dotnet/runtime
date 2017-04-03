@@ -639,6 +639,7 @@ class Tests {
 	public static int test_0_vector_array_cast () {
 		Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
 		Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
+		Array arr5 = Array.CreateInstance (typeof (string), new int[] {1}, new int[] {10});
 
 		if (arr1.GetType () != typeof (int[]))
 			return 1;
@@ -659,6 +660,9 @@ class Tests {
 
 		if (arr2 is int[])
 			return 4;
+		var as_object_arr = arr5 as object [];
+		if (as_object_arr != null)
+			return 5;
 
 		int [,] [] arr3 = new int [1, 1] [];
 		object o = arr3;
