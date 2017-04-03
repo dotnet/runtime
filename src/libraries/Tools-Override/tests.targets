@@ -94,7 +94,7 @@
       <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
     <ItemGroup Condition="'$(BuildingNETFxVertical)' != 'true'">
-      <SupplementalTestData Include="$(XunitRuntimeConfig)" />
+      <SupplementalTestData Condition="'$(SkipXunitRuntimeConfigCopying)' != 'true'" Include="$(XunitRuntimeConfig)" />
       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
     </ItemGroup>
     <ItemGroup Condition="'$(BuildingNETFxVertical)' == 'true'">
