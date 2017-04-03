@@ -2554,6 +2554,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             if (call->IsR2RRelativeIndir())
             {
                 cellAddr->gtRegNum = REG_JUMP_THUNK_PARAM;
+                indir->gtRegNum    = REG_VIRTUAL_STUB_PARAM;
             }
 #endif
 #endif
