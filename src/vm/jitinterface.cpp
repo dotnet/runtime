@@ -8719,7 +8719,6 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
                                                           CORINFO_CONTEXT_HANDLE ownerType)
 {
     CONTRACTL {
-        SO_TOLERANT;
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
