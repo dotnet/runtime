@@ -3406,7 +3406,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			if (strcmp (cfg->method->name, name) == 0)
 				cfg->verbose_level = 4;
 		}
-		g_free (verbose_method_name);
 	}
 
 	cfg->intvars = (guint16 *)mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
