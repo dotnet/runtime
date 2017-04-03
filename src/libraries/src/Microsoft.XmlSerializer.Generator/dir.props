@@ -5,9 +5,5 @@
     <PackageVersion>1.0.0</PackageVersion>
     <SkipValidatePackage>true</SkipValidatePackage>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
-    <IsUAP>false</IsUAP>
-    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>
