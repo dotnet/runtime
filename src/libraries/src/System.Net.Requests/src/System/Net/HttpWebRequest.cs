@@ -39,7 +39,7 @@ namespace System.Net
 
         private Task<HttpResponseMessage> _sendRequestTask;
 
-        private static int _defaultMaxResponseHeaderLength = HttpHandlerDefaults.DefaultMaxResponseHeaderLength;
+        private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
         private int _beginGetRequestStreamCalled = 0;
         private int _beginGetResponseCalled = 0;
@@ -47,7 +47,7 @@ namespace System.Net
         private int _endGetResponseCalled = 0;
                 
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
-        private int _maximumResponseHeaderLen = _defaultMaxResponseHeaderLength;
+        private int _maximumResponseHeadersLen = _defaultMaxResponseHeadersLength;
         private ServicePoint _servicePoint;
         private int _timeout = WebRequest.DefaultTimeoutMilliseconds;
         private HttpContinueDelegate _continueDelegate;
@@ -150,11 +150,11 @@ namespace System.Net
         {
             get
             {
-                return _maximumResponseHeaderLen;
+                return _maximumResponseHeadersLen;
             }
             set
             {
-                _maximumResponseHeaderLen = value;
+                _maximumResponseHeadersLen = value;
             }
         }
                 
@@ -621,11 +621,11 @@ namespace System.Net
         {
             get
             {
-                return _defaultMaxResponseHeaderLength;
+                return _defaultMaxResponseHeadersLength;
             }
             set
             {
-                _defaultMaxResponseHeaderLength = value;
+                _defaultMaxResponseHeadersLength = value;
             }
         }
 

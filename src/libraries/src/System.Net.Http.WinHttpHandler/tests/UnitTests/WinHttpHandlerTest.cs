@@ -59,7 +59,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
-            Assert.Equal(64 * 1024, handler.MaxResponseHeadersLength);
+            Assert.Equal(64, handler.MaxResponseHeadersLength);
             Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
             Assert.NotNull(handler.Properties);
         }

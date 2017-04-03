@@ -30,7 +30,7 @@ namespace System.Net.Tests
             Assert.NotNull(HttpWebRequest.DefaultCachePolicy);
             Assert.Null(request.CookieContainer);
             Assert.Equal(0, HttpWebRequest.DefaultMaximumErrorResponseLength); // NetFX behavior difference (64 on NetFX).
-            Assert.Equal(65536, HttpWebRequest.DefaultMaximumResponseHeadersLength); // NetFX behavior difference (64 on NetFX).
+            Assert.Equal(64, HttpWebRequest.DefaultMaximumResponseHeadersLength);
             Assert.Null(request.CookieContainer);
             Assert.True(request.AllowWriteStreamBuffering);
             Assert.NotNull(request.ClientCertificates);
