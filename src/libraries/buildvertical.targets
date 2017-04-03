@@ -53,7 +53,7 @@
       <_NonPkgProjProjectReferenceBuildConfigurations>
         <AdditionalProperties>Configuration=%(Identity);%(_NonPkgProjProjectReferenceBuildConfigurations.AdditionalProperties)</AdditionalProperties>
       </_NonPkgProjProjectReferenceBuildConfigurations>
-      
+
       <!-- transform back to project -->
       <_NonPkgProjProjectReferenceWitnConfiguration Include="@(_NonPkgProjProjectReferenceBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
@@ -101,10 +101,18 @@
   <!-- Runs in a leaf project (eg: csproj) to determine all configurations -->
   <Target Name="GetBuildConfigurations"
           Returns="$(_AllBuildConfigurations)">
-     <PropertyGroup>
-       <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
-       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(_traversalBuildConfigurations)</_AllBuildConfigurations>
-     </PropertyGroup>
+    <PropertyGroup>
+      <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
+      <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(_traversalBuildConfigurations)</_AllBuildConfigurations>
+    </PropertyGroup>
+
+    <!-- Filter out configurations for things not in netcoreapp when building only netcoreapp -->
+    <PropertyGroup Condition="'$(BuildNETCoreAppOnly)' == 'true' and ('$(MSBuildProjectExtension)' == '.csproj' or '$(MSBuildProjectExtension)' == '.ilproj')">
+      <PartOfNETCoreAppBuild Condition="'$(PartOfNETCoreAppBuild)' == ''">$(IsNETCoreApp)</PartOfNETCoreAppBuild>
+
+      <_AllBuildConfigurations Condition="'$(PartOfNETCoreAppBuild)' != 'true'"></_AllBuildConfigurations>
+    </PropertyGroup>
+
   </Target>
 
   <!-- Runs in a leaf project (eg: csproj) to determine configurations to package -->
