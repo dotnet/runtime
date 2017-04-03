@@ -728,6 +728,88 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
     }
 }
 
+void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
+{
+    TreeNodeInfo* info     = &(tree->gtLsraInfo);
+    LinearScan*   l        = m_lsra;
+    Compiler*     compiler = comp;
+
+    info->srcCount = 1;
+    info->dstCount = 1;
+
+    // Need a variable number of temp regs (see genLclHeap() in codegenarm.cpp):
+    // Here '-' means don't care.
+    //
+    //  Size?                   Init Memory?    # temp regs
+    //   0                          -               0
+    //   const and <=4 ptr words    -             hasPspSym ? 1 : 0
+    //   const and <PageSize        No            hasPspSym ? 1 : 0
+    //   >4 ptr words               Yes           hasPspSym ? 2 : 1
+    //   Non-const                  Yes           hasPspSym ? 2 : 1
+    //   Non-const                  No            hasPspSym ? 2 : 1
+
+    bool hasPspSym;
+#if FEATURE_EH_FUNCLETS
+    hasPspSym = (compiler->lvaPSPSym != BAD_VAR_NUM);
+#else
+    hasPspSym = false;
+#endif
+
+    GenTreePtr size = tree->gtOp.gtOp1;
+    if (size->IsCnsIntOrI())
+    {
+        MakeSrcContained(tree, size);
+
+        size_t sizeVal = size->gtIntCon.gtIconVal;
+        if (sizeVal == 0)
+        {
+            info->internalIntCount = 0;
+        }
+        else
+        {
+            sizeVal                          = AlignUp(sizeVal, STACK_ALIGN);
+            size_t cntStackAlignedWidthItems = (sizeVal >> STACK_ALIGN_SHIFT);
+
+            // For small allocations up to 4 store instructions
+            if (cntStackAlignedWidthItems <= 4)
+            {
+                info->internalIntCount = 0;
+            }
+            else if (!compiler->info.compInitMem)
+            {
+                // No need to initialize allocated stack space.
+                if (sizeVal < compiler->eeGetPageSize())
+                {
+                    info->internalIntCount = 0;
+                }
+                else
+                {
+                    // target (regCnt) + tmp + [psp]
+                    info->internalIntCount       = 1;
+                    info->isInternalRegDelayFree = true;
+                }
+            }
+            else
+            {
+                // target (regCnt) + tmp + [psp]
+                info->internalIntCount       = 1;
+                info->isInternalRegDelayFree = true;
+            }
+
+            if (hasPspSym)
+            {
+                info->internalIntCount++;
+            }
+        }
+    }
+    else
+    {
+        // target (regCnt) + tmp + [psp]
+        info->internalIntCount       = hasPspSym ? 2 : 1;
+        info->isInternalRegDelayFree = true;
+    }
+}
+
 //------------------------------------------------------------------------
 // TreeNodeInfoInitBlockStore: Set the NodeInfo for a block store.
 //
@@ -1295,6 +1377,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_DYN_BLK:
             LowerBlockStore(tree->AsBlk());
             TreeNodeInfoInitBlockStore(tree->AsBlk());
+            break;
+
+        case GT_LCLHEAP:
+            TreeNodeInfoInitLclHeap(tree);
             break;
 
         case GT_STOREIND:
