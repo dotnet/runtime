@@ -266,9 +266,9 @@ BOOL BaseAssemblySpec::CompareRefToDef(const BaseAssemblySpec *pRef, const BaseA
     }
 
     //
-    // flags are non-optional, except processor architecture and content type
+    // flags are non-optional, except processor architecture, content type, and debuggable attribute bits
     //
-    DWORD dwFlagsMask = ~(afPA_FullMask | afContentType_Mask);
+    DWORD dwFlagsMask = ~(afPA_FullMask | afContentType_Mask | afDebuggableAttributeMask);
     if ((pRef->m_dwFlags & dwFlagsMask) != (pDef->m_dwFlags & dwFlagsMask))
         return FALSE;
 
