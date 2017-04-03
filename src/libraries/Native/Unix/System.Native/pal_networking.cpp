@@ -231,7 +231,7 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
             return PAL_EAI_NONAME;
     }
 
-    assert(false && "Unknown AddrInfo error flag");
+    assert_err(false, "Unknown AddrInfo error flag", error);
     return -1;
 }
 
@@ -411,7 +411,7 @@ static int ConvertGetHostErrorPlatformToPal(int error)
             return PAL_NO_DATA;
 
         default:
-            assert(false && "Unknown gethostbyname/gethostbyaddr error code");
+            assert_err(false, "Unknown gethostbyname/gethostbyaddr error code", error);
             return PAL_HOST_NOT_FOUND;
     }
 }
@@ -2558,7 +2558,7 @@ static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
             break;
 
         default:
-            assert(false && "unexpected kqueue filter type");
+            assert_msg(false, "unexpected kqueue filter type", static_cast<int>(filter));
             return PAL_SA_NONE;
     }
 
