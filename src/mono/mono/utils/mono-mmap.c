@@ -88,13 +88,8 @@ static size_t alloc_limit;
 void
 account_mem (MonoMemAccountType type, ssize_t size)
 {
-#if SIZEOF_VOID_P == 4
-	InterlockedAdd ((volatile gint32*)&allocation_count [type], (gint32)size);
-	InterlockedAdd ((volatile gint32*)&total_allocation_count, (gint32)size);
-#else
-	InterlockedAdd64 ((volatile gint64*)&allocation_count [type], (gint64)size);
-	InterlockedAdd64 ((volatile gint64*)&total_allocation_count, (gint64)size);
-#endif
+	InterlockedAddP (&allocation_count [type], size);
+	InterlockedAddP (&total_allocation_count, size);
 }
 
 void
