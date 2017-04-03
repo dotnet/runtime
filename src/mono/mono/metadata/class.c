@@ -4034,6 +4034,32 @@ mono_class_need_stelemref_method (MonoClass *klass)
 	return klass->rank == 1 && MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg);
 }
 
+static int
+apply_override (MonoClass *klass, MonoMethod **vtable, MonoMethod *decl, MonoMethod *override)
+{
+	int dslot;
+	dslot = mono_method_get_vtable_slot (decl);
+	if (dslot == -1) {
+		mono_class_set_type_load_failure (klass, "");
+		return FALSE;
+	}
+
+	dslot += mono_class_interface_offset (klass, decl->klass);
+	vtable [dslot] = override;
+	if (!MONO_CLASS_IS_INTERFACE (override->klass)) {
+		/*
+		 * If override from an interface, then it is an override of a default interface method,
+		 * don't override its slot.
+		 */
+		vtable [dslot]->slot = dslot;
+	}
+
+	if (mono_security_core_clr_enabled ())
+		mono_security_core_clr_check_override (klass, vtable [dslot], decl);
+
+	return TRUE;
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -4191,29 +4217,48 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER INHERITING PARENT VTABLE", TRUE));
+
+	/* Process overrides from interface default methods */
+	// FIXME: Ordering between interfaces
+	for (int ifindex = 0; ifindex < klass->interface_offsets_count; ifindex++) {
+		ic = klass->interfaces_packed [ifindex];
+
+		mono_class_setup_methods (ic);
+		if (mono_class_has_failure (ic))
+			goto fail;
+
+		MonoMethod **iface_overrides;
+		int iface_onum;
+		gboolean ok = mono_class_get_overrides_full (ic->image, ic->type_token, &iface_overrides, &iface_onum, mono_class_get_context (ic));
+		if (ok) {
+			for (int i = 0; i < iface_onum; i++) {
+				MonoMethod *decl = iface_overrides [i*2];
+				MonoMethod *override = iface_overrides [i*2 + 1];
+				if (!apply_override (klass, vtable, decl, override))
+					goto fail;
+
+				if (!override_map)
+					override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+				g_hash_table_insert (override_map, decl, override);
+			}
+			g_free (iface_overrides);
+		}
+	}
+
 	/* override interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
+		MonoMethod *override = overrides [i*2 + 1];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
-			int dslot;
-			dslot = mono_method_get_vtable_slot (decl);
-			if (dslot == -1) {
-				mono_class_set_type_load_failure (klass, "");
+			if (!apply_override (klass, vtable, decl, override))
 				goto fail;
-			}
 
-			dslot += mono_class_interface_offset (klass, decl->klass);
-			vtable [dslot] = overrides [i*2 + 1];
-			vtable [dslot]->slot = dslot;
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-			g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
-
-			if (mono_security_core_clr_enabled ())
-				mono_security_core_clr_check_override (klass, vtable [dslot], decl);
+			g_hash_table_insert (override_map, decl, override);
 		}
 	}
+
 	TRACE_INTERFACE_VTABLE (print_overrides (override_map, "AFTER OVERRIDING INTERFACE METHODS"));
 	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER OVERRIDING INTERFACE METHODS", FALSE));
 
@@ -4317,6 +4362,13 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						if (mono_class_has_failure (klass)) /*Might be set by check_interface_method_override*/
 							goto fail;
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("\n"));
+					}
+				}
+
+				if (vtable [im_slot] == NULL) {
+					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+						TRACE_INTERFACE_VTABLE (printf ("    Using default iface method %s.\n", mono_method_full_name (im, 1)));
+						vtable [im_slot] = im;
 					}
 				}
 			} else {

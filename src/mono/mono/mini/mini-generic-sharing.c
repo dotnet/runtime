@@ -3016,7 +3016,8 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 		return TRUE;
 
 	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
-			method->klass->valuetype) &&
+			method->klass->valuetype ||
+			MONO_CLASS_IS_INTERFACE (method->klass)) &&
 		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
 }
 
