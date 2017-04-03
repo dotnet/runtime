@@ -175,6 +175,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Active Issue dotnet/corefx#13343")]
     public unsafe void FlowsAsyncLocalsToCallback()
     {   // Makes sure that we flow async locals to callback
 
