@@ -261,7 +261,7 @@ namespace System.Threading.Tests
             }
             else if (toSignal is Mutex)
             {
-                Assert.Throws<Exception>(() => callSignalAndWait(toSignal, toWaitOn));
+                Assert.Throws<ApplicationException>(() => callSignalAndWait(toSignal, toWaitOn));
                 Assert.True(toWaitOn.WaitOne(0));
             }
             else
