@@ -138,7 +138,7 @@ sgen_card_table_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
 	GCObject **dest = (GCObject **)_dest;
 	GCObject **src = (GCObject **)_src;
 
-	size_t nursery_bits = DEFAULT_NURSERY_BITS;
+	size_t nursery_bits = sgen_nursery_bits;
 	char *start = sgen_nursery_start;
 	G_GNUC_UNUSED char *end = sgen_nursery_end;
 

@@ -38,13 +38,6 @@ typedef mword SgenDescriptor;
 #endif
 
 /*
- * Define this to allow the user to change the nursery size by
- * specifying its value in the MONO_GC_PARAMS environmental
- * variable. See mono_gc_base_init for details.
- */
-#define USER_CONFIG 1
-
-/*
  * The binary protocol enables logging a lot of the GC ativity in a way that is not very
  * intrusive and produces a compact file that can be searched using a custom tool.  This
  * option enables very fine-grained binary protocol events, which will make the GC a tiny

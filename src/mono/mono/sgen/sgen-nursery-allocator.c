@@ -72,10 +72,10 @@ static char *nursery_last_pinned_end = NULL;
 char *sgen_nursery_start;
 char *sgen_nursery_end;
 
-#ifdef USER_CONFIG
+/* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 size_t sgen_nursery_size = (1 << 22);
+/* The number of trailing 0 bits in sgen_nursery_size */
 int sgen_nursery_bits = 22;
-#endif
 
 char *sgen_space_bitmap;
 size_t sgen_space_bitmap_size;

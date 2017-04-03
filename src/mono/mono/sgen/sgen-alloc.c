@@ -211,7 +211,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 			/* when running in degraded mode, we continue allocing that way
 			 * for a while, to decrease the number of useless nursery collections.
 			 */
-			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE)
+			if (degraded_mode && degraded_mode < sgen_nursery_size)
 				return alloc_degraded (vtable, size, FALSE);
 
 			available_in_tlab = (int)(TLAB_REAL_END - TLAB_NEXT);//We'll never have tlabs > 2Gb

@@ -186,21 +186,8 @@ sgen_aligned_addr_hash (gconstpointer ptr)
 
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~(((mword)1 << (bits)) - 1)) == (mword)(start))
 
-#ifdef USER_CONFIG
-
-/* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
-#define DEFAULT_NURSERY_SIZE (sgen_nursery_size)
 extern size_t sgen_nursery_size;
-/* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
-#define DEFAULT_NURSERY_BITS (sgen_nursery_bits)
 extern int sgen_nursery_bits;
-
-#else
-
-#define DEFAULT_NURSERY_SIZE (4*1024*1024)
-#define DEFAULT_NURSERY_BITS 22
-
-#endif
 
 extern char *sgen_nursery_start;
 extern char *sgen_nursery_end;
@@ -208,7 +195,7 @@ extern char *sgen_nursery_end;
 static inline MONO_ALWAYS_INLINE gboolean
 sgen_ptr_in_nursery (void *p)
 {
-	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, sgen_nursery_start, sgen_nursery_end);
+	return SGEN_PTR_IN_NURSERY ((p), sgen_nursery_bits, sgen_nursery_start, sgen_nursery_end);
 }
 
 static inline MONO_ALWAYS_INLINE char*

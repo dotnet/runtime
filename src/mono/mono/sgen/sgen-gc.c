@@ -968,7 +968,7 @@ alloc_nursery (void)
 	/* If there isn't enough space even for the nursery we should simply abort. */
 	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
 
-	data = (char *)major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
+	data = (char *)major_collector.alloc_heap (alloc_size, alloc_size, sgen_nursery_bits);
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
 	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)sgen_gc_get_total_heap_allocation ());
 	section->data = section->next_data = data;
@@ -3097,8 +3097,6 @@ sgen_gc_init (void)
 		goto use_default_major;
 	}
 
-	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
-
 	if (opts) {
 		gboolean usage_printed = FALSE;
 
@@ -3135,8 +3133,6 @@ sgen_gc_init (void)
 				}
 				continue;
 			}
-
-#ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				size_t val;
 				opt = strchr (opt, '=') + 1;
@@ -3162,7 +3158,6 @@ sgen_gc_init (void)
 				}
 				continue;
 			}
-#endif
 			if (g_str_has_prefix (opt, "save-target-ratio=")) {
 				double val;
 				opt = strchr (opt, '=') + 1;
