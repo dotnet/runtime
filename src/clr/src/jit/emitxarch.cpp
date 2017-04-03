@@ -94,7 +94,10 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd || ins == INS_pminub ||
             ins == INS_pminsw || ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw || ins == INS_pminud ||
             ins == INS_pmaxub || ins == INS_pmaxsw || ins == INS_pmaxsb || ins == INS_pmaxsd || ins == INS_pmaxuw ||
-            ins == INS_pmaxud);
+            ins == INS_pmaxud || ins == INS_vinserti128 || ins == INS_punpckhbw || ins == INS_punpcklbw ||
+            ins == INS_punpckhqdq || ins == INS_punpcklqdq || ins == INS_punpckhwd || ins == INS_punpcklwd ||
+            ins == INS_punpckhdq || ins == INS_packssdw || ins == INS_packsswb || ins == INS_packuswb ||
+            ins == INS_packusdw || ins == INS_vperm2i128);
 }
 
 // Returns true if the AVX instruction is a move operator that requires 3 operands.
@@ -105,8 +108,8 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
 // to indicate whether a 3-operand instruction.
 bool emitter::IsThreeOperandMoveAVXInstruction(instruction ins)
 {
-    return IsAVXInstruction(ins) &&
-           (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps || ins == INS_movss);
+    return IsAVXInstruction(ins) && (ins == INS_movlpd || ins == INS_movlps || ins == INS_movhpd || ins == INS_movhps ||
+                                     ins == INS_movss || ins == INS_movlhps);
 }
 
 // ------------------------------------------------------------------------------
@@ -206,6 +209,14 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
 bool TakesRexWPrefix(instruction ins, emitAttr attr)
 {
+    // Because the current implementation of AVX does not have a way to distinguish between the register
+    // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
+    // required, the instruction must be created with the register size attribute (EA_16BYTE or EA_32BYTE),
+    // and here we must special case these by the opcode.
+    if (ins == INS_vpermq)
+    {
+        return true;
+    }
 #ifdef _TARGET_AMD64_
     // movsx should always sign extend out to 8 bytes just because we don't track
     // whether the dest should be 4 bytes or 8 bytes (attr indicates the size
@@ -342,7 +353,6 @@ unsigned RegEncoding(regNumber reg)
 // AVX:  specific bits within VEX prefix need to be set in bit-inverted form.
 emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 {
-#ifdef _TARGET_AMD64_
     if (UseAVX() && IsAVXInstruction(ins))
     {
         // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
@@ -351,7 +361,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
         // W-bit is the only bit that is added in non bit-inverted form.
         return code | 0x00008000000000ULL;
     }
-
+#ifdef _TARGET_AMD64_
     return code | 0x4800000000ULL;
 #else
     assert(!"UNREACHED");
@@ -3810,6 +3820,40 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     emitCurIGsize += sz;
 }
 
+/**********************************************************************************
+* emitIns_R_R_R_I: Add an instruction with three register operands and an immediate.
+*
+* Arguments:
+*    ins       - the instruction to add
+*    attr      - the emitter attribute for instruction
+*    targetReg - the target (destination) register
+*    reg1      - the first source register
+*    reg2      - the second source register
+*    ival      - the immediate value
+*/
+
+void emitter::emitIns_R_R_R_I(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, int ival)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+    // Currently vex prefix only use three bytes mode.
+    // size = vex + opcode + ModR/M + 1-byte-cns = 3 + 1 + 1 + 1 = 6
+    // TODO-XArch-CQ: We should create function which can calculate all kinds of AVX instructions size in future
+    UNATIVE_OFFSET sz = 6;
+
+    instrDesc* id = emitNewInstrCns(attr, ival);
+    id->idIns(ins);
+    id->idInsFmt(IF_RWR_RRD_RRD_CNS);
+    id->idReg1(targetReg);
+    id->idReg2(reg1);
+    id->idReg3(reg2);
+
+    id->idCodeSize(sz);
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 #endif
 /*****************************************************************************
  *
@@ -6995,6 +7039,15 @@ void emitter::emitDispIns(
             printf("%s, ", emitRegName(id->idReg2(), attr));
             printf("%s", emitRegName(id->idReg3(), attr));
             break;
+        case IF_RWR_RRD_RRD_CNS:
+            assert(IsAVXInstruction(ins));
+            assert(IsThreeOperandAVXInstruction(ins));
+            printf("%s, ", emitRegName(id->idReg1(), attr));
+            printf("%s, ", emitRegName(id->idReg2(), attr));
+            printf("%s, ", emitRegName(id->idReg3(), attr));
+            val = emitGetInsSC(id);
+            goto PRINT_CONSTANT;
+            break;
 #endif
         case IF_RRW_RRW_CNS:
             printf("%s,", emitRegName(id->idReg1(), attr));
@@ -9514,7 +9567,34 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         assert(id->idGCref() == GCT_NONE);
         assert(valInByte);
-        assert(ins == INS_psrldq || ins == INS_pslldq);
+        // The left and right shifts use the same encoding, and are distinguished by the Reg/Opcode field.
+        regNumber regOpcode;
+        switch (ins)
+        {
+            case INS_psrldq:
+                regOpcode = (regNumber)3;
+                break;
+            case INS_pslldq:
+                regOpcode = (regNumber)7;
+                break;
+            case INS_psrld:
+            case INS_psrlw:
+            case INS_psrlq:
+                regOpcode = (regNumber)2;
+                break;
+            case INS_pslld:
+            case INS_psllw:
+            case INS_psllq:
+                regOpcode = (regNumber)6;
+                break;
+            case INS_psrad:
+                regOpcode = (regNumber)4;
+                break;
+            default:
+                assert(!"Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
+                regOpcode = REG_NA;
+                break;
+        }
 
         // Get the 'base' opcode.
         code = insCodeMI(ins);
@@ -9528,14 +9608,6 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code = insEncodeReg3456(ins, reg, size, code);
         }
 
-        // In case of psrldq
-        // Reg/Opcode = 3
-        // R/M = reg1
-        //
-        // In case of pslldq
-        // Reg/Opcode = 7
-        // R/M = reg1
-        regNumber regOpcode = (regNumber)((ins == INS_psrldq) ? 3 : 7);
         unsigned regcode = (insEncodeReg345(ins, regOpcode, size, &code) | insEncodeReg012(ins, reg, size, &code)) << 8;
 
         // Output the REX prefix
@@ -10659,6 +10731,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst = emitOutputRRR(dst, id);
             sz  = emitSizeOfInsDsc(id);
             break;
+        case IF_RWR_RRD_RRD_CNS:
+            dst = emitOutputRRR(dst, id);
+            sz  = emitSizeOfInsDsc(id);
+            dst += emitOutputByte(dst, emitGetInsSC(id));
+            break;
 #endif
 
         case IF_RRW_RRW_CNS:
@@ -10690,6 +10767,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(code & 0x00FF0000);
 
 #ifdef FEATURE_AVX_SUPPORT
+            if (TakesRexWPrefix(ins, size))
+            {
+                code = AddRexWPrefix(ins, code);
+            }
+
             if (TakesVexPrefix(ins))
             {
                 if (IsThreeOperandBinaryAVXInstruction(ins))
@@ -10718,11 +10800,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (Is4ByteAVXInstruction(ins))
             {
-                // We just need to output the last byte of the opcode.
                 assert((code & 0xFF) == 0);
-                assert((code & 0xFF00) != 0xC000);
-                dst += emitOutputByte(dst, (code >> 8) & 0xFF);
-                code = 0;
+                if ((code & 0xFF00) == 0xC000)
+                {
+                    dst += emitOutputWord(dst, code | regcode);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, (code >> 8) & 0xFF);
+                    dst += emitOutputByte(dst, 0xC0 | (regcode >> 8));
+                }
             }
             else if (code & 0xFF000000)
             {
@@ -10732,27 +10819,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 if (Is4ByteSSE4Instruction(ins))
                 {
                     dst += emitOutputWord(dst, code);
-                    code = 0;
+                    dst += emitOutputByte(dst, 0xC0 | (regcode >> 8));
+                }
+                else
+                {
+                    assert((code & 0xFF00) == 0xC000);
+                    dst += emitOutputWord(dst, code | regcode);
                 }
             }
             else if (code & 0x00FF0000)
             {
                 dst += emitOutputByte(dst, code >> 16);
                 code &= 0x0000FFFF;
-            }
-
-            // Note that regcode is shifted by 8-bits above to align with RM byte.
-            if (code != 0)
-            {
                 assert((code & 0xFF00) == 0xC000);
                 dst += emitOutputWord(dst, code | regcode);
             }
             else
             {
-                // This case occurs for SSE4/AVX instructions.
-                // Note that regcode is left shifted by 8-bits.
-                assert(Is4ByteAVXInstruction(ins) || Is4ByteSSE4Instruction(ins));
-                dst += emitOutputByte(dst, 0xC0 | (regcode >> 8));
+                assert((code & 0xFF00) == 0xC000);
+                dst += emitOutputWord(dst, code | regcode);
             }
 
             dst += emitOutputByte(dst, emitGetInsSC(id));
