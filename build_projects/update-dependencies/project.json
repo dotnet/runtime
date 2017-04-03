@@ -16,7 +16,7 @@
       "target": "project"
     },
     "NuGet.Versioning": "3.5.0-rc-1285",
-    "Newtonsoft.Json": "7.0.1",
+    "Newtonsoft.Json": "9.0.1",
     "Octokit": "0.18.0",
     "Microsoft.Net.Http": "2.2.29"
   },
