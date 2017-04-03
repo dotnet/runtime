@@ -444,7 +444,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             return null;
                         }
-                        return GetTypeManager().GetArray(elementType, 1);
+                        return GetTypeManager().GetArray(elementType, 1, true);
                     }
                 case MethodSignatureEnum.SIG_METH_TYVAR:
                     {

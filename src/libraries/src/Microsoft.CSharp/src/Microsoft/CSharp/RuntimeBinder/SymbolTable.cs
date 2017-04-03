@@ -819,7 +819,15 @@ namespace Microsoft.CSharp.RuntimeBinder
             else if (t.IsArray)
             {
                 // Now we return an array of nesting level corresponding to the rank.
-                ctype = _typeManager.GetArray(GetCTypeFromType(t.GetElementType()), t.GetArrayRank());
+                ctype = _typeManager.GetArray(
+                    GetCTypeFromType(t.GetElementType()), 
+                    t.GetArrayRank(),
+#if netcoreapp
+                    t.IsSZArray
+#else
+                    t.GetElementType().MakeArrayType() == t
+#endif
+                    );
                 return ctype;
             }
             else if (t.IsPointer)
