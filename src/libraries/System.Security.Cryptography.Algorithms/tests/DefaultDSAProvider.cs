@@ -13,9 +13,13 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         public DSA Create(int keySize)
         {
+#if netcoreapp
+            return DSA.Create(keySize);
+#else
             DSA dsa = Create();
             dsa.KeySize = keySize;
             return dsa;
+#endif
         }
 
         public bool SupportsFips186_3
