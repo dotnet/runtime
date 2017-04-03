@@ -79,11 +79,7 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs-TestILC">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs-testilc/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(ProjectNTfsTestILCCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs-TestILC-PackageVersion">
+    <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfsTestILC">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs-testilc/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsTestILCCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
@@ -117,12 +113,12 @@
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
       <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
-    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs-TestILC">
+    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfsTestILC">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsTestILCExpectedPrerelease</ElementName>
-      <BuildInfoName>ProjectNTfs-TestILC</BuildInfoName>
+      <BuildInfoName>ProjectNTfsTestILC</BuildInfoName>
     </XmlUpdateStep>
-    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs-TestILC-PackageVersion">
+    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfsTestILC">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsTestILCPackageVersion</ElementName>
       <PackageId>TestILCNugetPackageForCoreFX</PackageId>
