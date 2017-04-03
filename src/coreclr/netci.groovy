@@ -605,9 +605,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
 
         case 'illink':
             // Testing on other operating systems TBD
-            assert (os == 'Windows_NT')
+            assert (os == 'Windows_NT' || os == 'Ubuntu')
             if (architecture == 'x64' || architecture == 'x86') {
-                Utilities.addPeriodicTrigger(job, '@daily')
+                if (configuration == 'Checked') {
+                    Utilities.addPeriodicTrigger(job, '@daily')
+                }
             }
 	    break
 
@@ -687,6 +689,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+.*")
                     break
                 case 'Ubuntu':
+                    if (scenario == 'illink') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
+                        break
+                    }
+                    // fall through
                 case 'OSX10.12':
                     // Triggers on the non-flow jobs aren't necessary here
                     // Corefx testing uses non-flow jobs.
@@ -1424,9 +1431,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildOpts = 'compatjitcrossgen skiptests'
                     }
 
-                    def illinkArch = (architecture == 'x86compatjit') ? 'x86' : architecture
                     if (scenario == 'illink') {
-                        buildCommands += "tests\\scripts\\build_illink.cmd clone ${illinkArch}"
+                        buildCommands += "tests\\scripts\\build_illink.cmd clone ${arch}"
                     }
 
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
@@ -1547,7 +1553,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         if (scenario == 'illink')
                         {
-                            illinkArguments = "link %WORKSPACE%\\linker\\linker\\bin\\netcore_Relase\\netcoreapp2.0\\win10-${illinkArch}\\publish\\illink.exe"
+                            illinkArguments = "link %WORKSPACE%\\linker\\linker\\bin\\netcore_Release\\netcoreapp2.0\\win10-${arch}\\publish\\illink.exe"
                         }
 
                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments} ${illinkArguments} collectdumps"
@@ -1694,6 +1700,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "python tests/scripts/format.py -c \${WORKSPACE} -o Linux -a ${arch}"
                         Utilities.addArchival(newJob, "format.patch", "", true, false)
                         break
+                    }
+
+                    if (scenario == 'illink') {
+                        assert(os == 'Ubuntu')
+                        buildCommands += "./tests/scripts/build_illink.sh --clone --arch=${arch}"
                     }
 
                     def standaloneGc = ''
@@ -2054,7 +2065,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'illink':
-                                if (os != 'Windows_NT') {
+                                if (os != 'Windows_NT' && (os != 'Ubuntu' || architecture != 'x64')) {
                                     return
                                 }
                                 if (architecture != 'x64' && architecture != 'x86' && architecture != 'x86compatjit') {
@@ -2278,7 +2289,7 @@ combinedScenarios.each { scenario ->
                             case 'formatting':
                                 return
                             case 'illink':
-                                if (os != 'Windows_NT') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu') {
                                     return
                                 }
                                 break
@@ -2351,6 +2362,7 @@ combinedScenarios.each { scenario ->
                     def runjitforcerelocsStr = ''
                     def runjitdisasmStr = ''
                     def gcstressStr = ''
+                    def illinkStr = ''
 
                     if (scenario == 'r2r' ||
                         scenario == 'pri1r2r' ||
@@ -2404,6 +2416,11 @@ combinedScenarios.each { scenario ->
                     if (scenario == 'jitdiff')
                     {
                         runjitdisasmStr = '--jitdisasm --crossgen'
+                    }
+
+                    if (scenario == 'illink')
+                    {
+                        illinkStr = '--link=\$WORKSPACE/linker/linker/bin/netcore_Release/netcoreapp2.0/ubuntu-x64/publish/illink'
                     }
 
                     if (isLongGc(scenario)) {
@@ -2574,7 +2591,7 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\${WORKSPACE}/bin/CoreFxBinDir\" \\
                 --limitedDumpGeneration \\
-                ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
+                ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${illinkStr} ${sequentialString} ${playlistString}""")
                             }
                         }
                     }

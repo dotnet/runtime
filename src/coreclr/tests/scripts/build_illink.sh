@@ -15,7 +15,7 @@ function print_usage {
 # Argument variables
 clone=
 setenv=
-os='ubuntu.16.04'
+os='ubuntu'
 arch='x64'
 
 for i in "$@"
@@ -27,7 +27,6 @@ do
             ;;
 	
         --clone)
-	    echo "Need to clone"
             clone=1
             ;;
 	
@@ -50,7 +49,6 @@ done
 rid="$os-$arch"
 
 if [ ! -z "$clone" ]; then
-    echo "Of Course Not here" 
     git clone --recursive https://github.com/mono/linker
 fi
 
