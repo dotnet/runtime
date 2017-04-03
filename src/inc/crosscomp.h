@@ -195,7 +195,7 @@ typedef union _NEON128 {
     struct {
         ULONGLONG Low;
         LONGLONG High;
-    } DUMMYSTRUCTNAME;
+    };
     double D[2];
     float S[4];
     WORD   H[8];
@@ -288,7 +288,7 @@ typedef struct _T_RUNTIME_FUNCTION {
             DWORD CR : 2;
             DWORD FrameSize : 9;
         } PackedUnwindData;
-    } DUMMYUNIONNAME;
+    };
 } T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
 
 
