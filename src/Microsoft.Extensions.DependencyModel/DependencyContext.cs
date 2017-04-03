@@ -81,7 +81,13 @@ namespace Microsoft.Extensions.DependencyModel
 #if !NETSTANDARD1_3
         private static DependencyContext LoadDefault()
         {
-            return DependencyContextLoader.Default.Load(Assembly.GetEntryAssembly());
+            var entryAssembly = Assembly.GetEntryAssembly();
+            if (entryAssembly == null)
+            {
+                return null;
+            }
+
+            return Load(entryAssembly);
         }
 
         public static DependencyContext Load(Assembly assembly)
