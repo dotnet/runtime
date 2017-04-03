@@ -10,6 +10,7 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+    <Compile Include="ArrayHandling.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="IntegerBinaryOperationTests.cs" />

@@ -234,7 +234,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(_typeDest != null);
 
-                if (!_typeSrc.IsArrayType() || _typeSrc.AsArrayType().rank != 1 ||
+                if (!_typeSrc.IsArrayType() || !_typeSrc.AsArrayType().IsSZArray ||
                     !_typeDest.isInterfaceType() || _typeDest.AsAggregateType().GetTypeArgsAll().Count != 1)
                 {
                     return false;
@@ -319,7 +319,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //   S[] to System.Collections.Generic.IList<T> or System.Collections.Generic.IReadOnlyList<T>. This is precisely when either S and T
                 //   are the same type or there is an implicit or explicit reference conversion from S to T.
 
-                if (arrayDest.rank != 1 || !_typeSrc.isInterfaceType() ||
+                if (!arrayDest.IsSZArray || !_typeSrc.isInterfaceType() ||
                     _typeSrc.AsAggregateType().GetTypeArgsAll().Count != 1)
                 {
                     return false;
@@ -363,7 +363,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 //   * An explicit reference conversion exists from SE to TE.
 
-                if (arraySrc.rank != arrayDest.rank)
+                if (arraySrc.rank != arrayDest.rank || arraySrc.IsSZArray != arrayDest.IsSZArray)
                 {
                     return false;  // Ranks do not match.
                 }

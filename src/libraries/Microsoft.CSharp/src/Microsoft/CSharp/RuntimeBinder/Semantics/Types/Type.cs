@@ -97,14 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_ArrayType:
                     ArrayType a = src.AsArrayType();
                     Type elementType = a.GetElementType().AssociatedSystemType;
-                    if (a.rank == 1)
-                    {
-                        result = elementType.MakeArrayType();
-                    }
-                    else
-                    {
-                        result = elementType.MakeArrayType(a.rank);
-                    }
+                    result = a.IsSZArray ? elementType.MakeArrayType() : elementType.MakeArrayType(a.rank);
                     break;
 
                 case TypeKind.TK_NullableType:

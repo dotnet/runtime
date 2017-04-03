@@ -565,7 +565,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr nullTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), save, GetExprFactory().CreateConstant(wrapArray.Type, ConstVal.Get(0)));
             Expr lenTest;
 
-            if (array.Type.AsArrayType().rank == 1)
+            if (array.Type.AsArrayType().IsSZArray)
             {
                 Expr len = GetExprFactory().CreateArrayLength(wrapArray);
                 lenTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), len, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), ConstVal.Get(0)));
@@ -2069,7 +2069,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // we need to create an array and put it as the last arg...
             CType substitutedArrayType = GetTypes().SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
-            if (!substitutedArrayType.IsArrayType() || substitutedArrayType.AsArrayType().rank != 1)
+            if (!substitutedArrayType.IsArrayType() || !substitutedArrayType.AsArrayType().IsSZArray)
             {
                 // Invalid type for params array parameter. Happens in LAF scenarios, e.g.
                 //
