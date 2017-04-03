@@ -8139,6 +8139,14 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // defined(_TARGET_ARMARCH_)
 
+#if defined(_TARGET_ARM_)
+    // If there are any reserved registers, add them to the
+    if (regSet.rsMaskResvd != RBM_NONE)
+    {
+        regSet.rsSetRegsModified(regSet.rsMaskResvd);
+    }
+#endif // _TARGET_ARM_
+
 #ifdef DEBUG
     if (verbose)
     {
