@@ -75,6 +75,7 @@ namespace System.Net.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Difference in behavior
         [OuterLoop]
         [Fact]
         public async Task HttpWebResponse_Close_Success()
