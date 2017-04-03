@@ -656,21 +656,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                             // Add [] with (rank-1) commas inside
                             ErrAppendChar('[');
 
-#if ! CSEE
                             // known rank.
-                            if (rank > 1)
+                            if (rank == 1)
                             {
-                                ErrAppendChar('*');
+                                if (!elementType.AsArrayType().IsSZArray)
+                                {
+                                    ErrAppendChar('*');
+                                }
                             }
-#endif
-
-                            for (int i = rank; i > 1; --i)
+                            else
                             {
-                                ErrAppendChar(',');
-#if ! CSEE
-
-                                ErrAppendChar('*');
-#endif
+                                for (int i = rank; i > 1; --i)
+                                {
+                                    ErrAppendChar(',');
+                                }
                             }
 
                             ErrAppendChar(']');

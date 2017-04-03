@@ -30,5 +30,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal(32, d[3]);
             Assert.Equal(28, d[-1]);
         }
+
+        [Fact]
+        public void ArrayTypeNames()
+        {
+            dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+            Assert.Contains("int[*]", ex.Message);
+
+            d = new int[3];
+            ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+            Assert.Contains("int[]", ex.Message);
+
+            d = new int[3, 2, 1];
+            ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+            Assert.Contains("int[,,]", ex.Message);
+
+            d = Array.CreateInstance(typeof(int), new[] { 3, 2, 1 }, new[] { -2, 2, -0 });
+            ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+            Assert.Contains("int[,,]", ex.Message);
+
+        }
     }
 }
