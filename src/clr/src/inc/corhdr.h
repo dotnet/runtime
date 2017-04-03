@@ -751,6 +751,7 @@ typedef enum CorAssemblyFlags
 
     afEnableJITcompileTracking   =  0x8000, // From "DebuggableAttribute".
     afDisableJITcompileOptimizer =  0x4000, // From "DebuggableAttribute".
+    afDebuggableAttributeMask    =  0xc000,
 
     afRetargetable          =   0x0100,     // The assembly can be retargeted (at runtime) to an
                                             //  assembly from a different publisher.
