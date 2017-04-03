@@ -5207,7 +5207,7 @@ HRESULT RegMeta::ValidateAssembly(RID rid)
     dwFlags = (CorAssemblyFlags) pMiniMd->getFlagsOfAssembly(pRecord);
 
     // Validate the flags 
-    invalidAssemblyFlags = dwFlags & (~(afPublicKey | afRetargetable | afPA_FullMask | afEnableJITcompileTracking | afDisableJITcompileOptimizer | afContentType_Mask));
+    invalidAssemblyFlags = dwFlags & (~(afPublicKey | afRetargetable | afPA_FullMask | afDebuggableAttributeMask | afContentType_Mask));
 
     // Validate we only set a legal processor architecture flags
     // The processor architecture flags were introduced in CLR v2.0.
