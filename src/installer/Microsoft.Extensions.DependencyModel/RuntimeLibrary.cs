@@ -67,14 +67,7 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();
             NativeLibraryGroups = nativeLibraryGroups;
-
-            Assemblies = new RuntimeAssembly[0];
-            NativeLibraries = new string[0];
         }
-
-        // Temporary (legacy) properties: https://github.com/dotnet/cli/issues/1998
-        public IReadOnlyList<RuntimeAssembly> Assemblies { get; }
-        public IReadOnlyList<string> NativeLibraries { get; }
 
         public IReadOnlyList<RuntimeAssetGroup> RuntimeAssemblyGroups { get; }
 

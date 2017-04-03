@@ -44,7 +44,6 @@ namespace Microsoft.Extensions.DependencyModel
 #if !NETSTANDARD1_3
         internal static ICompilationAssemblyResolver DefaultResolver { get; } = new CompositeCompilationAssemblyResolver(new ICompilationAssemblyResolver[]
         {
-            new PackageCacheCompilationAssemblyResolver(),
             new AppBaseCompilationAssemblyResolver(),
             new ReferenceAssemblyPathResolver(),
             new PackageCompilationAssemblyResolver()
