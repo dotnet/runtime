@@ -121,5 +121,66 @@ namespace System.SpanTests
             int[] expected = { 90, 92, 93, 94, 95, 96, 97, 97 };
             Assert.Equal<int>(expected, a);
         }
+
+        [Fact]
+        public static void CopyToArray()
+        {
+            int[] src = { 1, 2, 3 };
+            int[] dst = { 99, 100, 101 };
+
+            src.CopyTo(dst);
+            Assert.Equal<int>(src, dst);
+        }
+
+        [Fact]
+        public static void CopyToSingleArray()
+        {
+            int[] src = { 1 };
+            int[] dst = { 99 };
+            
+            src.CopyTo(dst);
+            Assert.Equal<int>(src, dst);
+        }
+
+        [Fact]
+        public static void CopyToEmptyArray()
+        {
+            int[] src = { };
+            int[] dst = { 99, 100, 101 };
+            
+            src.CopyTo(dst);
+            int[] expected = { 99, 100, 101 };
+            Assert.Equal<int>(expected, dst);
+
+            int[] dstEmpty = { };
+
+            src.CopyTo(dst);
+            int[] expectedEmpty = { };
+            Assert.Equal<int>(expectedEmpty, dstEmpty);
+        }
+
+        [Fact]
+        public static void CopyToLongerArray()
+        {
+            int[] src = { 1, 2, 3 };
+            int[] dst = { 99, 100, 101, 102 };
+
+            src.CopyTo(dst);
+            int[] expected = { 1, 2, 3, 102 };
+            Assert.Equal<int>(expected, dst);
+        }
+
+        [Fact]
+        public static void CopyToShorterArray()
+        {
+            int[] src = { 1, 2, 3 };
+            int[] dst = { 99, 100 };
+            
+            AssertThrows<ArgumentException, int>(src, (_src) => _src.CopyTo(dst));
+            int[] expected = { 99, 100 };
+            Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
+        }
+
+
     }
 }
