@@ -96,7 +96,9 @@
 
   <Target Name="VerifyNETStandard" AfterTargets="Build">
     <ItemGroup>
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\ref\netstandard$(NETStandardVersion)\*.dll" />
+      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\*.dll" />
+      <!-- force a missing file there are no files found in the package -->
+      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\MISSING_REF_BUILD" Condition="'@(_NETStandardFile)' == ''" />
       <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(File->'%(FileName)')" />
       <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
       <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
