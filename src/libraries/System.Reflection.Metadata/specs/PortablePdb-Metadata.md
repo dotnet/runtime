@@ -232,12 +232,12 @@ There shall be no duplicate rows in the LocalVariable table, based upon owner an
 
 There shall be no duplicate rows in the LocalVariable table, based upon owner and _Name_.
 
-#####<a name="LocalVariableAttributes"></a>LocalVariableAttributes
+##### <a name="LocalVariableAttributes"></a>LocalVariableAttributes
 | flag  | value | description |
 |:------|:------|:------------|
 | DebuggerHidden | 0x0001 | Variable shouldn’t appear in the list of variables displayed by the debugger |
 
-###<a name="LocalConstantTable"></a>LocalConstant Table: 0x34
+### <a name="LocalConstantTable"></a>LocalConstant Table: 0x34
 
 The LocalConstant table has the following columns:
 
@@ -248,7 +248,7 @@ Conceptually, every row in the LocalConstant table is owned by one, and only one
 
 There shall be no duplicate rows in the LocalConstant table, based upon owner and _Name_.
 
-####<a name="LocalConstantSig"></a>LocalConstantSig Blob
+#### <a name="LocalConstantSig"></a>LocalConstantSig Blob
 
 The structure of the blob is
 
@@ -302,13 +302,13 @@ The encoding of the _GeneralValue_ is determined based upon the type expressed b
 | System        | Decimal  | sign (highest bit), scale (bits 0..7), low (uint32), mid (uint32), high (uint32) |
 | System        | DateTime | int64: ticks             | 
 
-###<a name="ImportScopeTable"></a>ImportScope Table: 0x35
+### <a name="ImportScopeTable"></a>ImportScope Table: 0x35
 The ImportScope table has the following columns:
 
 * Parent (ImportScope row id or nil)
 * Imports (Blob index, encoding: [Imports blob](#ImportsBlob))
 
-####<a name="ImportsBlob"></a>Imports Blob
+#### <a name="ImportsBlob"></a>Imports Blob
 Imports blob represents all imports declared by an import scope.
 
 Imports blob has the following structure:
