@@ -7,8 +7,9 @@
     "System.Dynamic.Runtime": "4.0.11",
     "System.Reflection.Metadata": "1.3.0",
     "System.Runtime.Serialization.Primitives": "4.1.1",
+    "System.Threading.Thread": "4.0.0",
     "System.Xml.XmlSerializer": "4.0.11",
-    "WindowsAzure.Storage": "6.2.2-preview",
+    "WindowsAzure.Storage": "8.1.1",
     "Microsoft.DotNet.Cli.Build.Framework": {
       "target": "project"
     }
