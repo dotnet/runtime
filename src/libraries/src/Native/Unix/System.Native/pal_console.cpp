@@ -374,7 +374,7 @@ void* SignalHandlerLoop(void* arg)
             return nullptr;
         }
 
-        assert(signalCode == SIGQUIT || signalCode == SIGINT);
+        assert_msg(signalCode == SIGQUIT || signalCode == SIGINT, "invalid signalCode", static_cast<int>(signalCode));
 
         // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
         CtrlCallback callback = g_ctrlCallback;
