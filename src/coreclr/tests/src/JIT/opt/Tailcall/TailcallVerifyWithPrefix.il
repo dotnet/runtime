@@ -173,7 +173,7 @@
   {
     // Code size       154 (0x9a)
     .maxstack  3
-    .locals init ([0] class [System.Console]System.Exception e)
+    .locals init ([0] class [mscorlib]System.Exception e)
     IL_0000:  ldstr      "Executing Condition18.Test2 - Caller(imperative se"
     + "curity): Arguments: None - ReturnType: 3 byte struct; Callee: Arguments"
     + ": None - ReturnType: 3 byte struct"
