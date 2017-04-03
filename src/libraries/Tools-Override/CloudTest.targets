@@ -431,7 +431,7 @@
 
   <Target Name="CompressRuntimeDir" Condition="'$(SkipArchive)' != 'true'">
     <ZipFileCreateFromDirectory
-        SourceDirectory="$(ArchivePayloadRootDir)"
+        SourceDirectory="$(TestHostRootPath)"
         DestinationArchive="$(TestRuntimeArchiveFile)"
         OverwriteDestination="true" />
     <ItemGroup>
