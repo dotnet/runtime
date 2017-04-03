@@ -265,7 +265,6 @@
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>	
 
     <!-- Constructed shared fx path for testing -->
-    <ArchivePayloadRootDir Condition="'$(BinPlaceTestSharedFramework)' == 'true' or '$(BinPlaceUAPFramework)'=='true' or '$(BinPlaceILCInputFolder)' == 'true'">$(TestHostRootPath)</ArchivePayloadRootDir>
     <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true'">true</UseDotNetNativeToolchain>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
