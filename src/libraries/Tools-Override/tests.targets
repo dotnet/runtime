@@ -81,7 +81,7 @@
   <PropertyGroup Condition="'$(IsTestProject)'=='true'">
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)'==''">$(ArchivePayloadRootDir)dotnet.exe</StartProgram>
+    <StartProgram Condition="'$(StartProgram)'==''">$(TestHostRootPath)dotnet.exe</StartProgram>
     <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
   </PropertyGroup>
 
@@ -296,7 +296,7 @@
     <Error Text="We cannot run the tests for UAP because either the Runner or the Launcher could not be found. You need to specify the UAPToolsFolder property when calling build.cmd to fix this."
           Condition="'$(BuildingUAPVertical)'=='true' and (!Exists('$(TestHostRootPath)\Runner') or !Exists('$(TestHostRootPath)\Launcher'))" />
 
-    <Exec Command="$(TestPath)/$(RunnerScriptName) $(ArchivePayloadRootDir)"
+    <Exec Command="$(TestPath)/$(RunnerScriptName) $(TestHostRootPath)"
           CustomErrorRegularExpression="Failed: [^0]"
           ContinueOnError="true"
           IgnoreStandardErrorWarningFormat="true"
