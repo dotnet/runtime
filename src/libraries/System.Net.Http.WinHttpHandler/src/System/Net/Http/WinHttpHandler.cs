@@ -87,7 +87,7 @@ namespace System.Net.Http
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
-        private int _maxResponseHeadersLength = 64 * 1024;
+        private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
         private IDictionary<String, Object> _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
@@ -1173,7 +1173,7 @@ namespace System.Net.Http
 
         private void SetRequestHandleBufferingOptions(SafeWinHttpHandle requestHandle)
         {
-            uint optionData = (uint)_maxResponseHeadersLength;
+            uint optionData = (uint)(_maxResponseHeadersLength * 1024);
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_HEADER_SIZE, ref optionData);
             optionData = (uint)_maxResponseDrainSize;
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_DRAIN_SIZE, ref optionData);
