@@ -2470,7 +2470,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.jitFlags  = jitFlags;
     opts.compFlags = CLFLG_MAXOPT; // Default value is for full optimization
 
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) ||
+        jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     {
         opts.compFlags = CLFLG_MINOPT;
     }
@@ -2495,7 +2496,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //
     // If the EE sets SPEED_OPT we will optimize for speed at the expense of code size
     //
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
+    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT) ||
+             (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT)))
     {
         opts.compCodeOpt = FAST_CODE;
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT));
