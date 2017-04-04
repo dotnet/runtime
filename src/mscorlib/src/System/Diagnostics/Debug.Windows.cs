@@ -6,8 +6,6 @@ namespace System.Diagnostics
 {
     public static partial class Debug
     {
-        private static string NewLine => "\r\n";
-
         private static void ShowAssertDialog(string stackTrace, string message, string detailMessage)
         {
             if (Debugger.IsAttached)
@@ -16,8 +14,11 @@ namespace System.Diagnostics
             }
             else
             {
-                // TODO: #3708 Determine if/how to put up a dialog instead.
-                throw new DebugAssertException(message, detailMessage, stackTrace);
+                // In Core, we do not show a dialog.
+                // Fail in order to avoid anyone catching an exception and masking
+                // an assert failure.
+                var ex = new DebugAssertException(message, detailMessage, stackTrace);
+                Environment.FailFast(ex.Message, ex);
             }
         }
 
