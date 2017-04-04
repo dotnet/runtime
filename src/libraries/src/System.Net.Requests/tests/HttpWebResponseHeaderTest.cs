@@ -104,6 +104,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Hangs in Desktop
         public async Task HttpWebResponse_Serialize_Fails()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
