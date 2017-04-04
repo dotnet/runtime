@@ -470,7 +470,8 @@ namespace System.Security.Cryptography
             parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
 
             int modulusLen = parameters.Modulus.Length;
-            int halfModulus = modulusLen / 2;
+            // Add one so that odd byte-length values (RSA 1032) get padded correctly.
+            int halfModulus = (modulusLen + 1) / 2;
 
             parameters.D = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), modulusLen);
             parameters.P = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
