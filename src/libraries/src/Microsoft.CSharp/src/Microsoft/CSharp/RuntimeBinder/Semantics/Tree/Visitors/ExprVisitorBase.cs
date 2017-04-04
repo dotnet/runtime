@@ -264,118 +264,70 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     throw Error.InternalCompilerError();
             }
         }
+
         private void VisitChildren(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
 
-            Expr exprRet = null;
-
-            // Lists are a special case.  We treat a list not as a
-            // binary node but rather as a node with n children.
-            if (pExpr is ExprList list)
-            {
-                while (true)
-                {
-                    list.OptionalElement = Visit(list.OptionalElement);
-                    Expr nextNode = list.OptionalNextListNode;
-                    if (nextNode == null)
-                    {
-                        return;
-                    }
-
-                    if (!(nextNode is ExprList next))
-                    {
-                        list.OptionalNextListNode = Visit(nextNode);
-                        return;
-                    }
-
-                    list = next;
-                }
-            }
+            Expr exprRet;
 
             switch (pExpr.Kind)
             {
-                default:
-                    pExpr.AssertIsBin();
-                    goto VISIT_EXPRBINOP;
-
-                VISIT_EXPR:
-                    break;
-                VISIT_BASE_EXPRSTMT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRSTMT:
-                    goto VISIT_BASE_EXPRSTMT;
-
-                case ExpressionKind.EK_BINOP:
-                    goto VISIT_EXPRBINOP;
-                VISIT_BASE_EXPRBINOP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRBINOP:
-                    exprRet = Visit((pExpr as ExprBinOp).OptionalLeftChild);
-                    (pExpr as ExprBinOp).OptionalLeftChild = exprRet as Expr;
-                    exprRet = Visit((pExpr as ExprBinOp).OptionalRightChild);
-                    (pExpr as ExprBinOp).OptionalRightChild = exprRet as Expr;
-                    goto VISIT_BASE_EXPRBINOP;
-
                 case ExpressionKind.EK_LIST:
-                    goto VISIT_EXPRLIST;
-                VISIT_BASE_EXPRLIST:
-                    goto VISIT_EXPR;
-                VISIT_EXPRLIST:
-                    exprRet = Visit((pExpr as ExprList).OptionalElement);
-                    (pExpr as ExprList).OptionalElement = exprRet as Expr;
-                    exprRet = Visit((pExpr as ExprList).OptionalNextListNode);
-                    (pExpr as ExprList).OptionalNextListNode = exprRet as Expr;
-                    goto VISIT_BASE_EXPRLIST;
+
+                    // Lists are a special case.  We treat a list not as a
+                    // binary node but rather as a node with n children.
+                    ExprList list = (ExprList)pExpr;
+                    while (true)
+                    {
+                        list.OptionalElement = Visit(list.OptionalElement);
+                        Expr nextNode = list.OptionalNextListNode;
+                        if (nextNode == null)
+                        {
+                            return;
+                        }
+
+                        if (!(nextNode is ExprList next))
+                        {
+                            list.OptionalNextListNode = Visit(nextNode);
+                            return;
+                        }
+
+                        list = next;
+                    }
 
                 case ExpressionKind.EK_ASSIGNMENT:
-                    goto VISIT_EXPRASSIGNMENT;
-                VISIT_BASE_EXPRASSIGNMENT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRASSIGNMENT:
                     exprRet = Visit((pExpr as ExprAssignment).LHS);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprAssignment).LHS = exprRet as Expr;
+                    (pExpr as ExprAssignment).LHS = exprRet;
                     exprRet = Visit((pExpr as ExprAssignment).RHS);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprAssignment).RHS = exprRet as Expr;
-                    goto VISIT_BASE_EXPRASSIGNMENT;
+                    (pExpr as ExprAssignment).RHS = exprRet;
+                    break;
 
                 case ExpressionKind.EK_QUESTIONMARK:
-                    goto VISIT_EXPRQUESTIONMARK;
-                VISIT_BASE_EXPRQUESTIONMARK:
-                    goto VISIT_EXPR;
-                VISIT_EXPRQUESTIONMARK:
                     exprRet = Visit((pExpr as ExprQuestionMark).TestExpression);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprQuestionMark).TestExpression = exprRet as Expr;
+                    (pExpr as ExprQuestionMark).TestExpression = exprRet;
                     exprRet = Visit((pExpr as ExprQuestionMark).Consequence);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprQuestionMark).Consequence = exprRet as ExprBinOp;
-                    goto VISIT_BASE_EXPRQUESTIONMARK;
+                    break;
 
                 case ExpressionKind.EK_ARRAYINDEX:
-                    goto VISIT_EXPRARRAYINDEX;
-                VISIT_BASE_EXPRARRAYINDEX:
-                    goto VISIT_EXPR;
-                VISIT_EXPRARRAYINDEX:
                     exprRet = Visit((pExpr as ExprArrayIndex).Array);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprArrayIndex).Array = exprRet as Expr;
+                    (pExpr as ExprArrayIndex).Array = exprRet;
                     exprRet = Visit((pExpr as ExprArrayIndex).Index);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprArrayIndex).Index = exprRet as Expr;
-                    goto VISIT_BASE_EXPRARRAYINDEX;
+                    (pExpr as ExprArrayIndex).Index = exprRet;
+                    break;
 
                 case ExpressionKind.EK_ARRAYLENGTH:
-                    goto VISIT_EXPRARRAYLENGTH;
-                VISIT_BASE_EXPRARRAYLENGTH:
-                    goto VISIT_EXPR;
-                VISIT_EXPRARRAYLENGTH:
                     exprRet = Visit((pExpr as ExprArrayLength).Array);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprArrayLength).Array = exprRet as Expr;
-                    goto VISIT_BASE_EXPRARRAYLENGTH;
+                    (pExpr as ExprArrayLength).Array = exprRet;
+                    break;
 
                 case ExpressionKind.EK_UNARYOP:
                 case ExpressionKind.EK_TRUE:
@@ -390,168 +342,100 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.EK_DECIMALNEG:
                 case ExpressionKind.EK_DECIMALINC:
                 case ExpressionKind.EK_DECIMALDEC:
-                    goto VISIT_EXPRUNARYOP;
-                VISIT_BASE_EXPRUNARYOP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRUNARYOP:
                     exprRet = Visit((pExpr as ExprUnaryOp).Child);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprUnaryOp).Child = exprRet as Expr;
-                    goto VISIT_BASE_EXPRUNARYOP;
+                    (pExpr as ExprUnaryOp).Child = exprRet;
+                    break;
 
                 case ExpressionKind.EK_USERLOGOP:
-                    goto VISIT_EXPRUSERLOGOP;
-                VISIT_BASE_EXPRUSERLOGOP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRUSERLOGOP:
                     exprRet = Visit((pExpr as ExprUserLogicalOp).TrueFalseCall);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprUserLogicalOp).TrueFalseCall = exprRet as Expr;
+                    (pExpr as ExprUserLogicalOp).TrueFalseCall = exprRet;
                     exprRet = Visit((pExpr as ExprUserLogicalOp).OperatorCall);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprUserLogicalOp).OperatorCall = exprRet as ExprCall;
                     exprRet = Visit((pExpr as ExprUserLogicalOp).FirstOperandToExamine);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprUserLogicalOp).FirstOperandToExamine = exprRet as Expr;
-                    goto VISIT_BASE_EXPRUSERLOGOP;
+                    (pExpr as ExprUserLogicalOp).FirstOperandToExamine = exprRet;
+                    break;
 
                 case ExpressionKind.EK_TYPEOF:
-                    goto VISIT_EXPRTYPEOF;
-                VISIT_BASE_EXPRTYPEOF:
-                    goto VISIT_EXPR;
-                VISIT_EXPRTYPEOF:
                     exprRet = Visit((pExpr as ExprTypeOf).SourceType);
                     (pExpr as ExprTypeOf).SourceType = exprRet as ExprTypeOrNamespace;
-                    goto VISIT_BASE_EXPRTYPEOF;
+                    break;
 
                 case ExpressionKind.EK_CAST:
-                    goto VISIT_EXPRCAST;
-                VISIT_BASE_EXPRCAST:
-                    goto VISIT_EXPR;
-                VISIT_EXPRCAST:
                     exprRet = Visit((pExpr as ExprCast).Argument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprCast).Argument = exprRet as Expr;
+                    (pExpr as ExprCast).Argument = exprRet;
                     exprRet = Visit((pExpr as ExprCast).DestinationType);
                     (pExpr as ExprCast).DestinationType = exprRet as ExprTypeOrNamespace;
-                    goto VISIT_BASE_EXPRCAST;
+                    break;
 
                 case ExpressionKind.EK_USERDEFINEDCONVERSION:
-                    goto VISIT_EXPRUSERDEFINEDCONVERSION;
-                VISIT_BASE_EXPRUSERDEFINEDCONVERSION:
-                    goto VISIT_EXPR;
-                VISIT_EXPRUSERDEFINEDCONVERSION:
                     exprRet = Visit((pExpr as ExprUserDefinedConversion).UserDefinedCall);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprUserDefinedConversion).UserDefinedCall = exprRet as Expr;
-                    goto VISIT_BASE_EXPRUSERDEFINEDCONVERSION;
+                    (pExpr as ExprUserDefinedConversion).UserDefinedCall = exprRet;
+                    break;
 
                 case ExpressionKind.EK_ZEROINIT:
-                    goto VISIT_EXPRZEROINIT;
-                VISIT_BASE_EXPRZEROINIT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRZEROINIT:
                     exprRet = Visit((pExpr as ExprZeroInit).OptionalArgument);
-                    (pExpr as ExprZeroInit).OptionalArgument = exprRet as Expr;
+                    (pExpr as ExprZeroInit).OptionalArgument = exprRet;
+
                     // Used for when we zeroinit 0 parameter constructors for structs/enums.
                     exprRet = Visit((pExpr as ExprZeroInit).OptionalConstructorCall);
-                    (pExpr as ExprZeroInit).OptionalConstructorCall = exprRet as Expr;
-                    goto VISIT_BASE_EXPRZEROINIT;
+                    (pExpr as ExprZeroInit).OptionalConstructorCall = exprRet;
+                    break;
 
                 case ExpressionKind.EK_BLOCK:
-                    goto VISIT_EXPRBLOCK;
-                VISIT_BASE_EXPRBLOCK:
-                    goto VISIT_EXPRSTMT;
-                VISIT_EXPRBLOCK:
                     exprRet = Visit((pExpr as ExprBlock).OptionalStatements);
                     (pExpr as ExprBlock).OptionalStatements = exprRet as ExprStatement;
-                    goto VISIT_BASE_EXPRBLOCK;
+                    break;
 
                 case ExpressionKind.EK_MEMGRP:
-                    goto VISIT_EXPRMEMGRP;
-                VISIT_BASE_EXPRMEMGRP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRMEMGRP:
+
                     // The object expression. NULL for a static invocation.
                     exprRet = Visit((pExpr as ExprMemberGroup).OptionalObject);
-                    (pExpr as ExprMemberGroup).OptionalObject = exprRet as Expr;
-                    goto VISIT_BASE_EXPRMEMGRP;
+                    (pExpr as ExprMemberGroup).OptionalObject = exprRet;
+                    break;
 
                 case ExpressionKind.EK_CALL:
-                    goto VISIT_EXPRCALL;
-                VISIT_BASE_EXPRCALL:
-                    goto VISIT_EXPR;
-                VISIT_EXPRCALL:
                     exprRet = Visit((pExpr as ExprCall).OptionalArguments);
-                    (pExpr as ExprCall).OptionalArguments = exprRet as Expr;
+                    (pExpr as ExprCall).OptionalArguments = exprRet;
                     exprRet = Visit((pExpr as ExprCall).MemberGroup);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprCall).MemberGroup = exprRet as ExprMemberGroup;
-                    goto VISIT_BASE_EXPRCALL;
-
+                    break;
 
                 case ExpressionKind.EK_PROP:
-                    goto VISIT_EXPRPROP;
-                VISIT_BASE_EXPRPROP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRPROP:
                     exprRet = Visit((pExpr as ExprProperty).OptionalArguments);
-                    (pExpr as ExprProperty).OptionalArguments = exprRet as Expr;
+                    (pExpr as ExprProperty).OptionalArguments = exprRet;
                     exprRet = Visit((pExpr as ExprProperty).MemberGroup);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprProperty).MemberGroup = exprRet as ExprMemberGroup;
-                    goto VISIT_BASE_EXPRPROP;
+                    break;
 
                 case ExpressionKind.EK_FIELD:
-                    goto VISIT_EXPRFIELD;
-                VISIT_BASE_EXPRFIELD:
-                    goto VISIT_EXPR;
-                VISIT_EXPRFIELD:
                     exprRet = Visit((pExpr as ExprField).OptionalObject);
-                    (pExpr as ExprField).OptionalObject = exprRet as Expr;
-                    goto VISIT_BASE_EXPRFIELD;
+                    (pExpr as ExprField).OptionalObject = exprRet;
+                    break;
 
                 case ExpressionKind.EK_EVENT:
-                    goto VISIT_EXPREVENT;
-                VISIT_BASE_EXPREVENT:
-                    goto VISIT_EXPR;
-                VISIT_EXPREVENT:
                     exprRet = Visit((pExpr as ExprEvent).OptionalObject);
-                    (pExpr as ExprEvent).OptionalObject = exprRet as Expr;
-                    goto VISIT_BASE_EXPREVENT;
-
-                case ExpressionKind.EK_LOCAL:
-                    goto VISIT_EXPRLOCAL;
-                VISIT_BASE_EXPRLOCAL:
-                    goto VISIT_EXPR;
-                VISIT_EXPRLOCAL:
-                    goto VISIT_BASE_EXPRLOCAL;
-
-                case ExpressionKind.EK_THISPOINTER:
-                    goto VISIT_EXPRTHISPOINTER;
-                VISIT_BASE_EXPRTHISPOINTER:
-                    goto VISIT_EXPRLOCAL;
-                VISIT_EXPRTHISPOINTER:
-                    goto VISIT_BASE_EXPRTHISPOINTER;
+                    (pExpr as ExprEvent).OptionalObject = exprRet;
+                    break;
 
                 case ExpressionKind.EK_RETURN:
-                    goto VISIT_EXPRRETURN;
-                VISIT_BASE_EXPRRETURN:
-                    goto VISIT_EXPRSTMT;
-                VISIT_EXPRRETURN:
                     exprRet = Visit((pExpr as ExprReturn).OptionalObject);
-                    (pExpr as ExprReturn).OptionalObject = exprRet as Expr;
-                    goto VISIT_BASE_EXPRRETURN;
+                    (pExpr as ExprReturn).OptionalObject = exprRet;
+                    break;
 
                 case ExpressionKind.EK_CONSTANT:
-                    goto VISIT_EXPRCONSTANT;
-                VISIT_BASE_EXPRCONSTANT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRCONSTANT:
+
                     // Used for when we zeroinit 0 parameter constructors for structs/enums.
                     exprRet = Visit((pExpr as ExprConstant).OptionalConstructorCall);
-                    (pExpr as ExprConstant).OptionalConstructorCall = exprRet as Expr;
-                    goto VISIT_BASE_EXPRCONSTANT;
+                    (pExpr as ExprConstant).OptionalConstructorCall = exprRet;
+                    break;
 
                 /*************************************************************************************************
                   TYPEEXPRs defined:
@@ -582,131 +466,64 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 *************************************************************************************************/
 
                 case ExpressionKind.EK_TYPEARGUMENTS:
-                    goto VISIT_EXPRTYPEARGUMENTS;
-                VISIT_BASE_EXPRTYPEARGUMENTS:
-                    goto VISIT_EXPR;
-                VISIT_EXPRTYPEARGUMENTS:
                     exprRet = Visit((pExpr as ExprTypeArguments).OptionalElements);
-                    (pExpr as ExprTypeArguments).OptionalElements = exprRet as Expr;
-                    goto VISIT_BASE_EXPRTYPEARGUMENTS;
-
-                case ExpressionKind.EK_TYPEORNAMESPACE:
-                    goto VISIT_EXPRTYPEORNAMESPACE;
-                VISIT_BASE_EXPRTYPEORNAMESPACE:
-                    goto VISIT_EXPR;
-                VISIT_EXPRTYPEORNAMESPACE:
-                    goto VISIT_BASE_EXPRTYPEORNAMESPACE;
-
-                case ExpressionKind.EK_CLASS:
-                    goto VISIT_EXPRCLASS;
-                VISIT_BASE_EXPRCLASS:
-                    goto VISIT_EXPRTYPEORNAMESPACE;
-                VISIT_EXPRCLASS:
-                    goto VISIT_BASE_EXPRCLASS;
-
-                case ExpressionKind.EK_FUNCPTR:
-                    goto VISIT_EXPRFUNCPTR;
-                VISIT_BASE_EXPRFUNCPTR:
-                    goto VISIT_EXPR;
-                VISIT_EXPRFUNCPTR:
-                    goto VISIT_BASE_EXPRFUNCPTR;
-
-                case ExpressionKind.EK_MULTIGET:
-                    goto VISIT_EXPRMULTIGET;
-                VISIT_BASE_EXPRMULTIGET:
-                    goto VISIT_EXPR;
-                VISIT_EXPRMULTIGET:
-                    goto VISIT_BASE_EXPRMULTIGET;
+                    (pExpr as ExprTypeArguments).OptionalElements = exprRet;
+                    break;
 
                 case ExpressionKind.EK_MULTI:
-                    goto VISIT_EXPRMULTI;
-                VISIT_BASE_EXPRMULTI:
-                    goto VISIT_EXPR;
-                VISIT_EXPRMULTI:
                     exprRet = Visit((pExpr as ExprMulti).Left);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprMulti).Left = exprRet as Expr;
+                    (pExpr as ExprMulti).Left = exprRet;
                     exprRet = Visit((pExpr as ExprMulti).Operator);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprMulti).Operator = exprRet as Expr;
-                    goto VISIT_BASE_EXPRMULTI;
-
-                case ExpressionKind.EK_WRAP:
-                    goto VISIT_EXPRWRAP;
-                VISIT_BASE_EXPRWRAP:
-                    goto VISIT_EXPR;
-                VISIT_EXPRWRAP:
-                    goto VISIT_BASE_EXPRWRAP;
+                    (pExpr as ExprMulti).Operator = exprRet;
+                    break;
 
                 case ExpressionKind.EK_CONCAT:
-                    goto VISIT_EXPRCONCAT;
-                VISIT_BASE_EXPRCONCAT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRCONCAT:
                     exprRet = Visit((pExpr as ExprConcat).FirstArgument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprConcat).FirstArgument = exprRet as Expr;
+                    (pExpr as ExprConcat).FirstArgument = exprRet;
                     exprRet = Visit((pExpr as ExprConcat).SecondArgument);
                     Debug.Assert(exprRet != null);
-                    (pExpr as ExprConcat).SecondArgument = exprRet as Expr;
-                    goto VISIT_BASE_EXPRCONCAT;
+                    (pExpr as ExprConcat).SecondArgument = exprRet;
+                    break;
 
                 case ExpressionKind.EK_ARRINIT:
-                    goto VISIT_EXPRARRINIT;
-                VISIT_BASE_EXPRARRINIT:
-                    goto VISIT_EXPR;
-                VISIT_EXPRARRINIT:
                     exprRet = Visit((pExpr as ExprArrayInit).OptionalArguments);
-                    (pExpr as ExprArrayInit).OptionalArguments = exprRet as Expr;
+                    (pExpr as ExprArrayInit).OptionalArguments = exprRet;
                     exprRet = Visit((pExpr as ExprArrayInit).OptionalArgumentDimensions);
-                    (pExpr as ExprArrayInit).OptionalArgumentDimensions = exprRet as Expr;
-                    goto VISIT_BASE_EXPRARRINIT;
-
-                case ExpressionKind.EK_NOOP:
-                    goto VISIT_EXPRNOOP;
-                VISIT_BASE_EXPRNOOP:
-                    goto VISIT_EXPRSTMT;
-                VISIT_EXPRNOOP:
-                    goto VISIT_BASE_EXPRNOOP;
+                    (pExpr as ExprArrayInit).OptionalArgumentDimensions = exprRet;
+                    break;
 
                 case ExpressionKind.EK_BOUNDLAMBDA:
-                    goto VISIT_EXPRBOUNDLAMBDA;
-                VISIT_BASE_EXPRBOUNDLAMBDA:
-                    goto VISIT_EXPR;
-                VISIT_EXPRBOUNDLAMBDA:
                     exprRet = Visit((pExpr as ExprBoundLambda).OptionalBody);
                     (pExpr as ExprBoundLambda).OptionalBody = exprRet as ExprBlock;
-                    goto VISIT_BASE_EXPRBOUNDLAMBDA;
+                    break;
 
+                case ExpressionKind.EK_LOCAL:
+                case ExpressionKind.EK_THISPOINTER:
+                case ExpressionKind.EK_TYPEORNAMESPACE:
+                case ExpressionKind.EK_CLASS:
+                case ExpressionKind.EK_FUNCPTR:
+                case ExpressionKind.EK_MULTIGET:
+                case ExpressionKind.EK_WRAP:
+                case ExpressionKind.EK_NOOP:
                 case ExpressionKind.EK_UNBOUNDLAMBDA:
-                    goto VISIT_EXPRUNBOUNDLAMBDA;
-                VISIT_BASE_EXPRUNBOUNDLAMBDA:
-                    goto VISIT_EXPR;
-                VISIT_EXPRUNBOUNDLAMBDA:
-                    goto VISIT_BASE_EXPRUNBOUNDLAMBDA;
-
                 case ExpressionKind.EK_HOISTEDLOCALEXPR:
-                    goto VISIT_EXPRHOISTEDLOCALEXPR;
-                VISIT_BASE_EXPRHOISTEDLOCALEXPR:
-                    goto VISIT_EXPR;
-                VISIT_EXPRHOISTEDLOCALEXPR:
-                    goto VISIT_BASE_EXPRHOISTEDLOCALEXPR;
-
                 case ExpressionKind.EK_FIELDINFO:
-                    goto VISIT_EXPRFIELDINFO;
-                VISIT_BASE_EXPRFIELDINFO:
-                    goto VISIT_EXPR;
-                VISIT_EXPRFIELDINFO:
-                    goto VISIT_BASE_EXPRFIELDINFO;
-
                 case ExpressionKind.EK_METHODINFO:
-                    goto VISIT_EXPRMETHODINFO;
-                VISIT_BASE_EXPRMETHODINFO:
-                    goto VISIT_EXPR;
-                VISIT_EXPRMETHODINFO:
-                    goto VISIT_BASE_EXPRMETHODINFO;
+                    break;
+
+                default:
+                    pExpr.AssertIsBin();
+                    exprRet = Visit((pExpr as ExprBinOp).OptionalLeftChild);
+                    (pExpr as ExprBinOp).OptionalLeftChild = exprRet;
+                    exprRet = Visit((pExpr as ExprBinOp).OptionalRightChild);
+                    (pExpr as ExprBinOp).OptionalRightChild = exprRet;
+                    break;
             }
         }
+
         protected virtual Expr VisitEXPR(Expr pExpr)
         {
             VisitChildren(pExpr);
