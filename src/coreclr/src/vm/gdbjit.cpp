@@ -398,7 +398,10 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
     {
         if (FindNativeInfoInILVariable(0, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
         {
-            vars[0].m_var_type = GetTypeInfoFromTypeHandle(TypeHandle(md->GetMethodTable()), pTypeMap, method);
+            TypeHandle th = TypeHandle(md->GetMethodTable());
+            if (th.IsValueType())
+                th = th.MakePointer();
+            vars[0].m_var_type = GetTypeInfoFromTypeHandle(th, pTypeMap, method);
             vars[0].m_var_name = new char[strlen("this") + 1];
             strcpy(vars[0].m_var_name, "this");
             vars[0].m_il_index = 0;
