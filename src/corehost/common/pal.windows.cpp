@@ -134,36 +134,19 @@ void pal::unload_library(dll_t library)
     // No-op. On windows, we pin the library, so it can't be unloaded.
 }
 
-bool pal::get_default_breadcrumb_store(string_t* recv)
-{
-    recv->clear();
-
-    pal::char_t* prog_dat;
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_ProgramData, 0,  NULL, &prog_dat);
-    if (hr != S_OK)
-    {
-        trace::verbose(_X("Failed to read default breadcrumb store 0x%X"), hr);
-        return false;
-    }
-    recv->assign(prog_dat);
-    append_path(recv, _X("Microsoft"));
-    append_path(recv, _X("NetFramework"));
-    append_path(recv, _X("BreadcrumbStore"));
-    return true;
-}
-
 static
-bool get_program_files_by_id(KNOWNFOLDERID kfid, pal::string_t* recv)
+bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* prog_files;
-    HRESULT hr = ::SHGetKnownFolderPath(kfid, 0,  NULL, &prog_files);
-    if (hr != S_OK)
+    pal::string_t file_path;
+    if (!(pal::getenv(env_key, &file_path) && pal::realpath(&file_path)))
     {
-        trace::verbose(_X("Failed to obtain Program Files directory, HRESULT: 0x%X"), hr);
+        // We should have the path in file_path.
+        trace::verbose(_X("Failed to obtain [%s] directory,[%s]"),env_key, file_path.c_str());
         return false;
     }
-    recv->assign(prog_files);
+
+    recv->assign(file_path);
     return true;
 }
 
@@ -171,11 +154,30 @@ static
 bool get_wow_mode_program_files(pal::string_t* recv)
 {
 #if defined(_TARGET_AMD64_)
-    KNOWNFOLDERID kfid = FOLDERID_ProgramFilesX86;
+    pal::char_t* env_key = _X("ProgramFiles(x86)");
 #else
-    KNOWNFOLDERID kfid = FOLDERID_ProgramFiles;
+    pal::char_t* env_key = _X("ProgramFiles");
 #endif
-    return get_program_files_by_id(kfid, recv);
+
+    return get_file_path_from_env(env_key,recv);
+}
+
+bool pal::get_default_breadcrumb_store(string_t* recv)
+{
+    recv->clear();
+
+    pal::string_t prog_dat;
+    if (!get_file_path_from_env(_X("ProgramData"), &prog_dat))
+    {
+        // We should have the path in prog_dat.
+        trace::verbose(_X("Failed to read default breadcrumb store [%s]"), prog_dat.c_str());
+        return false;
+    }
+    recv->assign(prog_dat);
+    append_path(recv, _X("Microsoft"));
+    append_path(recv, _X("NetFramework"));
+    append_path(recv, _X("BreadcrumbStore"));
+    return true;
 }
 
 bool pal::get_default_servicing_directory(string_t* recv)
@@ -190,7 +192,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 
 bool pal::get_global_dotnet_dir(pal::string_t* dir)
 {
-    if (!get_program_files_by_id(FOLDERID_ProgramFiles, dir))
+    if (!get_file_path_from_env(_X("ProgramFiles"), dir))
     {
         return false;
     }
@@ -201,11 +203,11 @@ bool pal::get_global_dotnet_dir(pal::string_t* dir)
 
 bool pal::get_local_dotnet_dir(pal::string_t* dir)
 {
-    pal::char_t* profile;
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &profile);
-    if (hr != S_OK)
+    pal::string_t profile;
+    if (!get_file_path_from_env(_X("USERPROFILE"), &profile))
     {
-        trace::verbose(_X("Failed to obtain user profile directory, HRESULT: 0x%X"), hr);
+        // We should have the path in profile.
+        trace::verbose(_X("Failed to obtain user profile directory,[%s]"), profile.c_str());
         return false;
     }
 
