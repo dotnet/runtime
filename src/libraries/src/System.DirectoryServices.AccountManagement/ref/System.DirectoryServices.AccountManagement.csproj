@@ -10,8 +10,7 @@
     <Compile Include="System.DirectoryServices.AccountManagement.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Principal.Windows" />
+    <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
