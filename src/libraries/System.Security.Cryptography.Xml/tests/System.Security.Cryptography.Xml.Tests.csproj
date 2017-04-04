@@ -16,6 +16,7 @@
     <Compile Include="DataReferenceTest.cs" />
     <Compile Include="DSAKeyValueTest.cs" />
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
+    <Compile Include="EncryptionMethodTests.cs" />
     <Compile Include="EncryptedXmlTest.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
     <Compile Include="KeyInfoNodeTest.cs" />
