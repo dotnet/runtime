@@ -76,7 +76,7 @@ OOPStackUnwinderX86::VirtualUnwind(
 
     FillRegDisplay(&rd, ContextRecord);
 
-    rd.SP = ContextRecord->ResumeEsp;
+    rd.SP = ContextRecord->Esp;
     rd.PCTAddr = (UINT_PTR)&(ContextRecord->Eip);
 
     if (ContextPointers)
