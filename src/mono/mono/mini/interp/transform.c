@@ -811,8 +811,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			int offset;
 			if (mono_interp_traceopt)
 				g_print ("Optimize tail call of %s.%s\n", target_method->klass->name, target_method->name);
-			for (i = csignature->param_count - 1; i >= 0; --i)
-				store_arg (td, i + csignature->hasthis);
+
+			for (i = csignature->param_count - 1 + !!csignature->hasthis; i >= 0; --i)
+				store_arg (td, i);
 
 			ADD_CODE(td, MINT_BR_S);
 			offset = body_start_offset - ((td->new_ip - 1) - td->new_code);
