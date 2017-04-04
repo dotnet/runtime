@@ -1404,7 +1404,6 @@ TypesMustExist : Type 'Microsoft.SqlServer.Server.Format' does not exist in the 
 TypesMustExist : Type 'Microsoft.SqlServer.Server.IBinarySerialize' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.InvalidUdtException' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlContext' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlDataRecord' does not implement interface 'System.Data.IDataRecord' in the implementation but it does in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFacetAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFunctionAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
@@ -3350,4 +3349,4 @@ MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerial
 MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.CodeDom.Compiler.CompilerParameters)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-Total Issues: 3333
+Total Issues: 3332
