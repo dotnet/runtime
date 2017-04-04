@@ -17,6 +17,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Dataflow.Internal;
+using System.Threading.Tasks.Dataflow.Internal.Threading;
 
 namespace System.Threading.Tasks.Dataflow
 {
