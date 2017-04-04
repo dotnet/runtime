@@ -2760,6 +2760,17 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Area, actual.Area);
     }
 
+    [Fact]
+    public static void DCS_TypeWithDelegate()
+    {
+        var value = new TypeWithDelegate();
+        value.IntProperty = 3;
+        var actual = SerializeAndDeserialize(value, "<TypeWithDelegate xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:x=\"http://www.w3.org/2001/XMLSchema\"><IntValue i:type=\"x:int\" xmlns=\"\">3</IntValue></TypeWithDelegate>");
+        Assert.NotNull(actual);
+        Assert.Null(actual.DelegateProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
