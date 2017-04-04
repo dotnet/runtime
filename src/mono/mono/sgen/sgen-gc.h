@@ -35,6 +35,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
 #include "mono/sgen/gc-internal-agnostic.h"
+#include "mono/sgen/sgen-thread-pool.h"
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -559,11 +560,13 @@ sgen_nursery_is_object_alive (GCObject *obj)
 
 typedef struct {
 	gboolean is_split;
+	gboolean is_parallel;
 
 	GCObject* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 	SgenObjectOperations serial_ops_with_concurrent_major;
+	SgenObjectOperations parallel_ops;
 
 	void (*prepare_to_space) (char *to_space_bitmap, size_t space_bitmap_size);
 	void (*clear_fragments) (void);
@@ -578,7 +581,7 @@ typedef struct {
 
 extern SgenMinorCollector sgen_minor_collector;
 
-void sgen_simple_nursery_init (SgenMinorCollector *collector);
+void sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel);
 void sgen_split_nursery_init (SgenMinorCollector *collector);
 
 /* Updating references */
@@ -591,7 +594,7 @@ sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 {
 	if (!allow_null)
 		SGEN_ASSERT (0, o, "Cannot update a reference with a NULL pointer");
-	SGEN_ASSERT (0, !sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
+	SGEN_ASSERT (0, !sgen_workers_is_worker_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
 	*p = o;
 }
 
@@ -634,7 +637,6 @@ struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_concurrent;
 	gboolean is_parallel;
-	gboolean needs_thread_pool;
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
 
@@ -691,6 +693,7 @@ struct _SgenMajorCollector {
 	guint8* (*get_cardtable_mod_union_for_reference) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
+	SgenThreadPool* (*get_sweep_pool) (void);
 
 	void (*worker_init_cb) (gpointer worker);
 };
@@ -701,6 +704,7 @@ void sgen_marksweep_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_par_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
+SgenMinorCollector* sgen_get_minor_collector (void);
 
 
 typedef struct _SgenRememberedSet {
@@ -711,11 +715,10 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*scan_remsets) (ScanCopyContext ctx);
+	void (*start_scan_remsets) (void);
 
 	void (*clear_cards) (void);
 
-	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
 } SgenRememberedSet;

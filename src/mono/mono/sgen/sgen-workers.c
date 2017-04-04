@@ -26,6 +26,9 @@ static volatile gboolean forced_stop;
 static WorkerData *workers_data;
 static SgenWorkerCallback worker_init_cb;
 
+static SgenThreadPool pool_inst;
+static SgenThreadPool *pool; /* null if we're not using workers */
+
 /*
  * When using multiple workers, we need to have the last worker
  * enqueue the preclean jobs (if there are any). This lock ensures
@@ -61,6 +64,8 @@ enum {
 	STATE_WORK_ENQUEUED
 };
 
+#define SGEN_WORKER_MIN_SECTIONS_SIGNAL 4
+
 typedef gint32 State;
 
 static SgenObjectOperations * volatile idle_func_object_ops;
@@ -82,7 +87,7 @@ set_state (WorkerData *data, State old_state, State new_state)
 	else if (new_state == STATE_WORKING)
 		SGEN_ASSERT (0, old_state == STATE_WORK_ENQUEUED, "We can only transition to WORKING from WORK ENQUEUED");
 	if (new_state == STATE_NOT_WORKING || new_state == STATE_WORKING)
-		SGEN_ASSERT (6, sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Only the worker thread is allowed to transition to NOT_WORKING or WORKING");
+		SGEN_ASSERT (6, sgen_thread_pool_is_thread_pool_thread (pool, mono_native_thread_id_get ()), "Only the worker thread is allowed to transition to NOT_WORKING or WORKING");
 
 	return InterlockedCompareExchange (&data->state, new_state, old_state) == old_state;
 }
@@ -126,7 +131,7 @@ sgen_workers_ensure_awake (void)
 	}
 
 	if (need_signal)
-		sgen_thread_pool_idle_signal ();
+		sgen_thread_pool_idle_signal (pool);
 }
 
 static void
@@ -198,24 +203,23 @@ sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue)
 		return;
 	}
 
-	sgen_thread_pool_job_enqueue (job);
+	sgen_thread_pool_job_enqueue (pool, job);
 }
 
 static gboolean
 workers_get_work (WorkerData *data)
 {
-	SgenMajorCollector *major;
+	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
+	GrayQueueSection *section;
 
 	g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
+	g_assert (major->is_concurrent || minor->is_parallel);
 
-	/* If we're concurrent, steal from the workers distribute gray queue. */
-	major = sgen_get_major_collector ();
-	if (major->is_concurrent) {
-		GrayQueueSection *section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
-		if (section) {
-			sgen_gray_object_enqueue_section (&data->private_gray_queue, section, major->is_parallel);
-			return TRUE;
-		}
+	section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
+	if (section) {
+		sgen_gray_object_enqueue_section (&data->private_gray_queue, section, major->is_parallel);
+		return TRUE;
 	}
 
 	/* Nobody to steal from */
@@ -227,10 +231,13 @@ static gboolean
 workers_steal_work (WorkerData *data)
 {
 	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
+	int generation = sgen_get_current_collection_generation ();
 	GrayQueueSection *section = NULL;
 	int i, current_worker;
 
-	if (!major->is_parallel)
+	if ((generation == GENERATION_OLD && !major->is_parallel) ||
+			(generation == GENERATION_NURSERY && !minor->is_parallel))
 		return FALSE;
 
 	/* If we're parallel, steal from other workers' private gray queues  */
@@ -275,10 +282,11 @@ thread_pool_init_func (void *data_untyped)
 {
 	WorkerData *data = (WorkerData *)data_untyped;
 	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
 
 	sgen_client_thread_register_worker ();
 
-	if (!major->is_concurrent)
+	if (!major->is_concurrent && !minor->is_parallel)
 		return;
 
 	init_private_gray_queue (data);
@@ -314,7 +322,6 @@ marker_idle_func (void *data_untyped)
 	WorkerData *data = (WorkerData *)data_untyped;
 
 	SGEN_ASSERT (0, continue_idle_func (data_untyped), "Why are we called when we're not supposed to work?");
-	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
 
 	if (data->state == STATE_WORK_ENQUEUED) {
 		set_state (data, STATE_WORK_ENQUEUED, STATE_WORKING);
@@ -328,7 +335,8 @@ marker_idle_func (void *data_untyped)
 
 		sgen_drain_gray_stack (ctx);
 
-		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < active_workers_num) {
+		if (data->private_gray_queue.num_sections >= SGEN_WORKER_MIN_SECTIONS_SIGNAL
+				&& workers_finished && worker_awakenings < active_workers_num) {
 			/* We bound the number of worker awakenings just to be sure */
 			worker_awakenings++;
 			mono_os_mutex_lock (&finished_lock);
@@ -357,7 +365,7 @@ init_distribute_gray_queue (void)
 void
 sgen_workers_init_distribute_gray_queue (void)
 {
-	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent,
+	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent || sgen_get_minor_collector ()->is_parallel,
 			"Why should we init the distribute gray queue if we don't need it?");
 	init_distribute_gray_queue ();
 }
@@ -366,12 +374,7 @@ void
 sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 {
 	int i;
-	void **workers_data_ptrs = (void **)alloca(num_workers * sizeof(void *));
-
-	if (!sgen_get_major_collector ()->is_concurrent) {
-		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL, NULL);
-		return;
-	}
+	WorkerData **workers_data_ptrs = (WorkerData**)alloca(num_workers * sizeof(WorkerData*));
 
 	mono_os_mutex_init (&finished_lock);
 	//g_print ("initing %d workers\n", num_workers);
@@ -385,13 +388,21 @@ sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 	init_distribute_gray_queue ();
 
 	for (i = 0; i < num_workers; ++i)
-		workers_data_ptrs [i] = (void *) &workers_data [i];
+		workers_data_ptrs [i] = &workers_data [i];
 
 	worker_init_cb = callback;
 
-	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, workers_data_ptrs);
+	pool = &pool_inst;
+	sgen_thread_pool_init (pool, num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, (SgenThreadPoolData**)workers_data_ptrs);
 
 	mono_counters_register ("# workers finished", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_finished);
+}
+
+void
+sgen_workers_shutdown (void)
+{
+	if (pool)
+		sgen_thread_pool_shutdown (pool);
 }
 
 void
@@ -401,8 +412,8 @@ sgen_workers_stop_all_workers (void)
 	mono_memory_write_barrier ();
 	forced_stop = TRUE;
 
-	sgen_thread_pool_wait_for_all_jobs ();
-	sgen_thread_pool_idle_wait ();
+	sgen_thread_pool_wait_for_all_jobs (pool);
+	sgen_thread_pool_idle_wait (pool);
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can only signal enqueue work when in no work state");
 }
 
@@ -441,8 +452,8 @@ sgen_workers_join (void)
 {
 	int i;
 
-	sgen_thread_pool_wait_for_all_jobs ();
-	sgen_thread_pool_idle_wait ();
+	sgen_thread_pool_wait_for_all_jobs (pool);
+	sgen_thread_pool_idle_wait (pool);
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can only signal enqueue work when in no work state");
 
 	/* At this point all the workers have stopped. */
@@ -539,6 +550,14 @@ sgen_workers_foreach (SgenWorkerCallback callback)
 
 	for (i = 0; i < workers_num; i++)
 		callback (&workers_data [i]);
+}
+
+gboolean
+sgen_workers_is_worker_thread (MonoNativeThreadId id)
+{
+	if (!pool)
+		return FALSE;
+	return sgen_thread_pool_is_thread_pool_thread (pool, id);
 }
 
 #endif

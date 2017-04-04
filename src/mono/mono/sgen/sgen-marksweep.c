@@ -187,6 +187,9 @@ static volatile int sweep_state = SWEEP_STATE_SWEPT;
 static gboolean concurrent_mark;
 static gboolean concurrent_sweep = TRUE;
 
+SgenThreadPool sweep_pool_inst;
+SgenThreadPool *sweep_pool;
+
 #define BLOCK_IS_TAGGED_HAS_REFERENCES(bl)	SGEN_POINTER_IS_TAGGED_1 ((bl))
 #define BLOCK_TAG_HAS_REFERENCES(bl)		SGEN_POINTER_TAG_1 ((bl))
 
@@ -727,7 +730,6 @@ get_block:
 			 */
 			if (SGEN_CAS_PTR ((volatile gpointer *)&free_blocks [size_index], next_free, block) != block)
 				goto get_block;
-			g_assert (block->free_list);
 			block->next_free = free_blocks_local [size_index];
 			free_blocks_local [size_index] = block;
 
@@ -919,7 +921,7 @@ major_finish_sweep_checking (void)
  wait:
 	job = sweep_job;
 	if (job)
-		sgen_thread_pool_job_wait (job);
+		sgen_thread_pool_job_wait (sweep_pool, job);
 	SGEN_ASSERT (0, !sweep_job, "Why did the sweep job not null itself?");
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "How is the sweep job done but we're not swept?");
 }
@@ -1557,6 +1559,25 @@ sgen_worker_clear_free_block_lists (WorkerData *worker)
 }
 
 static void
+sgen_worker_clear_free_block_lists_evac (WorkerData *worker)
+{
+	int i, j;
+
+	if (!worker->free_block_lists)
+		return;
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++) {
+		for (j = 0; j < num_block_obj_sizes; j++) {
+			if (((MSBlockInfo***) worker->free_block_lists) [i][j])
+				SGEN_ASSERT (0, !((MSBlockInfo***) worker->free_block_lists) [i][j]->next_free, "Why do we have linked free blocks on the workers");
+
+			if (evacuate_block_obj_sizes [j])
+				((MSBlockInfo***) worker->free_block_lists) [i][j] = NULL;
+		}
+	}
+}
+
+static void
 sweep_start (void)
 {
 	int i;
@@ -1788,7 +1809,7 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 	 */
 	if (concurrent_sweep && lazy_sweep) {
 		sweep_blocks_job = sgen_thread_pool_job_alloc ("sweep_blocks", sweep_blocks_job_func, sizeof (SgenThreadPoolJob));
-		sgen_thread_pool_job_enqueue (sweep_blocks_job);
+		sgen_thread_pool_job_enqueue (sweep_pool, sweep_blocks_job);
 	}
 
 	sweep_finish ();
@@ -1837,7 +1858,7 @@ major_sweep (void)
 	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
 		sweep_job = sgen_thread_pool_job_alloc ("sweep", sweep_job_func, sizeof (SgenThreadPoolJob));
-		sgen_thread_pool_job_enqueue (sweep_job);
+		sgen_thread_pool_job_enqueue (sweep_pool, sweep_job);
 	} else {
 		sweep_job_func (NULL, NULL);
 	}
@@ -2039,6 +2060,9 @@ major_start_major_collection (void)
 		sgen_evacuation_freelist_blocks (&free_block_lists [MS_BLOCK_FLAG_REFS][i], i);
 	}
 
+	/* We expect workers to have very few blocks on the freelist, just evacuate them */
+	sgen_workers_foreach (sgen_worker_clear_free_block_lists_evac);
+
 	if (lazy_sweep && concurrent_sweep) {
 		/*
 		 * sweep_blocks_job is created before sweep_finish, which we wait for above
@@ -2047,7 +2071,7 @@ major_start_major_collection (void)
 		 */
 		SgenThreadPoolJob *job = sweep_blocks_job;
 		if (job)
-			sgen_thread_pool_job_wait (job);
+			sgen_thread_pool_job_wait (sweep_pool, job);
 	}
 
 	if (lazy_sweep && !concurrent_sweep)
@@ -2085,6 +2109,12 @@ major_finish_major_collection (ScannedObjectCounts *counts)
 		sgen_pointer_queue_clear (&scanned_objects_list);
 	}
 #endif
+}
+
+static SgenThreadPool*
+major_get_sweep_pool (void)
+{
+	return sweep_pool;
 }
 
 static int
@@ -2693,7 +2723,6 @@ static void
 post_param_init (SgenMajorCollector *collector)
 {
 	collector->sweeps_lazily = lazy_sweep;
-	collector->needs_thread_pool = concurrent_mark || concurrent_sweep;
 }
 
 /* We are guaranteed to be called by the worker in question */
@@ -2710,6 +2739,12 @@ sgen_worker_init_callback (gpointer worker_untyped)
 	worker->free_block_lists = worker_free_blocks;
 
 	mono_native_tls_set_value (worker_block_free_list_key, worker_free_blocks);
+}
+
+static void
+thread_pool_init_func (void *data_untyped)
+{
+	sgen_client_thread_register_worker ();
 }
 
 static void
@@ -2748,6 +2783,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
+	/* We can do this because we always init the minor before the major */
+	if (is_parallel || sgen_get_minor_collector ()->is_parallel) {
+		mono_native_tls_alloc (&worker_block_free_list_key, NULL);
+		collector->worker_init_cb = sgen_worker_init_callback;
+	}
+
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_lazy_swept);
@@ -2761,7 +2802,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	concurrent_mark = is_concurrent;
 	collector->is_concurrent = is_concurrent;
 	collector->is_parallel = is_parallel;
-	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
@@ -2807,6 +2847,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
 	collector->count_cards = major_count_cards;
+	collector->get_sweep_pool = major_get_sweep_pool;
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
@@ -2837,10 +2878,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 			collector->major_ops_conc_par_finish.scan_vtype = major_scan_vtype_par_with_evacuation;
 			collector->major_ops_conc_par_finish.scan_ptr_field = major_scan_ptr_field_par_with_evacuation;
 			collector->major_ops_conc_par_finish.drain_gray_stack = drain_gray_stack_par;
-
-			collector->worker_init_cb = sgen_worker_init_callback;
-
-			mono_native_tls_alloc (&worker_block_free_list_key, NULL);
 		}
 	}
 
@@ -2870,6 +2907,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((MS_BLOCK_SIZE % (8 * CARD_SIZE_IN_BYTES)) == 0);
+
+	if (concurrent_sweep) {
+		SgenThreadPool **thread_datas = &sweep_pool;
+		sweep_pool = &sweep_pool_inst;
+		sgen_thread_pool_init (sweep_pool, 1, thread_pool_init_func, NULL, NULL, NULL, (SgenThreadPoolData**)&thread_datas);
+	}
 }
 
 void

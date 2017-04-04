@@ -20,7 +20,7 @@
 
 #include "mono/sgen/sgen-gc.h"
 #include "mono/sgen/sgen-memory-governor.h"
-#include "mono/sgen/sgen-thread-pool.h"
+#include "mono/sgen/sgen-workers.h"
 #include "mono/sgen/sgen-client.h"
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
@@ -459,7 +459,7 @@ gboolean
 sgen_memgov_try_alloc_space (mword size, int space)
 {
 	if (sgen_memgov_available_free_space () < size) {
-		SGEN_ASSERT (4, !sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Memory shouldn't run out in worker thread");
+		SGEN_ASSERT (4, !sgen_workers_is_worker_thread (mono_native_thread_id_get ()), "Memory shouldn't run out in worker thread");
 		return FALSE;
 	}
 
