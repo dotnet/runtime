@@ -248,23 +248,6 @@
 #define __PLACEMENT_NEW_INLINE  // don't bring in the global placement new, it is easy to make a mistake
                                 // with our new(compiler*) pattern.
 
-#if COR_JIT_EE_VER > 460
-#define NO_CLRCONFIG // Don't bring in the usual CLRConfig infrastructure, since the JIT uses the JIT/EE
-                     // interface to retrieve config values.
-
-// This is needed for contract.inl when FEATURE_STACK_PROBE is enabled.
-struct CLRConfig
-{
-    static struct ConfigKey
-    {
-    } EXTERNAL_NO_SO_NOT_MAINLINE;
-    static DWORD GetConfigValue(const ConfigKey& key)
-    {
-        return 0;
-    }
-};
-#endif
-
 #include "utilcode.h" // this defines assert as _ASSERTE
 #include "host.h"     // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
