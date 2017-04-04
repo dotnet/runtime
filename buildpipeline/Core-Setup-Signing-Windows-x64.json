@@ -50,7 +50,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,CompileCoreHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,CompileCoreHost $(PB_PortableBuild)",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -116,7 +116,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PackagePkgProjects,BuildProjectsForNuGetPackages",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PackagePkgProjects,BuildProjectsForNuGetPackages $(PB_PortableBuild)",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -135,7 +135,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PublishSharedFrameworkAndSharedHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PublishSharedFrameworkAndSharedHost $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -208,7 +208,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Test,InitPackage,GenerateVersionBadge,GenerateZip,GenerateMsis,GenerateNugetPackages",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Test,InitPackage,GenerateVersionBadge,GenerateZip,GenerateMsis,GenerateNugetPackages $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -254,7 +254,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,GenerateBundles",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,GenerateBundles $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -273,7 +273,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ExtractEngineFromBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ExtractEngineFromBundle $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -319,7 +319,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ReattachEngineToBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ReattachEngineToBundle $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -378,7 +378,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Publish",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Publish $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -475,6 +475,10 @@
     },
     "system.debug": {
       "value": "false"
+    },
+    "PB_PortableBuild": {
+      "value": "",
+      "allowOverride": true
     },
     "NUGET_SYMBOLS_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"

@@ -115,9 +115,24 @@
           }
         },
         {
-          "Name": "Core-Setup-PortableLinux-x64",
+          "Name": "Core-Setup-OSX-x64",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
           "ReportingParameters": {
-            "SubType": "PortableLinux",
+            "SubType": "PortableBuild",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-PortableLinux-x64",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "Platform": "x64"
@@ -141,9 +156,33 @@
           }
         },
         {
+          "Name": "Core-Setup-Signing-Windows-x64",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
           "Name": "Core-Setup-Signing-Windows-x86",
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x86"
+          }
+        },
+        {
+          "Name": "Core-Setup-Signing-Windows-x86",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
             "Type": "build/product/",
             "Platform": "x86"
           }
@@ -157,6 +196,20 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/"
+          }
+        },
+        {
+          "Name": "Core-Setup-CrossBuild",
+          "Parameters": {
+            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_Architecture": "arm",
+            "TargetRid": "linux-arm",
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "SubType": "PortableBuild",
             "Type": "build/product/"
           }
         },
@@ -178,6 +231,30 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Platform": "arm"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-arm32",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "arm"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-arm64",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "arm64"
           }
         },
         {

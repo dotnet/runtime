@@ -35,7 +35,11 @@ init_rid_plat()
     fi
 
     if [ $__linkPortable == 1 ]; then
-        export __rid_plat="linux"
+        if [ "$(uname -s)" == "Darwin" ]; then
+        export __rid_plat="osx"
+        else
+            export __rid_plat="linux"
+        fi
     fi
 }
 
@@ -49,8 +53,8 @@ usage()
     echo "  --apphostver <app host version>   Version of the apphost executable"
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
     echo "  --policyver <HostPolicy version>  Version of the hostpolicy library"
-    echo "  --commithash <Git commit hash>   Current commit hash of the repo at build time"
-    echo "  --portableLinux                      Optional argument to build native libraries portable over GLIBC based Linux distros."
+    echo "  --commithash <Git commit hash>    Current commit hash of the repo at build time"
+    echo "  -portable                         Optional argument to build portable platform packages."
     echo "  --cross                           Optional argument to signify cross compilation,"
     echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
 
@@ -74,7 +78,7 @@ __policy_ver=
 __fxr_ver=
 __CrossBuild=0
 __commit_hash=
-__linkPortable=0
+__portableBuildArgs=
 __configuration=Debug
 
 while [ "$1" != "" ]; do
@@ -112,8 +116,8 @@ while [ "$1" != "" ]; do
             shift
             __commit_hash=$1
             ;;
-        --portablelinux)
-            __linkPortable=1
+        -portable)
+            __portableBuildArgs="-DCLI_CMAKE_PORTABLE_BUILD=1"
             ;;
         --cross)
             __CrossBuild=1
@@ -124,7 +128,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration}"
+__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 case $__build_arch in
     amd64|x64)

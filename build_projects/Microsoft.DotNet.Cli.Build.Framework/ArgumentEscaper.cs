@@ -200,7 +200,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 return true;
             }
 
-            return true;
+            return false;
         }
     }
 }

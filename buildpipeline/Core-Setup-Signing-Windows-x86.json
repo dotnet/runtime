@@ -50,7 +50,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,CompileCoreHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,CompileCoreHost $(PB_PortableBuild)",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -116,7 +116,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PackagePkgProjects",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PackagePkgProjects $(PB_PortableBuild)",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -135,7 +135,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PublishSharedFrameworkAndSharedHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PublishSharedFrameworkAndSharedHost $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -181,7 +181,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Test,GenerateVersionBadge,GenerateZip,GenerateMsis",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Test,GenerateVersionBadge,GenerateZip,GenerateMsis $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -227,7 +227,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,GenerateBundles",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,GenerateBundles $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -246,7 +246,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ExtractEngineFromBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ExtractEngineFromBundle $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -292,7 +292,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ReattachEngineToBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ReattachEngineToBundle $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -351,7 +351,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Publish",
+        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Publish $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -439,6 +439,10 @@
     },
     "RID": {
       "value": "win81-x86"
+    },
+    "PB_PortableBuild": {
+      "value": "",
+      "allowOverride": true
     },
     "MsbuildSigningArguments": {
       "value": "/p:RID=$(RID) /p:CertificateId=$(CertificateId) /v:detailed"
