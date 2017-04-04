@@ -14,13 +14,16 @@
 
   <Target Name="ResolveMatchingContract">
     <PropertyGroup>
-      <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(AssemblyName)/ref/$(AssemblyName).csproj</ContractProject>
+      <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
       <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
+      <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(ContractOutputPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
-      <!-- add contract project as project reference to get target path -->
-      <ProjectReference Include="$(ContractProject)">
+      <ResolvedMatchingContract Condition="'$(IsDesktopFacade)' != 'true' and Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
+
+      <!-- If the contract doesn't exist in the default contract output path add a project reference to the contract project to resolve -->
+      <ProjectReference Condition="'@(ResolvedMatchingContract)' == ''" Include="$(ContractProject)">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         <OutputItemType>ResolvedMatchingContract</OutputItemType>
       </ProjectReference>
