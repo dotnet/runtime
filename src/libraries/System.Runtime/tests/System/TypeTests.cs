@@ -304,26 +304,11 @@ namespace System.Tests
             public string Value = "The Value property.";
         }
 
-        static string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestLoadAssembly.dll");
-        static string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestLoadAssembly", "TestLoadAssembly.dll");
+        static string s_testAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestLoadAssembly.dll");
         static string testtype = "System.Collections.Generic.Dictionary`2[[Program, Foo], [Program, Foo]]";
-        static TypeTestsExtended()
-        {
-            // Move TestLoadAssembly.dll to subfolder TestLoadAssembly
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
-                File.Move(sourceTestAssemblyPath, destTestAssemblyPath);
-            }
-            catch (System.Exception) { }
-            finally
-            {
-                File.Delete(sourceTestAssemblyPath);
-            }
-        }
 
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
-                           Assembly.LoadFrom(@".\TestLoadAssembly\TestLoadAssembly.dll") :
+                           Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
                            null;
         private static Func<Assembly, String, Boolean, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
@@ -337,7 +322,7 @@ namespace System.Tests
                    string test1 = testtype;
                    Type t1 = Type.GetType(test1,
                              (aName) => aName.Name == "Foo" ?
-                                   Assembly.LoadFrom(destTestAssemblyPath) : null,
+                                   Assembly.LoadFrom(s_testAssemblyPath) : null,
                              typeloader,
                              true
                      );
@@ -365,7 +350,7 @@ namespace System.Tests
                    Assert.Throws<System.IO.FileNotFoundException>(() =>
                    Type.GetType(test1,
                      (aName) => aName.Name == "Foo" ?
-                         Assembly.LoadFrom(@".\TestLoadAssembly.dll") : null,
+                         Assembly.LoadFrom(@".\NoSuchTestLoadAssembly.dll") : null,
                      typeloader,
                      true
                   ));
