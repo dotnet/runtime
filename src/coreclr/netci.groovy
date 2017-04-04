@@ -143,10 +143,7 @@ class Constants {
 
 def static setMachineAffinity(def job, def os, def architecture) {
     if (architecture == 'arm64' && os == 'Windows_NT') {
-        // For cross compilation
-        job.with {
-            label('arm64')
-        }
+        Utilities.setMachineAffinity(job, os, 'latest-arm64');
     } else if (architecture == 'arm64' && os == 'Ubuntu') {
         Utilities.setMachineAffinity(job, os, 'arm-cross-latest');
     } else if ((architecture == 'arm') && (os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
