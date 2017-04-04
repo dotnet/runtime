@@ -29,13 +29,23 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void Ctor_Invalid()
+        public void Ctor_NullName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new RegionInfo(null)); // Culture is null
-            // TODO: include param name once dotnet/coreclr#3915 is merged and the CI updates
-            Assert.Throws<ArgumentException>(() => new RegionInfo("")); // Culture is invariant
-            Assert.Throws<ArgumentException>("name", () => new RegionInfo("no-such-culture")); // Culture is non-existent
-            Assert.Throws<ArgumentException>("name", () => new RegionInfo("en")); // Culture is neutral
+            Assert.Throws<ArgumentNullException>("name", () => new RegionInfo(null));
+        }
+
+        [Fact]
+        public void Ctor_EmptyName_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new RegionInfo(""));
+        }
+
+        [Theory]
+        [InlineData("no-such-culture")]
+        [InlineData("en")]
+        public void Ctor_InvalidName_ThrowsArgumentException(string name)
+        {
+            Assert.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
