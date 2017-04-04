@@ -6,6 +6,7 @@ usage()
     echo ""
     echo "Options:"
     echo "  --rid <Runtime Identifier>         Target Runtime Identifier"
+    echo "   -portable                         Generate portable RID packages"
 
     exit 1
 }
@@ -23,6 +24,7 @@ done
 # initialize variables
 __project_dir="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 __distro_rid=
+__portableBuildArgs=
 
 while [ "$1" != "" ]; do
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -34,6 +36,9 @@ while [ "$1" != "" ]; do
         --rid)
             shift
             __distro_rid=$1
+            ;;
+        -portable)
+            __portableBuildArgs="/p:PortableBuild=true"
             ;;
         *)
         echo "Unknown argument to pack.sh $1"
@@ -67,7 +72,7 @@ else
     fi
 fi
 
-__common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal"
+__common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal $__portableBuildArgs"
 
 $__msbuild $__project_dir/tasks/core-setup.tasks.builds $__common_parameters || exit 1
 

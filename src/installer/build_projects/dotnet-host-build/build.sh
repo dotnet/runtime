@@ -81,13 +81,8 @@ while [[ $# > 0 ]]; do
         --nopackage)
             export DOTNET_BUILD_SKIP_PACKAGING=1
             ;;
-        --portablelinux)
-            if [ "$__BuildOS" == "Linux" ]; then
-                export DOTNET_BUILD_LINK_PORTABLE=1
-            else
-                echo "ERROR: portableLinux not supported for non-Linux platforms."
-                exit 1
-            fi
+        -portable)
+            export DOTNET_BUILD_LINK_PORTABLE=1
             ;;
         --skip-prereqs)
             # Allow CI to disable prereqs check since the CI has the pre-reqs but not ldconfig it seems
@@ -112,7 +107,7 @@ while [[ $# > 0 ]]; do
             echo "  --nopackage                          Skip packaging targets"
             echo "  --skip-prereqs                       Skip checks for pre-reqs in dotnet_install"
             echo "  --build-driver-only                  Just build dotnet-host-build binary"
-            echo "  --portableLinux                      Optional argument to build native libraries portable over GLIBC based Linux distros."
+            echo "  -portable                            Optional argument to build portable platform packages."
             echo "  --docker <IMAGENAME>                 Build in Docker using the Dockerfile located in scripts/docker/IMAGENAME"
             echo "  --help                               Display this help message"
             echo "  <TARGETS...>                         The build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"

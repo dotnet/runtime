@@ -181,7 +181,7 @@
       "allowOverride": true
     },
     "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default --portableLinux",
+      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default $(PB_PortableBuild)",
       "allowOverride": true
     },
     "DockerImageName": {
@@ -209,6 +209,10 @@
     },
     "PB_CleanAgent": {
       "value": "true"
+    },
+    "PB_PortableBuild": {
+      "value": "",
+      "allowOverride": true
     },
     "DockerHost_Sandbox": {
       "value": "$(Build.StagingDirectory)/HostSandbox"

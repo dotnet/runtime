@@ -97,31 +97,20 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        private static bool IsCrossArch(string rid) {
-            if (!String.IsNullOrEmpty(rid))
-            {
-                return (String.Compare(rid, "win8-arm", true) == 0)
-                       || (String.Compare(rid, "win10-arm64", true) == 0)
-                       || (String.Compare(rid, "ubuntu.14.04-arm", true) == 0)
-                       || (String.Compare(rid, "ubuntu.16.04-arm", true) == 0)
-                       || (rid.EndsWith("-armel"));
-            }
-            return false;
-        }
-
         private static List<string> RunDotnetTestOnTestProjects(BuildTargetContext c, DotNetCli dotnet, string configuration)
         {
             var failingTests = new List<string>();
 
             // Fetch the target RID to determine if we support running tests or not.
             string rid = c.BuildContext.Get<string>("TargetRID");
-            bool fIsCrossArch = IsCrossArch(rid); // We dont support running native tests for cross-architecture builds yet.
+            bool fIsCrossArch = Utils.IsCrossArchRID(rid); 
 
             foreach (var project in TestProjects)
             {
                 // Explicitly checking for the host tests since they are the only ones running native code.
                 if (String.Compare("HostActivationTests", project) == 0)
                 {
+                    // We dont support running native tests for cross-architecture builds yet.
                     if (fIsCrossArch)
                     {
                         c.Info($"Skipping tests in: {project} since cross-arch test runs are not yet supported for {rid}.");

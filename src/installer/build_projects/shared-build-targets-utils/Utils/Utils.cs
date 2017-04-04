@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -9,6 +10,46 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public static class Utils
     {
+
+        public static bool IsCrossArchRID(string rid) {
+        if (!String.IsNullOrEmpty(rid))
+        {
+            return (String.Compare(rid, "win8-arm", true) == 0) 
+                    || (String.Compare(rid, "win-arm", true) == 0)
+                    || (String.Compare(rid, "win-arm64", true) == 0)
+                    || (String.Compare(rid, "win10-arm64", true) == 0)
+                    || (String.Compare(rid, "linux-arm", true) == 0)
+                    || (String.Compare(rid, "ubuntu.14.04-arm", true) == 0)
+                    || (String.Compare(rid, "ubuntu.16.04-arm", true) == 0)
+                    || (rid.EndsWith("-armel"));
+        }
+        return false;
+        }
+        public static bool IsPortableRID(string rid, out string portablePlatformID)
+        {
+            bool fIsPortable = false;
+            portablePlatformID = null;
+
+            Dictionary<string, string> portablePlatformIDList = new Dictionary<string, string>()
+             {
+                 { "linux-", "linux" },
+                 { "win-", "win" },
+                 { "osx-", "osx" }
+             };
+
+            foreach(var platformRID in portablePlatformIDList)
+            {
+                if (rid.StartsWith(platformRID.Key))
+                {
+                    portablePlatformID = platformRID.Value;
+                    fIsPortable = true;
+                    break;
+                }
+            }
+            
+            return fIsPortable;
+        }
+
         public static void CleanNuGetTempCache()
         {
             // Clean NuGet Temp Cache on Linux (seeing some issues on Linux)
