@@ -56,6 +56,7 @@
     <Compile Include="CultureInfo\CultureInfoGetHashCode.cs" />
     <Compile Include="CultureInfo\CultureInfoIsNeutralCulture.cs" />
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
+    <Compile Include="CultureInfo\CultureInfoNumberFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />

@@ -30,17 +30,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NumberFormatInfo_Set_Properties()
-        {
-            CultureInfo culture = new CultureInfo("fr");
-            culture.NumberFormat.PositiveSign = "a";
-            Assert.Equal("a", culture.NumberFormat.PositiveSign);
-
-            culture.NumberFormat.PercentPositivePattern = 4;
-            Assert.Equal(4, culture.NumberFormat.PercentPositivePattern);
-        }
-
-        [Fact]
         public void NumberFormat_Set_Invalid()
         {
             Assert.Throws<ArgumentNullException>("value", () => new CultureInfo("en-US").NumberFormat = null);
