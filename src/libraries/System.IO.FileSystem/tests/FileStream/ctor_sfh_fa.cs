@@ -134,6 +134,7 @@ namespace System.IO.Tests
     public class DerivedFileStream_ctor_sfh_fa : FileSystemTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The NetFX FileStream Handle constructor calls the virtual Can*. This has been fixed in netcoreapp to instead directly check for write/read FileAccess.")]
         public void VirtualCanReadWrite_ShouldNotBeCalledDuringCtor()
         {
             using (var fs = File.Create(GetTestFilePath()))
