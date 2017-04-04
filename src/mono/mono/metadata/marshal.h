@@ -414,7 +414,7 @@ mono_marshal_unlock_internal (void);
 /* marshaling internal calls */
 
 void * 
-mono_marshal_alloc (gulong size, MonoError *error);
+mono_marshal_alloc (gsize size, MonoError *error);
 
 void 
 mono_marshal_free (gpointer ptr);

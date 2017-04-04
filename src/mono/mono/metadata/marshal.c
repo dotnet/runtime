@@ -10678,7 +10678,7 @@ mono_marshal_alloc_co_task_mem (size_t size)
  * mono_marshal_alloc:
  */
 void*
-mono_marshal_alloc (gulong size, MonoError *error)
+mono_marshal_alloc (gsize size, MonoError *error)
 {
 	gpointer res;
 
