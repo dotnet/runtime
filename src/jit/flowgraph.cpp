@@ -7118,7 +7118,9 @@ bool Compiler::fgAddrCouldBeNull(GenTreePtr addr)
  *  Optimize the call to the delegate constructor.
  */
 
-GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall* call, CORINFO_CONTEXT_HANDLE* ExactContextHnd)
+GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
+                                                   CORINFO_CONTEXT_HANDLE* ExactContextHnd,
+                                                   CORINFO_RESOLVED_TOKEN* ldftnToken)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
     CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
@@ -7182,8 +7184,37 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall* call, CORINFO_CO
 #ifdef FEATURE_READYTORUN_COMPILER
     if (opts.IsReadyToRun())
     {
+        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        {
+            if (ldftnToken != nullptr)
+            {
+                GenTreePtr           thisPointer       = call->gtCallObjp;
+                GenTreePtr           targetObjPointers = call->gtCallArgs->Current();
+                GenTreeArgList*      helperArgs        = nullptr;
+                CORINFO_LOOKUP       pLookup;
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &pLookup);
+                if (!pLookup.lookupKind.needsRuntimeLookup)
+                {
+                    helperArgs = gtNewArgList(thisPointer, targetObjPointers);
+                    entryPoint = pLookup.constLookup;
+                }
+                else
+                {
+                    assert(oper != GT_FTN_ADDR);
+                    CORINFO_CONST_LOOKUP genericLookup;
+                    info.compCompHnd->getReadyToRunHelper(ldftnToken, &pLookup.lookupKind,
+                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
+                    GenTreePtr ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
+                    helperArgs         = gtNewArgList(thisPointer, targetObjPointers, ctxTree);
+                    entryPoint         = genericLookup;
+                }
+                call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
+                call->setEntryPoint(entryPoint);
+            }
+        }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-        if (oper == GT_FTN_ADDR)
+        else if (oper == GT_FTN_ADDR)
         {
             GenTreePtr      thisPointer       = call->gtCallObjp;
             GenTreePtr      targetObjPointers = call->gtCallArgs->Current();
@@ -7191,8 +7222,8 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall* call, CORINFO_CO
 
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
 
-            CORINFO_RESOLVED_TOKEN* ldftnToken = targetMethod->gtFptrVal.gtLdftnResolvedToken;
-            CORINFO_LOOKUP          entryPoint;
+            assert(ldftnToken == targetMethod->gtFptrVal.gtLdftnResolvedToken);
+            CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
