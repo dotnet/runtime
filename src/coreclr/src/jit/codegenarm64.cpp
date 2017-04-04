@@ -1840,8 +1840,8 @@ void CodeGen::genReturn(GenTreePtr treeNode)
 
         if (movRequired)
         {
-            emitAttr movSize = EA_ATTR(genTypeSize(targetType));
-            getEmitter()->emitIns_R_R(INS_mov, movSize, retReg, op1->gtRegNum);
+            emitAttr attr = emitTypeSize(targetType);
+            getEmitter()->emitIns_R_R(INS_mov, attr, retReg, op1->gtRegNum);
         }
     }
 
