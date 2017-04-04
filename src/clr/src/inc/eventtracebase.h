@@ -154,11 +154,6 @@ public:
 
 class Object;
 #if !defined(FEATURE_PAL)
-/******************************/
-/* CLR ETW supported versions */
-/******************************/
-#define ETW_SUPPORTED_MAJORVER 5    // ETW is supported on win2k and above
-#define ETW_ENABLED_MAJORVER 6      // OS versions >= to this we enable ETW registration by default, since on XP and Windows 2003, registration is too slow.
 
 /***************************************/
 /* Tracing levels supported by CLR ETW */
@@ -201,11 +196,6 @@ struct ProfilingScanContext;
 #include <wmistr.h>
 #include <evntrace.h>
 #include <evntprov.h>
-#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
-#define GetVersionEx(Version) (GetOSVersion((LPOSVERSIONINFOW)Version))
-#else
-#define GetVersionEx(Version) (WszGetVersionEx((LPOSVERSIONINFOW)Version))
-#endif // !DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
 #endif //!FEATURE_REDHAWK
 #endif //!defined(FEATURE_PAL)
 

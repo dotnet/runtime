@@ -21029,8 +21029,6 @@ regMaskTP CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
     }
     else
     {
-        noway_assert(pInfo->osMajor >= 5);
-
         DWORD basePtr = WIN_NT5_TLS_HIGHOFFSET;
         threadTlsIndex -= 64;
 
