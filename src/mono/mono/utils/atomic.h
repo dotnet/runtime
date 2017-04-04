@@ -458,4 +458,10 @@ extern void InterlockedWritePointer(volatile gpointer *dst, gpointer val);
 
 #endif
 
+#if SIZEOF_VOID_P == 4
+#define InterlockedAddP(p,add) InterlockedAdd ((volatile gint32*)p, (gint32)add)
+#else
+#define InterlockedAddP(p,add) InterlockedAdd64 ((volatile gint64*)p, (gint64)add)
+#endif
+
 #endif /* _WAPI_ATOMIC_H_ */

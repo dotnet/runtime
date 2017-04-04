@@ -81,16 +81,29 @@ aligned_address (char *mem, size_t size, size_t alignment)
 	return aligned;
 }
 
-static volatile size_t allocation_count [MONO_MEM_ACCOUNT_MAX];
+static size_t allocation_count [MONO_MEM_ACCOUNT_MAX];
+static size_t total_allocation_count;
+static size_t alloc_limit;
 
 void
 account_mem (MonoMemAccountType type, ssize_t size)
 {
-#if SIZEOF_VOID_P == 4
-	InterlockedAdd ((volatile gint32*)&allocation_count [type], (gint32)size);
-#else
-	InterlockedAdd64 ((volatile gint64*)&allocation_count [type], (gint64)size);
-#endif
+	InterlockedAddP (&allocation_count [type], size);
+	InterlockedAddP (&total_allocation_count, size);
+}
+
+void
+mono_valloc_set_limit (size_t size)
+{
+	alloc_limit = size;
+}
+
+gboolean
+mono_valloc_can_alloc (size_t size)
+{
+	if (alloc_limit)
+		return (total_allocation_count + size) < alloc_limit;
+	return TRUE;
 }
 
 const char*
@@ -194,6 +207,10 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 	void *ptr;
 	int mflags = 0;
 	int prot = prot_from_flags (flags);
+
+	if (!mono_valloc_can_alloc (length))
+		return NULL;
+
 	/* translate the flags */
 	if (flags & MONO_MMAP_FIXED)
 		mflags |= MAP_FIXED;

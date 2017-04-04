@@ -21,6 +21,12 @@ aligned_address (char *mem, size_t size, size_t alignment);
 void
 account_mem (MonoMemAccountType type, ssize_t size);
 
+gboolean
+mono_valloc_can_alloc (size_t size);
+
+void
+mono_valloc_set_limit (size_t size);
+
 int
 mono_pages_not_faulted (void *addr, size_t length);
 
