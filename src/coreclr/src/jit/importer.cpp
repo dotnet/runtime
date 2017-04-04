@@ -350,6 +350,12 @@ StackEntry& Compiler::impStackTop(unsigned n)
 
     return verCurrentState.esStack[verCurrentState.esStackDepth - n - 1];
 }
+
+unsigned Compiler::impStackHeight()
+{
+    return verCurrentState.esStackDepth;
+}
+
 /*****************************************************************************
  *  Some of the trees are spilled specially. While unspilling them, or
  *  making a copy, these need to be handled specially. The function
@@ -6378,6 +6384,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     int                    tailCall                       = prefixFlags & PREFIX_TAILCALL;
     bool                   readonlyCall                   = (prefixFlags & PREFIX_READONLY) != 0;
 
+    CORINFO_RESOLVED_TOKEN* ldftnToken = nullptr;
+
     // Synchronized methods need to call CORINFO_HELP_MON_EXIT at the end. We could
     // do that before tailcalls, but that is probably not the intended
     // semantic. So just disallow tailcalls from synchronized methods.
@@ -7289,6 +7297,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextHnd = nullptr;
     }
 
+    if ((opcode == CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_DELEGATE) != 0))
+    {
+        // Only verifiable cases are supported.
+        // dup; ldvirtftn; newobj; or ldftn; newobj.
+        // IL test could contain unverifiable sequence, in this case optimization should not be done.
+        if (impStackHeight() > 0)
+        {
+            typeInfo delegateTypeInfo = impStackTop().seTypeInfo;
+            if (delegateTypeInfo.IsToken())
+            {
+                ldftnToken = delegateTypeInfo.GetToken();
+            }
+        }
+    }
+
     //-------------------------------------------------------------------------
     // The main group of arguments
 
@@ -7369,7 +7392,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // New inliner morph it in impImportCall.
                 // This will allow us to inline the call to the delegate constructor.
-                call = fgOptimizeDelegateConstructor(call->AsCall(), &exactContextHnd);
+                call = fgOptimizeDelegateConstructor(call->AsCall(), &exactContextHnd, ldftnToken);
             }
 
             if (!bIntrinsicImported)
@@ -12272,7 +12295,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                impPushOnStack(op1, typeInfo(resolvedToken.hMethod));
+                CORINFO_RESOLVED_TOKEN* heapToken = impAllocateToken(resolvedToken);
+                impPushOnStack(op1, typeInfo(heapToken));
 
                 break;
             }
@@ -12377,7 +12401,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                impPushOnStack(fptr, typeInfo(resolvedToken.hMethod));
+                CORINFO_RESOLVED_TOKEN* heapToken = impAllocateToken(resolvedToken);
+                assert(heapToken->tokenType == CORINFO_TOKENKIND_Method);
+                heapToken->tokenType = CORINFO_TOKENKIND_Ldvirtftn;
+                impPushOnStack(fptr, typeInfo(heapToken));
 
                 break;
             }
@@ -18695,4 +18722,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                baseMethodName, derivedClassName, derivedMethodName, note);
     }
 #endif // defined(DEBUG)
+}
+
+//------------------------------------------------------------------------
+// impAllocateToken: create CORINFO_RESOLVED_TOKEN into jit-allocated memory and init it.
+//
+// Arguments:
+//    token - init value for the allocated token.
+//
+// Return Value:
+//    pointer to token into jit-allocated memory.
+CORINFO_RESOLVED_TOKEN* Compiler::impAllocateToken(CORINFO_RESOLVED_TOKEN token)
+{
+    CORINFO_RESOLVED_TOKEN* memory = (CORINFO_RESOLVED_TOKEN*)compGetMem(sizeof(token));
+    *memory                        = token;
+    return memory;
 }
