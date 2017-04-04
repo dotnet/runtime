@@ -536,26 +536,6 @@ extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClient
     SSL_CTX_set_client_cert_cb(ctx, callback);
 }
 
-extern "C" void CryptoNative_GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
-{
-    // This function is kept for compatibility with RC2 builds on a jagged upgrade path.
-    // Removal is tracked via issue #8504.
-    if (header)
-    {
-        *header = SSL3_RT_HEADER_LENGTH;
-    }
-
-    if (trailer)
-    {
-        *trailer = 68;
-    }
-
-    if (maximumMessage)
-    {
-        *maximumMessage = SSL3_RT_MAX_PLAIN_LENGTH;
-    }
-}
-
 extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 {
     if (!x509 || !ssl)
