@@ -18,7 +18,7 @@ using System.Diagnostics;
 
 namespace Microsoft.SqlServer.Server
 {
-    public class SqlDataRecord
+    public class SqlDataRecord : IDataRecord
     {
         private SmiRecordBuffer _recordBuffer;
         private SmiExtendedMetaData[] _columnSmiMetaData;
@@ -730,6 +730,11 @@ namespace Microsoft.SqlServer.Server
             {
                 throw SQL.SubclassMustOverride();
             }
+        }
+
+        public IDataReader GetData(int i)
+        {
+            throw ADP.NotSupported();
         }
     }
 }
