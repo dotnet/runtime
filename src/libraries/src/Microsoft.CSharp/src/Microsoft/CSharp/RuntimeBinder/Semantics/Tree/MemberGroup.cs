@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMemberGroup : ExprWithType, IExprWithObject
     {
         public ExprMemberGroup(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_MEMGRP, type)
         {
         }
 
@@ -42,7 +42,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsDelegate => (Flags & EXPRFLAG.EXF_DELEGATE) != 0;
 
         public void SetInaccessibleBit() => SetError();
-
-        public override ExpressionKind Kind => ExpressionKind.EK_MEMGRP;
     }
 }

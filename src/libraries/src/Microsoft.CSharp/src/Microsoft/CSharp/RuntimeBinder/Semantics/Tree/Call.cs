@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprCall : ExprWithType, IExprWithArgs
     {
         public ExprCall(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_CALL, type)
         {
         }
 
@@ -38,7 +38,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MemberGroup?.SetMismatchedStaticBit();
             base.SetMismatchedStaticBit();
         }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_CALL;
     }
 }

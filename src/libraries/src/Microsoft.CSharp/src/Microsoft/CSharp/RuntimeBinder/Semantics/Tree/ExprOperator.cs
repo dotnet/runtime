@@ -8,13 +8,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class ExprOperator : ExprWithType
     {
-        public override ExpressionKind Kind { get; }
-
         protected ExprOperator(ExpressionKind kind, CType type)
-            : base(type)
+            : base(kind, type)
         {
             Debug.Assert(kind.isUnaryOperator() || kind > ExpressionKind.EK_TypeLim);
-            Kind = kind;
         }
 
         public Expr OptionalUserDefinedCall { get; set; }

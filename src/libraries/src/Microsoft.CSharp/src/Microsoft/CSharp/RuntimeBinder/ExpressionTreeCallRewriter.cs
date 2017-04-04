@@ -21,18 +21,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             public readonly Expression Expression;
             public ExpressionExpr(Expression e)
+                : base(0)
             {
                 Expression = e;
-            }
-
-            [ExcludeFromCodeCoverage]
-            public override ExpressionKind Kind
-            {
-                get
-                {
-                    Debug.Fail("Should not be called");
-                    return 0;
-                }
             }
         }
 

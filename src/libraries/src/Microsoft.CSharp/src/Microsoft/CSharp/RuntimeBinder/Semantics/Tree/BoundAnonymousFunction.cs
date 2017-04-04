@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Scope _argumentScope;
 
         public ExprBoundLambda(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_BOUNDLAMBDA, type)
         {
             Debug.Assert(type == null || type.isDelegateType());
         }
@@ -36,7 +36,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _argumentScope = value;
             }
         }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_BOUNDLAMBDA;
     }
 }

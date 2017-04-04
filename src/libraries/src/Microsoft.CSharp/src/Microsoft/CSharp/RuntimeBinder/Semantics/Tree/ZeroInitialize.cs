@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprZeroInit : ExprWithType
     {
         public ExprZeroInit(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_ZEROINIT, type)
         {
         }
 
@@ -16,7 +16,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr OptionalConstructorCall { get; set; }
 
         public bool IsConstructor { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_ZEROINIT;
     }
 }

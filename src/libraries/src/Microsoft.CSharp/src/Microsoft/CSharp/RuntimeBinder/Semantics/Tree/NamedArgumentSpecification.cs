@@ -8,12 +8,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprNamedArgumentSpecification : Expr
     {
+        public ExprNamedArgumentSpecification()
+            : base(ExpressionKind.EK_NamedArgumentSpecification)
+        {
+        }
+
         public Name Name { get; set; }
 
         public Expr Value { get; set; }
 
         public override CType Type => Value.Type;
-
-        public override ExpressionKind Kind => ExpressionKind.EK_NamedArgumentSpecification;
     }
 }

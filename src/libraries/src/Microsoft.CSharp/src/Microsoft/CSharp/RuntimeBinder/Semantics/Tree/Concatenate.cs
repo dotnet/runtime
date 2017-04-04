@@ -7,14 +7,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprConcat : ExprWithType
     {
         public ExprConcat(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_CONCAT ,type)
         {
         }
 
         public Expr FirstArgument { get; set; }
 
         public Expr SecondArgument { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_CONCAT;
     }
 }
