@@ -132,35 +132,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 Debug.Assert(_userProvidedPredicate != null, "User-provided predicate is required.");
 
-                return _userProvidedPredicate(item); // avoid state object allocation if execution context isn't needed
-            }
-
-            /// <summary>Manually closes over state necessary in FilteredLinkPropagator.</summary>
-            private sealed class PredicateContextState
-            {
-                /// <summary>The input to be filtered.</summary>
-                internal readonly T Input;
-                /// <summary>The predicate function.</summary>
-                internal readonly Predicate<T> Predicate;
-                /// <summary>The result of the filtering operation.</summary>
-                internal bool Output;
-
-                /// <summary>Initializes the predicate state.</summary>
-                /// <param name="input">The input to be filtered.</param>
-                /// <param name="predicate">The predicate function.</param>
-                internal PredicateContextState(T input, Predicate<T> predicate)
-                {
-                    Debug.Assert(predicate != null, "A predicate with which to filter is required.");
-                    this.Input = input;
-                    this.Predicate = predicate;
-                }
-
-                /// <summary>Runs the predicate function over the input and stores the result into the output.</summary>
-                internal void Run()
-                {
-                    Debug.Assert(Predicate != null, "Non-null predicate required");
-                    Output = Predicate(Input);
-                }
+                return _userProvidedPredicate(item);
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
