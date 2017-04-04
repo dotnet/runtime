@@ -12,11 +12,12 @@ param(
     [string[]]$Targets=@("Default"),
     [string[]]$EnvVars=@(),
     [switch]$NoPackage,
+    [switch]$Portable,
     [switch]$Help)
 
 if($Help)
 {
-    Write-Host "Usage: .\build.ps1 [-Configuration <CONFIGURATION>] [-NoPackage] [-Help] [-Targets <TARGETS...>]"
+    Write-Host "Usage: .\build.ps1 [-Configuration <CONFIGURATION>] [-NoPackage] [-Portable] [-Help] [-Targets <TARGETS...>]"
     Write-Host ""
     Write-Host "Options:"
     Write-Host "  -Configuration <CONFIGURATION>     Build the specified Configuration (Debug or Release, default: Debug)"
@@ -27,6 +28,7 @@ if($Help)
     Write-Host "  -Targets <TARGETS...>              Comma separated build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
     Write-Host "  -EnvVars <'V1=val1','V2=val2'...>  Comma separated list of environment variable name-value pairs"
     Write-Host "  -NoPackage                         Skip packaging targets"
+    Write-Host "  -Portable                          Optional argument to build portable platform packages"
     Write-Host "  -Help                              Display this help message"
     exit 0
 }
@@ -75,6 +77,15 @@ if($NoPackage)
 else
 {
     $env:DOTNET_BUILD_SKIP_PACKAGING=0
+}
+
+if($Portable)
+{
+    $env:DOTNET_BUILD_LINK_PORTABLE=1
+}
+else
+{
+    $env:DOTNET_BUILD_LINK_PORTABLE=0
 }
 
 # Load Branch Info
