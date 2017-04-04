@@ -15,12 +15,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
-using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
-using System.Threading.Tasks.Dataflow.Internal.Threading;
 
 namespace System.Threading.Tasks.Dataflow
 {
