@@ -8,17 +8,17 @@ namespace System.IO
 {
     public static class FileSystemAclExtensions
     {
-        public static DirectorySecurity GetAccessControl(DirectoryInfo directoryInfo)
+        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
             return directoryInfo.GetAccessControl();
         }
 
-        public static DirectorySecurity GetAccessControl(DirectoryInfo directoryInfo, AccessControlSections includeSections)
+        public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
         {
             return directoryInfo.GetAccessControl(includeSections);
         }
 
-        public static void SetAccessControl(DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
+        public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             directoryInfo.SetAccessControl(directorySecurity);
         }
@@ -28,22 +28,22 @@ namespace System.IO
             return fileInfo.GetAccessControl();
         }
 
-        public static FileSecurity GetAccessControl(FileInfo fileInfo, AccessControlSections includeSections)
+        public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
         {
             return fileInfo.GetAccessControl(includeSections);
         }
 
-        public static void SetAccessControl(FileInfo fileInfo, FileSecurity fileSecurity)
+        public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
             fileInfo.SetAccessControl(fileSecurity);
         }
 
-        public static FileSecurity GetAccessControl(FileStream fileStream)
+        public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
             return fileStream.GetAccessControl();
         }
 
-        public static void SetAccessControl(FileStream fileStream, FileSecurity fileSecurity)
+        public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
             fileStream.SetAccessControl(fileSecurity);
         }
