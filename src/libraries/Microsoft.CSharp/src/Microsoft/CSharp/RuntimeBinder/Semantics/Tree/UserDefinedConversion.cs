@@ -6,6 +6,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprUserDefinedConversion : Expr
     {
+        public ExprUserDefinedConversion()
+            : base(ExpressionKind.EK_USERDEFINEDCONVERSION)
+        {
+            
+        }
         public Expr Argument { get; set; }
 
         public Expr UserDefinedCall { get; set; }
@@ -13,7 +18,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override CType Type => UserDefinedCall.Type;
 
         public MethWithInst UserDefinedCallMethod { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_USERDEFINEDCONVERSION;
     }
 }

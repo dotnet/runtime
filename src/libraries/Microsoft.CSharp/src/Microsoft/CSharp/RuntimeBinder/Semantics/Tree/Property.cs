@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // "through" type to ensure that protected semantics are correctly enforced.)
 
         public ExprProperty(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_PROP, type)
         {
         }
 
@@ -38,7 +38,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsBaseCall => 0 != (Flags & EXPRFLAG.EXF_BASECALL);
 
         SymWithType IExprWithArgs.GetSymWithType() => PropWithTypeSlot;
-
-        public override ExpressionKind Kind => ExpressionKind.EK_PROP;
     }
 }

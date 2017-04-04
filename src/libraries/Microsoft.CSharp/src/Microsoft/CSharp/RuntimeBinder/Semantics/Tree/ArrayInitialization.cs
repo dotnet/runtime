@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprArrayInit : ExprWithType
     {
         public ExprArrayInit(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_ARRINIT, type)
         {
         }
 
@@ -21,7 +21,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public int DimensionSize { get; set; }
 
         public bool GeneratedForParamArray { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_ARRINIT;
     }
 }

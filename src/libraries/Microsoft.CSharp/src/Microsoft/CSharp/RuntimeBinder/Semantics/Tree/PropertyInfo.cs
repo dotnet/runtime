@@ -7,12 +7,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprPropertyInfo : ExprWithType
     {
         public ExprPropertyInfo(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_PROPERTYINFO, type)
         {
         }
 
         public PropWithType Property { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_PROPERTYINFO;
     }
 }

@@ -6,10 +6,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprList : Expr
     {
+        public ExprList()
+            : base(ExpressionKind.EK_LIST)
+        {            
+        }
+
         public Expr OptionalElement { get; set; }
 
         public Expr OptionalNextListNode { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_LIST;
     }
 }

@@ -7,12 +7,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprArrayLength : ExprWithType
     {
         public ExprArrayLength(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_ARRAYLENGTH, type)
         {
         }
 
         public Expr Array { get; set; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_ARRAYLENGTH;
     }
 }

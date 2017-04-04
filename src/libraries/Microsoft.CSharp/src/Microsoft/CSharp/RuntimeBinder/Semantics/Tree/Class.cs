@@ -7,10 +7,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprClass : ExprWithType
     {
         public ExprClass(CType type)
-            : base(type)
+            : base(ExpressionKind.EK_CLASS, type)
         {
         }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_CLASS;
     }
 }

@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprFieldInfo : ExprWithType
     {
         public ExprFieldInfo(FieldSymbol f, AggregateType ft, CType type)
-            : base(type)
+            : base(ExpressionKind.EK_FIELDINFO, type)
         {
             Field = f;
             FieldType = ft;
@@ -16,7 +16,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public FieldSymbol Field { get; }
 
         public AggregateType FieldType { get; }
-
-        public override ExpressionKind Kind => ExpressionKind.EK_FIELDINFO;
     }
 }
