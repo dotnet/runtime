@@ -38,7 +38,7 @@ which is a system to package, distribute and version software components.  See [
 for more information on Nuget.   For now it is enough to know Nuget is a system that
 bundles components into `*.nupkg` files (which are ZIP archives) and these packages can be 'published' 
 either through a local file system path or by a URL (e.g. https://www.nuget.org/).   There are then tools 
-(e.g. Nuget.exe, Visual Studio, dotnet.exe) that based on a configuration file (project.json) know 
+(e.g. Nuget.exe, Visual Studio, dotnet.exe) that based on a configuration file (.csproj) know 
 how to search these publishing locations and pull down consistent set of packages for the 
 application.   
 
