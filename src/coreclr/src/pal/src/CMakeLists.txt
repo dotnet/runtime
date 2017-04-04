@@ -181,7 +181,6 @@ set(SOURCES
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
-  misc/version.cpp
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp

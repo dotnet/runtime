@@ -2418,14 +2418,11 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
                                           &fForceProfiling,
                                           &fForceInstrument);
 
-    OSVERSIONINFOW osInfo;
-    osInfo.dwOSVersionInfoSize = sizeof(osInfo);
-    if (!GetOSVersion(&osInfo))
-        _ASSERTE(!"GetOSVersion failed");
-
-    _ASSERTE(osInfo.dwMajorVersion < 999);
-    _ASSERTE(osInfo.dwMinorVersion < 999);
-    pNativeVersionInfo->wOSPlatformID = (WORD) osInfo.dwPlatformId;
+#ifndef FEATURE_PAL 
+    pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_WIN32_NT;
+#else
+    pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_UNIX;
+#endif    
 
     // The native images should be OS-version agnostic. Do not store the actual OS version for determinism.
     // pNativeVersionInfo->wOSMajorVersion = (WORD) osInfo.dwMajorVersion;

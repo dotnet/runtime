@@ -170,8 +170,6 @@ FCFuncStart(gDateTimeFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
-    FCFuncElement("GetVersion", SystemNative::GetOSVersion)
-    FCFuncElement("GetVersionEx", SystemNative::GetOSVersionEx)
     FCFuncElement("get_TickCount", SystemNative::GetTickCount)
     QCFuncElement("_Exit", SystemNative::Exit)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
@@ -181,7 +179,7 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
     FCFuncElement("get_CurrentProcessorNumber", SystemNative::GetCurrentProcessorNumber)
 
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_COMINTEROP)
     QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
 #endif // FEATURE_COMINTEROP
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
