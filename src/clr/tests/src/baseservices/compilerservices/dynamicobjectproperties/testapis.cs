@@ -91,8 +91,6 @@ public class Driver<K, V>
         ConditionalWeakTable<K,V> tbl = new ConditionalWeakTable<K,V>();
 
         // Try to remove key from an empty dictionary
-        Random r = new Random();
-
         // Remove should return false
         Test.Eval(!tbl.Remove(keys[0]), "Err_005 Expected Remove to return false");
 
@@ -147,7 +145,6 @@ public class Driver<K, V>
 
         // Try to get non existing key
         // TryGetValue should return false and value should contian default(TValue)
-        Random r = new Random();
         Test.Eval(!tbl.TryGetValue(key, out val), "Err_011 Expected TryGetValue to return false");
         Test.Eval(val == null, "Err_012 Expected val to be null");
     }
