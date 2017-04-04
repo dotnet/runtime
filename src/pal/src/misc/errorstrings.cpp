@@ -76,7 +76,7 @@ ErrorString palErrorStrings[] =
     { ERROR_SEM_TIMEOUT, W("The semaphore timeout period has expired.\n") },
     { ERROR_INSUFFICIENT_BUFFER, W("The data area passed to a system call is too small.\n") },
     { ERROR_INVALID_NAME, W("The filename, directory name, or volume label syntax is incorrect.\n") },
-    { ERROR_MOD_NOT_FOUND, W("The specified module could not be found.\n") },
+    { ERROR_MOD_NOT_FOUND, W("The specified module or one of its dependencies could not be found.\n") },
     { ERROR_PROC_NOT_FOUND, W("The specified procedure could not be found.\n") },
     { ERROR_WAIT_NO_CHILDREN, W("There are no child processes to wait for.\n") },
     { ERROR_NEGATIVE_SEEK, W("An attempt was made to move the file pointer before the beginning of the file.\n") },
