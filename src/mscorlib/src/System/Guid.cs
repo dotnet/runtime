@@ -1285,35 +1285,40 @@ namespace System
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char HexToChar(int a)
         {
             a = a & 0xf;
             return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
-        unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b)
+        unsafe private static int HexsToChars(char* guidChars, int a, int b)
         {
-            return HexsToChars(guidChars, offset, a, b, false);
+            guidChars[0] = HexToChar(a >> 4);
+            guidChars[1] = HexToChar(a);
+
+            guidChars[2] = HexToChar(b >> 4);
+            guidChars[3] = HexToChar(b);
+
+            return 4;
         }
 
-        unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b, bool hex)
+        unsafe private static int HexsToCharsHexOutput(char* guidChars, int a, int b)
         {
-            if (hex)
-            {
-                guidChars[offset++] = '0';
-                guidChars[offset++] = 'x';
-            }
-            guidChars[offset++] = HexToChar(a >> 4);
-            guidChars[offset++] = HexToChar(a);
-            if (hex)
-            {
-                guidChars[offset++] = ',';
-                guidChars[offset++] = '0';
-                guidChars[offset++] = 'x';
-            }
-            guidChars[offset++] = HexToChar(b >> 4);
-            guidChars[offset++] = HexToChar(b);
-            return offset;
+            guidChars[0] = '0';
+            guidChars[1] = 'x';
+
+            guidChars[2] = HexToChar(a >> 4);
+            guidChars[3] = HexToChar(a);
+
+            guidChars[4] = ',';
+            guidChars[5] = '0';
+            guidChars[6] = 'x';
+
+            guidChars[7] = HexToChar(b >> 4);
+            guidChars[8] = HexToChar(b);
+
+            return 9;
         }
 
         // IFormattable interface
@@ -1396,42 +1401,42 @@ namespace System
                         // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _a >> 24, _a >> 16);
-                        offset = HexsToChars(guidChars, offset, _a >> 8, _a);
+                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
+                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _b >> 8, _b);
+                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _c >> 8, _c);
+                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '{';
-                        offset = HexsToChars(guidChars, offset, _d, _e, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _d, _e);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _f, _g, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _f, _g);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _h, _i, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _h, _i);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _j, _k, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _j, _k);
                         guidChars[offset++] = '}';
                     }
                     else
                     {
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        offset = HexsToChars(guidChars, offset, _a >> 24, _a >> 16);
-                        offset = HexsToChars(guidChars, offset, _a >> 8, _a);
+                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
+                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _b >> 8, _b);
+                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _c >> 8, _c);
+                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _d, _e);
+                        offset += HexsToChars(guidChars + offset, _d, _e);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _f, _g);
-                        offset = HexsToChars(guidChars, offset, _h, _i);
-                        offset = HexsToChars(guidChars, offset, _j, _k);
+                        offset += HexsToChars(guidChars + offset, _f, _g);
+                        offset += HexsToChars(guidChars + offset, _h, _i);
+                        offset += HexsToChars(guidChars + offset, _j, _k);
                     }
                 }
             }
