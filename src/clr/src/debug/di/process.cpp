@@ -4525,10 +4525,6 @@ void CordbProcess::QueueFakeConnectionEvents()
 // from the runtime controller. This represents the last amount of processing
 // the DI gets to do on an event before giving it to the user.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void CordbProcess::DispatchRCEvent()
 {
     INTERNAL_API_ENTRY(this);
@@ -4729,6 +4725,10 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    A V2 shim can provide a proxy calllack that takes these events and queues them and 
 //    does the real dispatch to the user to emulate V2 semantics.
 //
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
+#endif
 void CordbProcess::RawDispatchEvent(
     DebuggerIPCEvent *          pEvent, 
     RSLockHolder *              pLockHolder,
