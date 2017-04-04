@@ -222,7 +222,7 @@ then
   # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
   for bin in *.exe *.dll; 
   do 
-    Assemblies="$Assemblies -a $bin"
+    Assemblies="$Assemblies -a ${bin%.*}"
   done
 
   # Run dotnet-linker
