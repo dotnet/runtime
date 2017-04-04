@@ -3519,7 +3519,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	}
 
 	runtime_method->local_offsets = g_malloc (header->num_locals * sizeof(guint32));
-	runtime_method->stack_size = (sizeof (stackval) + 2) * header->max_stack; /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
+	runtime_method->stack_size = (sizeof (stackval)) * (header->max_stack + 2); /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
 	runtime_method->stack_size = (runtime_method->stack_size + 7) & ~7;
 	offset = 0;
 	for (i = 0; i < header->num_locals; ++i) {
