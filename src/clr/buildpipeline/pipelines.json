@@ -1,0 +1,414 @@
+{
+  "Repository": "coreclr",
+  "Definitions": {
+    "Path": ".",
+    "Type": "VSTS",
+    "BaseUrl":  "https://devdiv.visualstudio.com/DefaultCollection"
+  },
+  "DefinitionGroups": [
+    {
+      "Name": "Product-Build",
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "debian82_prereqs_2",
+            "Rid": "debian.8"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "rhel7_prereqs_2",
+            "Rid": "rhel.7"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "ubuntu1404_prereqs_v3",
+            "Rid": "ubuntu.14.04"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "ubuntu1604_prereqs",
+            "Rid": "ubuntu.16.04"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.04"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "ubuntu1610_prereqs_v2",
+            "Rid": "ubuntu.16.10"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.10"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "fedora24_prereqs_v4",
+            "Rid": "fedora.24"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Fedora 24"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "opensuse421_prereqs_v3",
+            "Rid": "opensuse.42.1"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "openSUSE 42.1"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "alpine_prereqs",
+            "Rid": "alpine.3.4.3"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Alpine 3.4.3"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "rhel7_prereqs_2",
+            "portableBuild": "-portable",
+            "Rid": "linux"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Mac",
+          "Parameters": {
+            "Rid": "osx.10.12"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Mac",
+          "Parameters": {
+            "Rid": "osx.10.12",
+            "portableBuild": "-portable"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "x64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "x64",
+            "portableBuild": "-portable"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "arm64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "arm64",
+            "portableBuild": "-portable"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "arm"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows",
+          "Parameters": {
+            "Architecture": "arm",
+            "portableBuild": "-portable"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows-x86"
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Windows-x86",
+          "Parameters": {
+            "portableBuild": "-portable"
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Linux-CrossBuild",
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
+          "Parameters": {
+            "DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "Architecture": "arm",
+            "Rid": "ubuntu.14.04"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "SubType": "CrossBuild"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
+          "Parameters": {
+            "DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "Architecture": "arm",
+            "portableBuild": "-portable",
+            "Rid": "ubuntu.14.04"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "SubType": "CrossBuild"
+          }
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
+          "Parameters": {
+            "DockerTag": "ubuntu1604_cross_prereqs_v2",
+            "Architecture": "arm",
+            "Rid": "ubuntu.16.04"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.04",
+            "SubType": "CrossBuild"
+          }
+        }
+      ]
+    }
+  ],
+  "Pipelines": [
+    {
+      "Name": "Trusted-All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Release"
+      },
+      "DefinitionGroupRefs": [
+        "Product-Build"
+      ]
+    },
+    {
+      "Name": "Trusted-All-Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Debug"
+      },
+      "DefinitionGroupRefs": [
+        "Product-Build"
+      ]
+    },
+    {
+      "Name": "Trusted-All-Checked",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Checked"
+      },
+      "DefinitionGroupRefs": [
+        "Product-Build"
+      ]
+    },
+    {
+      "Name": "Trusted-Crossbuild-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Release"
+      },
+      "DefinitionGroupRefs": [
+        "Linux-CrossBuild"
+      ]
+    },
+    {
+      "Name": "Trusted-Crossbuild-Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Debug"
+      },
+      "DefinitionGroupRefs": [
+        "Linux-CrossBuild"
+      ]
+    },
+    {
+      "Name": "Trusted-Crossbuild-Checked",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Checked"
+      },
+      "DefinitionGroupRefs": [
+        "Linux-CrossBuild"
+      ]
+    },
+    {
+      "Name": "Publish Packages to Feeds - Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Release"
+      },
+      "ReportingParameters": {
+        "SubType":  "Publish"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish",
+          "Parameters": {
+            "VstsRepositoryName": "DotNet-CoreCLR-Trusted",
+            "GitHubRepositoryName": "coreclr",
+            "AzureContainerPackageGlob": "pkg\\*.nupkg",
+            "AzureContainerSymbolPackageGlob": "symbolpkg\\*.nupkg"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release",
+        "Trusted-Crossbuild-Release"
+      ]
+    },
+    {
+      "Name": "Publish Packages to Drop - Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Debug"
+      },
+      "ReportingParameters": {
+        "SubType": "Publish"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish",
+          "Parameters": {
+            "VstsRepositoryName": "DotNet-CoreCLR-Trusted",
+            "GitHubRepositoryName": "coreclr"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Debug",
+        "Trusted-Crossbuild-Debug"
+      ]
+    },
+    {
+      "Name": "Publish Packages to Drop - Checked",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Checked"
+      },
+      "ReportingParameters": {
+        "SubType": "Publish"
+      },
+
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish",
+          "Parameters": {
+            "VstsRepositoryName": "DotNet-CoreCLR-Trusted",
+            "GitHubRepositoryName": "coreclr"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Checked",
+        "Trusted-Crossbuild-Checked"
+      ]
+    },
+    {
+      "Name": "Build And Run Tests - Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "TargetsWindows": "true",
+            "Rid": "windows_nt-x64",
+            "TargetQueues": "windows.10.amd64",
+            "TestContainerSuffix": "windows10",
+            "RuntimeIDArg": " "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "TargetsWindows": "false",
+            "Rid": "osx.10.12-x64",
+            "TargetQueues": "osx.1012.amd64",
+            "TestContainerSuffix": "osx1012",
+            "RuntimeIDArg": "runtimeid osx.10.12-x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "OSX"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "TargetsWindows": "false",
+            "Rid": "linux-x64",
+            "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64",
+            "TestContainerSuffix": "linux",
+            "RuntimeIDArg": "runtimeid linux-x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
+      ]
+    }
+  ]
+}
