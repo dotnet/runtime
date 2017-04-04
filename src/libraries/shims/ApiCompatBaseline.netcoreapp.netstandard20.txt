@@ -1,1 +1,15 @@
-Total Issues: 0
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.ServiceModel.Web'.
+Compat issues with assembly netstandard:
+TypesMustExist : Type 'System.Security.Cryptography.SHA256CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SHA384CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SHA512CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Core:
+TypesMustExist : Type 'System.Security.Cryptography.SHA256CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SHA384CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SHA512CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ServiceModel.Web:
+TypesMustExist : Type 'System.Runtime.Serialization.Json.DataContractJsonSerializer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Serialization.Json.IXmlJsonReaderInitializer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Serialization.Json.IXmlJsonWriterInitializer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Serialization.Json.JsonReaderWriterFactory' does not exist in the implementation but it does exist in the contract.
+Total Issues: 10
