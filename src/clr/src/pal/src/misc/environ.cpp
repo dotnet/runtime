@@ -218,7 +218,13 @@ GetEnvironmentVariableW(
     }
     else if (size == 0)
     {
-        // handle error in GetEnvironmentVariableA
+        // If size is 0, it either means GetEnvironmentVariableA failed, or that
+        // it succeeded and the value of the variable is empty. Check GetLastError
+        // to determine which. If the call failed, we won't touch the buffer.
+        if (GetLastError() == ERROR_SUCCESS)
+        {
+            *lpBuffer = '\0';
+        }
     }
     else
     {
