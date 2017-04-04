@@ -68,6 +68,16 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        [Fact]
+        public void InvalidArguments_Mode_Truncate()
+        {
+            // FileMode.Truncate never allowed
+            AssertExtensions.Throws<ArgumentException>("mode", null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Truncate));
+            AssertExtensions.Throws<ArgumentException>("mode", null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Truncate, null));
+            AssertExtensions.Throws<ArgumentException>("mode", null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Truncate, null, 4096));
+            AssertExtensions.Throws<ArgumentException>("mode", null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Truncate, null, 4096, MemoryMappedFileAccess.ReadWrite));
+        }
+
         /// <summary>
         /// Tests invalid arguments to the CreateFromFile access parameter.
         /// </summary>
@@ -349,40 +359,30 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Test various combinations of arguments to CreateFromFile, focusing on the Create and Truncate modes,
+        /// Test various combinations of arguments to CreateFromFile, focusing on the Create mode,
         /// and validating the creating maps each time they're created.
         /// </summary>
         [Theory]
-        [MemberData(nameof(MemberData_ValidArgumentCombinationsWithPath),
-            new FileMode[] { FileMode.Create, FileMode.Truncate },
+        [MemberData(nameof(MemberData_ValidNameCapacityCombinationsWithPath),
             new string[] { null, "CreateUniqueMapName()" },
-            new long[] { 1, 256, -1 /*pagesize*/, 10000 },
-            new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite })]
-        public void ValidArgumentCombinationsWithPath_ModesCreateOrTruncate(
-            FileMode mode, string mapName, long capacity, MemoryMappedFileAccess access)
+            new long[] { 1, 256, -1 /*pagesize*/, 10000 })]
+        public void ValidArgumentCombinationsWithPath_ModeCreate(string mapName, long capacity)
         {
-            // For FileMode.Create/Truncate, try existing files.  Only the overloads that take a capacity are valid because
-            // both of these modes will cause the input file to be made empty, and an empty file doesn't work with the default capacity.
-
             using (TempFile file = new TempFile(GetTestFilePath(), capacity))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, mode, mapName, capacity))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Create, mapName, capacity))
             {
                 ValidateMemoryMappedFile(mmf, capacity);
             }
 
             using (TempFile file = new TempFile(GetTestFilePath(), capacity))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, mode, mapName, capacity, access))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Create, mapName, capacity, MemoryMappedFileAccess.ReadWrite))
             {
-                ValidateMemoryMappedFile(mmf, capacity, access);
+                ValidateMemoryMappedFile(mmf, capacity, MemoryMappedFileAccess.ReadWrite);
             }
 
-            // For FileMode.Create, also try letting it create a new file (Truncate needs the file to have existed)
-            if (mode == FileMode.Create)
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Create, mapName, capacity))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(GetTestFilePath(), mode, mapName, capacity))
-                {
-                    ValidateMemoryMappedFile(mmf, capacity);
-                }
+                ValidateMemoryMappedFile(mmf, capacity);
             }
         }
 
@@ -405,31 +405,39 @@ namespace System.IO.MemoryMappedFiles.Tests
         public static IEnumerable<object[]> MemberData_ValidArgumentCombinationsWithPath(
             FileMode[] modes, string[] mapNames, long[] capacities, MemoryMappedFileAccess[] accesses)
         {
-            foreach (FileMode mode in modes)
+            foreach (object[] namesCaps in MemberData_ValidNameCapacityCombinationsWithPath(mapNames, capacities))
             {
-                foreach (string tmpMapName in mapNames)
+                foreach (FileMode mode in modes)
                 {
-                    if (tmpMapName != null && !MapNamesSupported)
+                    foreach (MemoryMappedFileAccess access in accesses)
                     {
-                        continue;
-                    }
-
-                    foreach (long tmpCapacity in capacities)
-                    {
-                        long capacity = tmpCapacity == -1 ? s_pageSize.Value : tmpCapacity;
-
-                        foreach (MemoryMappedFileAccess access in accesses)
+                        if ((mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.Truncate) &&
+                            !IsWritable(access))
                         {
-                            if ((mode == FileMode.Create || mode == FileMode.CreateNew || mode == FileMode.Truncate) && 
-                                !IsWritable(access))
-                            {
-                                continue;
-                            }
-
-                            string mapName = tmpMapName == "CreateUniqueMapName()" ? CreateUniqueMapName() : tmpMapName;
-                            yield return new object[] { mode, mapName, capacity, access };
+                            continue;
                         }
+
+                        yield return new object[] { mode, namesCaps[0], namesCaps[1], access };
                     }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> MemberData_ValidNameCapacityCombinationsWithPath(
+            string[] mapNames, long[] capacities)
+        {
+            foreach (string tmpMapName in mapNames)
+            {
+                if (tmpMapName != null && !MapNamesSupported)
+                {
+                    continue;
+                }
+
+                foreach (long tmpCapacity in capacities)
+                {
+                    long capacity = tmpCapacity == -1 ? s_pageSize.Value : tmpCapacity;
+                    string mapName = tmpMapName == "CreateUniqueMapName()" ? CreateUniqueMapName() : tmpMapName;
+                    yield return new object[] { mapName, capacity, };
                 }
             }
         }
@@ -495,8 +503,8 @@ namespace System.IO.MemoryMappedFiles.Tests
 
                 foreach (long tmpCapacity in capacities)
                 {
-                    long capacity = tmpCapacity == -1 ? 
-                        s_pageSize.Value : 
+                    long capacity = tmpCapacity == -1 ?
+                        s_pageSize.Value :
                         tmpCapacity;
 
                     foreach (MemoryMappedFileAccess access in accesses)
@@ -543,16 +551,14 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test that appropriate exceptions are thrown creating a map with a non-existent file and a mode
         /// that requires the file to exist.
         /// </summary>
-        [Theory]
-        [InlineData(FileMode.Truncate)]
-        [InlineData(FileMode.Open)]
-        public void FileDoesNotExist(FileMode mode)
+        [Fact]
+        public void FileDoesNotExist_OpenFileMode()
         {
             Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath()));
-            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), mode));
-            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), mode, null));
-            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), mode, null, 4096));
-            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), mode, null, 4096, MemoryMappedFileAccess.ReadWrite));
+            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Open));
+            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Open, null));
+            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Open, null, 4096));
+            Assert.Throws<FileNotFoundException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Open, null, 4096, MemoryMappedFileAccess.ReadWrite));
         }
 
         /// <summary>
