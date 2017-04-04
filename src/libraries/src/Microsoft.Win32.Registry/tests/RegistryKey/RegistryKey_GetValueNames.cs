@@ -62,7 +62,8 @@ namespace Microsoft.Win32.RegistryTests
         public static void TestGetValueNamesForPerformanceData()
         {
             var rk = Registry.PerformanceData;
-            int iNumValue = rk.GetValueNames().Length;
+            string[] names = rk.GetValueNames();
+            Assert.Equal(new string[] { "Global", "Costly" }, names);
         }
     }
 }
