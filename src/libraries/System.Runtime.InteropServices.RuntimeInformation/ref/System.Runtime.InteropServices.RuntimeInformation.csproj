@@ -11,8 +11,11 @@
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.RuntimeInformation.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
