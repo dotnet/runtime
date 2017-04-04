@@ -121,6 +121,27 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void ImportExport1032()
+        {
+            RSAParameters imported = TestData.RSA1032Parameters;
+            RSAParameters exported;
+            RSAParameters exportedPublic;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(imported);
+                exported = rsa.ExportParameters(true);
+                exportedPublic = rsa.ExportParameters(false);
+            }
+
+            AssertKeyEquals(ref imported, ref exported);
+
+            Assert.Equal(exportedPublic.Modulus, imported.Modulus);
+            Assert.Equal(exportedPublic.Exponent, imported.Exponent);
+            Assert.Null(exportedPublic.D);
+        }
+
+        [Fact]
         public static void ImportReset()
         {
             using (RSA rsa = RSAFactory.Create())
