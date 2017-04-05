@@ -909,13 +909,36 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
     {
         _ASSERTE(HasID());
 
-        if (imageLayoutMask&PEImageLayout::LAYOUT_MAPPED)
+        BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
+        BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
+
+#if !defined(PLATFORM_UNIX)
+        if (bIsMappedLayoutSuitable)
         {
-          pRetVal = PEImage::CreateLayoutMapped();
+            bIsFlatLayoutSuitable = FALSE;
         }
-        else
+#endif // !PLATFORM_UNIX
+
+        _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);
+
+        BOOL bIsMappedLayoutRequired = !bIsFlatLayoutSuitable;
+        BOOL bIsFlatLayoutRequired = !bIsMappedLayoutSuitable;
+
+        if (bIsFlatLayoutRequired
+            || (bIsFlatLayoutSuitable && !m_bIsTrustedNativeImage))
         {
-          pRetVal = PEImage::CreateLayoutFlat();
+          _ASSERTE(bIsFlatLayoutSuitable);
+
+          BOOL bPermitWriteableSections = bIsFlatLayoutRequired;
+
+          pRetVal = PEImage::CreateLayoutFlat(bPermitWriteableSections);
+        }
+
+        if (pRetVal == NULL)
+        {
+          _ASSERTE(bIsMappedLayoutSuitable);
+
+          pRetVal = PEImage::CreateLayoutMapped();
         }
     }
 
@@ -992,7 +1015,7 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     return pRetVal;
 }
 
-PTR_PEImageLayout PEImage::CreateLayoutFlat()
+PTR_PEImageLayout PEImage::CreateLayoutFlat(BOOL bPermitWriteableSections)
 {
     CONTRACTL
     {
@@ -1002,12 +1025,22 @@ PTR_PEImageLayout PEImage::CreateLayoutFlat()
     }
     CONTRACTL_END;
 
-    PTR_PEImageLayout pRetVal;
+    _ASSERTE(m_pLayouts[IMAGE_FLAT] == NULL);
 
-    pRetVal = PEImageLayout::LoadFlat(GetFileHandle(),this);
-    m_pLayouts[IMAGE_FLAT] = pRetVal;
+    PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(GetFileHandle(),this);
 
-    return pRetVal;
+    if (!bPermitWriteableSections && pFlatLayout->HasWriteableSections())
+    {
+        pFlatLayout->Release();
+
+        return NULL;
+    }
+    else
+    {
+        m_pLayouts[IMAGE_FLAT] = pFlatLayout;
+
+        return pFlatLayout;
+    }
 }
 
 /* static */
@@ -1070,17 +1103,44 @@ void PEImage::Load()
     }
 
     SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(!IsFile())
+
+    _ASSERTE(m_pLayouts[IMAGE_LOADED] == NULL);
+
+#ifdef PLATFORM_UNIX
+    if (m_pLayouts[IMAGE_FLAT] != NULL
+        && m_pLayouts[IMAGE_FLAT]->CheckFormat()
+        && m_pLayouts[IMAGE_FLAT]->IsILOnly()
+        && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
     {
-        if (!m_pLayouts[IMAGE_FLAT]->CheckILOnly())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        if(m_pLayouts[IMAGE_LOADED]==NULL)
-            SetLayout(IMAGE_LOADED,PEImageLayout::LoadFromFlat(m_pLayouts[IMAGE_FLAT]));
+        // IL-only images with writeable sections are mapped in general way,
+        // because the writeable sections should always be page-aligned
+        // to make possible setting another protection bits exactly for these sections
+        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasWriteableSections());
+
+        // As the image is IL-only, there should no be native code to execute
+        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasNativeEntryPoint());
+
+        m_pLayouts[IMAGE_FLAT]->AddRef();
+
+        SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
+#endif // PLATFORM_UNIX
     {
-        if(m_pLayouts[IMAGE_LOADED]==NULL)
-            SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
+        if(!IsFile())
+        {
+            _ASSERTE(m_pLayouts[IMAGE_FLAT] != NULL);
+
+            if (!m_pLayouts[IMAGE_FLAT]->CheckILOnly())
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            if(m_pLayouts[IMAGE_LOADED]==NULL)
+                SetLayout(IMAGE_LOADED,PEImageLayout::LoadFromFlat(m_pLayouts[IMAGE_FLAT]));
+        }
+        else
+        {
+            if(m_pLayouts[IMAGE_LOADED]==NULL)
+                SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
+        }
     }
 }
 
