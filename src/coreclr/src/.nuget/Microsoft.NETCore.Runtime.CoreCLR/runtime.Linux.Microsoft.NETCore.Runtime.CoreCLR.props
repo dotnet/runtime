@@ -3,10 +3,14 @@
   <PropertyGroup>
     <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportNiFiles>
     <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportNiFiles>
+    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportNiFiles>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportEventTrace>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportEventTrace>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
   </PropertyGroup>
   <ItemGroup>
     <NativeBinary Include="$(BinDir)libcoreclr.so" />
-    <NativeBinary Condition="'$(_PlatformDoesNotSupportNiFiles)' != 'true'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
+    <NativeBinary Condition="'$(_PlatformDoesNotSupportEventTrace)' != 'true'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
     <NativeBinary Include="$(BinDir)libdbgshim.so" />
     <NativeBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeBinary Include="$(BinDir)libmscordbi.so" />
