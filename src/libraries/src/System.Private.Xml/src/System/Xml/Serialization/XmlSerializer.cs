@@ -266,10 +266,22 @@ namespace System.Xml.Serialization
                     if (_tempAssembly == null)
                     {
                         {
-                            // need to reflect and generate new serialization assembly
-                            XmlReflectionImporter importer = new XmlReflectionImporter(defaultNamespace);
-                            _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
-                            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace);
+                            XmlSerializerImplementation contract = null;
+                            Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, null, out contract);
+                            if (assembly == null)
+                            {
+                                // need to reflect and generate new serialization assembly
+                                XmlReflectionImporter importer = new XmlReflectionImporter(defaultNamespace);
+                                _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
+                                _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace);
+                            }
+                            else
+                            {
+                                // we found the pre-generated assembly, now make sure that the assembly has the right serializer
+                                // try to avoid the reflection step, need to get ElementName, namespace and the Key form the type
+                                _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
+                                _tempAssembly = new TempAssembly(new XmlMapping[] { _mapping }, assembly, contract);
+                            }
                         }
                     }
                     s_cache.Add(defaultNamespace, type, _tempAssembly);
