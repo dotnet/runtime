@@ -2413,6 +2413,18 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
 #endif
 
+    bool      isPartialArgInfo;
+
+#ifndef UNIX_X86_ABI
+    isPartialArgInfo = info->ebpFrame;
+#else
+    // For x86/Linux, interruptible code always has full arg info
+    //
+    // This should be aligned with emitFullArgInfo setting at
+    // emitter::emitEndCodeGen (in JIT)
+    isPartialArgInfo = false;
+#endif
+
   /*
       Encoding table for methods that are fully interruptible
 
@@ -2611,9 +2623,9 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
 
                         argOfs--;
                     }
-                    else if (info->ebpFrame)
+                    else if (isPartialArgInfo)
                         argCnt--;
-                    else /* !ebpFrame && not a ref */
+                    else /* full arg info && not a ref */
                         argOfs--;
 
                     /* Continue with the next lower bit */
@@ -2622,11 +2634,11 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
                 }
                 while (argOfs);
 
-                _ASSERTE((info->ebpFrame != 0) ||
+                _ASSERTE(!isPartialArgInfo     ||
                          isZero(argHigh)       ||
                         (argHigh == CONSTRUCT_ptrArgTP(1, (argCnt-1))));
 
-                if (info->ebpFrame)
+                if (isPartialArgInfo)
                 {
                     while (!intersect(argHigh, ptrArgs) && (!isZero(argHigh)))
                         argHigh >>= 1;
@@ -2643,10 +2655,10 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
                 }
                 else
                 {
-                    /* For ESP-frames, all pushes are reported, and so
+                    /* Full arg info reports all pushes, and thus
                        argOffs has to be consistent with argCnt */
 
-                    _ASSERTE(info->ebpFrame || argCnt == argOfs);
+                    _ASSERTE(isPartialArgInfo || argCnt == argOfs);
 
                     /* store arg count */
 
@@ -2692,7 +2704,7 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
             }
             else {
                 /* non-ptr arg push */
-                _ASSERTE(!(info->ebpFrame));
+                _ASSERTE(!isPartialArgInfo);
                 ptrOffs += (val & 0x07);
                 if (ptrOffs > curOffs) {
                     iptr = isThis = false;
@@ -2753,9 +2765,9 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
                 }
             }
 
-            // For ebp-frames, need to find the next higest pointer for argHigh
+            // For partial arg info, need to find the next higest pointer for argHigh
 
-            if (info->ebpFrame)
+            if (isPartialArgInfo)
             {
                 for(argHigh = ptrArgTP(0); !isZero(argMask); argMask >>= 1)
                 {
@@ -2794,7 +2806,7 @@ REPORT_REFS:
     info->thisPtrResult  = thisPtrReg;
     _ASSERTE(thisPtrReg == REGI_NA || (regNumToMask(thisPtrReg) & info->regMaskResult));
 
-    if (info->ebpFrame)
+    if (isPartialArgInfo)
     {
         return 0;
     }
@@ -3789,7 +3801,9 @@ bool UnwindEbpDoubleAlignFrame(
         PREGDISPLAY     pContext,
         EECodeInfo     *pCodeInfo,
         hdrInfo        *info,
+        PTR_CBYTE       table,
         PTR_CBYTE       methodStart,
+        DWORD           curOffs,
         unsigned        flags,
         StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
 {
@@ -3815,8 +3829,9 @@ bool UnwindEbpDoubleAlignFrame(
         // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
         if (pCodeInfo->IsFunclet())
         {
+            baseSP = curESP;
             // Set baseSP as initial SP
-            baseSP = pContext->pCurrentContext->ResumeEsp;
+            baseSP += GetPushedArgSize(info, table, curOffs);
             // 16-byte stack alignment padding (allocated in genFuncletProlog)
             baseSP += 12;
 
@@ -4014,7 +4029,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  Now we know that have an EBP frame
          */
 
-        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, methodStart, flags, pUnwindInfo))
+        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, table, methodStart, curOffs, flags, pUnwindInfo))
             return false;
     }
 

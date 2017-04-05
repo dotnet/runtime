@@ -16202,7 +16202,14 @@ void Compiler::fgSetOptions()
     // to use a frame pointer because of EH. But until all the code uses
     // the same test, leave info.compXcptnsCount here.
     if (info.compXcptnsCount > 0)
+    {
         codeGen->setFramePointerRequiredEH(true);
+#ifdef UNIX_X86_ABI
+        assert(!codeGen->isGCTypeFixed());
+        // Enforce fully interruptible codegen for funclet unwinding
+        genInterruptible = true;
+#endif // UNIX_X86_ABI
+    }
 
 #else // !_TARGET_X86_
 

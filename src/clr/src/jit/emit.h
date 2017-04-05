@@ -2040,6 +2040,7 @@ public:
     /*         The following logic keeps track of live GC ref values        */
     /************************************************************************/
 
+    bool emitFullArgInfo; // full arg info (including non-ptr arg)?
     bool emitFullGCinfo; // full GC pointer maps?
     bool emitFullyInt;   // fully interruptible code?
 
