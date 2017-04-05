@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput(Type type)
         {
-            if ((type != typeof(XmlDocument)) || (!type.IsSubclassOf(typeof(XmlDocument))))
+            if ((type != typeof(XmlDocument)) && (!type.IsSubclassOf(typeof(XmlDocument))))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
 
             return GetOutput();
