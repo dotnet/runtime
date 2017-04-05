@@ -4,13 +4,13 @@
 
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
-      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')">
+      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" Condition="'$(TargetGroup)' != 'netfx'">
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' == ''">StrongName</StrongNameSig>
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' != ''">%(NetfxReference.StrongNameSig)</StrongNameSig>
       </NetFxContracts>
       <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
       <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
-      <GenFacadesSeeds Include="$(RefPath)*.dll" Exclude="$(RefPath)System.Private.CoreLib.dll" />
+      <GenFacadesSeeds Include="$(RefPath)*.dll" />
     </ItemGroup>
   </Target>
 
@@ -43,9 +43,13 @@
       <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
     </PropertyGroup>
 
-    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Condition="'@(NetFxContracts)' != ''"
+          Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;"
+          WorkingDirectory="$(ToolRuntimePath)" />
 
-    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Condition="'@(NETStandardContracts)' != ''"
+          Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;"
+          WorkingDirectory="$(ToolRuntimePath)" />
 
     <WriteSigningRequired
         Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"

@@ -5,6 +5,7 @@
       netcoreapp;
       uap;
       uapaot;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 
