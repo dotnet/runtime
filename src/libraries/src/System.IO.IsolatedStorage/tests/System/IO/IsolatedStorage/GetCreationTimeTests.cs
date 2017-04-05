@@ -58,7 +58,6 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        [ActiveIssue(12539, TestPlatforms.Linux)]
         [PlatformSpecific(TestPlatforms.FreeBSD | TestPlatforms.Linux | TestPlatforms.NetBSD)]  // Filesystem timestamps vary in granularity
         public void GetCreationTime_GetsTime_Unix()
         {
@@ -69,7 +68,7 @@ namespace System.IO.IsolatedStorage
 
                 // Filesystem timestamps vary in granularity, we can't make a positive assertion that
                 // the time will come before or after the current time.
-                Assert.Equal(default(DateTimeOffset), isf.GetCreationTime(file));
+                Assert.Equal(default(DateTimeOffset).ToLocalTime(), isf.GetCreationTime(file));
             }
         }
 
