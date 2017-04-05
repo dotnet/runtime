@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprZeroInit : ExprWithType
     {
         public ExprZeroInit(CType type)
-            : base(ExpressionKind.EK_ZEROINIT, type)
+            : base(ExpressionKind.ZeroInit, type)
         {
         }
 

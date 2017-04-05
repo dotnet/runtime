@@ -1233,7 +1233,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 if (result == null)
                 {
-                    result = _binder.bindUDUnop(op == OperatorKind.OP_TRUE ? ExpressionKind.EK_TRUE : ExpressionKind.EK_FALSE, arg1);
+                    result = _binder.bindUDUnop(op == OperatorKind.OP_TRUE ? ExpressionKind.True : ExpressionKind.False, arg1);
                 }
 
                 // If the result is STILL null, then that means theres no implicit conversion to bool,
@@ -1270,9 +1270,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             arg1.ErrorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
             arg2.ErrorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
 
-            if (ek > ExpressionKind.EK_MULTIOFFSET)
+            if (ek > ExpressionKind.MultiOffset)
             {
-                ek = (ExpressionKind)(ek - ExpressionKind.EK_MULTIOFFSET);
+                ek = (ExpressionKind)(ek - ExpressionKind.MultiOffset);
             }
             return _binder.BindStandardBinop(ek, arg1, arg2);
         }

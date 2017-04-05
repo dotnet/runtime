@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMultiGet : ExprWithType
     {
         public ExprMultiGet(CType type)
-            : base(ExpressionKind.EK_MULTIGET, type)
+            : base(ExpressionKind.MultiGet, type)
         {
         }
 
@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMulti : ExprWithType
     {
         public ExprMulti(CType type)
-            : base(ExpressionKind.EK_MULTI, type)
+            : base(ExpressionKind.Multi, type)
         {
         }
 

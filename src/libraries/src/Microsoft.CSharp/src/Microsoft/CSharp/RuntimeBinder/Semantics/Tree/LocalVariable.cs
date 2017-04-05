@@ -9,14 +9,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal class ExprLocal : Expr
     {
         public ExprLocal()
-            : base(ExpressionKind.EK_LOCAL)
+            : base(ExpressionKind.Local)
         {
         }
 
         protected ExprLocal(ExpressionKind kind)
             : base(kind)
         {
-            Debug.Assert(kind == ExpressionKind.EK_THISPOINTER);
+            Debug.Assert(kind == ExpressionKind.ThisPointer);
         }
 
         public LocalVariableSymbol Local { get; set; }

@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprFuncPtr : ExprWithType, IExprWithObject
     {
         public ExprFuncPtr(CType type) 
-            : base(ExpressionKind.EK_FUNCPTR, type)
+            : base(ExpressionKind.FunctionPointer, type)
         {
         }
 

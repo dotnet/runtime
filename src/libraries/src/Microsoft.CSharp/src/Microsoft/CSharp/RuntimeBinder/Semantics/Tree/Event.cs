@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprEvent : ExprWithType, IExprWithObject
     {
         public ExprEvent(CType type)
-            : base(ExpressionKind.EK_EVENT, type)
+            : base(ExpressionKind.Event, type)
         {
         }
 

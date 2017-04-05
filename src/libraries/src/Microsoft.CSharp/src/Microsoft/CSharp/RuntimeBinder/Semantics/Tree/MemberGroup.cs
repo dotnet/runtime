@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMemberGroup : ExprWithType, IExprWithObject
     {
         public ExprMemberGroup(CType type)
-            : base(ExpressionKind.EK_MEMGRP, type)
+            : base(ExpressionKind.MemberGroup, type)
         {
         }
 

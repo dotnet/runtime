@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprBlock : ExprStatement
     {
         public ExprBlock()
-            : base(ExpressionKind.EK_BLOCK)
+            : base(ExpressionKind.Block)
         {
         }
 

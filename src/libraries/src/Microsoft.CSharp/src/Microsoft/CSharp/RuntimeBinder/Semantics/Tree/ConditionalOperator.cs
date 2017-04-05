@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprQuestionMark : Expr
     {
         public ExprQuestionMark()
-            : base(ExpressionKind.EK_QUESTIONMARK)
+            : base(ExpressionKind.QuestionMark)
         {
         }
 

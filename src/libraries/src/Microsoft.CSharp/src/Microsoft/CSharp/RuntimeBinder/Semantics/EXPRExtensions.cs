@@ -49,7 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [Conditional("DEBUG")]
         public static void AssertIsBin(this Expr expr)
         {
-            Debug.Assert(expr?.Kind >= ExpressionKind.EK_TypeLim && 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
+            Debug.Assert(expr?.Kind >= ExpressionKind.TypeLimit && 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
         }
         public static bool isLvalue(this Expr expr)
         {
@@ -82,10 +82,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     default:
                         return exprVal;
-                    case ExpressionKind.EK_SEQUENCE:
+                    case ExpressionKind.Sequence:
                         exprVal = ((ExprBinOp)exprVal).OptionalRightChild;
                         break;
-                    case ExpressionKind.EK_SEQREV:
+                    case ExpressionKind.SequenceReverse:
                         exprVal = ((ExprBinOp)exprVal).OptionalLeftChild;
                         break;
                 }
@@ -100,11 +100,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static Expr GetConst(this Expr expr)
         {
             Expr exprVal = expr.GetSeqVal();
-            if (null == exprVal || !exprVal.isCONSTANT_OK() && exprVal.Kind != ExpressionKind.EK_ZEROINIT)
+            if (null == exprVal || !exprVal.isCONSTANT_OK() && exprVal.Kind != ExpressionKind.ZeroInit)
                 return null;
             return exprVal;
         }
 
-        public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
+        public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.Constant && expr.IsOK); }
     }
 }

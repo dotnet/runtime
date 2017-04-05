@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprCast : Expr
     {
         public ExprCast()
-            : base(ExpressionKind.EK_CAST)
+            : base(ExpressionKind.Cast)
         {            
         }
 

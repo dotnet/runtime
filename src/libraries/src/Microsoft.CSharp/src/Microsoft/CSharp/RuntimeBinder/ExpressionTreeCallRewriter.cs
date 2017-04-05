@@ -55,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Assert all of these first, and then unwrap them.
 
             Debug.Assert(pExpr != null);
-            Debug.Assert(pExpr.Kind == ExpressionKind.EK_SEQUENCE);
+            Debug.Assert(pExpr.Kind == ExpressionKind.Sequence);
             ExprBinOp binOp = (ExprBinOp)pExpr;
             Debug.Assert(binOp != null);
             Debug.Assert(binOp.OptionalRightChild is ExprCall);

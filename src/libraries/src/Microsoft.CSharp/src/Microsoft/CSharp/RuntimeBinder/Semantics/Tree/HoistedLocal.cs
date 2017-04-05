@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprHoistedLocalExpr : ExprWithType
     {
         public ExprHoistedLocalExpr(CType type)
-            : base(ExpressionKind.EK_HOISTEDLOCALEXPR, type)
+            : base(ExpressionKind.HoistedLocalExpression, type)
         {
         }
     }

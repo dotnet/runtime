@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // "through" type to ensure that protected semantics are correctly enforced.)
 
         public ExprProperty(CType type)
-            : base(ExpressionKind.EK_PROP, type)
+            : base(ExpressionKind.Property, type)
         {
         }
 

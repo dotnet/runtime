@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected ExprOperator(ExpressionKind kind, CType type)
             : base(kind, type)
         {
-            Debug.Assert(kind.isUnaryOperator() || kind > ExpressionKind.EK_TypeLim);
+            Debug.Assert(kind.IsUnaryOperator() || kind > ExpressionKind.TypeLimit);
         }
 
         public Expr OptionalUserDefinedCall { get; set; }

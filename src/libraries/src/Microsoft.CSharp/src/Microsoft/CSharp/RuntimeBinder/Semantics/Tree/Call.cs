@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprCall : ExprWithType, IExprWithArgs
     {
         public ExprCall(CType type)
-            : base(ExpressionKind.EK_CALL, type)
+            : base(ExpressionKind.Call, type)
         {
         }
 

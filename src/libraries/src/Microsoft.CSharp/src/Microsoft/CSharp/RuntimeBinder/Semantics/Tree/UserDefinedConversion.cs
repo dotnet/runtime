@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprUserDefinedConversion : Expr
     {
         public ExprUserDefinedConversion()
-            : base(ExpressionKind.EK_USERDEFINEDCONVERSION)
+            : base(ExpressionKind.UserDefinedConversion)
         {
             
         }
