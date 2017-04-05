@@ -143,6 +143,7 @@
 #include "mscoree.h"
 #include "appdomainstack.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
 

@@ -45,7 +45,7 @@ void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
     OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
     VALIDATEOBJECTREF(objRef);
 
-    IGCHandleTable *pHandleTable = GCHeapUtilities::GetGCHandleTable();
+    IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
 
     void* handleTable = pHandleTable->GetHandleTableForHandle(handle);
     DWORD context = (DWORD)pHandleTable->GetHandleTableContext(handleTable);
