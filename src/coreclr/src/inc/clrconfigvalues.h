@@ -1054,6 +1054,11 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_LocalWinMDPath, W("LocalWinMDPath"), "Additio
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_AllowDComReflection, W("AllowDComReflection"), 0, "Allows out of process DCOM clients to marshal blocked reflection types.")
 
 //
+// Performance Tracing
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_PerformanceTracing, W("PerformanceTracing"), 0, "Enable/disable performance tracing.  Non-zero values enable tracing.")
+
+//
 // Unknown
 // 
 //---------------------------------------------------------------------------------------

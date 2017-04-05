@@ -164,6 +164,8 @@ set(VM_SOURCES_WKS
     eemessagebox.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
+    eventpipe.cpp
+    eventpipejsonfile.cpp
     eventstore.cpp
     fcall.cpp
     fieldmarshaler.cpp
@@ -211,6 +213,7 @@ set(VM_SOURCES_WKS
     reflectioninvocation.cpp
     runtimehandles.cpp
     safehandle.cpp
+    sampleprofiler.cpp
     security.cpp
     securityattributes.cpp
     securitydeclarative.cpp

@@ -779,3 +779,7 @@ End
 Crst InlineTrackingMap
     AcquiredBefore IbcProfile
 End
+
+Crst EventPipe
+    AcquiredBefore ThreadIdDispenser ThreadStore
+End
