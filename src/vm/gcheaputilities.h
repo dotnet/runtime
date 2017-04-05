@@ -226,5 +226,54 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
 }
 
+#ifndef DACCESS_COMPILE
+
+inline OBJECTHANDLE CreateWeakHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
+}
+
+inline OBJECTHANDLE CreateShortWeakHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
+}
+
+inline OBJECTHANDLE CreateLongWeakHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
+}
+
+inline OBJECTHANDLE CreateHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+}
+
+inline OBJECTHANDLE CreateStrongHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_STRONG);
+}
+
+inline OBJECTHANDLE CreatePinningHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_PINNED);
+}
+
+inline OBJECTHANDLE CreateSizedRefHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_SIZEDREF);
+}
+
+inline OBJECTHANDLE CreateAsyncPinningHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_ASYNCPINNED);
+}
+
+inline OBJECTHANDLE CreateRefcountedHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHeapUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
+}
+
+#endif // !DACCESS_COMPILE
+
 #endif // _GCHEAPUTILITIES_H_
 

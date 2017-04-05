@@ -78,25 +78,11 @@ struct HandleTableBucket
  * Convenience macros and prototypes for the various handle types we define
  */
 
-inline OBJECTHANDLE CreateTypedHandle(HHANDLETABLE table, OBJECTREF object, int type)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, type, object); 
-}
-
 inline void DestroyTypedHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandleOfUnknownType(HndGetHandleTable(handle), handle);
-}
-
-inline OBJECTHANDLE CreateHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_DEFAULT, object); 
 }
 
 inline void DestroyHandle(OBJECTHANDLE handle)
@@ -121,14 +107,6 @@ inline OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) {
     return HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, HndFetchHandle(handle));
 }
 
-
-inline OBJECTHANDLE CreateWeakHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_WEAK_DEFAULT, object); 
-}
-
 inline void DestroyWeakHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
@@ -136,26 +114,11 @@ inline void DestroyWeakHandle(OBJECTHANDLE handle)
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_DEFAULT, handle);
 }
 
-inline OBJECTHANDLE CreateShortWeakHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_WEAK_SHORT, object); 
-}
-
 inline void DestroyShortWeakHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_SHORT, handle);
-}
-
-
-inline OBJECTHANDLE CreateLongWeakHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_WEAK_LONG, object); 
 }
 
 inline void DestroyLongWeakHandle(OBJECTHANDLE handle)
@@ -169,25 +132,11 @@ inline void DestroyLongWeakHandle(OBJECTHANDLE handle)
 typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyLongWeakHandle> LongWeakHandleHolder;
 #endif
 
-inline OBJECTHANDLE CreateStrongHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_STRONG, object); 
-}
-
 inline void DestroyStrongHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_STRONG, handle);
-}
-
-inline OBJECTHANDLE CreatePinningHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_PINNED, object); 
 }
 
 inline void DestroyPinningHandle(OBJECTHANDLE handle)
@@ -201,13 +150,6 @@ inline void DestroyPinningHandle(OBJECTHANDLE handle)
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL> PinningHandleHolder;
 #endif
 
-inline OBJECTHANDLE CreateAsyncPinningHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_ASYNCPINNED, object); 
-}
-
 inline void DestroyAsyncPinningHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
@@ -219,13 +161,6 @@ inline void DestroyAsyncPinningHandle(OBJECTHANDLE handle)
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
 #endif
 
-inline OBJECTHANDLE CreateSizedRefHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_SIZEDREF, object, (uintptr_t)0);
-}
-
 void DestroySizedRefHandle(OBJECTHANDLE handle);
 
 #ifndef FEATURE_REDHAWK
@@ -233,12 +168,6 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroySizedRefHandle, NU
 #endif
 
 #ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateRefcountedHandle(HHANDLETABLE table, OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(table, HNDTYPE_REFCOUNTED, object); 
-}
 
 inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
 { 
