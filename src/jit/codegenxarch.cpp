@@ -3826,6 +3826,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     regNumber   targetReg = treeNode->gtRegNum;
     regNumber   dataReg   = data->gtRegNum;
     regNumber   addrReg   = addr->gtRegNum;
+    var_types   type      = genActualType(data->TypeGet());
     instruction ins;
 
     // The register allocator should have extended the lifetime of the address
@@ -3840,7 +3841,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
     if (targetReg != REG_NA && dataReg != REG_NA && dataReg != targetReg)
     {
-        inst_RV_RV(ins_Copy(data->TypeGet()), targetReg, dataReg);
+        inst_RV_RV(ins_Copy(type), targetReg, dataReg);
         data->gtRegNum = targetReg;
 
         // TODO-XArch-Cleanup: Consider whether it is worth it, for debugging purposes, to restore the
@@ -3866,8 +3867,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     // all of these nodes implicitly do an indirection on op1
     // so create a temporary node to feed into the pattern matching
-    GenTreeIndir i = indirForm(data->TypeGet(), addr);
-    getEmitter()->emitInsBinary(ins, emitTypeSize(data), &i, data);
+    GenTreeIndir i = indirForm(type, addr);
+    getEmitter()->emitInsBinary(ins, emitTypeSize(type), &i, data);
 
     if (treeNode->gtRegNum != REG_NA)
     {
