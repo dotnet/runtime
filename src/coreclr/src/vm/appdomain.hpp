@@ -28,6 +28,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
@@ -1239,7 +1240,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        IGCHandleTable *pHandleTable = GCHeapUtilities::GetGCHandleTable();
+        IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
         return pHandleTable->CreateHandleOfType(m_hHandleTableBucket->pTable[GetCurrentThreadHomeHeapNumber()], OBJECTREFToObject(object), type);
     }
 
