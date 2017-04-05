@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
     public class ObjectManager
     {
         private const int DefaultInitialSize = 16;
-        private const int MaxArraySize = 0x1000; //MUST BE A POWER OF 2!
+        private const int MaxArraySize = 0x100000; //MUST BE A POWER OF 2!
         private const int ArrayMask = MaxArraySize - 1;
         private const int MaxReferenceDepth = 100;
 
