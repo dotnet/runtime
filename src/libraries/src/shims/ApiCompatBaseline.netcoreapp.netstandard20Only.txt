@@ -1,6 +1,2 @@
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
-Compat issues with assembly netstandard:
-TypesMustExist : Type 'System.Security.Cryptography.SHA256CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA384CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA512CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3
+Total Issues: 0
