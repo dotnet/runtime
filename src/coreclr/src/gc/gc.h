@@ -256,12 +256,6 @@ void TouchPages(void * pStart, size_t cb);
 void updateGCShadow(Object** ptr, Object* val);
 #endif
 
-// the method table for the WeakReference class
-extern MethodTable  *pWeakReferenceMT;
-// The canonical method table for WeakReference<T>
-extern MethodTable  *pWeakReferenceOfTCanonMT;
-extern void FinalizeWeakReference(Object * obj);
-
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;
 
