@@ -9,7 +9,7 @@ class App
 		AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler (MyResolveEventHandler);
 
 		try {
-			var a = Assembly.Load ("test");
+			var a = Assembly.Load ("Test");
 			foreach (Type t in a.GetTypes ()) {
 				Console.WriteLine ("pp: " + t + " " + t.BaseType);
 			}
@@ -23,12 +23,11 @@ class App
 
 	static Assembly MyResolveEventHandler (object sender, ResolveEventArgs args)
 	{
-		var path = Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve", "deps");
-		if (args.Name == "test" && args.RequestingAssembly == null)
-			return Assembly.LoadFile (Path.Combine (path, "test.dll"));
-		if (args.Name == "TestBase, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" && args.RequestingAssembly.GetName ().Name == "test")
-			return Assembly.LoadFile (Path.Combine (path, "TestBase.dll"));
+		if (args.Name == "Test" && args.RequestingAssembly == null)
+			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "Test.dll"));
+		if (args.Name == "TestBase, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" && args.RequestingAssembly.GetName ().Name == "Test")
+			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "TestBase.dll"));
 
-		throw new InvalidOperationException (String.Format ("Unexpected parameter combination {0} {1}", args.Name, args.RequestingAssembly));
+		throw new InvalidOperationException (String.Format ("Unexpected parameter combination Name=\"{0}\" RequestingAssembly=\"{1}\"", args.Name, args.RequestingAssembly));
 	}
 }

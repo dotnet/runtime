@@ -4,7 +4,7 @@ using System.IO;
 
 class Driver {
 	static int Main () {
-		var src = Path.Combine (Path.GetDirectoryName (typeof (Driver).Assembly.Location), "reflection-load-dir");
+		var src = Path.GetDirectoryName (typeof (Driver).Assembly.Location);
 		var dep_asm = Assembly.UnsafeLoadFrom (Path.Combine (src, "reflection-load-with-context-lib.dll"));
 		var type = dep_asm.GetType ("B.ClassB");
 		var attr_type = dep_asm.GetType ("B.MyAttribute");

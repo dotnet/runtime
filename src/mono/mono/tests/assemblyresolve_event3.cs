@@ -13,17 +13,19 @@ class App
 		
 		event_handler_count = 0;
 		try {
-			Assembly a = Assembly.LoadFile (String.Format ("{0}{1}assemblyresolve{1}test{1}asm.dll", Directory.GetCurrentDirectory (), Path.DirectorySeparatorChar));
+			Assembly a = Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_asm.dll"));
 			foreach (Type t in a.GetTypes ()) {
 				Console.WriteLine ("pp: " + t + " " + t.BaseType);
 			}
 		} catch (Exception ex) {
-			Console.WriteLine ("Caught exception: {0}", ex.Message);
+			Console.WriteLine ($"Caught exception: {ex}");
 			return 1;
 		}
 		
-		if (event_handler_count != expected_count)
+		if (event_handler_count != expected_count) {
+			Console.WriteLine ($"Expected MyResolveEventHandler to be called {expected_count} but was called {event_handler_count}");
 			return 2;
+		}
 				
 		return 0;
 	}
@@ -32,10 +34,10 @@ class App
 	{
 		event_handler_count++;
 		Console.WriteLine ("Resolve assembly: {0}", args.Name);
-		if (args.Name == "test, Version=0.0.0.0, Culture=neutral" || args.Name == "test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null")
-			return Assembly.LoadFile (String.Format ("{0}{1}assemblyresolve{1}deps{1}test.dll", Directory.GetCurrentDirectory (), Path.DirectorySeparatorChar));
+		if (args.Name == "Test, Version=0.0.0.0, Culture=neutral" || args.Name == "Test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null")
+			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "Test.dll"));
 		if (args.Name == "TestBase, Version=0.0.0.0, Culture=neutral" || args.Name == "TestBase, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null")
-			return Assembly.LoadFile (String.Format ("{0}{1}assemblyresolve{1}deps{1}TestBase.dll", Directory.GetCurrentDirectory (), Path.DirectorySeparatorChar));
+			return Assembly.LoadFile (Path.Combine (Directory.GetCurrentDirectory (), "assemblyresolve_deps", "TestBase.dll"));
 		return null;
 	}
 }

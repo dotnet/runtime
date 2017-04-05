@@ -61,9 +61,6 @@ public class TestRunner
 		string mono_gac_prefix = null;
 		var opt_sets = new List<string> ();
 
-		string aot_run_flags = null;
-		string aot_build_flags = null;
-
 		// Process options
 		int i = 0;
 		while (i < args.Length) {
@@ -104,7 +101,7 @@ public class TestRunner
 						Console.WriteLine ("Missing argument to --runtime-args command line option.");
 						return 1;
 					}
-					runtime_args = args [i + 1];
+					runtime_args = (runtime_args ?? "") + " " + args [i + 1];
 					i += 2;
 				} else if (args [i] == "--config") {
 					if (i + 1 >= args.Length) {
@@ -156,20 +153,6 @@ public class TestRunner
 						return 1;
 					}
 					mono_gac_prefix = args[i + 1];
-					i += 2;
-				} else if (args [i] == "--aot-run-flags") {
-					if (i + 1 >= args.Length) {
-						Console.WriteLine ("Missing argument to --aot-run-flags command line option.");
-						return 1;
-					}
-					aot_run_flags = args [i + 1].Substring(0, args [i + 1].Length);
-					i += 2;
-				} else if (args [i] == "--aot-build-flags") {
-					if (i + 1 >= args.Length) {
-						Console.WriteLine ("Missing argument to --aot-build-flags command line option.");
-						return 1;
-					}
-					aot_build_flags = args [i + 1].Substring(0, args [i + 1].Length);
 					i += 2;
 				} else if (args [i] == "--verbose") {
 					verbose = true;
@@ -232,68 +215,6 @@ public class TestRunner
 				output_width = Math.Min (120, ti.test.Length);
 		}
 
-		if (aot_build_flags != null)  {
-			Console.WriteLine("AOT compiling tests");
-
-			object aot_monitor = new object ();
-			var aot_queue = new Queue<String> (tests); 
-
-			List<Thread> build_threads = new List<Thread> (concurrency);
-
-			for (int j = 0; j < concurrency; ++j) {
-				Thread thread = new Thread (() => {
-					while (true) {
-						String test_name;
-
-						lock (aot_monitor) {
-							if (aot_queue.Count == 0)
-								break;
-							test_name = aot_queue.Dequeue ();
-						}
-
-						string test_bitcode_output = test_name + "_bitcode_tmp";
-						string test_bitcode_arg = ",temp-path=" + test_bitcode_output;
-						string aot_args = aot_build_flags + test_bitcode_arg + " " + test_name;
-
-						Directory.CreateDirectory(test_bitcode_output);
-
-						ProcessStartInfo job = new ProcessStartInfo (runtime, aot_args);
-						job.UseShellExecute = false;
-						job.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
-						if (mono_path != null)
-							job.EnvironmentVariables[MONO_PATH] = mono_path;
-						if (mono_gac_prefix != null)
-							job.EnvironmentVariables[MONO_GAC_PREFIX] = mono_gac_prefix;
-						Process compiler = new Process ();
-						compiler.StartInfo = job;
-
-						compiler.Start ();
-
-						if (!compiler.WaitForExit (timeout * 1000)) {
-							try {
-								compiler.Kill ();
-							} catch {
-							}
-							throw new Exception(String.Format("Timeout AOT compiling tests, output in {0}", test_bitcode_output));
-						} else if (compiler.ExitCode != 0) {
-							throw new Exception(String.Format("Error AOT compiling tests, output in {0}", test_bitcode_output));
-						} else {
-							Directory.Delete (test_bitcode_output, true);
-						}
-					}
-				});
-
-				thread.Start ();
-
-				build_threads.Add (thread);
-			}
-
-			for (int j = 0; j < build_threads.Count; ++j)
-				build_threads [j].Join ();
-
-			Console.WriteLine("Done compiling");
-		}
-
 		List<Thread> threads = new List<Thread> (concurrency);
 
 		DateTime test_start_time = DateTime.UtcNow;
@@ -320,19 +241,16 @@ public class TestRunner
 						Console.Write (".");
 					}
 
-					string test_invoke;
-
-					if (aot_run_flags != null)
-						test_invoke = aot_run_flags + " " + test;
-					else
-						test_invoke = test;
-
 					/* Spawn a new process */
-					string process_args = test_invoke;
+
+					string process_args = "";
+
 					if (opt_set != null)
-						process_args = "-O=" + opt_set + " " + process_args;
+						process_args += " -O=" + opt_set;
 					if (runtime_args != null)
-						process_args = runtime_args + " " + process_args;
+						process_args += " " + runtime_args;
+
+					process_args += " " + test;
 
 					ProcessStartInfo info = new ProcessStartInfo (runtime, process_args);
 					info.UseShellExecute = false;

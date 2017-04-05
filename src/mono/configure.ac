@@ -4439,7 +4439,6 @@ mono/arch/mips/Makefile
 mono/sgen/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
-mono/tests/assemblyresolve/Makefile
 mono/tests/gc-descriptors/Makefile
 mono/tests/testing_gac/Makefile
 mono/unit-tests/Makefile
