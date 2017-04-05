@@ -49,6 +49,7 @@
     <Compile Include="XmlDsigExcC14NWithCommentsTransformTest.cs" />
     <Compile Include="XmlDsigXPathTransformTest.cs" />
     <Compile Include="XmlDsigXsltTransformTest.cs" />
+    <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
