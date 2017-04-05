@@ -3111,9 +3111,6 @@ mono_w32file_get_std_handle (gint stdhandle)
 			mono_w32error_set_last (ERROR_NO_MORE_FILES);
 			goto done;
 		}
-	} else {
-		/* Add a reference to this handle */
-		mono_w32handle_ref (handle);
 	}
 	
   done:

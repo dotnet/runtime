@@ -8,6 +8,7 @@
 #ifdef USE_OSX_BACKEND
 
 #include <errno.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/proc.h>
 #include <sys/sysctl.h>
@@ -120,9 +121,13 @@ mono_w32process_get_modules (pid_t pid)
 {
 	GSList *ret = NULL;
 	MonoW32ProcessModule *mod;
-	guint32 count = _dyld_image_count ();
+	guint32 count;
 	int i = 0;
 
+	if (pid != getpid ())
+		return NULL;
+
+	count = _dyld_image_count ();
 	for (i = 0; i < count; i++) {
 #if SIZEOF_VOID_P == 8
 		const struct mach_header_64 *hdr;

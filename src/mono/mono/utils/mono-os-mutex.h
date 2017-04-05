@@ -41,6 +41,10 @@ G_BEGIN_DECLS
 
 #if !defined(HOST_WIN32)
 
+#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX) || defined(PLATFORM_ANDROID)
+#define BROKEN_CLOCK_SOURCE
+#endif
+
 typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_cond_t mono_cond_t;
 
@@ -124,7 +128,7 @@ mono_os_cond_init (mono_cond_t *cond)
 {
 	int res;
 
-#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
+#ifdef BROKEN_CLOCK_SOURCE
 	res = pthread_cond_init (cond, NULL);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
@@ -174,7 +178,7 @@ mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 static inline int
 mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
-#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
+#ifdef BROKEN_CLOCK_SOURCE
 	struct timeval tv;
 #endif
 	struct timespec ts;
@@ -187,7 +191,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
 
-#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
+#ifdef BROKEN_CLOCK_SOURCE
 	/* clock_gettime is not supported in MAC OS x */
 	res = gettimeofday (&tv, NULL);
 	if (G_UNLIKELY (res != 0))

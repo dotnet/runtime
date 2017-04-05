@@ -1171,10 +1171,10 @@ mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar
 	bytes += 2;
 
 	if (size < bytes) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d smaller than needed (%ld); truncating", __func__, size, bytes);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d smaller than needed (%zd); truncating", __func__, size, bytes);
 		memcpy (basename, proc_path, size);
 	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d larger than needed (%ld)", __func__, size, bytes);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d larger than needed (%zd)", __func__, size, bytes);
 		memcpy (basename, proc_path, bytes);
 	}
 
@@ -1197,8 +1197,8 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	char *pname = NULL;
 	gboolean res;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module base name, process handle %p module %p",
-		   __func__, process, module);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Getting module base name, process handle %p module %p basename %p size %d",
+		   __func__, process, module, basename, size);
 
 	size = size * sizeof (gunichar2); /* adjust for unicode characters */
 
@@ -1215,7 +1215,8 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	pname = g_strdup (process_handle->pname);
 
 	mods = mono_w32process_get_modules (pid);
-	if (!mods) {
+	if (!mods && module != NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get modules %p", __func__, process);
 		g_free (pname);
 		return 0;
 	}
@@ -1236,11 +1237,14 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	}
 
 	if (procname_ext == NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from procmods %p", __func__, process);
 		/* If it's *still* null, we might have hit the
 		 * case where reading /proc/$pid/maps gives an
 		 * empty file for this user.
 		 */
 		procname_ext = mono_w32process_get_name (pid);
+		if (!procname_ext)
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext from proc_get_name %p pid %d", __func__, process, pid);
 	}
 
 	g_slist_free (mods);
@@ -1252,6 +1256,7 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get procname %p", __func__, process);
 			/* bugger */
 			g_free (procname_ext);
 			return 0;
@@ -1263,11 +1268,11 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 		bytes += 2;
 
 		if (size < bytes) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d smaller than needed (%ld); truncating", __func__, size, bytes);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d smaller than needed (%zd); truncating", __func__, size, bytes);
 
 			memcpy (basename, procname, size);
 		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d larger than needed (%ld)",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Size %d larger than needed (%zd)",
 				   __func__, size, bytes);
 
 			memcpy (basename, procname, bytes);
@@ -1279,6 +1284,7 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 		return len;
 	}
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't find procname_ext %p", __func__, process);
 	return 0;
 }
 
@@ -2314,7 +2320,6 @@ mono_w32process_set_cli_launcher (gchar *path)
 gpointer
 ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void)
 {
-	mono_w32handle_ref (current_process);
 	return current_process;
 }
 
