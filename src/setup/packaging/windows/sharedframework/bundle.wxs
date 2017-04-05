@@ -4,7 +4,6 @@
      xmlns:swid="http://schemas.microsoft.com/wix/TagExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include "Variables.wxi" ?>
-  <?include "..\inc\crtvariables.wxi" ?>
 
   <Bundle Name="$(var.ProductName)" Manufacturer="$(var.Manufacturer)"
           Version="$(var.DisplayVersion)" UpgradeCode="$(var.UpgradeCode)"
@@ -27,22 +26,6 @@
     <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitecture))" bal:Overridable="no" />
 
     <Chain DisableSystemRestore="yes" ParallelCache="yes">
-      <ExePackage Name="VC_redist.$(var.Platform).exe"
-                  DownloadUrl="$(var.Crt_DownloadUrl)"
-                  DetectCondition='(VCRedist_KeyExists AND VCRedist_KeyValue &gt;= "v14.0.23506.00")'
-                  InstallCommand="/q /norestart"
-                  PerMachine="yes"
-                  Vital="yes"
-                  Permanent="yes"
-                  Compressed="no">
-        <RemotePayload CertificatePublicKey="$(var.Crt_CertificatePublicKey)" 
-                       CertificateThumbprint="$(var.Crt_CertificateThumbprint)" 
-                       Description="$(var.Crt_Description)" 
-                       Hash="$(var.Crt_Hash)" 
-                       ProductName="$(var.Crt_ProductName)" 
-                       Size="$(var.Crt_Size)" 
-                       Version="$(var.Crt_Version)" />
-      </ExePackage>
       <MsiPackage SourceFile="$(var.SharedFXMsiSourcePath)">
         <MsiProperty Name="DOTNETHOME" Value="[DOTNETHOME]" />
       </MsiPackage>
@@ -56,23 +39,6 @@
   </Bundle>
 
   <Fragment>
-    <util:RegistrySearch
-       Id="VCRedist_KeyExists"
-       Variable="VCRedist_KeyExists"
-       Root="HKLM"
-       Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\$(var.Platform)"
-       Value="Version"
-       Win64="no"
-       Result="exists" />
-    <util:RegistrySearch
-       Id="VCRedist_KeyValue"
-       Variable="VCRedist_KeyValue"
-       Root="HKLM"
-       Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\$(var.Platform)"
-       Value="Version"
-       Win64="no"
-       Result="value" />
-
     <PayloadGroup Id="DotnetCoreBAPayloads">
       <Payload Name="thm.xml" Compressed="yes" SourceFile="bundle.thm" />
       <Payload Name="thm.wxl" Compressed="yes" SourceFile="bundle.wxl" />
