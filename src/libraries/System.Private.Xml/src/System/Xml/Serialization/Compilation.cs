@@ -179,7 +179,7 @@ namespace System.Xml.Serialization
                 name.CultureInfo = CultureInfo.InvariantCulture;
                 try
                 {
-                    serializer = Assembly.Load(name);
+                    serializer = Assembly.LoadFile(Path.GetFullPath(serializerName) + ".dll");
                 }
                 catch (Exception e)
                 {
@@ -193,9 +193,6 @@ namespace System.Xml.Serialization
                         // the parent assembly was signed, so do not try to LoadWithPartialName
                         return null;
                     }
-#pragma warning disable 618
-                    serializer = Assembly.LoadWithPartialName(serializerName);
-#pragma warning restore 618
                 }
                 if (serializer == null)
                 {
