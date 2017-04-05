@@ -1202,6 +1202,30 @@ void ZapUnwindData::Save(ZapWriter * pZapWriter)
 #endif //REDHAWK
 }
 
+#elif defined(_TARGET_X86_) && defined(FEATURE_PAL)
+
+UINT ZapUnwindData::GetAlignment()
+{
+    return sizeof(BYTE);
+}
+
+DWORD ZapUnwindData::GetSize()
+{
+    DWORD dwSize = ZapBlob::GetSize();
+
+    return dwSize;
+}
+
+void ZapUnwindData::Save(ZapWriter * pZapWriter)
+{
+    ZapImage * pImage = ZapImage::GetImage(pZapWriter);
+
+    PVOID pData = GetData();
+    DWORD dwSize = GetBlobSize();
+
+    pZapWriter->Write(pData, dwSize);
+}
+
 #elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 
 UINT ZapUnwindData::GetAlignment()
