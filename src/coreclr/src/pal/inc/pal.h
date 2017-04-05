@@ -4137,6 +4137,12 @@ QueryThreadCycleTime(
     IN HANDLE ThreadHandle,
     OUT PULONG64 CycleTime);
 
+PALIMPORT
+INT
+PALAPI
+PAL_nanosleep(
+    IN long timeInNs);
+
 #ifndef FEATURE_PAL_SXS
 
 typedef LONG (PALAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
