@@ -1,0 +1,13 @@
+<linker>
+  <assembly fullname="System.Diagnostics.DiagnosticSource">
+    <type fullname="System.Diagnostics.DiagnosticSourceEventSource">
+      <!-- DiagnosticSourceEventSource calls these methods through reflection based on strings passed from user code -->
+      <method name="Activity1Start" />
+      <method name="Activity1Stop" />
+      <method name="Activity2Start" />
+      <method name="Activity2Stop" />
+      <method name="RecursiveActivity1Start" />
+      <method name="RecursiveActivity1Stop" />
+    </type>
+  </assembly>
+</linker>

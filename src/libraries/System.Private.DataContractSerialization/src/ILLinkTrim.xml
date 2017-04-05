@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.DataContractSerialization">
+    <type fullname="System.Runtime.Serialization.DataContractSerializer">
+      <!-- called through reflection by tests -->
+      <method name="set_Option" />
+    </type>
+  </assembly>
+</linker>

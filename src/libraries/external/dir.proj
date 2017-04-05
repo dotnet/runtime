@@ -15,6 +15,7 @@
     <Project Include="portable\portable.depproj" />
     <Project Include="uapaotredist/uapaotredist.depproj" />
     <Project Include="ilasm/ilasm.depproj" />
+    <Project Condition="'$(ILLinkTrimAssembly)' != 'false'" Include="ILLink/ILLink.depproj" />
   </ItemGroup>
 
   <Import Project="../dir.traversal.targets" />
