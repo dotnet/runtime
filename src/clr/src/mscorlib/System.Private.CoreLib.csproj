@@ -660,9 +660,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Security\Util\URLString.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilters.cs" />
