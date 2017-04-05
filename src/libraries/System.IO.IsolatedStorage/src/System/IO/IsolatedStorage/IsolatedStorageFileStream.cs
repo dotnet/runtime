@@ -193,6 +193,14 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        public override bool IsAsync
+        {
+            get
+            {
+                return _fs.IsAsync;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -212,6 +220,11 @@ namespace System.IO.IsolatedStorage
         public override void Flush()
         {
             _fs.Flush();
+        }
+
+        public override void Flush(bool flushToDisk)
+        {
+            _fs.Flush(flushToDisk);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -295,6 +308,14 @@ namespace System.IO.IsolatedStorage
         public override void Lock(long position, long length)
         {
             _fs.Lock(position, length);
+        }
+
+        public override SafeFileHandle SafeFileHandle
+        {
+            get
+            {
+                throw new IsolatedStorageException(SR.IsolatedStorage_Operation_ISFS);
+            }
         }
     }
 }
