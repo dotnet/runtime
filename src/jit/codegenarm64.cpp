@@ -4733,13 +4733,13 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 if (lsl > 0)
                 {
                     // Generate code to set tmpReg = base + index*scale
-                    emit->emitIns_R_R_R_I(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl,
+                    emit->emitIns_R_R_R_I(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl,
                                           INS_OPTS_LSL);
                 }
                 else // no scale
                 {
                     // Generate code to set tmpReg = base + index
-                    emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum);
+                    emit->emitIns_R_R_R(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum);
                 }
 
                 // Then compute target reg from [tmpReg + offset]
@@ -4752,7 +4752,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                 // Then add the base register
                 //      rd = rd + base
-                emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, memBase->gtRegNum);
+                emit->emitIns_R_R_R(INS_add, size, tmpReg, tmpReg, memBase->gtRegNum);
 
                 noway_assert(tmpReg != index->gtRegNum);
 
