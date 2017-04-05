@@ -4181,3 +4181,28 @@ public partial class CompositeTypeForXmlMembersMapping
         }
     }
 }
+
+public delegate void MyDelegate();
+
+[Serializable]
+public class TypeWithDelegate : ISerializable
+{
+    public TypeWithDelegate()
+    {
+
+    }
+
+    public TypeWithDelegate(SerializationInfo info, StreamingContext context)
+    {
+        IntProperty = info.GetInt32("IntValue");
+    }
+
+    public int IntProperty { get; set; }
+
+    public MyDelegate DelegateProperty { get; set; }
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue("IntValue", IntProperty);
+    }
+}
