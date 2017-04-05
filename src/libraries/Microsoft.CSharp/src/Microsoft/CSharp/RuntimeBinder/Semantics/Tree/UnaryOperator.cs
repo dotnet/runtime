@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprUnaryOp(ExpressionKind kind, CType type)
             : base(kind, type)
         {
-            Debug.Assert(kind.isUnaryOperator());
+            Debug.Assert(kind.IsUnaryOperator());
         }
 
         public Expr Child { get; set; }

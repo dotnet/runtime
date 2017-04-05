@@ -672,8 +672,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 switch (pSource.Kind)
                 {
-                    case ExpressionKind.EK_MEMGRP:
-                    case ExpressionKind.EK_BOUNDLAMBDA:
+                    case ExpressionKind.MemberGroup:
+                    case ExpressionKind.BoundLambda:
                         TypeArray pDelegateParameters = pDest.AsAggregateType().GetDelegateParameters(GetSymbolLoader());
                         if (pDelegateParameters != null)
                         {
@@ -720,8 +720,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 switch (pSource.Kind)
                 {
-                    case ExpressionKind.EK_MEMGRP:
-                    case ExpressionKind.EK_BOUNDLAMBDA:
+                    case ExpressionKind.MemberGroup:
+                    case ExpressionKind.BoundLambda:
                         CType pDelegateReturn = pDest.AsAggregateType().GetDelegateReturnType(GetSymbolLoader());
                         if (pDelegateReturn != null)
                         {

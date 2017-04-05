@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprMethodInfo : ExprWithType
     {
         public ExprMethodInfo(CType type)
-            : base(ExpressionKind.EK_METHODINFO, type)
+            : base(ExpressionKind.MethodInfo, type)
         {
         }
 

@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprUserLogicalOp : ExprWithType
     {
         public ExprUserLogicalOp(CType type)
-            : base(ExpressionKind.EK_USERLOGOP, type)
+            : base(ExpressionKind.UserLogicalOp, type)
         {
         }
 

@@ -430,7 +430,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     op2 = bindPtrToString(op2);
                 }
-                else if (op2.Kind == ExpressionKind.EK_ADDR)
+                else if (op2.Kind == ExpressionKind.Addr)
                 {
                     op2.Flags |= EXPRFLAG.EXF_ADDRNOCONV;
                 }
@@ -536,7 +536,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             CType typeRet = GetTypes().GetPointer(GetReqPDT(PredefinedType.PT_CHAR));
 
-            return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_ADDR, typeRet, @string);
+            return GetExprFactory().CreateUnaryOp(ExpressionKind.Addr, typeRet, @string);
         }
 
         private ExprQuestionMark BindPtrToArray(ExprLocal exprLoc, Expr array)
@@ -562,21 +562,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // the time of the cast and the assignment to the local, we're toast.
             ExprWrap wrapArray = WrapShortLivedExpression(array);
             Expr save = GetExprFactory().CreateSave(wrapArray);
-            Expr nullTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), save, GetExprFactory().CreateConstant(wrapArray.Type, ConstVal.Get(0)));
+            Expr nullTest = GetExprFactory().CreateBinop(ExpressionKind.NotEq, GetReqPDT(PredefinedType.PT_BOOL), save, GetExprFactory().CreateConstant(wrapArray.Type, ConstVal.Get(0)));
             Expr lenTest;
 
             if (array.Type.AsArrayType().rank == 1)
             {
                 Expr len = GetExprFactory().CreateArrayLength(wrapArray);
-                lenTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), len, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), ConstVal.Get(0)));
+                lenTest = GetExprFactory().CreateBinop(ExpressionKind.NotEq, GetReqPDT(PredefinedType.PT_BOOL), len, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), ConstVal.Get(0)));
             }
             else
             {
                 ExprCall call = BindPredefMethToArgs(PREDEFMETH.PM_ARRAY_GETLENGTH, wrapArray, null, null, null);
-                lenTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), call, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), ConstVal.Get(0)));
+                lenTest = GetExprFactory().CreateBinop(ExpressionKind.NotEq, GetReqPDT(PredefinedType.PT_BOOL), call, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), ConstVal.Get(0)));
             }
 
-            test = GetExprFactory().CreateBinop(ExpressionKind.EK_LOGAND, GetReqPDT(PredefinedType.PT_BOOL), nullTest, lenTest);
+            test = GetExprFactory().CreateBinop(ExpressionKind.LogicalAnd, GetReqPDT(PredefinedType.PT_BOOL), nullTest, lenTest);
 
             Expr list = null;
             Expr pList = list;
@@ -587,18 +587,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             Debug.Assert(list != null);
 
-            Expr exprAddr = GetExprFactory().CreateUnaryOp(ExpressionKind.EK_ADDR, typePtrElem, GetExprFactory().CreateArrayIndex(wrapArray, list));
+            Expr exprAddr = GetExprFactory().CreateUnaryOp(ExpressionKind.Addr, typePtrElem, GetExprFactory().CreateArrayIndex(wrapArray, list));
             exprAddr.Flags |= EXPRFLAG.EXF_ADDRNOCONV;
             exprAddr = mustConvert(exprAddr, exprLoc.Type, CONVERTTYPE.NOUDC);
             exprAddr = GetExprFactory().CreateAssignment(exprLoc, exprAddr);
             exprAddr.Flags |= EXPRFLAG.EXF_ASSGOP;
-            exprAddr = GetExprFactory().CreateBinop(ExpressionKind.EK_SEQREV, exprLoc.Type, exprAddr, WrapShortLivedExpression(wrapArray)); // free the temp
+            exprAddr = GetExprFactory().CreateBinop(ExpressionKind.SequenceReverse, exprLoc.Type, exprAddr, WrapShortLivedExpression(wrapArray)); // free the temp
 
             Expr exprnull = GetExprFactory().CreateZeroInit(exprLoc.Type);
             exprnull = GetExprFactory().CreateAssignment(exprLoc, exprnull);
             exprnull.Flags |= EXPRFLAG.EXF_ASSGOP;
 
-            ExprBinOp exprRes = GetExprFactory().CreateBinop(ExpressionKind.EK_BINOP, exprAddr.Type, exprAddr, exprnull);
+            ExprBinOp exprRes = GetExprFactory().CreateBinop(ExpressionKind.BinaryOp, exprAddr.Type, exprAddr, exprnull);
             return GetExprFactory().CreateQuestionMark(test, exprRes);
         }
 
@@ -1494,7 +1494,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_PROP:
+                case ExpressionKind.Property:
                     if (kind == CheckLvalueKind.OutParameter)
                     {
                         // passing a property as ref or out
@@ -1533,7 +1533,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     break;
 
-                case ExpressionKind.EK_ARRAYLENGTH:
+                case ExpressionKind.ArrayLength:
                     if (kind == CheckLvalueKind.OutParameter)
                     {
                         // passing a property as ref or out
@@ -1546,12 +1546,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     return true;
 
-                case ExpressionKind.EK_BOUNDLAMBDA:
-                case ExpressionKind.EK_UNBOUNDLAMBDA:
-                case ExpressionKind.EK_CONSTANT:
+                case ExpressionKind.BoundLambda:
+                case ExpressionKind.UnboundLambda:
+                case ExpressionKind.Constant:
                     ErrorContext.Error(GetStandardLvalueError(kind));
                     return false;
-                case ExpressionKind.EK_MEMGRP:
+                case ExpressionKind.MemberGroup:
                     {
                         ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
                         ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
@@ -1837,7 +1837,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                        isThisPointer(pObject) ||  // the this pointer's fields or props are lvalues
 
-                       (((pObject.Flags & EXPRFLAG.EXF_LVALUE) != 0) && (pObject.Kind != ExpressionKind.EK_PROP)) ||
+                       (((pObject.Flags & EXPRFLAG.EXF_LVALUE) != 0) && (pObject.Kind != ExpressionKind.Property)) ||
                        // things marked as lvalues have props/fields which are lvalues, with one exception:  props of structs
                        // do not have fields/structs as lvalues
 
@@ -2488,8 +2488,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Name ekName(ExpressionKind ek)
         {
-            Debug.Assert(ek >= ExpressionKind.EK_FIRSTOP && (ek - ExpressionKind.EK_FIRSTOP) < (int)s_EK2NAME.Length);
-            return NameManager.GetPredefinedName(s_EK2NAME[ek - ExpressionKind.EK_FIRSTOP]);
+            Debug.Assert(ek >= ExpressionKind.FirstOp && (ek - ExpressionKind.FirstOp) < (int)s_EK2NAME.Length);
+            return NameManager.GetPredefinedName(s_EK2NAME[ek - ExpressionKind.FirstOp]);
         }
 
         private void checkUnsafe(CType type)

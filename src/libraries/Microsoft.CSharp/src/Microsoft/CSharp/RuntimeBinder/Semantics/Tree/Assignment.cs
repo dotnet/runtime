@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprAssignment : Expr
     {
         public ExprAssignment()
-            : base(ExpressionKind.EK_ASSIGNMENT)
+            : base(ExpressionKind.Assignment)
         {
         }
 

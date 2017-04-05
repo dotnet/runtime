@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprNamedArgumentSpecification : Expr
     {
         public ExprNamedArgumentSpecification()
-            : base(ExpressionKind.EK_NamedArgumentSpecification)
+            : base(ExpressionKind.NamedArgumentSpecification)
         {
         }
 

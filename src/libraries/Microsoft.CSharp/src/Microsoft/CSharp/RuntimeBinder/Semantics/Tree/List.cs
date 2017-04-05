@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprList : Expr
     {
         public ExprList()
-            : base(ExpressionKind.EK_LIST)
+            : base(ExpressionKind.List)
         {            
         }
 

@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr OptionalElements { get; set; }
 
         public ExprTypeArguments()
-            : base(ExpressionKind.EK_TYPEARGUMENTS)
+            : base(ExpressionKind.TypeArguments)
         {
         }
     }

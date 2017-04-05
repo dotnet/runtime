@@ -7,7 +7,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExprReturn : ExprStatement, IExprWithObject
     {
         public ExprReturn()
-            : base(ExpressionKind.EK_RETURN)
+            : base(ExpressionKind.Return)
         {
         }
 

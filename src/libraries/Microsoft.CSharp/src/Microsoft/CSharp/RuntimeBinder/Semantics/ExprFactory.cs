@@ -528,7 +528,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprUnaryOp CreateUnaryOp(ExpressionKind exprKind, CType pType, Expr pOperand)
         {
-            Debug.Assert(exprKind.isUnaryOperator());
+            Debug.Assert(exprKind.IsUnaryOperator());
             Debug.Assert(pOperand != null);
             ExprUnaryOp rval = new ExprUnaryOp(exprKind, pType);
             rval.Child = pOperand;
@@ -538,8 +538,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprOperator CreateOperator(ExpressionKind exprKind, CType pType, Expr pArg1, Expr pOptionalArg2)
         {
             Debug.Assert(pArg1 != null);
-            Debug.Assert(exprKind.isUnaryOperator() ? pOptionalArg2 == null : pOptionalArg2 != null);
-            return exprKind.isUnaryOperator()
+            Debug.Assert(exprKind.IsUnaryOperator() ? pOptionalArg2 == null : pOptionalArg2 != null);
+            return exprKind.IsUnaryOperator()
                 ? (ExprOperator)CreateUnaryOp(exprKind, pType, pArg1)
                 : CreateBinop(exprKind, pType, pArg1, pOptionalArg2);
         }
@@ -584,7 +584,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprUnaryOp CreateNeg(EXPRFLAG nFlags, Expr pOperand)
         {
             Debug.Assert(pOperand != null);
-            ExprUnaryOp pUnaryOp = CreateUnaryOp(ExpressionKind.EK_NEG, pOperand.Type, pOperand);
+            ExprUnaryOp pUnaryOp = CreateUnaryOp(ExpressionKind.Negate, pOperand.Type, pOperand);
             pUnaryOp.Flags |= nFlags;
             return pUnaryOp;
         }
@@ -596,7 +596,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(p1 != null);
             Debug.Assert(p2 != null);
-            return CreateBinop(ExpressionKind.EK_SEQUENCE, p2.Type, p1, p2);
+            return CreateBinop(ExpressionKind.Sequence, p2.Type, p1, p2);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -606,7 +606,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(p1 != null);
             Debug.Assert(p2 != null);
-            return CreateBinop(ExpressionKind.EK_SEQREV, p1.Type, p1, p2);
+            return CreateBinop(ExpressionKind.SequenceReverse, p1.Type, p1, p2);
         }
 
         public ExprAssignment CreateAssignment(Expr pLHS, Expr pRHS)
@@ -649,7 +649,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprBinOp CreateSave(ExprWrap wrap)
         {
             Debug.Assert(wrap != null);
-            ExprBinOp expr = CreateBinop(ExpressionKind.EK_SAVE, wrap.Type, wrap.OptionalExpression, wrap);
+            ExprBinOp expr = CreateBinop(ExpressionKind.Save, wrap.Type, wrap.OptionalExpression, wrap);
             expr.SetAssignment();
             return expr;
         }
@@ -677,7 +677,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 last = newItem;
                 return;
             }
-            if (first.Kind != ExpressionKind.EK_LIST)
+            if (first.Kind != ExpressionKind.List)
             {
                 Debug.Assert(last == first);
                 first = CreateList(first, newItem);
@@ -685,7 +685,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return;
             }
             Debug.Assert((last as ExprList)?.OptionalNextListNode != null);
-            Debug.Assert((last as ExprList).OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+            Debug.Assert((last as ExprList).OptionalNextListNode.Kind != ExpressionKind.List);
             ExprList list = (ExprList)last;
             list.OptionalNextListNode = CreateList(list.OptionalNextListNode, newItem);
             last = list.OptionalNextListNode;
