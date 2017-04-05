@@ -788,6 +788,50 @@ namespace System.Xml.Serialization
 #endif
         }
 
+#if XMLSERIALIZERGENERATOR
+        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
+        [ResourceExposure(ResourceScope.None)]
+        public static bool GenerateSerializer(Type[] types, XmlMapping[] mappings, string codePath)
+        {
+            if (types == null || types.Length == 0)
+                return false;
+
+            if (mappings == null)
+                throw new ArgumentNullException(nameof(mappings));
+
+            if(!Directory.Exists(codePath))
+            {
+                throw new ArgumentException(SR.Format(SR.XmlMelformMapping));
+            }
+
+            if (XmlMapping.IsShallow(mappings))
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlMelformMapping));
+            }
+
+            Assembly assembly = null;
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type type = types[i];
+                if (DynamicAssemblies.IsTypeDynamic(type))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.XmlPregenTypeDynamic, type.FullName));
+                }
+
+                if (assembly == null)
+                {
+                    assembly = type.Assembly;
+                }
+                else if (type.Assembly != assembly)
+                {
+                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, assembly.Location), "types");
+                }
+            }
+
+            return TempAssembly.GenerateSerializerFile(mappings, types, null, assembly, new Hashtable(), codePath);
+        }
+#endif
+
         private static XmlSerializer[] GetSerializersFromCache(XmlMapping[] mappings, Type type)
         {
             XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
