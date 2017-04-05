@@ -966,6 +966,14 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 
 #endif // FEATURE_READYTORUN
 
+//
+// Entry stack:
+//    dispatch token
+//    siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
+//    return address of caller to stub
+//
+// Please see vm/i386/virtualcallstubcpu.hpp for details
+//
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     //
     // The stub arguments are where we want to setup the TransitionBlock. We will
@@ -987,32 +995,40 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     mov         esi, esp
 
+    #define STACK_ALIGN_PADDING 8
+
+    sub         esp, STACK_ALIGN_PADDING
     push        [esi + 4*4]     // dispatch token
     push        [esi + 5*4]     // siteAddrForRegisterIndirect
     push        esi             // pTransitionBlock
 
     // Setup up proper EBP frame now that the stub arguments can be trashed
-    mov         [esi + 4*4],ebx
-    mov         [esi + 5*4],ebp
+    mov         [esi + 4*4], ebx
+    mov         [esi + 5*4], ebp
     lea         ebp, [esi + 5*4]
 
     // Make the call
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(VSD_ResolveWorker)
+
+    add         esp, STACK_ALIGN_PADDING
+
+    #undef STACK_ALIGN_PADDING
 
     // From here on, mustn't trash eax
 
     // pop ArgumentRegisters
-    pop     edx
-    pop     ecx
+    pop         edx
+    pop         ecx
 
     // pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
 
     // Now jump to the target
-    jmp     eax             // continue on into the method
+    jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
 #ifdef FEATURE_STUBS_AS_IL
