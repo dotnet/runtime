@@ -2393,6 +2393,10 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #include <xclrdata.h>
 #endif
 
+#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
+typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
+#endif
+
 #ifdef _WIN64
 typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
