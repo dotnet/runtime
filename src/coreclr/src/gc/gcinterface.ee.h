@@ -142,6 +142,15 @@ public:
     // an app domain.
     virtual
     bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj) = 0;
+
+    // Offers the EE the option to finalize the given object eagerly, i.e.
+    // not on the finalizer thread but on the current thread. The
+    // EE returns true if it finalized the object eagerly and the GC does not
+    // need to do so, and false if it chose not to eagerly finalize the object
+    // and it's up to the GC to finalize it later.
+    virtual
+    bool EagerFinalized(Object* obj) = 0;
+
 };
 
 #endif // _GCINTERFACE_EE_H_
