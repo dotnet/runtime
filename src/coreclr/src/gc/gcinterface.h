@@ -395,6 +395,8 @@ public:
     virtual void* GetHandleTableContext(void* handleTable) = 0;
 
     virtual void* GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.

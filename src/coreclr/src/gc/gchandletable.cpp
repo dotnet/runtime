@@ -32,3 +32,8 @@ void* GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
 {
     return (void*)::HndGetHandleTable(handle);
 }
+
+OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* table, Object* object, int type)
+{
+    return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object));
+}

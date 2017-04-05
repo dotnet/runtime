@@ -1238,7 +1238,9 @@ public:
     OBJECTHANDLE CreateTypedHandle(OBJECTREF object, int type)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateTypedHandle(m_hHandleTableBucket->pTable[GetCurrentThreadHomeHeapNumber()], object, type);
+
+        IGCHandleTable *pHandleTable = GCHeapUtilities::GetGCHandleTable();
+        return pHandleTable->CreateHandleOfType(m_hHandleTableBucket->pTable[GetCurrentThreadHomeHeapNumber()], OBJECTREFToObject(object), type);
     }
 
     OBJECTHANDLE CreateHandle(OBJECTREF object)
