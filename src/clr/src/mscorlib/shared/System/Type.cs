@@ -44,6 +44,7 @@ namespace System
         public virtual bool IsGenericTypeDefinition => false;
 
         public virtual bool IsSZArray { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsVariableBoundArray => IsArray && !IsSZArray;
 
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
