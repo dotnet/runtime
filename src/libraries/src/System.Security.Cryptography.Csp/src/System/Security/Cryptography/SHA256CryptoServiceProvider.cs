@@ -10,14 +10,14 @@ namespace System.Security.Cryptography
     // If you change this file, make the corresponding changes to all of the SHA*CryptoServiceProvider.cs files.
     //
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public sealed class SHA1CryptoServiceProvider : SHA1
+    public sealed class SHA256CryptoServiceProvider : SHA256
     {
-        private const int HashSizeBits = 160;
+        private const int HashSizeBits = 256;
         private readonly IncrementalHash _incrementalHash;
 
-        public SHA1CryptoServiceProvider()
+        public SHA256CryptoServiceProvider()
         {
-            _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
+            _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             HashSizeValue = HashSizeBits;
         }
 
