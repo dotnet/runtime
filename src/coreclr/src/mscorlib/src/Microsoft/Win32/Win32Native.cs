@@ -834,13 +834,13 @@ namespace Microsoft.Win32
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal unsafe static extern int RegEnumKeyEx(SafeRegistryHandle hKey, int dwIndex,
-                    char* lpName, ref int lpcbName, int[] lpReserved,
+                    char[] lpName, ref int lpcbName, int[] lpReserved,
                     [Out]StringBuilder lpClass, int[] lpcbClass,
                     long[] lpftLastWriteTime);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal unsafe static extern int RegEnumValue(SafeRegistryHandle hKey, int dwIndex,
-                    char* lpValueName, ref int lpcbValueName,
+                    char[] lpValueName, ref int lpcbValueName,
                     IntPtr lpReserved_MustBeZero, int[] lpType, byte[] lpData,
                     int[] lpcbData);
 

@@ -4,6 +4,7 @@
 
 internal partial class Interop
 {
+    // As defined in winerror.h and https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382.aspx
     internal partial class Errors
     {
         internal const int ERROR_SUCCESS = 0x0;
