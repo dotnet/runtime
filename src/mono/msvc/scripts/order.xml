@@ -4259,7 +4259,7 @@
     </project>
     <project dir="class/Facades/System.Data.Common" library="Facades_System.Data.Common-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.Xml.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.Xml.dll</flags>
       <output>System.Data.Common.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.Data.Common.dll</library_output>
