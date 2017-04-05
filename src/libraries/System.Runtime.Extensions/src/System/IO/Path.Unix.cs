@@ -206,40 +206,6 @@ namespace System.IO
             return IsPathRooted(path) ? DirectorySeparatorCharAsString : String.Empty;
         }
 
-        private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
-        {
-            if (Environment.IsMac)
-            {
-                GetCryptoRandomBytesApple(bytes, byteCount);
-            }
-            else
-            {
-                GetCryptoRandomBytesOpenSsl(bytes, byteCount);
-            }
-        }
-
-        private static unsafe void GetCryptoRandomBytesApple(byte* bytes, int byteCount)
-        {
-            Debug.Assert(bytes != null);
-            Debug.Assert(byteCount >= 0);
-
-            if (Interop.CommonCrypto.CCRandomGenerateBytes(bytes, byteCount) != 0)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-            }
-        }
-
-        private static unsafe void GetCryptoRandomBytesOpenSsl(byte* bytes, int byteCount)
-        {
-            Debug.Assert(bytes != null);
-            Debug.Assert(byteCount >= 0);
-
-            if (!Interop.Crypto.GetRandomBytes(bytes, byteCount))
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-            }
-        }
-
         /// <summary>Gets whether the system is case-sensitive.</summary>
         internal static bool IsCaseSensitive { get { return !s_isMac; } }
     }
