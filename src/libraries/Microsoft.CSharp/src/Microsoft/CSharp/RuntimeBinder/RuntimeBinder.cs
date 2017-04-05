@@ -1570,7 +1570,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 throw Error.BindBinaryAssignmentFailedNullReference();
             }
 
-            return _binder.bindAssignment(lhs, rhs, bIsCompound);
+            return _binder.BindAssignment(lhs, rhs, bIsCompound);
         }
         #endregion
 
