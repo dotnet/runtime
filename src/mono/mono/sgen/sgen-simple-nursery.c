@@ -57,7 +57,14 @@ clear_fragments (void)
 static void
 init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 {
-	sgen_fragment_allocator_add (allocator, start, end);
+	char *nursery_limit = sgen_nursery_start + sgen_nursery_size;
+
+	if (start < nursery_limit && end > nursery_limit) {
+		sgen_fragment_allocator_add (allocator, start, nursery_limit);
+		sgen_fragment_allocator_add (allocator, nursery_limit, end);
+	} else {
+		sgen_fragment_allocator_add (allocator, start, end);
+	}
 }
 
 

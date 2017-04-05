@@ -946,40 +946,51 @@ sgen_update_heap_boundaries (mword low, mword high)
  * in the nursery. The nursery is stored in nursery_section.
  */
 static void
-alloc_nursery (void)
+alloc_nursery (gboolean dynamic, size_t min_size, size_t max_size)
 {
-	GCMemSection *section;
 	char *data;
 	size_t scan_starts;
-	size_t alloc_size;
 
-	if (nursery_section)
-		return;
-	SGEN_LOG (2, "Allocating nursery size: %zu", (size_t)sgen_nursery_size);
-	/* later we will alloc a larger area for the nursery but only activate
-	 * what we need. The rest will be used as expansion if we have too many pinned
-	 * objects in the existing nursery.
-	 */
+	if (dynamic) {
+		if (!min_size)
+			min_size = SGEN_DEFAULT_NURSERY_MIN_SIZE;
+		if (!max_size)
+			max_size = SGEN_DEFAULT_NURSERY_MAX_SIZE;
+	} else {
+		SGEN_ASSERT (0, min_size == max_size, "We can't have nursery ranges for static configuration.");
+		if (!min_size)
+			min_size = max_size = SGEN_DEFAULT_NURSERY_SIZE;
+	}
+
+	SGEN_ASSERT (0, !nursery_section, "Why are we allocating the nursery twice?");
+	SGEN_LOG (2, "Allocating nursery size: %zu, initial %zu", max_size, min_size);
+
 	/* FIXME: handle OOM */
-	section = (GCMemSection *)sgen_alloc_internal (INTERNAL_MEM_SECTION);
-
-	alloc_size = sgen_nursery_size;
+	nursery_section = (GCMemSection *)sgen_alloc_internal (INTERNAL_MEM_SECTION);
 
 	/* If there isn't enough space even for the nursery we should simply abort. */
-	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
+	g_assert (sgen_memgov_try_alloc_space (max_size, SPACE_NURSERY));
 
-	data = (char *)major_collector.alloc_heap (alloc_size, alloc_size, sgen_nursery_bits);
-	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
-	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)sgen_gc_get_total_heap_allocation ());
-	section->data = data;
-	section->end_data = data + sgen_nursery_size;
-	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = (char **)sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
-	section->num_scan_start = scan_starts;
+	/*
+	 * The nursery section range represents the memory section where objects
+	 * can be found. This is used when iterating for objects in the nursery,
+	 * pinning etc. sgen_nursery_max_size represents the total allocated space
+	 * for the nursery. sgen_nursery_size represents the current size of the
+	 * nursery and it is used for allocation limits, heuristics etc. The
+	 * nursery section is not always identical to the current nursery size
+	 * because it can contain pinned objects from when the nursery was larger.
+	 *
+	 * sgen_nursery_size <= nursery_section size <= sgen_nursery_max_size
+	 */
+	data = (char *)major_collector.alloc_heap (max_size, max_size);
+	sgen_update_heap_boundaries ((mword)data, (mword)(data + max_size));
+	nursery_section->data = data;
+	nursery_section->end_data = data + min_size;
+	scan_starts = (max_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
+	nursery_section->scan_starts = (char **)sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
+	nursery_section->num_scan_start = scan_starts;
 
-	nursery_section = section;
-
-	sgen_nursery_allocator_set_nursery_bounds (data, data + sgen_nursery_size);
+	sgen_nursery_allocator_set_nursery_bounds (data, min_size, max_size);
 }
 
 FILE *
@@ -1731,6 +1742,8 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	 */
 	if (remset_consistency_checks)
 		sgen_check_remset_consistency ();
+
+	sgen_resize_nursery ();
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -2984,6 +2997,8 @@ sgen_gc_init (void)
 	gboolean debug_print_allowance = FALSE;
 	double allowance_ratio = 0, save_target = 0;
 	gboolean cement_enabled = TRUE;
+	gboolean dynamic_nursery = FALSE;
+	size_t min_nursery_size = 0, max_nursery_size = 0;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -3132,10 +3147,8 @@ sgen_gc_init (void)
 						continue;
 					}
 
-					sgen_nursery_size = val;
-					sgen_nursery_bits = 0;
-					while (ONE_P << (++ sgen_nursery_bits) != sgen_nursery_size)
-						;
+					min_nursery_size = max_nursery_size = val;
+					dynamic_nursery = FALSE;
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "`nursery-size` must be an integer.");
 					continue;
@@ -3179,6 +3192,19 @@ sgen_gc_init (void)
 				continue;
 			}
 
+			if (!strcmp (opt, "dynamic-nursery")) {
+				if (sgen_minor_collector.is_split)
+					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.",
+							"dynamic-nursery not supported with split-nursery.");
+				else
+					dynamic_nursery = TRUE;
+				continue;
+			}
+			if (!strcmp (opt, "no-dynamic-nursery")) {
+				dynamic_nursery = FALSE;
+				continue;
+			}
+
 			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
 				continue;
 
@@ -3201,6 +3227,7 @@ sgen_gc_init (void)
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  [no-]cementing\n");
+			fprintf (stderr, "  [no-]dynamic-nursery\n");
 			if (major_collector.print_gc_param_usage)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
@@ -3225,7 +3252,7 @@ sgen_gc_init (void)
 	if (params_opts)
 		g_free (params_opts);
 
-	alloc_nursery ();
+	alloc_nursery (dynamic_nursery, min_nursery_size, max_nursery_size);
 
 	sgen_pinning_init ();
 	sgen_cement_init (cement_enabled);

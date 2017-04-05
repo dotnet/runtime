@@ -204,4 +204,11 @@ typedef mword SgenDescriptor;
 #define SGEN_CEMENT_HASH(hv)	(((hv) ^ ((hv) >> SGEN_CEMENT_HASH_SHIFT)) & (SGEN_CEMENT_HASH_SIZE - 1))
 #define SGEN_CEMENT_THRESHOLD	1000
 
+/*
+ * Default values for the nursery size
+ */
+#define SGEN_DEFAULT_NURSERY_MIN_SIZE	(1 << 19)
+#define SGEN_DEFAULT_NURSERY_SIZE	(1 << 22)
+#define SGEN_DEFAULT_NURSERY_MAX_SIZE	(1 << 25)
+
 #endif

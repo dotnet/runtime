@@ -184,6 +184,7 @@ sgen_aligned_addr_hash (gconstpointer ptr)
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~(((mword)1 << (bits)) - 1)) == (mword)(start))
 
 extern size_t sgen_nursery_size;
+extern size_t sgen_nursery_max_size;
 extern int sgen_nursery_bits;
 
 extern char *sgen_nursery_start;
@@ -623,7 +624,7 @@ struct _SgenMajorCollector {
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
 
-	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
+	void* (*alloc_heap) (mword nursery_size, mword nursery_align);
 	gboolean (*is_object_live) (GCObject *obj);
 	GCObject* (*alloc_small_pinned_obj) (GCVTable vtable, size_t size, gboolean has_references);
 	GCObject* (*alloc_degraded) (GCVTable vtable, size_t size);
@@ -895,7 +896,8 @@ void sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr);
 
 void sgen_clear_nursery_fragments (void);
 void sgen_nursery_allocator_prepare_for_pinning (void);
-void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end);
+void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, size_t min_size, size_t max_size);
+void sgen_resize_nursery (void);
 mword sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue);
 void sgen_init_nursery_allocator (void);
 void sgen_nursery_allocator_init_heavy_stats (void);
