@@ -53,8 +53,7 @@ if [ ! -z "$clone" ]; then
 fi
 
 pushd linker/corebuild
-./restore.sh -RuntimeIdentifier=$rid
-export DoNotEmbedDescriptors=1
+./restore.sh -r $rid
 cd ../linker
 ../corebuild/Tools/dotnetcli/dotnet publish -r $rid -c netcore_Release
 popd
