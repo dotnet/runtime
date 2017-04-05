@@ -4733,8 +4733,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 if (lsl > 0)
                 {
                     // Generate code to set tmpReg = base + index*scale
-                    emit->emitIns_R_R_R_I(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl,
-                                          INS_OPTS_LSL);
+                    emit->emitIns_R_R_R_I(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl, INS_OPTS_LSL);
                 }
                 else // no scale
                 {
