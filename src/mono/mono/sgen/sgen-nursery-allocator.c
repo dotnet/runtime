@@ -799,13 +799,6 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 	return fragment_total;
 }
 
-char *
-sgen_nursery_alloc_get_upper_alloc_bound (void)
-{
-	/*FIXME we need to calculate the collector upper bound as well, but this must be done in the previous GC. */
-	return sgen_nursery_end;
-}
-
 /*** Nursery memory allocation ***/
 void
 sgen_nursery_retire_region (void *address, ptrdiff_t size)

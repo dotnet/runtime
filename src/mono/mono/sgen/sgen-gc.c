@@ -530,7 +530,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 	void **start =  sgen_pinning_get_entry (section->pin_queue_first_entry);
 	void **end = sgen_pinning_get_entry (section->pin_queue_last_entry);
 	void *start_nursery = section->data;
-	void *end_nursery = section->next_data;
+	void *end_nursery = section->end_data;
 	void *last = NULL;
 	int count = 0;
 	void *search_start;
@@ -971,8 +971,7 @@ alloc_nursery (void)
 	data = (char *)major_collector.alloc_heap (alloc_size, alloc_size, sgen_nursery_bits);
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
 	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)sgen_gc_get_total_heap_allocation ());
-	section->data = section->next_data = data;
-	section->size = alloc_size;
+	section->data = data;
 	section->end_data = data + sgen_nursery_size;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = (char **)sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
@@ -1598,8 +1597,6 @@ static gboolean
 collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_queue)
 {
 	gboolean needs_major, is_parallel = FALSE;
-	size_t max_garbage_amount;
-	char *nursery_next;
 	mword fragment_total;
 	SgenGrayQueue gc_thread_gray_queue;
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
@@ -1643,21 +1640,14 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	degraded_mode = 0;
 	objects_pinned = 0;
-	nursery_next = sgen_nursery_alloc_get_upper_alloc_bound ();
-	/* FIXME: optimize later to use the higher address where an object can be present */
-	nursery_next = MAX (nursery_next, sgen_get_nursery_end ());
 
-	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", gc_stats.minor_gc_count, sgen_get_nursery_start (), nursery_next, (int)(nursery_next - sgen_get_nursery_start ()));
-	max_garbage_amount = nursery_next - sgen_get_nursery_start ();
-	g_assert (nursery_section->size >= max_garbage_amount);
+	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", gc_stats.minor_gc_count, nursery_section->data, nursery_section->end_data, (int)(nursery_section->end_data - nursery_section->data));
 
 	/* world must be stopped already */
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
 	sgen_client_pre_collection_checks ();
-
-	nursery_section->next_data = nursery_next;
 
 	major_collector.start_nursery_collection ();
 
@@ -1673,7 +1663,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	/* pin from pinned handles */
 	sgen_init_pinning ();
 	sgen_client_binary_protocol_mark_start (GENERATION_NURSERY);
-	pin_from_roots (sgen_get_nursery_start (), nursery_next, ctx);
+	pin_from_roots (nursery_section->data, nursery_section->end_data, ctx);
 	/* pin cemented objects */
 	sgen_pin_cemented_objects ();
 	/* identify pinned objects */
@@ -1713,7 +1703,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
-	enqueue_scan_from_roots_jobs (&gc_thread_gray_queue, sgen_get_nursery_start (), nursery_next, is_parallel ? object_ops_par : object_ops_nopar, is_parallel);
+	enqueue_scan_from_roots_jobs (&gc_thread_gray_queue, nursery_section->data, nursery_section->end_data, is_parallel ? object_ops_par : object_ops_nopar, is_parallel);
 
 	if (is_parallel) {
 		gray_queue_redirect (&gc_thread_gray_queue);
@@ -1843,12 +1833,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
-
-	if (!sgen_collection_is_concurrent ())
-		nursery_section->next_data = sgen_get_nursery_end ();
-	/* we should also coalesce scanning from sections close to each other
-	 * and deal with pointers outside of the sections later.
-	 */
 
 	objects_pinned = 0;
 
@@ -2945,7 +2929,7 @@ sgen_gc_get_used_size (void)
 	gint64 tot = 0;
 	LOCK_GC;
 	tot = los_memory_usage;
-	tot += nursery_section->next_data - nursery_section->data;
+	tot += nursery_section->end_data - nursery_section->data;
 	tot += major_collector.get_used_size ();
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;

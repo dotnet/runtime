@@ -60,9 +60,6 @@ NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 typedef struct _GCMemSection GCMemSection;
 struct _GCMemSection {
 	char *data;
-	mword size;
-	/* pointer where more data could be allocated if it fits */
-	char *next_data;
 	char *end_data;
 	/*
 	 * scan starts is an array of pointers to objects equally spaced in the allocation area
@@ -904,7 +901,6 @@ mword sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue
 void sgen_init_nursery_allocator (void);
 void sgen_nursery_allocator_init_heavy_stats (void);
 void sgen_init_allocator (void);
-char* sgen_nursery_alloc_get_upper_alloc_bound (void);
 void* sgen_nursery_alloc (size_t size);
 void* sgen_nursery_alloc_range (size_t size, size_t min_size, size_t *out_alloc_size);
 gboolean sgen_can_alloc_size (size_t size);

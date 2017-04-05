@@ -1065,10 +1065,10 @@ void
 sgen_dump_section (GCMemSection *section, const char *type)
 {
 	char *start = section->data;
-	char *end = section->data + section->size;
+	char *end = section->end_data;
 	char *occ_start = NULL;
 
-	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)(section->end_data - section->data));
 
 	while (start < end) {
 		guint size;
@@ -1083,7 +1083,6 @@ sgen_dump_section (GCMemSection *section, const char *type)
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
 			continue;
 		}
-		g_assert (start < section->next_data);
 
 		if (!occ_start)
 			occ_start = start;
