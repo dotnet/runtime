@@ -17,9 +17,13 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public RSA Create(int keySize)
         {
+#if netcoreapp
+            return RSA.Create(keySize);
+#else
             RSA rsa = Create();
             rsa.KeySize = keySize;
             return rsa;
+#endif
         }
 
         public bool Supports384PrivateKey

@@ -140,6 +140,7 @@
     <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="DESProvider.cs" />
     <Compile Include="DESTests.cs" />
+    <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="PaddingModeTests.cs" />
@@ -147,6 +148,7 @@
     <Compile Include="RC2Provider.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="RijndaelTests.cs" />
+    <Compile Include="RSACreateTests.cs" />
     <Compile Include="RSAKeyExchangeFormatterTests.cs" />
     <Compile Include="RSASignatureFormatterTests.cs" />
     <Compile Include="Sha1ManagedTests.cs" />
