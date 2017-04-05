@@ -36269,16 +36269,11 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
 
                     assert (method_table(obj)->HasFinalizer());
 
-#ifndef FEATURE_REDHAWK
-                    if (method_table(obj) == pWeakReferenceMT || method_table(obj)->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT)
+                    if (GCToEEInterface::EagerFinalized(obj))
                     {
-                        //destruct the handle right there.
-                        FinalizeWeakReference (obj);
                         MoveItem (i, Seg, FreeList);
                     }
-                    else
-#endif //!FEATURE_REDHAWK
-                    if ((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN)
+                    else if ((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN)
                     {
                         //remove the object because we don't want to
                         //run the finalizer
