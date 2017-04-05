@@ -1474,7 +1474,7 @@ extern "C" Error SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t mu
     int fd = ToFileDescriptor(socket);
 
     int optionName;
-    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    if (!GetMulticastOptionName(multicastOption, true, optionName))
     {
         return PAL_EINVAL;
     }
@@ -1502,7 +1502,7 @@ extern "C" Error SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t mu
     int fd = ToFileDescriptor(socket);
 
     int optionName;
-    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    if (!GetMulticastOptionName(multicastOption, true, optionName))
     {
         return PAL_EINVAL;
     }
