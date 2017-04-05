@@ -445,6 +445,7 @@ mono_tramp_info_free (MonoTrampInfo *info)
 
 	// FIXME: ji
 	mono_free_unwind_info (info->unwind_ops);
+	g_free (info->uw_info);
 	g_free (info);
 }
 
