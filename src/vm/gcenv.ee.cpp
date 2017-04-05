@@ -29,6 +29,15 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+// the method table for the WeakReference class
+extern MethodTable* pWeakReferenceMT;
+
+// The canonical method table for WeakReference<T>
+extern MethodTable* pWeakReferenceOfTCanonMT;
+
+// Finalizes a weak reference directly.
+extern void FinalizeWeakReference(Object* obj);
+
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
@@ -1358,4 +1367,17 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* 
     // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
     // to move them to a new app domain instead of finalizing them here.
     return true;
+}
+
+bool GCToEEInterface::EagerFinalized(Object* obj)
+{
+    MethodTable* pMT = obj->GetGCSafeMethodTable();
+    if (pMT == pWeakReferenceMT ||
+        pMT->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT)
+    {
+        FinalizeWeakReference(obj);
+        return true;
+    }
+
+    return false;
 }
