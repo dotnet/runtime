@@ -20,8 +20,7 @@ if defined doCLone (
 )
 
 pushd linker\corebuild
-call restore.cmd -RuntimeIdentifier=%rid%
-set DoNotEmbedDescriptors=1
+call restore.cmd -r %rid%
 cd ..\linker
 ..\corebuild\Tools\dotnetcli\dotnet.exe publish -r %rid% -c netcore_Release
 popd
