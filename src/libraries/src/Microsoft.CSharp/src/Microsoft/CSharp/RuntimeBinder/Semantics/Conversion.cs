@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private delegate bool ConversionFunc(
             Expr pSourceExpr,
             CType pSourceType,
-            ExprTypeOrNamespace pDestinationTypeExpr,
+            ExprClass pDestinationTypeExpr,
             CType pDestinationTypeForLambdaErrorReporting,
             bool needsExprDest,
             out Expr ppDestinationExpr,
@@ -364,15 +364,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // performs an implicit conversion if it's possible. otherwise displays an error. flags is an optional parameter.
 
-        private Expr mustConvertCore(Expr expr, ExprTypeOrNamespace destExpr)
+        private Expr mustConvertCore(Expr expr, ExprClass destExpr)
         {
             return mustConvertCore(expr, destExpr, 0);
         }
 
-        private Expr mustConvertCore(Expr expr, ExprTypeOrNamespace destExpr, CONVERTTYPE flags)
+        private Expr mustConvertCore(Expr expr, ExprClass destExpr, CONVERTTYPE flags)
         {
             Expr exprResult;
-            CType dest = destExpr.TypeOrNamespace as CType;
+            CType dest = destExpr.Type;
 
             if (BindImplicitConversion(expr, expr.Type, destExpr, dest, out exprResult, flags))
             {
@@ -475,7 +475,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprClass exprClass = ExprFactory.MakeClass(dest);
             return mustConvert(expr, exprClass, flags);
         }
-        private Expr mustConvert(Expr expr, ExprTypeOrNamespace dest, CONVERTTYPE flags)
+        private Expr mustConvert(Expr expr, ExprClass dest, CONVERTTYPE flags)
         {
             return mustConvertCore(expr, dest, flags);
         }
@@ -487,11 +487,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //        }
 
         // performs an explicit conversion if its possible. otherwise displays an error.
-        private Expr mustCastCore(Expr expr, ExprTypeOrNamespace destExpr, CONVERTTYPE flags)
+        private Expr mustCastCore(Expr expr, ExprClass destExpr, CONVERTTYPE flags)
         {
             Expr exprResult;
 
-            CType dest = destExpr.TypeOrNamespace as CType;
+            CType dest = destExpr.Type;
 
             SemanticChecker.CheckForStaticClass(null, dest, ErrorCode.ERR_ConvertToStaticClass);
             if (expr.IsOK)
@@ -839,12 +839,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         CConversions.FBoxingConv(GetSymbolLoader(), typeSrc, typeDest);
         }
 
-        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, CONVERTTYPE flags)
+        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, false, flags);
             return binder.Bind();
         }
-        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, out Expr ppDestinationExpr, CONVERTTYPE flags)
+        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, true, flags);
             bool result = binder.Bind();
@@ -852,7 +852,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
+        private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, needsExprDest, flags);
             bool result = binder.Bind();
@@ -860,7 +860,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
+        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, pDestinationTypeForLambdaErrorReporting, needsExprDest, flags);
             bool result = binder.Bind();
@@ -868,7 +868,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, out Expr ppDestinationExpr, CONVERTTYPE flags)
+        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, pDestinationTypeForLambdaErrorReporting, true, flags);
             bool result = binder.Bind();
@@ -876,7 +876,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprTypeOrNamespace pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, CONVERTTYPE flags)
+        private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, ExprClass pDestinationTypeExpr, CType pDestinationTypeForLambdaErrorReporting, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, pDestinationTypeExpr, pDestinationTypeForLambdaErrorReporting, false, flags);
             return binder.Bind();
@@ -1444,12 +1444,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
          * Fold a constant cast. Returns true if the constant could be folded.
          */
-        private ConstCastResult bindConstantCast(Expr exprSrc, ExprTypeOrNamespace exprTypeDest, bool needExprDest, out Expr pexprDest, bool explicitConversion)
+        private ConstCastResult bindConstantCast(Expr exprSrc, ExprClass exprTypeDest, bool needExprDest, out Expr pexprDest, bool explicitConversion)
         {
             pexprDest = null;
             long valueInt = 0;
             double valueFlt = 0;
-            CType typeDest = exprTypeDest.TypeOrNamespace.AsType();
+            CType typeDest = exprTypeDest.Type;
             FUNDTYPE ftSrc = exprSrc.Type.fundType();
             FUNDTYPE ftDest = typeDest.fundType();
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
@@ -1702,9 +1702,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
          * Bind a constant cast to or from decimal. Return null if cast can't be done.
          */
-        private Expr bindDecimalConstCast(ExprTypeOrNamespace exprDestType, CType srcType, ExprConstant src)
+        private Expr bindDecimalConstCast(ExprClass exprDestType, CType srcType, ExprConstant src)
         {
-            CType destType = exprDestType.TypeOrNamespace.AsType();
+            CType destType = exprDestType.Type;
             CType typeDecimal = SymbolLoader.GetOptPredefType(PredefinedType.PT_DECIMAL);
             ConstVal cv;
 
@@ -1811,12 +1811,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        private bool canExplicitConversionBeBoundInUncheckedContext(Expr exprSrc, CType typeSrc, ExprTypeOrNamespace typeDest, CONVERTTYPE flags)
+        private bool canExplicitConversionBeBoundInUncheckedContext(Expr exprSrc, CType typeSrc, ExprClass typeDest, CONVERTTYPE flags)
         {
             CheckedContext ctx = CheckedContext.CreateInstance(Context, false /*checkedNormal*/, false /*checkedConstant*/);
             Debug.Assert(typeDest != null);
-            Debug.Assert(typeDest.TypeOrNamespace != null);
-            return (new ExpressionBinder(ctx)).BindExplicitConversion(exprSrc, typeSrc, typeDest, typeDest.TypeOrNamespace.AsType(), flags);
+            Debug.Assert(typeDest.Type != null);
+            return (new ExpressionBinder(ctx)).BindExplicitConversion(exprSrc, typeSrc, typeDest, typeDest.Type, flags);
         }
     }
 

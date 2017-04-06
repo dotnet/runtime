@@ -88,7 +88,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\InputFile.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ITypeOrNamespace.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\LangCompiler.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
@@ -145,6 +144,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Event.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\EXPR.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExpressionIterator.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprOperator.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ExprWithType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Field.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\FieldInfo.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\HoistedLocal.cs" />
@@ -164,7 +165,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\This.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeArguments.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOf.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOrNamespace.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnaryOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnboundAnonymousFunction.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedConversion.cs" />
@@ -217,6 +217,10 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Reflection, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETPortable\v4.5\Profile\Profile259\System.Reflection.dll</HintPath>
+    </Reference>
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

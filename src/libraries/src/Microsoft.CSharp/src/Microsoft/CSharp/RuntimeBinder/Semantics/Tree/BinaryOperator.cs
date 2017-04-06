@@ -2,21 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprBinOp : Expr
+    internal sealed class ExprBinOp : ExprOperator
     {
+        public ExprBinOp(ExpressionKind kind, CType type)
+            : base(kind, type)
+        {
+            Debug.Assert(kind > ExpressionKind.TypeLimit);
+        }
+
         public Expr OptionalLeftChild { get; set; }
 
         public Expr OptionalRightChild { get; set; }
 
-        public Expr OptionalUserDefinedCall { get; set; }
-
-        public MethWithInst PredefinedMethodToCall { get; set; }
-
         public bool IsLifted { get; set; }
-
-        public MethPropWithInst UserDefinedCallMethod { get; set; }
 
         public void SetAssignment()
         {

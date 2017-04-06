@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprProperty : Expr, IExprWithArgs
+    internal sealed class ExprProperty : ExprWithType, IExprWithArgs
     {
         // If we have this.prop = 123, but the implementation of the property is in the
         // base class, then the object is of the base class type. Note that to get
@@ -13,6 +13,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // "throughObject" is
         // of the type we are actually calling through.  (We need to know the
         // "through" type to ensure that protected semantics are correctly enforced.)
+
+        public ExprProperty(CType type)
+            : base(ExpressionKind.Property, type)
+        {
+        }
 
         public Expr OptionalArguments { get; set; }
 

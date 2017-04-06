@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprArrayIndex : Expr
+    internal sealed class ExprArrayIndex : ExprWithType
     {
+        public ExprArrayIndex(CType type)
+            : base(ExpressionKind.ArrayIndex, type)
+        {
+        }
+
         public Expr Array { get; set; }
 
         public Expr Index { get; set; }

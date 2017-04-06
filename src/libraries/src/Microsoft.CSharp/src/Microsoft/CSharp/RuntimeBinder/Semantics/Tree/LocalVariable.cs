@@ -2,10 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal class ExprLocal : Expr
     {
+        public ExprLocal()
+            : base(ExpressionKind.Local)
+        {
+        }
+
+        protected ExprLocal(ExpressionKind kind)
+            : base(kind)
+        {
+            Debug.Assert(kind == ExpressionKind.ThisPointer);
+        }
+
         public LocalVariableSymbol Local { get; set; }
+
+        public override CType Type => Local?.GetType();
     }
 }
