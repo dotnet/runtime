@@ -25,21 +25,27 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleInstance()
         {
-            Assert.Same(GetEmptyPartition<int>(), GetEmptyPartition<int>());
+            // .NET Core returns the instance as an optimization.
+            // see https://github.com/dotnet/corefx/pull/2401.
+            Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(GetEmptyPartition<int>(), GetEmptyPartition<int>()));
         }
 
         [Fact]
         public void SkipSame()
         {
-            var empty = GetEmptyPartition<int>();
-            Assert.Same(empty, empty.Skip(2));
+            IEnumerable<int> empty = GetEmptyPartition<int>();
+            // .NET Core returns the instance as an optimization.
+            // see https://github.com/dotnet/corefx/pull/2401.
+            Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(empty, empty.Skip(2)));
         }
 
         [Fact]
         public void TakeSame()
         {
-            var empty = GetEmptyPartition<int>();
-            Assert.Same(empty, empty.Take(2));
+            IEnumerable<int> empty = GetEmptyPartition<int>();
+            // .NET Core returns the instance as an optimization.
+            // see https://github.com/dotnet/corefx/pull/2401.
+            Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(empty, empty.Take(2)));
         }
 
         [Fact]
