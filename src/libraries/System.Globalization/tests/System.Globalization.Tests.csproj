@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{9A8926D9-1D4C-4069-8965-A626F6CA8C29}</ProjectGuid>
+    <ProjectGuid>{484C92C6-6D2C-45BC-A5E2-4A12BA228E1E}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
