@@ -5,7 +5,6 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,7 +61,15 @@ namespace System.Net.Tests
                     }
 
                     byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
-                    await outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
+                    // [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix])
+                    if (PlatformDetection.IsWindows)
+                    {
+                        await outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<ObjectDisposedException>(() => outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length));
+                    }
                 }
 
                 string clientString = await clientTask;
@@ -99,8 +106,16 @@ namespace System.Net.Tests
                         outputStream.Close();
                     }
 
+                    // [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix])
                     byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
-                    outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
+                    if (PlatformDetection.IsWindows)
+                    {
+                        outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
+                    }
+                    else
+                    {
+                        Assert.Throws<ObjectDisposedException>(() => outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length));
+                    }
                 }
 
                 string clientString = await clientTask;
@@ -231,6 +246,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // NotSupportedException thrown instead of InvalidOperationException
         public async Task CanRead_Get_ReturnsFalse()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -245,6 +261,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Windows returns Task.CompletedTask in FlushAsync
         public async Task CanWrite_Get_ReturnsTrue()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -259,6 +276,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)]
         public async Task Write_NullBuffer_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -272,6 +290,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)]
         public async Task Write_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -286,6 +305,7 @@ namespace System.Net.Tests
         [InlineData(0, 3)]
         [InlineData(1, 2)]
         [InlineData(2, 1)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)]
         public async Task Write_InvalidOffsetSize_ThrowsArgumentOutOfRangeException(int offset, int size)
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -297,6 +317,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -325,6 +346,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -351,6 +373,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -379,6 +402,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_HeadersToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -394,10 +418,9 @@ namespace System.Net.Tests
                 HttpListenerContext context = await listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
-
-                // TODO: the tests fail intermitently without this...
-                Thread.Sleep(1000);
+                client.Dispose();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 // Writing to a disconnected client should fail.
                 await Assert.ThrowsAsync<HttpListenerException>(() => context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length));
@@ -410,6 +433,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_HeadersToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -425,10 +449,9 @@ namespace System.Net.Tests
                 HttpListenerContext context = await listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
-
-                // TODO: the tests fail intermitently without this...
-                Thread.Sleep(1000);
+                client.Close();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
                 
                 // Writing to, a closed connection should fail.
                 Assert.Throws<HttpListenerException>(() => context.Response.OutputStream.Write(buffer, 0, buffer.Length));
@@ -441,6 +464,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -459,10 +483,9 @@ namespace System.Net.Tests
                 await context.Response.OutputStream.WriteAsync(buffer, 0, 1);
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
-
-                // TODO: the tests fail intermitently without this...
-                Thread.Sleep(1000);
+                client.Close();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 // Writing non-header content to a disconnected client should fail, only if IgnoreWriteExceptions is false.
                 if (ignoreWriteExceptions)
@@ -482,6 +505,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -500,10 +524,9 @@ namespace System.Net.Tests
                 context.Response.OutputStream.Write(buffer, 0, 1);
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
-
-                // TODO: the tests fail intermitently without this...
-                Thread.Sleep(1000);
+                client.Close();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 // Writing non-header content to a disconnected client should fail, only if IgnoreWriteExceptions is false.
                 if (ignoreWriteExceptions)
@@ -521,7 +544,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task EndWrite_NullCallback_ThrowsArgumentNullException()
+        public async Task EndWrite_NullAsyncResult_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
@@ -531,14 +554,15 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task EndWrite_InvalidCallback_ThrowsArgumentException()
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)]
+        public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
             using (HttpListenerResponse response1 = await _helper.GetResponse())
             using (Stream outputStream1 = response1.OutputStream)
             using (HttpListenerResponse response2 = await _helper.GetResponse())
             using (Stream outputStream2 = response2.OutputStream)
             {
-                IAsyncResult beginWriteResult = outputStream1.BeginWrite(new byte[0], 0, 0, new AsyncCallback(Common.StubCallback), null);
+                IAsyncResult beginWriteResult = outputStream1.BeginWrite(new byte[0], 0, 0, null, null);
 
                 Assert.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(new CustomAsyncResult()));
                 Assert.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(beginWriteResult));
@@ -546,12 +570,13 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {
             using (HttpListenerResponse response1 = await _helper.GetResponse())
             using (Stream outputStream = response1.OutputStream)
             {
-                IAsyncResult beginWriteResult = outputStream.BeginWrite(new byte[0], 0, 0, new AsyncCallback(Common.StubCallback), null);
+                IAsyncResult beginWriteResult = outputStream.BeginWrite(new byte[0], 0, 0, null, null);
                 outputStream.EndWrite(beginWriteResult);
 
                 Assert.Throws<InvalidOperationException>(() => outputStream.EndWrite(beginWriteResult));
