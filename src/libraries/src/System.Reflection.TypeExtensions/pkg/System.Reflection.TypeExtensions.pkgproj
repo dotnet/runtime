@@ -18,6 +18,10 @@
          now that net461 supports netstandard2.0 and therefor nestandard1.5 we must support
          the ns1.5 API in net461, exclude the net462 assembly since it is redundant. -->
     <HarvestExcludePaths Include="ref/net462;lib/net462" />
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
