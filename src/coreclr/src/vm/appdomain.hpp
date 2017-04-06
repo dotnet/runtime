@@ -1325,8 +1325,16 @@ public:
 
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateDependentHandle(m_hHandleTableBucket->pTable[GetCurrentThreadHomeHeapNumber()], primary, secondary);
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
+        return pHandleTable->CreateDependentHandle((void*)m_hHandleTableBucket->pTable[GetCurrentThreadHomeHeapNumber()], OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
     }
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
