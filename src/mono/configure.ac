@@ -3023,7 +3023,7 @@ if test "x$enable_llvm" = "xyes"; then
 	  LLVM_CXXFLAGS="$LLVM_CXXFLAGS -DLLVM_API_VERSION=$llvm_api_version"
    fi   
 
-   AC_DEFINE_UNQUOTED(LLVM_VERSION, "$llvm_version", [Full version of LLVM libraties])
+   AC_DEFINE_UNQUOTED(LLVM_VERSION, "$llvm_version", [Full version of LLVM libraries])
 
    AC_SUBST(LLVM_CFLAGS)
    AC_SUBST(LLVM_CXXFLAGS)
