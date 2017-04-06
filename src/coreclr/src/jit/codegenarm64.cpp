@@ -3397,9 +3397,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     GenTreePtr source  = cpBlkNode->Data();
     GenTreePtr srcAddr = nullptr;
 
-    assert((size != 0 ) && (size <= CPBLK_UNROLL_LIMIT));
+    assert((size != 0) && (size <= CPBLK_UNROLL_LIMIT));
 
-    emitter *emit = getEmitter();
+    emitter* emit = getEmitter();
 
     if (source->gtOper == GT_IND)
     {
