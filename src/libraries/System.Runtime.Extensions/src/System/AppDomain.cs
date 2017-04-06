@@ -8,9 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-#if !uapaot
 using System.Runtime.Loader;
-#endif
 using System.IO;
 using System.Security.Principal;
 
@@ -229,7 +227,6 @@ namespace System
         [ObsoleteAttribute("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyPath(string path) { }
 
-#if !uapaot
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
 
         public event AssemblyLoadEventHandler AssemblyLoad
@@ -257,98 +254,6 @@ namespace System
             add { AssemblyLoadContext.ResourceResolve += value; }
             remove { AssemblyLoadContext.ResourceResolve -= value; }
         }
-#else
-        public Assembly[] GetAssemblies()
-        {
-            List<string> names = new List<string>();
-            List<Assembly> assemblies = new List<Assembly>();
-            List<Assembly> stack = new List<Assembly>();
-
-            stack.Add(Assembly.GetEntryAssembly());
-            names.Add(Assembly.GetEntryAssembly().FullName);
-
-            while (stack.Count > 0)
-            {
-                Assembly assembly = stack[stack.Count - 1];
-                stack.RemoveAt(stack.Count - 1);
-                assemblies.Add(assembly);
-/*
-                foreach (var reference in assembly.GetReferencedAssemblies())
-                {
-                    if (!names.Contains(reference.FullName))
-                    {
-                        stack.Add(reference);
-                        names.Add(reference.FullName);
-                    }
-                }
-*/
-            }
-
-            return assemblies.ToArray();
-        }
-
-        public event AssemblyLoadEventHandler AssemblyLoad
-        {
-            add { throw new PlatformNotSupportedException(); }
-            remove { throw new PlatformNotSupportedException(); }
-        }
-
-        public event ResolveEventHandler AssemblyResolve
-        {
-            add { throw new PlatformNotSupportedException(); }
-            remove { throw new PlatformNotSupportedException(); }
-        }
-
-        public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
-
-        public event ResolveEventHandler TypeResolve
-        {
-            add { throw new PlatformNotSupportedException(); }
-            remove { throw new PlatformNotSupportedException(); }
-        }
-
-        public event ResolveEventHandler ResourceResolve
-        {
-            add { throw new PlatformNotSupportedException(); }
-            remove { throw new PlatformNotSupportedException(); }
-        }
-
-        public delegate void AssemblyLoadEventHandler(object sender, AssemblyLoadEventArgs args);
-        public delegate Assembly ResolveEventHandler(object sender, ResolveEventArgs args);
-
-        public class AssemblyLoadEventArgs : EventArgs
-        {
-            private Assembly _LoadedAssembly;
-
-            public Assembly LoadedAssembly { get { return _LoadedAssembly; } }
-
-            public AssemblyLoadEventArgs(Assembly loadedAssembly)
-            {
-                _LoadedAssembly = loadedAssembly;
-            }
-        } 
-
-        public class ResolveEventArgs : EventArgs
-        {
-            private String _Name;
-            private Assembly _RequestingAssembly;
-
-            public String Name { get { return _Name; } }
-
-            public Assembly RequestingAssembly { get { return _RequestingAssembly; } }
-
-            public ResolveEventArgs(String name)
-            {
-                _Name = name;
-            }
-
-            public ResolveEventArgs(String name, Assembly requestingAssembly)
-            {
-                _Name = name;
-                _RequestingAssembly = requestingAssembly;
-            }
-        }
-#endif
 
         public void SetPrincipalPolicy(PrincipalPolicy policy) { }
 
