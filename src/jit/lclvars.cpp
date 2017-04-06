@@ -3622,23 +3622,9 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
     }
 
 #if ASSERTION_PROP
-    /* Exclude the normal entry block */
-    if (fgDomsComputed && (lvaMarkRefsCurBlock->bbNum != 1) && lvaMarkRefsCurBlock->bbIDom != nullptr)
+    if (fgDomsComputed && IsDominatedByExceptionalEntry(lvaMarkRefsCurBlock))
     {
-        // If any entry block except the normal entry block dominates the block, then mark the local with the
-        // lvVolatileHint flag.
-
-        if (BlockSetOps::MayBeUninit(lvaMarkRefsCurBlock->bbDoms))
-        {
-            // Lazy init (If a block is not dominated by any other block, we'll redo this every time, but it'll be fast)
-            BlockSetOps::AssignNoCopy(this, lvaMarkRefsCurBlock->bbDoms, fgGetDominatorSet(lvaMarkRefsCurBlock));
-            BlockSetOps::RemoveElemD(this, lvaMarkRefsCurBlock->bbDoms, fgFirstBB->bbNum);
-        }
-        assert(fgEnterBlksSetValid);
-        if (!BlockSetOps::IsEmptyIntersection(this, lvaMarkRefsCurBlock->bbDoms, fgEnterBlks))
-        {
-            varDsc->lvVolatileHint = 1;
-        }
+        SetVolatileHint(varDsc);
     }
 
     /* Record if the variable has a single def or not */
@@ -3721,6 +3707,29 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// IsDominatedByExceptionalEntry: Check is the block dominated by an exception entry block.
+//
+// Arguments:
+//    block - the checking block.
+//
+bool Compiler::IsDominatedByExceptionalEntry(BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    return block->IsDominatedByExceptionalEntryFlag();
+}
+
+//------------------------------------------------------------------------
+// SetVolatileHint: Set a local var's volatile hint.
+//
+// Arguments:
+//    varDsc - the local variable that needs the hint.
+//
+void Compiler::SetVolatileHint(LclVarDsc* varDsc)
+{
+    varDsc->lvVolatileHint = true;
 }
 
 /*****************************************************************************

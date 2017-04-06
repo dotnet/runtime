@@ -438,6 +438,8 @@ struct BasicBlock : private LIR::Range
 #define BBF_CLONED_FINALLY_BEGIN 0x100000000 // First block of a cloned finally region
 #define BBF_CLONED_FINALLY_END 0x200000000   // Last block of a cloned finally region
 
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x400000000 // Block is dominated by exceptional entry.
+
 // Flags that relate blocks to loop structure.
 
 #define BBF_LOOP_FLAGS (BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1)
@@ -877,12 +879,6 @@ struct BasicBlock : private LIR::Range
     unsigned bbDfsNum;   // The index of this block in DFS reverse post order
                          // relative to the flow graph.
 
-#if ASSERTION_PROP
-    // A set of blocks which dominate this one *except* the normal entry block. This is lazily initialized
-    // and used only by Assertion Prop, intersected with fgEnterBlks!
-    BlockSet bbDoms;
-#endif
-
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
                              // range is not inclusive of the end offset. The count of IL bytes in the block
@@ -1077,13 +1073,7 @@ struct BasicBlock : private LIR::Range
     GenTree*     FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock()
-        :
-#if ASSERTION_PROP
-        BLOCKSET_INIT_NOCOPY(bbDoms, BlockSetOps::UninitVal())
-        ,
-#endif // ASSERTION_PROP
-        VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal())
-        , VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
+        : VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal()), VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
     {
     }
 
@@ -1170,6 +1160,16 @@ public:
 
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR();
+
+    void SetDominatedByExceptionalEntryFlag()
+    {
+        bbFlags |= BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY;
+    }
+
+    bool IsDominatedByExceptionalEntryFlag()
+    {
+        return (bbFlags & BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY) != 0;
+    }
 };
 
 template <>
