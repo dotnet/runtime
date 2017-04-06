@@ -21,11 +21,7 @@ namespace System.Drawing
 
         private static void InitColorTable()
         {
-            int[] values = new int[(int)KnownColor.MenuHighlight + 1];
-
-            // system
-            //
-            UpdateSystemColors(values);
+            int[] values = new int[KnownColor.LastColor - KnownColor.FirstColor + 1];
 
             // just consts...
             //
@@ -185,44 +181,10 @@ namespace System.Drawing
 
         private static void InitColorNameTable()
         {
-            string[] values = new string[((int)KnownColor.MenuHighlight) + 1];
+            string[] values = new string[KnownColor.LastColor - KnownColor.FirstColor + 1];
 
             // just consts...
             //
-            values[(int)KnownColor.ActiveBorder] = "ActiveBorder";
-            values[(int)KnownColor.ActiveCaption] = "ActiveCaption";
-            values[(int)KnownColor.ActiveCaptionText] = "ActiveCaptionText";
-            values[(int)KnownColor.AppWorkspace] = "AppWorkspace";
-            values[(int)KnownColor.ButtonFace] = "ButtonFace";
-            values[(int)KnownColor.ButtonHighlight] = "ButtonHighlight";
-            values[(int)KnownColor.ButtonShadow] = "ButtonShadow";
-            values[(int)KnownColor.Control] = "Control";
-            values[(int)KnownColor.ControlDark] = "ControlDark";
-            values[(int)KnownColor.ControlDarkDark] = "ControlDarkDark";
-            values[(int)KnownColor.ControlLight] = "ControlLight";
-            values[(int)KnownColor.ControlLightLight] = "ControlLightLight";
-            values[(int)KnownColor.ControlText] = "ControlText";
-            values[(int)KnownColor.Desktop] = "Desktop";
-            values[(int)KnownColor.GradientActiveCaption] = "GradientActiveCaption";
-            values[(int)KnownColor.GradientInactiveCaption] = "GradientInactiveCaption";
-            values[(int)KnownColor.GrayText] = "GrayText";
-            values[(int)KnownColor.Highlight] = "Highlight";
-            values[(int)KnownColor.HighlightText] = "HighlightText";
-            values[(int)KnownColor.HotTrack] = "HotTrack";
-            values[(int)KnownColor.InactiveBorder] = "InactiveBorder";
-            values[(int)KnownColor.InactiveCaption] = "InactiveCaption";
-            values[(int)KnownColor.InactiveCaptionText] = "InactiveCaptionText";
-            values[(int)KnownColor.Info] = "Info";
-            values[(int)KnownColor.InfoText] = "InfoText";
-            values[(int)KnownColor.Menu] = "Menu";
-            values[(int)KnownColor.MenuBar] = "MenuBar";
-            values[(int)KnownColor.MenuHighlight] = "MenuHighlight";
-            values[(int)KnownColor.MenuText] = "MenuText";
-            values[(int)KnownColor.ScrollBar] = "ScrollBar";
-            values[(int)KnownColor.Window] = "Window";
-            values[(int)KnownColor.WindowFrame] = "WindowFrame";
-            values[(int)KnownColor.WindowText] = "WindowText";
-
             values[(int)KnownColor.Transparent] = "Transparent";
             values[(int)KnownColor.AliceBlue] = "AliceBlue";
             values[(int)KnownColor.AntiqueWhite] = "AntiqueWhite";
@@ -370,7 +332,7 @@ namespace System.Drawing
         public static int KnownColorToArgb(KnownColor color)
         {
             EnsureColorTable();
-            if (color <= KnownColor.MenuHighlight)
+            if (color >= KnownColor.FirstColor && color <= KnownColor.LastColor)
             {
                 return s_colorTable[(int)color];
             }
@@ -383,7 +345,7 @@ namespace System.Drawing
         public static string KnownColorToName(KnownColor color)
         {
             EnsureColorNameTable();
-            if (color <= KnownColor.MenuHighlight)
+            if (color >= KnownColor.FirstColor && color <= KnownColor.LastColor)
             {
                 return s_colorNameTable[(int)color];
             }
@@ -391,44 +353,6 @@ namespace System.Drawing
             {
                 return null;
             }
-        }
-
-        private static void UpdateSystemColors(int[] colorTable)
-        {
-            // Colors from a default XP desktop for use by UI designers in ASP.NET: <EMAIL>mcartwri</EMAIL>
-            colorTable[(int)KnownColor.ActiveBorder] = unchecked((int)0xffd4d0c8);
-            colorTable[(int)KnownColor.ActiveCaption] = unchecked((int)0xff0054e3);
-            colorTable[(int)KnownColor.ActiveCaptionText] = unchecked((int)0xffffffff);
-            colorTable[(int)KnownColor.AppWorkspace] = unchecked((int)0xff808080);
-            colorTable[(int)KnownColor.ButtonFace] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.ButtonHighlight] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.ButtonShadow] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.Control] = unchecked((int)0xffece9d8);
-            colorTable[(int)KnownColor.ControlDark] = unchecked((int)0xffaca899);
-            colorTable[(int)KnownColor.ControlDarkDark] = unchecked((int)0xff716f64);
-            colorTable[(int)KnownColor.ControlLight] = unchecked((int)0xfff1efe2);
-            colorTable[(int)KnownColor.ControlLightLight] = unchecked((int)0xffffffff);
-            colorTable[(int)KnownColor.ControlText] = unchecked((int)0xff000000);
-            colorTable[(int)KnownColor.Desktop] = unchecked((int)0xff004e98);
-            colorTable[(int)KnownColor.GradientActiveCaption] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.GradientInactiveCaption] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.GrayText] = unchecked((int)0xffaca899);
-            colorTable[(int)KnownColor.Highlight] = unchecked((int)0xff316ac5);
-            colorTable[(int)KnownColor.HighlightText] = unchecked((int)0xffffffff);
-            colorTable[(int)KnownColor.HotTrack] = unchecked((int)0xff000080);
-            colorTable[(int)KnownColor.InactiveBorder] = unchecked((int)0xffd4d0c8);
-            colorTable[(int)KnownColor.InactiveCaption] = unchecked((int)0xff7a96df);
-            colorTable[(int)KnownColor.InactiveCaptionText] = unchecked((int)0xffd8e4f8);
-            colorTable[(int)KnownColor.Info] = unchecked((int)0xffffffe1);
-            colorTable[(int)KnownColor.InfoText] = unchecked((int)0xff000000);
-            colorTable[(int)KnownColor.Menu] = unchecked((int)0xffffffff);
-            colorTable[(int)KnownColor.MenuBar] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.MenuHighlight] = unchecked((int)0x0);
-            colorTable[(int)KnownColor.MenuText] = unchecked((int)0xff000000);
-            colorTable[(int)KnownColor.ScrollBar] = unchecked((int)0xffd4d0c8);
-            colorTable[(int)KnownColor.Window] = unchecked((int)0xffffffff);
-            colorTable[(int)KnownColor.WindowFrame] = unchecked((int)0xff000000);
-            colorTable[(int)KnownColor.WindowText] = unchecked((int)0xff000000);
         }
     }
 }
