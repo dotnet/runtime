@@ -476,10 +476,10 @@ namespace System.Net.Http
 
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
-            var easy = new EasyRequest(this, request, cancellationToken);
+            var easy = new EasyRequest(this, _agent, request, cancellationToken);
             try
             {
-                EventSourceTrace("{0}", request, easy: easy, agent: _agent);
+                EventSourceTrace("{0}", request, easy: easy);
                 _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             catch (Exception exc)
@@ -731,9 +731,9 @@ namespace System.Net.Http
                 agent = easy._associatedMultiAgent;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.HandlerMessage(
+            NetEventSource.Log.HandlerMessage(
                 (agent?.RunningWorkerId).GetValueOrDefault(),
-                easy != null ? easy.Task.Id : 0,
+                easy?.Task.Id ?? 0,
                 memberName,
                 message);
         }
