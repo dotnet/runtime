@@ -100,13 +100,6 @@ inline void DestroyHandle(OBJECTHANDLE handle)
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, handle);
 }
 
-inline OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) {
-    WRAPPER_NO_CONTRACT;
-
-    // Create a new STRONG handle in the same table as an existing handle.  
-    return HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, HndFetchHandle(handle));
-}
-
 inline void DestroyWeakHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
@@ -176,13 +169,6 @@ inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_REFCOUNTED, handle);
 }
 
-inline OBJECTHANDLE CreateWinRTWeakHandle(HHANDLETABLE table, OBJECTREF object, IWeakReference* pWinRTWeakReference)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(pWinRTWeakReference != NULL);
-    return HndCreateHandle(table, HNDTYPE_WEAK_WINRT, object, reinterpret_cast<uintptr_t>(pWinRTWeakReference));
-}
-
 void DestroyWinRTWeakHandle(OBJECTHANDLE handle);
 
 #endif // FEATURE_COMINTEROP
@@ -192,7 +178,6 @@ void DestroyWinRTWeakHandle(OBJECTHANDLE handle);
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle);
 
 #ifndef DACCESS_COMPILE
-OBJECTHANDLE CreateDependentHandle(HHANDLETABLE table, OBJECTREF primary, OBJECTREF secondary);
 void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF secondary);
 
 inline void DestroyDependentHandle(OBJECTHANDLE handle)
@@ -268,25 +253,11 @@ public:
 
 int GetCurrentThreadHomeHeapNumber();
 
-inline OBJECTHANDLE CreateGlobalTypedHandle(OBJECTREF object, int type)
-{ 
-    WRAPPER_NO_CONTRACT;
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, object); 
-}
-
 inline void DestroyGlobalTypedHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandleOfUnknownType(HndGetHandleTable(handle), handle);
-}
-
-inline OBJECTHANDLE CreateGlobalHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_DEFAULT, object); 
 }
 
 inline void DestroyGlobalHandle(OBJECTHANDLE handle)
@@ -296,26 +267,11 @@ inline void DestroyGlobalHandle(OBJECTHANDLE handle)
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, handle);
 }
 
-inline OBJECTHANDLE CreateGlobalWeakHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_WEAK_DEFAULT, object); 
-}
-
 inline void DestroyGlobalWeakHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_DEFAULT, handle);
-}
-
-inline OBJECTHANDLE CreateGlobalShortWeakHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_WEAK_SHORT, object);     
 }
 
 inline void DestroyGlobalShortWeakHandle(OBJECTHANDLE handle)
@@ -329,26 +285,11 @@ inline void DestroyGlobalShortWeakHandle(OBJECTHANDLE handle)
 typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyGlobalShortWeakHandle> GlobalShortWeakHandleHolder;
 #endif
 
-inline OBJECTHANDLE CreateGlobalLongWeakHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_WEAK_LONG, object); 
-}
-
 inline void DestroyGlobalLongWeakHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_LONG, handle);
-}
-
-inline OBJECTHANDLE CreateGlobalStrongHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_STRONG, object); 
 }
 
 inline void DestroyGlobalStrongHandle(OBJECTHANDLE handle)
@@ -362,13 +303,6 @@ inline void DestroyGlobalStrongHandle(OBJECTHANDLE handle)
 typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyGlobalStrongHandle> GlobalStrongHandleHolder;
 #endif
 
-inline OBJECTHANDLE CreateGlobalPinningHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_PINNED, object); 
-}
-
 inline void DestroyGlobalPinningHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
@@ -377,13 +311,6 @@ inline void DestroyGlobalPinningHandle(OBJECTHANDLE handle)
 }
 
 #ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    return HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], HNDTYPE_REFCOUNTED, object); 
-}
-
 inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;

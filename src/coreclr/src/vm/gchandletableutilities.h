@@ -7,6 +7,10 @@
 
 #include "gcinterface.h"
 
+#ifdef FEATURE_COMINTEROP
+#include <weakreference.h>
+#endif
+
 extern "C" IGCHandleTable* g_pGCHandleTable;
 
 class GCHandleTableUtilities
@@ -43,6 +47,13 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
 
 #ifndef DACCESS_COMPILE
 
+// Handle creation convenience functions
+
+inline OBJECTHANDLE CreateHandle(HHANDLETABLE table, OBJECTREF object)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+}
+
 inline OBJECTHANDLE CreateWeakHandle(HHANDLETABLE table, OBJECTREF object)
 {
     return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
@@ -56,11 +67,6 @@ inline OBJECTHANDLE CreateShortWeakHandle(HHANDLETABLE table, OBJECTREF object)
 inline OBJECTHANDLE CreateLongWeakHandle(HHANDLETABLE table, OBJECTREF object)
 {
     return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
-}
-
-inline OBJECTHANDLE CreateHandle(HHANDLETABLE table, OBJECTREF object)
-{
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_DEFAULT);
 }
 
 inline OBJECTHANDLE CreateStrongHandle(HHANDLETABLE table, OBJECTREF object)
@@ -87,6 +93,55 @@ inline OBJECTHANDLE CreateRefcountedHandle(HHANDLETABLE table, OBJECTREF object)
 {
     return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
 }
+
+// Global handle creation convenience functions
+
+inline OBJECTHANDLE CreateGlobalHandle(OBJECTREF object)
+{
+    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+}
+
+inline OBJECTHANDLE CreateGlobalWeakHandle(OBJECTREF object)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
+}
+
+inline OBJECTHANDLE CreateGlobalShortWeakHandle(OBJECTREF object)
+{
+    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
+}
+
+inline OBJECTHANDLE CreateGlobalLongWeakHandle(OBJECTREF object)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
+}
+
+inline OBJECTHANDLE CreateGlobalStrongHandle(OBJECTREF object)
+{
+    CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_STRONG);
+}
+
+inline OBJECTHANDLE CreateGlobalPinningHandle(OBJECTREF object)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_PINNED);
+}
+
+inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateGlobalHandleOfType(OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
+}
+
+// Special handle creation convenience functions
+
+#ifdef FEATURE_COMINTEROP
+inline OBJECTHANDLE CreateWinRTWeakHandle(HHANDLETABLE table, OBJECTREF object, IWeakReference* pWinRTWeakReference)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table, OBJECTREFToObject(object), HNDTYPE_WEAK_WINRT, (void*)pWinRTWeakReference);
+}
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 

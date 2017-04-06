@@ -871,24 +871,6 @@ void Ref_EndSynchronousGC(uint32_t condemned, uint32_t maxgen)
 */    
 }
 
-
-OBJECTHANDLE CreateDependentHandle(HHANDLETABLE table, OBJECTREF primary, OBJECTREF secondary)
-{ 
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE handle = HndCreateHandle(table, HNDTYPE_DEPENDENT, primary); 
-
-    SetDependentHandleSecondary(handle, secondary);
-
-    return handle;
-}
-
 void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
 { 
     CONTRACTL
