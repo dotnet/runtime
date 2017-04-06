@@ -1257,7 +1257,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
             if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
             {
-                internalIntCount = 1;
+                internalIntCount      = 1;
                 internalIntCandidates = RBM_ALLINT;
             }
             else
