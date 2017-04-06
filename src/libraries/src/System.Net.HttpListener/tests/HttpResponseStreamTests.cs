@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -376,100 +377,64 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true, "Non-Empty")]
-        [InlineData(false, "Non-Empty")]
-        public async Task Write_ToClosedSocketAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions, string text)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Write_HeadersToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                // Websockets in WinHttp 5.1 is only supported from Windows 8+
-                Assert.Throws<PlatformNotSupportedException>(() => new ClientWebSocket());
-                return;
-            }
+            const string Text = "Some-String";
+            byte[] buffer = Encoding.UTF8.GetBytes(Text);
 
             using (HttpListenerFactory factory = new HttpListenerFactory())
+            using (Socket client = factory.GetConnectedSocket())
             {
-                UriBuilder uriBuilder = new UriBuilder(factory.ListeningUrl) { Scheme = "ws" };
-
+                // Send a header to the HttpListener to give it a context.
+                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
+                HttpListenerContext context = await listener.GetContextAsync();
 
-                Task<HttpListenerContext> serverContextTask = listener.GetContextAsync();
-                using (ClientWebSocket clientWebSocket = new ClientWebSocket())
-                {
-                    Task clientConnectTask = clientWebSocket.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
 
-                    HttpListenerContext listenerContext = await serverContextTask;
-                    byte[] receiveBuffer = Encoding.UTF8.GetBytes(text);
-                    listenerContext.Response.ContentLength64 = receiveBuffer.Length;
+                // TODO: the tests fail intermitently without this...
+                Thread.Sleep(1000);
 
-                    // Disconnect the socket from the listener.
-                    HttpListenerWebSocketContext wsContext = await listenerContext.AcceptWebSocketAsync(null);
-                    await clientConnectTask;
-                    clientWebSocket.Dispose();
+                // Writing to a disconnected client should fail.
+                await Assert.ThrowsAsync<HttpListenerException>(() => context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length));
 
-                    // TODO: we need to sleep and wait to make sure the socket closes.
-                    Thread.Sleep(1000);
-
-                    // Try writing to the disconnected socket.
-                    if (ignoreWriteExceptions)
-                    {
-                        await listenerContext.Response.OutputStream.WriteAsync(receiveBuffer, 0, receiveBuffer.Length);
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<HttpListenerException>(() => listenerContext.Response.OutputStream.WriteAsync(receiveBuffer, 0, receiveBuffer.Length));
-                    }
-                }
+                // Closing a response from a closed client if a writing has already failed should not fail.
+                context.Response.Close();
             }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true, "Non-Empty")]
-        [InlineData(false, "Non-Empty")]
-        public async void Write_ToClosedSocketSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions, string text)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Write_HeadersToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                // Websockets in WinHttp 5.1 is only supported from Windows 8+
-                Assert.Throws<PlatformNotSupportedException>(() => new ClientWebSocket());
-                return;
-            }
+            const string Text = "Some-String";
+            byte[] buffer = Encoding.UTF8.GetBytes(Text);
 
             using (HttpListenerFactory factory = new HttpListenerFactory())
+            using (Socket client = factory.GetConnectedSocket())
             {
-                UriBuilder uriBuilder = new UriBuilder(factory.ListeningUrl) { Scheme = "ws" };
-
+                // Send a header to the HttpListener to give it a context.
+                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
+                HttpListenerContext context = await listener.GetContextAsync();
 
-                Task<HttpListenerContext> serverContextTask = listener.GetContextAsync();
-                using (ClientWebSocket clientWebSocket = new ClientWebSocket())
-                {
-                    Task clientConnectTask = clientWebSocket.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
 
-                    HttpListenerContext listenerContext = await serverContextTask;
-                    byte[] receiveBuffer = Encoding.UTF8.GetBytes(text);
-                    listenerContext.Response.ContentLength64 = receiveBuffer.Length;
-
-                    // Disconnect the socket from the listener.
-                    HttpListenerWebSocketContext wsContext = await listenerContext.AcceptWebSocketAsync(null);
-                    await clientConnectTask;
-                    clientWebSocket.Dispose();
-
-                    // TODO: we need to sleep and wait to make sure the socket closes.
-                    Thread.Sleep(1000);
-
-                    // Try writing to the disconnected socket.
-                    if (ignoreWriteExceptions)
-                    {
-                        listenerContext.Response.OutputStream.Write(receiveBuffer, 0, receiveBuffer.Length);
-                    }
-                    else
-                    {
-                        Assert.Throws<HttpListenerException>(() => listenerContext.Response.OutputStream.Write(receiveBuffer, 0, receiveBuffer.Length));
-                    }
-                }
+                // TODO: the tests fail intermitently without this...
+                Thread.Sleep(1000);
+                
+                // Writing to, a closed connection should fail.
+                Assert.Throws<HttpListenerException>(() => context.Response.OutputStream.Write(buffer, 0, buffer.Length));
+                
+                // Closing a response from a closed client if a writing has already failed should not fail.
+                context.Response.Close();
             }
         }
 

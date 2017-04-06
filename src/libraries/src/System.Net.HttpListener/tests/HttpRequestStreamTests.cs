@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -391,61 +392,60 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Read_FromClosedSocketSynchronously_ThrowsHttpListenerException(bool transferEncodingChunked)
+        [Fact]
+        public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
             byte[] expected = Encoding.UTF8.GetBytes(Text);
-            Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
 
-            using (HttpClient client = new HttpClient())
+            using (Socket client = _factory.GetConnectedSocket())
             {
-                client.DefaultRequestHeaders.TransferEncodingChunked = transferEncodingChunked;
-                Task<HttpResponseMessage> clientTask = client.PostAsync(_factory.ListeningUrl, new StringContent(Text));
+                // Send a header to the HttpListener to give it a context.
+                // Note: It's important here that we don't send the content.
+                // If the content is missing, then the HttpListener needs
+                // to get the content. However, the socket has been closed
+                // before the reading of the content, so reading should fail.
+                client.Send(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                HttpListenerContext context = await _listener.GetContextAsync();
 
-                HttpListenerContext context = await contextTask;
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
 
-                // Disconnect the client from the HttpListener.
-                client.Dispose();
-
-                // Reading from a closed client should fail.
+                // Reading from a closed connection should fail.
                 byte[] buffer = new byte[expected.Length];
-                Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
+                await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
+                await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
 
-                // Closing a response from a closed client should fail.
+                // Closing a response from a closed client if no writing has failed should fail.
                 Assert.Throws<HttpListenerException>(() => context.Response.Close());
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Read_FromClosedSocketASynchronously_ThrowsHttpListenerException(bool transferEncodingChunked)
+        [Fact]
+        public async Task Read_FromClosedConnectionSynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
             byte[] expected = Encoding.UTF8.GetBytes(Text);
-            Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
 
-            using (HttpClient client = new HttpClient())
+            using (Socket client = _factory.GetConnectedSocket())
             {
-                client.DefaultRequestHeaders.TransferEncodingChunked = transferEncodingChunked;
-                Task<HttpResponseMessage> clientTask = client.PostAsync(_factory.ListeningUrl, new StringContent(Text));
+                // Send a header to the HttpListener to give it a context.
+                // Note: It's important here that we don't send the content.
+                // If the content is missing, then the HttpListener needs
+                // to get the content. However, the socket has been closed
+                // before the reading of the content, so reading should fail.
+                client.Send(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                HttpListenerContext context = await _listener.GetContextAsync();
 
-                HttpListenerContext context = await contextTask;
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
 
-                // Disconnect the client from the HttpListener.
-                client.Dispose();
-
-                // TODO: we need to sleep and wait to make sure the client closes.
-                Thread.Sleep(1000);
-
-                // Reading from a closed client should fail.
+                // Reading from a closed connection should fail.
                 byte[] buffer = new byte[expected.Length];
-                await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
+                Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
+                Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
 
-                // Closing a response from a closed client should fail.
+                // Closing a response from a closed client if no writing has occured should fail.
                 Assert.Throws<HttpListenerException>(() => context.Response.Close());
             }
         }

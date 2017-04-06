@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
+using System.Text;
 
 namespace System.Net.Tests
 {
@@ -12,6 +13,7 @@ namespace System.Net.Tests
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
+        private const string Hostname = "localhost";
         private readonly int _port;
 
         internal HttpListenerFactory()
@@ -24,7 +26,7 @@ namespace System.Net.Tests
 
             for (int port = 1024; port <= IPEndPoint.MaxPort; port++)
             {
-                string prefix = $"http://localhost:{port}/{processGuid:N}/";
+                string prefix = $"http://{Hostname}:{port}/{processGuid:N}/";
 
                 var listener = new HttpListener();
                 try
@@ -86,5 +88,30 @@ namespace System.Net.Tests
         public HttpListener GetListener() => _processPrefixListener;
 
         public void Dispose() => _processPrefixListener.Close();
+
+        public Socket GetConnectedSocket()
+        {
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Connect(Hostname, _port);
+            return socket;
+        }
+
+        public byte[] GetContent(string requestType, string text, bool headerOnly)
+        {
+            Uri listeningUri = new Uri(ListeningUrl);
+
+            string content = $"{requestType} {listeningUri.PathAndQuery} HTTP/1.1\r\nHost: {listeningUri.Host}\r\nContent-Length: {text.Length}\r\n\r\n";
+            if (!headerOnly)
+            {
+                content += text;
+            }
+
+            return Encoding.UTF8.GetBytes(content);
+        }
+    }
+
+    public static class RequestTypes
+    {
+        public const string POST = "POST";
     }
 }
