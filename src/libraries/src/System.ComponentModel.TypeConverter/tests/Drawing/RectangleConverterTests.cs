@@ -175,7 +175,7 @@ namespace System.ComponentModel.TypeConverterTests
         {
             var rect = new Rectangle(10, 10, 20, 30);
             var propsColl = Converter.GetProperties(rect);
-            Assert.Equal(11, propsColl.Count);
+            Assert.Equal(4, propsColl.Count);
             Assert.Equal(rect.X, propsColl["X"].GetValue(rect));
             Assert.Equal(rect.Y, propsColl["Y"].GetValue(rect));
             Assert.Equal(rect.Width, propsColl["Width"].GetValue(rect));
@@ -183,7 +183,7 @@ namespace System.ComponentModel.TypeConverterTests
 
             rect = new Rectangle(-10, -10, 20, 30);
             propsColl = Converter.GetProperties(null, rect);
-            Assert.Equal(11, propsColl.Count);
+            Assert.Equal(4, propsColl.Count);
             Assert.Equal(rect.X, propsColl["X"].GetValue(rect));
             Assert.Equal(rect.Y, propsColl["Y"].GetValue(rect));
             Assert.Equal(rect.Width, propsColl["Width"].GetValue(rect));
@@ -196,6 +196,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Y, propsColl["Y"].GetValue(rect));
             Assert.Equal(rect.Width, propsColl["Width"].GetValue(rect));
             Assert.Equal(rect.Height, propsColl["Height"].GetValue(rect));
+            Assert.Equal(rect.IsEmpty, propsColl["IsEmpty"].GetValue(rect));
 
             Assert.Equal(rect.Top, propsColl["Top"].GetValue(rect));
             Assert.Equal(rect.Bottom, propsColl["Bottom"].GetValue(rect));
@@ -204,6 +205,10 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Location, propsColl["Location"].GetValue(rect));
             Assert.Equal(rect.Size, propsColl["Size"].GetValue(rect));
             Assert.Equal(rect.IsEmpty, propsColl["IsEmpty"].GetValue(rect));
+
+            // Pick an attibute that cannot be applied to properties to make sure everything gets filtered
+            propsColl = Converter.GetProperties(null, new Rectangle(10, 10, 20, 30), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
+            Assert.Equal(0, propsColl.Count);
         }
 
         [Theory]

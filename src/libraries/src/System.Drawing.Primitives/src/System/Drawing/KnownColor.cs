@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Drawing
 {
     [SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue")]
-    public enum KnownColor
+    internal enum KnownColor
     {
         // This enum is order dependant!!!
         //
@@ -19,6 +19,7 @@ namespace System.Drawing
         // 0 - reserved for "not a known color"
 
         // "System" colors
+        /*
         ActiveBorder = 1,
         ActiveCaption,
         ActiveCaptionText,
@@ -45,9 +46,11 @@ namespace System.Drawing
         Window,
         WindowFrame,
         WindowText,
+        */
 
         // "Web" Colors
-        Transparent,
+        FirstColor = 0,
+        Transparent = FirstColor,
         AliceBlue,
         AntiqueWhite,
         Aqua,
@@ -188,9 +191,11 @@ namespace System.Drawing
         WhiteSmoke,
         Yellow,
         YellowGreen,
+        LastColor = YellowGreen
 
         // NEW ADDITIONS IN WHIDBEY - DO NOT MOVE THESE UP OR IT WILL BE A BREAKING CHANGE
 
+        /*
         ButtonFace,
         ButtonHighlight,
         ButtonShadow,
@@ -198,5 +203,6 @@ namespace System.Drawing
         GradientInactiveCaption,
         MenuBar,
         MenuHighlight,
+        */
     }
 }

@@ -10,7 +10,6 @@ namespace System.Drawing
     internal static class ColorTable
     {
         private static readonly Lazy<Dictionary<string, Color>> s_colorConstants = new Lazy<Dictionary<string, Color>>(GetColors);
-        private static readonly Lazy<Dictionary<string, Color>> s_systemColorConstants = new Lazy<Dictionary<string, Color>>(GetSystemColors);
 
         private static Dictionary<string, Color> GetColors()
         {
@@ -19,16 +18,7 @@ namespace System.Drawing
             return dict;
         }
 
-        private static Dictionary<string, Color> GetSystemColors()
-        {
-            var dict = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
-            FillConstants(dict, typeof(SystemColors));
-            return dict;
-        }
-
         internal static Dictionary<string, Color> Colors => s_colorConstants.Value;
-
-        internal static Dictionary<string, Color> SystemColors => s_systemColorConstants.Value;
 
         private static void FillConstants(Dictionary<string, Color> colors, Type enumType)
         {
@@ -49,6 +39,12 @@ namespace System.Drawing
         }
 
         internal static bool TryGetNamedColor(string name, out Color result) =>
-            Colors.TryGetValue(name, out result) || SystemColors.TryGetValue(name, out result);
+            Colors.TryGetValue(name, out result);
+
+        internal static bool IsKnownNamedColor(string name)
+        {
+           Color result;
+           return Colors.TryGetValue(name, out result);
+        }
     }
 }

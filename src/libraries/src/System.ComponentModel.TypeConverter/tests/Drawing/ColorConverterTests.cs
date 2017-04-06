@@ -84,8 +84,9 @@ namespace System.ComponentModel.TypeConverterTests
             }
         }
 
-        public static IEnumerable<object[]> ColorNames =>
-            Enum.GetNames(typeof(KnownColor)).Select(n => new object[] {n});
+        public static IEnumerable<object[]> ColorNames => typeof(Color).GetProperties()
+                .Where(p => p.PropertyType == typeof(Color))
+                .Select(p => new object[] { p.Name} );
 
         [Theory]
         [MemberData(nameof(ColorData))]
@@ -436,8 +437,7 @@ namespace System.ComponentModel.TypeConverterTests
         {
             var conv = new ColorConverter();
 
-            Assert.Equal((int) KnownColor.MenuHighlight, conv.GetStandardValues().Count);
-            Assert.Equal((int) KnownColor.MenuHighlight, conv.GetStandardValues(null).Count);
+            Assert.True(conv.GetStandardValues().Count > 0);
         }
 
         [Fact]

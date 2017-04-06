@@ -160,7 +160,12 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void CreateInstance_CaseSensitive()
         {
-            Assert.Throws<ArgumentException>(() =>
+            // NET Framework throws NullReferenceException but we want it to be friendly on Core so it 
+            // correctly throws an ArgumentException
+            Type expectedExceptionType =
+                PlatformDetection.IsFullFramework ? typeof(NullReferenceException) : typeof(ArgumentException);
+
+            Assert.Throws(expectedExceptionType, () =>
             {
                 Converter.CreateInstance(null, new Dictionary<string, object>
                 {
@@ -175,16 +180,14 @@ namespace System.ComponentModel.TypeConverterTests
         {
             var pt = new SizeF(1, 1);
             var props = Converter.GetProperties(new SizeF(1, 1));
-            Assert.Equal(3, props.Count);
+            Assert.Equal(2, props.Count);
             Assert.Equal(1f, props["Width"].GetValue(pt));
             Assert.Equal(1f, props["Height"].GetValue(pt));
-            Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
             props = Converter.GetProperties(null, new SizeF(1, 1));
-            Assert.Equal(3, props.Count);
+            Assert.Equal(2, props.Count);
             Assert.Equal(1f, props["Width"].GetValue(pt));
             Assert.Equal(1f, props["Height"].GetValue(pt));
-            Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
             props = Converter.GetProperties(null, new SizeF(1, 1), null);
             Assert.Equal(3, props.Count);
@@ -192,12 +195,15 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(1f, props["Height"].GetValue(pt));
             Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
-            props = Converter.GetProperties(null, new SizeF(1, 1),
-                typeof(SizeF).GetCustomAttributes(true).OfType<Attribute>().ToArray());
+            props = Converter.GetProperties(null, new SizeF(1, 1), new Attribute[0]);
             Assert.Equal(3, props.Count);
             Assert.Equal(1f, props["Width"].GetValue(pt));
             Assert.Equal(1f, props["Height"].GetValue(pt));
             Assert.Equal(false, props["IsEmpty"].GetValue(pt));
+
+            // Pick an attibute that cannot be applied to properties to make sure everything gets filtered
+            props = Converter.GetProperties(null, new SizeF(1, 1), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
+            Assert.Equal(0, props.Count);
         }
 
         [Theory]

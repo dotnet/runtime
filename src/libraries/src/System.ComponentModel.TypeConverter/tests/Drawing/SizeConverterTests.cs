@@ -175,16 +175,14 @@ namespace System.ComponentModel.TypeConverterTests
         {
             var pt = new Size(1, 1);
             var props = Converter.GetProperties(new Size(1, 1));
-            Assert.Equal(3, props.Count);
+            Assert.Equal(2, props.Count);
             Assert.Equal(1, props["Width"].GetValue(pt));
             Assert.Equal(1, props["Height"].GetValue(pt));
-            Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
             props = Converter.GetProperties(null, new Size(1, 1));
-            Assert.Equal(3, props.Count);
+            Assert.Equal(2, props.Count);
             Assert.Equal(1, props["Width"].GetValue(pt));
             Assert.Equal(1, props["Height"].GetValue(pt));
-            Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
             props = Converter.GetProperties(null, new Size(1, 1), null);
             Assert.Equal(3, props.Count);
@@ -192,12 +190,15 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(1, props["Height"].GetValue(pt));
             Assert.Equal(false, props["IsEmpty"].GetValue(pt));
 
-            props = Converter.GetProperties(null, new Size(1, 1),
-                typeof(Size).GetCustomAttributes(true).OfType<Attribute>().ToArray());
+            props = Converter.GetProperties(null, new Size(1, 1), new Attribute[0]);
             Assert.Equal(3, props.Count);
             Assert.Equal(1, props["Width"].GetValue(pt));
             Assert.Equal(1, props["Height"].GetValue(pt));
             Assert.Equal(false, props["IsEmpty"].GetValue(pt));
+
+            // Pick an attibute that cannot be applied to properties to make sure everything gets filtered
+            props = Converter.GetProperties(null, new Size(1, 1), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
+            Assert.Equal(0, props.Count);
         }
 
         [Theory]
