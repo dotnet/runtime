@@ -11,6 +11,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AuthenticationTests.cs" />
+    <Compile Include="Common.cs" />
+    <Compile Include="HttpResponseStreamTests.cs" />
     <Compile Include="SimpleHttpTests.cs" />
     <Compile Include="HttpListenerFactory.cs" />
     <Compile Include="WebSocketTests.cs" />
