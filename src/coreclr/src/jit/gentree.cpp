@@ -7900,8 +7900,7 @@ GenTreePtr Compiler::gtCloneExpr(
                 copy = new (this, oper) GenTreeFptrVal(tree->gtType, tree->gtFptrVal.gtFptrMethod);
 
 #ifdef FEATURE_READYTORUN_COMPILER
-                copy->gtFptrVal.gtEntryPoint         = tree->gtFptrVal.gtEntryPoint;
-                copy->gtFptrVal.gtLdftnResolvedToken = tree->gtFptrVal.gtLdftnResolvedToken;
+                copy->gtFptrVal.gtEntryPoint = tree->gtFptrVal.gtEntryPoint;
 #endif
                 goto DONE;
 
