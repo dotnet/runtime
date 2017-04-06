@@ -22,16 +22,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        public void SingleRankNonSZArrayIndexed()
-        {
-            dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
-            d[3] = 32;
-            d[-1] = 28;
-            Assert.Equal(32, d[3]);
-            Assert.Equal(28, d[-1]);
-        }
-
-        [Fact]
         public void ArrayTypeNames()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
