@@ -5615,7 +5615,7 @@ void CEEInfo::getCallInfo(
     pResult->classFlags = getClassAttribsInternal(pResolvedToken->hClass);
 
     pResult->methodFlags = getMethodAttribsInternal(pResult->hMethod);
-    getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL);
+    getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, /* isCallSite = */ TRUE);
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
     {
@@ -8356,7 +8356,8 @@ void
 CEEInfo::getMethodSigInternal(
     CORINFO_METHOD_HANDLE ftnHnd, 
     CORINFO_SIG_INFO *    sigRet, 
-    CORINFO_CLASS_HANDLE  owner)
+    CORINFO_CLASS_HANDLE  owner,
+    BOOL isCallSite)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8382,7 +8383,15 @@ CEEInfo::getMethodSigInternal(
     // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
     if (ftn->RequiresInstArg())
     {
-        sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
+        //
+        // If we are making an interface call that is a default interface method, we need to lie to the JIT.  
+        // The reason being that we already made sure target is always directly callable (through instantiation stubs), 
+        // JIT should not generate shared generics aware call code and insert the secret argument again at the callsite.
+        // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
+        //
+        BOOL isDefaultInterfaceMethodCallSite = isCallSite && ftn->IsDefaultInterfaceMethod();
+        if (!isDefaultInterfaceMethodCallSite)
+            sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
     }
 
     // We want the calling convention bit to be consistant with the method attribute bit

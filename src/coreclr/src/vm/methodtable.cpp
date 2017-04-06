@@ -1982,7 +1982,7 @@ MethodTable::Debug_DumpInterfaceMap(
     HRESULT hr;
     EX_TRY
     {
-        InterfaceMapIterator it(this, false);
+        InterfaceMapIterator it(this);
         while (it.Next())
         {
             MethodTable *pInterfaceMT = it.GetInterface();
@@ -6850,6 +6850,12 @@ MethodTable::FindDispatchImpl(
         DispatchMapEntry e;
         if (!FindDispatchEntry(typeID, slotNumber, &e))
         {
+            // Figure out the interface being called
+            MethodTable *pIfcMT = GetThread()->GetDomain()->LookupType(typeID);
+
+            // Figure out which method of the interface the caller requested.
+            MethodDesc * pIfcMD = pIfcMT->GetMethodDescForSlot(slotNumber);
+
             // A call to an array thru IList<T> (or IEnumerable<T> or ICollection<T>) has to be handled specially.
             // These interfaces are "magic" (mostly due to working set concerned - they are created on demand internally
             // even though semantically, these are static interfaces.)
@@ -6863,7 +6869,7 @@ MethodTable::FindDispatchImpl(
                 // IList<T> call thru an array.
 
                 // Get the MT of IList<T> or IReadOnlyList<T>
-                MethodTable *pIfcMT = GetThread()->GetDomain()->LookupType(typeID);
+
 
                 // Quick sanity check
                 if (!(pIfcMT->HasInstantiation()))
@@ -6874,9 +6880,6 @@ MethodTable::FindDispatchImpl(
 
                 // Get the type of T (as in IList<T>)
                 TypeHandle theT = pIfcMT->GetInstantiation()[0];
-
-                // Figure out which method of IList<T> the caller requested.
-                MethodDesc * pIfcMD = pIfcMT->GetMethodDescForSlot(slotNumber);
 
                 // Retrieve the corresponding method of SZArrayHelper. This is the guy that will actually execute.
                 // This method will be an instantiation of a generic method. I.e. if the caller requested
@@ -6894,10 +6897,33 @@ MethodTable::FindDispatchImpl(
                 RETURN(TRUE);
 
             }
+            else
+            {
+                //
+                // See if we can find a default method from one of the implemented interfaces 
+                //
+                MethodDesc *pDefaultMethod = NULL;
+                if (FindDefaultMethod(
+                    pIfcMD,     // the interface method being resolved
+                    pIfcMT,     // the interface being resolved
+                    &pDefaultMethod))
+                {
+                    // Now, construct a DispatchSlot to return in *pImplSlot
+                    DispatchSlot ds(pDefaultMethod->GetMethodEntryPoint());
+
+                    if (pImplSlot != NULL)
+                    {
+                        *pImplSlot = ds;
+                    }
+
+                    RETURN(TRUE);
+                }
+            }
 
             // This contract is not implemented by this class or any parent class.
             RETURN(FALSE);
         }
+
 
         /////////////////////////////////
         // 1.1. Update the typeID and slotNumber so that the full search can commense below
@@ -6915,6 +6941,148 @@ MethodTable::FindDispatchImpl(
     // Successfully determined the target for the given target
     RETURN (TRUE);
 }
+
+#ifndef DACCESS_COMPILE
+BOOL MethodTable::FindDefaultMethod(
+    MethodDesc *pInterfaceMD,
+    MethodTable *pInterfaceMT,
+    MethodDesc **ppDefaultMethod
+)
+{
+    CONTRACT(BOOL) {
+        INSTANCE_CHECK;
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(CheckPointer(pInterfaceMD));
+        PRECONDITION(CheckPointer(pInterfaceMT));
+        PRECONDITION(CheckPointer(ppDefaultMethod));
+        POSTCONDITION(!RETVAL || (*ppDefaultMethod) != nullptr);
+    } CONTRACT_END;
+
+    //
+    // Find best candidate
+    //
+    InterfaceMapIterator it = this->IterateInterfaceMap();
+    MethodTable *pBestCandidateMT = NULL;
+    MethodDesc  *pBestCandidateMD = NULL;
+
+
+    //
+    // Walk interface from derived class to parent class
+    //
+    // @DIM_TODO - This is a first cut naive implementation for prototyping and flush out other 
+    // implementation issues without worrying too much about ordering/checks
+    // Once CLR/C# team has agreed on the right order, we'll replace this with the real deal
+    //
+    MethodTable *pMT = this;
+    while (pMT != NULL)
+    {
+        MethodTable *pParentMT = pMT->GetParentMethodTable();
+        unsigned dwParentInterfaces = 0;
+        if (pParentMT)
+            dwParentInterfaces = pParentMT->GetNumInterfaces();
+
+        // Scanning only current class only if the current class have more interface than parent
+        // (parent interface are laid out first in interface map)
+        if (pMT->GetNumInterfaces() > dwParentInterfaces)
+        {    
+            // Only iterate the interfaceimpls on current class
+            MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
+            while (!it.Finished())
+            {
+                MethodTable *pCurMT = it.GetInterface();
+
+                MethodDesc *pCurMD = NULL;
+                if (pCurMT == pInterfaceMT)
+                {
+                    if (!pInterfaceMD->IsAbstract())
+                    {
+                        // exact match
+                        pCurMD = pInterfaceMD;
+                    }
+                }
+                else if (pCurMT->CanCastToInterface(pInterfaceMT))
+                {
+                    if (pCurMT->HasSameTypeDefAs(pInterfaceMT))
+                    {
+                        // Generic variance match
+                        pCurMD = pInterfaceMD;
+                    }
+                    else
+                    {
+                        //
+                        // Parent interface - search for an methodimpl for explicit override
+                        // Implicit override in default interface methods are not allowed
+                        //
+                        MethodIterator methodIt(pCurMT);
+                        for (; methodIt.IsValid(); methodIt.Next())
+                        {
+                            MethodDesc *pMD = methodIt.GetMethodDesc();
+                            if (pMD->IsVirtual() && !pMD->IsAbstract() && pMD->IsMethodImpl())
+                            {
+                                MethodImpl *pImpl = pMD->GetMethodImpl();
+                                MethodDesc **pImplMDs = pImpl->GetImplementedMDs();
+                                for (DWORD i = 0; i < pImpl->GetSize(); ++i)
+                                {
+                                    if (pImplMDs[i] == pInterfaceMD)
+                                    {
+                                        pCurMD = pMD;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pCurMD != NULL)
+                {
+                    //
+                    // Found a match. But is it a more specific match (we want most specific interfaces)
+                    //
+                    if (pCurMD->HasClassOrMethodInstantiation())
+                    {
+                        // Instantiate the MethodDesc
+                        // We don't want generic dictionary from this pointer - we need pass secret type argument
+                        // from instantiating stubs to resolve ambiguity
+                        pCurMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                            pCurMD,
+                            pCurMT,
+                            FALSE,                  // forceBoxedEntryPoint
+                            pCurMD->HasMethodInstantiation() ?
+                                pCurMD->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
+                                Instantiation(),    // for method themselves that are generic
+                            FALSE,                  // allowInstParam
+                            TRUE                    // forceRemoteableMethod
+                        );
+                    }
+
+                    if (pBestCandidateMT == NULL ||                         // first time
+                        pCurMT->CanCastToInterface(pBestCandidateMT))       // Prefer "more specific"" interface
+                    {
+                        // This is a better match
+                        pBestCandidateMT = pCurMT;
+                        pBestCandidateMD = pCurMD;
+                    }
+                }
+
+                it.Next();
+            }
+        }
+
+        pMT = pParentMT;
+    }
+
+    if (pBestCandidateMD != NULL)
+    {
+        *ppDefaultMethod = pBestCandidateMD;
+        RETURN(TRUE);
+    }
+
+    RETURN(FALSE);
+}
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber)
@@ -9473,78 +9641,78 @@ MethodTable::TryResolveConstraintMethodApprox(
         // we don't have enough exact type information at JIT time
         // even to decide whether we will be able to resolve to an unboxed entry point...
         // To cope with this case we always go via the helper function if there's any
-        // chance of this happening by checking for all interfaces which might possibly
-        // be compatible with the call (verification will have ensured that
-        // at least one of them will be)
-        
-        // Enumerate all potential interface instantiations
-        MethodTable::InterfaceMapIterator it = pCanonMT->IterateInterfaceMap();
-        DWORD cPotentialMatchingInterfaces = 0;
-        while (it.Next())
-        {
-            TypeHandle thPotentialInterfaceType(it.GetInterface());
-            if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() == 
-                thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
-            {
-                cPotentialMatchingInterfaces++;
-                pMD = pCanonMT->GetMethodDescForInterfaceMethod(thPotentialInterfaceType, pGenInterfaceMD);
-                
-                // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-                if ((pMD != NULL) && !pMD->GetMethodTable()->IsValueType())
-                {
-                    LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: %s::%s not a value type method\n",
-                         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-                    return NULL;
-                }
-            }
-        }
-        
-        _ASSERTE_MSG((cPotentialMatchingInterfaces != 0), 
-            "At least one interface has to implement the method, otherwise there's a bug in JIT/verification.");
+// chance of this happening by checking for all interfaces which might possibly
+// be compatible with the call (verification will have ensured that
+// at least one of them will be)
 
-        if (cPotentialMatchingInterfaces > 1)
-        {   // We have more potentially matching interfaces
-            MethodTable * pInterfaceMT = thInterfaceType.GetMethodTable();
-            _ASSERTE(pInterfaceMT->HasInstantiation());
-            
-            BOOL fIsExactMethodResolved = FALSE;
+// Enumerate all potential interface instantiations
+MethodTable::InterfaceMapIterator it = pCanonMT->IterateInterfaceMap();
+DWORD cPotentialMatchingInterfaces = 0;
+while (it.Next())
+{
+    TypeHandle thPotentialInterfaceType(it.GetInterface());
+    if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
+        thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
+    {
+        cPotentialMatchingInterfaces++;
+        pMD = pCanonMT->GetMethodDescForInterfaceMethod(thPotentialInterfaceType, pGenInterfaceMD);
 
-            if (!pInterfaceMT->IsSharedByGenericInstantiations() && 
-                !pInterfaceMT->IsGenericTypeDefinition() && 
-                !this->IsSharedByGenericInstantiations() && 
-                !this->IsGenericTypeDefinition())
-            {   // We have exact interface and type instantiations (no generic variables and __Canon used 
-                // anywhere)
-                if (this->CanCastToInterface(pInterfaceMT))
-                {
-                    // We can resolve to exact method
-                    pMD = this->GetMethodDescForInterfaceMethod(pInterfaceMT, pInterfaceMD);
-                    _ASSERTE(pMD != NULL);
-                    fIsExactMethodResolved = TRUE;
-                }
-            }
-            
-            if (!fIsExactMethodResolved)
-            {   // We couldn't resolve the interface statically
-                _ASSERTE(pfForceUseRuntimeLookup != NULL);
-                // Notify the caller that it should use runtime lookup
-                // Note that we can leave pMD incorrect, because we will use runtime lookup
-                *pfForceUseRuntimeLookup = TRUE;
-            }
-        }
-        else
+        // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+        if ((pMD != NULL) && !pMD->GetMethodTable()->IsValueType())
         {
-            // If we can resolve the interface exactly then do so (e.g. when doing the exact 
-            // lookup at runtime, or when not sharing generic code).
-            if (pCanonMT->CanCastToInterface(thInterfaceType.GetMethodTable()))
-            {
-                pMD = pCanonMT->GetMethodDescForInterfaceMethod(thInterfaceType, pGenInterfaceMD);
-                if (pMD == NULL)
-                {
-                    LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: failed to find method desc for interface method\n"));
-                }
-            }
+            LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: %s::%s not a value type method\n",
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+            return NULL;
         }
+    }
+}
+
+_ASSERTE_MSG((cPotentialMatchingInterfaces != 0),
+    "At least one interface has to implement the method, otherwise there's a bug in JIT/verification.");
+
+if (cPotentialMatchingInterfaces > 1)
+{   // We have more potentially matching interfaces
+    MethodTable * pInterfaceMT = thInterfaceType.GetMethodTable();
+    _ASSERTE(pInterfaceMT->HasInstantiation());
+
+    BOOL fIsExactMethodResolved = FALSE;
+
+    if (!pInterfaceMT->IsSharedByGenericInstantiations() &&
+        !pInterfaceMT->IsGenericTypeDefinition() &&
+        !this->IsSharedByGenericInstantiations() &&
+        !this->IsGenericTypeDefinition())
+    {   // We have exact interface and type instantiations (no generic variables and __Canon used 
+        // anywhere)
+        if (this->CanCastToInterface(pInterfaceMT))
+        {
+            // We can resolve to exact method
+            pMD = this->GetMethodDescForInterfaceMethod(pInterfaceMT, pInterfaceMD);
+            _ASSERTE(pMD != NULL);
+            fIsExactMethodResolved = TRUE;
+        }
+    }
+
+    if (!fIsExactMethodResolved)
+    {   // We couldn't resolve the interface statically
+        _ASSERTE(pfForceUseRuntimeLookup != NULL);
+        // Notify the caller that it should use runtime lookup
+        // Note that we can leave pMD incorrect, because we will use runtime lookup
+        *pfForceUseRuntimeLookup = TRUE;
+    }
+}
+else
+{
+    // If we can resolve the interface exactly then do so (e.g. when doing the exact 
+    // lookup at runtime, or when not sharing generic code).
+    if (pCanonMT->CanCastToInterface(thInterfaceType.GetMethodTable()))
+    {
+        pMD = pCanonMT->GetMethodDescForInterfaceMethod(thInterfaceType, pGenInterfaceMD);
+        if (pMD == NULL)
+        {
+            LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintMethodApprox: failed to find method desc for interface method\n"));
+        }
+    }
+}
     }
     else if (pGenInterfaceMD->IsVirtual())
     {
@@ -9566,33 +9734,36 @@ MethodTable::TryResolveConstraintMethodApprox(
         // methods on System.Object, i.e. when these are used as a constraint.
         pMD = NULL;
     }
-    
+
     if (pMD == NULL)
     {   // Fall back to VSD
         return NULL;
     }
-    
-    //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-    // Only return a method if the value type itself declares the method, 
-    // otherwise we might get a method from Object or System.ValueType
-    if (!pMD->GetMethodTable()->IsValueType())
-    {   // Fall back to VSD
-        return NULL;
+
+    if (!pMD->GetMethodTable()->IsInterface())
+    {
+        //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+        // Only return a method if the value type itself declares the method
+        // otherwise we might get a method from Object or System.ValueType
+        if (!pMD->GetMethodTable()->IsValueType())
+        {   // Fall back to VSD
+            return NULL;
+        }
+
+        // We've resolved the method, ignoring its generic method arguments
+        // If the method is a generic method then go and get the instantiated descriptor
+        pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pMD,
+            this,
+            FALSE /* no BoxedEntryPointStub */,
+            pInterfaceMD->GetMethodInstantiation(),
+            FALSE /* no allowInstParam */);
+
+        // FindOrCreateAssociatedMethodDesc won't return an BoxedEntryPointStub.
+        _ASSERTE(pMD != NULL);
+        _ASSERTE(!pMD->IsUnboxingStub());
     }
-    
-    // We've resolved the method, ignoring its generic method arguments
-    // If the method is a generic method then go and get the instantiated descriptor
-    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        pMD,
-        this,
-        FALSE /* no BoxedEntryPointStub */ ,
-        pInterfaceMD->GetMethodInstantiation(),
-        FALSE /* no allowInstParam */ );
-    
-    // FindOrCreateAssociatedMethodDesc won't return an BoxedEntryPointStub.
-    _ASSERTE(pMD != NULL);
-    _ASSERTE(!pMD->IsUnboxingStub());
-    
+
     return pMD;
 } // MethodTable::TryResolveConstraintMethodApprox
 
