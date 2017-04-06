@@ -276,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // * S and T differ only in element type. In other words, S and T have the same number of dimensions.
             // * Both SE and TE are reference types.
             // * An implicit reference conversion exists from SE to TE.
-            return (pSource.rank == pDest.rank) &&
+            return (pSource.rank == pDest.rank) && pSource.IsSZArray == pDest.IsSZArray &&
                 HasImplicitReferenceConversion(pSource.GetElementType(), pDest.GetElementType());
         }
 
@@ -301,7 +301,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
-            if (pSource.rank != 1)
+            if (!pSource.IsSZArray)
             {
                 return false;
             }

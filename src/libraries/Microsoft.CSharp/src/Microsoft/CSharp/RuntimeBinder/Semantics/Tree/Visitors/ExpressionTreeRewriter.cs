@@ -1174,7 +1174,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             int parameterCount = ExpressionIterator.Count(args);
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
-            ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
+            ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1, true);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
             ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
             arrayInit.DimensionSize = parameterCount;
@@ -1204,7 +1204,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
-            ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
+            ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1, true);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(methodCount);
             ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, newArgs, paramsArrayArg, null);
             arrayInit.DimensionSize = methodCount;
