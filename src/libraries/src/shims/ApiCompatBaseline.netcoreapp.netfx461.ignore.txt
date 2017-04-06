@@ -24,6 +24,8 @@ TypesMustExist : Type 'System.Runtime.Remoting.Messaging.IRemotingFormatter' doe
 // SchemaImporter won't be implemented in netcore20
 TypesMustExist : Type 'System.Xml.Serialization.SchemaImporter' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlSchemaImporter' does not inherit from base type 'System.Xml.Serialization.SchemaImporter' in the implementation but it does in the contract.
+// IServiceProvider won't be implemented by SqlClientFactory. See here: https://github.com/dotnet/corefx/issues/17708
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlClientFactory' does not implement interface 'System.IServiceProvider' in the implementation but it does in the contract.
 // Interfaces were intentional removals
 TypesMustExist : Type 'System.Runtime.InteropServices._Activator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices._Assembly' does not exist in the implementation but it does exist in the contract.
