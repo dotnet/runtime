@@ -15,6 +15,38 @@ namespace System.Security.Cryptography
             return (RSA)CryptoConfig.CreateFromName(algName);
         }
 
+        public static RSA Create(int keySizeInBits)
+        {
+            RSA rsa = Create();
+
+            try
+            {
+                rsa.KeySize = keySizeInBits;
+                return rsa;
+            }
+            catch
+            {
+                rsa.Dispose();
+                throw;
+            }
+        }
+
+        public static RSA Create(RSAParameters parameters)
+        {
+            RSA rsa = Create();
+
+            try
+            {
+                rsa.ImportParameters(parameters);
+                return rsa;
+            }
+            catch
+            {
+                rsa.Dispose();
+                throw;
+            }
+        }
+
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);
         public virtual byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) { throw DerivedClassMustOverride(); }

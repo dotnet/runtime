@@ -314,14 +314,12 @@ namespace System.Runtime.InteropServices
         public decimal WrappedObject { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-    [System.ObsoleteAttribute("CustomQueryInterfaceMode and support for ICustomQueryInterface may be unavailable in future releases.")]
     public enum CustomQueryInterfaceMode
     {
         Allow = 1,
         Ignore = 0,
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-    [System.ObsoleteAttribute("CustomQueryInterfaceResult and support for ICustomQueryInterface may be unavailable in future releases.")]
     public enum CustomQueryInterfaceResult
     {
         Failed = 2,
@@ -462,7 +460,6 @@ namespace System.Runtime.InteropServices
         object MarshalNativeToManaged(System.IntPtr pNativeData);
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-    [System.ObsoleteAttribute("ICustomQueryInterface may be unavailable in future releases.")]
     public partial interface ICustomQueryInterface
     {
         System.Runtime.InteropServices.CustomQueryInterfaceResult GetInterface(ref System.Guid iid, out System.IntPtr ppv);

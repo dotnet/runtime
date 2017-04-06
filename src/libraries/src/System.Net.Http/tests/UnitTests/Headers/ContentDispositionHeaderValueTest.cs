@@ -332,6 +332,15 @@ namespace System.Net.Http.Tests
             Assert.Null(contentDisposition.Size);
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData(66)]
+        public void Size_ValueSetGet_RoundtripsSuccessfully(int? value)
+        {
+            var contentDisposition = new ContentDispositionHeaderValue("inline") { Size = value };
+            Assert.Equal(value, contentDisposition.Size);
+        }
+
         [Fact]
         public void ToString_UseDifferentContentDispositions_AllSerializedCorrectly()
         {

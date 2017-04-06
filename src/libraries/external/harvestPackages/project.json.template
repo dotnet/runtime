@@ -27,6 +27,7 @@
         "System.Reflection.Context": "4.3.0",
         "System.Reflection.DispatchProxy": "4.3.0",
         "System.Reflection.Metadata": "1.4.1",
+        "System.Reflection.TypeExtensions": "4.3.0",
         "System.Runtime.CompilerServices.Unsafe": "4.3.0",
         "System.Runtime.InteropServices.RuntimeInformation": "4.3.0",
         "System.Runtime.WindowsRuntime": "4.3.0",

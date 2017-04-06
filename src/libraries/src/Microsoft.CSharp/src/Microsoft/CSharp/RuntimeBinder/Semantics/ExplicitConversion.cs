@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private Expr _exprSrc;
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
-            private readonly ExprTypeOrNamespace _exprTypeDest;
+            private readonly ExprClass _exprTypeDest;
 
             // This is for lambda error reporting. The reason we have this is because we 
             // store errors for lambda conversions, and then we don't bind the conversion
@@ -45,12 +45,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // BindExplicitConversion
             // ----------------------------------------------------------------------------
 
-            public ExplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprTypeOrNamespace typeDest, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, CONVERTTYPE flags)
+            public ExplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprClass typeDest, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, CONVERTTYPE flags)
             {
                 _binder = binder;
                 _exprSrc = exprSrc;
                 _typeSrc = typeSrc;
-                _typeDest = typeDest.TypeOrNamespace.AsType();
+                _typeDest = typeDest.Type;
                 _pDestinationTypeForLambdaErrorReporting = pDestinationTypeForLambdaErrorReporting;
                 _exprTypeDest = typeDest;
                 _needsExprDest = needsExprDest;
@@ -207,9 +207,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             VSFAIL("BindExplicitConversion failed unexpectedly");
                             return false;
                         }
-                        if (_exprDest.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION)
+                        if (_exprDest is ExprUserDefinedConversion udc)
                         {
-                            _exprDest.asUSERDEFINEDCONVERSION().Argument = _exprSrc;
+                            udc.Argument = _exprSrc;
                         }
                     }
                     return true;
@@ -775,11 +775,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return AggCastResult.Failure;
                 }
-#if ! CSEE
                 if (aggTypeDest.getAggregate().IsInterface())
-#else
-                if ((exprSrc != null && !exprSrc.eeValue.substType.IsNullableType()) || aggTypeDest.getAggregate().IsInterface())
-#endif
                 {
                     // Explicit conversion of type variables to interfaces.
                     if (_needsExprDest)

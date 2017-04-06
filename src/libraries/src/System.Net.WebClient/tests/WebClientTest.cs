@@ -41,6 +41,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadData_InvalidArguments_ThrowExceptions()
         {
@@ -56,6 +57,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((Uri)null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadFile_InvalidArguments_ThrowExceptions()
         {
@@ -80,6 +82,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync(new Uri("http://localhost"), null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadString_InvalidArguments_ThrowExceptions()
         {
@@ -95,6 +98,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((Uri)null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadData_InvalidArguments_ThrowExceptions()
         {
@@ -129,6 +133,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadFile_InvalidArguments_ThrowExceptions()
         {
@@ -163,6 +168,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadString_InvalidArguments_ThrowExceptions()
         {
@@ -197,6 +203,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadValues_InvalidArguments_ThrowExceptions()
         {
@@ -385,6 +392,7 @@ namespace System.Net.Tests
             Assert.Equal("ArbitraryValue", wc.ResponseHeaders["ArbitraryHeader"]);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // hangs on NETFX
         [Fact]
         public static async Task RequestHeaders_SpecialHeaders_RequestSucceeds()
         {
@@ -517,7 +525,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory]
+        [Fact]
         public async Task DownloadData_LargeData_Success()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -658,6 +666,7 @@ namespace System.Net.Tests
             Assert.Contains(ExpectedText, result);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]

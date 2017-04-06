@@ -119,11 +119,5 @@ namespace System.Globalization.Tests
             Assert.Equal(threeLetterISORegionName, ri.ThreeLetterISORegionName);
             Assert.Equal(threeLetterWindowsRegionName, ri.ThreeLetterWindowsRegionName);
         }
-
-        [Fact]
-        public void NegativeTest()
-        {
-            Assert.Throws<System.ArgumentException>("name", () => new RegionInfo(""));
-        }
     }
 }

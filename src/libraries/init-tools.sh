@@ -43,10 +43,6 @@ get_current_linux_name() {
         echo "alpine"
         return 0
     elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
-            echo "fedora.23"
-            return 0
-        fi
         if [ "$(cat /etc/*-release | grep -cim1 24)" -eq 1 ]; then
             echo "fedora.24"
             return 0

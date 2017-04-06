@@ -72,7 +72,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            uint uValue = value; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
 #if !netstandard10
@@ -143,18 +143,18 @@ namespace System
                     goto NotFound;
                 }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
-                // Get comparision Vector
-                Vector<byte> vComparision = GetVector(value);
+                // Get comparison Vector
+                Vector<byte> vComparison = GetVector(value);
                 while ((byte*)nLength > (byte*)index)
                 {
-                    var vMatches = Vector.Equals(vComparision, Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index)));
+                    var vMatches = Vector.Equals(vComparison, Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index)));
                     if (Vector<byte>.Zero.Equals(vMatches))
                     {
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparision to keep register pressure low
-                    vComparision = vMatches;
+                    // Found match, reuse Vector vComparison to keep register pressure low
+                    vComparison = vMatches;
                     // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
                     goto VectorFound;
                 }
@@ -173,7 +173,7 @@ namespace System
                 }
             VectorFound:
                 // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(vComparision);
+                return (int)(byte*)index + LocateFirstFoundByte(vComparison);
             }
         NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
@@ -200,8 +200,8 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            uint uValue0 = value0; // Use uint for comparisions to avoid unnecessary 8->32 extensions
-            uint uValue1 = value1; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
 #if !netstandard10
@@ -213,7 +213,7 @@ namespace System
                     nLength = (IntPtr)(uint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
                 }
             }
-            SequentialScan:
+        SequentialScan:
 #endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
@@ -281,40 +281,37 @@ namespace System
 #if !netstandard10
             if (Vector.IsHardwareAccelerated)
             {
-                if ((int)(byte*)index >= length - 1)
+                if ((int)(byte*)index >= length)
                 {
                     goto NotFound;
                 }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
-                // Get comparision Vector
+                // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
                 Vector<byte> values1 = GetVector(value1);
-                do
+
+                while ((byte*)nLength > (byte*)index)
                 {
                     var vData = Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index));
                     var vMatches = Vector.BitwiseOr(
                                     Vector.Equals(vData, values0),
                                     Vector.Equals(vData, values1));
-
-                    if (!vMatches.Equals(Vector<byte>.Zero))
+                    if (Vector<byte>.Zero.Equals(vMatches))
                     {
-                        // Found match, reuse Vector values0 to keep register pressure low
-                        values0 = vMatches;
-                        break;
+                        index += Vector<byte>.Count;
+                        continue;
                     }
-                    index += Vector<byte>.Count;
-                } while ((byte*)nLength > (byte*)index);
-
-                // Found match? Perform secondary search outside out of loop, so above loop body is small
-                if ((byte*)nLength > (byte*)index)
-                {
-                    // Find offset of first match
-                    index += LocateFirstFoundByte(values0);
-                    // goto rather than inline return to keep function smaller
-                    goto Found;
+                    // Found match, reuse Vector vComparison to keep register pressure low
+                    values0 = vMatches;
+                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
+                    goto VectorFound;
                 }
 
-                if ((int)(byte*)index <= length - 1)
+                if ((int)(byte*)index >= length)
+                {
+                    goto NotFound;
+                }
+                else
                 {
                     unchecked
                     {
@@ -322,25 +319,28 @@ namespace System
                     }
                     goto SequentialScan;
                 }
+            VectorFound:
+                // Find offset of first match
+                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-            NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-            Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
             return (int)(byte*)index;
-            Found1:
+        Found1:
             return (int)(byte*)(index + 1);
-            Found2:
+        Found2:
             return (int)(byte*)(index + 2);
-            Found3:
+        Found3:
             return (int)(byte*)(index + 3);
-            Found4:
+        Found4:
             return (int)(byte*)(index + 4);
-            Found5:
+        Found5:
             return (int)(byte*)(index + 5);
-            Found6:
+        Found6:
             return (int)(byte*)(index + 6);
-            Found7:
+        Found7:
             return (int)(byte*)(index + 7);
         }
 
@@ -348,9 +348,9 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            uint uValue0 = value0; // Use uint for comparisions to avoid unnecessary 8->32 extensions
-            uint uValue1 = value1; // Use uint for comparisions to avoid unnecessary 8->32 extensions
-            uint uValue2 = value2; // Use uint for comparisions to avoid unnecessary 8->32 extensions
+            uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            uint uValue2 = value2; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use UIntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)(uint)length;
 #if !netstandard10
@@ -362,7 +362,7 @@ namespace System
                     nLength = (IntPtr)(uint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
                 }
             }
-            SequentialScan:
+        SequentialScan:
 #endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
@@ -430,44 +430,41 @@ namespace System
 #if !netstandard10
             if (Vector.IsHardwareAccelerated)
             {
-                if ((int)(byte*)index >= length - 2)
+                if ((int)(byte*)index >= length)
                 {
                     goto NotFound;
                 }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
-                // Get comparision Vector
+                // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
                 Vector<byte> values1 = GetVector(value1);
                 Vector<byte> values2 = GetVector(value2);
-                do
+                while ((byte*)nLength > (byte*)index)
                 {
                     var vData = Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref searchSpace, index));
 
                     var vMatches = Vector.BitwiseOr(
-                                    Vector.BitwiseAnd(
+                                    Vector.BitwiseOr(
                                         Vector.Equals(vData, values0),
                                         Vector.Equals(vData, values1)),
                                     Vector.Equals(vData, values2));
 
-                    if (!vMatches.Equals(Vector<byte>.Zero))
+                    if (Vector<byte>.Zero.Equals(vMatches))
                     {
-                        // Found match, reuse Vector values0 to keep register pressure low
-                        values0 = vMatches;
-                        break;
+                        index += Vector<byte>.Count;
+                        continue;
                     }
-                    index += Vector<byte>.Count;
-                } while ((byte*)nLength > (byte*)index);
-
-                // Found match? Perform secondary search outside out of loop, so above loop body is small
-                if ((byte*)nLength > (byte*)index)
-                {
-                    // Find offset of first match
-                    index += LocateFirstFoundByte(values0);
-                    // goto rather than inline return to keep function smaller
-                    goto Found;
+                    // Found match, reuse Vector vComparison to keep register pressure low
+                    values0 = vMatches;
+                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
+                    goto VectorFound;
                 }
 
-                if ((int)(byte*)index <= length - 2)
+                if ((int)(byte*)index >= length)
+                {
+                    goto NotFound;
+                }
+                else
                 {
                     unchecked
                     {
@@ -475,25 +472,28 @@ namespace System
                     }
                     goto SequentialScan;
                 }
+            VectorFound:
+                // Find offset of first match
+                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-            NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-            Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
             return (int)(byte*)index;
-            Found1:
+        Found1:
             return (int)(byte*)(index + 1);
-            Found2:
+        Found2:
             return (int)(byte*)(index + 2);
-            Found3:
+        Found3:
             return (int)(byte*)(index + 3);
-            Found4:
+        Found4:
             return (int)(byte*)(index + 4);
-            Found5:
+        Found5:
             return (int)(byte*)(index + 5);
-            Found6:
+        Found6:
             return (int)(byte*)(index + 6);
-            Found7:
+        Found7:
             return (int)(byte*)(index + 7);
         }
 

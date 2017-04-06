@@ -6,9 +6,15 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprBoundLambda : Expr
+    internal sealed class ExprBoundLambda : ExprWithType
     {
         private Scope _argumentScope;
+
+        public ExprBoundLambda(CType type)
+            : base(ExpressionKind.BoundLambda, type)
+        {
+            Debug.Assert(type == null || type.isDelegateType());
+        }
 
         public ExprBlock OptionalBody { get; set; }
 

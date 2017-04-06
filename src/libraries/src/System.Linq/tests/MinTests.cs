@@ -122,7 +122,16 @@ namespace System.Linq.Tests
             yield return new object[] { new float[] { 6.8f, 9.4f, 10f, 0, -5.6f, float.NaN }, float.NaN };
             yield return new object[] { new float[] { float.NaN, float.NegativeInfinity }, float.NaN };
             yield return new object[] { new float[] { float.NegativeInfinity, float.NaN }, float.NaN };
-            yield return new object[] { Enumerable.Repeat(float.NaN, int.MaxValue), float.NaN };
+
+            // In .NET Core, Enumerable.Min shortcircuits if it finds any float.NaN in the array,
+            // as nothing can be less than float.NaN. See https://github.com/dotnet/corefx/pull/2426.
+            // Without this optimization, we would iterate through int.MaxValue elements, which takes
+            // a long time.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { Enumerable.Repeat(float.NaN, int.MaxValue), float.NaN };
+            }
+            yield return new object[] { Enumerable.Repeat(float.NaN, 3), float.NaN };
 
             // Normally NaN < anything is false, as is anything < NaN
             // However, this leads to some irksome outcomes in Min and Max.
@@ -166,10 +175,19 @@ namespace System.Linq.Tests
             yield return new object[] { new double[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(double.MinValue, 1)), double.MinValue };
 
             yield return new object[] { Enumerable.Repeat(5.5, 1), 5.5 };
-            yield return new object[] { Enumerable.Repeat(double.NaN, int.MaxValue), double.NaN };
             yield return new object[] { new double[] { -2.5, 4.9, 130, 4.7, 28 }, -2.5 };
             yield return new object[] { new double[] { 6.8, 9.4, 10, 0, -5.6 }, -5.6 };
             yield return new object[] { new double[] { -5.5, double.NegativeInfinity, 9.9, double.NegativeInfinity }, double.NegativeInfinity };
+
+            // In .NET Core, Enumerable.Min shortcircuits if it finds any double.NaN in the array,
+            // as nothing can be less than double.NaN. See https://github.com/dotnet/corefx/pull/2426.
+            // Without this optimization, we would iterate through int.MaxValue elements, which takes
+            // a long time.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { Enumerable.Repeat(double.NaN, int.MaxValue), double.NaN };
+            }
+            yield return new object[] { Enumerable.Repeat(double.NaN, 3), double.NaN };
 
             yield return new object[] { new double[] { double.NaN, 6.8, 9.4, 10, 0, -5.6 }, double.NaN };
             yield return new object[] { new double[] { 6.8, 9.4, 10, 0, -5.6, double.NaN }, double.NaN };
@@ -334,10 +352,19 @@ namespace System.Linq.Tests
             yield return new object[] { new float?[] { 6.8f, 9.4f, 10f, 0, null, -5.6f, float.NaN }, float.NaN };
             yield return new object[] { new float?[] { float.NaN, float.NegativeInfinity }, float.NaN };
             yield return new object[] { new float?[] { float.NegativeInfinity, float.NaN }, float.NaN };
-            yield return new object[] { Enumerable.Repeat((float?)float.NaN, int.MaxValue), float.NaN };
             yield return new object[] { new float?[] { float.NaN, null, null, null }, float.NaN };
             yield return new object[] { new float?[] { null, null, null, float.NaN }, float.NaN };
             yield return new object[] { new float?[] { null, float.NaN, null }, float.NaN };
+
+            // In .NET Core, Enumerable.Min shortcircuits if it finds any float.NaN in the array,
+            // as nothing can be less than float.NaN. See https://github.com/dotnet/corefx/pull/2426.
+            // Without this optimization, we would iterate through int.MaxValue elements, which takes
+            // a long time.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { Enumerable.Repeat((float?)float.NaN, int.MaxValue), float.NaN };
+            }
+            yield return new object[] { Enumerable.Repeat((float?)float.NaN, 3), float.NaN };
         }
 
         [Theory]
@@ -375,10 +402,19 @@ namespace System.Linq.Tests
             yield return new object[] { new double?[] { 6.8, 9.4, 10, 0.0, null, -5.6f, double.NaN }, double.NaN };
             yield return new object[] { new double?[] { double.NaN, double.NegativeInfinity }, double.NaN };
             yield return new object[] { new double?[] { double.NegativeInfinity, double.NaN }, double.NaN };
-            yield return new object[] { Enumerable.Repeat((double?)double.NaN, int.MaxValue), double.NaN };
             yield return new object[] { new double?[] { double.NaN, null, null, null }, double.NaN };
             yield return new object[] { new double?[] { null, null, null, double.NaN }, double.NaN };
             yield return new object[] { new double?[] { null, double.NaN, null }, double.NaN };
+
+            // In .NET Core, Enumerable.Min shortcircuits if it finds any double.NaN in the array,
+            // as nothing can be less than double.NaN. See https://github.com/dotnet/corefx/pull/2426.
+            // Without this optimization, we would iterate through int.MaxValue elements, which takes
+            // a long time.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { Enumerable.Repeat((double?)double.NaN, int.MaxValue), double.NaN };
+            }
+            yield return new object[] { Enumerable.Repeat((double?)double.NaN, 3), double.NaN };
         }
 
         [Theory]

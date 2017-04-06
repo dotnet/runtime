@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException(SR.Cryptography_Xml_InvalidKeySize);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Cryptography_Xml_InvalidKeySize);
                 _keySize = value;
                 _cachedXml = null;
             }

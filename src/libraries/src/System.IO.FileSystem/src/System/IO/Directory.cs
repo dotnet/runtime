@@ -563,6 +563,12 @@ namespace System.IO
             String destinationRoot = Path.GetPathRoot(destPath);
             if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
+            
+            if (!FileSystem.Current.DirectoryExists(fullsourceDirName))
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
+            
+            if (FileSystem.Current.DirectoryExists(fulldestDirName))
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
 
             FileSystem.Current.MoveDirectory(fullsourceDirName, fulldestDirName);
         }

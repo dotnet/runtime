@@ -130,14 +130,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // This class should never be created on its own.
-        protected SymFactoryBase(SYMTBL symtable, NameManager namemgr)
+        protected SymFactoryBase(SYMTBL symtable, bool loadNames)
         {
             m_pSymTable = symtable;
 
-            if (namemgr != null)
+            if (loadNames)
             {
-                m_pMissingNameNode = namemgr.GetPredefName(PredefinedName.PN_MISSING);
-                m_pMissingNameSym = namemgr.GetPredefName(PredefinedName.PN_MISSINGSYM);
+                m_pMissingNameNode = NameManager.GetPredefinedName(PredefinedName.PN_MISSING);
+                m_pMissingNameSym = NameManager.GetPredefinedName(PredefinedName.PN_MISSINGSYM);
             }
         }
     }

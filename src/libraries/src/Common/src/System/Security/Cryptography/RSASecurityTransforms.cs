@@ -53,8 +53,8 @@ namespace System.Security.Cryptography
                     {
                         // All values are in bits.
                         // 1024 was achieved via experimentation.
-                        // 1024 and 1024+64 both generated successfully, 1024-64 produced errSecParam.
-                        new KeySizes(minSize: 1024, maxSize: 16384, skipSize: 64),
+                        // 1024 and 1024+8 both generated successfully, 1024-8 produced errSecParam.
+                        new KeySizes(minSize: 1024, maxSize: 16384, skipSize: 8),
                     };
                 }
             }
@@ -470,7 +470,8 @@ namespace System.Security.Cryptography
             parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
 
             int modulusLen = parameters.Modulus.Length;
-            int halfModulus = modulusLen / 2;
+            // Add one so that odd byte-length values (RSA 1032) get padded correctly.
+            int halfModulus = (modulusLen + 1) / 2;
 
             parameters.D = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), modulusLen);
             parameters.P = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);

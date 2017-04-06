@@ -11,8 +11,7 @@
     <When Condition="'$(PackageRID)' != ''" />
     <When Condition="'$(_runtimeOSFamily)' == 'win'">
       <PropertyGroup>
-        <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)$(_aotSuffix)</PackageRID>
-        <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)$(_aotSuffix)</PackageRID>
+        <PackageRID>win10-$(ArchGroup)$(_aotSuffix)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>

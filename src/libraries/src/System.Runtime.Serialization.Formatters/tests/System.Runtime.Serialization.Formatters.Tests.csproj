@@ -14,11 +14,15 @@
     <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />
     <Compile Include="FormatterServicesTests.cs" />
+    <Compile Include="FormatterServicesTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="FormatterTests.cs" />
     <Compile Include="SerializationBinderTests.cs" />
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\NonRuntimeType.cs">
+      <Link>Common\System\NonRuntimeType.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>

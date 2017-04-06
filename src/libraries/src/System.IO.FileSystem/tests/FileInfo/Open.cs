@@ -12,6 +12,40 @@ namespace System.IO.Tests
         {
             return new FileInfo(path).Open(mode);
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
+        public override void FileModeAppend()
+        {
+            using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Append))
+            {
+                Assert.Equal(false, fs.CanRead);
+                Assert.Equal(true, fs.CanWrite);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
+        public override void FileModeAppendExisting()
+        {
+            string fileName = GetTestFilePath();
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Create))
+            {
+                fs.WriteByte(0);
+            }
+
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Append))
+            {
+                // Ensure that the file was re-opened and position set to end
+                Assert.Equal(1L, fs.Length);
+                Assert.Equal(1L, fs.Position);
+                Assert.False(fs.CanRead);
+                Assert.True(fs.CanSeek);
+                Assert.True(fs.CanWrite);
+                Assert.Throws<IOException>(() => fs.Seek(-1, SeekOrigin.Current));
+                Assert.Throws<NotSupportedException>(() => fs.ReadByte());
+            }
+        }
     }
 
     public class FileInfo_Open_fm_fa : FileStream_ctor_str_fm_fa

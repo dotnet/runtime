@@ -4,11 +4,22 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprCall : Expr
+    internal sealed class ExprCall : ExprWithType, IExprWithArgs
     {
+        public ExprCall(CType type)
+            : base(ExpressionKind.Call, type)
+        {
+        }
+
         public Expr OptionalArguments { get; set; }
 
         public ExprMemberGroup MemberGroup { get; set; }
+
+        public Expr OptionalObject
+        {
+            get { return MemberGroup.OptionalObject; }
+            set { MemberGroup.OptionalObject = value; }
+        }
 
         public MethWithInst MethWithInst { get; set; }
 
@@ -19,5 +30,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr PConversions { get; set; }
 
         public Expr CastOfNonLiftedResultToLiftedType { get; set; }
+
+        SymWithType IExprWithArgs.GetSymWithType() => MethWithInst;
+
+        public override void SetMismatchedStaticBit()
+        {
+            MemberGroup?.SetMismatchedStaticBit();
+            base.SetMismatchedStaticBit();
+        }
     }
 }

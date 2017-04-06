@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             };
             yield return new object[] { new int[,] { { 1, 2, 3, 4, 5 }, { 6, 7, 8, 9, 10 }, { 11, 12, 13, 14, 15 } } };
             yield return new object[] { new int[,,] { { { 1, 2, 3, 4, 5 }, { 6, 7, 8, 9, 10 }, { 11, 12, 13, 14, 15 } } } };
-            yield return new object[] { new int[,,,,] { { { { { 1 } } } } } };
+            yield return new object[] { new int[,,,] { { { { 1 } } } } };
             yield return new ArraySegment<int>(new int[] { 1, 2, 3, 4, 5 }, 1, 2);
             yield return Enumerable.Range(0, 10000).Select(i => (object)i).ToArray();
             yield return new object[200]; // fewer than 256 nulls

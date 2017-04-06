@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Constructor.
 
         public MiscSymFactory(SYMTBL symtable)
-            : base(symtable, null)
+            : base(symtable, false)
         {
         }
 

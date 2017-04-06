@@ -40,7 +40,7 @@
           UseHardlinksIfPossible="true" />
 
     <Copy SourceFiles="@(DotnetExe)"
-          DestinationFolder="$(NETCoreAppTestRootPath)"
+          DestinationFolder="$(TestHostRootPath)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 

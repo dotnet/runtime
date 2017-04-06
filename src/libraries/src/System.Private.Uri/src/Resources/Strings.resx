@@ -136,48 +136,6 @@
   <data name="net_uri_BadUnicodeHostForIdn" xml:space="preserve">
     <value>An invalid Unicode character by IDN standards was specified in the host.</value>
   </data>
-  <data name="DebugAssertBanner" xml:space="preserve">
-    <value>---- DEBUG ASSERTION FAILED ----</value>
-  </data>
-  <data name="DebugAssertLongMessage" xml:space="preserve">
-    <value>---- Assert Long Message ----</value>
-  </data>
-  <data name="DebugAssertShortMessage" xml:space="preserve">
-    <value>---- Assert Short Message ----</value>
-  </data>
-  <data name="IO_FileNotFound" xml:space="preserve">
-    <value>Unable to find the specified file.</value>
-  </data>
-  <data name="IO_FileNotFound_FileName" xml:space="preserve">
-    <value>Could not find file '{0}'.</value>
-  </data>
-  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
-    <value>Could not find a part of the path.</value>
-  </data>
-  <data name="IO_PathNotFound_Path" xml:space="preserve">
-    <value>Could not find a part of the path '{0}'.</value>
-  </data>
-  <data name="IO_SharingViolation_File" xml:space="preserve">
-    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
-  </data>
-  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
-    <value>The process cannot access the file because it is being used by another process.</value>
-  </data>
-  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
-    <value>Access to the path is denied.</value>
-  </data>
-  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
-    <value>Access to the path '{0}' is denied.</value>
-  </data>
-  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
-    <value>Specified file length was too large for the file system.</value>
-  </data>
-  <data name="IO_FileExists_Name" xml:space="preserve">
-    <value>The file '{0}' already exists.</value>
-  </data>
-  <data name="IO_PathTooLong" xml:space="preserve">
-    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
-  </data>
   <data name="Argument_ExtraNotValid" xml:space="preserve">
     <value>Extra portion of URI not valid.</value>
   </data>

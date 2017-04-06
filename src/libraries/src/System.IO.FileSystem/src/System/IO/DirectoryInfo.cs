@@ -413,6 +413,12 @@ namespace System.IO
             if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
+            if (!Exists)
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
+
+            if (FileSystem.Current.DirectoryExists(fullDestDirName))
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fullDestDirName));
+
             FileSystem.Current.MoveDirectory(FullPath, fullDestDirName);
 
             FullPath = fullDestDirName;

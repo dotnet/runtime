@@ -6,8 +6,13 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprConstant : Expr
+    internal sealed class ExprConstant : ExprWithType
     {
+        public ExprConstant(CType type)
+            : base(ExpressionKind.Constant, type)
+        {
+        }
+
         public Expr OptionalConstructorCall { get; set; }
 
         public bool IsZero => Val.IsZero(Type.constValKind());

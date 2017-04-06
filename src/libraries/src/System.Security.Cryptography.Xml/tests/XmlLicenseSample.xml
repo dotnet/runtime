@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" licenseId="{00000000-0000-0000-0000-123456789012}">
+  <r:title>Test License</r:title>
+  <r:grant>
+    <r:encryptedGrant>
+      <EncryptionMethod xmlns="http://www.w3.org/2001/04/xmlenc#" Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc" />
+      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+      <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p" />
+      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <KeyValue xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <RSAKeyValue>
+        <Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus>
+        <Exponent>AQAB</Exponent>
+      </RSAKeyValue>
+      </KeyValue>
+      </KeyInfo>
+      <CipherData>
+        <CipherValue>RGVjb2Rl</CipherValue>
+      </CipherData>
+      </EncryptedKey>
+      </KeyInfo>
+      <CipherData xmlns="http://www.w3.org/2001/04/xmlenc#">
+      <CipherValue>RGVjb2Rl</CipherValue>
+      </CipherData>
+    </r:encryptedGrant>
+  </r:grant>
+  <r:issuer>
+    <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.microsoft.com/xrml/lwc14n" />
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+      <Reference>
+        <Transforms>
+          <Transform Algorithm="urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform" />
+          <Transform Algorithm="http://www.microsoft.com/xrml/lwc14n" />
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <DigestValue>xByYONj0RUGSJ5kQWQO3KzqFZps=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>qJrCl/NkSZ66MqR/vzDHVDWT6N75UTjPmEz6wOYH1uEWQsUW4IrBxrdUxUicadFVdobxmQZRO/kazhWzSZjLGOhu+cbwgYJ+fnAAz699ZA7ObqNhQgtSKFA54hl/SbedygHJbFRIHeWOCm5P6WagodJ23258T1g1geaYtIqSdD8L8WRB/hQc8WMcNzSPYp0Dy8E3GDyDeiyK0WWnfF814H4RONYZkxwPfU7zy3jngABZQaFKoCnt2PFjCKfLiSrZgEwEgfnW+GmtCrL8W+Rkis+AV9LvPQpHg/tn4WdG4PW+9oGvxriMWAR30V8hAooiEOQ0yUBe+BlvBBvWWOZ/Aw==</SignatureValue>
+    <KeyInfo>
+      <KeyValue>
+        <RSAKeyValue>
+          <Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus>
+          <Exponent>AQAB</Exponent>
+        </RSAKeyValue>
+      </KeyValue>
+    </KeyInfo>
+    </Signature>
+    <r:details>
+      <r:timeOfIssue>2017-01-71T00:00:00Z</r:timeOfIssue>
+    </r:details>
+  </r:issuer>
+</r:license>

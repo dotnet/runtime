@@ -13,6 +13,8 @@
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">true</GeneratePlatformNotSupportedAssembly>
     <!-- use netstandard1.1 refs for win8 and wpa81 -->
     <RefPath Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(RefRootPath)/netstandard1.1</RefPath>
+    <!-- For net45 use the netstandard1.1 contract for APICompat -->
+    <ContractAssemblyPath Condition="'$(TargetGroup)'=='net45'">$(RefRootPath)/netstandard1.1</ContractAssemblyPath>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
     </PackageTargetRuntime>

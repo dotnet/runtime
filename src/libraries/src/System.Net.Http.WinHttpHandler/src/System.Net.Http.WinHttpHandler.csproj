@@ -7,6 +7,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler</AssemblyName>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <!-- Although we have a NS configuration, the actual UWP implementation is a shim over WinRT: so just validate against OneCore -->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />

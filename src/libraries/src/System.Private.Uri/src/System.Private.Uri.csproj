@@ -16,9 +16,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uapaot'">
-      <Link>Common\System\Diagnostics\Debug.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
@@ -48,66 +45,14 @@
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and ('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap')">
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OutputDebugString.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.OutputDebugString.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs">
-      <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
-    </Compile>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Uri.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and ('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap')">
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
-      <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Dup.cs">
-      <Link>Common\Interop\Unix\Interop.Dup.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FileDescriptors.cs">
-      <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FLock.cs">
-      <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysLog.cs">
-      <Link>Common\Interop\Unix\libc\Interop.SysLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
-    </Compile>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Uri.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="System\Uri.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

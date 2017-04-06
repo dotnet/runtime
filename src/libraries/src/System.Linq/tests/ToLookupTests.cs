@@ -292,6 +292,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Lookup<T> doesn't have a Debugger proxy in the full .NET framework. See https://github.com/dotnet/corefx/issues/14790.")]
         public void DebuggerAttributesValid<TKey, TElement>(ILookup<TKey, TElement> lookup, TKey dummy1, TElement dummy2)
         {
             // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.

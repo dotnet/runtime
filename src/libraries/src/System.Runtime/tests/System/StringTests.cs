@@ -267,7 +267,16 @@ namespace System.Tests
                 Assert.Equal(expected, result);
                 if (result.Length == 0)
                 {
-                    Assert.Same(string.Empty, result);
+                    // We return string.Empty by reference as an optimization
+                    // in .NET core if there is no work to do.
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        Assert.Equal(string.Empty, result);
+                    }
+                    else
+                    {
+                        Assert.Same(string.Empty, result);
+                    }
                 }
             };
 
@@ -716,16 +725,23 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("a", 0, "bb", -1, 0)); // IndexB < 0
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("a", 0, "bb", 3, 0)); // IndexB > strB.Length
 
-            // Length < 0
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
-
             // We must validate arguments before any short-circuiting is done (besides for nulls)
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("foo", -1, "foo", -1, -1)); // length should be validated first
             Assert.Throws<ArgumentOutOfRangeException>("indexA", () => string.CompareOrdinal("foo", -1, "foo", -1, 0)); // then indexA
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("foo", 0, "foo", -1, 0)); // then indexB
             Assert.Throws<ArgumentOutOfRangeException>("indexA", () => string.CompareOrdinal("foo", 4, "foo", 4, 0)); // indexA > strA.Length first
             Assert.Throws<ArgumentOutOfRangeException>("indexB", () => string.CompareOrdinal("foo", 3, "foo", 4, 0)); // then indexB > strB.Length
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => string.CompareOrdinal("foo", 0, "foo", 0, -1)); // early return should not kick in if length is invalid
+        }
+
+        [Fact]
+        public static void CompareOrdinal_NegativeLength_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", "count", () => string.CompareOrdinal("a", 0, "bb", 0, -1));
+
+            // length should be validated first
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", "count", () => string.CompareOrdinal("foo", -1, "foo", -1, -1));
+
+            // early return should not kick in if length is invalid
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", "count", () => string.CompareOrdinal("foo", 0, "foo", 0, -1));
         }
 
         [Theory]
@@ -1490,28 +1506,30 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void IndexOfAny_Invalid()
+        public static void IndexOfAny_NullAnyOf_ThrowsArgumentNullException()
         {
-            // AnyOf is null
-            Assert.Throws<ArgumentNullException>("anyOf", () => "foo".IndexOfAny(null));
-            Assert.Throws<ArgumentNullException>("anyOf", () => "foo".IndexOfAny(null, 0));
-            Assert.Throws<ArgumentNullException>("anyOf", () => "foo".IndexOfAny(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("anyOf", null, () => "foo".IndexOfAny(null));
+            AssertExtensions.Throws<ArgumentNullException>("anyOf", null, () => "foo".IndexOfAny(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("anyOf", null, () => "foo".IndexOfAny(null, 0, 0));
+        }
 
-            // Start index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".IndexOfAny(new char[] { 'o' }, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".IndexOfAny(new char[] { 'o' }, -1, 0));
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        public static void IndexOfAny_InvalidStartIndex_ThrowsArgumentOutOfRangeException(int startIndex)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", null, () => "foo".IndexOfAny(new char[] { 'o' }, startIndex));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", null, () => "foo".IndexOfAny(new char[] { 'o' }, startIndex, 0));
+        }
 
-            // Start index > string.Length
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".IndexOfAny(new char[] { 'o' }, 4));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "foo".IndexOfAny(new char[] { 'o' }, 4, 0));
-
-            // Count < 0 or Count > string.Length
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => "foo".IndexOfAny(new char[] { 'o' }, 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => "foo".IndexOfAny(new char[] { 'o' }, 0, 4));
-
-            // Start index + count > string.Length
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => "foo".IndexOfAny(new char[] { 'o' }, 3, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => "foo".IndexOfAny(new char[] { 'o' }, 2, 2));
+        [Theory]
+        [InlineData(0, -1)]
+        [InlineData(0, 4)]
+        [InlineData(3, 1)]
+        [InlineData(2, 2)]
+        public static void IndexOfAny_InvalidCount_ThrowsArgumentOutOfRangeException(int startIndex, int count)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => "foo".IndexOfAny(new char[] { 'o' }, startIndex, count));
         }
 
         [Theory]
