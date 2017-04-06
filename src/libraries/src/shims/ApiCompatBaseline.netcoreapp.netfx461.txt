@@ -1601,6 +1601,10 @@ TypesMustExist : Type 'System.Drawing.BufferedGraphics' does not exist in the im
 TypesMustExist : Type 'System.Drawing.BufferedGraphicsContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.BufferedGraphicsManager' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.CharacterRange' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.FromKnownColor(System.Drawing.KnownColor)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.IsKnownColor.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.IsSystemColor.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.ToKnownColor()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.ColorTranslator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.ContentAlignment' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.CopyPixelOperation' does not exist in the implementation but it does exist in the contract.
@@ -1617,6 +1621,7 @@ TypesMustExist : Type 'System.Drawing.Image' does not exist in the implementatio
 TypesMustExist : Type 'System.Drawing.ImageAnimator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.ImageConverter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.ImageFormatConverter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Drawing.KnownColor' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.Pen' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.Pens' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.Region' does not exist in the implementation but it does exist in the contract.
@@ -1629,7 +1634,7 @@ TypesMustExist : Type 'System.Drawing.StringFormatFlags' does not exist in the i
 TypesMustExist : Type 'System.Drawing.StringTrimming' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.StringUnit' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.SystemBrushes' does not exist in the implementation but it does exist in the contract.
-CannotMakeTypeAbstract : Type 'System.Drawing.SystemColors' is abstract in the implementation but is not abstract in the contract.
+TypesMustExist : Type 'System.Drawing.SystemColors' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.SystemFonts' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.SystemIcons' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.SystemPens' does not exist in the implementation but it does exist in the contract.
@@ -3393,4 +3398,4 @@ MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerial
 MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.CodeDom.Compiler.CompilerParameters)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-Total Issues: 3374
+Total Issues: 3379
