@@ -730,15 +730,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Select_ResetCalledOnEnumerator_ExceptionThrown()
+        public void Select_ResetCalledOnEnumerator_ThrowsException()
         {
             int[] source = new[] { 1, 2, 3, 4, 5 };
             Func<int, int> selector = i => i + 1;
 
-            var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            IEnumerable<int> result = source.Select(selector);
+            IEnumerator<int> enumerator = result.GetEnumerator();
 
-            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+            // The.NET full framework throws a NotImplementedException.
+            // See https://github.com/dotnet/corefx/pull/2959.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<NotImplementedException>(() => enumerator.Reset());
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+            }
         }
 
         [Fact]
