@@ -47,26 +47,27 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
  *  of the following enumeration.
  */
 
+// clang-format off
+
 DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
 {
-    BBJ_EHFINALLYRET,    // block ends with 'endfinally' (for finally or fault)
-        BBJ_EHFILTERRET, // block ends with 'endfilter'
-        BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if FEATURE_EH_FUNCLETS)
-        BBJ_THROW,       // block ends with 'throw'
-        BBJ_RETURN,      // block ends with 'ret'
+    BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally or fault)
+    BBJ_EHFILTERRET, // block ends with 'endfilter'
+    BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if FEATURE_EH_FUNCLETS)
+    BBJ_THROW,       // block ends with 'throw'
+    BBJ_RETURN,      // block ends with 'ret'
+    BBJ_NONE,        // block flows into the next one (no jump)
+    BBJ_ALWAYS,      // block always jumps to the target
+    BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded region. Only used until importing.
+    BBJ_CALLFINALLY, // block always calls the target finally
+    BBJ_COND,        // block conditionally jumps to the target
+    BBJ_SWITCH,      // block ends with a switch statement
 
-        BBJ_NONE, // block flows into the next one (no jump)
-
-        BBJ_ALWAYS,      // block always jumps to the target
-        BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded
-                         // region. Used temporarily until importing
-        BBJ_CALLFINALLY, // block always calls the target finally
-        BBJ_COND,        // block conditionally jumps to the target
-        BBJ_SWITCH,      // block ends with a switch statement
-
-        BBJ_COUNT
+    BBJ_COUNT
 }
 END_DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
+
+// clang-format on
 
 struct GenTree;
 struct GenTreeStmt;
@@ -377,66 +378,79 @@ struct BasicBlock : private LIR::Range
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
 
-#define BBF_VISITED 0x00000001 // BB visited during optimizations
-#define BBF_MARKED 0x00000002  // BB marked  during optimizations
-#define BBF_CHANGED 0x00000004 // input/output of this block has changed
-#define BBF_REMOVED 0x00000008 // BB has been removed from bb-list
+// clang-format off
 
-#define BBF_DONT_REMOVE 0x00000010         // BB should not be removed during flow graph optimizations
-#define BBF_IMPORTED 0x00000020            // BB byte-code has been imported
-#define BBF_INTERNAL 0x00000040            // BB has been added by the compiler
+#define BBF_VISITED             0x00000001 // BB visited during optimizations
+#define BBF_MARKED              0x00000002 // BB marked  during optimizations
+#define BBF_CHANGED             0x00000004 // input/output of this block has changed
+#define BBF_REMOVED             0x00000008 // BB has been removed from bb-list
+
+#define BBF_DONT_REMOVE         0x00000010 // BB should not be removed during flow graph optimizations
+#define BBF_IMPORTED            0x00000020 // BB byte-code has been imported
+#define BBF_INTERNAL            0x00000040 // BB has been added by the compiler
 #define BBF_FAILED_VERIFICATION 0x00000080 // BB has verification exception
 
-#define BBF_TRY_BEG 0x00000100       // BB starts a 'try' block
-#define BBF_FUNCLET_BEG 0x00000200   // BB is the beginning of a funclet
-#define BBF_HAS_NULLCHECK 0x00000400 // BB contains a null check
-#define BBF_NEEDS_GCPOLL 0x00000800  // This BB is the source of a back edge and needs a GC Poll
+#define BBF_TRY_BEG             0x00000100 // BB starts a 'try' block
+#define BBF_FUNCLET_BEG         0x00000200 // BB is the beginning of a funclet
+#define BBF_HAS_NULLCHECK       0x00000400 // BB contains a null check
+#define BBF_NEEDS_GCPOLL        0x00000800 // This BB is the source of a back edge and needs a GC Poll
 
-#define BBF_RUN_RARELY 0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
-#define BBF_LOOP_HEAD 0x00002000  // BB is the head of a loop
-#define BBF_LOOP_CALL0 0x00004000 // BB starts a loop that sometimes won't call
-#define BBF_LOOP_CALL1 0x00008000 // BB starts a loop that will always     call
+#define BBF_RUN_RARELY          0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
+#define BBF_LOOP_HEAD           0x00002000 // BB is the head of a loop
+#define BBF_LOOP_CALL0          0x00004000 // BB starts a loop that sometimes won't call
+#define BBF_LOOP_CALL1          0x00008000 // BB starts a loop that will always     call
 
-#define BBF_HAS_LABEL 0x00010000     // BB needs a label
-#define BBF_JMP_TARGET 0x00020000    // BB is a target of an implicit/explicit jump
-#define BBF_HAS_JMP 0x00040000       // BB executes a JMP instruction (instead of return)
-#define BBF_GC_SAFE_POINT 0x00080000 // BB has a GC safe point (a call).  More abstractly, BB does not
-                                     // require a (further) poll -- this may be because this BB has a
-                                     // call, or, in some cases, because the BB occurs in a loop, and
-                                     // we've determined that all paths in the loop body leading to BB
-                                     // include a call.
-#define BBF_HAS_VTABREF 0x00100000   // BB contains reference of vtable
-#define BBF_HAS_IDX_LEN 0x00200000   // BB contains simple index or length expressions on an array local var.
-#define BBF_HAS_NEWARRAY 0x00400000  // BB contains 'new' of an array
-#define BBF_HAS_NEWOBJ 0x00800000    // BB contains 'new' of an object type.
+#define BBF_HAS_LABEL           0x00010000 // BB needs a label
+#define BBF_JMP_TARGET          0x00020000 // BB is a target of an implicit/explicit jump
+#define BBF_HAS_JMP             0x00040000 // BB executes a JMP instruction (instead of return)
+#define BBF_GC_SAFE_POINT       0x00080000 // BB has a GC safe point (a call).  More abstractly, BB does not require a
+                                           // (further) poll -- this may be because this BB has a call, or, in some
+                                           // cases, because the BB occurs in a loop, and we've determined that all
+                                           // paths in the loop body leading to BB include a call.
+
+#define BBF_HAS_VTABREF         0x00100000 // BB contains reference of vtable
+#define BBF_HAS_IDX_LEN         0x00200000 // BB contains simple index or length expressions on an array local var.
+#define BBF_HAS_NEWARRAY        0x00400000 // BB contains 'new' of an array
+#define BBF_HAS_NEWOBJ          0x00800000 // BB contains 'new' of an object type.
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-#define BBF_FINALLY_TARGET 0x01000000 // BB is the target of a finally return: where a finally will return during
-                                      // non-exceptional flow. Because the ARM calling sequence for calling a
-                                      // finally explicitly sets the return address to the finally target and jumps
-                                      // to the finally, instead of using a call instruction, ARM needs this to
-                                      // generate correct code at the finally target, to allow for proper stack
-                                      // unwind from within a non-exceptional call to a finally.
-#endif                                // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-#define BBF_BACKWARD_JUMP 0x02000000  // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL 0x04000000   // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                      // BBJ_ALWAYS); see isBBCallAlwaysPair().
-#define BBF_LOOP_PREHEADER 0x08000000 // BB is a loop preheader block
 
-#define BBF_COLD 0x10000000        // BB is cold
-#define BBF_PROF_WEIGHT 0x20000000 // BB weight is computed from profile data
+#define BBF_FINALLY_TARGET      0x01000000 // BB is the target of a finally return: where a finally will return during
+                                           // non-exceptional flow. Because the ARM calling sequence for calling a
+                                           // finally explicitly sets the return address to the finally target and jumps
+                                           // to the finally, instead of using a call instruction, ARM needs this to
+                                           // generate correct code at the finally target, to allow for proper stack
+                                           // unwind from within a non-exceptional call to a finally.
+
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
+#define BBF_BACKWARD_JUMP       0x02000000 // BB is surrounded by a backward jump/switch arc
+#define BBF_RETLESS_CALL        0x04000000 // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                           // BBJ_ALWAYS); see isBBCallAlwaysPair().
+#define BBF_LOOP_PREHEADER      0x08000000 // BB is a loop preheader block
+
+#define BBF_COLD                0x10000000 // BB is cold
+#define BBF_PROF_WEIGHT         0x20000000 // BB weight is computed from profile data
+
 #ifdef LEGACY_BACKEND
-#define BBF_FORWARD_SWITCH 0x40000000  // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
-#else                                  // !LEGACY_BACKEND
-#define BBF_IS_LIR 0x40000000          // Set if the basic block contains LIR (as opposed to HIR)
-#endif                                 // LEGACY_BACKEND
-#define BBF_KEEP_BBJ_ALWAYS 0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                       // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                       // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                       // finally.
 
-#define BBF_CLONED_FINALLY_BEGIN 0x100000000 // First block of a cloned finally region
-#define BBF_CLONED_FINALLY_END 0x200000000   // Last block of a cloned finally region
+#define BBF_FORWARD_SWITCH      0x40000000 // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
+
+#else // !LEGACY_BACKEND
+
+#define BBF_IS_LIR              0x40000000 // Set if the basic block contains LIR (as opposed to HIR)
+
+#endif // LEGACY_BACKEND
+
+#define BBF_KEEP_BBJ_ALWAYS     0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                           // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                           // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                           // finally.
+
+#define BBF_CLONED_FINALLY_BEGIN    0x100000000 // First block of a cloned finally region
+#define BBF_CLONED_FINALLY_END      0x200000000 // Last block of a cloned finally region
+
+// clang-format on
 
 #define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x400000000 // Block is dominated by exceptional entry.
 
