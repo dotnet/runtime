@@ -54,9 +54,4 @@ namespace System.Net.Tests
         public bool CompletedSynchronously => throw new NotImplementedException();
         public bool IsCompleted => throw new NotImplementedException();
     }
-
-    public class Common
-    {
-        public static void StubCallback(IAsyncResult result) { }
-    }
 }

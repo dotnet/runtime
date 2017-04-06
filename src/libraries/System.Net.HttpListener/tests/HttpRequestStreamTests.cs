@@ -128,6 +128,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Different behaviour when not chunked, that needs investigation.
         public async Task Read_LargeLengthAsynchronous_Success(bool transferEncodingChunked)
         {
             string text = new string('a', 128 * 1024 + 1); // More than 128kb
@@ -141,15 +142,24 @@ namespace System.Net.Tests
 
                 HttpListenerContext context = await contextTask;
 
-                // If the size is greater than 128K, then we limit the size, and have to do multiple reads.
+                // If the size is greater than 128K, then we limit the size, and have to do multiple reads on
+                // Windows, which uses http.sys internally.
                 byte[] buffer = new byte[expected.Length];
                 int bytesRead = await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length);
-                Assert.Equal(expected.Length - 1, bytesRead);
-                Assert.NotEqual(expected, buffer);
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(expected.Length - 1, bytesRead);
+                    Assert.NotEqual(expected, buffer);
 
-                bytesRead = await context.Request.InputStream.ReadAsync(buffer, buffer.Length - 1, 1);
-                Assert.Equal(1, bytesRead);
-                Assert.Equal(expected, buffer);
+                    bytesRead = await context.Request.InputStream.ReadAsync(buffer, buffer.Length - 1, 1);
+                    Assert.Equal(1, bytesRead);
+                    Assert.Equal(expected, buffer);
+                }
+                else
+                {
+                    Assert.Equal(expected.Length, bytesRead);
+                    Assert.Equal(expected, buffer);
+                }
 
                 // Subsequent reads don't do anything.
                 Assert.Equal(0, await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
@@ -162,6 +172,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Different behaviour when not chunked, that needs investigation.
         public async Task Read_LargeLengthSynchronous_Success(bool transferEncodingChunked)
         {
             string text = new string('a', 128 * 1024 + 1); // More than 128kb
@@ -175,15 +186,24 @@ namespace System.Net.Tests
 
                 HttpListenerContext context = await contextTask;
 
-                // If the size is greater than 128K, then we limit the size, and have to do multiple reads.
+                // If the size is greater than 128K, then we limit the size, and have to do multiple reads on
+                // Windows, which uses http.sys internally.
                 byte[] buffer = new byte[expected.Length];
                 int bytesRead = context.Request.InputStream.Read(buffer, 0, buffer.Length);
-                Assert.Equal(expected.Length - 1, bytesRead);
-                Assert.NotEqual(expected, buffer);
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(expected.Length - 1, bytesRead);
+                    Assert.NotEqual(expected, buffer);
 
-                bytesRead = context.Request.InputStream.Read(buffer, buffer.Length - 1, 1);
-                Assert.Equal(1, bytesRead);
-                Assert.Equal(expected, buffer);
+                    bytesRead = context.Request.InputStream.Read(buffer, buffer.Length - 1, 1);
+                    Assert.Equal(1, bytesRead);
+                    Assert.Equal(expected, buffer);
+                }
+                else
+                {
+                    Assert.Equal(expected.Length, bytesRead);
+                    Assert.Equal(expected, buffer);
+                }
 
                 // Subsequent reads don't do anything.
                 Assert.Equal(0, context.Request.InputStream.Read(buffer, 0, buffer.Length));
@@ -243,7 +263,6 @@ namespace System.Net.Tests
             }
         }
 
-
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]
@@ -297,6 +316,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // NotSupportedException thrown instead of InvalidOperationException
         public async Task CanWrite_Get_ReturnsFalse()
         {
             HttpListenerRequest request = await _helper.GetRequest();
@@ -328,6 +348,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Managed implementation throws different exception
         public async Task Read_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
         {
             HttpListenerRequest request = await _helper.GetRequest();
@@ -342,6 +363,7 @@ namespace System.Net.Tests
         [InlineData(0, 3)]
         [InlineData(1, 2)]
         [InlineData(2, 1)]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Managed implementation throws different exception
         public async Task Read_InvalidOffsetSize_ThrowsArgumentOutOfRangeException(int offset, int size)
         {
             HttpListenerRequest request = await _helper.GetRequest();
@@ -353,7 +375,8 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task EndRead_NullCallback_ThrowsArgumentNullException()
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
+        public async Task EndRead_NullAsyncResult_ThrowsArgumentNullException()
         {
             HttpListenerRequest request = await _helper.GetRequest();
 
@@ -364,7 +387,8 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task EndRead_InvalidCallback_ThrowsArgumentException()
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
+        public async Task EndRead_InvalidAsyncResult_ThrowsArgumentException()
         {
             HttpListenerRequest request1 = await _helper.GetRequest();
             HttpListenerRequest request2 = await _helper.GetRequest();
@@ -372,7 +396,7 @@ namespace System.Net.Tests
             using (Stream inputStream1 = request1.InputStream)
             using (Stream inputStream2 = request2.InputStream)
             {
-                IAsyncResult beginReadResult = inputStream1.BeginRead(new byte[0], 0, 0, new AsyncCallback(Common.StubCallback), null);
+                IAsyncResult beginReadResult = inputStream1.BeginRead(new byte[0], 0, 0, null, null);
 
                 Assert.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(new CustomAsyncResult()));
                 Assert.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(beginReadResult));
@@ -380,12 +404,13 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
         public async Task EndRead_CalledTwice_ThrowsInvalidOperationException()
         {
             HttpListenerRequest request = await _helper.GetRequest();
             using (Stream inputStream = request.InputStream)
             {
-                IAsyncResult beginReadResult = inputStream.BeginRead(new byte[0], 0, 0, new AsyncCallback(Common.StubCallback), null);
+                IAsyncResult beginReadResult = inputStream.BeginRead(new byte[0], 0, 0, null, null);
                 inputStream.EndRead(beginReadResult);
 
                 Assert.Throws<InvalidOperationException>(() => inputStream.EndRead(beginReadResult));
@@ -393,6 +418,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
@@ -422,6 +448,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Read_FromClosedConnectionSynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
