@@ -8,11 +8,13 @@ def project = GithubProject
 def branch = GithubBranchName
 def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolderName(branch)
 
-// Create a folder for JIT stress jobs
+// Create a folder for JIT stress jobs and associated folder views
 folder('jitstress')
+Utilities.addStandardFolderView(this, 'jitstress', project)
 
 // Create a folder for testing via illink
 folder('illink')
+Utilities.addStandardFolderView(this, 'illink', project)
 
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
