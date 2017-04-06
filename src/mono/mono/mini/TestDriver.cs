@@ -165,64 +165,29 @@ public class TestDriver {
 }
 
 /// Provide tests with the ability to find out how much time they have to run before being timed out.
-public class TestTimeout {
-	const string ENV_TIMEOUT = "TEST_DRIVER_TIMEOUT_SEC";
-	private readonly TimeSpan availableTime;
-	private TimeSpan slack;
-	private DateTime startTime;
+public class TestTimeout
+{
+	private TimeSpan Timeout { get; }
 
-	/// <summary>
-	///   How much time the test runner provided for us or TimeSpan.Zero if there is no bound.
-	/// </summary>
-	public TimeSpan AvailableTime { get { return availableTime; } }
+	private DateTime StartTime { get; }
 
-	public DateTime StartTime { get { return startTime; } }
+	public bool HaveTimeLeft { get { return DateTime.UtcNow - StartTime < Timeout; } }
 
-	/// <summary> Extra time to add when deciding if there
-	///   is still time to run.  Bigger slack means less
-	///   time left.
-	/// </summary>
-	public TimeSpan Slack {
-		get { return slack; }
-		set { slack = value; }
-	}
+	public static bool IsStressTest { get { return Environment.GetEnvironmentVariable("MONO_TESTS_STRESS") == "1"; } }
 
-	public TestTimeout () {
-		availableTime = initializeAvailableTime ();
-		slack = defaultSlack ();
-	}
-
-	/// <summary>
-	///    Consider the test started.
-	/// </summary>
-	public void Start ()
+	private TestTimeout (TimeSpan timeout)
 	{
-		startTime = DateTime.UtcNow;
+		Timeout = timeout;
+		StartTime = DateTime.UtcNow;
 	}
 
-	public bool HaveTimeLeft ()
+	public static TestTimeout Start(TimeSpan timeout)
 	{
-		if (availableTime == TimeSpan.Zero)
-			return true;
-		var t = DateTime.UtcNow;
-		var finishTime = startTime + availableTime - slack;
-		return (t < finishTime);
-	}
-
-	private TimeSpan defaultSlack ()
-	{
-		return TimeSpan.FromSeconds (5);
-	}
-
-	private TimeSpan initializeAvailableTime ()
-	{
-		var e = System.Environment.GetEnvironmentVariable(ENV_TIMEOUT);
-		double d;
-		if (Double.TryParse(e, out d)) {
-			return TimeSpan.FromSeconds(d);
-		} else {
-			return TimeSpan.Zero;
+		if (timeout.Ticks < 0)
+		{
+			throw new ArgumentException("timeout");
 		}
-	}
 
+		return new TestTimeout(timeout);
+	}
 }

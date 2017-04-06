@@ -44,11 +44,9 @@ class T {
     }
 
     static void Main (string[] args) {
-        var testTimeout = new TestTimeout ();
-        testTimeout.Start ();
+        int iterations = 0;
 
-        const int TOTAL_ITERATIONS = 2;
-        for (int j = 0; j < TOTAL_ITERATIONS; j++)
+        for (TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1)); timeout.HaveTimeLeft;)
         {
             count = 0;
 
@@ -96,13 +94,9 @@ class T {
             }
 
             Console.WriteLine ();
-            if (!testTimeout.HaveTimeLeft ()) {
-                    var finishTime = DateTime.UtcNow;
-                    var ranFor = finishTime - testTimeout.StartTime;
-                    Console.WriteLine ("Will run out of time soon.  ran for {0}, finished {1}/{2} iterations", ranFor, j+1, TOTAL_ITERATIONS);
-            }
+            iterations += 1;
         }
 
-	Console.WriteLine ("done");
+        Console.WriteLine ($"done {iterations} iterations");
     }
 }

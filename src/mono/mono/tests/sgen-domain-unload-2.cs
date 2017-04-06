@@ -23,30 +23,23 @@ class Driver {
 	}
 
 	static void Main () {
-		var testTimeout = new TestTimeout ();
-		testTimeout.Start ();
 		for (int i = 0; i < Math.Max (1, Environment.ProcessorCount / 2); ++i) {
 		// for (int i = 0; i < 4; ++i) {
 			var t = new Thread (BackgroundNoise);
 			t.IsBackground = true;
 			t.Start ();
 		}
-		
-		const int TOTAL_ITERATIONS = 100;
-		for (int i = 0; i < TOTAL_ITERATIONS; ++i) {
-			var ad = AppDomain.CreateDomain ("domain_" + i);
+
+		int iterations = 0;
+
+		for (TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1)); timeout.HaveTimeLeft;) {
+			var ad = AppDomain.CreateDomain ("domain_" + iterations);
 			ad.DoCallBack (new CrossAppDomainDelegate (AllocStuff));
 			AppDomain.Unload (ad);
 
 			Console.Write (".");
-			if (i > 0 && i % 20 == 0) Console.WriteLine ();
-
-			if (!testTimeout.HaveTimeLeft ()) {
-				var finishTime = DateTime.UtcNow;
-				var ranFor = finishTime - testTimeout.StartTime;
-				Console.WriteLine ("Will run out of time soon. ran for {0}, finished {1}/{2} iterations", ranFor, i+1, TOTAL_ITERATIONS);
-			}
+			if ((++iterations) % 20 == 0) Console.WriteLine ();
 		}
-		Console.WriteLine ("\ndone");
+		Console.WriteLine ($"\ndone {iterations} iterations");
 	}
 }

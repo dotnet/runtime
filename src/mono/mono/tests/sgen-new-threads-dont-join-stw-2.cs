@@ -13,7 +13,7 @@ class Driver
 		Thread producer = new Thread (new ThreadStart (() => {
 			DateTime start = DateTime.Now;
 
-			while (DateTime.Now - start < TimeSpan.FromSeconds (30)) {
+			for (TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1)); timeout.HaveTimeLeft;) {
 				Thread worker = new Thread (new ThreadStart (() => {
 					HashSet<string> hashset = new HashSet<string> ();
 					for (int i = 0; i < 50000; ++i) {

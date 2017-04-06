@@ -5,20 +5,16 @@ using System.Threading;
 
 class Driver
 {
-	static DateTime targetTime;
-	static bool finished() {
-		DateTime now = DateTime.UtcNow;
-		return now > targetTime;
-	}
+	static TestTimeout timeout;
 
 	public static void Main ()
 	{
 		int gcCount = 0;
 		int joinCount = 0;
-		targetTime = DateTime.UtcNow.AddSeconds(30);
+		TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1));
 
 		Thread gcThread = new Thread (() => {
-			while (!finished()) {
+			while (timeout.HaveTimeLeft) {
 				GC.Collect ();
 				gcCount++;
 				Thread.Sleep (1);
@@ -27,8 +23,8 @@ class Driver
 
 		gcThread.Start ();
 
-		// Create threads then join them for 30 seconds nonstop while GCs occur once per ms
-		while (!finished()) {
+		// Create threads then join them for 1 seconds (120 for stress tests) nonstop while GCs occur once per ms
+		while (timeout.HaveTimeLeft) {
 			BlockingCollection<Thread> threads = new BlockingCollection<Thread> (new ConcurrentQueue<Thread> (), 128);
 
 			Thread joinThread = new Thread (() => {
@@ -57,7 +53,7 @@ class Driver
 			joinThread.Join ();
 
 			joinCount += makeThreads;
-			Console.WriteLine("Performed {0} GCs, created {1} threads. Finished? {2}", gcCount, joinCount, finished());
+			Console.WriteLine("Performed {0} GCs, created {1} threads. Finished? {2}", gcCount, joinCount, !timeout.HaveTimeLeft);
 		}
 		gcThread.Join ();
 	}
