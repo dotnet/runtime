@@ -1230,10 +1230,8 @@ namespace System.Text
 
             Encoding enc;
 
-
-            // For silverlight we use UTF8 since ANSI isn't available
-            enc = UTF8;
-
+            // For netcore we use UTF8 since ANSI isn't available
+            enc = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
 
             // This method should only ever return one Encoding instance
             return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
