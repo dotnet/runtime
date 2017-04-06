@@ -1255,16 +1255,12 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             short     internalIntCount      = 0;
             regMaskTP internalIntCandidates = RBM_NONE;
 
-#if 0
             if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
             {
-                // TODO-ARM64-CQ: cpblk loop unrolling is currently not implemented.
-                // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
-                // we should unroll the loop to improve CQ.
-                // For reference see the code in lsraxarch.cpp.
+                internalIntCount = 1;
+                internalIntCandidates = RBM_ALLINT;
             }
             else
-#endif // 0
             {
                 assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
                 dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_ARG_0);
