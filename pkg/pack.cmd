@@ -4,6 +4,14 @@ setlocal EnableDelayedExpansion
 set __ProjectDir=%~dp0
 set __DotNet=%__ProjectDir%\Tools\dotnetcli\dotnet.exe
 set __MSBuild=%__ProjectDir%\Tools\MSBuild.dll
+set __PortableBuildArgs=false
+
+:Arg_Loop
+if "%1" == "" goto ArgsDone
+
+if /i "%1" == "-portable"             (set __PortableBuildArgs=true&shift&goto Arg_Loop)
+
+:ArgsDone
 
 :: Initialize the MSBuild Tools
 call "%__ProjectDir%\init-tools.cmd"
@@ -20,7 +28,7 @@ if exist "%__ProjectDir%\bin" (rmdir /s /q "%__ProjectDir%\bin")
 if not ERRORLEVEL 0 goto :Error
 
 :: Package the assets using Tools
-"%__DotNet%" "%__MSBuild%" "%__ProjectDir%\packages.builds" /p:OSGroup=Windows_NT /verbosity:minimal
+"%__DotNet%" "%__MSBuild%" "%__ProjectDir%\packages.builds" /p:OSGroup=Windows_NT /verbosity:minimal /p:PortableBuild=%__PortableBuildArgs%
 
 if not ERRORLEVEL 0 goto :Error
 exit /b 0

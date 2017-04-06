@@ -98,6 +98,10 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
       endif()
 endif ()
 
+if (DEFINED CLI_CMAKE_PORTABLE_BUILD)
+    add_definitions(-DFEATURE_PORTABLE_BUILD=1)
+endif ()
+
 if("${CLI_CMAKE_HOST_POLICY_VER}" STREQUAL "")
     message(FATAL_ERROR "Host policy version is not specified")
 else()

@@ -77,6 +77,18 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
+        private static string GetPortablePlatformForRID(string targetRID)
+        {
+            if (targetRID.StartsWith("win"))
+                return "win";
+            
+            if (targetRID.StartsWith("osx"))
+                return "osx";
+
+            // Everything else is "linux"
+            return "linux";
+        }
+
         [Target]
         public static BuildTargetResult CommonInit(BuildTargetContext c)
         {
@@ -107,8 +119,8 @@ namespace Microsoft.DotNet.Host.Build
             bool linkPortable = (int.Parse(szLinkPortable) == 1)?true:false;
             if (linkPortable)
             {
-                // Portable build only supports Linux RID
-                targetRID = $"linux-{platformEnv}";
+                string ridPortablePlatform = GetPortablePlatformForRID(targetRID);
+                targetRID = $"{ridPortablePlatform}-{platformEnv}";
                 realTargetRID = targetRID;
 
                 // Update/set the TARGETRID environment variable that will be used by various parts of the build
@@ -269,7 +281,13 @@ namespace Microsoft.DotNet.Host.Build
             string version)
         {
             var productName = Monikers.GetProductMoniker(c, artifactPrefix, version);
-
+            bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
+            if (linkPortable)
+            {
+                // If we are building portable binaries, then reflect the same in the installer binary name as well.
+                productName = productName+"-portable";
+            }
+            
             var extension = CurrentPlatform.IsWindows ? ".zip" : ".tar.gz";
             c.BuildContext[contextPrefix + "CompressedFile"] = Path.Combine(Dirs.Packages, productName + extension);
 
