@@ -143,11 +143,6 @@ public:
     virtual
     bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj) = 0;
 
-    // Asks the EE if the GC scheduled for the given condemned generation should be
-    // elevated to a blocking collection, to clean up an app domain.
-    virtual
-    bool ShouldElevateForAppDomainCleanup() = 0;
-
     // Offers the EE the option to finalize the given object eagerly, i.e.
     // not on the finalizer thread but on the current thread. The
     // EE returns true if it finalized the object eagerly and the GC does not
