@@ -638,6 +638,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\File.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
