@@ -217,7 +217,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         true,
                                         "PackagePath",
-                                        "PackageHashPath"
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
                                     ),
                             }));
 
@@ -255,6 +256,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
             library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+            library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
         }
 
         [Fact]
@@ -301,7 +303,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         },
                                         true,
                                         "PackagePath",
-                                        "PackageHashPath"
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
                                     ),
                             }));
 
@@ -338,6 +341,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("serviceable", true);
             library.Should().HavePropertyValue("path", "PackagePath");
             library.Should().HavePropertyValue("hashPath", "PackageHashPath");
+            library.Should().HavePropertyValue("runtimeStoreManifestName", "placeHolderManifest.xml");
         }
 
         [Fact]
