@@ -39,6 +39,7 @@ namespace System.Net.Http
             private static readonly bool s_curlDebugLogging = Environment.GetEnvironmentVariable("CURLHANDLER_DEBUG_VERBOSE") == "true";
 
             internal readonly CurlHandler _handler;
+            internal readonly MultiAgent _associatedMultiAgent;
             internal readonly HttpRequestMessage _requestMessage;
             internal readonly CurlResponseMessage _responseMessage;
             internal readonly CancellationToken _cancellationToken;
@@ -49,17 +50,22 @@ namespace System.Net.Http
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSListHandle _requestHeaders;
 
-            internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
             internal StrongToWeakReference<EasyRequest> _selfStrongToWeakReference;
 
             private SafeCallbackHandle _callbackHandle;
 
-            public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
+            public EasyRequest(CurlHandler handler, MultiAgent agent, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
+                Debug.Assert(handler != null, $"Expected non-null {nameof(handler)}");
+                Debug.Assert(agent != null, $"Expected non-null {nameof(agent)}");
+                Debug.Assert(requestMessage != null, $"Expected non-null {nameof(requestMessage)}");
+
                 _handler = handler;
+                _associatedMultiAgent = agent;
                 _requestMessage = requestMessage;
+
                 _cancellationToken = cancellationToken;
                 _responseMessage = new CurlResponseMessage(this);
             }

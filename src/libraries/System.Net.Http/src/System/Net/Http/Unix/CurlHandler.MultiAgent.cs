@@ -622,7 +622,7 @@ namespace System.Net.Http
             private void ActivateNewRequest(EasyRequest easy)
             {
                 Debug.Assert(easy != null, "We should never get a null request");
-                Debug.Assert(easy._associatedMultiAgent == null, "New requests should not be associated with an agent yet");
+                Debug.Assert(easy._associatedMultiAgent == this, "Request should be associated with this agent");
 
                 // If cancellation has been requested, complete the request proactively
                 if (easy._cancellationToken.IsCancellationRequested)
@@ -654,7 +654,6 @@ namespace System.Net.Http
                 {
                     easy.InitializeCurl();
 
-                    easy._associatedMultiAgent = this;
                     easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
                     easy.SetCurlCallbacks(gcHandlePtr, s_receiveHeadersCallback, s_sendCallback, s_seekCallback, s_receiveBodyCallback, s_debugCallback);
 
