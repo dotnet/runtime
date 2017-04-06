@@ -23,7 +23,7 @@ namespace System.Net.Tests
 
         public async Task<HttpListenerResponse> GetResponse()
         {
-            // We need this to avoid hanging tests.
+            // We need to create a mock request to give the HttpListener a context.
             Task<string> clientTask = _client.GetStringAsync(_listeningUrl);
             HttpListenerContext context = await _listener.GetContextAsync();
             return context.Response;
@@ -31,7 +31,7 @@ namespace System.Net.Tests
 
         public async Task<HttpListenerRequest> GetRequest()
         {
-            // We need this to avoid hanging tests.
+            // We need to create a mock request to give the HttpListener a context.
             Task<HttpListenerContext> serverContext = _listener.GetContextAsync();
 
             _client.DefaultRequestHeaders.TransferEncodingChunked = true;
