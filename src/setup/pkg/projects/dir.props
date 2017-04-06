@@ -54,41 +54,13 @@
     <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(PackageRID)' == ''">
-    <PackageRID>$(DistroRid)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
+  <PropertyGroup>
+    <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <OfficialBuildRID Include="alpine.3.4.3-x64" />
-    <OfficialBuildRid Include="debian.8-armel">
-      <Platform>armel</Platform>
-    </OfficialBuildRid>
-    <OfficialBuildRID Include="linux-x64" />
-    <OfficialBuildRID Include="osx.10.12-x64" />
-    <OfficialBuildRID Include="win7-x86">
-      <Platform>x86</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="win7-x64"/>
-    <OfficialBuildRID Include="win8-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="win10-arm64">
-      <Platform>arm64</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.14.04-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.16.04-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRid Include="tizen.4.0.0-armel">
-      <Platform>armel</Platform>
-    </OfficialBuildRid>
+  <Import Project="$(RIDPropsFile)" />
 
+  <ItemGroup>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)">

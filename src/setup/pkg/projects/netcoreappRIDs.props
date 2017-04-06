@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(PackageRID)' == ''">
+    <PackageRID>$(DistroRid)</PackageRID>
+    <PackageRID Condition="'$(OSEnvironment)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <OfficialBuildRID Include="alpine.3.4.3-x64" />
+    <OfficialBuildRid Include="debian.8-armel">
+      <Platform>armel</Platform>
+    </OfficialBuildRid>
+    <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="osx.10.12-x64" />
+    <OfficialBuildRID Include="win7-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win7-x64"/>
+    <OfficialBuildRID Include="win8-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="ubuntu.14.04-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="ubuntu.16.04-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRid Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </OfficialBuildRid>
+  </ItemGroup>
+</Project>
