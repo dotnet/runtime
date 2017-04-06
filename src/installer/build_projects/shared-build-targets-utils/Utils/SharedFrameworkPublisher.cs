@@ -48,7 +48,8 @@ namespace Microsoft.DotNet.Cli.Build
             // If we are dealing with cross-targeting compilation, then specify the 
             // correct RID for crossgen to use when compiling SharedFramework.
             // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
-            if ((sharedFrameworkRid == "win8-arm") || (sharedFrameworkRid == "win10-arm64") || (sharedFrameworkRid.StartsWith("linux-")))
+            string portablePlatformRID = null;
+            if ((sharedFrameworkRid == "win8-arm") || (sharedFrameworkRid == "win10-arm64") || (Utils.IsPortableRID(sharedFrameworkRid, out portablePlatformRID)))
             {
                 crossgenRID = sharedFrameworkRid;
             }

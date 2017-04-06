@@ -31,7 +31,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir c:\\tools\\clr -Framework netcoreapp2.0",
+        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir c:\\tools\\clr -Framework netcoreapp2.0 $(PB_PortableBuild)",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -105,6 +105,10 @@
     },
     "PUBLISH_TO_AZURE_BLOB": {
       "value": "true",
+      "allowOverride": true
+    },
+    "PB_PortableBuild": {
+      "value": "",
       "allowOverride": true
     },
     "NUGET_SYMBOLS_FEED_URL": {

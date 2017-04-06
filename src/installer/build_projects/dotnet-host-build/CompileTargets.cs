@@ -26,15 +26,22 @@ namespace Microsoft.DotNet.Host.Build
             { "win7-x86", "win7-x86" },
             { "win8-arm", "win8-arm" },
             { "win10-arm64", "win10-arm64" },
+            { "win-x86", "win-x86" },
+            { "win-x64", "win-x64" },
+            { "win-arm", "win-arm" },
+            { "win-arm64", "win-arm64" },
             { "osx.10.12-x64", "osx.10.12-x64" },
+            { "osx-x64", "osx-x64"},
             { "linux-x64", "linux-x64" },
             { "ubuntu.14.04-x64", "ubuntu.14.04-x64" },
             { "ubuntu.16.04-x64", "ubuntu.16.04-x64" },
             { "ubuntu.16.10-x64", "ubuntu.16.10-x64" },
             { "ubuntu.14.04-arm", "ubuntu.14.04-arm" },
             { "ubuntu.16.04-arm", "ubuntu.16.04-arm" },
+            { "linux-arm", "linux-arm" },
 //          { "ubuntu.14.04-arm64", "ubuntu.14.04-arm64" },
 //          { "ubuntu.16.04-arm64", "ubuntu.16.04-arm64" },
+//          { "linux-arm64", "linux-arm64" },
             { "centos.7-x64", "rhel.7-x64" },
             { "rhel.7-x64", "rhel.7-x64" },
             { "rhel.7.0-x64", "rhel.7-x64" },
@@ -205,8 +212,7 @@ namespace Microsoft.DotNet.Host.Build
                 string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
                 string cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
-                string cmakeExtraArgs = null;
-
+                
                 switch (platform.ToLower())
                 {
                     case "x86":
@@ -219,7 +225,7 @@ namespace Microsoft.DotNet.Host.Build
                         cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win8-arm";
                         visualStudio = "Visual Studio 14 2015 ARM";
                         archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_ARM=1";
-                        cmakeExtraArgs ="-DCMAKE_SYSTEM_VERSION=10.0";
+                        cmakeArgList.Add("-DCMAKE_SYSTEM_VERSION=10.0");
                         arch = "arm";
                         break;
                     case "arm64":
@@ -254,9 +260,9 @@ namespace Microsoft.DotNet.Host.Build
                 cmakeArgList.Add("-G");
                 cmakeArgList.Add(visualStudio);
                 
-                if (!String.IsNullOrEmpty(cmakeExtraArgs))
+                if (linkPortable)
                 {
-                    cmakeArgList.Add(cmakeExtraArgs);
+                    cmakeArgList.Add("-DCLI_CMAKE_PORTABLE_BUILD=1");
                 }
 
                 ExecIn(cmakeOut, "cmake", cmakeArgList);
@@ -331,7 +337,7 @@ namespace Microsoft.DotNet.Host.Build
 
                 if (linkPortable)
                 {
-                    buildScriptArgList.Add("--portableLinux");
+                    buildScriptArgList.Add("-portable");
                 }
                 
                 ExecIn(cmakeOut, buildScriptFile, buildScriptArgList);
@@ -418,20 +424,27 @@ namespace Microsoft.DotNet.Host.Build
             string rid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
 
+            // Form the path to the script that generates nuget packages.
+            string buildScriptFile = Path.Combine(pkgDir, "pack.sh");
+            List<string> buildScriptArgList = new List<string>();
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Exec(Path.Combine(pkgDir, "pack.cmd"));
+                buildScriptFile = Path.Combine(pkgDir, "pack.cmd");
             }
             else
             {
-                List<string> buildScriptArgList = new List<string>();
-                string buildScriptFile = Path.Combine(pkgDir, "pack.sh");
-
                 buildScriptArgList.Add("--rid");
                 buildScriptArgList.Add(rid);
-
-                Exec(buildScriptFile, buildScriptArgList);
             }
+
+            bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
+            if (linkPortable)
+            {
+                buildScriptArgList.Add("-portable");
+            }
+            
+            Exec(buildScriptFile, buildScriptArgList);
 
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {

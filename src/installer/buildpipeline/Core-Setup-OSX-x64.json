@@ -124,7 +124,11 @@
       "allowOverride": true
     },
     "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default",
+      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default $(PB_PortableBuild)",
+      "allowOverride": true
+    },
+    "PB_PortableBuild": {
+      "value": "",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
