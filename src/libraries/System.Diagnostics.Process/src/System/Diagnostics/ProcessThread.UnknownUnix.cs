@@ -13,8 +13,8 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
+            set { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
 
         /// <summary>
@@ -23,13 +23,13 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan PrivilegedProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
 
         /// <summary>Returns the time the associated thread was started.</summary>
         public DateTime StartTime
         {
-            get { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan TotalProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan UserProcessorTime
         {
-            get { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); }  // Not available on POSIX
         }
     }
 }

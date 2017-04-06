@@ -222,7 +222,8 @@ namespace System.IO.Tests
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]  // invalid colons throws ArgumentException
-        public void PathWithInvalidColons_ThrowsArgumentException(string invalidPath)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Versions of netfx older than 4.6.2 throw an ArgumentException instead of NotSupportedException. Until all of our machines run netfx against the actual latest version, these will fail.")]
+        public void PathWithInvalidColons_ThrowsNotSupportedException(string invalidPath)
         {
             Assert.Throws<NotSupportedException>(() => Create(invalidPath));
         }

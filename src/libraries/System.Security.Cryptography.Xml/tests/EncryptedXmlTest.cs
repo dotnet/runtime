@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
             string originalXml;
-            using (Stream stream = LoadResourceStream(resourceName))
+            using (Stream stream = TestHelpers.LoadResourceStream(resourceName))
             using (StreamReader streamReader = new StreamReader(stream))
             {
                 originalXml = streamReader.ReadToEnd();
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 XmlDocument doc = new XmlDocument();
                 doc.PreserveWhitespace = true;
-                doc.Load(LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample2.xml"));
+                doc.Load(TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample2.xml"));
                 EncryptedXml encxml = new EncryptedXml(doc);
                 EncryptedData edata = new EncryptedData();
                 edata.LoadXml(doc.DocumentElement);
@@ -974,22 +974,6 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(CipherMode.CBC, exml.Mode);
             Assert.Equal(Encoding.ASCII, exml.Encoding);
             Assert.Equal("Recipient", exml.Recipient);
-        }
-
-        private Stream LoadResourceStream(string resourceName)
-        {
-            return Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName);
-        }
-
-        private byte[] LoadResource(string resourceName)
-        {
-            using (Stream stream = Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName))
-            {
-                long length = stream.Length;
-                byte[] buffer = new byte[length];
-                stream.Read(buffer, 0, (int)length);
-                return buffer;
-            }
         }
 
         private void CheckEncryptionMethod(object algorithm, string uri)

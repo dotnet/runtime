@@ -22,10 +22,6 @@ namespace System.Globalization.Tests
         /// </summary>
         public string Value { get; private set; }
 
-        public ConformanceIdnaTestResult(string entry)
-            : this(entry, null)
-        { }
-
         public ConformanceIdnaTestResult(string entry, string fallbackValue)
         {
             if (string.IsNullOrWhiteSpace(entry))
@@ -36,16 +32,8 @@ namespace System.Globalization.Tests
 
         private void SetValues(string entry)
         {
-            if (entry.Trim().StartsWith("[", StringComparison.Ordinal))
-            {
-                Success = false;
-                Value = entry.Trim();
-            }
-            else
-            {
-                Success = true;
-                Value = entry.Trim();
-            }
+            Value = entry.Trim();
+            Success = !Value.StartsWith("[", StringComparison.Ordinal);
         }
     }
 }

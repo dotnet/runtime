@@ -126,7 +126,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
-                    _parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    Parameters.Add(new NameValueHeaderValue(size, sizeString));
                 }
             }
         }

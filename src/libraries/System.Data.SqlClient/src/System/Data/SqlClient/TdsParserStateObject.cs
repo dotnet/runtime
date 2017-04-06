@@ -105,7 +105,7 @@ namespace System.Data.SqlClient
         // 3) post session close - no attention is allowed
         private bool _cancelled;
         private const int _waitForCancellationLockPollTimeout = 100;
-
+        private WeakReference _cancellationOwner = new WeakReference(null);
 
         internal bool _hasOpenResult = false;
         // Cache the transaction for which this command was executed so upon completion we can
@@ -578,7 +578,9 @@ namespace System.Data.SqlClient
         // cancel request.
         internal void Cancel(object caller)
         {
-            Debug.Assert(!(caller is int), "Incorrectly calling this API using the caller's objectID");
+            Debug.Assert(caller != null, "Null caller for Cancel!");
+            Debug.Assert(caller is SqlCommand || caller is SqlDataReader, "Calling API with invalid caller type: " + caller.GetType());
+
             bool hasLock = false;
             try
             {
@@ -591,7 +593,7 @@ namespace System.Data.SqlClient
                       // This lock is also protecting against concurrent close and async continuations
 
                         // Ensure that, once we have the lock, that we are still the owner
-                        if ((!_cancelled) && (_owner.Target == caller))
+                        if ((!_cancelled) && (_cancellationOwner.Target == caller))
                         {
                             _cancelled = true;
 
@@ -721,6 +723,7 @@ namespace System.Data.SqlClient
             {
                 // Reset cancel state.
                 _cancelled = false;
+                _cancellationOwner.Target = null;
 
                 if (_attentionSent)
                 {
@@ -919,6 +922,10 @@ namespace System.Data.SqlClient
             }
         }
 
+        internal void StartSession(object cancellationOwner)
+        {
+            _cancellationOwner.Target = cancellationOwner;
+        }
 
         internal void ThrowExceptionAndWarning(bool callerHasConnectionLock = false, bool asyncClose = false)
         {

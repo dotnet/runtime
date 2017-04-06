@@ -141,6 +141,10 @@ namespace System.IO.MemoryMappedFiles
             {
                 throw new ArgumentException(SR.Argument_NewMMFAppendModeNotAllowed, nameof(mode));
             }
+            if (mode == FileMode.Truncate)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFTruncateModeNotAllowed, nameof(mode));
+            }
             if (access == MemoryMappedFileAccess.Write)
             {
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));

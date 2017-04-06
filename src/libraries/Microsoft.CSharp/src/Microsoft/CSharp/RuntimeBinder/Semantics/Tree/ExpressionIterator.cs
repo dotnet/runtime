@@ -83,10 +83,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pList = null;
                 _pCurrent = null;
             }
-            else if (pExpr.isLIST())
+            else if (pExpr is ExprList pList)
             {
-                _pList = pExpr.asLIST();
-                _pCurrent = _pList.OptionalElement;
+                _pList = pList;
+                _pCurrent = pList.OptionalElement;
             }
             else
             {

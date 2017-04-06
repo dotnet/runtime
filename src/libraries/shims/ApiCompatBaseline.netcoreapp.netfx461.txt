@@ -1,6 +1,7 @@
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.ServiceModel.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
@@ -1045,10 +1046,6 @@ TypesMustExist : Type 'System.Diagnostics.InstanceDataCollection' does not exist
 TypesMustExist : Type 'System.Diagnostics.InstanceDataCollectionCollection' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.MonitoringDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Diagnostics.OverflowAction' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.PerformanceCounter' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Diagnostics.PerformanceCounter.CloseSharedResources()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.PerformanceCounter.Decrement()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.PerformanceCounter.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterCategory' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterCategoryType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterManager' does not exist in the implementation but it does exist in the contract.
@@ -1387,11 +1384,8 @@ TypesMustExist : Type 'System.Security.Cryptography.ManifestSignatureInformation
 TypesMustExist : Type 'System.Security.Cryptography.MD5Cng' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SHA1Cng' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SHA256Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA256CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SHA384Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA384CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SHA512Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA512CryptoServiceProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SignatureVerificationResult' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.StrongNameSignatureInformation' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.AuthenticodeSignatureInformation' does not exist in the implementation but it does exist in the contract.
@@ -1404,7 +1398,6 @@ TypesMustExist : Type 'Microsoft.SqlServer.Server.Format' does not exist in the 
 TypesMustExist : Type 'Microsoft.SqlServer.Server.IBinarySerialize' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.InvalidUdtException' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlContext' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlDataRecord' does not implement interface 'System.Data.IDataRecord' in the implementation but it does in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFacetAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFunctionAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
@@ -1875,6 +1868,56 @@ MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSer
 MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializerSettings.DataContractSurrogate.set(System.Runtime.Serialization.IDataContractSurrogate)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.IXmlMtomReaderInitializer' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.IXmlMtomWriterInitializer' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ServiceModel.Web:
+MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializer..ctor(System.Type, System.Collections.Generic.IEnumerable<System.Type>, System.Int32, System.Boolean, System.Runtime.Serialization.IDataContractSurrogate, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializer..ctor(System.Type, System.String, System.Collections.Generic.IEnumerable<System.Type>, System.Int32, System.Boolean, System.Runtime.Serialization.IDataContractSurrogate, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializer..ctor(System.Type, System.Xml.XmlDictionaryString, System.Collections.Generic.IEnumerable<System.Type>, System.Int32, System.Boolean, System.Runtime.Serialization.IDataContractSurrogate, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializer.DataContractSurrogate.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.WebHttpBinding' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.WebHttpSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.WebHttpSecurityMode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Activation.WebScriptServiceHostFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Activation.WebServiceHostFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.JavascriptCallbackResponseMessageProperty' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.StreamBodyWriter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.WebBodyFormatMessageProperty' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.WebContentFormat' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.WebContentTypeMapper' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Channels.WebMessageEncodingBindingElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpBindingCollectionElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpBindingElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpEndpointCollectionElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpEndpointElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpSecurityElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebMessageEncodingElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEnablingElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEndpointCollectionElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEndpointElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.JsonFaultDetail' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.WebHttpBehavior' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.WebHttpEndpoint' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.WebScriptEnablingBehavior' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.WebScriptEndpoint' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Description.WebServiceEndpoint' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Dispatcher.JsonQueryStringConverter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Dispatcher.QueryStringConverter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Dispatcher.WebHttpDispatchOperationSelector' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.AspNetCacheProfileAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.IncomingWebRequestContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.IncomingWebResponseContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.JavascriptCallbackBehaviorAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.OutgoingWebRequestContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.OutgoingWebResponseContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebChannelFactory<TChannel>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebFaultException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebFaultException<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebGetAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebInvokeAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebMessageBodyStyle' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebMessageFormat' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebOperationContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ServiceModel.Web.WebServiceHost' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Transactions:
 TypesMustExist : Type 'System.Transactions.DistributedTransactionPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Transactions.DistributedTransactionPermissionAttribute' does not exist in the implementation but it does exist in the contract.
@@ -3350,4 +3393,4 @@ MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerial
 MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.CodeDom.Compiler.CompilerParameters)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-Total Issues: 3333
+Total Issues: 3374

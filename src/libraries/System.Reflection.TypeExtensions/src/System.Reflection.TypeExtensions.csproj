@@ -7,6 +7,8 @@
     <ProjectGuid>{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -22,8 +24,8 @@
     <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" Condition="'$(TargetGroup)' == 'netfx'" />
-    <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netfx'" />
+    <Reference Include="mscorlib" Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net461'" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetGroup)' != 'net461'" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -251,20 +251,34 @@ namespace System.Linq.Tests
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };
             var tinyCollection = new DelegateBasedCollection<int> { CountWorker = () => 1 };
 
+            Action<Action> assertThrows = (testCode) =>
+            {
+                // The full .NET Framework uses unsigned arithmetic summing up collection counts.
+                // See https://github.com/dotnet/corefx/pull/11492.
+                if (PlatformDetection.IsFullFramework)
+                {
+                    testCode();
+                }
+                else
+                {
+                    Assert.Throws<OverflowException>(testCode);
+                }
+            };
+
             // We need to use checked arithmetic summing up the collections' counts.
-            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).Count());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
+            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).Count());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).Count());
 
             // This applies to ToArray() and ToList() as well, which try to preallocate the exact size
             // needed if all inputs are ICollections.
-            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).ToArray());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
+            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).ToArray());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToArray());
 
-            Assert.Throws<OverflowException>(() => supposedlyLargeCollection.Concat(tinyCollection).ToList());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
-            Assert.Throws<OverflowException>(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
+            assertThrows(() => supposedlyLargeCollection.Concat(tinyCollection).ToList());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
+            assertThrows(() => tinyCollection.Concat(tinyCollection).Concat(tinyCollection).Concat(supposedlyLargeCollection).ToList());
         }
 
         [Fact]

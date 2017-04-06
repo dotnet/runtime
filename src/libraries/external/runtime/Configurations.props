@@ -6,6 +6,7 @@
       netcoreapp-Unix;
       uap;
       uapaot;
+      mono;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

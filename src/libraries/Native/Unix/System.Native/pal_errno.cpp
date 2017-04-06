@@ -385,7 +385,7 @@ extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
     // note that there is probably a corresponding missing case in the
     // other direction above, but the compiler can't warn in that case
     // because the platform values are not part of an enum.
-    assert(false && "Unknown error code");
+    assert_err(false, "Unknown error code", static_cast<int>(error));
     return -1;
 }
 
@@ -424,7 +424,7 @@ extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffe
     // The only other valid error codes are 0 for success or EINVAL for
     // an unknown error, but in the latter case a reasonable string (e.g
     // "Unknown error: 0x123") is returned.
-    assert(error == 0 || error == EINVAL);
+    assert_err(error == 0 || error == EINVAL, "invalid error", error);
     return buffer;
 #endif
 }

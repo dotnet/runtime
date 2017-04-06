@@ -57,7 +57,10 @@ namespace System.Linq.Tests
             var source = Enumerable.Range(0, 10).ToList();
             var pred = new CountedFunction<int, bool>(i => i < 7);
             Assert.Equal(6, source.Last(pred.Func));
-            Assert.Equal(4, pred.Calls);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
         }
 
         [Fact]
@@ -66,7 +69,10 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => i == 5 ? double.NaN : (double)i);
             Assert.True(double.IsNaN(source.Min()));
-            Assert.Equal(5, tracker.Moves);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
         }
 
         [Fact]
@@ -75,7 +81,10 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => (double?)(i == 5 ? double.NaN : (double)i));
             Assert.True(double.IsNaN(source.Min().GetValueOrDefault()));
-            Assert.Equal(5, tracker.Moves);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
         }
 
         [Fact]
@@ -84,7 +93,10 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => i == 5 ? float.NaN : (float)i);
             Assert.True(float.IsNaN(source.Min()));
-            Assert.Equal(5, tracker.Moves);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
         }
 
         [Fact]
@@ -93,7 +105,10 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => (float?)(i == 5 ? float.NaN : (float)i));
             Assert.True(float.IsNaN(source.Min().GetValueOrDefault()));
-            Assert.Equal(5, tracker.Moves);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
         }
 
         [Fact]
@@ -102,8 +117,11 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var pred = new CountedFunction<int, bool>(i => i > 2);
             Assert.Throws<InvalidOperationException>(() => tracker.Single(pred.Func));
-            Assert.Equal(4, tracker.Moves);
-            Assert.Equal(4, pred.Calls);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, tracker.Moves);
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
         }
 
         [Fact]
@@ -112,8 +130,11 @@ namespace System.Linq.Tests
             var tracker = new TrackingEnumerable(10);
             var pred = new CountedFunction<int, bool>(i => i > 2);
             Assert.Throws<InvalidOperationException>(() => tracker.SingleOrDefault(pred.Func));
-            Assert.Equal(4, tracker.Moves);
-            Assert.Equal(4, pred.Calls);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, tracker.Moves);
+            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
         }
 
         [Fact]
@@ -125,8 +146,11 @@ namespace System.Linq.Tests
             var tracker1 = new TrackingEnumerable(10);
             var pred1 = new CountedFunction<int, bool>(i => i > 2);
             Assert.Throws<InvalidOperationException>(() => tracker1.Where(pred1.Func).Single());
-            Assert.Equal(tracker0.Moves, tracker1.Moves);
-            Assert.Equal(pred0.Calls, pred1.Calls);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : tracker0.Moves, tracker1.Moves);
+            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : pred0.Calls, pred1.Calls);
         }
 
         [Fact]
@@ -138,8 +162,11 @@ namespace System.Linq.Tests
             var tracker1 = new TrackingEnumerable(10);
             var pred1 = new CountedFunction<int, bool>(i => i > 2);
             Assert.Throws<InvalidOperationException>(() => tracker1.Where(pred1.Func).SingleOrDefault());
-            Assert.Equal(tracker0.Moves, tracker1.Moves);
-            Assert.Equal(pred0.Calls, pred1.Calls);
+
+            // .NET Core shortcircuits as an optimization.
+            // See https://github.com/dotnet/corefx/pull/2350.
+            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : tracker0.Moves, tracker1.Moves);
+            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : pred0.Calls, pred1.Calls);
         }
     }
 }

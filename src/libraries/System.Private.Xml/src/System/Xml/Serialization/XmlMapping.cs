@@ -8,7 +8,11 @@ using System.Globalization;
 using System.Reflection;
 
 
+#if XMLSERIALIZERGENERATOR
+namespace Microsoft.XmlSerializer.Generator
+#else
 namespace System.Xml.Serialization
+#endif
 {
     [Flags]
     public enum XmlMappingAccess
@@ -59,7 +63,11 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string ElementName
         {
+#if XMLSERIALIZERGENERATOR
+            get { return Microsoft.XmlSerializer.Generator.Accessor.UnescapeName(Accessor.Name); }
+#else
             get { return System.Xml.Serialization.Accessor.UnescapeName(Accessor.Name); }
+#endif
         }
 
         /// <devdoc>

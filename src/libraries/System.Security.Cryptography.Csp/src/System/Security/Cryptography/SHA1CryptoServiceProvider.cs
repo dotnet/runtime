@@ -6,6 +6,9 @@ using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
+    //
+    // If you change this file, make the corresponding changes to all of the SHA*CryptoServiceProvider.cs files.
+    //
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class SHA1CryptoServiceProvider : SHA1
     {
@@ -41,8 +44,8 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 _incrementalHash.Dispose();
-                base.Dispose(disposing);
             }
+            base.Dispose(disposing);
         }
     }
 }

@@ -17,13 +17,16 @@
     <NetFxReference Include="System.ComponentModel.Composition" />
     <NetFxReference Include="System.ComponentModel.DataAnnotations">
       <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference> 
+    </NetFxReference>
     <NetFxReference Include="System.Data" />
     <NetFxReference Include="System.Drawing" />
     <NetFxReference Include="System.IO.Compression.FileSystem" />
     <NetFxReference Include="System.Net" />
     <NetFxReference Include="System.Numerics" />
     <NetFxReference Include="System.Runtime.Serialization" />
+    <NetFxReference Include="System.ServiceModel.Web">
+      <StrongNameSig>MSSharedLib</StrongNameSig>
+    </NetFxReference>
     <NetFxReference Include="System.Transactions" />
     <NetFxReference Include="System.Windows" />
     <NetFxReference Include="System.Web" />

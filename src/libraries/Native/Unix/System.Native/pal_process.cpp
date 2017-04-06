@@ -285,7 +285,7 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
             return RLIMIT_NOFILE;
     }
 
-    assert(false && "Unknown RLIMIT value");
+    assert_msg(false, "Unknown RLIMIT value", static_cast<int>(value));
     return -1;
 }
 
@@ -438,7 +438,7 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
 
     if (confValue == -1)
     {
-        assert(false && "Unknown PathConfName");
+        assert_msg(false, "Unknown PathConfName", static_cast<int>(name));
         errno = EINVAL;
         return -1;
     }

@@ -66,7 +66,8 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null)); // Type is null
+            Type nullType = null;
+            Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(nullType)); // Type is null
             Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null, new object[0])); // Type is null
 
             Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));

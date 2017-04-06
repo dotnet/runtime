@@ -108,7 +108,13 @@ namespace System.Drawing.PrimitivesTest
             var size = new SizeF(0, 0);
             Assert.False(size.Equals(null));
             Assert.False(size.Equals(0));
-            Assert.True(size.Equals(new Size(0, 0))); // Implicit cast
+
+            // If SizeF implements IEquatable<SizeF> (e.g in .NET Core), then classes that are implicitly 
+            // convertible to SizeF can potentially be equal.
+            // See https://github.com/dotnet/corefx/issues/5255.
+            bool expectsImplicitCastToSizeF = typeof(IEquatable<SizeF>).IsAssignableFrom(size.GetType());
+            Assert.Equal(expectsImplicitCastToSizeF, size.Equals(new Size(0, 0)));
+
             Assert.False(size.Equals((object)new Size(0, 0))); // No implicit cast
         }
 
