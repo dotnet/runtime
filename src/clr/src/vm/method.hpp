@@ -1087,6 +1087,14 @@ public:
             && GetSlot() < pMT->GetNumVirtuals();
     }
 
+    // Is this a default interface method (virtual non-abstract instance method)
+    inline BOOL IsDefaultInterfaceMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (GetMethodTable()->IsInterface() && !IsStatic() && IsVirtual() && !IsAbstract());
+    }
+
     inline BOOL HasNonVtableSlot();
 
     void SetHasNonVtableSlot()
