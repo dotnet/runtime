@@ -705,24 +705,6 @@ void Assembler::StartMethod(__in __nullterminated char* name, BinStr* sig, CorMe
             {
                 flags = (CorMethodAttr)(flags | mdSpecialName);
                 if(IsTdInterface(m_pCurClass->m_Attr)) report->error("Instance constructor in interface\n");
-
-            }
-            if(!IsMdStatic(flags))
-            {
-                if(IsTdInterface(m_pCurClass->m_Attr))
-                {
-                    if(!IsMdPublic(flags)) report->error("Non-public instance method in interface\n");
-                    if((!(IsMdVirtual(flags) && IsMdAbstract(flags))))
-                    {
-                        if(OnErrGo) report->error("Non-virtual, non-abstract instance method in interface\n");
-                        else
-                        {
-                            report->warn("Non-virtual, non-abstract instance method in interface, set to such\n");
-                            flags = (CorMethodAttr)(flags |mdVirtual | mdAbstract);
-                        }
-                    }
-    
-                }
             }
             m_pCurMethod = new Method(this, m_pCurClass, name, sig, flags);
         }
