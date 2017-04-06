@@ -103,12 +103,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Derived types - parent is base type
-        public ArrayType CreateArray(Name name, CType pElementType, int rank)
+        public ArrayType CreateArray(Name name, CType pElementType, int rank, bool isSZArray)
         {
             ArrayType type = new ArrayType();
 
             type.SetName(name);
             type.rank = rank;
+            type.IsSZArray = isSZArray;
             type.SetElementType(pElementType);
 
             type.SetTypeKind(TypeKind.TK_ArrayType);

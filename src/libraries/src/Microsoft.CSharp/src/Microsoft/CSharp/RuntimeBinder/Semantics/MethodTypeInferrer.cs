@@ -1185,7 +1185,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             ArrayType pArraySource = pSource.AsArrayType();
             ArrayType pArrayDest = pDest.AsArrayType();
-            if (pArraySource.rank != pArrayDest.rank)
+            if (pArraySource.rank != pArrayDest.rank || pArraySource.IsSZArray != pArrayDest.IsSZArray)
             {
                 return false;
             }
@@ -1379,7 +1379,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pDest.IsArrayType())
             {
                 ArrayType pArrayDest = pDest.AsArrayType();
-                if (pArrayDest.rank != pArraySource.rank)
+                if (pArrayDest.rank != pArraySource.rank || pArrayDest.IsSZArray != pArraySource.IsSZArray)
                 {
                     return false;
                 }
@@ -1391,7 +1391,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pDest.isPredefType(PredefinedType.PT_G_IREADONLYCOLLECTION) ||
                 pDest.isPredefType(PredefinedType.PT_G_IREADONLYLIST))
             {
-                if (pArraySource.rank != 1)
+                if (!pArraySource.IsSZArray)
                 {
                     return false;
                 }
@@ -1727,7 +1727,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pSource.IsArrayType())
             {
                 ArrayType pArraySource = pSource.AsArrayType();
-                if (pArrayDest.rank != pArraySource.rank)
+                if (pArrayDest.rank != pArraySource.rank || pArrayDest.IsSZArray != pArraySource.IsSZArray)
                 {
                     return false;
                 }
@@ -1739,7 +1739,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pSource.isPredefType(PredefinedType.PT_G_IREADONLYLIST) ||
                 pSource.isPredefType(PredefinedType.PT_G_IREADONLYCOLLECTION))
             {
-                if (pArrayDest.rank != 1)
+                if (!pArrayDest.IsSZArray)
                 {
                     return false;
                 }

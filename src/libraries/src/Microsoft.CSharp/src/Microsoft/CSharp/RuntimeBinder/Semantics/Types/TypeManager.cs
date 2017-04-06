@@ -169,15 +169,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public ArrayType GetArray(CType elementType, int args)
+        public ArrayType GetArray(CType elementType, int args, bool isSZArray)
         {
             Name name;
 
             Debug.Assert(args > 0 && args < 32767);
+            Debug.Assert(args == 1 || !isSZArray);
 
             switch (args)
             {
                 case 1:
+                    if (isSZArray)
+                    {
+                        goto case 2;
+                    }
+                    else
+                    {
+                        goto default;
+                    }
                 case 2:
                     name = NameManager.GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
                     break;
@@ -191,7 +200,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pArray == null)
             {
                 // No existing array symbol. Create a new one.
-                pArray = _typeFactory.CreateArray(name, elementType, args);
+                pArray = _typeFactory.CreateArray(name, elementType, args, isSZArray);
                 pArray.InitFromParent();
 
                 _typeTable.InsertArray(name, elementType, pArray);
@@ -554,7 +563,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ArrayType:
                     typeDst = SubstTypeCore(typeSrc = type.AsArrayType().GetElementType(), pctx);
-                    return (typeDst == typeSrc) ? type : GetArray(typeDst, type.AsArrayType().rank);
+                    return (typeDst == typeSrc) ? type : GetArray(typeDst, type.AsArrayType().rank, type.AsArrayType().IsSZArray);
 
                 case TypeKind.TK_PointerType:
                     typeDst = SubstTypeCore(typeSrc = type.AsPointerType().GetReferentType(), pctx);
@@ -690,7 +699,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
 
                 case TypeKind.TK_ArrayType:
-                    if (typeDst.GetTypeKind() != TypeKind.TK_ArrayType || typeDst.AsArrayType().rank != typeSrc.AsArrayType().rank)
+                    if (typeDst.GetTypeKind() != TypeKind.TK_ArrayType || typeDst.AsArrayType().rank != typeSrc.AsArrayType().rank || typeDst.AsArrayType().IsSZArray != typeSrc.AsArrayType().IsSZArray)
                         return false;
                     goto LCheckBases;
 
@@ -1269,7 +1278,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType intermediateType;
             if (GetBestAccessibleType(semanticChecker, bindingContext, elementType, out intermediateType))
             {
-                typeDst = this.GetArray(intermediateType, typeSrc.rank);
+                typeDst = this.GetArray(intermediateType, typeSrc.rank, typeSrc.IsSZArray);
 
                 Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, bindingContext.ContextForMemberLookup()));
                 return true;

@@ -120,14 +120,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //     o    An explicit reference conversion exists from SE to TE.
                 if (typeSrc.IsArrayType() && typeDst.IsArrayType())
                 {
-                    return typeSrc.AsArrayType().rank == typeDst.AsArrayType().rank && FExpRefConv(loader, typeSrc.AsArrayType().GetElementType(), typeDst.AsArrayType().GetElementType());
+                    return typeSrc.AsArrayType().rank == typeDst.AsArrayType().rank 
+                        && typeSrc.AsArrayType().IsSZArray == typeDst.AsArrayType().IsSZArray
+                        && FExpRefConv(loader, typeSrc.AsArrayType().GetElementType(), typeDst.AsArrayType().GetElementType());
                 }
 
                 // *    From a one-dimensional array-type S[] to System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> 
                 //      and their base interfaces, provided there is an explicit reference conversion from S to T.
                 if (typeSrc.IsArrayType())
                 {
-                    if (typeSrc.AsArrayType().rank != 1 ||
+                    if (!typeSrc.AsArrayType().IsSZArray ||
                         !typeDst.isInterfaceType() || typeDst.AsAggregateType().GetTypeArgsAll().Count != 1)
                     {
                         return false;
@@ -161,7 +163,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     //      are the same type or there is an implicit or explicit reference conversion from S to T.
                     ArrayType arrayDest = typeDst.AsArrayType();
                     AggregateType aggtypeSrc = typeSrc.AsAggregateType();
-                    if (arrayDest.rank != 1 || !typeSrc.isInterfaceType() ||
+                    if (!arrayDest.IsSZArray || !typeSrc.isInterfaceType() ||
                         aggtypeSrc.GetTypeArgsAll().Count != 1)
                     {
                         return false;
