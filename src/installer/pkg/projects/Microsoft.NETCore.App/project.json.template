@@ -4,7 +4,7 @@
     "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview1-25206-02",
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Microsoft.NETCore.Platforms": "2.0.0-preview1-25205-01",
-    "NETStandard.Library": "2.0.0-preview1-25206-01"
+    "NETStandard.Library": "2.0.0-preview1-25206-02"
   },
   "frameworks": {
     "netcoreapp2.0": {}
