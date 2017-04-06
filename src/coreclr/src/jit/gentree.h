@@ -3715,8 +3715,7 @@ struct GenTreeFptrVal : public GenTree
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    CORINFO_CONST_LOOKUP    gtEntryPoint;
-    CORINFO_RESOLVED_TOKEN* gtLdftnResolvedToken;
+    CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)

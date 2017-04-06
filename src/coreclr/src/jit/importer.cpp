@@ -1881,9 +1881,7 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
 #ifdef FEATURE_READYTORUN_COMPILER
             if (opts.IsReadyToRun())
             {
-                op1->gtFptrVal.gtEntryPoint          = pCallInfo->codePointerLookup.constLookup;
-                op1->gtFptrVal.gtLdftnResolvedToken  = new (this, CMK_Unknown) CORINFO_RESOLVED_TOKEN;
-                *op1->gtFptrVal.gtLdftnResolvedToken = *pResolvedToken;
+                op1->gtFptrVal.gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
             }
             else
             {
