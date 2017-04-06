@@ -479,7 +479,6 @@ typedef struct {
 
 void sgen_fragment_allocator_add (SgenFragmentAllocator *allocator, char *start, char *end);
 void sgen_fragment_allocator_release (SgenFragmentAllocator *allocator);
-void* sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t size);
 void* sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size);
 void* sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size);
 void* sgen_fragment_allocator_par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size);

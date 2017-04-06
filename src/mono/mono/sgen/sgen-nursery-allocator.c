@@ -457,33 +457,6 @@ restart:
 }
 
 void*
-sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t size)
-{
-	SgenFragment *frag;
-	SgenFragment **previous;
-#ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
-#endif
-
-	previous = &allocator->alloc_head;
-
-	for (frag = *previous; frag; frag = *previous) {
-		char *p = (char *)serial_alloc_from_fragment (previous, frag, size);
-
-		HEAVY_STAT (++stat_alloc_iterations);
-
-		if (p) {
-#ifdef NALLOC_DEBUG
-			add_alloc_record (p, size, FIXED_ALLOC);
-#endif
-			return p;
-		}
-		previous = &frag->next;
-	}
-	return NULL;
-}
-
-void*
 sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	SgenFragment *frag, **previous, *min_frag = NULL, **prev_min_frag = NULL;
