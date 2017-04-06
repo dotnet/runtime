@@ -2413,6 +2413,7 @@ void Compiler::fgComputeDoms()
     bbRoot.bbNum    = 0;
     bbRoot.bbIDom   = &bbRoot;
     bbRoot.bbDfsNum = 0;
+    bbRoot.bbFlags  = 0;
     flRoot.flNext   = nullptr;
     flRoot.flBlock  = &bbRoot;
 
@@ -2534,6 +2535,8 @@ void Compiler::fgComputeDoms()
             block->bbPreds = nullptr;
         }
     }
+
+    fgCompDominatedByExceptionalEntryBlocks();
 
 #ifdef DEBUG
     if (verbose)
@@ -25080,4 +25083,31 @@ unsigned Compiler::fgMeasureIR()
     }
 
     return nodeCount;
+}
+
+//------------------------------------------------------------------------
+// fgCompDominatedByExceptionalEntryBlocks: compute blocks that are
+// dominated by not normal entry.
+//
+void Compiler::fgCompDominatedByExceptionalEntryBlocks()
+{
+    assert(fgEnterBlksSetValid);
+    if (BlockSetOps::Count(this, fgEnterBlks) != 1) // There are exception entries.
+    {
+        for (unsigned i = 1; i <= fgBBNumMax; ++i)
+        {
+            BasicBlock* block = fgBBInvPostOrder[i];
+            if (BlockSetOps::IsMember(this, fgEnterBlks, block->bbNum))
+            {
+                if (fgFirstBB != block) // skip the normal entry.
+                {
+                    block->SetDominatedByExceptionalEntryFlag();
+                }
+            }
+            else if (block->bbIDom->IsDominatedByExceptionalEntryFlag())
+            {
+                block->SetDominatedByExceptionalEntryFlag();
+            }
+        }
+    }
 }
