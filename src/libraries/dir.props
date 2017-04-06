@@ -254,6 +254,7 @@
     <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
     <BinPlaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
     <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
+    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
     <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
     <TestHostRootPath>$(BinDir)testhost/$(BuildConfiguration)/</TestHostRootPath>
