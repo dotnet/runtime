@@ -5,11 +5,10 @@
 #pragma warning disable CS0067 // events are declared but not used
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-#if !uapaot
 using System.Runtime.Loader;
-#endif
 using System.IO;
 using System.Security.Principal;
 
@@ -25,7 +24,6 @@ namespace System
 
         public static AppDomain CurrentDomain => s_domain;
 
-#if !uapaot
         public string BaseDirectory => AppContext.BaseDirectory;
 
         public string RelativeSearchPath => null;
@@ -35,7 +33,6 @@ namespace System
             add { AppContext.UnhandledException += value; }
             remove { AppContext.UnhandledException -= value; }
         }
-#endif
 
         public string DynamicDirectory => null;
 
@@ -59,7 +56,6 @@ namespace System
 
         public event EventHandler DomainUnload;
 
-#if !uapaot
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
             add { AppContext.FirstChanceException += value; }
@@ -71,7 +67,6 @@ namespace System
             add { AppContext.ProcessExit += value; }
             remove { AppContext.ProcessExit -= value; }
         }
-#endif
 
         public string ApplyPolicy(string assemblyName)
         {
@@ -150,7 +145,6 @@ namespace System
         public int ExecuteAssemblyByName(string assemblyName, params string[] args) =>
             ExecuteAssembly(Assembly.Load(assemblyName), args);
 
-#if !uapaot
         public object GetData(string name) => AppContext.GetData(name);
 
         public void SetData(string name, object data) => AppContext.SetData(name, data);
@@ -160,7 +154,6 @@ namespace System
             bool result;
             return AppContext.TryGetSwitch(value, out result) ? result : default(bool?);
         }
-#endif
 
         public bool IsDefaultAppDomain() => true;
 
@@ -234,7 +227,6 @@ namespace System
         [ObsoleteAttribute("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyPath(string path) { }
 
-#if !uapaot
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
 
         public event AssemblyLoadEventHandler AssemblyLoad
@@ -262,7 +254,6 @@ namespace System
             add { AssemblyLoadContext.ResourceResolve += value; }
             remove { AssemblyLoadContext.ResourceResolve -= value; }
         }
-#endif
 
         public void SetPrincipalPolicy(PrincipalPolicy policy) { }
 
