@@ -37,21 +37,22 @@ __buildDirName="$__buildOS.$__buildArch.$__buildConfig"
 set -x
 set -e
 
-__currentWorkingDir=`pwd`
-__dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
-__dockerCmd="sudo docker run --privileged -i --rm -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
-
-# make rootfs for x86
-__buildRootfsCmd="./cross/build-rootfs.sh x86 xenial --skipunmount"
-(set +x; echo "Build RootFS for x86 xenial")
-$__dockerCmd $__buildRootfsCmd
-sudo chown -R $(id -u -n) cross/rootfs/
+__dockerImage="hseok82/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3_x86"
 
 # Begin cross build
 # We cannot build nuget package yet
-__buildCmd="./build.sh x86 cross skiptests skipnuget $__buildConfig"
+__dockerEnvironmentSet="-e ROOTFS_DIR=/crossrootfs/x86"
+__currentWorkingDir=`pwd`
+__dockerCmd="docker run -i --rm ${__dockerEnvironmentVariable} -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
+__buildCmd="./build.sh x86 cross skipnuget $__buildConfig"
 $__dockerCmd $__buildCmd
-sudo chown -R $(id -u -n) bin/
 
+# Begin PAL test
+__dockerImage="hseok82/dotnet-buildtools-prereqs:ubuntu1604_x86_test"
+__dockerCmd="docker run -i --rm -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
+__palTestCmd="./src/pal/tests/palsuite/runpaltests.sh /opt/code/bin/obj/Linux.x86.${__buildConfig} /opt/code/bin/paltestout"
+$__dockerCmd $__palTestCmd
+
+sudo chown -R $(id -u -n) bin/
 
 (set +x; echo 'Build complete')
