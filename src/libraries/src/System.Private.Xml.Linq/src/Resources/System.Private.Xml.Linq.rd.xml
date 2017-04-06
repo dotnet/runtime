@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library Name="System.Xml.Linq">
-    <Assembly Name="System.Private.Xml.Linq">
+    <Assembly Name="System.Xml.Linq">
       <Namespace Name="System.Xml.Linq">
         <Type Name="XElement">
           <!-- The default constructor of XElement is required for it to be serializable by XmlSerializer. -->
