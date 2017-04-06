@@ -438,6 +438,88 @@ namespace System.Net.Tests
             }
         }
 
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
+        {
+            const string Text = "Some-String";
+            byte[] buffer = Encoding.UTF8.GetBytes(Text);
+
+            using (HttpListenerFactory factory = new HttpListenerFactory())
+            using (Socket client = factory.GetConnectedSocket())
+            {
+                // Send a header to the HttpListener to give it a context.
+                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                HttpListener listener = factory.GetListener();
+                listener.IgnoreWriteExceptions = ignoreWriteExceptions;
+                HttpListenerContext context = await listener.GetContextAsync();
+
+                // Write the headers to the Socket.
+                await context.Response.OutputStream.WriteAsync(buffer, 0, 1);
+
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
+
+                // TODO: the tests fail intermitently without this...
+                Thread.Sleep(1000);
+
+                // Writing non-header content to a disconnected client should fail, only if IgnoreWriteExceptions is false.
+                if (ignoreWriteExceptions)
+                {
+                    await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<HttpListenerException>(() => context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length));
+                }
+
+                // Closing a response from a closed client if a writing has already failed should not fail.
+                context.Response.Close();
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
+        {
+            const string Text = "Some-String";
+            byte[] buffer = Encoding.UTF8.GetBytes(Text);
+
+            using (HttpListenerFactory factory = new HttpListenerFactory())
+            using (Socket client = factory.GetConnectedSocket())
+            {
+                // Send a header to the HttpListener to give it a context.
+                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                HttpListener listener = factory.GetListener();
+                listener.IgnoreWriteExceptions = ignoreWriteExceptions;
+                HttpListenerContext context = await listener.GetContextAsync();
+
+                // Write the headers to the Socket.
+                context.Response.OutputStream.Write(buffer, 0, 1);
+
+                // Disconnect the Socket from the HttpListener.
+                client.Disconnect(false);
+
+                // TODO: the tests fail intermitently without this...
+                Thread.Sleep(1000);
+
+                // Writing non-header content to a disconnected client should fail, only if IgnoreWriteExceptions is false.
+                if (ignoreWriteExceptions)
+                {
+                    context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                }
+                else
+                {
+                    Assert.Throws<HttpListenerException>(() => context.Response.OutputStream.Write(buffer, 0, buffer.Length));
+                }
+
+                // Closing a response from a closed client if a writing has already failed should not fail.
+                context.Response.Close();
+            }
+        }
+
         [Fact]
         public async Task EndWrite_NullCallback_ThrowsArgumentNullException()
         {
