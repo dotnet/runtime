@@ -24,6 +24,7 @@
     <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
     <!-- Needed for DynamicDelegate -->
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <!-- Causes us to use project references to avoid duplicate definitions that the ref assemblies would give us -->
