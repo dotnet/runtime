@@ -16,12 +16,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private sealed class ImplicitConversion
         {
-            public ImplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprTypeOrNamespace typeDest, bool needsExprDest, CONVERTTYPE flags)
+            public ImplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprClass typeDest, bool needsExprDest, CONVERTTYPE flags)
             {
                 _binder = binder;
                 _exprSrc = exprSrc;
                 _typeSrc = typeSrc;
-                _typeDest = typeDest.TypeOrNamespace.AsType();
+                _typeDest = typeDest.Type;
                 _exprTypeDest = typeDest;
                 _needsExprDest = needsExprDest;
                 _flags = flags;
@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly Expr _exprSrc;
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
-            private readonly ExprTypeOrNamespace _exprTypeDest;
+            private readonly ExprClass _exprTypeDest;
             private readonly bool _needsExprDest;
             private CONVERTTYPE _flags;
 
@@ -395,7 +395,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             if (exprUDC != null)
                             {
                                 exprUDC.UserDefinedCall = exprTmp;
-                                exprUDC.Type = (CType)exprTmp.Type;
                                 exprTmp = exprUDC;
                             }
                             Debug.Assert(exprTmp.Type == nubDst);

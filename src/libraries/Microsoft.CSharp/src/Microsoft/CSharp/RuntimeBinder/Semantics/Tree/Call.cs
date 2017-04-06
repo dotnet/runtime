@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprCall : Expr, IExprWithArgs
+    internal sealed class ExprCall : ExprWithType, IExprWithArgs
     {
+        public ExprCall(CType type)
+            : base(ExpressionKind.Call, type)
+        {
+        }
+
         public Expr OptionalArguments { get; set; }
 
         public ExprMemberGroup MemberGroup { get; set; }

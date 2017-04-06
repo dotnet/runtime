@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprZeroInit : Expr
+    internal sealed class ExprZeroInit : ExprWithType
     {
+        public ExprZeroInit(CType type)
+            : base(ExpressionKind.ZeroInit, type)
+        {
+        }
+
         public Expr OptionalArgument { get; set; }
 
         public Expr OptionalConstructorCall { get; set; }

@@ -438,30 +438,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_LSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT; break;
-                case ExpressionKind.EK_RSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT; break;
-                case ExpressionKind.EK_BITXOR: pdm = PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR; break;
-                case ExpressionKind.EK_BITOR: pdm = PREDEFMETH.PM_EXPRESSION_OR; break;
-                case ExpressionKind.EK_BITAND: pdm = PREDEFMETH.PM_EXPRESSION_AND; break;
-                case ExpressionKind.EK_LOGAND: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO; break;
-                case ExpressionKind.EK_LOGOR: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE; break;
-                case ExpressionKind.EK_STRINGEQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
-                case ExpressionKind.EK_EQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
-                case ExpressionKind.EK_STRINGNE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
-                case ExpressionKind.EK_NE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
-                case ExpressionKind.EK_GE: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL; break;
-                case ExpressionKind.EK_LE: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL; break;
-                case ExpressionKind.EK_LT: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN; break;
-                case ExpressionKind.EK_GT: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN; break;
-                case ExpressionKind.EK_MOD: pdm = PREDEFMETH.PM_EXPRESSION_MODULO; break;
-                case ExpressionKind.EK_DIV: pdm = PREDEFMETH.PM_EXPRESSION_DIVIDE; break;
-                case ExpressionKind.EK_MUL:
+                case ExpressionKind.LeftShirt: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT; break;
+                case ExpressionKind.RightShift: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT; break;
+                case ExpressionKind.BitwiseExclusiveOr: pdm = PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR; break;
+                case ExpressionKind.BitwiseOr: pdm = PREDEFMETH.PM_EXPRESSION_OR; break;
+                case ExpressionKind.BitwiseAnd: pdm = PREDEFMETH.PM_EXPRESSION_AND; break;
+                case ExpressionKind.LogicalAnd: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO; break;
+                case ExpressionKind.LogicalOr: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE; break;
+                case ExpressionKind.StringEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
+                case ExpressionKind.Eq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL; break;
+                case ExpressionKind.StringNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
+                case ExpressionKind.NotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL; break;
+                case ExpressionKind.GreaterThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL; break;
+                case ExpressionKind.LessThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL; break;
+                case ExpressionKind.LessThan: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN; break;
+                case ExpressionKind.GreaterThan: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN; break;
+                case ExpressionKind.Modulo: pdm = PREDEFMETH.PM_EXPRESSION_MODULO; break;
+                case ExpressionKind.Divide: pdm = PREDEFMETH.PM_EXPRESSION_DIVIDE; break;
+                case ExpressionKind.Multiply:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED : PREDEFMETH.PM_EXPRESSION_MULTIPLY;
                     break;
-                case ExpressionKind.EK_SUB:
+                case ExpressionKind.Subtract:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED : PREDEFMETH.PM_EXPRESSION_SUBTRACT;
                     break;
-                case ExpressionKind.EK_ADD:
+                case ExpressionKind.Add:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_ADDCHECKED : PREDEFMETH.PM_EXPRESSION_ADD;
                     break;
 
@@ -546,11 +546,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PREDEFMETH pdm;
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_UPLUS:
+                case ExpressionKind.UnaryPlus:
                     return Visit(expr.Child);
-                case ExpressionKind.EK_BITNOT: pdm = PREDEFMETH.PM_EXPRESSION_NOT; break;
-                case ExpressionKind.EK_LOGNOT: pdm = PREDEFMETH.PM_EXPRESSION_NOT; break;
-                case ExpressionKind.EK_NEG:
+                case ExpressionKind.BitwiseNot: pdm = PREDEFMETH.PM_EXPRESSION_NOT; break;
+                case ExpressionKind.LogicalNot: pdm = PREDEFMETH.PM_EXPRESSION_NOT; break;
+                case ExpressionKind.Negate:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_NEGATECHECKED : PREDEFMETH.PM_EXPRESSION_NEGATE;
                     break;
                 default:
@@ -566,7 +566,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr op = Visit(pOriginalOperator);
             if (pOriginalOperator.Type.IsNullableType() && pOriginalOperator.Type.StripNubs().isEnumType())
             {
-                Debug.Assert(pOperator.Kind == ExpressionKind.EK_BITNOT); // The only built-in unary operator defined on nullable enum.
+                Debug.Assert(pOperator.Kind == ExpressionKind.BitwiseNot); // The only built-in unary operator defined on nullable enum.
                 CType underlyingType = pOriginalOperator.Type.StripNubs().underlyingEnumType();
                 CType nullableType = GetSymbolLoader().GetTypeManager().GetNullable(underlyingType);
                 op = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, op, CreateTypeOf(nullableType));
@@ -588,35 +588,35 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_LOGOR: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED; break;
-                case ExpressionKind.EK_LOGAND: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED; break;
-                case ExpressionKind.EK_LSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT_USER_DEFINED; break;
-                case ExpressionKind.EK_RSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT_USER_DEFINED; break;
-                case ExpressionKind.EK_BITXOR: pdm = PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR_USER_DEFINED; break;
-                case ExpressionKind.EK_BITOR: pdm = PREDEFMETH.PM_EXPRESSION_OR_USER_DEFINED; break;
-                case ExpressionKind.EK_BITAND: pdm = PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED; break;
-                case ExpressionKind.EK_MOD: pdm = PREDEFMETH.PM_EXPRESSION_MODULO_USER_DEFINED; break;
-                case ExpressionKind.EK_DIV: pdm = PREDEFMETH.PM_EXPRESSION_DIVIDE_USER_DEFINED; break;
-                case ExpressionKind.EK_STRINGEQ:
-                case ExpressionKind.EK_STRINGNE:
-                case ExpressionKind.EK_DELEGATEEQ:
-                case ExpressionKind.EK_DELEGATENE:
-                case ExpressionKind.EK_EQ:
-                case ExpressionKind.EK_NE:
-                case ExpressionKind.EK_GE:
-                case ExpressionKind.EK_GT:
-                case ExpressionKind.EK_LE:
-                case ExpressionKind.EK_LT:
+                case ExpressionKind.LogicalOr: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED; break;
+                case ExpressionKind.LogicalAnd: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED; break;
+                case ExpressionKind.LeftShirt: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT_USER_DEFINED; break;
+                case ExpressionKind.RightShift: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT_USER_DEFINED; break;
+                case ExpressionKind.BitwiseExclusiveOr: pdm = PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR_USER_DEFINED; break;
+                case ExpressionKind.BitwiseOr: pdm = PREDEFMETH.PM_EXPRESSION_OR_USER_DEFINED; break;
+                case ExpressionKind.BitwiseAnd: pdm = PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED; break;
+                case ExpressionKind.Modulo: pdm = PREDEFMETH.PM_EXPRESSION_MODULO_USER_DEFINED; break;
+                case ExpressionKind.Divide: pdm = PREDEFMETH.PM_EXPRESSION_DIVIDE_USER_DEFINED; break;
+                case ExpressionKind.StringEq:
+                case ExpressionKind.StringNotEq:
+                case ExpressionKind.DelegateEq:
+                case ExpressionKind.DelegateNotEq:
+                case ExpressionKind.Eq:
+                case ExpressionKind.NotEq:
+                case ExpressionKind.GreaterThanOrEqual:
+                case ExpressionKind.GreaterThan:
+                case ExpressionKind.LessThanOrEqual:
+                case ExpressionKind.LessThan:
                     return GenerateUserDefinedComparisonOperator(expr);
-                case ExpressionKind.EK_DELEGATESUB:
-                case ExpressionKind.EK_SUB:
+                case ExpressionKind.DelegateSubtract:
+                case ExpressionKind.Subtract:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED_USER_DEFINED : PREDEFMETH.PM_EXPRESSION_SUBTRACT_USER_DEFINED;
                     break;
-                case ExpressionKind.EK_DELEGATEADD:
-                case ExpressionKind.EK_ADD:
+                case ExpressionKind.DelegateAdd:
+                case ExpressionKind.Add:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_ADDCHECKED_USER_DEFINED : PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED;
                     break;
-                case ExpressionKind.EK_MUL:
+                case ExpressionKind.Multiply:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED_USER_DEFINED : PREDEFMETH.PM_EXPRESSION_MULTIPLY_USER_DEFINED;
                     break;
                 default:
@@ -627,11 +627,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr udcall = expr.OptionalUserDefinedCall;
             if (udcall != null)
             {
-                Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
+                Debug.Assert(udcall.Kind == ExpressionKind.Call || udcall.Kind == ExpressionKind.UserLogicalOp);
                 if (udcall is ExprCall ascall)
                 {
                     ExprList args = (ExprList)ascall.OptionalArguments;
-                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.List);
                     p1 = args.OptionalElement;
                     p2 = args.OptionalNextListNode;
                 }
@@ -640,7 +640,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     ExprUserLogicalOp userLogOp = udcall as ExprUserLogicalOp;
                     Debug.Assert(userLogOp != null);
                     ExprList args = (ExprList)userLogOp.OperatorCall.OptionalArguments;
-                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.List);
                     p1 = ((ExprWrap)args.OptionalElement).OptionalExpression;
                     p2 = args.OptionalNextListNode;
                 }
@@ -652,7 +652,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr call = GenerateCall(pdm, p1, p2, methodInfo);
             // Delegate add/subtract generates a call to Combine/Remove, which returns System.Delegate,
             // not the operand delegate CType.  We must cast to the delegate CType.
-            if (expr.Kind == ExpressionKind.EK_DELEGATESUB || expr.Kind == ExpressionKind.EK_DELEGATEADD)
+            if (expr.Kind == ExpressionKind.DelegateSubtract || expr.Kind == ExpressionKind.DelegateAdd)
             {
                 Expr pTypeOf = CreateTypeOf(expr.Type);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, pTypeOf);
@@ -666,7 +666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
-            ExprCall call = expr.OptionalUserDefinedCall;
+            ExprCall call = (ExprCall)expr.OptionalUserDefinedCall;
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined
@@ -674,26 +674,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // argument stashed away in the left child of the operator.
                 arg = call.OptionalArguments;
             }
-            Debug.Assert(arg != null && arg.Kind != ExpressionKind.EK_LIST);
+            Debug.Assert(arg != null && arg.Kind != ExpressionKind.List);
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_TRUE:
-                case ExpressionKind.EK_FALSE:
+                case ExpressionKind.True:
+                case ExpressionKind.False:
                     return Visit(call);
-                case ExpressionKind.EK_UPLUS:
+                case ExpressionKind.UnaryPlus:
                     pdm = PREDEFMETH.PM_EXPRESSION_UNARYPLUS_USER_DEFINED;
                     break;
-                case ExpressionKind.EK_BITNOT: pdm = PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED; break;
-                case ExpressionKind.EK_LOGNOT: pdm = PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED; break;
-                case ExpressionKind.EK_DECIMALNEG:
-                case ExpressionKind.EK_NEG:
+                case ExpressionKind.BitwiseNot: pdm = PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED; break;
+                case ExpressionKind.LogicalNot: pdm = PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED; break;
+                case ExpressionKind.DecimalNegate:
+                case ExpressionKind.Negate:
                     pdm = expr.isChecked() ? PREDEFMETH.PM_EXPRESSION_NEGATECHECKED_USER_DEFINED : PREDEFMETH.PM_EXPRESSION_NEGATE_USER_DEFINED;
                     break;
 
-                case ExpressionKind.EK_INC:
-                case ExpressionKind.EK_DEC:
-                case ExpressionKind.EK_DECIMALINC:
-                case ExpressionKind.EK_DECIMALDEC:
+                case ExpressionKind.Inc:
+                case ExpressionKind.Dec:
+                case ExpressionKind.DecimalInc:
+                case ExpressionKind.DecimalDec:
                     pdm = PREDEFMETH.PM_EXPRESSION_CALL;
                     break;
 
@@ -703,8 +703,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr op = Visit(arg);
             Expr methodInfo = GetExprFactory().CreateMethodInfo(expr.UserDefinedCallMethod);
 
-            if (expr.Kind == ExpressionKind.EK_INC || expr.Kind == ExpressionKind.EK_DEC ||
-                expr.Kind == ExpressionKind.EK_DECIMALINC || expr.Kind == ExpressionKind.EK_DECIMALDEC)
+            if (expr.Kind == ExpressionKind.Inc || expr.Kind == ExpressionKind.Dec ||
+                expr.Kind == ExpressionKind.DecimalInc || expr.Kind == ExpressionKind.DecimalDec)
             {
                 return GenerateCall(pdm, null, methodInfo, GenerateParamsArray(op, PredefinedType.PT_EXPRESSION));
             }
@@ -719,16 +719,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (expr.Kind)
             {
-                case ExpressionKind.EK_STRINGEQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_STRINGNE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_DELEGATEEQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_DELEGATENE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_EQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_NE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_LE: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_LT: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED; break;
-                case ExpressionKind.EK_GE: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED; break;
-                case ExpressionKind.EK_GT: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED; break;
+                case ExpressionKind.StringEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
+                case ExpressionKind.StringNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
+                case ExpressionKind.DelegateEq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
+                case ExpressionKind.DelegateNotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
+                case ExpressionKind.Eq: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
+                case ExpressionKind.NotEq: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
+                case ExpressionKind.LessThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED; break;
+                case ExpressionKind.LessThan: pdm = PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED; break;
+                case ExpressionKind.GreaterThanOrEqual: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED; break;
+                case ExpressionKind.GreaterThan: pdm = PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED; break;
                 default:
                     throw Error.InternalCompilerError();
             }
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 ExprCall udcall = (ExprCall)expr.OptionalUserDefinedCall;
                 ExprList args = (ExprList)udcall.OptionalArguments;
-                Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+                Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.List);
 
                 p1 = args.OptionalElement;
                 p2 = args.OptionalNextListNode;
@@ -1037,7 +1037,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprList origArgs = (ExprList)expr.OptionalArguments;
             Debug.Assert(origArgs != null);
             Expr target = origArgs.OptionalElement;
-            Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
+            Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.FunctionPointer);
             ExprFuncPtr funcptr = (ExprFuncPtr)origArgs.OptionalNextListNode;
             Debug.Assert(funcptr != null);
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
@@ -1078,7 +1078,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr newIndex = it.Current();
                 if (newIndex.Type != intType)
                 {
-                    ExprClass exprType = expressionFactory.CreateClass(intType, null, null);
+                    ExprClass exprType = expressionFactory.CreateClass(intType, null);
                     newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
                     newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }
@@ -1285,7 +1285,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pCall.Type.isDelegateType() &&
                 pCall.OptionalArguments != null &&
                 pCall.OptionalArguments is ExprList list &&
-                list.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
+                list.OptionalNextListNode.Kind == ExpressionKind.FunctionPointer;
         }
         private static bool isEnumToDecimalConversion(CType argtype, CType desttype)
         {

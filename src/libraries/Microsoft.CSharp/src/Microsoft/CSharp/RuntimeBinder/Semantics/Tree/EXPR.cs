@@ -6,11 +6,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class Expr
     {
+        protected Expr(ExpressionKind kind)
+        {
+            Kind = kind;
+        }
+
         internal object RuntimeObject { get; set; }
 
         internal CType RuntimeObjectActualType { get; set; }
 
-        public ExpressionKind Kind { get; set; }
+        public ExpressionKind Kind { get; }
 
         public EXPRFLAG Flags { get; set; }
 
@@ -23,7 +28,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public string ErrorString { get; set; }
 
-        public CType Type { get; set; }
+        public virtual CType Type => null;
 
         public bool IsOK => !HasError;
 

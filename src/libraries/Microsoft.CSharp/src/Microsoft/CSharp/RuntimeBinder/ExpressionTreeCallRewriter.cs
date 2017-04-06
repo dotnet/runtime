@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -20,6 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             public readonly Expression Expression;
             public ExpressionExpr(Expression e)
+                : base(0)
             {
                 Expression = e;
             }
@@ -53,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Assert all of these first, and then unwrap them.
 
             Debug.Assert(pExpr != null);
-            Debug.Assert(pExpr.Kind == ExpressionKind.EK_SEQUENCE);
+            Debug.Assert(pExpr.Kind == ExpressionKind.Sequence);
             ExprBinOp binOp = (ExprBinOp)pExpr;
             Debug.Assert(binOp != null);
             Debug.Assert(binOp.OptionalRightChild is ExprCall);

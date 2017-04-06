@@ -4,8 +4,13 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprConcat : Expr
+    internal sealed class ExprConcat : ExprWithType
     {
+        public ExprConcat(CType type)
+            : base(ExpressionKind.Concat ,type)
+        {
+        }
+
         public Expr FirstArgument { get; set; }
 
         public Expr SecondArgument { get; set; }

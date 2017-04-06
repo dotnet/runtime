@@ -4,9 +4,10 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprFieldInfo : Expr
+    internal sealed class ExprFieldInfo : ExprWithType
     {
-        public ExprFieldInfo(FieldSymbol f, AggregateType ft)
+        public ExprFieldInfo(FieldSymbol f, AggregateType ft, CType type)
+            : base(ExpressionKind.FieldInfo, type)
         {
             Field = f;
             FieldType = ft;
