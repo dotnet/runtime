@@ -1202,7 +1202,7 @@ void ZapUnwindData::Save(ZapWriter * pZapWriter)
 #endif //REDHAWK
 }
 
-#elif defined(_TARGET_X86_) && defined(FEATURE_PAL)
+#elif defined(_TARGET_X86_)
 
 UINT ZapUnwindData::GetAlignment()
 {
@@ -1211,9 +1211,7 @@ UINT ZapUnwindData::GetAlignment()
 
 DWORD ZapUnwindData::GetSize()
 {
-    DWORD dwSize = ZapBlob::GetSize();
-
-    return dwSize;
+    return ZapBlob::GetSize();
 }
 
 void ZapUnwindData::Save(ZapWriter * pZapWriter)
