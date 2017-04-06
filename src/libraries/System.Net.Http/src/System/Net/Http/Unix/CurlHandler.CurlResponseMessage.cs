@@ -393,12 +393,13 @@ namespace System.Net.Http
 
                     // If there's a pending read request, complete it, either with 0 bytes for success
                     // or with the exception/CancellationToken for failure.
-                    if (_pendingReadRequest != null)
+                    ReadState pendingRead = _pendingReadRequest;
+                    if (pendingRead != null)
                     {
                         if (_completed == s_completionSentinel)
                         {
                             EventSourceTrace("Completing pending read with 0 bytes");
-                            _pendingReadRequest.TrySetResult(0);
+                            pendingRead.TrySetResult(0);
                         }
                         else
                         {
@@ -406,11 +407,11 @@ namespace System.Net.Http
                             OperationCanceledException oce = _completed as OperationCanceledException;
                             if (oce != null)
                             {
-                                _pendingReadRequest.TrySetCanceled(oce.CancellationToken);
+                                pendingRead.TrySetCanceled(oce.CancellationToken);
                             }
                             else
                             {
-                                _pendingReadRequest.TrySetException(MapToReadWriteIOException(_completed, isRead: true));
+                                pendingRead.TrySetException(MapToReadWriteIOException(_completed, isRead: true));
                             }
                         }
 
