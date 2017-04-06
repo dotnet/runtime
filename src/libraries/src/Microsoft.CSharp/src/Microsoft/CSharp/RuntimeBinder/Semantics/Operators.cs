@@ -1437,12 +1437,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // Check for user defined inc/dec
-#if !CSEE
                     ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(0, pArgumentType, null);
-#else // CSEE
-
-                    Expr exprGet = pArgument;
-#endif // CSEE
 
                     Expr exprVal = bindUDUnop((ExpressionKind)(exprKind - ExpressionKind.Add + ExpressionKind.Inc), exprGet);
                     if (exprVal != null)
@@ -1454,9 +1449,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         Debug.Assert(pArgument != null);
                         ExprMulti exprMulti = GetExprFactory().CreateMulti(EXPRFLAG.EXF_ASSGOP | flags, pArgumentType, pArgument, exprVal);
-#if ! CSEE
                         exprGet.OptionalMulti = exprMulti;
-#endif // !CSEE
 
                         // Check whether Lvalue can be assigned. checkLvalue may return true 
                         // despite reporting an error. 
@@ -1822,13 +1815,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(!uofs.isLifted());
 
             Debug.Assert(arg != null);
-#if ! CSEE
             ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.Type, null);
             Expr exprVal = exprGet;
-#else
-            Expr exprVal = arg;
-#endif
-
             CType type = uofs.GetType();
             Debug.Assert(!type.IsNullableType());
 
@@ -1843,10 +1831,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr op = mustCast(exprVal, arg.Type, CONVERTTYPE.NOUDC);
 
             ExprMulti exprMulti = GetExprFactory().CreateMulti(EXPRFLAG.EXF_ASSGOP | flags, arg.Type, arg, op);
-
-#if ! CSEE
             exprGet.OptionalMulti = exprMulti;
-#endif
             return exprMulti;
         }
 
@@ -1858,31 +1843,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             NullableType type = uofs.GetType().AsNullableType();
             Debug.Assert(arg != null);
 
-#if ! CSEE
             ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.Type, null);
             Expr exprVal = exprGet;
-#else
-            Expr exprVal = arg;
-#endif
-
-            Expr nonLiftedResult = null;
             Expr nonLiftedArg = exprVal;
 
             // We want to give the lifted argument as the binop, but use the non-lifted argument as the 
             // argument of the call.
             //Debug.Assert(uofs.LiftArg() || type.IsValType());
             nonLiftedArg = mustCast(nonLiftedArg, type.GetUnderlyingType());
-            nonLiftedResult = BindIncOpCore(ek, flags, nonLiftedArg, type.GetUnderlyingType());
+            Expr nonLiftedResult = BindIncOpCore(ek, flags, nonLiftedArg, type.GetUnderlyingType());
             exprVal = mustCast(exprVal, type);
             ExprUnaryOp exprRes = GetExprFactory().CreateUnaryOp((ek == ExpressionKind.Add) ? ExpressionKind.Inc : ExpressionKind.Dec, arg.Type/* type */, exprVal);
             mustCast(mustCast(nonLiftedResult, type), arg.Type);
             exprRes.Flags |= flags;
 
             ExprMulti exprMulti = GetExprFactory().CreateMulti(EXPRFLAG.EXF_ASSGOP | flags, arg.Type, arg, exprRes);
-
-#if ! CSEE
             exprGet.OptionalMulti = exprMulti;
-#endif
             return exprMulti;
         }
 
@@ -1922,15 +1898,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     typeRet = GetReqPDT(PredefinedType.PT_BOOL);
                     break;
             }
-
-#if CSEE
-            // In the EE, we want to emit an EXPRBINOP with the
-            // right EK so that when we evalsync we can just do the work ourselves instead of
-            // delegating to method calls.
-
-            return GetExprFactory().CreateBinop(tree, ek, typeRet, arg1, arg2);
-
-#endif // CSEE
 
             return GetExprFactory().CreateBinop(ek, typeRet, arg1, arg2);
         }

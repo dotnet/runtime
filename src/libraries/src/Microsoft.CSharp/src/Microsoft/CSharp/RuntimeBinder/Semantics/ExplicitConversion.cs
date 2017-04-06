@@ -775,11 +775,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return AggCastResult.Failure;
                 }
-#if ! CSEE
                 if (aggTypeDest.getAggregate().IsInterface())
-#else
-                if ((exprSrc != null && !exprSrc.eeValue.substType.IsNullableType()) || aggTypeDest.getAggregate().IsInterface())
-#endif
                 {
                     // Explicit conversion of type variables to interfaces.
                     if (_needsExprDest)
