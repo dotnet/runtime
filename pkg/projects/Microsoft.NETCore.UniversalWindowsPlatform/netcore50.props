@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <NetCore50Dependency Include="Microsoft.NETCore">
+      <Version>5.0.2</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="Microsoft.Net.Native.Compiler">
+      <Version>1.6.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="Microsoft.NETCore.Portable.Compatibility">
+      <Version>1.0.2</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>1.0.3</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="Microsoft.NETCore.Targets">
+      <Version>1.0.2</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="Microsoft.Win32.Primitives">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Collections.NonGeneric">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Collections.Specialized">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ComponentModel.EventBasedAsync">
+      <Version>4.0.11</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Data.Common">
+      <Version>4.1.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Diagnostics.Contracts">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Diagnostics.StackTrace">
+      <Version>4.0.2</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.IO.IsolatedStorage">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.Http.Rtc">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.NameResolution">
+      <Version>4.0.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.Requests">
+      <Version>4.0.11</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.Sockets">
+      <Version>4.1.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.WebHeaderCollection">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.WebSockets">
+      <Version>4.0.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Net.WebSockets.Client">
+      <Version>4.0.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Numerics.Vectors.WindowsRuntime">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Reflection.Context">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.InteropServices.WindowsRuntime">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.Serialization.Json">
+      <Version>4.0.3</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.Serialization.Primitives">
+      <Version>4.1.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.Serialization.Xml">
+      <Version>4.1.2</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.WindowsRuntime">
+      <Version>4.0.11</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Runtime.WindowsRuntime.UI.Xaml">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ServiceModel.Duplex">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ServiceModel.Http">
+      <Version>4.1.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ServiceModel.NetTcp">
+      <Version>4.1.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ServiceModel.Primitives">
+      <Version>4.1.0</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.ServiceModel.Security">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Text.Encoding.CodePages">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Threading.Overlapped">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Xml.XmlDocument">
+      <Version>4.0.1</Version>
+    </NetCore50Dependency>
+    <NetCore50Dependency Include="System.Xml.XmlSerializer">
+      <Version>4.0.11</Version>
+    </NetCore50Dependency>
+  </ItemGroup>
+</Project>
