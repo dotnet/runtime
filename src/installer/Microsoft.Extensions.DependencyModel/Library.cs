@@ -27,6 +27,18 @@ namespace Microsoft.Extensions.DependencyModel
             bool serviceable,
             string path,
             string hashPath)
+            : this(type, name, version, hash, dependencies, serviceable, path, hashPath, runtimeStoreManifestName: null)
+        {
+        }
+        public Library(string type,
+            string name,
+            string version,
+            string hash,
+            IEnumerable<Dependency> dependencies,
+            bool serviceable,
+            string path,
+            string hashPath,
+            string runtimeStoreManifestName = null)
         {
             if (string.IsNullOrEmpty(type))
             {
@@ -52,6 +64,7 @@ namespace Microsoft.Extensions.DependencyModel
             Serviceable = serviceable;
             Path = path;
             HashPath = hashPath;
+            RuntimeStoreManifestName = runtimeStoreManifestName;
         }
 
         public string Type { get; }
@@ -69,5 +82,7 @@ namespace Microsoft.Extensions.DependencyModel
         public string Path { get; }
 
         public string HashPath { get; }
+
+        public string RuntimeStoreManifestName {get;}
     }
 }
