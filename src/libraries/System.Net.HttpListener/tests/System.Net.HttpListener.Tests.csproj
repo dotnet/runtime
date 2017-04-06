@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="AuthenticationTests.cs" />
     <Compile Include="Common.cs" />
+    <Compile Include="HttpRequestStreamTests.cs" />
     <Compile Include="HttpResponseStreamTests.cs" />
     <Compile Include="SimpleHttpTests.cs" />
     <Compile Include="HttpListenerFactory.cs" />

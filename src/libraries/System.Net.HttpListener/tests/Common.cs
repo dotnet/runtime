@@ -28,6 +28,19 @@ namespace System.Net.Tests
             HttpListenerContext context = await _listener.GetContextAsync();
             return context.Response;
         }
+
+        public async Task<HttpListenerRequest> GetRequest()
+        {
+            // We need this to avoid hanging tests.
+            Task<HttpListenerContext> serverContext = _listener.GetContextAsync();
+
+            _client.DefaultRequestHeaders.TransferEncodingChunked = true;
+            Task<HttpResponseMessage> clientTask = _client.PostAsync(_listeningUrl, new StringContent("Hello"));
+
+            HttpListenerContext context = await serverContext;
+            return context.Request;
+        }
+
         public void Dispose()
         {
             _client.Dispose();
