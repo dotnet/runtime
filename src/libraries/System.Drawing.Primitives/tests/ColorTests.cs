@@ -157,7 +157,9 @@ namespace System.Drawing.Primitives.Tests
                 new object[] {"YellowGreen", 255, 154, 205, 50},
             };
 
-        public static IEnumerable<object[]> ColorNames => Enum.GetNames(typeof(KnownColor)).Select(n => new object[] { n });
+        public static IEnumerable<object[]> ColorNames => typeof(Color).GetProperties()
+                .Where(p => p.PropertyType == typeof(Color))
+                .Select(p => new object[] { p.Name} );
 
         private Color? GetColorByProperty(string name)
         {
@@ -215,35 +217,11 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void IsKnownColor()
-        {
-            Assert.True(Color.FromKnownColor(KnownColor.AliceBlue).IsKnownColor);
-            Assert.True(Color.FromName("AliceBlue").IsKnownColor);
-
-            Assert.False(Color.FromKnownColor((KnownColor)(-1)).IsKnownColor);
-            Assert.False(Color.FromKnownColor((KnownColor)(12345)).IsKnownColor);
-            Assert.False(Color.FromName("SomethingNotAColor").IsKnownColor);
-            Assert.False(Color.FromArgb(Color.AliceBlue.A, Color.AliceBlue.R, Color.AliceBlue.G, Color.AliceBlue.B).IsKnownColor);
-        }
-
-        [Fact]
         public void IsNamedColor()
         {
             Assert.True(Color.AliceBlue.IsNamedColor);
-            Assert.True(Color.FromKnownColor(KnownColor.AliceBlue).IsNamedColor);
             Assert.True(Color.FromName("AliceBlue").IsNamedColor);
             Assert.False(Color.FromArgb(Color.AliceBlue.A, Color.AliceBlue.R, Color.AliceBlue.G, Color.AliceBlue.B).IsNamedColor);
-        }
-
-        [Fact]
-        public void IsSystemColor()
-        {
-            Color c = Color.FromKnownColor(KnownColor.ActiveBorder);
-            Assert.True(c.IsSystemColor);
-            Assert.True(Color.FromName("ActiveBorder").IsSystemColor);
-            Assert.False(Color.FromArgb(c.A, c.R, c.G, c.B).IsSystemColor);
-            Assert.False(Color.FromKnownColor(KnownColor.AliceBlue).IsSystemColor);
-            Assert.False(Color.FromName("AliceBlue").IsSystemColor);
         }
 
         [Theory]
@@ -283,19 +261,6 @@ namespace System.Drawing.Primitives.Tests
         public void ToArgb(int argb, int alpha, int red, int green, int blue)
         {
             Assert.Equal(argb, Color.FromArgb(alpha, red, green, blue).ToArgb());
-        }
-
-        [Theory]
-        [MemberData(nameof(ColorNames))]
-        public void ToKnownColor(string name)
-        {
-            var knownColor = (KnownColor)Enum.Parse(typeof(KnownColor), name);
-            var colorByProperty = GetColorByProperty(name);
-            if (colorByProperty.HasValue)
-            {
-                Assert.Equal(knownColor, colorByProperty.Value.ToKnownColor());
-            }
-            Assert.Equal(knownColor, Color.FromName(name).ToKnownColor());
         }
 
         [Fact]
@@ -384,7 +349,7 @@ namespace System.Drawing.Primitives.Tests
                 Color.FromArgb(0, 0, 0, blue);
             });
         }
-        
+
         [Fact]
         public void FromName_Invalid()
         {
@@ -393,7 +358,7 @@ namespace System.Drawing.Primitives.Tests
             Assert.Equal(0, c.ToArgb());
             Assert.Equal("OingoBoingo", c.Name);
         }
-        
+
         private void CheckRed(Color color)
         {
             Assert.Equal(255, color.A);
@@ -402,9 +367,7 @@ namespace System.Drawing.Primitives.Tests
             Assert.Equal(0, color.B);
             Assert.Equal("Red", color.Name);
             Assert.False(color.IsEmpty, "IsEmpty");
-            Assert.True(color.IsKnownColor, "IsKnownColor");
             Assert.True(color.IsNamedColor, "IsNamedColor");
-            Assert.False(color.IsSystemColor, "IsSystemColor");
         }
 
         [Theory]
@@ -472,9 +435,6 @@ namespace System.Drawing.Primitives.Tests
 
         public static IEnumerable<object[]> Equality_MemberData()
         {
-            yield return new object[] { Color.FromKnownColor(KnownColor.AliceBlue), Color.FromKnownColor(KnownColor.AliceBlue), true };
-            yield return new object[] { Color.FromKnownColor(KnownColor.AliceBlue), Color.FromKnownColor(KnownColor.Aquamarine), false };
-
             yield return new object[] { Color.AliceBlue, Color.AliceBlue, true };
             yield return new object[] { Color.AliceBlue, Color.White, false};
             yield return new object[] { Color.AliceBlue, Color.Black, false };
