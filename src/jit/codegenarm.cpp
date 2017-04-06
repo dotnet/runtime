@@ -2544,15 +2544,23 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
+    emitAttr size = emitTypeSize(lea);
+    genConsumeOperands(lea);
+
     if (lea->Base() && lea->Index())
     {
-        regNumber baseReg  = genConsumeReg(lea->Base());
-        regNumber indexReg = genConsumeReg(lea->Index());
-        getEmitter()->emitIns_R_ARX(INS_lea, EA_BYREF, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->gtOffset);
+        regNumber baseReg  = lea->Base()->gtRegNum;
+        regNumber indexReg = lea->Index()->gtRegNum;
+        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->gtOffset);
     }
     else if (lea->Base())
     {
-        getEmitter()->emitIns_R_AR(INS_lea, EA_BYREF, lea->gtRegNum, genConsumeReg(lea->Base()), lea->gtOffset);
+        regNumber baseReg = lea->Base()->gtRegNum;
+        getEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, baseReg, lea->gtOffset);
+    }
+    else if (lea->Index())
+    {
+        assert(!"Should we see a baseless address computation during CodeGen for ARM32?");
     }
 
     genProduceReg(lea);
