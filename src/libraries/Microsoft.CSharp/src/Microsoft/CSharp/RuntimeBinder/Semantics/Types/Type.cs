@@ -308,14 +308,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             _fHasErrors = typePar.HasErrors();
             _fUnres = typePar.IsUnresolved();
-#if CSEE
-
-            this.typeRes = this;
-            if (!this.fUnres)
-                this.tsRes = ktsImportMax;
-            this.fDirty = typePar.fDirty;
-            this.tsDirty = typePar.tsDirty;
-#endif // CSEE
         }
 
         public bool HasErrors()

@@ -26,10 +26,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_MEMBERSET = 0x2,            // Only on EXPRFIELD, indicates that the reference is for set purposes
         EXF_OPENTYPE = 0x2,             // Only on EXPRTYPEOF. Indicates that the type is an open type.
         EXF_LABELREFERENCED = 0x2,      // Only on EXPRLABEL. Indicates the label was targeted by a goto.
-#if CSEE
-        EXF_CLASSASSTATICSCHILD = 0x2,  // Only on EXPRCLASS, indicates a synthesized child which is parent of statics
-        EXF_DECLASSG = 0x2,             // Only on EK_ASSG
-#endif
         EXF_GENERATEDQMARK = 0x2,       // only on EK_QMARK
 
         // 0x4
@@ -47,9 +43,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_FINALLYBLOCKED = 0x8,       // Only on EXPRTRY, EXPRGOTO, EXPRRETURN, means that FINALLY block end is unreachable
         EXF_REFCHECK = 0x8,             // Only on EXPRCAST, indicates an reference checked cast is required
         EXF_WRAPASTEMP = 0x8,           // Only on EXPRWRAP, indicates that this wrap represents an actual local
-#if CSEE
-        EXF_ADDROFREF = 0x8,            // Only on EXPRBINOP, with kind == EK_ADDR, indicates*f where f is of a class type
-#endif
 
         // 0x10
         EXF_LITERALCONST = 0x10,        // Only on EXPRCONSTANT, means this was not a folded constant
@@ -59,18 +52,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_NEWOBJCALL = 0x10,          // Only on EXPRCALL and EXPRMEMGRP, to indicate new <...>(...)
         EXF_INDEXEXPR = 0x10,           // Only on EXPRCAST, indicates a special cast for array indexing
         EXF_REPLACEWRAP = 0x10,         // Only on EXPRWRAP, it means the wrap should be replaced with its expr (during rewriting)
-#if CSEE
-        EXF_ADDROFREFLOC = 0x10,        // Only on EXPRBINOP, with kind == EK_ADDR, indicates &f where f is of a class type
-#endif
 
         // 0x20
         EXF_UNREALIZEDGOTO = 0x20,      // Only on EXPRGOTO, means target unknown
         EXF_CONSTRAINED = 0x20,         // Only on EXPRCALL, EXPRPROP, indicates a call through a method or prop on a type variable or value type
         EXF_FORCE_BOX = 0x20,           // Only on EXPRCAST, GENERICS: indicates a "forcing" boxing operation (if type parameter boxed then nop, i.e. object -> object, else value type -> object)
         EXF_SIMPLENAME = 0x20,          // Only on EXPRMEMGRP, We're binding a dynamic simple name.
-#if CSEE
-        EXF_BUCKETSINDEX = 0x20,        // Only on EXPRBINOP, with kind == EK_INDEX, indicates Everett view of hashtable bucket
-#endif
 
         // 0x40
         EXF_ASFINALLYLEAVE = 0x40,      // Only on EXPRGOTO, EXPRRETURN, means leave through a finally, ASLEAVE must also be set
@@ -89,17 +76,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // 0x200
         EXF_NEWSTRUCTASSG = 0x200,      // Only on EXPRCALL, indicates that this is a constructor call which assigns to object
-#if CSEE
-        EXF_OBJDECL = 0x200,            // Only on EXPRCAST, indicates a cast of object or itf declared var to actual type
-#endif
         EXF_GENERATEDSTMT = 0x200,      // Only on statement exprs. Indicates that the statement is compiler generated
         // so we shouldn't report things like "unreachable code" on it.
 
         // 0x400
         EXF_IMPLICITSTRUCTASSG = 0x400, // Only on EXPRCALL, indicates that this an implicit struct assg call
-#if CSEE
-        EXF_BASECAST = 0x400,           // Only on EXPRCAST, indicates a cast from declared type to its base type
-#endif
         EXF_MARKING = 0x400,            // Only on statement exprs. Indicates that we're currently marking
         // its children for reachability (it's up the stack).
 
@@ -114,9 +95,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_IMPLICITTHIS = 0x010000,        // indicates a compiler provided this pointer (in the EE, when doing autoexp, this can be anything)
         EXF_CANTBENULL = 0x020000,          // indicate this expression can't ever be null (e.g., "this").
         EXF_CHECKOVERFLOW = 0x040000,       // indicates that operation should be checked for overflow
-#if CSEE
-        EXF_THREWEXCEPTION = 0x080000,      // indicates the expr originally threw an exception
-#endif
         EXF_PUSH_OP_FIRST = 0x100000,       // On any expr, indicates that the first operand must be placed on the stack before
         // anything else - this is needed for multi-ops involving string concat.
         EXF_ASSGOP = 0x200000,              // On any non stmt exprs, indicates assignment node...
@@ -132,15 +110,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         EXF_USEORIGDEBUGINFO | EXF_LASTBRACEDEBUGINFO | EXF_NODEBUGINFO |
                         EXF_IMPLICITTHIS | EXF_CANTBENULL | EXF_CHECKOVERFLOW |
                         EXF_PUSH_OP_FIRST | EXF_ASSGOP | EXF_LVALUE | EXF_SAMENAMETYPE
-#if CSEE
-                        | EXF_THREWEXCEPTION
-#endif
 ,
 
         // Used to mask the cast flags off an EXPRCAST.
         EXF_CAST_ALL = EXF_BOX | EXF_UNBOX | EXF_REFCHECK | EXF_INDEXEXPR | EXF_FORCE_BOX | EXF_FORCE_UNBOX | EXF_STATIC_CAST
-#if CSEE
-                        | EXF_MAYBE_BOX | EXF_OBJDECL | EXF_BASECAST
-#endif
     }
 }

@@ -502,13 +502,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Expr pTemp = mustConvert(x, pDestType);
                     if (pDestType == pIntType)
                         return pTemp;
-#if CSEE
-                    EXPRFLAG flag = 0;
-#else
-                    EXPRFLAG flag = EXPRFLAG.EXF_INDEXEXPR;
-#endif
                     ExprClass exprType = GetExprFactory().MakeClass(pDestType);
-                    return GetExprFactory().CreateCast(flag, exprType, pTemp);
+                    return GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, pTemp);
                 });
 
             if (cIndices != rank)

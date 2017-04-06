@@ -287,13 +287,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (!_fMulti)
                         {
                             if (_swtFirst.Sym.IsFieldSymbol() && symCur.IsEventSymbol()
-#if !CSEE                       // The isEvent bit is only set on symbols which come from source...
+                               // The isEvent bit is only set on symbols which come from source...
                                 // This is not a problem for the compiler because the field is only
                                 // accessible in the scope in which it is declared,
                                 // but in the EE we ignore accessibility...
                                 && _swtFirst.Field().isEvent
-#endif
-)
+                        )
                             {
                                 // m_swtFirst is just the field behind the event symCur so ignore symCur.
                                 continue;

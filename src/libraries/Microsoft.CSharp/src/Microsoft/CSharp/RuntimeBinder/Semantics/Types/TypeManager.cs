@@ -236,19 +236,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(!pAggregate.fConstraintsChecked && !pAggregate.fConstraintError);
 
                 pAggregate.SetErrors(false);
-#if CSEE
-
-                SpecializedSymbolCreationEE* pSymCreate = static_cast<SpecializedSymbolCreationEE*>(m_BSymmgr.GetSymFactory().m_pSpecializedSymbolCreation);
-                AggregateSymbolExtra* pExtra = pSymCreate.GetHashTable().GetElement(agg).AsAggregateSymbolExtra();
-                pAggregate.typeRes = pAggregate;
-                if (!pAggregate.IsUnresolved())
-                {
-                    pAggregate.tsRes = ktsImportMax;
-                }
-                pAggregate.fDirty = pExtra.IsDirty() || pAggregate.IsUnresolved();
-                pAggregate.tsDirty = pExtra.GetLastComputedDirtyBit();
-#endif // CSEE
-
                 _typeTable.InsertAggregate(name, agg, pAggregate);
 
                 // If we have a generic type definition, then we need to set the

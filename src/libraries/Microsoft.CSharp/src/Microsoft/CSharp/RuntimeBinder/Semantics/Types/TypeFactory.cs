@@ -34,15 +34,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             type.SetTypeParameterSymbol(pSymbol);
             type.SetUnresolved(pSymbol.parent != null && pSymbol.parent.IsAggregateSymbol() && pSymbol.parent.AsAggregateSymbol().IsUnresolved());
             type.SetName(pSymbol.name);
-
-#if CSEE
-            type.typeRes = type;
-            if (!type.IsUnresolved())
-            {
-                type.tsRes = ktsImportMax;
-            }
-#endif // CSEE
-
             Debug.Assert(pSymbol.GetTypeParameterType() == null);
             pSymbol.SetTypeParameterType(type);
 
