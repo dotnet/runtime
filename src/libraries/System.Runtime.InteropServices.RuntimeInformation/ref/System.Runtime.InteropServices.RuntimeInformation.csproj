@@ -14,7 +14,7 @@
     <Compile Include="System.Runtime.InteropServices.RuntimeInformation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
-    <Reference Include="System.Runtime" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
