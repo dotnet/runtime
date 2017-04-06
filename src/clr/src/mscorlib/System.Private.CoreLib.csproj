@@ -778,7 +778,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingForwarder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncodingInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncodingNLS.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncodingProvider.cs" />
