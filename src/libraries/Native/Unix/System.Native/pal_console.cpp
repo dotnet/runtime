@@ -74,7 +74,7 @@ extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString)
 }
 
 static bool g_readInProgress = false;        // tracks whether a read is currently in progress, such that attributes have been changed
-static bool g_signalForBreak = true;        // tracks whether the terminal should send signals for breaks
+static bool g_signalForBreak = true;         // tracks whether the terminal should send signals for breaks, such that attributes have been changed
 static bool g_haveInitTermios = false;       // whether g_initTermios has been initialized
 static struct termios g_initTermios = {};    // the initial attributes captured when Console was initialized
 static struct termios g_preReadTermios = {}; // the original attributes captured before a read; valid if g_readInProgress is true
@@ -82,9 +82,18 @@ static struct termios g_currTermios = {};    // the current attributes set durin
 
 static void UninitializeConsole()
 {
-    // Put the attributes back to what they were when the console was initially initialized
-    if (g_haveInitTermios)
-        tcsetattr(STDIN_FILENO, TCSANOW, &g_initTermios); // ignore any failure
+    // Put the attributes back to what they were when the console was initially initialized.
+    // We only do so, however, if we have explicitly modified the termios; doing so always
+    // can result in problems if the app is in the background, as then attempting to call
+    // tcsetattr on STDIN_FILENO will suspend the app and prevent its shutdown. We also don't
+    // want to, for example, just compare g_currTermios with g_initTermios, as we'd then be
+    // factoring in changes made by other apps or by user code.
+    if (g_haveInitTermios &&                     // we successfully initialized the console
+        (g_readInProgress || !g_signalForBreak)) // we modified attributes
+    {
+        tcsetattr(STDIN_FILENO, TCSANOW, &g_initTermios);
+        // ignore any failure
+    }
 }
 
 static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
