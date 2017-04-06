@@ -78,7 +78,7 @@ APP_SIGNED_V1_AOT=$(APP_SIGNED_V1_EXE:.exe=.exe$(PLATFORM_AOT_SUFFIX))
 endif
 
 
-SIGNING_KEY= testkey.snk
+SIGNING_KEY= $(srcdir)/testkey.snk
 
 # prefix for the testing gac.  gacutil will add lib/mono/gac directories
 GACDIR=.
