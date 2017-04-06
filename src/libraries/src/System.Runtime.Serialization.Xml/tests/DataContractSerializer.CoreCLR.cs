@@ -10,7 +10,6 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
-#if FALSE
     [Fact]
     public static void DCS_DifferentCollectionsOfSameTypeAsKnownTypes()
     {
@@ -18,5 +17,4 @@ public static partial class DataContractSerializerTests
             (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
         });
     }
-#endif
 }
