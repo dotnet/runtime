@@ -132,7 +132,15 @@ internal static partial class Interop
                 using (d_bn = new SafeBignumHandle(d_bn_not_owned, false))
                 {
                     // Match Windows semantics where qx, qy, and d have same length
+                    int keySizeBits = EcKeyGetSize(key);
+                    int expectedSize = (keySizeBits + 7) / 8;
                     int cbKey = GetMax(qx_cb, qy_cb, d_cb);
+
+                    Debug.Assert(
+                        cbKey <= expectedSize,
+                        $"Expected output size was {expectedSize}, which a parameter exceeded. qx={qx_cb}, qy={qy_cb}, d={d_cb}");
+
+                    cbKey = GetMax(cbKey, expectedSize);
 
                     parameters.Q = new ECPoint
                     {

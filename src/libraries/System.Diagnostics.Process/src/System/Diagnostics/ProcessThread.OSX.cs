@@ -13,8 +13,11 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            // Does not appear to be a POSIX API to do this on macOS. 
+            // Considered the posix pthread_getschedparam, and pthread_setschedparam, 
+            // but those seems to specify the scheduling policy with the priority.
+            get { throw new PlatformNotSupportedException(SR.ThreadPriorityNotSupported); }
+            set { throw new PlatformNotSupportedException(SR.ThreadPriorityNotSupported); }
         }
 
         /// <summary>
@@ -26,11 +29,11 @@ namespace System.Diagnostics
         /// <summary>Returns the time the associated thread was started.</summary>
         public DateTime StartTime
         {
-            get { throw new PlatformNotSupportedException(); }
+            get { throw new PlatformNotSupportedException(); } // macOS does not provide a way to get this data
         }
 
         /// <summary>
-        /// Returns the amount of time the associated thread has spent utilizing the CPU.
+        /// Returns the amount of time the associated thread has spent using the CPU.
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
         /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
         /// </summary>

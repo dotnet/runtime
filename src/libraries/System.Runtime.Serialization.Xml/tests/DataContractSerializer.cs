@@ -23,16 +23,6 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
-#if ReflectionOnly
-    private static readonly string SerializationOptionSetterName = "set_Option";
-
-    static DataContractSerializerTests()
-    {
-        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
-        method.Invoke(null, new object[] { 1 });
-    }
-#endif
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
@@ -2758,6 +2748,17 @@ public static partial class DataContractSerializerTests
         var actual = SerializeAndDeserialize(value, "<SquareWithDeserializationCallback xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Edge>2</Edge></SquareWithDeserializationCallback>");
         Assert.NotNull(actual);
         Assert.Equal(value.Area, actual.Area);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithDelegate()
+    {
+        var value = new TypeWithDelegate();
+        value.IntProperty = 3;
+        var actual = SerializeAndDeserialize(value, "<TypeWithDelegate xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:x=\"http://www.w3.org/2001/XMLSchema\"><IntValue i:type=\"x:int\" xmlns=\"\">3</IntValue></TypeWithDelegate>");
+        Assert.NotNull(actual);
+        Assert.Null(actual.DelegateProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)

@@ -287,13 +287,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (!_fMulti)
                         {
                             if (_swtFirst.Sym.IsFieldSymbol() && symCur.IsEventSymbol()
-#if !CSEE                       // The isEvent bit is only set on symbols which come from source...
+                               // The isEvent bit is only set on symbols which come from source...
                                 // This is not a problem for the compiler because the field is only
                                 // accessible in the scope in which it is declared,
                                 // but in the EE we ignore accessibility...
                                 && _swtFirst.Field().isEvent
-#endif
-)
+                        )
                             {
                                 // m_swtFirst is just the field behind the event symCur so ignore symCur.
                                 continue;
@@ -554,7 +553,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case SYMKIND.SK_MethodSymbol:
-                    if (swt.Meth().name == GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INVOKE) && swt.Meth().getClass().IsDelegate())
+                    if (swt.Meth().name == NameManager.GetPredefinedName(PredefinedName.PN_INVOKE) && swt.Meth().getClass().IsDelegate())
                     {
                         swt.Set(swt.Meth().getClass(), swt.GetType());
                     }
@@ -636,7 +635,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pSemanticChecker = checker;
             _pSymbolLoader = checker.GetSymbolLoader();
             _typeSrc = typeSrc;
-            _obj = (obj != null && !obj.isCLASS()) ? obj : null;
+            _obj = obj is ExprClass ? null : obj;
             _symWhere = symWhere;
             _name = name;
             _arity = arity;

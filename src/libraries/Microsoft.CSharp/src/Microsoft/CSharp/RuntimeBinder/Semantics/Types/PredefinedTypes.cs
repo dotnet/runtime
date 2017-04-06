@@ -51,12 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             _runtimeBinderSymbolTable = symtable;
             Debug.Assert(_pBSymmgr != null);
-
-#if !CSEE
             Debug.Assert(_predefSyms == null);
-#else // CSEE
-            Debug.Assert(predefSyms == null || aidMsCorLib != KAID.kaidNil);
-#endif // CSEE
 
             if (_aidMsCorLib == KAID.kaidNil)
             {

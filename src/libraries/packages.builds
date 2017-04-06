@@ -7,13 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
-    <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.Private.CoreFx.NETCoreApp\Microsoft.Private.CoreFx.NETCoreApp.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
-    <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.Private.CoreFx.UAP\Microsoft.Private.CoreFx.UAP.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
     <Project Include="*\pkg\**\*.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true' AND '$(BuildAllConfigurations)' == 'true'">

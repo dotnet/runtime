@@ -10,6 +10,7 @@ using Xunit;
 
 public static class HandleTests
 {
+    [Fact]
     public static void  RuntimeFieldHandleTest()
     {
         Type t = typeof(Derived);
@@ -18,6 +19,7 @@ public static class HandleTests
         Assert.True(h.Value != null);
     }
 
+    [Fact]
     public static void  RuntimeMethodHandleTest()
     {
         MethodInfo minfo = typeof( Co6006LateBoundDelegate).GetMethod( "Method1" );
@@ -30,10 +32,21 @@ public static class HandleTests
         Assert.True(Co6006LateBoundDelegate.iInvokeCount == 1);
     }
 
+    [Fact]
+    public static void  GenericMethodRuntimeMethodHandleTest()
+    {
+        // Make sure uninstantiated generic method has a valid handle
+        MethodInfo mi1 = typeof(Base).GetMethod("GenericMethod");
+        MethodInfo mi2 = (MethodInfo)MethodBase.GetMethodFromHandle(mi1.MethodHandle);
+        Assert.Equal(mi1, mi2);
+    }
+
+    [Fact]
     public static void  RuntimeTypeHandleTest()
     {
         RuntimeTypeHandle r1 = typeof(int).TypeHandle;
-        Assert.True(r1 != null);
+        RuntimeTypeHandle r2 = typeof(uint).TypeHandle;
+        Assert.NotEqual(r1, r2);
     }
     
     private class Base
@@ -47,6 +60,7 @@ public static class HandleTests
         public int MyProperty1 { get; private set; }
         public int MyProperty2 { private get; set; }
 
+        public static void GenericMethod<T>() { }
     }
 
     private class Derived : Base

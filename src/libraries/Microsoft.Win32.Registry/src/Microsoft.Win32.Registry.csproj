@@ -105,6 +105,8 @@
     <Reference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Resources.ResourceManager" />

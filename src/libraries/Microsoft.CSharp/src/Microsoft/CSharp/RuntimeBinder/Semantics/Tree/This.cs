@@ -6,5 +6,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprThisPointer : ExprLocal
     {
+        public ExprThisPointer()
+            : base(ExpressionKind.ThisPointer)
+        {
+        }
     }
 }

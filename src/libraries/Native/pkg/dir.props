@@ -9,7 +9,6 @@
     <WinNativePath Condition="'$(WinNativePath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\native\</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(LinuxNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(LinuxNativePath)</DebianNativePath>
-    <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(LinuxNativePath)</Fedora23NativePath>
     <Fedora24NativePath Condition="'$(Fedora24NativePath)' == ''">$(LinuxNativePath)</Fedora24NativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BinDir)OSX.$(PackagePlatform).$(ConfigurationGroup)\native\</OSXNativePath>
     <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(LinuxNativePath)</OpenSuse132NativePath>

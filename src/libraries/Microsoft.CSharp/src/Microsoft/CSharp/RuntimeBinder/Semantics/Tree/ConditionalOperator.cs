@@ -6,8 +6,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprQuestionMark : Expr
     {
+        public ExprQuestionMark()
+            : base(ExpressionKind.QuestionMark)
+        {
+        }
+
         public Expr TestExpression { get; set; }
 
         public ExprBinOp Consequence { get; set; }
+
+        public override CType Type => Consequence.Type ?? Consequence.OptionalLeftChild.Type;
     }
 }

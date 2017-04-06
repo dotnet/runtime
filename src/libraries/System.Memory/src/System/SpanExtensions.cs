@@ -278,5 +278,22 @@ namespace System
         {
             return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
         }
+
+        /// <summary>
+        /// Copies the contents of the array into the span. If the source
+        /// and destinations overlap, this method behaves as if the original values in
+        /// a temporary location before the destination is overwritten.
+        /// 
+        ///<param name="array">The array to copy items from.</param>
+        /// <param name="destination">The span to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination Span is shorter than the source array.
+        /// </exception>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyTo<T>(this T[] array, Span<T> destination)
+        {
+            array.AsSpan().CopyTo(destination);
+        }
     }
 }

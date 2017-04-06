@@ -284,11 +284,14 @@ namespace System.Net.Http
             get { return 10; }
             set
             {
+                /*
+                 * https://github.com/dotnet/corefx/issues/17812
                 if (value != MaxAutomaticRedirections)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(MaxAutomaticRedirections)));
                 }
+                */
                 CheckDisposedOrStarted();
             }
         }

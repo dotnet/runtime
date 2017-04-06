@@ -75,6 +75,7 @@ namespace System.Net.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Difference in behavior
         [OuterLoop]
         [Fact]
         public async Task HttpWebResponse_Close_Success()
@@ -103,6 +104,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Hangs in Desktop
         public async Task HttpWebResponse_Serialize_Fails()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

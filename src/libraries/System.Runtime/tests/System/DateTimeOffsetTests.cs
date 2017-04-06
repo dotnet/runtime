@@ -983,7 +983,7 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.Parse("06/08/1990", null, style));
             Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.ParseExact("06/08/1990", "Y", null, style));
 
-            DateTimeOffset dateTimeOffset;
+            DateTimeOffset dateTimeOffset = default(DateTimeOffset);
             Assert.Throws<ArgumentException>("styles", () => DateTimeOffset.TryParse("06/08/1990", null, style, out dateTimeOffset));
             Assert.Equal(default(DateTimeOffset), dateTimeOffset);
 

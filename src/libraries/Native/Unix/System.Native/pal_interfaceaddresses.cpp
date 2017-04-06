@@ -45,6 +45,10 @@ extern "C" int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onI
 
     for (ifaddrs* current = headAddr; current != nullptr; current = current->ifa_next)
     {
+        if (current->ifa_addr == nullptr)
+        {
+            continue;
+        }
         uint32_t interfaceIndex = if_nametoindex(current->ifa_name);
         // ifa_name may be an aliased interface name.
         // Use if_indextoname to map back to the true device name.

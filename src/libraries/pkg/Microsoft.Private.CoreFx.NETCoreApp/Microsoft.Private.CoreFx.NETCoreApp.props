@@ -42,7 +42,6 @@
       <Platform>armel</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="debian.8-x64" />
-    <OfficialBuildRID Include="fedora.23-x64" />
     <OfficialBuildRID Include="fedora.24-x64" />
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="opensuse.13.2-x64" />

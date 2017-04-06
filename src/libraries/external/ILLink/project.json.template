@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.ILLink": {
+      "version": "0.1.8-preview",
+      "exclude": "compile"
+    }
+  },
+  "frameworks": {
+    "netcoreapp1.1": { }
+  },
+  "runtimes": {
+    "{RID}": {}
+  }
+}

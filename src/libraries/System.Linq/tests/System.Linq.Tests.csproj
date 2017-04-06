@@ -10,6 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="AppendPrependTests.cs" />
     <Compile Include="SkipLastTests.cs" />
     <Compile Include="TakeLastTests.cs" />
     <Compile Include="OrderByTests.cs" />
@@ -23,7 +24,6 @@
     <Compile Include="AsEnumerableTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
-    <Compile Include="AppendPrependTests.cs" />
     <Compile Include="ConcatTests.cs" />
     <Compile Include="ConsistencyTests.cs" />
     <Compile Include="ContainsTests.cs" />

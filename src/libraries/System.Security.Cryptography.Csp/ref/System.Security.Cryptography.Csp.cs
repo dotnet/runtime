@@ -193,9 +193,11 @@ namespace System.Security.Cryptography
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        public override byte[] DecryptValue(byte[] rgb) { throw null; }
         protected override void Dispose(bool disposing) { }
         public byte[] Encrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        public override byte[] EncryptValue(byte[] rgb) { throw null; }
         public byte[] ExportCspBlob(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -215,6 +217,33 @@ namespace System.Security.Cryptography
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
         public SHA1CryptoServiceProvider() { }
+        protected sealed override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class SHA256CryptoServiceProvider : System.Security.Cryptography.SHA256
+    {
+        public SHA256CryptoServiceProvider() { }
+        protected sealed override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class SHA384CryptoServiceProvider : System.Security.Cryptography.SHA384
+    {
+        public SHA384CryptoServiceProvider() { }
+        protected sealed override void Dispose(bool disposing) { }
+        protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
+        protected override byte[] HashFinal() { throw null; }
+        public override void Initialize() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class SHA512CryptoServiceProvider : System.Security.Cryptography.SHA512
+    {
+        public SHA512CryptoServiceProvider() { }
         protected sealed override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override byte[] HashFinal() { throw null; }

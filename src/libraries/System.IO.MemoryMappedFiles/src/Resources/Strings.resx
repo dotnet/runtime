@@ -109,6 +109,9 @@
   <data name="Argument_NewMMFAppendModeNotAllowed" xml:space="preserve">
     <value>FileMode.Append is not permitted when creating new memory mapped files. Instead, use MemoryMappedFileView to ensure write-only access within a specified region.</value>
   </data>
+  <data name="Argument_NewMMFTruncateModeNotAllowed" xml:space="preserve">
+    <value>FileMode.Truncate is not permitted when creating new memory mapped files.</value>
+  </data>
   <data name="ArgumentNull_MapName" xml:space="preserve">
     <value>Map name cannot be null.</value>
   </data>

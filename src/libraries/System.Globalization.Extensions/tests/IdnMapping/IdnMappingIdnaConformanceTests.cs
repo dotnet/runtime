@@ -13,16 +13,22 @@ namespace System.Globalization.Tests
     /// </summary>
     public class IdnMappingIdnaConformanceTests
     {
+        /// <summary>
+        /// Tests positive cases for GetAscii.  Windows fails by design on some entries that should pass.  The recommendation is to take the source input
+        /// for this if needed.
+        /// 
+        /// There are some others that failed which have been commented out and marked in the dataset as "GETASCII DOES FAILS ON WINDOWS 8.1"
+        /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         [Fact]
         public void GetAscii_Success()
         {
-            foreach (var entry in Factory.GetDataset())
+            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
             {
-                if (entry.GetASCIIResult.Success)
+                if (entry.ASCIIResult.Success)
                 {
                     var map = new IdnMapping();
                     var asciiResult = map.GetAscii(entry.Source);
-                    Assert.Equal(entry.GetASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
+                    Assert.Equal(entry.ASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
@@ -32,24 +38,25 @@ namespace System.Globalization.Tests
         /// for this if needed.
         /// 
         /// There are some others that failed which have been commented out and marked in the dataset as "GETUNICODE DOES FAILS ON WINDOWS 8.1"
+        /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </summary>
         [Fact]
         public void GetUnicode_Succes()
         {
-            foreach (var entry in Factory.GetDataset())
+            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
             {
-                if (entry.GetUnicodeResult.Success)
+                if (entry.UnicodeResult.Success && entry.UnicodeResult.ValidDomainName)
                 {
                     try
                     {
                         var map = new IdnMapping { UseStd3AsciiRules = true, AllowUnassigned = true };
                         var unicodeResult = map.GetUnicode(entry.Source);
 
-                        Assert.Equal(entry.GetUnicodeResult.Value, unicodeResult, StringComparer.OrdinalIgnoreCase);
+                        Assert.Equal(entry.UnicodeResult.Value, unicodeResult, StringComparer.OrdinalIgnoreCase);
                     }
                     catch (ArgumentException)
                     {
-                        Assert.Equal(entry.GetUnicodeResult.Value, entry.Source, StringComparer.OrdinalIgnoreCase);
+                        Assert.Equal(entry.UnicodeResult.Value, entry.Source, StringComparer.OrdinalIgnoreCase);
                     }
                 }
             }
@@ -61,13 +68,14 @@ namespace System.Globalization.Tests
         /// <remarks>
         /// There are some failures on Windows 8.1 that have been commented out 
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
+        /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
         [Fact]
         public void GetAscii_Invalid()
         {
-            foreach (var entry in Factory.GetDataset())
+            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
             {
-                if (!entry.GetASCIIResult.Success)
+                if (!entry.ASCIIResult.Success)
                 {
                     var map = new IdnMapping();
                     Assert.Throws<ArgumentException>(() => map.GetAscii(entry.Source));
@@ -81,13 +89,14 @@ namespace System.Globalization.Tests
         /// <remarks>
         /// There are some failures on Windows 8.1 that have been commented out 
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETUNICODE DOES NOT FAIL ON WINDOWS 8.1"
+        /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
         [Fact]
         public void GetUnicode_Invalid()
         {
-            foreach (var entry in Factory.GetDataset())
+            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
             {
-                if (!entry.GetUnicodeResult.Success)
+                if (!entry.UnicodeResult.Success)
                 {
                     var map = new IdnMapping();
                     Assert.Throws<ArgumentException>(() => map.GetUnicode(entry.Source));

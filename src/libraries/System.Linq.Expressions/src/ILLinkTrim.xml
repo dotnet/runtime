@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Linq.Expressions">
+    <type fullname="System.Linq.Expressions.Interpreter.LightLambda">
+      <!-- required by debugger -->
+      <method name="get_DebugView" />
+    </type>
+  </assembly>
+</linker>

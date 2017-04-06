@@ -19,15 +19,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private TypeArray _pTypeArgsAll;         // includes args from outer types
         private AggregateSymbol _pOwningAggregate;
 
-#if ! CSEE // The EE can't cache these since the AGGSYMs may change as things are imported.
         private AggregateType _baseType;  // This is the result of calling SubstTypeArray on the aggregate's baseClass.
         private TypeArray _ifacesAll;  // This is the result of calling SubstTypeArray on the aggregate's ifacesAll.
         private TypeArray _winrtifacesAll; //This is the list of collection interfaces implemented by a WinRT object.
-#else // !CSEE
-
-        public short proxyOID; // oid for the managed proxy in the host running inside the debugee
-        public short typeConverterID;
-#endif // !CSEE
 
         public bool fConstraintsChecked;    // Have the constraints been checked yet?
         public bool fConstraintError;       // Did the constraints check produce an error?
@@ -51,21 +45,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateType GetBaseClass()
         {
-#if CSEE
-            AggregateType atsBase = getAggregate().GetBaseClass();
-            if (!atsBase || GetTypeArgsAll().size == 0 || atsBase.GetTypeArgsAll().size == 0)
-                return atsBase;
-
-            return getAggregate().GetTypeManager().SubstType(atsBase, GetTypeArgsAll()).AsAggregateType();
-#else // !CSEE
-
-            if (_baseType == null)
-            {
-                _baseType = getAggregate().GetTypeManager().SubstType(getAggregate().GetBaseClass(), GetTypeArgsAll()) as AggregateType;
-            }
-
-            return _baseType;
-#endif // !CSEE
+            return _baseType ??
+                (_baseType = getAggregate().GetTypeManager().SubstType(getAggregate().GetBaseClass(), GetTypeArgsAll()) as AggregateType);
         }
 
         public void SetTypeArgsThis(TypeArray pTypeArgsThis)

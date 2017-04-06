@@ -2647,10 +2647,15 @@ namespace System.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
-        [InlineData(1)]
         public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
         {
             Assert.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
+        }
+
+        [Fact]
+        public static void Reverse_IndexLessThanPositiveLowerBound_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", "length", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], 1), 0, 0));
         }
 
         [Fact]

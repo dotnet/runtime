@@ -6,9 +6,6 @@
     <AssemblyName>System.Diagnostics.Debug</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -18,74 +15,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="System\Diagnostics\Debug.Public.cs" />
-    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
-    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs">
-      <Link>System\Diagnostics\Debug.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap')">
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs">
-      <Link>System\Diagnostics\Debug.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OutputDebugString.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.OutputDebugString.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
-      <Link>System\Diagnostics\Debug.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Common\Interop\Unix\Interop.Close.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Dup.cs">
-      <Link>Common\Interop\Unix\Interop.Dup.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FileDescriptors.cs">
-      <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FLock.cs">
-      <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Common\Interop\Unix\Interop.Open.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysLog.cs">
-      <Link>Common\Interop\Unix\Interop.SysLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
-      <Link>Common\Interop\Unix\Interop.Write.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
-      <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+  <ItemGroup>
     <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
     <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
   </ItemGroup>

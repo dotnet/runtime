@@ -73,45 +73,48 @@ namespace System
     
     public static class SpanExtensions
     {
-         public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
-         public static int IndexOf(this Span<byte> span, byte value) { throw null; }
-
-         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : struct, IEquatable<T> { throw null; }
-         public static int IndexOf(this ReadOnlySpan<byte> span, byte value) { throw null; }
-
-         public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
-         public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
-
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
-        public static int IndexOf(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+        public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
+        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
+        public static int IndexOf(this Span<byte> span, byte value) { throw null; }
+        public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
 
         public static int IndexOfAny(this Span<byte> span, byte value0, byte value1) { throw null; }
         public static int IndexOfAny(this Span<byte> span, byte value0, byte value1, byte value2) { throw null; }
         public static int IndexOfAny(this Span<byte> span, ReadOnlySpan<byte> values) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1, byte value2) { throw null; }
-        public static int IndexOfAny(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> values) { throw null; }
 
         public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second) where T:struct, IEquatable<T> { throw null; }
         public static bool SequenceEqual(this Span<byte> first, ReadOnlySpan<byte> second) { throw null; }
-
-        public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : struct, IEquatable<T> { throw null; }
-        public static bool SequenceEqual(this ReadOnlySpan<byte> first, ReadOnlySpan<byte> second) { throw null; }
-
+        
         public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
         public static bool StartsWith(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
 
-        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
-        public static bool StartsWith(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+        public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
 
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+        
         public static ReadOnlySpan<char> AsSpan(this string text) { throw null; }
         public static Span<T> AsSpan<T>(this T[] array) { throw null; }
         public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment) { throw null; }
 
-        public static Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
+        public static void CopyTo<T>(this T[] array, Span<T> destination) { throw null; }
 
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : struct, IEquatable<T> { throw null; }
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
+        public static int IndexOf(this ReadOnlySpan<byte> span, byte value) { throw null; }
+        public static int IndexOf(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1) { throw null; }
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, byte value0, byte value1, byte value2) { throw null; }
+        public static int IndexOfAny(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> values) { throw null; }
+
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : struct, IEquatable<T> { throw null; }
+        public static bool SequenceEqual(this ReadOnlySpan<byte> first, ReadOnlySpan<byte> second) { throw null; }
+
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
+        public static bool StartsWith(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
+        
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
     }
 }

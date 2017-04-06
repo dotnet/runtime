@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
@@ -21,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
-                Assert.Equal(64 * 1024, handler.MaxResponseHeadersLength);
+                Assert.Equal(64, handler.MaxResponseHeadersLength);
             }
         }
 
@@ -38,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(1)]
-        [InlineData(65 * 1024)]
+        [InlineData(65)]
         [InlineData(int.MaxValue)]
         public void ValidValue_SetGet_Roundtrips(int validValue)
         {
@@ -62,10 +63,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
-        [InlineData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", 37, false)]
-        [InlineData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", 38, true)]
-        [InlineData("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", 39, true)]
+        [Theory, MemberData(nameof(ResponseWithManyHeadersData))]
         public async Task ThresholdExceeded_ThrowsException(string responseHeaders, int maxResponseHeadersLength, bool shouldSucceed)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -99,8 +97,65 @@ namespace System.Net.Http.Functional.Tests
                     });
                 }
             });
-
         }
 
+        public static IEnumerable<object[]> ResponseWithManyHeadersData
+        {
+            get
+            {
+                // Success case: response headers of size 1023 bytes (less than 1024 bytes max).
+                {
+                    yield return new object[] { GenerateLargeResponseHeaders(1023), 1, true };
+                }
+
+                // Success case: response headers of size 1024 bytes (equal to 1024 bytes max).
+                {
+                    yield return new object[] { GenerateLargeResponseHeaders(1024), 1, true };
+                }
+
+                // Failure case: response headers of size 1025 (greater than 1024 bytes max).
+                {
+                    yield return new object[] { GenerateLargeResponseHeaders(1025), 1, false };
+                }
+            }
+        }
+
+        private static string GenerateLargeResponseHeaders(int responseHeadersSizeInBytes)
+        {
+            // This helper method only supports generating sizes of 1023, 1024, or 1025 bytes.
+            // These are the only sizes needed to support the above tests.
+            Assert.InRange(responseHeadersSizeInBytes, 1023, 1025);
+
+            string statusHeader = "HTTP/1.1 200 OK\r\n";
+            string contentFooter = "Content-Length: 0\r\n\r\n";
+
+            var buffer = new StringBuilder();
+            buffer.Append(statusHeader);
+            for (int i = 0; i < 24; i++)
+            {
+                buffer.Append($"Custom-{i:D4}: 1234567890123456789012345\r\n");
+            }
+
+            if (responseHeadersSizeInBytes == 1023)
+            {
+                buffer.Append($"Custom-1023: 1234567890\r\n");
+            }
+            else if (responseHeadersSizeInBytes == 1024)
+            {
+                buffer.Append($"Custom-1024: 12345678901\r\n");
+            }
+            else
+            {
+                Assert.Equal(1025, responseHeadersSizeInBytes);
+                buffer.Append($"Custom-1025: 123456789012\r\n");
+            }
+
+            buffer.Append(contentFooter);
+
+            string response = buffer.ToString();            
+            Assert.Equal(responseHeadersSizeInBytes, response.Length);
+
+            return response;
+        }
     }
 }

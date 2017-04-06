@@ -22,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(false, false)]
@@ -76,6 +77,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
         [ActiveIssue(9075, TestPlatforms.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
         [OuterLoop] // includes seconds of delay
         [Fact]
@@ -84,6 +86,7 @@ namespace System.Net.Http.Functional.Tests
             return ReadAsStreamAsync_ReadAsync_Cancel_TaskCanceledQuickly(false);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(true)]

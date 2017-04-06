@@ -30,7 +30,7 @@ namespace System.Diagnostics
         public static bool operator ==(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
         public static bool operator !=(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
     }
-    public sealed partial class PerformanceCounter
+    public sealed partial class PerformanceCounter : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
     {
         [System.ObsoleteAttribute("This field has been deprecated and is not used.  Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping.")]
         public static int DefaultFileMappingSize;
@@ -57,6 +57,8 @@ namespace System.Diagnostics
         public bool ReadOnly { get { throw null; } set { } }
         public void BeginInit() { }
         public void Close() { }
+        public static void CloseSharedResources() { }
+        public long Decrement() { return default(long); }
         public void EndInit() { }
         public long Increment() { throw null; }
         public long IncrementBy(long value) { throw null; }

@@ -77,9 +77,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.IDictionary.cs">
-      <Link>Common\System\Collections\Generic\LowLevelDictionary.IDictionary.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>

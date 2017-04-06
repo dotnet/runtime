@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="System.Net.NetworkInformation">
+    <!-- NetEventSource isn't used by this assembly but tests check for its presence -->
+    <type fullname="System.Net.NetEventSource" />
+  </assembly>
+</linker>

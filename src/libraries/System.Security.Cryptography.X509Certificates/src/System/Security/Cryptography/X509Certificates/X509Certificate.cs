@@ -500,34 +500,34 @@ namespace System.Security.Cryptography.X509Certificates
 
         public virtual void Import(byte[] rawData)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         public virtual void Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
         public virtual void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         public virtual void Import(string fileName)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         public virtual void Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
         public virtual void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         internal ICertificatePal Pal { get; private set; }

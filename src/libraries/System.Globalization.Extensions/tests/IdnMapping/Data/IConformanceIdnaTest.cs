@@ -10,8 +10,8 @@ namespace System.Globalization.Tests
     {
         IdnType Type { get; }
         string Source { get; }
-        ConformanceIdnaTestResult GetUnicodeResult { get; }
-        ConformanceIdnaTestResult GetASCIIResult { get; }
+        ConformanceIdnaUnicodeTestResult UnicodeResult { get; }
+        ConformanceIdnaTestResult ASCIIResult { get; }
         int LineNumber { get; }
     }
 }
