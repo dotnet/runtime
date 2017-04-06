@@ -58,6 +58,7 @@ namespace System.Text
         internal sealed class UTF8EncodingSealed : UTF8Encoding
         {
             public UTF8EncodingSealed() : base(encoderShouldEmitUTF8Identifier: true) { }
+            public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
         }
 
         // Used by Encoding.UTF8 for lazy initialization
