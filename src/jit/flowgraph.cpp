@@ -7222,7 +7222,6 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
 
-            assert(ldftnToken == targetMethod->gtFptrVal.gtLdftnResolvedToken);
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
