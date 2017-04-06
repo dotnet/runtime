@@ -22,6 +22,10 @@
       <!-- only for netfx verticals will this project provide runtime assets -->
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <!-- copy shims to the testhost as well in order to be able to run the netfx tests -->
+      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    </BinPlaceConfiguration>
   </ItemGroup>
 
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"

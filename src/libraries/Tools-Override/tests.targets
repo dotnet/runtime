@@ -99,7 +99,6 @@
     </ItemGroup>
     <ItemGroup Condition="'$(BuildingNETFxVertical)' == 'true'">
       <SupplementalTestData Include="$(RuntimePath)xunit.console.exe" />
-      <SupplementalTestData Include="$(RuntimePath)xunit.console.exe.config" />
       <SupplementalTestData Include="$(RuntimePath)xunit.execution.desktop.dll" />
     </ItemGroup>
   </Target>
@@ -124,14 +123,27 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="CopyRemoteExecutionConfigFile" 
-          BeforeTargets="GenerateTestExecutionScripts" 
-          Condition="'$(BuildingNETFxVertical)' == 'true' And Exists('$(TestPath)\RemoteExecutorConsoleApp.exe')">
+  <!-- We need to generate a simple config file for desktop test executors to tell them to use DEVPATH environment variable to use their dependencies from there.
+  DEVPATH is being set for desktop runs in RunTests.cmd to the TestHostPath. We need this approach to have desktop Helix runs. -->
+  <Target Name="GenerateDesktopExecutorsConfigFiles"
+          BeforeTargets="GenerateTestExecutionScripts"
+          Condition="'$(BuildingNETFxVertical)' == 'true'">
+    <PropertyGroup>
+      <XunitRunnerNetfxConfigFile>$(TestPath)\$(XunitExecutable).config</XunitRunnerNetfxConfigFile>
+      <RemoteExecutorConfigFile>$(TestPath)\RemoteExecutorConsoleApp.exe.config</RemoteExecutorConfigFile>
+    </PropertyGroup>
 
-    <Copy SourceFiles="$(RuntimePath)\xunit.console.exe.config"
-          DestinationFiles="$(TestPath)\RemoteExecutorConsoleApp.exe.config" 
-          SkipUnchangedFiles="true"
-          />
+    <ItemGroup>
+      <ConfigFileLines Include="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;" />
+      <ConfigFileLines Include="&lt;configuration&gt;" />
+      <ConfigFileLines Include="&lt;runtime&gt;" />
+      <ConfigFileLines Include="&lt;developmentMode developerInstallation=&quot;true&quot; /&gt;" />
+      <ConfigFileLines Include="&lt;/runtime&gt;" />   
+      <ConfigFileLines Include="&lt;/configuration&gt;" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(XunitRunnerNetfxConfigFile)" Lines="@(ConfigFileLines)" Overwrite="true"/>
+    <WriteLinesToFile Condition="Exists('$(TestPath)\RemoteExecutorConsoleApp.exe')" File="$(RemoteExecutorConfigFile)" Lines="@(ConfigFileLines)" Overwrite="true" />
   </Target>
 
   <!-- Generate the script to run the tests.  The script performs two high-level steps:
@@ -140,7 +152,7 @@
            directory.
        2.  Runs the tests. -->
   <Target Name="GenerateTestExecutionScripts"
-          DependsOnTargets="DiscoverTestInputs;SetupTestProperties">
+          DependsOnTargets="DiscoverTestInputs;SetupTestProperties;GenerateDesktopExecutorsConfigFiles">
     <PropertyGroup>
       <TargetOSTrait Condition="'$(TargetOS)'=='Windows_NT'">nonwindowstests</TargetOSTrait>
       <TargetOSTrait Condition="'$(TargetOS)'=='Linux'">nonlinuxtests</TargetOSTrait>
@@ -197,6 +209,13 @@
       Lines="@(IncludedFileForRunnerScript -> '%(PackageRelativePath)')"
       Overwrite="true"
       Encoding="Ascii" />
+
+      <!--======================================================
+                      Section for netfx test runs
+            ====================================================== -->
+    <ItemGroup Condition="'$(BuildingNETFxVertical)' == 'true'" >
+      <TestCommandLines Include="set DEVPATH=%RUNTIME_PATH%" />
+    </ItemGroup>
 
         <!--======================================================
                       Section for uapaot ilc test runs

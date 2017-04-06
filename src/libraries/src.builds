@@ -9,7 +9,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
   <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
-  <UsingTask TaskName="GenerateBindingRedirect" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
 
   <PropertyGroup>
     <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
@@ -33,18 +32,4 @@
                       DepsExceptions="@(ExceptionForDepsJson)"
                       OutputPath="$(_OutputTestSharedFrameworkDepsPath)"/>
   </Target>
-
-  <Target Name="GenerateXUnitRunnerConfigFile" AfterTargets="BuildAllProjects" Condition="'$(TargetGroup)' == 'netfx'">
-
-    <ItemGroup>
-      <NetFXRuntimeAssemblies Include="$(RuntimePath)*.dll" />
-      <XUnitConsoleRunnerExecutable Include="$(RuntimePath)xunit.console.exe" />
-    </ItemGroup>
-
-    <GenerateBindingRedirect  Assemblies="@(NetFXRuntimeAssemblies)" 
-                              Executables="@(XUnitConsoleRunnerExecutable)"
-                              OutputPath="$(RuntimePath)"
-                              OutputCodeBase="True" />
-  </Target>
-
 </Project>
