@@ -2,14 +2,14 @@
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library Name="*System.Linq.Expressions*">
     <Assembly Name="System.Linq.Expressions">
+      <Type Name="Microsoft.CSharp.RuntimeBinder.RuntimeBinderException" Dynamic="Required All" />
+      <TypeInstantiation Name="System.Linq.Expressions.ExpressionCreator" Arguments="System.Func{System.Boolean}" Dynamic="Required All" />
+      <TypeInstantiation Name="System.Runtime.CompilerServices.CallSite" Arguments="System.Func{System.Runtime.CompilerServices.CallSite, System.Object, System.Int32}" Dynamic="Required All" /> 
+      <Type Name="System.Runtime.CompilerServices.CallSiteOps" Dynamic="Required All" />
       <Namespace Name="System.Linq.Expressions">
         <Type Name="Expression&lt;TDelegate&gt;">
           <GenericParameter Name="TDelegate" Dynamic="Public"/>
         </Type>
-        <Type Name="Microsoft.CSharp.RuntimeBinder.RuntimeBinderException" Dynamic="Required All" />
-        <TypeInstantiation Name="System.Linq.Expressions.ExpressionCreator" Arguments="System.Func{System.Boolean}" Dynamic="Required All" />
-        <TypeInstantiation Name="System.Runtime.CompilerServices.CallSite" Arguments="System.Func{System.Runtime.CompilerServices.CallSite, System.Object, System.Int32}" Dynamic="Required All" /> 
-        <Type Name="System.Runtime.CompilerServices.CallSiteOps" Dynamic="Required All" />
         <Type Name="Expression">
           <Method Name ="Block">
             <TypeParameter Name="type" Dynamic="Public"/>
