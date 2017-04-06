@@ -371,13 +371,19 @@ function create_core_overlay {
     copy_test_native_bin_to_test_root
 }
 
-function precompile_overlay_assemblies {
-    declare -A skipCrossGenFiles
+declare -a skipCrossGenFiles
 
-    while read line
-    do
-      skipCrossGenFiles[$line]=1
-    done <  "$(dirname "$0")/skipCrossGenFiles.$ARCH.txt"
+function is_skip_crossgen_test {
+    for skip in "${skipCrossGenFiles[@]}"; do
+        if [ "$1" == "$skip" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function precompile_overlay_assemblies {
+    skipCrossGenFiles=($(read_array "$(dirname "$0")/skipCrossGenFiles.$ARCH.txt"))
 
     if [ $doCrossgen == 1 ]; then
         local overlayDir=$CORE_ROOT
@@ -393,7 +399,7 @@ function precompile_overlay_assemblies {
                     echo Unable to generate dasm for $filename
                 fi
             else
-                if [[ ${skipCrossGenFiles[$(basename $filename)]:-0} == 0 ]]; then
+                if is_skip_crossgen_test "$(basename $filename)"; then
                     continue
                 fi
                 echo Precompiling $filename
