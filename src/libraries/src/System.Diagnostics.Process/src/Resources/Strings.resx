@@ -185,16 +185,22 @@
     <value>Process IDs cannot be negative.</value>
   </data>
   <data name="ProcessorAffinityNotSupported" xml:space="preserve">
-    <value>Processor affinity for processes or threads is not supported.</value>
+    <value>Processor affinity for processes or threads is not supported on this platform.</value>
+  </data>
+  <data name="ProcessStartIdentityNotSupported" xml:space="preserve">
+    <value>Starting a process with a different identity is not supported on this platform.</value>
   </data>
   <data name="RUsageFailure" xml:space="preserve">
     <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>
   </data>
   <data name="MinimumWorkingSetNotSupported" xml:space="preserve">
-    <value>Setting the minimum working set is not supported.</value>
+    <value>Setting the minimum working set is not supported on this platform.</value>
   </data>
   <data name="OsxExternalProcessWorkingSetNotSupported" xml:space="preserve">
-    <value>Getting or setting the working set limits on other processes is not supported.</value>
+    <value>Getting or setting the working set limits on other processes is not supported on this platform.</value>
+  </data>
+   <data name="ThreadPriorityNotSupported" xml:space="preserve">
+    <value>Getting or setting the thread priority is not supported on this platform.</value>
   </data>
   <data name="ProcessInformationUnavailable" xml:space="preserve">
     <value>Unable to retrieve the specified information about the process or thread.  It may have exited or may be privileged.</value>

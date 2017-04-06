@@ -16,8 +16,5 @@
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <Target Name="RunAfterCoreCompile" AfterTargets="CoreCompile">
-    <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''" />
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

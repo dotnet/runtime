@@ -18,7 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         kaidNil = -1,
 
         kaidGlobal = 0,
-        kaidErrorAssem,  // NOTE: !CSEE only
         kaidThisAssembly,
         kaidUnresolved,
         kaidStartAssigning,
@@ -395,7 +394,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case SYMKIND.SK_AggregateSymbol:
                     {
-#if !CSEE
                         AggregateSymbol AggregateSymbol = this.AsAggregateSymbol();
                         if (!AggregateSymbol.IsSource())
                             return AggregateSymbol.DeclOnly().getInputFile();
@@ -404,7 +402,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // files, getInputFile isn't a reasonable operation.
                         Debug.Assert(false);
                         return null;
-#endif
                     }
 
                 /*

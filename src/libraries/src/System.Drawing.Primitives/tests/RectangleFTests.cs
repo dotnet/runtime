@@ -126,7 +126,13 @@ namespace System.Drawing.PrimitivesTest
             var rectangle = new RectangleF(0, 0, 0, 0);
             Assert.False(rectangle.Equals(null));
             Assert.False(rectangle.Equals(0));
-            Assert.True(rectangle.Equals(new Rectangle(0, 0, 0, 0))); // Implicit cast
+
+            // If RectangleF implements IEquatable<RectangleF> (e.g. in .NET Core), then classes that are implicitly 
+            // convertible to RectangleF can potentially be equal.
+            // See https://github.com/dotnet/corefx/issues/5255.
+            bool expectsImplicitCastToRectangleF = typeof(IEquatable<RectangleF>).IsAssignableFrom(rectangle.GetType());
+            Assert.Equal(expectsImplicitCastToRectangleF, rectangle.Equals(new Rectangle(0, 0, 0, 0)));
+
             Assert.False(rectangle.Equals((object)new Rectangle(0, 0, 0, 0))); // No implicit cast
         }
 

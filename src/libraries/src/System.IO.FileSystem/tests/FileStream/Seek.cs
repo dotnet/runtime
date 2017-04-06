@@ -15,7 +15,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                Assert.Throws<ArgumentException>("origin", () => fs.Seek(0, ~SeekOrigin.Begin));
+                AssertExtensions.Throws<ArgumentException>("origin", null, () => fs.Seek(0, ~SeekOrigin.Begin));
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.IO.Tests
                 // no fast path
                 Assert.Throws<ObjectDisposedException>(() => fs.Seek(fs.Position, SeekOrigin.Begin));
                 // parameter checking happens first
-                Assert.Throws<ArgumentException>("origin", () => fs.Seek(0, ~SeekOrigin.Begin));
+                AssertExtensions.Throws<ArgumentException>("origin", null, () => fs.Seek(0, ~SeekOrigin.Begin));
             }
         }
 
@@ -61,7 +61,7 @@ namespace System.IO.Tests
                 // no fast path
                 Assert.Throws<NotSupportedException>(() => fs.Seek(fs.Position, SeekOrigin.Begin));
                 // parameter checking happens first
-                Assert.Throws<ArgumentException>("origin", () => fs.Seek(0, ~SeekOrigin.Begin));
+                AssertExtensions.Throws<ArgumentException>("origin", null, () => fs.Seek(0, ~SeekOrigin.Begin));
                 // dispose checking happens first
                 fs.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => fs.Seek(fs.Position, SeekOrigin.Begin));

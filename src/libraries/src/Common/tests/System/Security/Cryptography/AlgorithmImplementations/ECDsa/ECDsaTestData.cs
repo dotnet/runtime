@@ -147,6 +147,30 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             return p;
         }
+
+        internal static ECParameters GetNistP521DiminishedCoordsParameters()
+        {
+            return new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP521,
+
+                // Qx, Qy, and d start with 0x00, which should be preserved.
+                Q = new ECPoint
+                {
+                    X = (
+                        "00DCB499D2B8174A2A2E74F23D2EA6C5F8BC8B311574E94B7E590B1EBC28665E5A" +
+                        "2C021183F10A0B23E34EC9BED2F59525CC45CFB0E6870FD61EA4FFEAFBD08CDF73").HexToByteArray(),
+
+                    Y = (
+                        "008EA45062A8CEF4A4CE10449281D98B74A7EBBA9B5597DF842A9B1FA73B46A0E7" +
+                        "22C005FD49C141E43A5C10E77F1185C5233E6BE016998EF5CE09FC3936E3208B87").HexToByteArray(),
+                },
+
+                D = (
+                    "0029B61CD0B8670DCFA6B2ED44677C23D134C4A802D8E2B4D6FF563BE1F010EDA7" +
+                    "956FA22DD3C8682751296C129D55F8F8C15483103D99899446E13285998B7E0F05").HexToByteArray(),
+            };
+        }
 #endif // netcoreapp
     }
 }

@@ -464,6 +464,7 @@ namespace System.Linq.Tests
         [InlineData(1000)]
         [InlineData(1000000)]
         [InlineData(int.MaxValue)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core optimizes Take(...).Skip(...) on lazy sequences to avoid unecessary allocation. Without this optimization this test takes many minutes. See https://github.com/dotnet/corefx/pull/13628.")]
         public void LazySkipAllTakenForLargeNumbers(int largeNumber)
         {
             Assert.Empty(new FastInfiniteEnumerator<int>().Take(largeNumber).Skip(largeNumber));

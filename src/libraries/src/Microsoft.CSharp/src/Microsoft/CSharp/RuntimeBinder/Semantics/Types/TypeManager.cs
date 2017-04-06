@@ -179,7 +179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case 1:
                 case 2:
-                    name = _BSymmgr.GetNameManager().GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
+                    name = NameManager.GetPredefinedName(PredefinedName.PN_ARRAY0 + args);
                     break;
                 default:
                     name = _BSymmgr.GetNameManager().Add("[X" + args + 1);
@@ -236,19 +236,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(!pAggregate.fConstraintsChecked && !pAggregate.fConstraintError);
 
                 pAggregate.SetErrors(false);
-#if CSEE
-
-                SpecializedSymbolCreationEE* pSymCreate = static_cast<SpecializedSymbolCreationEE*>(m_BSymmgr.GetSymFactory().m_pSpecializedSymbolCreation);
-                AggregateSymbolExtra* pExtra = pSymCreate.GetHashTable().GetElement(agg).AsAggregateSymbolExtra();
-                pAggregate.typeRes = pAggregate;
-                if (!pAggregate.IsUnresolved())
-                {
-                    pAggregate.tsRes = ktsImportMax;
-                }
-                pAggregate.fDirty = pExtra.IsDirty() || pAggregate.IsUnresolved();
-                pAggregate.tsDirty = pExtra.GetLastComputedDirtyBit();
-#endif // CSEE
-
                 _typeTable.InsertAggregate(name, agg, pAggregate);
 
                 // If we have a generic type definition, then we need to set the
@@ -318,7 +305,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pPointer == null)
             {
                 // No existing type. Create a new one.
-                Name namePtr = _BSymmgr.GetNameManager().GetPredefName(PredefinedName.PN_PTR);
+                Name namePtr = NameManager.GetPredefinedName(PredefinedName.PN_PTR);
 
                 pPointer = _typeFactory.CreatePointer(namePtr, baseType);
                 pPointer.InitFromParent();
@@ -341,7 +328,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             NullableType pNullableType = _typeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
             {
-                Name pName = _BSymmgr.GetNameManager().GetPredefName(PredefinedName.PN_NUB);
+                Name pName = NameManager.GetPredefinedName(PredefinedName.PN_NUB);
 
                 pNullableType = _typeFactory.CreateNullable(pName, pUnderlyingType, _BSymmgr, this);
                 pNullableType.InitFromParent();
@@ -360,7 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ParameterModifierType GetParameterModifier(CType paramType, bool isOut)
         {
-            Name name = _BSymmgr.GetNameManager().GetPredefName(isOut ? PredefinedName.PN_OUTPARAM : PredefinedName.PN_REFPARAM);
+            Name name = NameManager.GetPredefinedName(isOut ? PredefinedName.PN_OUTPARAM : PredefinedName.PN_REFPARAM);
             ParameterModifierType pParamModifier = _typeTable.LookupParameterModifier(name, paramType);
 
             if (pParamModifier == null)

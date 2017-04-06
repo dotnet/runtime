@@ -9,6 +9,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="GetStringComparerTests.cs" />
+    <Compile Include="IdnMapping\Data\ConformanceIdnaUnicodeTestResult.cs" />
+    <Compile Include="IdnMapping\Data\Unicode_9_0\Unicode_9_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
     <Compile Include="IdnMapping\Data\Factory.cs" />
     <Compile Include="IdnMapping\Data\ConformanceIdnaTestResult.cs" />
@@ -27,6 +29,7 @@
   <ItemGroup>
     <EmbeddedResource Include="IdnMapping\Data\Unicode_6_0\IdnaTest_6.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_Win7\IdnaTest_Win7.txt" />
+    <EmbeddedResource Include="IdnMapping\Data\Unicode_9_0\IdnaTest_9.txt" />
     <EmbeddedResource Include="Normalization\Data\win8.txt">
       <LogicalName>NormalizationDataWin8</LogicalName>
     </EmbeddedResource>

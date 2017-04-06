@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -251,6 +252,9 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, @".." + Path.DirectorySeparatorChar));
         }
 
+        private static char[] OldWildcards = new char[] { '*', '?' };
+        private static char[] NewWildcards = new char[] { '<', '>', '\"' };
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid search patterns throw
         public void WindowsSearchPatternInvalid()
@@ -258,7 +262,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "|"));
 
-            Assert.All(Path.GetInvalidFileNameChars(), invalidChar =>
+            Assert.All(Path.GetInvalidFileNameChars().Except(OldWildcards).Except(NewWildcards), invalidChar =>
             {
                 switch (invalidChar)
                 {
@@ -282,18 +286,40 @@ namespace System.IO.Tests
                             GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
                         }
                         break;
-                    // Wildcard chars
-                    case '*':
-                    case '?':
-                    case '<':
-                    case '>':
-                    case '\"':
-                        GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
-                        break;
                     default:
                         Assert.Throws<ArgumentException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString())));
                         break;
                 }
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid search patterns throw
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In netcoreapp we made three new characters be treated as valid wildcards instead of invalid characters. NetFX still treats them as InvalidChars.")]
+        public void WindowsSearchPatternInvalid_Wildcards_netcoreapp()
+        {
+            Assert.All(OldWildcards, invalidChar =>
+            {
+                GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
+            });
+            Assert.All(NewWildcards, invalidChar =>
+            {
+                GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid search patterns throw
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "In netcoreapp we made three new characters be treated as valid wildcards instead of invalid characters. NetFX still treats them as InvalidChars.")]
+        public void WindowsSearchPatternInvalid_Wildcards_netfx()
+        {
+            Assert.All(OldWildcards, invalidChar =>
+            {
+                GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
+            });
+            Assert.All(NewWildcards, invalidChar =>
+            {
+                Assert.Throws<ArgumentException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString())));
             });
         }
 

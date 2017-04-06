@@ -27,7 +27,7 @@
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
-    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>     
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
     <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
@@ -37,8 +37,6 @@
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
     <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
 
-    <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
-    <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
     <NETStandardVersion>2.0</NETStandardVersion>
 
     <!-- Include symbols in package by default-->
@@ -112,13 +110,15 @@
 
   <Target Name="VerifyNETStandard" AfterTargets="Build">
     <ItemGroup>
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardLibraryPackage)\$(NETStandardLibraryPackageVersion)\ref\netstandard$(NETStandardVersion)\*.dll" />
+      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\*.dll" />
+      <!-- force a missing file there are no files found in the package -->
+      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\MISSING_REF_BUILD" Condition="'@(_NETStandardFile)' == ''" />
       <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(File->'%(FileName)')" />
       <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
       <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
     </ItemGroup>
-    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackage)' but missing from this package.  This error has been suppressed." />
-    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackage)' but missing from this package." />
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package." />
   </Target>
 
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">

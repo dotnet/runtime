@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -190,6 +191,22 @@ namespace System.Security.Cryptography.Xml.Tests
         public static X509Certificate2 GetSampleX509Certificate()
         {
             return new X509Certificate2(SamplePfx, "mono");
+        }
+
+        public static Stream LoadResourceStream(string resourceName)
+        {
+            return Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName);
+        }
+
+        public static byte[] LoadResource(string resourceName)
+        {
+            using (Stream stream = Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName))
+            {
+                long length = stream.Length;
+                byte[] buffer = new byte[length];
+                stream.Read(buffer, 0, (int)length);
+                return buffer;
+            }
         }
     }
 }

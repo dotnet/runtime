@@ -25,36 +25,32 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _pErrorContext;
         }
-        private static bool IsNullableConstructor(Expr expr)
+        private static bool IsNullableConstructor(Expr expr, out ExprCall call)
         {
             Debug.Assert(expr != null);
 
-            if (!expr.isCALL())
+            if (expr is ExprCall pCall && pCall.MemberGroup.OptionalObject == null)
             {
-                return false;
+                MethodSymbol meth = pCall.MethWithInst.Meth();
+                if (meth != null && meth.IsNullableConstructor())
+                {
+                    call = pCall;
+                    return true;
+                }
             }
 
-            ExprCall pCall = expr.asCALL();
-            if (pCall.MemberGroup.OptionalObject != null)
-            {
-                return false;
-            }
-
-            MethodSymbol meth = pCall.MethWithInst.Meth();
-            if (meth == null)
-            {
-                return false;
-            }
-            return meth.IsNullableConstructor();
+            call = null;
+            return false;
         }
+
         public static Expr StripNullableConstructor(Expr pExpr)
         {
-            while (IsNullableConstructor(pExpr))
+            while (IsNullableConstructor(pExpr, out ExprCall call))
             {
-                Debug.Assert(pExpr.isCALL());
-                pExpr = pExpr.asCALL().OptionalArguments;
-                Debug.Assert(pExpr != null && !pExpr.isLIST());
+                pExpr = call.OptionalArguments;
+                Debug.Assert(pExpr != null && !(pExpr is ExprList));
             }
+
             return pExpr;
         }
 
@@ -64,10 +60,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(exprSrc != null && exprSrc.Type.IsNullableType());
 
             // For new T?(x), the answer is x.
-            if (IsNullableConstructor(exprSrc))
+            if (IsNullableConstructor(exprSrc, out ExprCall call))
             {
-                Debug.Assert(exprSrc.asCALL().OptionalArguments != null && !exprSrc.asCALL().OptionalArguments.isLIST());
-                return exprSrc.asCALL().OptionalArguments;
+                var args = call.OptionalArguments;
+                Debug.Assert(args != null && !(args is ExprList));
+                return args;
             }
 
             CType typeBase = exprSrc.Type.AsNullableType().GetUnderlyingType();

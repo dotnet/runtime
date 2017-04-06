@@ -15,7 +15,6 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
                   'Debian8.4':'Linux',
-                  'Fedora23':'Linux',
                   'OSX':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
@@ -27,7 +26,6 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'Ubuntu14.04' : 'ubuntu.14.04-x64',
                              'Ubuntu16.04' : 'ubuntu.16.04-x64',
-                             'Fedora23' : 'fedora.23-x64',
                              'Debian8.4' : 'debian.8-x64',
                              'CentOS7.1' : 'centos.7-x64',
                              'OpenSUSE13.2' : 'opensuse.13.2-x64',
@@ -43,7 +41,6 @@ def osShortName = ['Windows 10': 'win10',
                    'CentOS7.1' : 'centos7.1',
                    'Debian8.4' : 'debian8.4',
                    'OpenSUSE13.2' : 'opensuse13.2',
-                   'Fedora23' : 'fedora23',
                    'RHEL7.2' : 'rhel7.2']
 
 

@@ -4,8 +4,8 @@
     <BuildConfigurations>
       portable_net40+sl4+win8+wp8;
       netstandard1.0;
-      netstandard;
       netcoreapp;
+      netfx;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

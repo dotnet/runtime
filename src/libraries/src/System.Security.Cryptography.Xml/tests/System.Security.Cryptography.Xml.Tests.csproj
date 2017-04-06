@@ -16,6 +16,7 @@
     <Compile Include="DataReferenceTest.cs" />
     <Compile Include="DSAKeyValueTest.cs" />
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
+    <Compile Include="EncryptionMethodTests.cs" />
     <Compile Include="EncryptedXmlTest.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
     <Compile Include="KeyInfoNodeTest.cs" />
@@ -48,12 +49,14 @@
     <Compile Include="XmlDsigExcC14NWithCommentsTransformTest.cs" />
     <Compile Include="XmlDsigXPathTransformTest.cs" />
     <Compile Include="XmlDsigXsltTransformTest.cs" />
+    <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />
+    <EmbeddedResource Include="XmlLicenseSample.xml" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />

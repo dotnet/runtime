@@ -277,6 +277,11 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// This method is not supported. Use Decrypt(byte[], RSAEncryptionPadding) instead.
+        /// </summary>
+        public override byte[] DecryptValue(byte[] rgb) => base.DecryptValue(rgb);
+
+        /// <summary>
         /// Dispose the key handles 
         /// </summary>
         protected override void Dispose(bool disposing)
@@ -315,6 +320,11 @@ namespace System.Security.Cryptography
             CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
             return encryptedKey;
         }
+
+        /// <summary>
+        /// This method is not supported. Use Encrypt(byte[], RSAEncryptionPadding) instead.
+        /// </summary>
+        public override byte[] EncryptValue(byte[] rgb) => base.EncryptValue(rgb); 
 
         /// <summary>
         ///Exports a blob containing the key information associated with an RSACryptoServiceProvider object.

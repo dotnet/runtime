@@ -12,26 +12,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // The name is a form of the aid.
     // ----------------------------------------------------------------------------
 
-    internal sealed class AssemblyQualifiedNamespaceSymbol : ParentSymbol, ITypeOrNamespace
+    internal sealed class AssemblyQualifiedNamespaceSymbol : ParentSymbol
     {
-        // ----------------------------------------------------------------------------
-        // AssemblyQualifiedNamespaceSymbol
-        // ----------------------------------------------------------------------------
-
-        public bool IsType => false;
-
-        public bool IsNamespace => true;
-
-        public AssemblyQualifiedNamespaceSymbol AsNamespace()
-        {
-            return this;
-        }
-
-        public CType AsType()
-        {
-            return null;
-        }
-
         public NamespaceSymbol GetNS()
         {
             return parent.AsNamespaceSymbol();

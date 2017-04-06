@@ -222,17 +222,24 @@
   </PropertyGroup>
 
   <Target Name="BinPlace"
-          DependsOnTargets="GetBinPlaceDirs;BinPlaceFiles;BinPlaceProps"
+          DependsOnTargets="GetBinPlaceConfiguration;BinPlaceFiles;BinPlaceProps"
           AfterTargets="CopyFilesToOutputDirectory"
           Condition="'$(EnableBinPlacing)' == 'true'" />
 
   <Target Name="BinPlaceFiles"
           Condition="'@(BinPlaceDir)' != ''"
-          DependsOnTargets="GetBinPlaceItems" >
+          DependsOnTargets="GetBinPlaceItems"
+          Inputs="@(BinPlaceDir);%(BinPlaceDir.ItemName)"
+          Outputs="unused" >
+
+    <PropertyGroup>
+      <_BinPlaceItemName>%(BinPlaceDir.ItemName)</_BinPlaceItemName>
+      <_BinPlaceItemName Condition="'$(_BinPlaceItemName)' == ''">BinPlaceItem</_BinPlaceItemName>
+    </PropertyGroup>
 
     <Message Importance="low" Text="BinPlaceDir: @(BinPlaceDir)" />
 
-    <Copy SourceFiles="@(BinPlaceItem)"
+    <Copy SourceFiles="@($(_BinPlaceItemName))"
           DestinationFolder="%(BinPlaceDir.Identity)" 
           SkipUnchangedFiles="true"
           OverwriteReadOnlyFiles="true"
@@ -284,7 +291,7 @@
   </Target>
 
   <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
-  <Target Name="GetBinPlaceDirs" DependsOnTargets="GetBuildConfigurations">
+  <Target Name="GetBinPlaceConfiguration" DependsOnTargets="GetBuildConfigurations">
     <!-- find which, if any, build configuration of this project is best
          for each binplace configuration -->
     <FindBestConfigurations Properties="@(Property)"
@@ -297,12 +304,25 @@
     <ItemGroup>
       <_currentBinPlaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
 
-      <BinPlaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.RuntimePath)" />
-      <BinPlaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.RefPath)" />
+      <BinPlaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="@(_currentBinPlaceConfigurations->'%(RuntimePath)')" />
+      <BinPlaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="@(_currentBinPlaceConfigurations->'%(RefPath)')" />
 
       <PackageFileDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRuntimePath)" />
       <PackageFileDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRefPath)" />
+
+      <!-- permit BinplaceConfigurations to define SetProperties metadata, 
+           set those properties when BinplaceConfiguration is active -->
+      <_binplacePropertyTuples Include="%(_currentBinPlaceConfigurations.SetProperties)" />
+
+      <_binplaceSetProperty Condition="'%(_binplacePropertyTuples.Identity)' != ''" 
+                            Include="$([System.String]::new('%(_binplacePropertyTuples.Identity)').Split('=')[0])">
+        <Value>$([System.String]::new('%(_binplacePropertyTuples.Identity)').Split('=')[1])</Value>
+      </_binplaceSetProperty>
     </ItemGroup>
+
+    <CreateProperty Value="%(_binplaceSetProperty.Value)" Condition="'@(_binplaceSetProperty)' != ''" >
+      <Output TaskParameter="Value" PropertyName="%(_binplaceSetProperty.Identity)" />
+    </CreateProperty>
   </Target>
 
   <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->

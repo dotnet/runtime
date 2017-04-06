@@ -392,10 +392,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return GetSymbolLoader().GetErrorContext();
         }
-        private NameManager GetNameManager()
-        {
-            return GetSymbolLoader().GetNameManager();
-        }
         private TypeManager GetTypeManager()
         {
             return GetSymbolLoader().GetTypeManager();
@@ -407,7 +403,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Name GetPredefName(PredefinedName pn)
         {
-            return GetNameManager().GetPredefName(pn);
+            return NameManager.GetPredefinedName(pn);
         }
         private AggregateSymbol GetOptPredefAgg(PredefinedType pt)
         {

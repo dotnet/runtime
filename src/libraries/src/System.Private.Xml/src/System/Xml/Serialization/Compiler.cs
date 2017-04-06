@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if XMLSERIALIZERGENERATOR
+namespace Microsoft.XmlSerializer.Generator
+#else
 namespace System.Xml.Serialization
+#endif
 {
     using System.Reflection;
     using System.Reflection.Emit;
@@ -18,12 +22,14 @@ namespace System.Xml.Serialization
     using System.Globalization;
     using System.Runtime.Versioning;
     using System.Runtime.CompilerServices;
-    using Collections.Generic;
-    using Linq;
+    using System.Collections.Generic;
+    using System.Linq;
 
     internal class Compiler
     {
+#if !XMLSERIALIZERGENERATOR
         private bool _debugEnabled = DiagnosticsSwitches.KeepTempFiles.Enabled;
+#endif
         private Hashtable _imports = new Hashtable();
         private StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 

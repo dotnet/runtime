@@ -6,9 +6,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprCast : Expr
     {
+        public ExprCast()
+            : base(ExpressionKind.Cast)
+        {            
+        }
+
         public Expr Argument { get; set; }
 
-        public ExprTypeOrNamespace DestinationType { get; set; }
+        public ExprClass DestinationType { get; set; }
+
+        public override CType Type => DestinationType.Type;
 
         public bool IsBoxingCast => (Flags & (EXPRFLAG.EXF_BOX | EXPRFLAG.EXF_FORCE_BOX)) != 0;
     }

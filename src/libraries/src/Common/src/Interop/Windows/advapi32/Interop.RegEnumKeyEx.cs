@@ -15,7 +15,7 @@ internal partial class Interop
         internal static extern unsafe int RegEnumKeyEx(
             SafeRegistryHandle hKey,
             int dwIndex,
-            char* lpName,
+            char[] lpName,
             ref int lpcbName,
             int[] lpReserved,
             [Out]StringBuilder lpClass,

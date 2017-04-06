@@ -167,7 +167,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileModeAppend()
+        public virtual void FileModeAppend()
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Append))
             {
@@ -177,7 +177,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void FileModeAppendExisting()
+        public virtual void FileModeAppendExisting()
         {
             string fileName = GetTestFilePath();
             using (FileStream fs = CreateFileStream(fileName, FileMode.Create))

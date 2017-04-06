@@ -32,6 +32,9 @@
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\SHA1CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\SHA256CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\SHA384CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\SHA512CryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\SafeCryptoHandles.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\Utils.cs" />

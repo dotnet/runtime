@@ -23,5 +23,33 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             dynamic dr = d0 * d1 + d0 + d0 + d0 / d1 - Math.Pow(d1, 2);
             Assert.Equal(254, dr);
         }
+
+        private class Value<T>
+        {
+            public T Quantity { get; set; }
+        }
+
+        private class Holder
+        {
+            private object _value;
+
+            public void Assign<T>(T value) => _value = value;
+
+            public T Value<T>() => (T)_value;
+        }
+
+        [Fact]
+        public void GenericNameMatchesPredefined()
+        {
+            dynamic d = 3;
+            dynamic v = new Value<int> {Quantity = d};
+            dynamic r = v.Quantity;
+            Assert.Equal(3, r);
+            dynamic h = new Holder();
+            h.Assign<int>(1);
+            Assert.Equal(1, h.Value<int>());
+            h.Assign(2);
+            Assert.Equal(2, h.Value<int>());
+        }
     }
 }

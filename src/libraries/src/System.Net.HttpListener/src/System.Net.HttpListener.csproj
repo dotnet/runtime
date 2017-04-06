@@ -4,6 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Although we have a NS configuration, the actual UWP implementation will be fully managed, so just validate against OneCore -->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -30,7 +32,6 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />

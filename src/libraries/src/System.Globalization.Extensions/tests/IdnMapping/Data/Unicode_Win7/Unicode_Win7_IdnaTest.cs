@@ -23,8 +23,8 @@ namespace System.Globalization.Tests
     {
         public IdnType Type { get; set; }
         public string Source { get; set; }
-        public ConformanceIdnaTestResult GetUnicodeResult { get; set; }
-        public ConformanceIdnaTestResult GetASCIIResult { get; set; }
+        public ConformanceIdnaUnicodeTestResult UnicodeResult { get; set; }
+        public ConformanceIdnaTestResult ASCIIResult { get; set; }
         public int LineNumber { get; set; }
 
         public Unicode_Win7_IdnaTest(string line, int lineNumber)
@@ -33,8 +33,8 @@ namespace System.Globalization.Tests
 
             Type = ConvertStringToType(split[0].Trim());
             Source = EscapedToLiteralString(split[1], lineNumber);
-            GetUnicodeResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[2], lineNumber), Source);
-            GetASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), GetUnicodeResult.Value);
+            UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[2], lineNumber), Source);
+            ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value);
             LineNumber = lineNumber;
         }
 

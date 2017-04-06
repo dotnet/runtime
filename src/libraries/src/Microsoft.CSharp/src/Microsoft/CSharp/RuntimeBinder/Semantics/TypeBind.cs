@@ -321,7 +321,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // have all the information necessary yet, if it is not fully bound.
                 // by calling LookupAggMember, it will ensure that we will update all the
                 // information necessary at least for the given method.
-                checker.GetSymbolLoader().LookupAggMember(checker.GetNameManager().GetPredefName(PredefinedName.PN_CTOR), agg, symbmask_t.MASK_ALL);
+                checker.GetSymbolLoader().LookupAggMember(NameManager.GetPredefinedName(PredefinedName.PN_CTOR), agg, symbmask_t.MASK_ALL);
 
                 if (agg.HasPubNoArgCtor() && !agg.IsAbstract())
                 {

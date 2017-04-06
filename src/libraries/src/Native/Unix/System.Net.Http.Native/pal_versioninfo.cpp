@@ -40,6 +40,11 @@ static_assert(PAL_CURL_VERSION_UNIX_SOCKETS == CURL_VERSION_UNIX_SOCKETS, "");
 static_assert(PAL_CURL_VERSION_PSL == CURL_VERSION_PSL, "");
 #endif
 
+// Based on docs/libcurl/symbols-in-versions in libcurl source tree,
+// the CURL_VERSION_HTTP2 was introduced in libcurl 7.33.0 and
+// the CURLPIPE_MULTIPLEX was introduced in libcurl 7.43.0.
+#define MIN_VERSION_WITH_CURLPIPE_MULTIPLEX 0x074300
+
 extern "C" int32_t HttpNative_GetSupportedFeatures()
 {
     curl_version_info_data* info = curl_version_info(CURLVERSION_NOW);
@@ -48,12 +53,10 @@ extern "C" int32_t HttpNative_GetSupportedFeatures()
 
 extern "C" int32_t HttpNative_GetSupportsHttp2Multiplexing()
 {
-#if HAVE_CURLPIPE_MULTIPLEX
     curl_version_info_data* info = curl_version_info(CURLVERSION_NOW);
-    return info != nullptr && (info->features & CURL_VERSION_HTTP2) == CURL_VERSION_HTTP2 ? 1 : 0;
-#else
-    return 0;
-#endif
+    return info != nullptr &&
+        (info->version_num >= MIN_VERSION_WITH_CURLPIPE_MULTIPLEX) && 
+        ((info->features & PAL_CURL_VERSION_HTTP2) == PAL_CURL_VERSION_HTTP2) ? 1 : 0;
 }
 
 extern "C" char* HttpNative_GetVersionDescription()
@@ -66,40 +69,4 @@ extern "C" char* HttpNative_GetSslVersionDescription()
 {
     curl_version_info_data* info = curl_version_info(CURLVERSION_NOW);
     return info != nullptr && info->ssl_version != nullptr ? strdup(info->ssl_version) : nullptr;
-}
-
-// TODO: Remove HttpNative_GetCurlVersionInfo once the build containing the above functions
-//       is available as part of a package.
-extern "C" int32_t HttpNative_GetCurlVersionInfo(int32_t* age,
-                                                 int32_t* supportsSsl,
-                                                 int32_t* supportsAutoDecompression,
-                                                 int32_t* supportsHttp2Multiplexing)
-{
-    curl_version_info_data* versionInfo = curl_version_info(CURLVERSION_NOW);
-
-    if (!versionInfo || !age || !supportsSsl || !supportsAutoDecompression || !supportsHttp2Multiplexing)
-    {
-        if (age)
-            *age = 0;
-        if (supportsSsl)
-            *supportsSsl = 0;
-        if (supportsAutoDecompression)
-            *supportsAutoDecompression = 0;
-        if (supportsHttp2Multiplexing)
-            *supportsHttp2Multiplexing = 0;
-
-        return 0;
-    }
-
-    *age = versionInfo->age;
-    *supportsSsl = (versionInfo->features & CURL_VERSION_SSL) == CURL_VERSION_SSL;
-    *supportsAutoDecompression = (versionInfo->features & CURL_VERSION_LIBZ) == CURL_VERSION_LIBZ;
-    *supportsHttp2Multiplexing =
-#if HAVE_CURLPIPE_MULTIPLEX
-        (versionInfo->features & CURL_VERSION_HTTP2) == CURL_VERSION_HTTP2;
-#else
-        0;
-#endif
-
-    return 1;
 }

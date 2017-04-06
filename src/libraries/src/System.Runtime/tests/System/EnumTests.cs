@@ -322,7 +322,7 @@ namespace System.Tests
             }
             else
             {
-                Format(enumType, value, "G", expected);
+                Format(enumType, value, "G", expected ?? value.ToString());
             }
         }
 

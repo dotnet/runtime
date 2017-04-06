@@ -790,7 +790,8 @@ namespace System.Security.Cryptography.Xml
 
         private byte[] GetC14NDigest(HashAlgorithm hash)
         {
-            if (!_bCacheValid || !SignedInfo.CacheValid)
+            bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
+            if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
             {
                 string baseUri = (_containingDocument == null ? null : _containingDocument.BaseURI);
                 XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
@@ -810,7 +811,7 @@ namespace System.Security.Cryptography.Xml
                 SignedXmlDebugLog.LogCanonicalizedOutput(this, c14nMethodTransform);
                 _digestedSignedInfo = c14nMethodTransform.GetDigestedOutput(hash);
 
-                _bCacheValid = true;
+                _bCacheValid = !isKeyedHashAlgorithm;
             }
             return _digestedSignedInfo;
         }

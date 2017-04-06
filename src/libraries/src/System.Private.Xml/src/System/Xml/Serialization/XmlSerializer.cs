@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if XMLSERIALIZERGENERATOR
+namespace Microsoft.XmlSerializer.Generator
+#else
 namespace System.Xml.Serialization
+#endif
 {
     using System.Reflection;
     using System.Collections;
@@ -17,6 +21,7 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
     using System.Collections.Generic;
     using System.Runtime.Versioning;
+    using System.Xml;
 
     /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlDeserializationEvents"]/*' />
     /// <devdoc>
@@ -782,6 +787,50 @@ namespace System.Xml.Serialization
             }
 #endif
         }
+
+#if XMLSERIALIZERGENERATOR
+        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
+        [ResourceExposure(ResourceScope.None)]
+        public static bool GenerateSerializer(Type[] types, XmlMapping[] mappings, string codePath)
+        {
+            if (types == null || types.Length == 0)
+                return false;
+
+            if (mappings == null)
+                throw new ArgumentNullException(nameof(mappings));
+
+            if(!Directory.Exists(codePath))
+            {
+                throw new ArgumentException(SR.Format(SR.XmlMelformMapping));
+            }
+
+            if (XmlMapping.IsShallow(mappings))
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlMelformMapping));
+            }
+
+            Assembly assembly = null;
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type type = types[i];
+                if (DynamicAssemblies.IsTypeDynamic(type))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.XmlPregenTypeDynamic, type.FullName));
+                }
+
+                if (assembly == null)
+                {
+                    assembly = type.Assembly;
+                }
+                else if (type.Assembly != assembly)
+                {
+                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, assembly.Location), "types");
+                }
+            }
+
+            return TempAssembly.GenerateSerializerFile(mappings, types, null, assembly, new Hashtable(), codePath);
+        }
+#endif
 
         private static XmlSerializer[] GetSerializersFromCache(XmlMapping[] mappings, Type type)
         {

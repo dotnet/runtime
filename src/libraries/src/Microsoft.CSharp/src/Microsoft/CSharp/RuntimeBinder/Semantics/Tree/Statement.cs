@@ -6,6 +6,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class ExprStatement : Expr
     {
+        public ExprStatement(ExpressionKind kind)
+            : base(kind)
+        {
+        }
+
         public ExprStatement OptionalNextStatement { get; set; }
     }
 }

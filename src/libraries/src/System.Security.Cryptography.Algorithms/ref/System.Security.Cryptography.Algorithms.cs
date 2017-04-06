@@ -99,7 +99,9 @@ namespace System.Security.Cryptography
     {
         protected DSA() { }
         public static new System.Security.Cryptography.DSA Create() { throw null; }
+        public static System.Security.Cryptography.DSA Create(int keySizeInBits) { throw null; }
         public static new System.Security.Cryptography.DSA Create(string algName) { throw null; }
+        public static System.Security.Cryptography.DSA Create(System.Security.Cryptography.DSAParameters parameters) { throw null; }
         public abstract byte[] CreateSignature(byte[] rgbHash);
         public abstract System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters);
         public override void FromXmlString(string xmlString) { }
@@ -395,7 +397,9 @@ namespace System.Security.Cryptography
         public override string KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public static new System.Security.Cryptography.RSA Create() { throw null; }
+        public static System.Security.Cryptography.RSA Create(int keySizeInBits) { throw null; }
         public static new System.Security.Cryptography.RSA Create(string algName) { throw null; }
+        public static System.Security.Cryptography.RSA Create(System.Security.Cryptography.RSAParameters parameters) { throw null; }
         public virtual byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
         public virtual byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }

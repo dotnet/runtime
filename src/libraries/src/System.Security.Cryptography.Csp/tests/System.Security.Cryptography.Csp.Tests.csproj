@@ -53,7 +53,7 @@
     <Compile Include="RC2CryptoServiceProviderProvider.cs" />
     <Compile Include="RC2CryptoServiceProviderTests.cs" />
     <Compile Include="RNGCryptoServiceProviderTests.cs" />
-    <Compile Include="SHA1CryptoServiceProviderTests.cs" />
+    <Compile Include="SHAxCryptoServiceProviderTests.cs" />
     <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs</Link>
