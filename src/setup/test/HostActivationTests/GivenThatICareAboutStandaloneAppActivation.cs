@@ -126,12 +126,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             if (CurrentPlatform.IsWindows)
             {
-                exitCode.Should().Be(-2147450749);
+                exitCode.Should().Be(-2147450748);
             }
             else
             {
                 // Some Unix flavors filter exit code to ubyte.
-                (exitCode & 0xFF).Should().Be(0x83);
+                (exitCode & 0xFF).Should().Be(0x84);
             }
         }
 

@@ -711,7 +711,7 @@ bool is_sdk_dir_present(const pal::string_t& own_dir)
     return pal::directory_exists(sdk_path);
 }
 
-int muxer_usage(bool is_sdk_present)
+int muxer_info()
 {
     trace::println();
     trace::println(_X("Microsoft .NET Core Shared Framework Host"));
@@ -719,30 +719,40 @@ int muxer_usage(bool is_sdk_present)
     trace::println(_X("  Version  : %s"), _STRINGIFY(HOST_FXR_PKG_VER));
     trace::println(_X("  Build    : %s"), _STRINGIFY(REPO_COMMIT_HASH));
     trace::println();
-    trace::println(_X("Usage: dotnet [common-options] [[options] path-to-application]"));
+
+    return StatusCode::Success;
+}
+
+int muxer_usage(bool is_sdk_present)
+{
+
+    std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, true);
+
+    if (!is_sdk_present)
+    {
+        trace::println();
+        trace::println(_X("Usage: dotnet [host-options] [path-to-application]"));
+        trace::println();
+        trace::println(_X("path-to-application:"));
+        trace::println(_X("  The path to an application .dll file to execute."));
+    }
     trace::println();
-    trace::println(_X("Common Options:"));
-    trace::println(_X("  --help                           Display .NET Core Shared Framework Host help."));
-    trace::println(_X("  --version                        Display .NET Core Shared Framework Host version."));
-    trace::println();
-    trace::println(_X("Options:"));
-    trace::println(_X("  --fx-version <version>           Version of the installed Shared Framework to use to run the application."));
-    trace::println(_X("  --additionalprobingpath <path>   Path containing probing policy and assemblies to probe for."));
-    trace::println();
-    trace::println(_X("Path to Application:"));
-    trace::println(_X("  The path to a .NET Core managed application, dll or exe file to execute."));
-    trace::println();
-    trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
+    trace::println(_X("host-options:"));
+
+    for (const auto& arg : known_opts)
+    {
+        trace::println(_X("  %-34s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
+    }
 
     trace::println();
-    if (is_sdk_present)
+
+    trace::println();
+    if (!is_sdk_present)
     {
-        trace::println(_X("Use dotnet --help to get help with the SDK"));
-    }
-    else
-    {
-        trace::println(_X("To get started on developing applications for .NET Core, install the SDK from:"));
-        trace::println(_X("  %s"), DOTNET_CORE_URL);
+        trace::println(_X("Common Options:"));
+        trace::println(_X("  -h|--help                           Displays this help."));
+        trace::println(_X("  --info                              Displays the host information"));
+        trace::println();
     }
 
     
@@ -759,6 +769,25 @@ void append_realpath(const pal::string_t& path, std::vector<pal::string_t>* real
     }
 }
 
+std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t mode, bool get_all_options)
+{
+    std::vector<host_option> known_opts = { { _X("--additionalprobingpath"), _X("<path>"), _X("Path containing probing policy and assemblies to probe for") } };
+    if (get_all_options || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::standalone)
+    {
+        known_opts.push_back({ _X("--depsfile"), _X("<path>"),  _X("Path to <application>.deps.json file") });
+        known_opts.push_back({ _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file") });
+    }
+
+    if (get_all_options || mode == host_mode_t::muxer)
+    {
+        known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") });
+        known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X(""), _X("Roll forward on no candidate shared framework is enabled") });
+        known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additonal deps.json file") });
+    }
+
+    return known_opts;
+}
+
 int fx_muxer_t::parse_args_and_execute(
     const pal::string_t& own_dir,
     const pal::string_t& own_dll,
@@ -766,19 +795,7 @@ int fx_muxer_t::parse_args_and_execute(
 {
     *is_an_app = true;
 
-    std::vector<pal::string_t> known_opts = { _X("--additionalprobingpath") };
-    if (exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::standalone)
-    {
-        known_opts.push_back(_X("--depsfile"));
-        known_opts.push_back(_X("--runtimeconfig"));
-    }
-
-    if (mode == host_mode_t::muxer)
-    {
-        known_opts.push_back(_X("--fx-version"));
-        known_opts.push_back(_X("--roll-forward-on-no-candidate-fx"));
-        known_opts.push_back(_X("--additional-deps"));
-    }
+    std::vector<host_option> known_opts = get_known_opts(exec_mode, mode);
 
     // Parse the known arguments if any.
     int num_parsed = 0;
@@ -788,7 +805,7 @@ int fx_muxer_t::parse_args_and_execute(
         trace::error(_X("Failed to parse supported options or their values:"));
         for (const auto& arg : known_opts)
         {
-            trace::error(_X("  %s"), arg.c_str());
+            trace::error(_X("  %s"), arg.option.c_str());
         }
         return InvalidArgFailure;
     }
@@ -1004,17 +1021,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     trace::verbose(_X("--- Executing in muxer mode..."));
 
-    if (argc <= 1)
-    {
-        return muxer_usage(!is_sdk_dir_present(own_dir));
-    }
-
     if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
     {
         return parse_args_and_execute(own_dir, own_dll, 2, argc, argv, true, host_mode_t::muxer, &is_an_app); // arg offset 2 for dotnet, exec
     }
 
     int result = parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::muxer, &is_an_app); // arg offset 1 for dotnet
+   
+
     if (is_an_app)
     {
         return result;
@@ -1028,12 +1042,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
         assert(argc > 1);
-        if (pal::strcasecmp(_X("--help"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("--version"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("-v"), argv[1]) == 0)
+        if ( pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
+             pal::strcasecmp(_X("--help"), argv[1]) == 0 )
         {
-            return muxer_usage(true);
+            return muxer_usage(false);
+        }
+        else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            return muxer_info();
         }
         trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from: "));
         trace::error(_X("  %s"), DOTNET_CORE_URL);
@@ -1055,7 +1071,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     new_argv[1] = sdk_dotnet.c_str();
 
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
-    return parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
+    result = parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
+
+    if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+    {
+        muxer_info();
+    }
+
+    return result;
 }
 
 
