@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -669,19 +670,32 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(16611, TestPlatforms.AnyUnix)]
         [Fact]
-        public async Task CopyToAsync_DisposedSourceStream_Throws()
+        public async Task CopyToAsync_DisposedSourceStream_ThrowsOnWindows_NoThrowOnUnix()
         {
             await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
             {
-                // Copying while and then after disposing the stream
+                // Copying while disposing the stream
                 Task copyTask = stream.CopyToAsync(new MemoryStream());
                 stream.Dispose();
-                await Assert.ThrowsAsync<IOException>(() => copyTask);
+                Exception e = await Record.ExceptionAsync(() => copyTask);
+
+                // Difference in shutdown/close behavior between Windows and Unix.
+                // On Windows, the outstanding receive is completed as aborted when the
+                // socket is closed.  On Unix, it's completed as successful once or after
+                // the shutdown is issued, but depending on timing, if it's then closed
+                // before that takes effect, it may also complete as aborted.
+                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows); 
+                Assert.True(
+                    (isWindows && e is IOException) ||
+                    (!isWindows && (e == null || e is IOException)),
+                    $"Got unexpected exception: {e?.ToString() ?? "(null)"}");
+
+                // Copying after disposing the stream
                 Assert.Throws<ObjectDisposedException>(() => { stream.CopyToAsync(new MemoryStream()); });
             });
         }
+
 
         [Fact]
         public async Task CopyToAsync_NonReadableSourceStream_Throws()
