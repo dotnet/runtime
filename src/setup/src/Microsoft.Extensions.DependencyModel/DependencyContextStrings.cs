@@ -27,6 +27,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal const string HashPathPropertyName = "hashPath";
 
+        internal const string RuntimeStoreManifestPropertyName = "runtimeStoreManifestName";
+
         internal const string TypePropertyName = "type";
 
         internal const string ServiceablePropertyName = "serviceable";
