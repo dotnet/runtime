@@ -1992,6 +1992,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
 				g_free (err);
 			}
+			g_free (aot_name);
 		}
 		if (!sofile) {
 			GList *l;
