@@ -298,6 +298,7 @@ typedef struct MonoAotCompile {
 	guint32 label_generator;
 	gboolean llvm;
 	gboolean has_jitted_code;
+	gboolean is_full_aot;
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 	gboolean blob_closed;
@@ -438,7 +439,10 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, const char *format,
 	va_end (args);
 	mono_error_cleanup (error);
 
-	g_error ("FullAOT cannot continue if there are loader errors");
+	if (acfg->is_full_aot) {
+		fprintf (output, "FullAOT cannot continue if there are loader errors.\n");
+		exit (1);
+	}
 }
 
 /* Wrappers around the image writer functions */
@@ -7613,11 +7617,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
-		if (acfg->aot_opts.print_skipped_methods) {
-			printf ("Skip (JIT failure): %s\n", mono_method_get_full_name (method));
-			if (cfg->exception_message)
-				printf ("Caused by: %s\n", cfg->exception_message);
-		}
+		/* Some instances cannot be JITted due to constraints etc. */
+		if (!method->is_inflated)
+			report_loader_error (acfg, &cfg->error, "Unable to compile method '%s' due to: '%s'.\n", mono_method_get_full_name (method), mono_error_get_message (&cfg->error));
 		/* Let the exception happen at runtime */
 		return;
 	}
@@ -11485,8 +11487,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-	if (mono_aot_mode_is_full (&acfg->aot_opts))
+	if (mono_aot_mode_is_full (&acfg->aot_opts)) {
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_FULL_AOT);
+		acfg->is_full_aot = TRUE;
+	}
 
 	if (mono_threads_is_coop_enabled ())
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_SAFEPOINTS);
