@@ -169,6 +169,7 @@ namespace Microsoft.DotNet.Host.Build
 
         private static void CopyBlobs(string sourceFolder, string destinationFolder)
         {
+            Console.WriteLine($"--Copying blobs from '{sourceFolder}' to '{destinationFolder}'");
             foreach (string blob in AzurePublisherTool.ListBlobs(sourceFolder))
             {
                 string source = blob.Replace("/dotnet/", "");
