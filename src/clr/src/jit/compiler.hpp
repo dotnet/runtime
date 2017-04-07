@@ -2335,15 +2335,16 @@ inline
             // On amd64, every param has a stack location, except on Unix-like systems.
             assert(varDsc->lvIsParam);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-#elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-            // For !LEGACY_BACKEND on x86, a stack parameter that is enregistered will have a stack location.
-            assert(varDsc->lvIsParam && !varDsc->lvIsRegArg);
-#else  // !(_TARGET_AMD64 || !(defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
+#elif !defined(LEGACY_BACKEND)
+            // For !LEGACY_BACKEND on other targets, a stack parameter that is enregistered or prespilled
+            // for profiling on ARM will have a stack location.
+            assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
+#else  // !(_TARGET_AMD64 || defined(LEGACY_BACKEND))
             // Otherwise, we only have a valid stack location for:
             // A parameter that was passed on the stack, being homed into its register home,
             // or a prespilled argument on arm under profiler.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg && varDsc->lvRegister) || isPrespilledArg);
-#endif // !(_TARGET_AMD64 || !(defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)))
+#endif // !(_TARGET_AMD64 || defined(LEGACY_BACKEND))
         }
 
         FPbased = varDsc->lvFramePointerBased;
