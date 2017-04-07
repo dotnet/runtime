@@ -9,7 +9,4 @@
 /*.obj
 /*.exe
 /*.dll
-/arm_dpimacros.h
-/arm_fpamacros.h
-/arm_vfpmacros.h
 /fixeol.sh
