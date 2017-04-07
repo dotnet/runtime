@@ -211,4 +211,12 @@ typedef mword SgenDescriptor;
 #define SGEN_DEFAULT_NURSERY_SIZE	(1 << 22)
 #define SGEN_DEFAULT_NURSERY_MAX_SIZE	(1 << 25)
 
+/*
+ * We are trying to keep pauses lower than this (ms). We use it for dynamic nursery
+ * sizing heuristics. We are keeping leeway in order to be prepared for work-load
+ * variations.
+ */
+#define SGEN_MAX_PAUSE_TIME 30
+#define SGEN_MAX_PAUSE_MARGIN 0.66f
+
 #endif

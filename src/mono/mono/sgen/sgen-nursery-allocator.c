@@ -920,7 +920,7 @@ sgen_nursery_allocator_set_nursery_bounds (char *start, size_t min_size, size_t 
 }
 
 void
-sgen_resize_nursery (void)
+sgen_resize_nursery (gboolean need_shrink)
 {
 	size_t major_size;
 
@@ -938,11 +938,11 @@ sgen_resize_nursery (void)
 	 * section).
 	 */
 	if ((sgen_nursery_size * 2) < (major_size / SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO) &&
-			(sgen_nursery_size * 2) <= sgen_nursery_max_size) {
+			(sgen_nursery_size * 2) <= sgen_nursery_max_size && !need_shrink) {
 		if ((nursery_section->end_data - nursery_section->data) == sgen_nursery_size)
 			nursery_section->end_data += sgen_nursery_size;
 		sgen_nursery_size *= 2;
-	} else if (sgen_nursery_size > (major_size / SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO) &&
+	} else if ((sgen_nursery_size > (major_size / SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO) || need_shrink) &&
 			(sgen_nursery_size / 2) >= sgen_nursery_min_size) {
 		sgen_nursery_size /= 2;
 	}
