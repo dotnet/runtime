@@ -5042,12 +5042,14 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
     
     FARPROC pFunc = NULL, pFuncW = NULL;
 
+#ifndef FEATURE_PAL
     // Handle ordinals.
     if (GetEntrypointName()[0] == '#')
     {
         long ordinal = atol(GetEntrypointName()+1);
         return reinterpret_cast<LPVOID>(GetProcAddress(hMod, (LPCSTR)(size_t)((UINT16)ordinal)));
     }
+#endif
 
     // Just look for the unmangled name.  If it is unicode fcn, we are going
     // to need to check for the 'W' API because it takes precedence over the
