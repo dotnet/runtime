@@ -2542,7 +2542,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             GenTree* indir    = Ind(cellAddr);
 
 #ifdef FEATURE_READYTORUN_COMPILER
-#if defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_ARMARCH_)
             // For arm64, we dispatch code same as VSD using X11 for indirection cell address,
             // which ZapIndirectHelperThunk expects.
             if (call->IsR2RRelativeIndir())

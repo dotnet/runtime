@@ -1379,7 +1379,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // R2R indirect call. Use the same registers as VSD
   #define REG_R2R_INDIRECT_PARAM          REG_R4
   #define RBM_R2R_INDIRECT_PARAM          RBM_R4
-  #define PREDICT_REG_RER_INDIRECT_PARAM  PREDICT_REG_R4
 
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_R4
