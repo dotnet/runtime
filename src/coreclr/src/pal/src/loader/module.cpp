@@ -280,6 +280,16 @@ GetProcAddress(
 
     module = (MODSTRUCT *) hModule;
 
+    /* try to assert on attempt to locate symbol by ordinal */
+    /* this can't be an exact test for HIWORD((DWORD)lpProcName) == 0
+       because of the address range reserved for ordinals contain can
+       be a valid string address on non-Windows systems
+    */
+    if ((DWORD_PTR)lpProcName < VIRTUAL_PAGE_SIZE)
+    {
+        ASSERT("Attempt to locate symbol by ordinal?!\n");
+    }
+
     /* parameter validation */
 
     if ((lpProcName == nullptr) || (*lpProcName == '\0'))
@@ -294,16 +304,6 @@ GetProcAddress(
         TRACE("Invalid module handle %p\n", hModule);
         SetLastError(ERROR_INVALID_HANDLE);
         goto done;
-    }
-    
-    /* try to assert on attempt to locate symbol by ordinal */
-    /* this can't be an exact test for HIWORD((DWORD)lpProcName) == 0
-       because of the address range reserved for ordinals contain can
-       be a valid string address on non-Windows systems
-    */
-    if ((DWORD_PTR)lpProcName < VIRTUAL_PAGE_SIZE)
-    {
-        ASSERT("Attempt to locate symbol by ordinal?!\n");
     }
 
     // Get the symbol's address.
