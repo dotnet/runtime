@@ -217,6 +217,7 @@
     </TargetGroups>
     <TargetGroups Include="mono">
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
     </TargetGroups>
   </ItemGroup>
 </Project>
