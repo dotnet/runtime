@@ -34,6 +34,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempPathW.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.LockFile.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.OutputDebugString.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"/>
@@ -72,6 +73,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.PosixFAdvise.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Read.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Stat.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.SysLog.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Unlink.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Write.cs"/>
   </ItemGroup>
@@ -128,6 +130,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DivideByZeroException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DuplicateWaitObjectException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\EntryPointNotFoundException.cs"/>
