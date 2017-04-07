@@ -2041,8 +2041,8 @@ public:
     /************************************************************************/
 
     bool emitFullArgInfo; // full arg info (including non-ptr arg)?
-    bool emitFullGCinfo; // full GC pointer maps?
-    bool emitFullyInt;   // fully interruptible code?
+    bool emitFullGCinfo;  // full GC pointer maps?
+    bool emitFullyInt;    // fully interruptible code?
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned emitCntStackDepth; // 0 in prolog/epilog, One DWORD elsewhere
