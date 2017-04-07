@@ -96,6 +96,7 @@
   </Target>
 
   <Target Name="FilterProjects"
+          Condition="'$(FilterProjectsByBuildConfiguration)' != 'false'"
           DependsOnTargets="ExpandAllBuildConfigurations;FilterBuildConfiguration" />
 
   <!-- Runs in a leaf project (eg: csproj) to determine all configurations -->

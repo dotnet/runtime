@@ -2,29 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <Import Project="$(MSBuildProjectName).props" />
-
-  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
-  <Choose>
-    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
-    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <ItemGroup>
-    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>

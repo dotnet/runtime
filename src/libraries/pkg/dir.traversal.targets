@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="..\dir.traversal.targets" />
+  
+  <PropertyGroup Condition="'$(OfficialBuildId)' != ''">
+    <!-- During an official build, only build identity packages in the AllConfigurations build -->
+    <SkipBuildIdentityPackage Condition="'$(BuildAllConfigurations)' != 'true'">true</SkipBuildIdentityPackage>
+
+    <!-- During an official build, skip building runtime packages on AllConfigurations build -->
+    <SkipBuildRuntimePackage Condition="'$(BuildAllConfigurations)' == 'true'">true</SkipBuildRuntimePackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      FilterProjectsPackageRID;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+
+  <!-- When @(BuildRID) is set, filter the set of projects down to only those applicable to $(PackageRID) -->
+  <Target Name="FilterProjectsPackageRID" Condition="'@(BuildRID)' != ''">
+    <ItemGroup>
+      <!-- Build identity package, when SkipBuildIdentityPackage is not set -->
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '' AND '$(SkipBuildIdentityPackage)' != 'true'" />
+      <!-- Build packages for current RID, when SkipBuildRuntimePackage is not set -->
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' AND '$(SkipBuildRuntimePackage)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Project Remove="@(Project)" />
+      <Project Include="@(_projectsToBuild)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- don't use BuildConfiguration filtering -->
+      <FilterProjectsByBuildConfiguration>false</FilterProjectsByBuildConfiguration>
+    </PropertyGroup>
+  </Target>
+</Project>
