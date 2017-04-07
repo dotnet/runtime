@@ -32,7 +32,7 @@
     <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
       <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
     </ReadSigningRequired>
-    <Message Importance="High" Text="Attempting to sign %(FilesToSign.Identity) with authenticode %(FilesToSign.Authenticode) and strongname %(FilesToSign.StrongName)" />
+    <Message Importance="High" Text="Attempting to sign %(FilesToSign.Identity) with authenticode='%(FilesToSign.Authenticode)' and strongname='%(FilesToSign.StrongName)'" />
   </Target>
 
   <Target Name="Build"
