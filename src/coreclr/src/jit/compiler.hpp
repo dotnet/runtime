@@ -2336,14 +2336,9 @@ inline
             assert(varDsc->lvIsParam);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif !defined(LEGACY_BACKEND)
-#if defined(_TARGET_X86_)
-            // For !LEGACY_BACKEND on x86, a stack parameter that is enregistered will have a stack location.
-            assert(varDsc->lvIsParam && !varDsc->lvIsRegArg);
-#else
             // For !LEGACY_BACKEND on other targets, a stack parameter that is enregistered or prespilled
             // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
-#endif
 #else  // !(_TARGET_AMD64 || defined(LEGACY_BACKEND))
             // Otherwise, we only have a valid stack location for:
             // A parameter that was passed on the stack, being homed into its register home,
