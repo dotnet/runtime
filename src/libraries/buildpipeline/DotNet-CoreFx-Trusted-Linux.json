@@ -191,7 +191,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(PB_BuildArguments)",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -245,7 +245,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=true",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
