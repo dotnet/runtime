@@ -5888,67 +5888,12 @@ static HMODULE LocalLoadLibraryDirectHelper(LPCWSTR name, DWORD flags, LoadLibEr
 #endif // !FEATURE_PAL
 }
 
-
-#if !defined(FEATURE_CORESYSTEM)
-
-#define NATIVE_DLL(d) L#d, L#d W(".dll")
-
-const LPCWSTR wellKnownModules[] =
-{
-    NATIVE_DLL(advapi32),
-    NATIVE_DLL(gdi32),
-    NATIVE_DLL(gdiplus),
-    NATIVE_DLL(kernel32),
-    NATIVE_DLL(mscoree),
-    NATIVE_DLL(ole32),
-    NATIVE_DLL(shfolder),
-    NATIVE_DLL(user32),
-    NATIVE_DLL(version)
-};
-
-BOOL CompareLibNames (UPTR val1, UPTR val2)
-{
-    CONTRACTL {
-        MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LPCWSTR wszStr1 = (LPCWSTR)(val1 << 1);
-    LPCWSTR wszStr2 = (LPCWSTR)val2;
-
-    if (SString::_wcsicmp(wszStr1, wszStr2) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-PtrHashMap * NDirect::s_pWellKnownNativeModules  = NULL;
+#if !defined(FEATURE_PAL)
 bool         NDirect::s_fSecureLoadLibrarySupported = false;
-
-HINSTANCE NDirect::CheckForWellKnownModules(LPCWSTR wszLibName, LoadLibErrorTracker *pErrorTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    ModuleHandleHolder hMod;
-    ULONG hash = HashiString(wszLibName);
-    LPCWSTR     wszName = NULL;
-    wszName = (LPCWSTR) s_pWellKnownNativeModules->LookupValue((UPTR) hash, (LPVOID)wszLibName);
-
-    if (wszName != (LPCWSTR)INVALIDENTRY)
-    {
-        hMod = LocalLoadLibraryHelper(wszLibName, 0, pErrorTracker);
-    }
-
-    return hMod.Extract();
-}
-
-#endif  // !FEATURE_CORESYSTEM
+#endif
 
 #define TOLOWER(a) (((a) >= W('A') && (a) <= W('Z')) ? (W('a') + (a - W('A'))) : (a))
 #define TOHEX(a)   ((a)>=10 ? W('a')+(a)-10 : W('0')+(a))
-
 
 // static
 HMODULE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath)
@@ -6154,10 +6099,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     {
        return hmod.Extract();
     }
-
-#if !defined(FEATURE_CORESYSTEM)
-    hmod = CheckForWellKnownModules(wszLibName, pErrorTracker);
-#endif
 
 #ifdef FEATURE_PAL
     // In the PAL version of CoreCLR, the CLR module itself exports the functionality
@@ -6432,6 +6373,17 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     }
     CONTRACTL_END;
 
+#if !defined(FEATURE_PAL)
+    // Check if the OS supports the new secure LoadLibraryEx flags introduced in KB2533623
+    HMODULE hMod = CLRGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
+    _ASSERTE(hMod != NULL);
+
+    if (GetProcAddress(hMod, "AddDllDirectory") != NULL)
+    {
+        // The AddDllDirectory export was added in KB2533623 together with the new flag support
+        s_fSecureLoadLibrarySupported = true;
+    }
+#endif // !FEATURE_PAL
 }
 
 
