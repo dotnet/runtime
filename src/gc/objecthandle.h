@@ -30,8 +30,6 @@
 #define StoreObjectInHandle(handle, object)        HndAssignHandle(handle, object)
 #define InterlockedCompareExchangeObjectInHandle(handle, object, oldObj)        HndInterlockedCompareExchangeHandle(handle, object, oldObj)
 #define StoreFirstObjectInHandle(handle, object)   HndFirstAssignHandle(handle, object)
-#define ObjectHandleIsNull(handle)                 HndIsNull(handle)
-#define IsHandleNullUnchecked(handle)              HndCheckForNullUnchecked(handle)
 
 typedef DPTR(struct HandleTableMap) PTR_HandleTableMap;
 typedef DPTR(struct HandleTableBucket) PTR_HandleTableBucket;
