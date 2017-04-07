@@ -2098,47 +2098,33 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 #elif defined(_TARGET_ARM_)
     if (IsDelayLoadHelper())
     {
-        // Indirection
-        if (IsVSD())
-        {
-            // push r4
-            *(WORD *)(p + 0) = 0xB410;
-            p += 2;
-        }
-        else
-        {
-            // push r12
-            *(WORD *)(p + 0) = 0xF84D;
-            *(WORD *)(p + 2) = 0xCD04;
-            p += 4;
-        }
+        // r4 contains indirection cell
+        // push r4
+        *(WORD *)(p + 0) = 0xB410;
+        p += 2;
 
-        // mov r12, index
-        *(WORD *)(p + 0) = 0xF04F;
+        // mov r4, index
         _ASSERTE(GetSectionIndex() <= 0x7F);
-        *(WORD *)(p + 2) = 0x0C00 | (BYTE)GetSectionIndex();
-        p += 4;
+        *(WORD *)(p + 0) = 0x2400 | (BYTE)GetSectionIndex();
+        p += 2;
 
-        // push r12
-        *(WORD *)(p + 0) = 0xF84D;
-        *(WORD *)(p + 2) = 0xCD04;
-        p += 4;
+        // push r4
+        *(WORD *)(p + 0) = 0xB410;
+        p += 2;
 
-        // mov r12, [module]
-        MovRegImm(p, 12);
+        // mov r4, [module]
+        MovRegImm(p, 4);
         if (pImage != NULL)
             pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_Module), 0, IMAGE_REL_BASED_THUMB_MOV32);
         p += 8;
 
-        // ldr r12, [r12]
-        *(WORD *)(p + 0) = 0xF8DC;
-        *(WORD *)(p + 2) = 0xC000;
-        p += 4;
+        // ldr r4, [r4]
+        *(WORD *)p = 0x6824;
+        p += 2;
 
-        // push r12
-        *(WORD *)(p + 0) = 0xF84D;
-        *(WORD *)(p + 2) = 0xCD04;
-        p += 4;
+        // push r4
+        *(WORD *)(p + 0) = 0xB410;
+        p += 2;
     }
     else
     if (IsLazyHelper())
@@ -2154,19 +2140,18 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
         p += 2;
     }
 
-    // mov r12, [helper]
-    MovRegImm(p, 12);
+    // mov r4, [helper]
+    MovRegImm(p, 4);
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_THUMB_MOV32);
     p += 8;
 
-    // ldr r12, [r12]
-    *(WORD *)(p + 0) = 0xF8DC;
-    *(WORD *)(p + 2) = 0xC000;
-    p += 4;
+    // ldr r4, [r4]
+    *(WORD *)p = 0x6824;
+    p += 2;
 
-    // bx r12
-    *(WORD *)p = 0x4760;
+    // bx r4
+    *(WORD *)p = 0x4720;
     p += 2;
 #elif defined(_TARGET_ARM64_)
     if (IsDelayLoadHelper())
