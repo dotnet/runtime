@@ -9,7 +9,6 @@
     <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <FileToInclude Include="System.Diagnostics.Tracing" />
     <FileToInclude Include="System.Dynamic.Runtime" />
     <FileToInclude Include="System.Net.Requests" />
   </ItemGroup>
