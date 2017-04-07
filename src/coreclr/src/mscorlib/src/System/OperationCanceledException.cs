@@ -32,19 +32,19 @@ namespace System
         public OperationCanceledException()
             : base(SR.OperationCanceled)
         {
-            SetErrorCode(__HResults.COR_E_OPERATIONCANCELED);
+            HResult = __HResults.COR_E_OPERATIONCANCELED;
         }
 
         public OperationCanceledException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_OPERATIONCANCELED);
+            HResult = __HResults.COR_E_OPERATIONCANCELED;
         }
 
         public OperationCanceledException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_OPERATIONCANCELED);
+            HResult = __HResults.COR_E_OPERATIONCANCELED;
         }
 
 

@@ -15,7 +15,7 @@ namespace System.IO
         private FileLoadException(string fileName, string fusionLog, int hResult)
             : base(null)
         {
-            SetErrorCode(hResult);
+            HResult = hResult;
             FileName = fileName;
             FusionLog = fusionLog;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);

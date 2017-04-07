@@ -35,19 +35,19 @@ namespace System.IO
         public IOException()
             : base(SR.Arg_IOException)
         {
-            SetErrorCode(__HResults.COR_E_IO);
+            HResult = __HResults.COR_E_IO;
         }
 
         public IOException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_IO);
+            HResult = __HResults.COR_E_IO;
         }
 
         public IOException(String message, int hresult)
             : base(message)
         {
-            SetErrorCode(hresult);
+            HResult = hresult;
         }
 
         // Adding this for debuggers when looking at exceptions in partial
@@ -56,14 +56,14 @@ namespace System.IO
         internal IOException(String message, int hresult, String maybeFullPath)
             : base(message)
         {
-            SetErrorCode(hresult);
+            HResult = hresult;
             _maybeFullPath = maybeFullPath;
         }
 
         public IOException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_IO);
+            HResult = __HResults.COR_E_IO;
         }
 
         protected IOException(SerializationInfo info, StreamingContext context) : base(info, context)

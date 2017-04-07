@@ -22,7 +22,7 @@ namespace System
         public AppDomainUnloadedException()
             : base(SR.Arg_AppDomainUnloadedException)
         {
-            SetErrorCode(__HResults.COR_E_APPDOMAINUNLOADED);
+            HResult = __HResults.COR_E_APPDOMAINUNLOADED;
         }
 
         //
