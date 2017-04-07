@@ -1259,6 +1259,12 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             {
                 internalIntCount      = 1;
                 internalIntCandidates = RBM_ALLINT;
+
+                if (size >= 2 * REGSIZE_BYTES)
+                {
+                    // Use ldp/stp to reduce code size and improve performance
+                    internalIntCount++;
+                }
             }
             else
             {
