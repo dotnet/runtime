@@ -190,6 +190,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidTimeZoneException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Error.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileLoadException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs"/>
