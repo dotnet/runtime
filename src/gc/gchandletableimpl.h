@@ -25,6 +25,12 @@ public:
     virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary);
 
     virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
+
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type);
+
+    virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
+
+    virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle);
 };
 
 #endif  // GCHANDLETABLE_H_
