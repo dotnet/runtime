@@ -28,31 +28,31 @@ namespace System
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, String fileName) : base(message)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
         public BadImageFormatException(String message, String fileName, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
+            HResult = __HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
@@ -130,7 +130,7 @@ namespace System
         private BadImageFormatException(String fileName, String fusionLog, int hResult)
             : base(null)
         {
-            SetErrorCode(hResult);
+            HResult = hResult;
             _fileName = fileName;
             _fusionLog = fusionLog;
             SetMessageField();

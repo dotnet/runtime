@@ -28,19 +28,19 @@ namespace System
         public MissingMemberException()
             : base(SR.Arg_MissingMemberException)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
+            HResult = __HResults.COR_E_MISSINGMEMBER;
         }
 
         protected MissingMemberException(SerializationInfo info, StreamingContext context) : base(info, context)

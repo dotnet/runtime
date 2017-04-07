@@ -23,13 +23,13 @@ namespace System.IO
         public DriveNotFoundException()
             : base(SR.Arg_DriveNotFoundException)
         {
-            SetErrorCode(__HResults.COR_E_DIRECTORYNOTFOUND);
+            HResult = __HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DriveNotFoundException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_DIRECTORYNOTFOUND);
+            HResult = __HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         protected DriveNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)

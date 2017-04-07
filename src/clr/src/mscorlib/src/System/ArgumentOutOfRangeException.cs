@@ -43,25 +43,25 @@ namespace System
         public ArgumentOutOfRangeException()
             : base(RangeMessage)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName)
             : base(RangeMessage, paramName)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName, String message)
             : base(message, paramName)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         // We will not use this in the classlibs, but we'll provide it for
@@ -71,7 +71,7 @@ namespace System
             : base(message, paramName)
         {
             m_actualValue = actualValue;
-            SetErrorCode(__HResults.COR_E_ARGUMENTOUTOFRANGE);
+            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public override String Message

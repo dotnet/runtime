@@ -28,26 +28,26 @@ namespace System.Resources
         public MissingSatelliteAssemblyException()
             : base(SR.MissingSatelliteAssembly_Default)
         {
-            SetErrorCode(System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY);
+            HResult = System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
         public MissingSatelliteAssemblyException(String message)
             : base(message)
         {
-            SetErrorCode(System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY);
+            HResult = System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
         public MissingSatelliteAssemblyException(String message, String cultureName)
             : base(message)
         {
-            SetErrorCode(System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY);
+            HResult = System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY;
             _cultureName = cultureName;
         }
 
         public MissingSatelliteAssemblyException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY);
+            HResult = System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
         protected MissingSatelliteAssemblyException(SerializationInfo info, StreamingContext context) : base(info, context)

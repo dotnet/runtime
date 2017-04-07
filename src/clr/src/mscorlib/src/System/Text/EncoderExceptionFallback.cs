@@ -110,19 +110,19 @@ namespace System.Text
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         internal EncoderFallbackException(SerializationInfo info, StreamingContext context) : base(info, context)

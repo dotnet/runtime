@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
         private RuntimeWrappedException(Object thrownObject)
             : base(SR.RuntimeWrappedException)
         {
-            SetErrorCode(System.__HResults.COR_E_RUNTIMEWRAPPED);
+            HResult = System.__HResults.COR_E_RUNTIMEWRAPPED;
             m_wrappedException = thrownObject;
         }
 
