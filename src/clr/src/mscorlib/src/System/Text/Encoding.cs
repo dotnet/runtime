@@ -85,7 +85,11 @@ namespace System.Text
     [Serializable]
     public abstract class Encoding : ICloneable
     {
-        private static Encoding defaultEncoding;
+        // For netcore we use UTF8 as default encoding since ANSI isn't available
+        private static readonly UTF8Encoding.UTF8EncodingSealed s_defaultEncoding  = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
+
+        // Returns an encoding for the system's current ANSI code page.
+        public static Encoding Default => s_defaultEncoding;
 
         //
         // The following values are from mlang.idl.  These values
@@ -1222,24 +1226,6 @@ namespace System.Text
         {
             return new DefaultDecoder(this);
         }
-
-        private static Encoding CreateDefaultEncoding()
-        {
-            // defaultEncoding should be null if we get here, but we can't
-            // assert that in case another thread beat us to the initialization
-
-            Encoding enc;
-
-            // For netcore we use UTF8 since ANSI isn't available
-            enc = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
-
-            // This method should only ever return one Encoding instance
-            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
-        }
-
-        // Returns an encoding for the system's current ANSI code page.
-
-        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
 
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
