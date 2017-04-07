@@ -16,7 +16,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version>1.1.0-beta-25128-00</Version>
+      <Version>1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
     </PackageReference>
     <FileToExclude Include="System.Private.CoreLib.Augments" />
     <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
