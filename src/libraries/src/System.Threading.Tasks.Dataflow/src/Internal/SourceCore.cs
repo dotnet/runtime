@@ -1022,8 +1022,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             internal DataflowBlockOptions DataflowBlockOptions { get { return _source._dataflowBlockOptions; } }
-            /// <summary>Gets whether the block is declining further messages.</summary>
-            internal bool IsDecliningPermanently { get { return _source._decliningPermanently; } }
+
             /// <summary>Gets whether the block is completed.</summary>
             internal bool IsCompleted { get { return _source.Completion.IsCompleted; } }
 
