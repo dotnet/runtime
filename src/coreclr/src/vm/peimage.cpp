@@ -911,68 +911,102 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
 
         if (imageLayoutMask&PEImageLayout::LAYOUT_MAPPED)
         {
-            PEImageLayout * pLoadLayout = NULL;
-
-            if (m_bIsTrustedNativeImage || IsFile())
-            {
-                // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
-                // regular mapping - but not for native images.
-                pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
-            }
-
-            if (pLoadLayout != NULL)
-            {
-                SetLayout(IMAGE_MAPPED,pLoadLayout);
-                pLoadLayout->AddRef();
-                SetLayout(IMAGE_LOADED,pLoadLayout);
-                pRetVal=pLoadLayout;
-            }
-            else
-            if (IsFile())
-            {
-                PEImageLayoutHolder pLayout(PEImageLayout::Map(GetFileHandle(),this));
-
-                bool fMarkAnyCpuImageAsLoaded = false;
-                // Avoid mapping another image if we can.   We can only do this for IL-ONLY images
-                // since LoadLibrary is needed if we are to actually load code.  
-                if (pLayout->HasCorHeader() && pLayout->IsILOnly())
-                {    
-                    // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
-                    // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
-                    fMarkAnyCpuImageAsLoaded = true;
-                }
-
-                pLayout.SuppressRelease();
-
-                SetLayout(IMAGE_MAPPED,pLayout);
-                if (fMarkAnyCpuImageAsLoaded)
-                {
-                    pLayout->AddRef();
-                    SetLayout(IMAGE_LOADED, pLayout);
-                }
-                pRetVal=pLayout;
-            }
-            else
-            {
-                PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
-                if (!flatPE->CheckFormat())
-                    ThrowFormat(COR_E_BADIMAGEFORMAT);
-                pRetVal=PEImageLayout::LoadFromFlat(flatPE);
-                SetLayout(IMAGE_MAPPED,pRetVal);
-            }
+          pRetVal = PEImage::CreateLayoutMapped();
         }
         else
-        if (imageLayoutMask&PEImageLayout::LAYOUT_FLAT)
         {
-            pRetVal=PEImageLayout::LoadFlat(GetFileHandle(),this);
-            m_pLayouts[IMAGE_FLAT]=pRetVal;
+          pRetVal = PEImage::CreateLayoutFlat();
         }
-        
     }
-    if (pRetVal)
+
+    if (pRetVal != NULL)
     {
         pRetVal->AddRef();
     }
+
+    return pRetVal;
+}
+
+PTR_PEImageLayout PEImage::CreateLayoutMapped()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(m_pLayoutLock->IsWriterLock());
+    }
+    CONTRACTL_END;
+
+    PTR_PEImageLayout pRetVal;
+
+    PEImageLayout * pLoadLayout = NULL;
+
+    if (m_bIsTrustedNativeImage || IsFile())
+    {
+        // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
+        // regular mapping - but not for native images.
+        pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
+    }
+
+    if (pLoadLayout != NULL)
+    {
+        SetLayout(IMAGE_MAPPED,pLoadLayout);
+        pLoadLayout->AddRef();
+        SetLayout(IMAGE_LOADED,pLoadLayout);
+        pRetVal=pLoadLayout;
+    }
+    else if (IsFile())
+    {
+        PEImageLayoutHolder pLayout(PEImageLayout::Map(GetFileHandle(),this));
+
+        bool fMarkAnyCpuImageAsLoaded = false;
+        // Avoid mapping another image if we can. We can only do this for IL-ONLY images
+        // since LoadLibrary is needed if we are to actually load code
+        if (pLayout->HasCorHeader() && pLayout->IsILOnly())
+        {
+            // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
+            // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
+            fMarkAnyCpuImageAsLoaded = true;
+        }
+
+        pLayout.SuppressRelease();
+
+        SetLayout(IMAGE_MAPPED,pLayout);
+        if (fMarkAnyCpuImageAsLoaded)
+        {
+            pLayout->AddRef();
+            SetLayout(IMAGE_LOADED, pLayout);
+        }
+        pRetVal=pLayout;
+    }
+    else
+    {
+        PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
+        if (!flatPE->CheckFormat())
+            ThrowFormat(COR_E_BADIMAGEFORMAT);
+        pRetVal=PEImageLayout::LoadFromFlat(flatPE);
+        SetLayout(IMAGE_MAPPED,pRetVal);
+    }
+
+    return pRetVal;
+}
+
+PTR_PEImageLayout PEImage::CreateLayoutFlat()
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(m_pLayoutLock->IsWriterLock());
+    }
+    CONTRACTL_END;
+
+    PTR_PEImageLayout pRetVal;
+
+    pRetVal = PEImageLayout::LoadFlat(GetFileHandle(),this);
+    m_pLayouts[IMAGE_FLAT] = pRetVal;
+
     return pRetVal;
 }
 
