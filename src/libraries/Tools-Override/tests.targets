@@ -129,18 +129,18 @@
           BeforeTargets="GenerateTestExecutionScripts"
           Condition="'$(BuildingNETFxVertical)' == 'true'">
     <PropertyGroup>
-      <GenericConfigSourceFile>$(ToolsDir)\DesktopRunnerConfigFile.config</GenericConfigSourceFile>
-      <XunitRunnerNetfxConfigFile>$(TestPath)\$(XunitExecutable).config</XunitRunnerNetfxConfigFile>
+      <NETFxTestRunnerAppConfig Condition="'$(NETFxTestRunnerAppConfig)' == ''">$(ToolsDir)\DesktopRunnerConfigFile.config</NETFxTestRunnerAppConfig>
+      <XunitRunnerNETFxConfigFile>$(TestPath)\$(XunitExecutable).config</XunitRunnerNETFxConfigFile>
       <RemoteExecutorConfigFile>$(TestPath)\RemoteExecutorConsoleApp.exe.config</RemoteExecutorConfigFile>
     </PropertyGroup>
 
-    <Copy SourceFiles="$(GenericConfigSourceFile)"
-          DestinationFiles="$(XunitRunnerNetfxConfigFile)" 
+    <Copy SourceFiles="$(NETFxTestRunnerAppConfig)"
+          DestinationFiles="$(XunitRunnerNETFxConfigFile)" 
           SkipUnchangedFiles="true"
           />
 
     <Copy Condition="Exists('$(TestPath)\RemoteExecutorConsoleApp.exe')"
-          SourceFiles="$(GenericConfigSourceFile)"
+          SourceFiles="$(NETFxTestRunnerAppConfig)"
           DestinationFiles="$(RemoteExecutorConfigFile)" 
           SkipUnchangedFiles="true"
           />
