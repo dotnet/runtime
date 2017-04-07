@@ -4701,15 +4701,12 @@ namespace System
             internal volatile CtorDelegate m_ctor;
             internal readonly RuntimeMethodHandleInternal m_hCtorMethodHandle;
             internal readonly MethodAttributes m_ctorAttributes;
-            // Is a security check needed before this constructor is invoked?
-            internal readonly bool m_bNeedSecurityCheck;
             // Lazy initialization was performed
             internal volatile bool m_bFullyInitialized;
 
-            internal ActivatorCacheEntry(RuntimeType t, RuntimeMethodHandleInternal rmh, bool bNeedSecurityCheck)
+            internal ActivatorCacheEntry(RuntimeType t, RuntimeMethodHandleInternal rmh)
             {
                 m_type = t;
-                m_bNeedSecurityCheck = bNeedSecurityCheck;
                 m_hCtorMethodHandle = rmh;
                 if (!m_hCtorMethodHandle.IsNullHandle())
                     m_ctorAttributes = RuntimeMethodHandle.GetAttributes(m_hCtorMethodHandle);
@@ -4779,16 +4776,12 @@ namespace System
         internal Object CreateInstanceSlow(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
         {
             RuntimeMethodHandleInternal runtime_ctor = default(RuntimeMethodHandleInternal);
-            bool bNeedSecurityCheck = true;
             bool bCanBeCached = false;
-            bool bSecurityCheckOff;
 
             if (!skipCheckThis)
                 CreateInstanceCheckThis();
 
-            bSecurityCheckOff = true;       // CoreCLR does not use security at all.   
-
-            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, bSecurityCheckOff, ref bCanBeCached, ref runtime_ctor, ref bNeedSecurityCheck);
+            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, ref bCanBeCached, ref runtime_ctor);
 
             if (bCanBeCached && fillCache)
             {
@@ -4801,7 +4794,7 @@ namespace System
                 }
 
                 // cache the ctor
-                ActivatorCacheEntry ace = new ActivatorCacheEntry(this, runtime_ctor, bNeedSecurityCheck);
+                ActivatorCacheEntry ace = new ActivatorCacheEntry(this, runtime_ctor);
                 activatorCache.SetEntry(ace);
             }
 
