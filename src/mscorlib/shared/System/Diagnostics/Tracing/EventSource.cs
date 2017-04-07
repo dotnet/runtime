@@ -209,7 +209,7 @@ using Contract = System.Diagnostics.Contracts.Contract;
 using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 #endif
 
-#if ES_BUILD_PN
+#if CORECLR || ES_BUILD_PN
 using Internal.Runtime.Augments;
 #endif
 
@@ -1477,8 +1477,7 @@ namespace System.Diagnostics.Tracing
 #if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || osVer >= 62)
+                if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
                     int setInformationResult;
