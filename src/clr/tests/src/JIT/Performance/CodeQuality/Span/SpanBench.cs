@@ -1009,7 +1009,7 @@ namespace Span
                 Array.Clear(array, 0, length);
         }
         #endregion
-#if false
+
         #region TestSpanAsBytes<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
@@ -1108,14 +1108,14 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanSliceStringChar<T>
+        #region TestSpanAsSpanStringChar<T>
         
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestSpanSliceStringCharWrapper(int length)
+        public static void TestSpanAsSpanStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
             Random rand = new Random(42);
@@ -1127,12 +1127,12 @@ namespace Span
             }
             string s = sb.ToString();
 
-            Invoke((int innerIterationCount) => TestSpanSliceStringChar(s, innerIterationCount, false),
-                "TestSpanSliceStringChar({0})", length);
+            Invoke((int innerIterationCount) => TestSpanAsSpanStringChar(s, innerIterationCount, false),
+                "TestSpanAsSpanStringChar({0})", length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanSliceStringChar(string s, int iterationCount, bool untrue)
+        static void TestSpanAsSpanStringChar(string s, int iterationCount, bool untrue)
         {
             var sink = Sink<char>.Instance;
 
@@ -1142,12 +1142,12 @@ namespace Span
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'charSpan' to make sure it's not dead, and an assignment
                 // to 's' so the AsBytes call won't get hoisted.
-                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to Slice()"; }
+                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to AsSpan()"; }
             }
         }
 
         #endregion      
- #endif
+
         #endregion // TestSpanAPIs
 
 
