@@ -108,19 +108,19 @@ namespace System.Text
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         internal DecoderFallbackException(SerializationInfo info, StreamingContext context) : base(info, context)

@@ -22,19 +22,19 @@ namespace System.Runtime.InteropServices
         public SafeArrayRankMismatchException()
             : base(SR.Arg_SafeArrayRankMismatchException)
         {
-            SetErrorCode(__HResults.COR_E_SAFEARRAYRANKMISMATCH);
+            HResult = __HResults.COR_E_SAFEARRAYRANKMISMATCH;
         }
 
         public SafeArrayRankMismatchException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_SAFEARRAYRANKMISMATCH);
+            HResult = __HResults.COR_E_SAFEARRAYRANKMISMATCH;
         }
 
         public SafeArrayRankMismatchException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_SAFEARRAYRANKMISMATCH);
+            HResult = __HResults.COR_E_SAFEARRAYRANKMISMATCH;
         }
 
         protected SafeArrayRankMismatchException(SerializationInfo info, StreamingContext context) : base(info, context)

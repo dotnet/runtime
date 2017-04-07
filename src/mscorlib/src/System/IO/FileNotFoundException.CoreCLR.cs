@@ -10,7 +10,7 @@ namespace System.IO
         private FileNotFoundException(string fileName, string fusionLog, int hResult)
             : base(null)
         {
-            SetErrorCode(hResult);
+            HResult = hResult;
             FileName = fileName;
             FusionLog = fusionLog;
             SetMessageField();

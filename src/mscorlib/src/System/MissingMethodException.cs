@@ -26,19 +26,19 @@ namespace System
         public MissingMethodException()
             : base(SR.Arg_MissingMethodException)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMETHOD);
+            HResult = __HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMETHOD);
+            HResult = __HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_MISSINGMETHOD);
+            HResult = __HResults.COR_E_MISSINGMETHOD;
         }
 
         protected MissingMethodException(SerializationInfo info, StreamingContext context) : base(info, context)
