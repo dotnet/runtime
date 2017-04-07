@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Xml.Tests
 {
     public class EncryptionPropertyTest
     {
-        private const string validXml = @"<EncryptionProperty xmlns=""http://www.w3.org/2001/04/xmlenc#"" Id=""ID_val"" Target=""Target_val"" />";
+        private const string ValidXml = @"<EncryptionProperty xmlns=""http://www.w3.org/2001/04/xmlenc#"" Id=""ID_val"" Target=""Target_val"" />";
 
         [Fact]
         public void DefaultConstructor()
@@ -21,12 +21,13 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void ConstructorWithXmlElement_Valid()
+        public void ConstructorWithXmlElement_ValidEncryptionPropertyXml()
         {
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(validXml);
+            doc.LoadXml(ValidXml);
             EncryptionProperty encryptionProperty = new EncryptionProperty(doc.DocumentElement);
             Assert.NotNull(encryptionProperty.PropertyElement);
+            Assert.Equal(doc.DocumentElement, encryptionProperty.PropertyElement);
         }
 
         [Fact]
@@ -45,14 +46,14 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void SetPropertyElement_Null()
+        public void PropertyElement_Set_Null()
         {
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             Assert.Throws<ArgumentNullException>(() => encryptionProperty.PropertyElement = null);
         }
 
         [Fact]
-        public void SetPropertyElement_InvalidXml()
+        public void PropertyElement_Set_InvalidXml()
         {
             string xml = "<a />";
             XmlDocument doc = new XmlDocument();
@@ -62,10 +63,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void SetPropertyElement_Valid()
+        public void PropertyElement_Set_ValidEncryptionPropertyXml()
         {
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(validXml);
+            doc.LoadXml(ValidXml);
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             encryptionProperty.PropertyElement = doc.DocumentElement;
             Assert.Equal(doc.DocumentElement, encryptionProperty.PropertyElement);
@@ -89,10 +90,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void LoadXml_Valid()
+        public void LoadXml_ValidEncryptionPropertyXml()
         {
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(validXml);
+            doc.LoadXml(ValidXml);
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             encryptionProperty.LoadXml(doc.DocumentElement);
             Assert.Equal(doc.DocumentElement, encryptionProperty.PropertyElement);
@@ -104,24 +105,24 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetXml()
         {
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(validXml);
+            doc.LoadXml(ValidXml);
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             encryptionProperty.PropertyElement = doc.DocumentElement;
 
             XmlElement output = encryptionProperty.GetXml();
-            Assert.Equal(validXml, output.OuterXml);
+            Assert.Equal(ValidXml, output.OuterXml);
         }
 
         [Fact]
         public void GetXml_Cached()
         {
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(validXml);
+            doc.LoadXml(ValidXml);
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             encryptionProperty.LoadXml(doc.DocumentElement);
 
             XmlElement output = encryptionProperty.GetXml();
-            Assert.Equal(validXml, output.OuterXml);
+            Assert.Equal(ValidXml, output.OuterXml);
         }
     }
 }
