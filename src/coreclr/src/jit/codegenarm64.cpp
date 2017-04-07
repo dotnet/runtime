@@ -3381,8 +3381,18 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 //   offset: distance from the base from which to load
 void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset)
 {
-    // For arm64 these functions are identical
-    genCodeForLoadOffset(ins, size, src, base, offset);
+    emitter* emit = getEmitter();
+
+    if (base->OperIsLocalAddr())
+    {
+        if (base->gtOper == GT_LCL_FLD_ADDR)
+            offset += base->gtLclFld.gtLclOffs;
+        emit->emitIns_S_R(ins, size, src, base->gtLclVarCommon.gtLclNum, offset);
+    }
+    else
+    {
+        emit->emitIns_R_R_I(ins, size, src, base->gtRegNum, offset);
+    }
 }
 
 // Generates CpBlk code by performing a loop unroll
@@ -3451,7 +3461,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
     }
 
-    // Fill the remainder (15 bytes or less) if there's one.
+    // Fill the remainder (7 bytes or less) if there's one.
     if ((size & 0x7) != 0)
     {
         if ((size & 4) != 0)
