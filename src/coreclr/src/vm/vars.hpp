@@ -72,6 +72,8 @@ typedef unsigned short wchar_t;
 
 #include "profilepriv.h"
 
+#include "gcinterface.h"
+
 class ClassLoader;
 class LoaderHeap;
 class IGCHeap;
@@ -96,23 +98,6 @@ class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 class BBSweep;
 struct IAssemblyUsageLog;
-
-//
-// object handles are opaque types that track object pointers
-//
-#ifndef DACCESS_COMPILE
-
-struct OBJECTHANDLE__
-{
-    void* unused;
-};
-typedef struct OBJECTHANDLE__* OBJECTHANDLE;
-
-#else
-
-typedef TADDR OBJECTHANDLE;
-
-#endif
 
 //
 // loader handles are opaque types that track object pointers that have a lifetime

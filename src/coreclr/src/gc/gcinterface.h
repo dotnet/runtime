@@ -385,6 +385,18 @@ typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, v
 typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
+
+// Opaque type for tracking object pointers
+#ifndef DACCESS_COMPILE
+struct OBJECTHANDLE__
+{
+    void* unused;
+};
+typedef struct OBJECTHANDLE__* OBJECTHANDLE;
+#else
+typedef uintptr_t OBJECTHANDLE;
+#endif
+
 class IGCHandleTable {
 public:
 
