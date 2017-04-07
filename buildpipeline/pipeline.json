@@ -149,6 +149,9 @@
         },
         {
           "Name": "Core-Setup-Signing-Windows-x64",
+          "Parameters": {
+            "SIGNED_PACKAGES": "true"
+          },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",

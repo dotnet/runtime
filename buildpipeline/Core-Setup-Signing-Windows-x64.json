@@ -459,7 +459,7 @@
       "value": "PassedViaPipeBuild"
     },
     "SIGNED_PACKAGES": {
-      "value": "true"
+      "value": "false"
     },
     "CertificateId": {
       "value": "400"
