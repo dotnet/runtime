@@ -40,6 +40,7 @@
 #cmakedefine01 HAVE_UTIMES
 #cmakedefine01 HAVE_SYSCTL
 #cmakedefine01 HAVE_SYSCONF
+#cmakedefine01 HAVE_SYSINFO
 #cmakedefine01 HAVE_LOCALTIME_R
 #cmakedefine01 HAVE_GMTIME_R
 #cmakedefine01 HAVE_TIMEGM
@@ -57,6 +58,8 @@
 #cmakedefine01 HAVE_TTRACE
 #cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
+#cmakedefine01 HAVE_XSWDEV
+#cmakedefine01 HAVE_XSW_USAGE
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_NSEC

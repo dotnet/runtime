@@ -32,11 +32,19 @@ Revision History:
 #error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
+#if HAVE_SYSINFO
+#include <sys/sysinfo.h>
+#endif
+
 #include <sys/param.h>
 
 #if HAVE_SYS_VMPARAM_H
 #include <sys/vmparam.h>
 #endif  // HAVE_SYS_VMPARAM_H
+
+#if HAVE_XSWDEV
+#include <vm/vm_param.h>
+#endif // HAVE_XSWDEV
 
 #if HAVE_MACH_VM_TYPES_H
 #include <mach/vm_types.h>
@@ -216,6 +224,8 @@ GlobalMemoryStatusEx(
     lpBuffer->ullAvailExtendedVirtual = 0;
 
     BOOL fRetVal = FALSE;
+    int mib[3];
+    int rc;
 
     // Get the physical memory size
 #if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
@@ -226,7 +236,6 @@ GlobalMemoryStatusEx(
     lpBuffer->ullTotalPhys = (DWORDLONG)physical_memory;
     fRetVal = TRUE;
 #elif HAVE_SYSCTL
-    int mib[2];
     int64_t physical_memory;
     size_t length;
 
@@ -234,7 +243,7 @@ GlobalMemoryStatusEx(
     mib[0] = CTL_HW;
     mib[1] = HW_MEMSIZE;
     length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+    rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
     if (rc != 0)
     {
         ASSERT("sysctl failed for HW_MEMSIZE (%d)\n", errno);
@@ -244,11 +253,65 @@ GlobalMemoryStatusEx(
         lpBuffer->ullTotalPhys = (DWORDLONG)physical_memory;
         fRetVal = TRUE;
     }
-#elif // HAVE_SYSINFO
-    // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
-    // we can use to fill in the xxxPageFile members.
 
-#endif // HAVE_SYSCONF
+#endif // HAVE_SYSCTL
+
+    // Get swap file size, consider the ability to get the values optional
+    // (don't return FALSE from the GlobalMemoryStatusEx)
+#if HAVE_XSW_USAGE
+    // This is available on OSX
+    struct xsw_usage xsu;
+    mib[0] = CTL_VM;
+    mib[1] = VM_SWAPUSAGE;
+    size_t length = sizeof(xsu);
+    rc = sysctl(mib, 2, &xsu, &length, NULL, 0);
+    if (rc == 0)
+    {
+        lpBuffer->ullTotalPageFile = xsu.xsu_total;
+        lpBuffer->ullAvailPageFile = xsu.xsu_avail;
+    }
+#elif HAVE_XSWDEV
+    // E.g. FreeBSD
+    struct xswdev xsw;
+
+    size_t length = 2;
+    rc = sysctlnametomib("vm.swap_info", mib, &length);
+    if (rc == 0)
+    {
+        int pagesize = getpagesize();
+        // Aggregate the information for all swap files on the system
+        for (mib[2] = 0; ; mib[2]++)
+        {
+            length = sizeof(xsw);
+            rc = sysctl(mib, 3, &xsw, &length, NULL, 0);
+            if ((rc < 0) || (xsw.xsw_version != XSWDEV_VERSION))
+            {
+                // All the swap files were processed or coreclr was built against
+                // a version of headers not compatible with the current XSWDEV_VERSION.
+                break;
+            }
+
+            DWORDLONG avail = xsw.xsw_nblks - xsw.xsw_used;
+            lpBuffer->ullTotalPageFile += (DWORDLONG)xsw.xsw_nblks * pagesize;
+            lpBuffer->ullAvailPageFile += (DWORDLONG)avail * pagesize;
+        }
+    }
+#elif HAVE_SYSINFO
+    // Linux
+    struct sysinfo info;
+    rc = sysinfo(&info);
+    if (rc == 0)
+    {
+        lpBuffer->ullTotalPageFile = info.totalswap;
+        lpBuffer->ullAvailPageFile = info.freeswap;
+#if HAVE_SYSINFO_WITH_MEM_UNIT
+        // A newer version of the sysinfo structure represents all the sizes
+        // in mem_unit instead of bytes
+        lpBuffer->ullTotalPageFile *= info.mem_unit;
+        lpBuffer->ullAvailPageFile *= info.mem_unit;
+#endif // HAVE_SYSINFO_WITH_MEM_UNIT
+    }
+#endif // HAVE_SYSINFO
 
     // Get the physical memory in use - from it, we can get the physical memory available.
     // We do this only when we have the total physical memory available.
