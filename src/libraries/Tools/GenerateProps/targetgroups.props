@@ -185,10 +185,10 @@
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netfx">
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
-      <Imports>net463</Imports>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
+      <Imports>net461</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
