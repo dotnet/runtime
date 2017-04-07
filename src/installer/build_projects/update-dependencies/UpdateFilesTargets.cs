@@ -91,6 +91,7 @@ namespace Microsoft.DotNet.Scripts
             var projectJsonFiles = new List<string>
             {
                 Path.Combine(Dirs.PkgProjects, "Microsoft.NETCore.App", "project.json.template"),
+                Path.Combine(Dirs.PkgProjects, "Microsoft.NETCore.UniversalWindowsPlatform", "project.json.template"),
                 Path.Combine(Dirs.PkgDeps, "project.json")
             };
             //projectJsonFiles.AddRange(Directory.GetFiles(Dirs.RepoRoot, "project.json", SearchOption.AllDirectories));
