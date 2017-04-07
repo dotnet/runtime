@@ -1,0 +1,291 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(VS140COMNTOOLS)\\VsDevCmd.bat",
+        "arguments": "",
+        "modifyEnvironment": "true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run clean.cmd",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "clean.cmd",
+        "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Run sync.cmd",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sync.cmd",
+        "arguments": "-n -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label)-$(Rid) -RuntimeId=$(Rid)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run build-test.cmd",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "build-test.cmd",
+        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages $(RuntimeIDArg) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Send job to Helix",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "msbuild",
+        "arguments": "helixpublish.proj /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:CloudDropAccountName=$(CloudDropAccountName) /p:ContainerName=$(PB_ContainerName) /p:Platform=$(Architecture) /p:BuildType=$(PB_BuildType) /p:CloudResultsAccountName=$(CloudResultsAccountName) /p:CloudResultsAccessToken=$(CloudResultsAccessToken) /p:TargetsWindows=$(TargetsWindows) /p:OverwriteOnUpload=true /p:Rid=$(Rid) /p:TargetQueues=\"$(TargetQueues)\" /p:TestProduct=$(TestProduct) /p:Branch=$(HelixBranch) /p:HelixApiAccessKey=$(HelixApiAccessKey) /p:HelixApiEndpoint=$(HelixApiEndpoint) /p:FilterToOSGroup=$(FilterToOSGroup) /p:FilterToTestTFM=$(FilterToTestTFM) /p:TimeoutInSeconds=3600 /fileloggerparameters:Verbosity=diag;LogFile=helix.log",
+        "workingFolder": "tests",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": true,
+      "displayName": "Copy Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "**\\*.log",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "234347",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "PB_BuildType": {
+      "value": "Release",
+      "allowOverride": true
+    },
+    "Architecture": {
+      "value": "x64",
+      "allowOverride": true
+    },
+    "Priority": {
+      "value": "1"
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "CloudResultsAccountName": {
+      "value": "dotnetjobresults"
+    },
+    "CloudResultsAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "TargetsWindows": {
+      "value": "false"
+    },
+    "Rid": {
+      "value": "linux-x64"
+    },
+    "TargetQueues": {
+      "value": "debian.82.amd64,fedora.23.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64"
+    },
+    "TestProduct": {
+      "value": "coreclr"
+    },
+    "HelixBranch": {
+      "value": "master"
+    },
+    "HelixApiAccessKey": {
+      "value": null,
+      "isSecret": true
+    },
+    "HelixApiEndpoint": {
+      "value": "https://helix.dot.net/api/2016-09-12/jobs"
+    },
+    "FilterToOSGroup": {
+      "value": "Dummy"
+    },
+    "FilterToTestTFM": {
+      "value": "Dummy"
+    },
+    "PB_ContainerName": {
+      "value": "$(Label)-$(TestContainerSuffix)-test"
+    },
+    "TestContainerSuffix": {
+      "value": "linux"
+    },
+    "RuntimeIDArg": {
+      "value": "runtimeid linux-x64"
+    }
+  },
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(Rid)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 180,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0"
+    },
+    "id": "670e3783-ab4f-44fc-9786-d332007da311",
+    "type": "TfsGit",
+    "name": "DotNet-CoreCLR-Trusted",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-CoreCLR-Trusted",
+    "defaultBranch": "refs/heads/master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\",
+  "type": "build",
+  "id": 5159,
+  "name": "Dotnet-CoreClr-Trusted-BuildTests",
+  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/5159",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097633
+  }
+}
