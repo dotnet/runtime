@@ -753,6 +753,7 @@ miscellaneous/getenvironmentvariablew/test3,1
 miscellaneous/getenvironmentvariablew/test4,1
 miscellaneous/getlasterror/test1,1
 miscellaneous/getsysteminfo/test1,1
+miscellaneous/getglobalmemorystatusex/test1,1
 miscellaneous/gettickcount/test1,1
 miscellaneous/getversionexa/test1,1
 miscellaneous/getversionexw/test1,1
