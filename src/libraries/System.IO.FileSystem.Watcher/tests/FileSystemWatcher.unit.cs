@@ -497,8 +497,11 @@ namespace System.IO.Tests
             watcher.Path = ".";
             Assert.Equal(".", watcher.Path);
 
-            watcher.Path = "..";
-            Assert.Equal("..", watcher.Path);
+            if (!PlatformDetection.IsWinRT)
+            {
+                watcher.Path = "..";
+                Assert.Equal("..", watcher.Path);
+            }
 
             string currentDir = Path.GetFullPath(".").TrimEnd('.', Path.DirectorySeparatorChar);
             watcher.Path = currentDir;
