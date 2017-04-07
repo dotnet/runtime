@@ -22,12 +22,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal const int CACHE_LINE_SIZE = 128;
     }
 
-    /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = Padding.CACHE_LINE_SIZE - sizeof(Int32))] // Based on common case of 64-byte cache lines
-    internal struct PaddingForInt32
-    {
-    }
-
     /// <summary>Value type that contains single Int64 value padded on both sides.</summary>
     [StructLayout(LayoutKind.Explicit, Size = 2 * Padding.CACHE_LINE_SIZE)]
     internal struct PaddedInt64
