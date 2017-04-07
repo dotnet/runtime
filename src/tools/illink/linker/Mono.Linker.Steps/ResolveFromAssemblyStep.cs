@@ -90,7 +90,7 @@ namespace Mono.Linker.Steps {
 			context.SafeReadSymbols (assembly);
 		}
 
-		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly, RootVisibility rootVisibility)
+		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly, RootVisibility rootVisibility = RootVisibility.Any)
 		{
 			var action = rootVisibility == RootVisibility.Any ? AssemblyAction.Copy : AssemblyAction.Link;
 			SetAction (context, assembly, action);
