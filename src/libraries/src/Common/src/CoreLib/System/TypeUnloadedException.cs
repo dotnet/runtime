@@ -12,19 +12,19 @@ namespace System
         public TypeUnloadedException()
             : base(SR.Arg_TypeUnloadedException)
         {
-            SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
+            HResult = __HResults.COR_E_TYPEUNLOADED;
         }
 
         public TypeUnloadedException(string message)
             : base(message)
         {
-            SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
+            HResult = __HResults.COR_E_TYPEUNLOADED;
         }
 
         public TypeUnloadedException(string message, Exception innerException)
             : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_TYPEUNLOADED);
+            HResult = __HResults.COR_E_TYPEUNLOADED;
         }
 
         //
