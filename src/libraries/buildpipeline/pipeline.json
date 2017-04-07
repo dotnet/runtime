@@ -479,6 +479,40 @@
             "ConfigurationGroup": "Release",
             "SubType": "AllConfigurations"
           }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows",
+          "Parameters": {
+            "PB_Platform": "x64",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixJobType=test/functional/desktop/cli/\""
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x64",
+            "ConfigurationGroup": "Release",
+            "SubType": "Netfx"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows",
+          "Parameters": {
+            "PB_Platform": "x86",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixJobType=test/functional/desktop/cli/\""
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x86",
+            "ConfigurationGroup": "Release",
+            "SubType": "Netfx"
+          }
         }
       ]
     },
@@ -854,6 +888,40 @@
             "Platform": "x64",
             "ConfigurationGroup": "Debug",
             "SubType": "AllConfigurations"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows",
+          "Parameters": {
+            "PB_Platform": "x64",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixJobType=test/functional/desktop/cli/\""
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x64",
+            "ConfigurationGroup": "Debug",
+            "SubType": "Netfx"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Windows",
+          "Parameters": {
+            "PB_Platform": "x86",
+            "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixJobType=test/functional/desktop/cli/\""
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x86",
+            "ConfigurationGroup": "Debug",
+            "SubType": "Netfx"
           }
         }
       ]
