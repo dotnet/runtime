@@ -5074,9 +5074,13 @@ void Thread::SafeUpdateLastThrownObject(void)
     {
         EX_TRY
         {
-            // Using CreateDuplicateHandle here ensures that the AD of the last thrown object matches the domain of
-            // the current throwable.
-            SetLastThrownObjectHandle(CreateDuplicateHandle(hThrowable));
+            IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
+            void* table = pHandleTable->GetHandleTableForHandle(hThrowable);
+
+            // Creating a duplicate handle here ensures that the AD of the last thrown object
+            // matches the domain of the current throwable.
+            OBJECTHANDLE duplicateHandle = pHandleTable->CreateHandleOfType(table, OBJECTREFToObject(ObjectFromHandle(hThrowable)), HNDTYPE_DEFAULT);
+            SetLastThrownObjectHandle(duplicateHandle);
         }
         EX_CATCH
         {

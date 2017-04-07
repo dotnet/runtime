@@ -17,6 +17,14 @@ public:
     virtual void* GetHandleTableContext(void* handleTable);
 
     virtual void* GetHandleTableForHandle(OBJECTHANDLE handle);
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type);
+
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo);
+
+    virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary);
+
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
 };
 
 #endif  // GCHANDLETABLE_H_
