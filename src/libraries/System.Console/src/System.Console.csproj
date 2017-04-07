@@ -33,12 +33,8 @@
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : UAP -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
-    <Compile Include="System\ConsolePal.Uap.cs" />
-  </ItemGroup> 
-  <!-- Windows : Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+  <!-- Windows -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
       <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
