@@ -738,21 +738,13 @@ protected:
         // arm64: 48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef RELOC_SUPPORT
-
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
 
 #define ID_EXTRA_RELOC_BITS (2)
 
-#else // RELOC_SUPPORT
-
-#define ID_EXTRA_RELOC_BITS (0)
-
-#endif // RELOC_SUPPORT
-
         ////////////////////////////////////////////////////////////////////////
-        // Space taken up to here (assuming RELOC_SUPPORT):
+        // Space taken up to here:
         // x86:   40 bits
         // amd64: 48 bits
         // arm:   50 bits
@@ -768,7 +760,7 @@ protected:
 #define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
         ////////////////////////////////////////////////////////////////////////
-        // Small constant size (assuming RELOC_SUPPORT):
+        // Small constant size:
         // x86:   24 bits
         // amd64: 16 bits
         // arm:   14 bits
@@ -777,7 +769,7 @@ protected:
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
-        // Space taken up to here (with RELOC_SUPPORT): 64 bits, all architectures, by design.
+        // Space taken up to here: 64 bits, all architectures, by design.
         ////////////////////////////////////////////////////////////////////////
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -829,22 +821,12 @@ protected:
 
 #define ID_EXTRA_BITFIELD_BITS (7)
 
-//
-// For x86, we are using  7 bits from the second DWORD for bitfields.
-//
-
-#ifdef RELOC_SUPPORT
+        //
+        // For x86, we are using  7 bits from the second DWORD for bitfields.
+        //
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
-
-#define ID_EXTRA_RELOC_BITS (2)
-
-#else // RELOC_SUPPORT
-
-#define ID_EXTRA_RELOC_BITS (0)
-
-#endif // RELOC_SUPPORT
 
 #define ID_EXTRA_REG_BITS (0)
 
@@ -856,7 +838,7 @@ protected:
 #define ID_MIN_SMALL_CNS 0
 #define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
-        // For x86 (assuming RELOC_SUPPORT) we have 23 bits remaining for the
+        // For x86 we have 23 bits remaining for the
         //   small constant in this extra DWORD.
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
@@ -1283,8 +1265,6 @@ protected:
         }
 #endif // defined(_TARGET_ARM_)
 
-#ifdef RELOC_SUPPORT
-
         bool idIsCnsReloc() const
         {
             assert(!idIsTiny());
@@ -1310,8 +1290,6 @@ protected:
         {
             return idIsDspReloc() || idIsCnsReloc();
         }
-
-#endif
 
         unsigned idSmallCns() const
         {

@@ -144,9 +144,7 @@ inline int emitter::emitGetInsCDinfo(instrDesc* id)
 
 inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
 {
-#ifdef RELOC_SUPPORT
     cv->cnsReloc = id->idIsCnsReloc();
-#endif
     if (id->idIsLargeCns())
     {
         cv->cnsVal = ((instrDescCns*)id)->idcCnsVal;
@@ -159,9 +157,7 @@ inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
 
 inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
 {
-#ifdef RELOC_SUPPORT
     cv->cnsReloc = id->idIsCnsReloc();
-#endif
     if (id->idIsLargeDsp())
     {
         if (id->idIsLargeCns())
@@ -192,9 +188,7 @@ inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
 
 inline void emitter::emitGetInsDcmCns(instrDesc* id, CnsVal* cv)
 {
-#ifdef RELOC_SUPPORT
     cv->cnsReloc = id->idIsCnsReloc();
-#endif
     if (id->idIsLargeCns())
     {
         if (id->idIsLargeDsp())

@@ -797,7 +797,6 @@ void CodeGen::sched_AM(instruction ins,
     }
     else if (addr->IsCnsIntOrI())
     {
-#ifdef RELOC_SUPPORT
         // Do we need relocations?
         if (compiler->opts.compReloc && addr->IsIconHandle())
         {
@@ -806,7 +805,6 @@ void CodeGen::sched_AM(instruction ins,
             // so that we can uniquely identify the handle
             assert(offs <= 4);
         }
-#endif
         ssize_t disp = addr->gtIntCon.gtIconVal + offs;
         if ((insType == eIT_Store) && (ireg != REG_NA))
         {
@@ -1113,7 +1111,6 @@ void CodeGen::sched_AM(instruction ins,
 
             assert(addr->IsCnsIntOrI());
 
-#ifdef RELOC_SUPPORT
             // Do we need relocations?
             if (compiler->opts.compReloc && addr->IsIconHandle())
             {
@@ -1122,7 +1119,7 @@ void CodeGen::sched_AM(instruction ins,
                 // so that we can uniquely identify the handle
                 assert(offs <= 4);
             }
-#endif
+
             reg          = REG_NA;
             ssize_t disp = addr->gtIntCon.gtIconVal + offs;
 
@@ -3894,9 +3891,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
  */
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
 {
-#if RELOC_SUPPORT
     if (!compiler->opts.compReloc)
-#endif // RELOC_SUPPORT
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }

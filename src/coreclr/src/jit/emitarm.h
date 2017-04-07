@@ -10,10 +10,8 @@
 
 struct CnsVal
 {
-    int cnsVal;
-#ifdef RELOC_SUPPORT
+    int  cnsVal;
     bool cnsReloc;
-#endif
 };
 
 insSize emitInsSize(insFormat insFmt);
