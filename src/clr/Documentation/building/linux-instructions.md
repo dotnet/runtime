@@ -47,7 +47,7 @@ ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6
 
 You now have all the required components.
 
-If you are using Fedora 23 or 24, then you will need to install the following packages:
+If you are using Fedora, then you will need to install the following packages:
 
 `$ sudo dnf install llvm cmake clang lldb-devel libunwind-devel lttng-ust-devel libuuid-devel libicu-devel`
 
@@ -61,7 +61,7 @@ Set the maximum number of file-handles
 
 To ensure that your system can allocate enough file-handles for the corefx build run `sysctl fs.file-max`. If it is less than 100000, add `fs.file-max = 100000` to `/etc/sysctl.conf`, and then run `sudo sysctl -p`.
 
-On Fedora 23 or 24:
+On Fedora:
 
 `$ sudo dnf install mono-devel`
 
