@@ -131,10 +131,7 @@ private:
 
     static HMODULE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);
 
-#if !defined(FEATURE_CORESYSTEM)
-    static HINSTANCE    CheckForWellKnownModules(LPCWSTR wszLibName, LoadLibErrorTracker *pErrorTracker);
-    static PtrHashMap   *s_pWellKnownNativeModules;
-
+#if !defined(FEATURE_PAL)
     // Indicates if the OS supports the new secure LoadLibraryEx flags introduced in KB2533623
     static bool         s_fSecureLoadLibrarySupported;
 
@@ -144,7 +141,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return s_fSecureLoadLibrarySupported;
     }
-#endif // !FEATURE_CORESYSTEM
+#endif // !FEATURE_PAL
 };
 
 //----------------------------------------------------------------
