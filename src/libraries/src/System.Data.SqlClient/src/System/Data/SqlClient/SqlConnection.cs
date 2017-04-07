@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlClient
 {
-    public sealed partial class SqlConnection : DbConnection
+    public sealed partial class SqlConnection : DbConnection, ICloneable
     {
         private bool _AsyncCommandInProgress;
 
@@ -51,6 +51,15 @@ namespace System.Data.SqlClient
         public SqlConnection(string connectionString) : this()
         {
             ConnectionString = connectionString;    // setting connection string first so that ConnectionOption is available
+            CacheConnectionStringProperties();
+        }
+
+        private SqlConnection(SqlConnection connection)
+        {
+            GC.SuppressFinalize(this);
+            CopyFrom(connection);
+            _connectionString = connection._connectionString;
+
             CacheConnectionStringProperties();
         }
 
@@ -1266,6 +1275,24 @@ namespace System.Data.SqlClient
             }
             // delegate the rest of the work to the SqlStatistics class
             Statistics.UpdateStatistics();
+        }
+
+        object ICloneable.Clone() => new SqlConnection(this);
+
+        private void CopyFrom(SqlConnection connection)
+        {
+            ADP.CheckArgumentNull(connection, nameof(connection));
+            _userConnectionOptions = connection.UserConnectionOptions;
+            _poolGroup = connection.PoolGroup;
+            
+            if (DbConnectionClosedNeverOpened.SingletonInstance == connection._innerConnection)
+            {
+                _innerConnection = DbConnectionClosedNeverOpened.SingletonInstance;
+            }
+            else
+            {
+                _innerConnection = DbConnectionClosedPreviouslyOpened.SingletonInstance;
+            }
         }
     } // SqlConnection
 } // System.Data.SqlClient namespace

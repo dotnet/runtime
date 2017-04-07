@@ -1142,5 +1142,21 @@ namespace System.Data.Common
 
             return false;
         }
+
+        static internal ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
+        {
+#if DEBUG
+            switch (value)
+            {
+                case DataRowVersion.Default:
+                case DataRowVersion.Current:
+                case DataRowVersion.Original:
+                case DataRowVersion.Proposed:
+                    Debug.Fail($"Invalid DataRowVersion {value}");
+                    break;
+            }
+#endif
+            return InvalidEnumerationValue(typeof(DataRowVersion), (int)value);
+        }
     }
 }
