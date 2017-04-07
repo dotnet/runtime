@@ -641,6 +641,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" Condition="'$(TargetsUnix)' == 'true'" />
