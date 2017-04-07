@@ -18,6 +18,7 @@
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
     <Compile Include="EncryptionMethodTests.cs" />
     <Compile Include="EncryptedXmlTest.cs" />
+    <Compile Include="EncryptionPropertyTest.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
     <Compile Include="KeyInfoNodeTest.cs" />
     <Compile Include="KeyInfoRetrievalMethodTest.cs" />
