@@ -276,9 +276,14 @@ mdToken Assembler::GetAsmRef(__in __nullterminated const char* szName)
 
 mdToken Assembler::GetBaseAsmRef()
 {
-    if(RidFromToken(m_pManifest->GetAsmRefTokByName("System.Runtime")) != 0)
+    if (RidFromToken(m_pManifest->GetAsmRefTokByName("System.Runtime")) != 0)
     {
         return GetAsmRef("System.Runtime");
+    }
+
+    if (RidFromToken(m_pManifest->GetAsmRefTokByName("netstandard")) != 0)
+    {
+        return GetAsmRef("netstandard");
     }
 
     return GetAsmRef("mscorlib");
