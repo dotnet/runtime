@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.ILAsm": "2.0.0-preview1-25130-01",
-    "Microsoft.NETCore.ILDAsm": "2.0.0-preview1-25130-01",
-    "Microsoft.NETCore.Jit": "2.0.0-preview1-25130-01",
-    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview1-25130-01",
-    "Microsoft.NETCore.TestHost": "2.0.0-preview1-25130-01"
+    "Microsoft.NETCore.ILAsm": "2.0.0-preview1-25207-02",
+    "Microsoft.NETCore.ILDAsm": "2.0.0-preview1-25207-02",
+    "Microsoft.NETCore.Jit": "2.0.0-preview1-25207-02",
+    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview1-25207-02",
+    "Microsoft.NETCore.TestHost": "2.0.0-preview1-25207-02"
   },
   "frameworks": {
     "netcoreapp2.0": {
@@ -25,7 +25,7 @@
     "centos.7-x64": {},
     "rhel.7-x64": {},
     "debian.8-x64": {},
-    "fedora.24-x64": {},   
+    "fedora.24-x64": {},
     "opensuse.42.1-x64": {},
     "linux-x64": {}
   }
