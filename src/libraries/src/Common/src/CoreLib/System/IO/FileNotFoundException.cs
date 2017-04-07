@@ -6,37 +6,39 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
+    // Thrown when trying to access a file that doesn't exist on disk.
     [Serializable]
-    public partial class FileLoadException : IOException
+    public partial class FileNotFoundException : IOException
     {
-        public FileLoadException()
-            : base(SR.IO_FileLoad)
+        public FileNotFoundException()
+            : base(SR.IO_FileNotFound)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileLoadException(string message)
+        public FileNotFoundException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileLoadException(string message, Exception inner)
-            : base(message, inner)
+        public FileNotFoundException(string message, Exception innerException)
+            : base(message, innerException)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = __HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileLoadException(string message, string fileName) : base(message)
+        public FileNotFoundException(string message, string fileName) 
+            : base(message)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = __HResults.COR_E_FILENOTFOUND;
             FileName = fileName;
         }
 
-        public FileLoadException(string message, string fileName, Exception inner)
-            : base(message, inner)
+        public FileNotFoundException(string message, string fileName, Exception innerException)
+            : base(message, innerException)
         {
-            HResult = __HResults.COR_E_FILELOAD;
+            HResult = __HResults.COR_E_FILENOTFOUND;
             FileName = fileName;
         }
 
@@ -44,11 +46,21 @@ namespace System.IO
         {
             get
             {
-                if (_message == null)
-                {
-                    _message = FormatFileLoadExceptionMessage(FileName, HResult);
-                }
+                SetMessageField();
                 return _message;
+            }
+        }
+
+        private void SetMessageField()
+        {
+            if (_message == null)
+            {
+                if ((FileName == null) &&
+                    (HResult == System.__HResults.COR_E_EXCEPTION))
+                    _message = SR.IO_FileNotFound;
+
+                else if (FileName != null)
+                    _message = FileLoadException.FormatFileLoadExceptionMessage(FileName, HResult);
             }
         }
 
@@ -76,17 +88,16 @@ namespace System.IO
                 s += Environment.NewLine;
                 s += FusionLog;
             }
-
             return s;
         }
 
-        protected FileLoadException(SerializationInfo info, StreamingContext context)
+        protected FileNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             // Base class constructor will check info != null.
 
-            FileName = info.GetString("FileLoad_FileName");
-            FusionLog = info.GetString("FileLoad_FusionLog");
+            FileName = info.GetString("FileNotFound_FileName");
+            FusionLog = info.GetString("FileNotFound_FusionLog");
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -95,8 +106,9 @@ namespace System.IO
             base.GetObjectData(info, context);
 
             // Serialize data for this class
-            info.AddValue("FileLoad_FileName", FileName, typeof(string));
-            info.AddValue("FileLoad_FusionLog", FusionLog, typeof(string));
+            info.AddValue("FileNotFound_FileName", FileName, typeof(string));
+            info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(string));
         }
     }
 }
+
