@@ -275,7 +275,7 @@ namespace System.Data.SqlClient
         public override System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { throw null; }
         public override System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
-    public sealed partial class SqlCommand : System.Data.Common.DbCommand
+    public sealed partial class SqlCommand : System.Data.Common.DbCommand, System.ICloneable
     {
         public SqlCommand() { }
         public SqlCommand(string cmdText) { }
@@ -294,6 +294,8 @@ namespace System.Data.SqlClient
         public override System.Data.UpdateRowSource UpdatedRowSource { get { throw null; } set { } }
         public event System.Data.StatementCompletedEventHandler StatementCompleted { add { } remove { } }
         public override void Cancel() { }
+        object System.ICloneable.Clone() { throw null; }
+        public SqlCommand Clone() { throw null;  }
         protected override System.Data.Common.DbParameter CreateDbParameter() { throw null; }
         public new System.Data.SqlClient.SqlParameter CreateParameter() { throw null; }
         protected override System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior) { throw null; }
@@ -313,11 +315,12 @@ namespace System.Data.SqlClient
         public System.Threading.Tasks.Task<System.Xml.XmlReader> ExecuteXmlReaderAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Prepare() { }
     }
-    public sealed partial class SqlConnection : System.Data.Common.DbConnection
+    public sealed partial class SqlConnection : System.Data.Common.DbConnection, System.ICloneable
     {
         public SqlConnection() { }
         public SqlConnection(string connectionString) { }
         public System.Guid ClientConnectionId { get { throw null; } }
+        object ICloneable.Clone() { throw null; }
         public override string ConnectionString { get { throw null; } set { } }
         public override int ConnectionTimeout { get { throw null; } }
         public override string Database { get { throw null; } }
@@ -539,13 +542,14 @@ namespace System.Data.SqlClient
         public override string ToString() { throw null; }
     }
     public delegate void SqlInfoMessageEventHandler(object sender, System.Data.SqlClient.SqlInfoMessageEventArgs e);
-    public sealed partial class SqlParameter : System.Data.Common.DbParameter
+    public sealed partial class SqlParameter : System.Data.Common.DbParameter, System.ICloneable
     {
         public SqlParameter() { }
         public SqlParameter(string parameterName, System.Data.SqlDbType dbType) { }
         public SqlParameter(string parameterName, System.Data.SqlDbType dbType, int size) { }
         public SqlParameter(string parameterName, System.Data.SqlDbType dbType, int size, string sourceColumn) { }
         public SqlParameter(string parameterName, object value) { }
+        object ICloneable.Clone() { throw null; }
         public System.Data.SqlTypes.SqlCompareOptions CompareInfo { get { throw null; } set { } }
         public override System.Data.DbType DbType { get { throw null; } set { } }
         public override System.Data.ParameterDirection Direction { get { throw null; } set { } }
@@ -558,6 +562,7 @@ namespace System.Data.SqlClient
         public override int Size { get { throw null; } set { } }
         public override string SourceColumn { get { throw null; } set { } }
         public override bool SourceColumnNullMapping { get { throw null; } set { } }
+        public override DataRowVersion SourceVersion { get { throw null; } set { } }
         public System.Data.SqlDbType SqlDbType { get { throw null; } set { } }
         public object SqlValue { get { throw null; } set { } }
         public string TypeName { get { throw null; } set { } }

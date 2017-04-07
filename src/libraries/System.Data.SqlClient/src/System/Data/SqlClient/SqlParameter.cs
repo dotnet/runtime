@@ -54,7 +54,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    public sealed partial class SqlParameter : DbParameter
+    public sealed partial class SqlParameter : DbParameter, ICloneable
     {
         private MetaType _metaType;
 
@@ -78,6 +78,8 @@ namespace System.Data.SqlClient
         private bool _coercedValueIsSqlType;
         private bool _coercedValueIsDataFeed;
         private int _actualSize = -1;
+
+        private DataRowVersion _sourceVersion;
 
         public SqlParameter() : base()
         {
@@ -110,6 +112,19 @@ namespace System.Data.SqlClient
             this.SqlDbType = dbType;
             this.Size = size;
             this.SourceColumn = sourceColumn;
+        }
+
+        private SqlParameter(SqlParameter source) : this()
+        {
+            ADP.CheckArgumentNull(source, nameof(source));
+
+            source.CloneHelper(this);
+
+            ICloneable cloneable = (_value as ICloneable);
+            if (null != cloneable)
+            {
+                _value = cloneable.Clone();
+            }
         }
 
         //
@@ -1631,6 +1646,69 @@ namespace System.Data.SqlClient
             {
                 {
                     throw SQL.InvalidParameterTypeNameFormat();
+                }
+            }
+        }
+
+        object ICloneable.Clone() => new SqlParameter(this);
+
+        private void CloneHelper(SqlParameter destination)
+        {
+            CloneHelperCore(destination);
+            destination._metaType = _metaType;
+            destination._collation = _collation;
+            destination._xmlSchemaCollectionDatabase = _xmlSchemaCollectionDatabase;
+            destination._xmlSchemaCollectionOwningSchema = _xmlSchemaCollectionOwningSchema;
+            destination._xmlSchemaCollectionName = _xmlSchemaCollectionName;
+            destination._typeName = _typeName;
+
+            destination._parameterName = _parameterName;
+            destination._precision = _precision;
+            destination._scale = _scale;
+            destination._sqlBufferReturnValue = _sqlBufferReturnValue;
+            destination._isSqlParameterSqlType = _isSqlParameterSqlType;
+            destination._internalMetaType = _internalMetaType;
+            destination.CoercedValue = CoercedValue; // copy cached value reference because of XmlReader problem
+            destination._valueAsINullable = _valueAsINullable;
+            destination._isNull = _isNull;
+            destination._coercedValueIsDataFeed = _coercedValueIsDataFeed;
+            destination._coercedValueIsSqlType = _coercedValueIsSqlType;
+            destination._actualSize = _actualSize;
+        }
+
+        private void CloneHelperCore(SqlParameter destination)
+        {
+            destination._value = _value;
+
+            destination._direction = _direction;
+            destination._size = _size;
+
+            destination._offset = _offset;
+            destination._sourceColumn = _sourceColumn;
+            destination._sourceVersion = _sourceVersion;
+            destination._sourceColumnNullMapping = _sourceColumnNullMapping;
+            destination._isNullable = _isNullable;
+        }
+
+        public override DataRowVersion SourceVersion
+        {
+            get
+            {
+                DataRowVersion sourceVersion = _sourceVersion;
+                return ((0 != sourceVersion) ? sourceVersion : DataRowVersion.Current);
+            }
+            set
+            {
+                switch (value)
+                {
+                    case DataRowVersion.Original:
+                    case DataRowVersion.Current:
+                    case DataRowVersion.Proposed:
+                    case DataRowVersion.Default:
+                        _sourceVersion = value;
+                        break;
+                    default:
+                        throw ADP.InvalidDataRowVersion(value);
                 }
             }
         }
