@@ -25,7 +25,21 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR && !ES_BUILD_PN    
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
 #endif // !CORECLR && !ES_BUILD_PN
-    internal struct EventDescriptor
+
+    /*
+     EventDescriptor was public in the separate System.Diagnostics.Tracing assembly(pre NS2.0), 
+     now the move to CoreLib marked them as private.
+     While they are technically private (it's a contract used between the library and the ILC toolchain), 
+     we need them to be rooted and exported from shared library for the system to work.
+     For now I'm simply marking them as public again.A cleaner solution might be to use.rd.xml to 
+     root them and modify shared library definition to force export them.
+     */
+#if ES_BUILD_PN
+    public
+#else
+    internal
+#endif
+    struct EventDescriptor
     {
         # region private
         [FieldOffset(0)]
