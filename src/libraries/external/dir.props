@@ -10,6 +10,6 @@
     <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <!-- We need configuration-specific assets files. -->
-    <RestoreOutputPath>$(BaseIntermediateOutputPath)external/$(MSBuildProjectName)/$(TargetGroup)</RestoreOutputPath>
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
   </PropertyGroup>
 </Project>

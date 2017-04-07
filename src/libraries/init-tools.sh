@@ -159,8 +159,6 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     echo "Making all .sh files executable under Tools."
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
 
-    cp Tools-Override/* Tools
-
     touch $__INIT_TOOLS_DONE_MARKER
 
     echo "Done initializing tools."
