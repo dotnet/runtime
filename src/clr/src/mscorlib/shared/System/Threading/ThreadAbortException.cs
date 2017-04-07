@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
 /*=============================================================================
 **
 **
@@ -15,25 +14,23 @@
 **
 =============================================================================*/
 
-using System;
 using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     [Serializable]
-    internal sealed class ThreadAbortException : SystemException
+    public sealed class ThreadAbortException : SystemException
     {
         private ThreadAbortException()
-            : base(GetMessageFromNativeResources(ExceptionMessageKind.ThreadAbort))
         {
-            SetErrorCode(__HResults.COR_E_THREADABORTED);
+            HResult = __HResults.COR_E_THREADABORTED;
         }
 
-        //required for serialization
         internal ThreadAbortException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+
+        public object ExceptionState => null;
     }
 }
