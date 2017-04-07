@@ -55,3 +55,18 @@ OBJECTHANDLE GCHandleTable::CreateDependentHandle(void* table, Object* primary, 
 
     return handle;
 }
+
+void GCHandleTable::DestroyHandleOfType(OBJECTHANDLE handle, int type)
+{
+    ::HndDestroyHandle(::HndGetHandleTable(handle), type, handle);
+}
+
+void GCHandleTable::DestroyHandleOfUnknownType(OBJECTHANDLE handle)
+{
+    ::HndDestroyHandleOfUnknownType(::HndGetHandleTable(handle), handle);
+}
+
+void* GCHandleTable::GetExtraInfoFromHandle(OBJECTHANDLE handle)
+{
+    return (void*)::HndGetHandleExtraInfo(handle);
+}

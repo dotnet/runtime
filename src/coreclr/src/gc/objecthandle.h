@@ -73,119 +73,10 @@ struct HandleTableBucket
                                     (flag == VHT_STRONG)     || \
                                     (flag == VHT_PINNED))
 
-#ifndef DACCESS_COMPILE
-/*
- * Convenience macros and prototypes for the various handle types we define
- */
-
-inline void DestroyTypedHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandleOfUnknownType(HndGetHandleTable(handle), handle);
-}
-
-inline void DestroyHandle(OBJECTHANDLE handle)
-{ 
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, handle);
-}
-
-inline void DestroyWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_DEFAULT, handle);
-}
-
-inline void DestroyShortWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_SHORT, handle);
-}
-
-inline void DestroyLongWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_LONG, handle);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyLongWeakHandle> LongWeakHandleHolder;
-#endif
-
-inline void DestroyStrongHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_STRONG, handle);
-}
-
-inline void DestroyPinningHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_PINNED, handle);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL> PinningHandleHolder;
-#endif
-
-inline void DestroyAsyncPinningHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_ASYNCPINNED, handle);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
-#endif
-
-void DestroySizedRefHandle(OBJECTHANDLE handle);
-
-#ifndef FEATURE_REDHAWK
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroySizedRefHandle, NULL> SizeRefHandleHolder;
-#endif
-
-#ifdef FEATURE_COMINTEROP
-
-inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_REFCOUNTED, handle);
-}
-
-void DestroyWinRTWeakHandle(OBJECTHANDLE handle);
-
-#endif // FEATURE_COMINTEROP
-
-#endif // !DACCESS_COMPILE
-
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle);
 
 #ifndef DACCESS_COMPILE
 void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF secondary);
-
-inline void DestroyDependentHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-	HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_DEPENDENT, handle);
-}
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -193,129 +84,13 @@ uint32_t     GetVariableHandleType(OBJECTHANDLE handle);
 void         UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type);
 uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType, uint32_t newType);
 
-inline void  DestroyVariableHandle(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_VARIABLE, handle);
-}
-
 void GCHandleValidatePinnedObject(OBJECTREF obj);
 
-/*
- * Holder for OBJECTHANDLE
- */
-
-#ifndef FEATURE_REDHAWK
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle > OHWrapper;
-
-class OBJECTHANDLEHolder : public OHWrapper
-{
-public:
-    FORCEINLINE OBJECTHANDLEHolder(OBJECTHANDLE p = NULL) : OHWrapper(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    FORCEINLINE void operator=(OBJECTHANDLE p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        OHWrapper::operator=(p);
-    }
-};
-#endif
-
-#ifdef FEATURE_COMINTEROP
-
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle> RefCountedOHWrapper;
-
-class RCOBJECTHANDLEHolder : public RefCountedOHWrapper
-{
-public:
-    FORCEINLINE RCOBJECTHANDLEHolder(OBJECTHANDLE p = NULL) : RefCountedOHWrapper(p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    FORCEINLINE void operator=(OBJECTHANDLE p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        RefCountedOHWrapper::operator=(p);
-    }
-};
-
-#endif // FEATURE_COMINTEROP
 /*
  * Convenience prototypes for using the global handles
  */
 
 int GetCurrentThreadHomeHeapNumber();
-
-inline void DestroyGlobalTypedHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandleOfUnknownType(HndGetHandleTable(handle), handle);
-}
-
-inline void DestroyGlobalHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, handle);
-}
-
-inline void DestroyGlobalWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_DEFAULT, handle);
-}
-
-inline void DestroyGlobalShortWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_SHORT, handle);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyGlobalShortWeakHandle> GlobalShortWeakHandleHolder;
-#endif
-
-inline void DestroyGlobalLongWeakHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_LONG, handle);
-}
-
-inline void DestroyGlobalStrongHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_STRONG, handle);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,DestroyGlobalStrongHandle> GlobalStrongHandleHolder;
-#endif
-
-inline void DestroyGlobalPinningHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_PINNED, handle);
-}
-
-#ifdef FEATURE_COMINTEROP
-inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
-{ 
-    WRAPPER_NO_CONTRACT;
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_REFCOUNTED, handle);
-}
-#endif // FEATURE_COMINTEROP
 
 inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
 {
