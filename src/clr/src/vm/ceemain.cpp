@@ -1721,8 +1721,19 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             if (!fIBCLoggingDone)
             {
                 if (g_IBCLogger.InstrEnabled())
-                    Module::WriteAllModuleProfileData(true);
+                {
+                    Thread * pThread = GetThread();
+                    ThreadLocalIBCInfo* pInfo = pThread->GetIBCInfo();
 
+                    // Acquire the Crst lock before creating the IBCLoggingDisabler object.
+                    // Only one thread at a time can be processing an IBC logging event.
+                    CrstHolder lock(g_IBCLogger.GetSync());
+                    {
+                        IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
+                        
+                        Module::WriteAllModuleProfileData(true);
+                    }
+                }
                 fIBCLoggingDone = TRUE;
             }
         }
