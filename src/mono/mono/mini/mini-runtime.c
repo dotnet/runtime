@@ -1760,9 +1760,6 @@ no_gsharedvt_in_wrapper (void)
 /*
 Overall algorithm:
 
-Limit JITing to mono_cpu_count
-	This ensures there's always room for application progress and not just JITing.
-
 When a JIT request is made, we check if there's an outstanding one for that method and, if it exits, put the thread to sleep.
 	If the current thread is already JITing another method, don't wait as it might cause a deadlock.
 	Dependency management in this case is too complex to justify implementing it.
@@ -1770,22 +1767,25 @@ When a JIT request is made, we check if there's an outstanding one for that meth
 If there are no outstanding requests, the current thread is doing nothing and there are already mono_cpu_count threads JITing, go to sleep.
 
 TODO:
-	Get rid of cctor invocatio from within the JIT, it increases JIT duration and complicates things A LOT.
-	Verify that we don't have too many spurious wakeups.
-	Experiment with limiting to values around mono_cpu_count +/- 1 as this would enable progress during warmup.
+	Get rid of cctor invocations from within the JIT, it increases JIT duration and complicates things A LOT.
+	Can we get rid of ref_count and use `done && threads_waiting == 0` as the equivalent of `ref_count == 0`?
+	Reduce amount of dynamically allocated - possible once the JIT is no longer reentrant
+	Maybe pool JitCompilationEntry, specially those with an inited cond var;
 */
 typedef struct {
 	MonoMethod *method;
 	MonoDomain *domain;
-	int count;
+	int compilation_count; /* Number of threads compiling this method - This happens due to the JIT being reentrant */
+	int ref_count; /* Number of threads using this JitCompilationEntry, roughtly 1 + threads_waiting */
+	int threads_waiting; /* Number of threads waiting on this job */
+	gboolean has_cond; /* True if @cond was initialized */
+	gboolean done; /* True if the method finished JIT'ing */
+	MonoCoopCond cond; /* Cond sleeping threads wait one */
 } JitCompilationEntry;
 
 typedef struct {
 	GPtrArray *in_flight_methods; //JitCompilationEntry*
-	int active_threads;
-	int threads_waiting;
 	MonoCoopMutex lock;
-	MonoCoopCond cond;
 } JitCompilationData;
 
 static JitCompilationData compilation_data;
@@ -1795,7 +1795,6 @@ static void
 mini_jit_init_job_control (void)
 {
 	mono_coop_mutex_init (&compilation_data.lock);
-	mono_coop_cond_init (&compilation_data.cond);
 	compilation_data.in_flight_methods = g_ptr_array_new ();
 }
 
@@ -1827,27 +1826,18 @@ find_method (MonoMethod *method, MonoDomain *domain)
 static void
 add_current_thread (MonoJitTlsData *jit_tls)
 {
-	if (jit_tls->active_jit_methods == 0)
-		++compilation_data.active_threads;
 	++jit_tls->active_jit_methods;
 }
 
-//Returns true if this thread should wait
-static gboolean
-should_wait_for_available_cpu_capacity (void)
+static void
+unref_jit_entry (JitCompilationEntry *entry)
 {
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-
-	//We can't suspend threads that are already JIT'ing something or we risk deadlocking
-	if (jit_tls->active_jit_methods > 0)
-		return FALSE;
-
-	//If there are as many active threads as cores, JITing more will cause thrashing
-	if (compilation_data.active_threads >= mono_cpu_count ()) {
-		++jit_methods_overload;
-		return TRUE;
-	}
-	return FALSE;
+	--entry->ref_count;
+	if (entry->ref_count)
+		return;
+	if (entry->has_cond)
+		mono_coop_cond_destroy (&entry->cond);
+	g_free (entry);
 }
 
 /*
@@ -1870,23 +1860,13 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 
 	lock_compilation_data ();
 
-	int waits = 0;
-	while (should_wait_for_available_cpu_capacity ()) {
-		fflush (stdout);
-		++compilation_data.threads_waiting;
-		mono_coop_cond_wait (&compilation_data.cond, &compilation_data.lock);
-		--compilation_data.threads_waiting;
-		if (waits)
-			++jit_spurious_wakeups;
-		++waits;
-	}
-
 	if (!(entry = find_method (method, domain))) {
-		entry = g_new (JitCompilationEntry, 1);
+		entry = g_new0 (JitCompilationEntry, 1);
 		entry->method = method;
 		entry->domain = domain;
-		entry->count = 1;
+		entry->compilation_count = entry->ref_count = 1;
 		g_ptr_array_add (compilation_data.in_flight_methods, entry);
+		g_assert (find_method (method, domain) == entry);
 		add_current_thread (jit_tls);
 
 		unlock_compilation_data ();
@@ -1894,7 +1874,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 	} else if (jit_tls->active_jit_methods > 0) {
 		//We can't suspend the current thread if it's already JITing a method.
 		//Dependency management is too compilated and we want to get rid of this anyways.
-		++entry->count;
+		++entry->compilation_count;
 		++jit_methods_multiple;
 		++jit_tls->active_jit_methods;
 
@@ -1902,13 +1882,22 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 		return FALSE;
 	} else {
 		++jit_methods_waited;
-		while (TRUE) {
-			fflush (stdout);
-			++compilation_data.threads_waiting;
-			mono_coop_cond_wait (&compilation_data.cond, &compilation_data.lock);
-			--compilation_data.threads_waiting;
+		++entry->ref_count;
 
-			if (!find_method (method, domain)) {
+		if (!entry->has_cond) {
+			mono_coop_cond_init (&entry->cond);
+			entry->has_cond = TRUE;
+		}
+
+		while (TRUE) {
+			++entry->threads_waiting;
+
+			g_assert (entry->has_cond);
+			mono_coop_cond_wait (&entry->cond, &compilation_data.lock);
+			--entry->threads_waiting;
+
+			if (entry->done) {
+				unref_jit_entry (entry);
 				unlock_compilation_data ();
 				return TRUE;
 			} else {
@@ -1927,18 +1916,21 @@ unregister_method_for_compile (MonoMethod *method, MonoDomain *target_domain)
 
 	g_assert (jit_tls->active_jit_methods > 0);
 	--jit_tls->active_jit_methods;
-	if (jit_tls->active_jit_methods == 0)
-		--compilation_data.active_threads;
 
 	JitCompilationEntry *entry = find_method (method, target_domain);
 	g_assert (entry); // It would be weird to fail
-	if (--entry->count == 0) {
-		g_ptr_array_remove (compilation_data.in_flight_methods, entry);
-		g_free (entry);
+	entry->done = TRUE;
+
+	if (entry->threads_waiting) {
+		g_assert (entry->has_cond);
+		mono_coop_cond_broadcast (&entry->cond);
 	}
 
-	if (compilation_data.threads_waiting)
-		mono_coop_cond_broadcast (&compilation_data.cond);
+	if (--entry->compilation_count == 0) {
+		g_ptr_array_remove (compilation_data.in_flight_methods, entry);
+		unref_jit_entry (entry);
+	}
+
 	unlock_compilation_data ();
 }
 
