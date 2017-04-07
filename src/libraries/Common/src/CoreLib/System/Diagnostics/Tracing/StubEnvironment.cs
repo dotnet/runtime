@@ -370,7 +370,7 @@ namespace System.Security.Permissions
 #if ES_BUILD_PN
 namespace System
 {
-    public static class AppDomain
+    internal static class AppDomain
     {
         public static int GetCurrentThreadId()
         {
