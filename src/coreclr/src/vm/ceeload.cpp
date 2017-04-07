@@ -3586,8 +3586,21 @@ void Module::StartUnload()
     }
 #endif // PROFILING_SUPPORTED
 #ifdef FEATURE_PREJIT 
-    // Write out the method profile data
-    /*hr=*/WriteMethodProfileDataLogFile(true);
+    if (g_IBCLogger.InstrEnabled())
+    {
+        Thread * pThread = GetThread();
+        ThreadLocalIBCInfo* pInfo = pThread->GetIBCInfo();
+
+        // Acquire the Crst lock before creating the IBCLoggingDisabler object.
+        // Only one thread at a time can be processing an IBC logging event.
+        CrstHolder lock(g_IBCLogger.GetSync());
+        {
+            IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
+
+            // Write out the method profile data
+            /*hr=*/WriteMethodProfileDataLogFile(true);
+        }
+    }
 #endif // FEATURE_PREJIT
     SetBeingUnloaded();
 }
