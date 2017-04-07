@@ -1803,13 +1803,11 @@ static void
 lock_compilation_data (void)
 {
 	mono_coop_mutex_lock (&compilation_data.lock);
-	fflush (stdout);
 }
 
 static void
 unlock_compilation_data (void)
 {
-	fflush (stdout);
 	mono_coop_mutex_unlock (&compilation_data.lock);
 }
 
@@ -1861,7 +1859,6 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 	JitCompilationEntry *entry;
 
-
 	static gboolean inited;
 	if (!inited) {
 		mono_counters_register ("JIT compile waited others", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_waited);
@@ -1891,6 +1888,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 		entry->count = 1;
 		g_ptr_array_add (compilation_data.in_flight_methods, entry);
 		add_current_thread (jit_tls);
+
 		unlock_compilation_data ();
 		return FALSE;
 	} else if (jit_tls->active_jit_methods > 0) {
@@ -1898,6 +1896,8 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 		//Dependency management is too compilated and we want to get rid of this anyways.
 		++entry->count;
 		++jit_methods_multiple;
+		++jit_tls->active_jit_methods;
+
 		unlock_compilation_data ();
 		return FALSE;
 	} else {
@@ -1925,6 +1925,7 @@ unregister_method_for_compile (MonoMethod *method, MonoDomain *target_domain)
 
 	lock_compilation_data ();
 
+	g_assert (jit_tls->active_jit_methods > 0);
 	--jit_tls->active_jit_methods;
 	if (jit_tls->active_jit_methods == 0)
 		--compilation_data.active_threads;
