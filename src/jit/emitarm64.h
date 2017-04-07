@@ -19,9 +19,7 @@ static bool strictArmAsm;
 struct CnsVal
 {
     ssize_t cnsVal;
-#ifdef RELOC_SUPPORT
-    bool cnsReloc;
-#endif
+    bool    cnsReloc;
 };
 
 #ifdef DEBUG

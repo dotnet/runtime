@@ -6838,12 +6838,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
             id->idSetIsCallAddr();
         }
 
-#if RELOC_SUPPORT
         if (emitComp->opts.compReloc)
         {
             id->idSetIsDspReloc();
         }
-#endif
     }
 
 #ifdef DEBUG
