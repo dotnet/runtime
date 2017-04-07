@@ -98,7 +98,7 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
       endif()
 endif ()
 
-if (DEFINED CLI_CMAKE_PORTABLE_BUILD)
+if (CLI_CMAKE_PORTABLE_BUILD)
     add_definitions(-DFEATURE_PORTABLE_BUILD=1)
 endif ()
 
