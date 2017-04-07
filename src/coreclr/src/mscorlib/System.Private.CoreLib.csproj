@@ -637,7 +637,6 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\File.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
@@ -679,46 +678,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stackframe.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\ActivityTracker.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventActivityOptions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventDescriptor.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
     <Compile Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSourceException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\StubEnvironment.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\Winmeta.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ArrayTypeInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSet.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSetItem.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\DataCollector.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EmptyStruct.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumerableTypeInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventDataAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldFormat.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventIgnoreAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventPayload.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventSourceOptions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\FieldMetadata.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\InvokeTypeInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\NameInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyValue.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyAnalysis.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleEventTypes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleTypeInfos.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\Statics.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataCollector.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventSource.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTraits.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTypes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingMetadataCollector.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingTypeInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TypeAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
