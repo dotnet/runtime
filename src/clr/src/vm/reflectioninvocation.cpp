@@ -470,21 +470,17 @@ FCIMPL1(Object*, RuntimeTypeHandle::Allocate, ReflectClassBaseObject* pTypeUNSAF
 }//Allocate
 FCIMPLEND
 
-FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
+FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
                                                     CLR_BOOL publicOnly,
-                                                    CLR_BOOL securityOff,
                                                     CLR_BOOL* pbCanBeCached,
-                                                    MethodDesc** pConstructor,
-                                                    CLR_BOOL *pbNeedSecurityCheck) {
+                                                    MethodDesc** pConstructor) {
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(refThisUNSAFE));
         PRECONDITION(CheckPointer(pbCanBeCached));
-        PRECONDITION(CheckPointer(pbNeedSecurityCheck));
         PRECONDITION(CheckPointer(pConstructor));
         PRECONDITION(*pbCanBeCached == false);
         PRECONDITION(*pConstructor == NULL);
-        PRECONDITION(*pbNeedSecurityCheck == true);
     }
     CONTRACTL_END;
 
@@ -508,7 +504,6 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refThis);
 
     MethodTable* pVMT;
-    bool bNeedAccessCheck;
 
     // Get the type information associated with refThis
     if (thisTH.IsNull() || thisTH.IsTypeDesc())
@@ -517,8 +512,6 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     pVMT = thisTH.AsMethodTable();
 
     pVMT->EnsureInstanceActive();
-
-    bNeedAccessCheck = false;
 
 #ifdef FEATURE_COMINTEROP
     // If this is __ComObject then create the underlying COM object.
@@ -577,34 +570,16 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
                 COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
             }
 
-            if (!securityOff)
-            {
-                {
-                    // Public critical types cannot be accessed by transparent callers
-                    bNeedAccessCheck = !pVMT->IsExternallyVisible() || Security::TypeRequiresTransparencyCheck(pVMT);
-                }
-
-                if (bNeedAccessCheck)
-                {
-                    RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType());
-                    InvokeUtil::CanAccessClass(&sCtx, pVMT, TRUE);
-                }
-            }
-
-                // Handle the nullable<T> special case
+            // Handle the nullable<T> special case
             if (Nullable::IsNullableType(thisTH)) {
                 rv = Nullable::BoxedNullableNull(thisTH);
             }
             else 
                 rv = pVMT->Allocate();
 
-            // Since no security checks will be performed on cached value types without default ctors,
-            // we cannot cache those types that require access checks.
-            // In fact, we don't even need to set pbNeedSecurityCheck to false here.
-            if (!pVMT->Collectible() && !bNeedAccessCheck)
+            if (!pVMT->Collectible())
             {
                 *pbCanBeCached = true;
-                *pbNeedSecurityCheck = false;
             }
         }
         else // !pVMT->HasDefaultConstructor()
@@ -616,30 +591,6 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
 
             if (!IsMdPublic(attr) && publicOnly)
                 COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
-
-            if (!securityOff)
-            {
-                // If the type is critical or the constructor we're using is critical, we need to ensure that
-                // the caller is allowed to invoke it.
-                bool needsTransparencyCheck = Security::TypeRequiresTransparencyCheck(pVMT) ||
-                                               (Security::IsMethodCritical(pMeth) && !Security::IsMethodSafeCritical(pMeth));
-
-                // We also need to do a check if the method or type is not public
-                bool needsVisibilityCheck = !IsMdPublic(attr) || !pVMT->IsExternallyVisible();
-
-                // If the visiblity, transparency, or legacy LinkDemands on the type or constructor dictate that
-                // we need to check the caller, then do that now.
-                bNeedAccessCheck = needsTransparencyCheck ||
-                    needsVisibilityCheck ||
-                    pMeth->RequiresLinktimeCheck();
-
-                if (bNeedAccessCheck)
-                {
-                    // this security context will be used in cast checking as well
-                    RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType());
-                    InvokeUtil::CanAccessMethod(pMeth, pVMT, NULL, &sCtx);
-                }
-            }
 
             // We've got the class, lets allocate it and call the constructor
             OBJECTREF o;
@@ -663,12 +614,13 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             rv = o;
             GCPROTECT_END();
 
-            // No need to set these if they cannot be cached
-            if (!remoting && !pVMT->Collectible())
+            // No need to set these if they cannot be cached. In particular, if the type is a value type with a custom
+            // parameterless constructor, don't allow caching and have subsequent calls come back here to allocate an object and
+            // call the constructor.
+            if (!remoting && !pVMT->Collectible() && !pVMT->IsValueType())
             {
                 *pbCanBeCached = true;
                 *pConstructor = pMeth;
-                *pbNeedSecurityCheck = bNeedAccessCheck;
             }
         }
     }
