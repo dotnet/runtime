@@ -109,7 +109,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
-            "Rid": "osx.10.12",
+            "Rid": "osx",
             "portableBuild": "-portable"
           }
         },
