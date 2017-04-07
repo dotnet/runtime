@@ -2668,7 +2668,7 @@ public:
         LclVarDsc* varDsc = &(lvaTable[varNum]);
         if (varDsc->lvIsParam && varDsc->lvIsTemp)
         {
-            assert((varDsc->lvType == TYP_STRUCT) || (varDsc->lvType == TYP_BYREF));
+            assert(varTypeIsStruct(varDsc) || (varDsc->lvType == TYP_BYREF));
             return true;
         }
 #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
