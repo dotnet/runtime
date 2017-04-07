@@ -869,7 +869,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Initialize remoting
 
-        if (!GCHeapUtilities::GetGCHandleTable()->Initialize())
+        if (!GCHandleTableUtilities::GetGCHandleTable()->Initialize())
         {
             IfFailGo(E_OUTOFMEMORY);
         }
@@ -1880,7 +1880,7 @@ part2:
 #ifdef SHOULD_WE_CLEANUP
                 if (!g_fFastExitProcess)
                 {
-                    GCHeapUtilities::GetGCHandleTable()->Shutdown();
+                    GCHandleTableUtilities::GetGCHandleTable()->Shutdown();
                 }
 #endif /* SHOULD_WE_CLEANUP */
 
