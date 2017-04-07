@@ -580,7 +580,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadAbortException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPriority.cs" />
