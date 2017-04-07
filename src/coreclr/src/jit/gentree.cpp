@@ -5524,7 +5524,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
 
 #ifdef FEATURE_READYTORUN_COMPILER
-#if defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_ARMARCH_)
             if (tree->gtCall.IsR2RRelativeIndir())
             {
                 ftreg |= RBM_R2R_INDIRECT_PARAM;
