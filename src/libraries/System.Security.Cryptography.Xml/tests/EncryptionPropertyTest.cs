@@ -10,6 +10,8 @@ namespace System.Security.Cryptography.Xml.Tests
     public class EncryptionPropertyTest
     {
         private const string ValidXml = @"<EncryptionProperty xmlns=""http://www.w3.org/2001/04/xmlenc#"" Id=""ID_val"" Target=""Target_val"" />";
+        private const string IDValue = "ID_val";
+        private const string TargetValue = "Target_val";
 
         [Fact]
         public void DefaultConstructor()
@@ -97,8 +99,8 @@ namespace System.Security.Cryptography.Xml.Tests
             EncryptionProperty encryptionProperty = new EncryptionProperty();
             encryptionProperty.LoadXml(doc.DocumentElement);
             Assert.Equal(doc.DocumentElement, encryptionProperty.PropertyElement);
-            Assert.Equal("ID_val", encryptionProperty.Id);
-            Assert.Equal("Target_val", encryptionProperty.Target);
+            Assert.Equal(IDValue, encryptionProperty.Id);
+            Assert.Equal(TargetValue, encryptionProperty.Target);
         }
 
         [Fact]
