@@ -27,7 +27,6 @@ GVAL_DECL(GCHeapType, g_heap_type);
 // GC will update it when it needs to.
 extern "C" gc_alloc_context g_global_alloc_context;
 
-extern "C" IGCHandleTable* g_pGCHandleTable;
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
@@ -71,15 +70,6 @@ public:
 
         assert(g_pGCHeap != nullptr);
         return g_pGCHeap;
-    }
-
-    // Retrieves the GC handle table.
-    static IGCHandleTable* GetGCHandleTable() 
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        assert(g_pGCHandleTable != nullptr);
-        return g_pGCHandleTable;
     }
 
     // Returns true if the heap has been initialized, false otherwise.
@@ -210,23 +200,6 @@ private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
 };
-
-// Handle-related utilities.
-
-void ValidateHandleAndAppDomain(OBJECTHANDLE handle);
-
-// Given a handle, returns an OBJECTREF for the object it refers to.
-inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
-{
-    _ASSERTE(handle);
-
-#ifdef _DEBUG_IMPL
-    ValidateHandleAndAppDomain(handle);
-#endif // _DEBUG_IMPL
-
-    // Wrap the raw OBJECTREF and return it
-    return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
-}
 
 #endif // _GCHEAPUTILITIES_H_
 
