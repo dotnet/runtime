@@ -55,7 +55,7 @@ namespace System.Diagnostics
         public DateTime StartTimeUtc { get; private set; }
 
         /// <summary>
-        /// If the Activity that created this activity is  from the same process you can get 
+        /// If the Activity that created this activity is from the same process you can get 
         /// that Activity with Parent.  However, this can be null if the Activity has no
         /// parent (a root activity) or if the Parent is from outside the process.
         /// </summary>
@@ -65,7 +65,7 @@ namespace System.Diagnostics
         /// <summary>
         /// If the parent for this activity comes from outside the process, the activity
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
-        /// from the parent) .   This accessor fetches the parent ID if it exists at all.  
+        /// from the parent).   This accessor fetches the parent ID if it exists at all.  
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
@@ -120,7 +120,7 @@ namespace System.Diagnostics
         /// Baggage is string-string key-value pairs that represent information that will
         /// be passed along to children of this activity.   Baggage is serialized 
         /// when requests leave the process (along with the ID).   Typically Baggage is
-        /// used to do fine-grained control over logging of the activty and any children.  
+        /// used to do fine-grained control over logging of the activity and any children.  
         /// In general, if you are not using the data at runtime, you should be using Tags 
         /// instead. 
         /// </summary> 
@@ -149,7 +149,7 @@ namespace System.Diagnostics
         /* Constructors  Builder methods */
 
         /// <summary>
-        /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'With*' APIs and then
+        /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'Set*' and 'Add*' APIs and then
         /// call <see cref="Start"/> to build the activity.  You MUST call <see cref="Start"/> before using it.
         /// </summary>
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
@@ -162,7 +162,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have a tag with an additional 'key' and value 'value'.
-        /// This shows up in the <see cref="Tags"/>  eumeration.   It is meant for information that
+        /// This shows up in the <see cref="Tags"/>  enumeration.   It is meant for information that
         /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
         /// <returns>'this' for convenient chaining</returns>
@@ -174,8 +174,8 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have baggage with an additional 'key' and value 'value'.
-        /// This shows up in the <see cref="Baggage"/> eumeration as well as the <see cref="GetBaggageItem(string)"/>
-        /// mathod.
+        /// This shows up in the <see cref="Baggage"/> enumeration as well as the <see cref="GetBaggageItem(string)"/>
+        /// method.
         /// Baggage is meant for information that is needed for runtime control.   For information 
         /// that is simply useful to show up in the log with the activity use <see cref="Tags"/>.
         /// Returns 'this' for convenient chaining.
@@ -225,6 +225,7 @@ namespace System.Diagnostics
             StartTimeUtc = startTimeUtc;
             return this;
         }
+
         /// <summary>
         /// Update the Activity to set <see cref="Duration"/>
         /// as a difference between <see cref="StartTimeUtc"/>
@@ -244,8 +245,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// If the Activity has ended (<see cref="Stop"/> was called) then this is the delta
-        /// between start and end.   If the activity is not ended then this is 
+        /// If the Activity has ended (<see cref="Stop"/> or <see cref="SetEndTime"/> was called) then this is the delta
+        /// between <see cref="StartTimeUtc"/> and end.   If Activity is not ended and <see cref="SetEndTime"/> was not called then this is 
         /// <see cref="TimeSpan.Zero"/>.
         /// </summary>
         public TimeSpan Duration { get; private set; }
@@ -328,7 +329,9 @@ namespace System.Diagnostics
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
                 string parentId = ParentId[0] == RootIdPrefix ? ParentId : RootIdPrefix + ParentId;
-                if (parentId[parentId.Length - 1] != '.')
+
+                char lastChar = parentId[parentId.Length - 1];
+                if (lastChar != '.' && lastChar != '_')
                 {
                     parentId += '.';
                 }
