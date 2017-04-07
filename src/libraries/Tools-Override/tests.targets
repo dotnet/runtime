@@ -300,7 +300,7 @@
       RunnerScriptTemplate="$(MSBuildThisFileDirectory)/$(RunnerTemplateName)"
       ScriptOutputPath ="$(OutputPathForScriptGenerator)"
     />
-    <Exec Command="chmod +x $(OutputPathForScriptGenerator)" />
+    <Exec Condition="'$(TargetOS)'!='Windows_NT'" Command="chmod +x $(OutputPathForScriptGenerator)" />
   </Target>
 
   <Target Name="RunTestsForProject"
