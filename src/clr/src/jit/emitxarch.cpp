@@ -1802,13 +1802,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, int var, int dsp, in
         valSize = sizeof(int);
     }
 
-#ifdef RELOC_SUPPORT
     if (id->idIsCnsReloc())
     {
         valInByte = false; // relocs can't be placed in a byte
         assert(valSize == sizeof(int));
     }
-#endif
 
     if (valInByte)
     {
@@ -1884,13 +1882,11 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
             break;
     }
 
-#ifdef RELOC_SUPPORT
     if (id->idIsDspReloc())
     {
         dspInByte = false; // relocs can't be placed in a byte
         dspIsZero = false; // relocs won't always be zero
     }
-#endif
 
     if (code & 0xFF000000)
     {
@@ -2077,13 +2073,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
         valSize = sizeof(INT32);
     }
 
-#ifdef RELOC_SUPPORT
     if (id->idIsCnsReloc())
     {
         valInByte = false; // relocs can't be placed in a byte
         assert(valSize == sizeof(INT32));
     }
-#endif
 
     if (valInByte)
     {
@@ -2125,13 +2119,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
         valSize = sizeof(INT32);
 #endif // !_TARGET_AMD64_
 
-#ifdef RELOC_SUPPORT
     if (id->idIsCnsReloc())
     {
         valInByte = false; // relocs can't be placed in a byte
         assert(valSize == sizeof(INT32));
     }
-#endif
 
     if (valInByte)
     {
@@ -3666,13 +3658,11 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
 
 void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
-#if RELOC_SUPPORT
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
     {
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
-#endif
 
     UNATIVE_OFFSET sz;
     instrDesc*     id;
@@ -3834,13 +3824,11 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
  */
 void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
-#if RELOC_SUPPORT
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
     {
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
-#endif
 
     emitAttr size = EA_SIZE(attr);
 
@@ -3919,13 +3907,11 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
 
 void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
 {
-#if RELOC_SUPPORT
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
     {
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
-#endif
 
     emitAttr size = EA_SIZE(attr);
 
@@ -3994,13 +3980,11 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 
 void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val)
 {
-#if RELOC_SUPPORT
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
     {
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
-#endif
 
     insFormat fmt;
 
@@ -4082,7 +4066,6 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     emitTotalIGjmps++;
 #endif
 
-#if RELOC_SUPPORT
 #ifndef _TARGET_AMD64_
     // Storing the address of a basicBlock will need a reloc
     // as the instruction uses the absolute address,
@@ -4095,7 +4078,6 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     {
         id->idSetIsDspReloc();
     }
-#endif // RELOC_SUPPORT
 
     id->idCodeSize(sz);
 
@@ -5027,7 +5009,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
     else if (ins == INS_push || ins == INS_push_hide)
     {
-#if RELOC_SUPPORT
         // Pushing the address of a basicBlock will need a reloc
         // as the instruction uses the absolute address,
         // not a relative address
@@ -5035,7 +5016,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         {
             id->idSetIsDspReloc();
         }
-#endif
         sz = PUSH_INST_SIZE;
     }
     else
@@ -5532,7 +5512,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idAddr()->iiaAddr = (BYTE*)addr;
         sz                    = 6;
 
-#if RELOC_SUPPORT
         // Since this is an indirect call through a pointer and we don't
         // currently pass in emitAttr into this function, we query codegen
         // whether addr needs a reloc.
@@ -5550,7 +5529,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
             sz++;
         }
 #endif //_TARGET_AMD64_
-#endif // RELOC_SUPPORT
     }
     else
     {
@@ -5570,13 +5548,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
             id->idSetIsCallAddr();
         }
 
-#if RELOC_SUPPORT
         // Direct call to a method and no addr indirection is needed.
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
         }
-#endif
     }
 
 #ifdef DEBUG
@@ -6031,12 +6007,10 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
     doffs = Compiler::eeGetJitDataOffs(fldHnd);
 
-#ifdef RELOC_SUPPORT
     if (reloc)
     {
         printf("reloc ");
     }
-#endif
 
     if (doffs >= 0)
     {
@@ -6252,12 +6226,10 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
         if (jdsc)
         {
-#ifdef RELOC_SUPPORT
             if (id->idIsDspReloc())
             {
                 printf("reloc ");
             }
-#endif
             printf("J_M%03u_DS%02u", Compiler::s_compMethodsCount, id->idDebugOnlyInfo()->idMemCookie);
         }
 
@@ -6298,7 +6270,6 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-#ifdef RELOC_SUPPORT
     if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
@@ -6308,7 +6279,6 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         emitDispReloc(disp);
     }
     else
-#endif
     {
         // Munge any pointers if we want diff-able disassembly
         if (emitComp->opts.disDiffable)
@@ -6515,11 +6485,8 @@ void emitter::emitDispIns(
         printf("IN%04x: ", idNum);
     }
 
-#ifdef RELOC_SUPPORT
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
-#else
-#define ID_INFO_DSP_RELOC false
-#endif
+
     /* Display a constant value if the instruction references one */
 
     if (!isNew)
@@ -6736,13 +6703,11 @@ void emitter::emitDispIns(
             // no 8-byte immediates allowed here!
             assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
-#ifdef RELOC_SUPPORT
             if (id->idIsCnsReloc())
             {
                 emitDispReloc(val);
             }
             else
-#endif
             {
             PRINT_CONSTANT:
                 // Munge any pointers if we want diff-able disassembly
@@ -6864,13 +6829,11 @@ void emitter::emitDispIns(
             else
             {
                 printf(", ");
-#ifdef RELOC_SUPPORT
                 if (cnsVal.cnsReloc)
                 {
                     emitDispReloc(val);
                 }
                 else
-#endif
                 {
                     goto PRINT_CONSTANT;
                 }
@@ -6945,13 +6908,11 @@ void emitter::emitDispIns(
             else
             {
                 printf(", ");
-#ifdef RELOC_SUPPORT
                 if (cnsVal.cnsReloc)
                 {
                     emitDispReloc(val);
                 }
                 else
-#endif
                 {
                     goto PRINT_CONSTANT;
                 }
@@ -7051,13 +7012,11 @@ void emitter::emitDispIns(
             assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             printf(", ");
-#ifdef RELOC_SUPPORT
             if (id->idIsCnsReloc())
             {
                 emitDispReloc(val);
             }
             else
-#endif
             {
                 goto PRINT_CONSTANT;
             }
@@ -7125,14 +7084,11 @@ void emitter::emitDispIns(
             // no 8-byte immediates allowed here!
             assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
-#ifdef RELOC_SUPPORT
             if (cnsVal.cnsReloc)
             {
                 emitDispReloc(val);
             }
-            else
-#endif
-                if (id->idInsFmt() == IF_MRW_SHF)
+            else if (id->idInsFmt() == IF_MRW_SHF)
             {
                 emitDispShift(ins, (BYTE)val);
             }
@@ -7177,13 +7133,11 @@ void emitter::emitDispIns(
         case IF_RRW_CNS:
             printf("%s, ", emitRegName(id->idReg1(), attr));
             val = emitGetInsSC(id);
-#ifdef RELOC_SUPPORT
             if (id->idIsCnsReloc())
             {
                 emitDispReloc(val);
             }
             else
-#endif
             {
                 goto PRINT_CONSTANT;
             }
@@ -7529,11 +7483,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         ssize_t cval = addc->cnsVal;
 
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval &&
-#ifdef RELOC_SUPPORT
-            addc->cnsReloc == false &&
-#endif
-            ins != INS_mov && ins != INS_test)
+        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
             if (id->idInsFmt() != IF_ARW_SHF)
             {
@@ -7678,12 +7628,10 @@ GOT_DSP:
     dspInByte = ((signed char)dsp == (ssize_t)dsp);
     dspIsZero = (dsp == 0);
 
-#ifdef RELOC_SUPPORT
     if (id->idIsDspReloc())
     {
         dspInByte = false; // relocs can't be placed in a byte
     }
-#endif
 
     // Is there a [scaled] index component?
     if (rgx == REG_NA)
@@ -7777,12 +7725,10 @@ GOT_DSP:
                     dst += emitOutputWord(dst, code | 0x8500);
                     dst += emitOutputLong(dst, dsp);
 
-#ifdef RELOC_SUPPORT
                     if (id->idIsDspReloc())
                     {
                         emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
-#endif
                 }
                 break;
 
@@ -7817,12 +7763,10 @@ GOT_DSP:
                     dst += emitOutputWord(dst, code | 0x8400);
                     dst += emitOutputByte(dst, 0x24);
                     dst += emitOutputLong(dst, dsp);
-#ifdef RELOC_SUPPORT
                     if (id->idIsDspReloc())
                     {
                         emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
-#endif
                 }
                 break;
 
@@ -7848,12 +7792,10 @@ GOT_DSP:
                     {
                         dst += emitOutputWord(dst, code | 0x8000);
                         dst += emitOutputLong(dst, dsp);
-#ifdef RELOC_SUPPORT
                         if (id->idIsDspReloc())
                         {
                             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
-#endif
                     }
                 }
 
@@ -7898,12 +7840,10 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x8400);
                         dst += emitOutputByte(dst, regByte);
                         dst += emitOutputLong(dst, dsp);
-#ifdef RELOC_SUPPORT
                         if (id->idIsDspReloc())
                         {
                             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                         }
-#endif
                     }
                 }
             }
@@ -7923,12 +7863,10 @@ GOT_DSP:
                 }
 
                 dst += emitOutputLong(dst, dsp);
-#ifdef RELOC_SUPPORT
                 if (id->idIsDspReloc())
                 {
                     emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                 }
-#endif
             }
         }
         else
@@ -7956,12 +7894,10 @@ GOT_DSP:
                     dst += emitOutputWord(dst, code | 0x8400);
                     dst += emitOutputByte(dst, regByte);
                     dst += emitOutputLong(dst, dsp);
-#ifdef RELOC_SUPPORT
                     if (id->idIsDspReloc())
                     {
                         emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
                     }
-#endif
                 }
             }
         }
@@ -7995,13 +7931,11 @@ GOT_DSP:
                 assert(!"unexpected operand size");
         }
 
-#ifdef RELOC_SUPPORT
         if (addc->cnsReloc)
         {
             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
             assert(opsz == 4);
         }
-#endif
     }
 
 DONE:
@@ -8151,11 +8085,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         ssize_t cval = addc->cnsVal;
 
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval &&
-#ifdef RELOC_SUPPORT
-            addc->cnsReloc == false &&
-#endif
-            ins != INS_mov && ins != INS_test)
+        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
             if (id->idInsFmt() != IF_SRW_SHF)
             {
@@ -8290,10 +8220,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     dspInByte = ((signed char)dsp == (int)dsp);
     dspIsZero = (dsp == 0);
 
-#ifdef RELOC_SUPPORT
     // for stack varaibles the dsp should never be a reloc
     assert(id->idIsDspReloc() == 0);
-#endif
 
     if (EBPbased)
     {
@@ -8413,13 +8341,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 assert(!"unexpected operand size");
         }
 
-#ifdef RELOC_SUPPORT
         if (addc->cnsReloc)
         {
             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
             assert(opsz == 4);
         }
-#endif
     }
 
     // Does this instruction operate on a GC ref value?
@@ -8562,11 +8488,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval &&
-#ifdef RELOC_SUPPORT
-            addc->cnsReloc == false &&
-#endif
-            ins != INS_mov && ins != INS_test)
+        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
             if (id->idInsFmt() != IF_MRW_SHF)
             {
@@ -8808,12 +8730,10 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         dst += emitOutputLong(dst, (int)target);
 #endif //_TARGET_X86_
 
-#ifdef RELOC_SUPPORT
         if (id->idIsDspReloc())
         {
             emitRecordRelocation((void*)(dst - sizeof(int)), target, IMAGE_REL_BASED_DISP32, 0, addlDelta);
         }
-#endif
     }
     else
     {
@@ -8826,12 +8746,10 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputSizeT(dst, (ssize_t)target);
 
-#ifdef RELOC_SUPPORT
         if (id->idIsDspReloc())
         {
             emitRecordRelocation((void*)(dst - sizeof(void*)), target, IMAGE_REL_BASED_MOFFSET);
         }
-#endif
 
 #endif //_TARGET_X86_
     }
@@ -8863,13 +8781,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             default:
                 assert(!"unexpected operand size");
         }
-#ifdef RELOC_SUPPORT
         if (addc->cnsReloc)
         {
             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
             assert(opsz == 4);
         }
-#endif
     }
 
     // Does this instruction operate on a GC ref value?
@@ -9591,12 +9507,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     ssize_t     val       = emitGetInsSC(id);
     bool        valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifdef RELOC_SUPPORT
     if (id->idIsCnsReloc())
     {
         valInByte = false; // relocs can't be placed in a byte
     }
-#endif
 
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
@@ -9684,12 +9598,10 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         }
 #endif
 
-#ifdef RELOC_SUPPORT
         if (id->idIsCnsReloc())
         {
             emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_BASED_MOFFSET);
         }
-#endif
 
         goto DONE;
     }
@@ -9846,13 +9758,11 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
                 break;
         }
 
-#ifdef RELOC_SUPPORT
         if (id->idIsCnsReloc())
         {
             emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
             assert(size == EA_4BYTE);
         }
-#endif
     }
 
 DONE:
@@ -9961,7 +9871,6 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     noway_assert(size < EA_8BYTE || ((int)val == val && !id->idIsCnsReloc()));
 #endif
 
-#ifdef RELOC_SUPPORT
     if (id->idIsCnsReloc())
     {
         valInByte = false; // relocs can't be placed in a byte
@@ -9969,7 +9878,6 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
         // Of these instructions only the push instruction can have reloc
         assert(ins == INS_push || ins == INS_push_hide);
     }
-#endif
 
     switch (ins)
     {
@@ -10011,12 +9919,10 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
 
                 dst += emitOutputByte(dst, code);
                 dst += emitOutputLong(dst, val);
-#ifdef RELOC_SUPPORT
                 if (id->idIsCnsReloc())
                 {
                     emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
                 }
-#endif
             }
 
             // Did we push a GC ref value?
@@ -10603,12 +10509,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dst += emitOutputLong(dst, offset);
 
-#ifdef RELOC_SUPPORT
             if (id->idIsDspReloc())
             {
                 emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, IMAGE_REL_BASED_REL32);
             }
-#endif
 
         DONE_CALL:
 
