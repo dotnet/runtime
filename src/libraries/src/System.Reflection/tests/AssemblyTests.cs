@@ -121,7 +121,10 @@ namespace System.Reflection.Tests
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
-            Assert.StartsWith("xunit.console.netcore", Assembly.GetEntryAssembly().ToString(), StringComparison.OrdinalIgnoreCase);
+            string assembly = Assembly.GetEntryAssembly().ToString();
+            bool correct = assembly.IndexOf("xunit.console.netcore", StringComparison.OrdinalIgnoreCase) != -1 ||
+                           assembly.IndexOf("XUnit.Runner.Uap", StringComparison.OrdinalIgnoreCase) != -1;
+            Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
