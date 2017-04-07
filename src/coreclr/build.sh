@@ -334,10 +334,10 @@ isMSBuildOnNETCoreSupported()
                 "debian.8-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                "fedora.23-x64")
+                "fedora.24-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                "fedora.24-x64")
+                "fedora.25-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
                 "opensuse.42.1-x64")

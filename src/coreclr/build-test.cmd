@@ -392,8 +392,8 @@ echo buildagainstpackages: builds tests against restored packages, instead of ag
 echo runtimeid ^<ID^>: Builds a test overlay for the specified OS (Only supported when building against packages). Supported IDs are:
 echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
 echo     debian.8-x64: Builds overlay for Debian 8
-echo     fedora.23-x64: Builds overlay for Fedora 23
-echo     fedora.24-x64: Builds overlay for Fedora 23
+echo     fedora.24-x64: Builds overlay for Fedora 24
+echo     fedora.25-x64: Builds overlay for Fedora 25
 echo     opensuse.42.1-x64: Builds overlay for OpenSUSE 42.1
 echo     osx.10.12-x64: Builds overlay for OSX 10.12
 echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
