@@ -3376,6 +3376,28 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
     }
 }
 
+// Generate code for a load pair from some address + offset
+//   base: tree node which can be either a local address or arbitrary node
+//   offset: distance from the base from which to load
+void CodeGen::genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* base, unsigned offset)
+{
+    emitter* emit = getEmitter();
+
+    if (base->OperIsLocalAddr())
+    {
+        if (base->gtOper == GT_LCL_FLD_ADDR)
+            offset += base->gtLclFld.gtLclOffs;
+
+        // TODO-ARM64-CQ: Implement support for using a ldp instruction with a varNum (see emitIns_R_S)
+        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+    }
+    else
+    {
+        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, dst, dst2, base->gtRegNum, offset);
+    }
+}
+
 // Generate code for a store to some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
@@ -3392,6 +3414,28 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
     else
     {
         emit->emitIns_R_R_I(ins, size, src, base->gtRegNum, offset);
+    }
+}
+
+// Generate code for a store pair to some address + offset
+//   base: tree node which can be either a local address or arbitrary node
+//   offset: distance from the base from which to load
+void CodeGen::genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* base, unsigned offset)
+{
+    emitter* emit = getEmitter();
+
+    if (base->OperIsLocalAddr())
+    {
+        if (base->gtOper == GT_LCL_FLD_ADDR)
+            offset += base->gtLclFld.gtLclOffs;
+
+        // TODO-ARM64-CQ: Implement support for using a stp instruction with a varNum (see emitIns_S_R)
+        emit->emitIns_S_R(INS_str, EA_8BYTE, src, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_S_R(INS_str, EA_8BYTE, src2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+    }
+    else
+    {
+        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, src, src2, base->gtRegNum, offset);
     }
 }
 
@@ -3444,26 +3488,35 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     unsigned offset = 0;
 
     // Grab the integer temp register to emit the loads and stores.
-    regNumber tmpReg = genRegNumFromMask(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
+    regMaskTP tmpMask = genFindLowestBit(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
+    regNumber tmpReg  = genRegNumFromMask(tmpMask);
 
-    if (size >= REGSIZE_BYTES)
+    if (size >= 2 * REGSIZE_BYTES)
     {
-        // TODO-ARM64-CQ: Consider using LDP/STP to save codesize.
-        size_t slots = size / REGSIZE_BYTES;
+        regMaskTP tmp2Mask = cpBlkNode->gtRsvdRegs & RBM_ALLINT & ~tmpMask;
+        regNumber tmp2Reg  = genRegNumFromMask(tmp2Mask);
+
+        size_t slots = size / (2 * REGSIZE_BYTES);
 
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_ldr, EA_8BYTE, tmpReg, srcAddr, offset);
+            genCodeForLoadPairOffset(tmpReg, tmp2Reg, srcAddr, offset);
             // Store
-            genCodeForStoreOffset(INS_str, EA_8BYTE, tmpReg, dstAddr, offset);
-            offset += REGSIZE_BYTES;
+            genCodeForStorePairOffset(tmpReg, tmp2Reg, dstAddr, offset);
+            offset += 2 * REGSIZE_BYTES;
         }
     }
 
-    // Fill the remainder (7 bytes or less) if there's one.
-    if ((size & 0x7) != 0)
+    // Fill the remainder (15 bytes or less) if there's one.
+    if ((size & 0xf) != 0)
     {
+        if ((size & 8) != 0)
+        {
+            genCodeForLoadOffset(INS_ldr, EA_8BYTE, tmpReg, srcAddr, offset);
+            genCodeForStoreOffset(INS_str, EA_8BYTE, tmpReg, dstAddr, offset);
+            offset += 8;
+        }
         if ((size & 4) != 0)
         {
             genCodeForLoadOffset(INS_ldr, EA_4BYTE, tmpReg, srcAddr, offset);
