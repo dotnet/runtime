@@ -945,43 +945,43 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
     }
     CONTRACTL_END;
 
-    GCX_COOP();
-
-    // There's no way how to get the class name if the AD is unloaded. We will just skip it if it
-    // is the case. Note that we do log the AD unload event in SimpleComCallWrapper::Neuter so there
-    // should still be enough useful information in the log.
-    AppDomainFromIDHolder ad(GetRawDomainID(), TRUE);
-    if (!ad.IsUnloaded())
+    // Don't worry about domain unloading in CoreCLR
+    LPCUTF8 pszClassName;
+    LPCUTF8 pszNamespace;
+    if (SUCCEEDED(m_pMT->GetMDImport()->GetNameOfTypeDef(m_pMT->GetCl(), &pszClassName, &pszNamespace)))
     {
-        LPCUTF8 pszClassName;
-        LPCUTF8 pszNamespace;
-        if (SUCCEEDED(m_pMT->GetMDImport()->GetNameOfTypeDef(m_pMT->GetCl(), &pszClassName, &pszNamespace)))
+        OBJECTHANDLE handle = GetMainWrapper()->GetRawObjectHandle();
+        _UNCHECKED_OBJECTREF obj = NULL;
+
+        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // We only need the value in ETW events and it doesn't matter if it is super accurate
+        if (handle != NULL)
+            obj = *((_UNCHECKED_OBJECTREF *)(handle));
+
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, CCWRefCountChange)) 
+            FireEtwCCWRefCountChange(
+                handle, 
+                (Object *)obj, 
+                this, 
+                dwEstimatedRefCount, 
+                NULL,                   // domain value is not interesting in CoreCLR
+                pszClassName, pszNamespace, wszOperation, GetClrInstanceId());
+        
+        if (g_pConfig->ShouldLogCCWRefCountChange(pszClassName, pszNamespace))
         {
-            OBJECTHANDLE handle = GetMainWrapper()->GetRawObjectHandle();
-            Object* obj = NULL;
-            if (handle != NULL)
-                obj = OBJECTREFToObject(ObjectFromHandle(handle));
-
-            if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, CCWRefCountChange)) 
-                FireEtwCCWRefCountChange(handle, obj, this, dwEstimatedRefCount, (LONGLONG) ad.GetAddress(),
-                    pszClassName, pszNamespace, wszOperation, GetClrInstanceId());
-            
-            if (g_pConfig->ShouldLogCCWRefCountChange(pszClassName, pszNamespace))
+            EX_TRY
             {
-                EX_TRY
-                {
-                    StackSString ssClassName;
-                    TypeString::AppendType(ssClassName, TypeHandle(m_pMT));
+                StackSString ssClassName;
+                TypeString::AppendType(ssClassName, TypeHandle(m_pMT));
 
-                    ssMessage.Printf(W("LogCCWRefCountChange[%s]: '%s', Object=poi(%p)"),
-                        wszOperation,                                          // %s operation
-                        ssClassName.GetUnicode(),                              // %s type name
-                        handle);               // %p Object
-                }
-                EX_CATCH
-                { }
-                EX_END_CATCH(SwallowAllExceptions);
+                ssMessage.Printf(W("LogCCWRefCountChange[%s]: '%s', Object=poi(%p)"),
+                    wszOperation,                                          // %s operation
+                    ssClassName.GetUnicode(),                              // %s type name
+                    handle);               // %p Object
             }
+            EX_CATCH
+            { }
+            EX_END_CATCH(SwallowAllExceptions);
         }
     }
 }
