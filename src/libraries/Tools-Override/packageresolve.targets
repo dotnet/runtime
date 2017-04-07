@@ -37,7 +37,7 @@
 
     <PropertyGroup>
       <_DnuRestoreCommandRidPortion Condition="'$(RidSpecificAssets)' == 'true'">-r $(NuGetRuntimeIdentifier)</_DnuRestoreCommandRidPortion>
-      <_DnuRestoreCommandFull>$(DnuRestoreCommand) $(ProjectJson) /p:TargetGroup=$(TargetGroup) /p:TargetFramework=$(NuGetTargetMonikerShort) $(_DnuRestoreCommandRidPortion)</_DnuRestoreCommandFull>
+      <_DnuRestoreCommandFull>$(DnuRestoreCommand) $(ProjectJson) /p:TargetGroup=$(TargetGroup) /p:ConfigurationGroup=$(ConfigurationGroup) /p:ArchGroup=$(ArchGroup) /p:TargetFramework=$(NuGetTargetMonikerShort) $(_DnuRestoreCommandRidPortion)</_DnuRestoreCommandFull>
     </PropertyGroup>
     <Exec Condition="Exists('$(ProjectJson)') AND '$(RestoreRequired)' == 'true'" Command="$(_DnuRestoreCommandFull)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
     
