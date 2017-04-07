@@ -12,4 +12,4 @@ MembersMustExist : Member 'System.Math.Clamp(System.UInt32, System.UInt32, Syste
 MembersMustExist : Member 'System.Math.Clamp(System.UInt64, System.UInt64, System.UInt64)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-Total Issues: 35
+Total Issues: 13
