@@ -11,6 +11,14 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
+  <PropertyGroup Condition="'$(OfficialBuildId)' != ''">
+    <!-- During an official build, only build identity packages in the AllConfigurations build -->
+    <SkipBuildIdentityPackage Condition="'$(BuildAllConfigurations)' != 'true'">true</SkipBuildIdentityPackage>
+
+    <!-- During an official build, skip building runtime packages on AllConfigurations build -->
+    <SkipBuildRuntimePackage Condition="'$(BuildAllConfigurations)' == 'true'">true</SkipBuildRuntimePackage>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TraversalBuildDependsOn>
       FilterProjects;
@@ -21,9 +29,11 @@
   <Target Name="FilterProjects">
     <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
 
-    <!-- Only build packages for current RID -->
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
+      <!-- Build identity package, when SkipBuildIdentityPackage is not set -->
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '' AND '$(SkipBuildIdentityPackage)' != 'true'" />
+      <!-- Build packages for current RID, when SkipBuildRuntimePackage is not set -->
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' AND '$(SkipBuildRuntimePackage)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>
