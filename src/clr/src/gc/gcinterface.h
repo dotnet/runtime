@@ -420,6 +420,12 @@ public:
     virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary) = 0;
 
     virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type) = 0;
+
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type) = 0;
+
+    virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
+
+    virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
