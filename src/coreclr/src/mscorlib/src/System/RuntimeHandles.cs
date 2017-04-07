@@ -203,7 +203,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object CreateInstance(RuntimeType type, bool publicOnly, bool noCheck, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool bNeedSecurityCheck);
+        internal static extern Object CreateInstance(RuntimeType type, bool publicOnly, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo ctor);
