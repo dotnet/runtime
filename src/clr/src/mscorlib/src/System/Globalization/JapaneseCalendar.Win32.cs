@@ -36,30 +36,30 @@ namespace System.Globalization
 
             try
             {
-                // Need to access registry
-                RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(c_japaneseErasHive, false);
-
-                // Abort if we didn't find anything
-                if (key == null) return null;
-
-                // Look up the values in our reg key
-                String[] valueNames = key.GetValueNames();
-                if (valueNames != null && valueNames.Length > 0)
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(c_japaneseErasHive, writable: false))
                 {
-                    registryEraRanges = new EraInfo[valueNames.Length];
+                    // Abort if we didn't find anything
+                    if (key == null) return null;
 
-                    // Loop through the registry and read in all the values
-                    for (int i = 0; i < valueNames.Length; i++)
+                    // Look up the values in our reg key
+                    String[] valueNames = key.GetValueNames();
+                    if (valueNames != null && valueNames.Length > 0)
                     {
-                        // See if the era is a valid date
-                        EraInfo era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i]).ToString());
+                        registryEraRanges = new EraInfo[valueNames.Length];
 
-                        // continue if not valid
-                        if (era == null) continue;
+                        // Loop through the registry and read in all the values
+                        for (int i = 0; i < valueNames.Length; i++)
+                        {
+                            // See if the era is a valid date
+                            EraInfo era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i]).ToString());
 
-                        // Remember we found one.
-                        registryEraRanges[iFoundEras] = era;
-                        iFoundEras++;
+                            // continue if not valid
+                            if (era == null) continue;
+
+                            // Remember we found one.
+                            registryEraRanges[iFoundEras] = era;
+                            iFoundEras++;
+                        }
                     }
                 }
             }
