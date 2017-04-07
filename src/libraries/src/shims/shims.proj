@@ -52,7 +52,7 @@
           WorkingDirectory="$(ToolRuntimePath)" />
 
     <WriteSigningRequired
-        Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        Condition="'@(NetFxContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
         AuthenticodeSig="Microsoft"
         StrongNameSig="%(NetFxContracts.StrongNameSig)"
         MarkerFile="$(GenFacadesOutputPath)%(NetFxContracts.Filename)%(NetFxContracts.Extension).requires_signing" />
@@ -61,7 +61,7 @@
     Currently we don't have a way to fully sign with the open key as part of our signing step so disabling these for now.
     See issue https://github.com/dotnet/corefx/issues/17494
     <WriteSigningRequired
-        Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        Condition="'@(NETStandardContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
         AuthenticodeSig="Microsoft"
         StrongNameSig="Open"
         MarkerFile="$(GenFacadesOutputPath)%(NETStandardContracts.Filename)%(NETStandardContracts.Extension).requires_signing" />
