@@ -28,25 +28,25 @@ namespace System.Runtime.InteropServices
         public COMException()
             : base(SR.Arg_COMException)
         {
-            SetErrorCode(__HResults.E_FAIL);
+            HResult = __HResults.E_FAIL;
         }
 
         public COMException(String message)
             : base(message)
         {
-            SetErrorCode(__HResults.E_FAIL);
+            HResult = __HResults.E_FAIL;
         }
 
         public COMException(String message, Exception inner)
             : base(message, inner)
         {
-            SetErrorCode(__HResults.E_FAIL);
+            HResult = __HResults.E_FAIL;
         }
 
         public COMException(String message, int errorCode)
             : base(message)
         {
-            SetErrorCode(errorCode);
+            HResult = errorCode;
         }
 
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)

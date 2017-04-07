@@ -864,7 +864,7 @@ namespace System
         public CrossAppDomainMarshaledException(String message, int errorCode)
             : base(message)
         {
-            SetErrorCode(errorCode);
+            HResult = errorCode;
         }
 
         // Normally, only Telesto's UEF will see these exceptions.

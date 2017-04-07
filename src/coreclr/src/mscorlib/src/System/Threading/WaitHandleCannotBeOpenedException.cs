@@ -17,17 +17,17 @@ namespace System.Threading
     {
         public WaitHandleCannotBeOpenedException() : base(SR.Threading_WaitHandleCannotBeOpenedException)
         {
-            SetErrorCode(__HResults.COR_E_WAITHANDLECANNOTBEOPENED);
+            HResult = __HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }
 
         public WaitHandleCannotBeOpenedException(String message) : base(message)
         {
-            SetErrorCode(__HResults.COR_E_WAITHANDLECANNOTBEOPENED);
+            HResult = __HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }
 
         public WaitHandleCannotBeOpenedException(String message, Exception innerException) : base(message, innerException)
         {
-            SetErrorCode(__HResults.COR_E_WAITHANDLECANNOTBEOPENED);
+            HResult = __HResults.COR_E_WAITHANDLECANNOTBEOPENED;
         }
 
         protected WaitHandleCannotBeOpenedException(SerializationInfo info, StreamingContext context) : base(info, context)

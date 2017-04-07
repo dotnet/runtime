@@ -16,13 +16,13 @@ namespace System.Threading
         private ThreadStartException()
             : base(SR.Arg_ThreadStartException)
         {
-            SetErrorCode(__HResults.COR_E_THREADSTART);
+            HResult = __HResults.COR_E_THREADSTART;
         }
 
         private ThreadStartException(Exception reason)
             : base(SR.Arg_ThreadStartException, reason)
         {
-            SetErrorCode(__HResults.COR_E_THREADSTART);
+            HResult = __HResults.COR_E_THREADSTART;
         }
 
         //required for serialization
