@@ -73,7 +73,6 @@ def static getOSGroup(def os) {
                     "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                     batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                     batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
-                    batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
                     if (arch == 'x86jit32')
                     {
@@ -81,6 +80,8 @@ def static getOSGroup(def os) {
                         batchFile("C:\\Tools\\nuget.exe install runtime.win7-${architecture}.Microsoft.NETCore.Jit -Source https://dotnet.myget.org/F/dotnet-core -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion\n" +
                         "xcopy \"%WORKSPACE%\\runtime.win7-x86.Microsoft.NETCore.Jit\\runtimes\\win7-x86\\native\\compatjit.dll\" \"%WORKSPACE%\\bin\\Product\\${os}.${architecture}.${configuration}\" /Y")
                     }
+
+                    batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
                     batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
                     batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
