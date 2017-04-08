@@ -111,14 +111,12 @@ Return value :
 BOOL 
 SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
-#if !HAVE_MACH_EXCEPTIONS
     if (!SEHInitializeSignals(flags))
     {
         ERROR("SEHInitializeSignals failed!\n");
         SEHCleanup();
         return FALSE;
     }
-#endif
 
     return TRUE;
 }
@@ -142,9 +140,8 @@ SEHCleanup()
 
 #if HAVE_MACH_EXCEPTIONS
     SEHCleanupExceptionPort();
-#else
-    SEHCleanupSignals();
 #endif
+    SEHCleanupSignals();
 }
 
 /*++

@@ -111,6 +111,8 @@ Return :
 --*/
 void FreeSignalAlternateStack();
 
+#endif // !HAVE_MACH_EXCEPTIONS
+
 /*++
 Function :
     SEHInitializeSignals
@@ -135,7 +137,4 @@ Function :
 --*/
 void SEHCleanupSignals();
 
-#endif // !HAVE_MACH_EXCEPTIONS
-
 #endif /* _PAL_SIGNAL_HPP_ */
-
