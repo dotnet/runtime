@@ -3321,11 +3321,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                                                     info.compMethodInfo->args.pSig);
 #endif
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
-#if RELOC_SUPPORT
     opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
-#endif
 
 #ifdef DEBUG
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
