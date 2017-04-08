@@ -42,6 +42,8 @@ namespace System.Diagnostics
         {
             get
             {
+                GC.KeepAlive(HttpHandlerDiagnosticListener.s_instance);
+
                 if (s_allListenerObservable == null)
                 {
                     s_allListenerObservable = new AllListenerObservable();

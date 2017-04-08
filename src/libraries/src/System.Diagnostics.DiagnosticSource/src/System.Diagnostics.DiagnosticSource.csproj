@@ -58,6 +58,9 @@
   <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
