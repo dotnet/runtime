@@ -13,7 +13,7 @@ namespace System.Xml.Serialization
 {
     internal class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
 #endif
-    { 
+    {
         internal void Write_string(object o)
         {
             WriteStartDocument();

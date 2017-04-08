@@ -384,11 +384,6 @@ namespace System.Xml.Schema
                 _set.Remove(tns);
             }
         }
-
-        public bool IsEmpty()
-        {
-            return ((_type == ListType.Set) && ((_set == null) || _set.Count == 0));
-        }
     };
 
     internal class NamespaceListV1Compat : NamespaceList

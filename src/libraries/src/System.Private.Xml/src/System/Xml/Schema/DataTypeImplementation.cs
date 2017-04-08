@@ -142,8 +142,6 @@ namespace System.Xml.Schema
         // Additional built-in XQuery simple types
         internal static XmlSchemaSimpleType AnyAtomicType { get { return s__anyAtomicType; } }
         internal static XmlSchemaSimpleType UntypedAtomicType { get { return s__untypedAtomicType; } }
-        internal static XmlSchemaSimpleType YearMonthDurationType { get { return s_yearMonthDurationType; } }
-        internal static XmlSchemaSimpleType DayTimeDurationType { get { return s_dayTimeDurationType; } }
 
         internal new static DatatypeImplementation FromXmlTokenizedType(XmlTokenizedType token)
         {
@@ -538,11 +536,6 @@ namespace System.Xml.Schema
         internal abstract RestrictionFlags ValidRestrictionFlags { get; }
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Preserve; } }
-
-        internal override object ParseValue(string s, Type typDest, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
-        {
-            return ValueConverter.ChangeType(ParseValue(s, nameTable, nsmgr), typDest, nsmgr);
-        }
 
         public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
         {
@@ -968,10 +961,6 @@ namespace System.Xml.Schema
             }
 
             return XmlListConverter.Create(listItemType.ValueConverter);
-        }
-
-        internal Datatype_List(DatatypeImplementation type) : this(type, 0)
-        {
         }
         internal Datatype_List(DatatypeImplementation type, int minListSize)
         {
@@ -2032,10 +2021,6 @@ namespace System.Xml.Schema
         internal override FacetsChecker FacetsChecker { get { return dateTimeFacetsChecker; } }
 
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.DateTime; } }
-
-        internal Datatype_dateTimeBase()
-        {
-        }
 
         internal Datatype_dateTimeBase(XsdDateTimeFlags dateTimeFlags)
         {

@@ -751,7 +751,7 @@ namespace MS.Internal.Xml.XPath
 
         // --------------- Helper methods ----------------------
 
-        void CheckToken(XPathScanner.LexKind t)
+        private void CheckToken(XPathScanner.LexKind t)
         {
             if (_scanner.Kind != t)
             {
@@ -759,13 +759,13 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        void PassToken(XPathScanner.LexKind t)
+        private void PassToken(XPathScanner.LexKind t)
         {
             CheckToken(t);
             NextLex();
         }
 
-        void NextLex()
+        private void NextLex()
         {
             _scanner.NextLex();
         }
@@ -779,7 +779,7 @@ namespace MS.Internal.Xml.XPath
             );
         }
 
-        void CheckNodeSet(XPathResultType t)
+        private void CheckNodeSet(XPathResultType t)
         {
             if (t != XPathResultType.NodeSet && t != XPathResultType.Any)
             {

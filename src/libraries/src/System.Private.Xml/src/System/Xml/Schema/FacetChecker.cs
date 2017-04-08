@@ -506,8 +506,7 @@ namespace System.Xml.Schema
                         throw new XmlSchemaException(SR.Sch_MinLengthGtMaxLength, string.Empty);
                     }
                 }
-
-                //TODO  MinInc /MinExc /MaxInc / MaxExc checked in derived types
+                
                 if (
                     (_derivedRestriction.Flags & RestrictionFlags.MinInclusive) != 0 &&
                     (_derivedRestriction.Flags & RestrictionFlags.MaxInclusive) != 0
@@ -805,10 +804,6 @@ namespace System.Xml.Schema
         {
             return null;
         }
-        internal virtual Exception CheckValueFacets(byte value, XmlSchemaDatatype datatype)
-        {
-            return null;
-        }
         internal virtual Exception CheckValueFacets(DateTime value, XmlSchemaDatatype datatype)
         {
             return null;
@@ -1079,11 +1074,6 @@ namespace System.Xml.Schema
             return CheckValueFacets(decimalValue, datatype);
         }
         internal override Exception CheckValueFacets(Int16 value, XmlSchemaDatatype datatype)
-        {
-            decimal decimalValue = (decimal)value;
-            return CheckValueFacets(decimalValue, datatype);
-        }
-        internal override Exception CheckValueFacets(byte value, XmlSchemaDatatype datatype)
         {
             decimal decimalValue = (decimal)value;
             return CheckValueFacets(decimalValue, datatype);

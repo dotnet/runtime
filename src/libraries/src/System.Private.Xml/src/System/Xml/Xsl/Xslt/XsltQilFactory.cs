@@ -53,11 +53,6 @@ namespace System.Xml.Xsl.Xslt
             return QName("default-value", XmlReservedNs.NsXslDebug);
         }
 
-        public QilNode IsDefaultValueMarker(QilNode n)
-        {
-            return IsType(n, T.QNameX);
-        }
-
         public QilNode InvokeIsSameNodeSort(QilNode n1, QilNode n2)
         {
             CheckNodeNotRtf(n1);

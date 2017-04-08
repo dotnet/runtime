@@ -1106,12 +1106,6 @@ namespace System.Xml
             }
         }
 
-        internal void Close(bool closeStream)
-        {
-            _coreReaderImpl.Close(closeStream);
-            _parsingFunction = ParsingFunction.ReaderClosed;
-        }
-
         internal BaseValidator Validator
         {
             get
@@ -1157,14 +1151,6 @@ namespace System.Xml
             set
             {
                 _coreReaderImpl.InternalTypedValue = value;
-            }
-        }
-
-        internal bool Normalization
-        {
-            get
-            {
-                return _coreReaderImpl.Normalization;
             }
         }
 

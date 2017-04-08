@@ -56,35 +56,6 @@ namespace System.Xml.Schema
             }
         }
 
-        internal string ToString(object value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            Type sourceType = value.GetType();
-
-            if (sourceType == s_booleanType) return XmlConvert.ToString((bool)value);
-            if (sourceType == s_byteType) return XmlConvert.ToString((byte)value);
-            if (sourceType == s_byteArrayType) return Base64BinaryToString((byte[])value);
-            if (sourceType == s_dateTimeType) return DateTimeToString((DateTime)value);
-            if (sourceType == s_dateTimeOffsetType) return DateTimeOffsetToString((DateTimeOffset)value);
-            if (sourceType == s_decimalType) return XmlConvert.ToString((decimal)value);
-            if (sourceType == s_doubleType) return XmlConvert.ToString((double)value);
-            if (sourceType == s_int16Type) return XmlConvert.ToString((short)value);
-            if (sourceType == s_int32Type) return XmlConvert.ToString((int)value);
-            if (sourceType == s_int64Type) return XmlConvert.ToString((long)value);
-            if (sourceType == s_SByteType) return XmlConvert.ToString((sbyte)value);
-            if (sourceType == s_singleType) return XmlConvert.ToString((float)value);
-            if (sourceType == s_stringType) return ((string)value);
-            if (sourceType == s_timeSpanType) return DurationToString((TimeSpan)value);
-            if (sourceType == s_UInt16Type) return XmlConvert.ToString((ushort)value);
-            if (sourceType == s_UInt32Type) return XmlConvert.ToString((uint)value);
-            if (sourceType == s_UInt64Type) return XmlConvert.ToString((ulong)value);
-            if (IsDerivedFrom(sourceType, s_uriType)) return AnyUriToString((Uri)value);
-            if (IsDerivedFrom(sourceType, s_xmlQualifiedNameType)) return QNameToString((XmlQualifiedName)value, nsResolver);
-
-            return (string)ListTypeToString(value, nsResolver);
-        }
-
         internal object FromString(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -162,19 +133,9 @@ namespace System.Xml.Schema
             return (ulong)value;
         }
 
-        private string Base64BinaryToString(byte[] value)
-        {
-            return Convert.ToBase64String(value);
-        }
-
         private byte[] StringToBase64Binary(string value)
         {
             return Convert.FromBase64String(XmlConvert.TrimString(value));
-        }
-
-        private string DateTimeToString(DateTime value)
-        {
-            return (new XsdDateTime(value, XsdDateTimeFlags.DateTime)).ToString();
         }
 
         private static DateTime StringToDateTime(string value)
@@ -182,47 +143,14 @@ namespace System.Xml.Schema
             return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.AllXsd));
         }
 
-        private static string DateTimeOffsetToString(DateTimeOffset value)
-        {
-            return (new XsdDateTime(value, XsdDateTimeFlags.DateTime)).ToString();
-        }
-
         private static DateTimeOffset StringToDateTimeOffset(string value)
         {
             return (DateTimeOffset)(new XsdDateTime(value, XsdDateTimeFlags.AllXsd));
         }
 
-        private string DurationToString(TimeSpan value)
-        {
-            return new XsdDuration(value, XsdDuration.DurationType.Duration).ToString(XsdDuration.DurationType.Duration);
-        }
-
         private TimeSpan StringToDuration(string value)
         {
             return new XsdDuration(value, XsdDuration.DurationType.Duration).ToTimeSpan(XsdDuration.DurationType.Duration);
-        }
-
-        private string AnyUriToString(Uri value)
-        {
-            return value.OriginalString;
-        }
-
-        protected static string QNameToString(XmlQualifiedName qname, IXmlNamespaceResolver nsResolver)
-        {
-            string prefix;
-
-            if (nsResolver == null)
-            {
-                return string.Concat("{", qname.Namespace, "}", qname.Name);
-            }
-
-            prefix = nsResolver.LookupPrefix(qname.Namespace);
-            if (prefix == null)
-            {
-                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
-            }
-
-            return (prefix.Length != 0) ? string.Concat(prefix, ":", qname.Name) : qname.Name;
         }
 
         private static XmlQualifiedName StringToQName(string value, IXmlNamespaceResolver nsResolver)
@@ -252,32 +180,6 @@ namespace System.Xml.Schema
 
             // Create XmlQualfiedName
             return new XmlQualifiedName(localName, ns);
-        }
-
-        private string ListTypeToString(object value, IXmlNamespaceResolver nsResolver)
-        {
-            if (!_listsAllowed || !(value is IEnumerable))
-            {
-                throw CreateInvalidClrMappingException(value.GetType(), typeof(string));
-            }
-
-            StringBuilder bldr = new StringBuilder();
-
-            foreach (object item in ((IEnumerable)value))
-            {
-                // skip null values
-                if (item != null)
-                {
-                    // Separate values by single space character
-                    if (bldr.Length != 0)
-                        bldr.Append(' ');
-
-                    // Append string value of next item in the list
-                    bldr.Append(_listItemConverter.ToString(item, nsResolver));
-                }
-            }
-
-            return bldr.ToString();
         }
 
         private object StringToListType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
@@ -334,21 +236,6 @@ namespace System.Xml.Schema
                 arrDst[i] = (T)_listItemConverter.FromString(stringArray[i], typeof(T), nsResolver);
             }
             return arrDst;
-        }
-
-        /// <summary>
-        /// Type.IsSubtypeOf does not return true if types are equal, this method does.
-        /// </summary>
-        private static bool IsDerivedFrom(Type derivedType, Type baseType)
-        {
-            while (derivedType != null)
-            {
-                if (derivedType == baseType)
-                    return true;
-
-                derivedType = derivedType.BaseType;
-            }
-            return false;
         }
 
         private Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)

@@ -178,14 +178,6 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        // Called after an element's attributes have been enumerated, but before any children have been
-        // enumerated.  This method must always be called, even for empty elements.
-
-        internal virtual Task StartElementContentAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         // WriteEndElement() and WriteFullEndElement() overloads, in which caller gives the full name of the
         // element, so that raw writers do not need to keep a stack of element names.  This method should
         // always be called instead of WriteEndElement() or WriteFullEndElement() without parameters.

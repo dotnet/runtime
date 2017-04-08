@@ -45,12 +45,6 @@ namespace System.Xml.Xsl.XPath
         }
 
         [Conditional("DEBUG")]
-        public void CheckAny(QilNode n)
-        {
-            Debug.Assert(n != null && IsAnyType(n), "Must be of 'any' type");
-        }
-
-        [Conditional("DEBUG")]
         public void CheckNode(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");

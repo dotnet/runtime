@@ -82,11 +82,6 @@ namespace System.Xml.Schema
         private ArrayList _KSs;                  // stack of KSStruct, will not become less 
         private int _KSpointer = 0;              // indicate current stack top (next available element);
 
-        public bool EmptyStack
-        {
-            get { return _KSpointer == 0; }
-        }
-
         public int lastDepth
         {
             get { return (_KSpointer == 0) ? -1 : ((KSStruct)_KSs[_KSpointer - 1]).depth; }
@@ -413,13 +408,6 @@ namespace System.Xml.Schema
         public int PosCol
         {
             get { return _poscol; }
-        }
-
-        public KeySequence(TypedObject[] ks)
-        {
-            _ks = ks;
-            _dim = ks.Length;
-            _posline = _poscol = 0;
         }
 
         public object this[int index]

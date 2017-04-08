@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.Xslt
 {
     using TypeFactory = XmlQueryTypeFactory;
 #if DEBUG
-    using XmlILTrace    = System.Xml.Xsl.IlGen.XmlILTrace;
+    using XmlILTrace = System.Xml.Xsl.IlGen.XmlILTrace;
 #endif
 
     internal enum XslVersion

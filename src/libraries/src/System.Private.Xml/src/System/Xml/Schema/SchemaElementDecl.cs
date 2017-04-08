@@ -16,7 +16,6 @@ namespace System.Xml.Schema
         private bool _isIdDeclared;
         private bool _hasNonCDataAttribute = false;
 
-#if !SILVERLIGHT
         private bool _isAbstract = false;
         private bool _isNillable = false;
         private bool _hasRequiredAttribute = false;
@@ -29,12 +28,10 @@ namespace System.Xml.Schema
         private XmlSchemaElement _schemaElement;
 
         internal static readonly SchemaElementDecl Empty = new SchemaElementDecl();
-#endif
 
         //
         // Constructor
         //
-#if !SILVERLIGHT
         internal SchemaElementDecl()
         {
         }
@@ -44,7 +41,6 @@ namespace System.Xml.Schema
             Datatype = dtype;
             _contentValidator = ContentValidator.TextOnly;
         }
-#endif
 
         internal SchemaElementDecl(XmlQualifiedName name, String prefix)
         : base(name, prefix)
@@ -54,14 +50,12 @@ namespace System.Xml.Schema
         //
         // Static methods
         //
-#if !SILVERLIGHT
         internal static SchemaElementDecl CreateAnyTypeElementDecl()
         {
             SchemaElementDecl anyTypeElementDecl = new SchemaElementDecl();
             anyTypeElementDecl.Datatype = DatatypeImplementation.AnySimpleType.Datatype;
             return anyTypeElementDecl;
         }
-#endif
 
         //
         // IDtdAttributeListInfo interface
@@ -127,7 +121,6 @@ namespace System.Xml.Schema
             set { _hasNonCDataAttribute = value; }
         }
 
-#if !SILVERLIGHT
         internal SchemaElementDecl Clone()
         {
             return (SchemaElementDecl)MemberwiseClone();
@@ -191,17 +184,15 @@ namespace System.Xml.Schema
             get { return _schemaElement; }
             set { _schemaElement = value; }
         }
-#endif
+
         // add a new SchemaAttDef to the SchemaElementDecl
         internal void AddAttDef(SchemaAttDef attdef)
         {
             _attdefs.Add(attdef.Name, attdef);
-#if !SILVERLIGHT
             if (attdef.Presence == SchemaDeclBase.Use.Required || attdef.Presence == SchemaDeclBase.Use.RequiredFixed)
             {
                 _hasRequiredAttribute = true;
             }
-#endif
             if (attdef.Presence == SchemaDeclBase.Use.Default || attdef.Presence == SchemaDeclBase.Use.Fixed)
             { //Not adding RequiredFixed here
                 if (_defaultAttdefs == null)
@@ -232,7 +223,6 @@ namespace System.Xml.Schema
             get { return _defaultAttdefs; }
         }
 
-#if !SILVERLIGHT
         internal Dictionary<XmlQualifiedName, SchemaAttDef> AttDefs
         {
             get { return _attdefs; }
@@ -260,6 +250,5 @@ namespace System.Xml.Schema
                 }
             }
         }
-#endif
     }
 }

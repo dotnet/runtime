@@ -84,7 +84,7 @@ namespace System.Xml
 
             object typedValue = tuple_0.Item2;
 
-            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType; //TODO special case for xsd:duration and xsd:dateTime
+            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
             try
             {
                 if (xmlType != null)

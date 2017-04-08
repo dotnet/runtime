@@ -105,16 +105,5 @@ namespace MS.Internal.Xml.XPath
             method._xsltContext = _xsltContext;
             return method;
         }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", _funcType.ToString());
-            if (_arg != null)
-            {
-                _arg.PrintQuery(w);
-            }
-            w.WriteEndElement();
-        }
     }
 }

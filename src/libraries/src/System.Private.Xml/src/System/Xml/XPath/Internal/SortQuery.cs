@@ -112,14 +112,6 @@ namespace MS.Internal.Xml.XPath
         public override int CurrentPosition { get { return count; } }
         public override int Count { get { return _results.Count; } }
         public override QueryProps Properties { get { return QueryProps.Cached | QueryProps.Position | QueryProps.Count; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            _qyInput.PrintQuery(w);
-            w.WriteElementString("XPathSortComparer", "... PrintTree() not implemented ...");
-            w.WriteEndElement();
-        }
     } // class SortQuery
 
     internal sealed class SortKey

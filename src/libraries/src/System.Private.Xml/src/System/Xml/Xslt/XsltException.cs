@@ -13,7 +13,7 @@ namespace System.Xml.Xsl
     public class XsltException : SystemException
     {
         private string _res;
-        string[] _args;
+        private string[] _args;
         private string _sourceUri;
         private int _lineNumber;
         private int _linePosition;
@@ -22,39 +22,45 @@ namespace System.Xml.Xsl
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
         private string _message;
 
-        protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context) {
-            _res          = (string)   info.GetValue("res"         , typeof(string           ));
-            _args         = (string[]) info.GetValue("args"        , typeof(string[]         ));
-            _sourceUri    = (string)   info.GetValue("sourceUri"   , typeof(string           ));
-            _lineNumber   = (int)      info.GetValue("lineNumber"  , typeof(int              ));
-            _linePosition = (int)      info.GetValue("linePosition", typeof(int              ));
+        protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            _res = (string)info.GetValue("res", typeof(string));
+            _args = (string[])info.GetValue("args", typeof(string[]));
+            _sourceUri = (string)info.GetValue("sourceUri", typeof(string));
+            _lineNumber = (int)info.GetValue("lineNumber", typeof(int));
+            _linePosition = (int)info.GetValue("linePosition", typeof(int));
 
             // deserialize optional members
             string version = null;
-            foreach ( SerializationEntry e in info ) {
-                if ( e.Name == "version" ) {
+            foreach (SerializationEntry e in info)
+            {
+                if (e.Name == "version")
+                {
                     version = (string)e.Value;
                 }
             }
 
-            if (version == null) {
+            if (version == null)
+            {
                 // deserializing V1 exception
                 _message = CreateMessage(_res, _args, _sourceUri, _lineNumber, _linePosition);
             }
-            else {
+            else
+            {
                 // deserializing V2 or higher exception -> exception message is serialized by the base class (Exception._message)
                 _message = null;
             }
         }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
             base.GetObjectData(info, context);
-            info.AddValue("res"         , _res         );
-            info.AddValue("args"        , _args        );
-            info.AddValue("sourceUri"   , _sourceUri   );
-            info.AddValue("lineNumber"  , _lineNumber  );
+            info.AddValue("res", _res);
+            info.AddValue("args", _args);
+            info.AddValue("sourceUri", _sourceUri);
+            info.AddValue("lineNumber", _lineNumber);
             info.AddValue("linePosition", _linePosition);
-            info.AddValue("version"     , "2.0");
+            info.AddValue("version", "2.0");
         }
 
         public XsltException() : this(string.Empty, (Exception)null) { }
@@ -140,9 +146,10 @@ namespace System.Xml.Xsl
     [Serializable]
     public class XsltCompileException : XsltException
     {
-        protected XsltCompileException(SerializationInfo info, StreamingContext context) : base(info, context) {}
+        protected XsltCompileException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
             base.GetObjectData(info, context);
         }
 

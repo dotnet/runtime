@@ -179,18 +179,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathNodeIterator Clone() { return new FilterQuery(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            if (!_noPosition
-                )
-            {
-                w.WriteAttributeString("position", "yes");
-            }
-            qyInput.PrintQuery(w);
-            _cond.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

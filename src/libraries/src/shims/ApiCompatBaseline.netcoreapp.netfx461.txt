@@ -1024,7 +1024,6 @@ TypesMustExist : Type 'System.Diagnostics.CounterCreationData' does not exist in
 TypesMustExist : Type 'System.Diagnostics.CounterCreationDataCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.CounterSampleCalculator' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debug.Listeners.get()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.DelimitedListTraceListener.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
 TypesMustExist : Type 'System.Diagnostics.DiagnosticsConfigurationHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.EntryWrittenEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.EntryWrittenEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -1054,11 +1053,8 @@ TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionAccess' do
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
-CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Switch.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.SwitchAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.SwitchLevelAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.TraceListener.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
-CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.TraceSource.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
 TypesMustExist : Type 'System.Diagnostics.XmlWriterTraceListener' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.InternalBufferOverflowException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -1490,7 +1486,6 @@ TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCertificateStore
 TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCngProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCspProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionKeyStoreProvider' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlCommand' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand..ctor(System.String, System.Data.SqlClient.SqlConnection, System.Data.SqlClient.SqlTransaction, System.Data.SqlClient.SqlCommandColumnEncryptionSetting)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteNonQuery()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteNonQuery(System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -1500,7 +1495,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader(S
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteXmlReader()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteXmlReader(System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.Clone()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.ColumnEncryptionSetting.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteNonQuery(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteReader(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
@@ -1512,7 +1506,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnli
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.ResetCommandTimeout()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlCommandBuilder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlCommandColumnEncryptionSetting' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlConnection' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection..ctor(System.String, System.Data.SqlClient.SqlCredential)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.set(System.String)' does not exist in the implementation but it does exist in the contract.
@@ -1551,7 +1544,6 @@ TypesMustExist : Type 'System.Data.SqlClient.SqlNotificationEventArgs' does not 
 TypesMustExist : Type 'System.Data.SqlClient.SqlNotificationInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlNotificationSource' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlNotificationType' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlParameter' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter..ctor(System.String, System.Data.SqlDbType, System.Int32, System.Data.ParameterDirection, System.Boolean, System.Byte, System.Byte, System.String, System.Data.DataRowVersion, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter..ctor(System.String, System.Data.SqlDbType, System.Int32, System.Data.ParameterDirection, System.Byte, System.Byte, System.String, System.Data.DataRowVersion, System.Boolean, System.Object, System.String, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.get()' does not exist in the implementation but it does exist in the contract.
@@ -3398,4 +3390,4 @@ MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerial
 MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.CodeDom.Compiler.CompilerParameters)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-Total Issues: 3379
+Total Issues: 3371

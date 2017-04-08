@@ -85,7 +85,8 @@ namespace System.Xml.Serialization
         private void IncludeTypes(ICustomAttributeProvider provider, RecursionLimiter limiter)
         {
             object[] attrs = provider.GetCustomAttributes(typeof(SoapIncludeAttribute), false);
-            for (int i = 0; i < attrs.Length; i++) {
+            for (int i = 0; i < attrs.Length; i++)
+            {
                 IncludeType(((SoapIncludeAttribute)attrs[i]).Type, limiter);
             }
         }

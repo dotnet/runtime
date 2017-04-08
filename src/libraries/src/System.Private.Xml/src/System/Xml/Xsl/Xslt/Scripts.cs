@@ -21,50 +21,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
-
-    internal class ScriptClass
-    {
-        public string ns;
-        public StringCollection refAssemblies;
-        public StringCollection nsImports;
-        public bool refAssembliesByHref;
-
-        public Dictionary<string, string> scriptUris;
-
-        // These two fields are used to report a compile error when its position is outside
-        // of all user code snippets in the generated temporary file
-        public string endUri;
-        public Location endLoc;
-
-        public ScriptClass(string ns)
-        {
-            this.ns = ns;
-            this.refAssemblies = new StringCollection();
-            this.nsImports = new StringCollection();
-            this.refAssembliesByHref = false;
-            this.scriptUris = new Dictionary<string, string>(
-#if !FEATURE_CASE_SENSITIVE_FILESYSTEM            
-                StringComparer.OrdinalIgnoreCase
-#endif
-            );
-        }
-
-        private static long s_scriptClassCounter = 0;
-
-        private static string GenerateUniqueClassName()
-        {
-            return "Script" + Interlocked.Increment(ref s_scriptClassCounter);
-        }
-
-        public ISourceLineInfo EndLineInfo
-        {
-            get
-            {
-                return new SourceLineInfo(this.endUri, this.endLoc, this.endLoc);
-            }
-        }
-    }
-
     internal class Scripts
     {
         private const string ScriptClassesNamespace = "System.Xml.Xsl.CompiledQuery";

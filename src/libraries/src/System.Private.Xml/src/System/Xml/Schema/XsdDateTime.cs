@@ -23,11 +23,9 @@ namespace System.Xml.Schema
         GMonthDay = 0x20,
         GDay = 0x40,
         GMonth = 0x80,
-#if !SILVERLIGHT // XDR is not supported in Silverlight
         XdrDateTimeNoTz = 0x100,
         XdrDateTime = 0x200,
         XdrTimeNoTz = 0x400,  //XDRTime with tz is the same as xsd:time  
-#endif
         AllXsd = 0xFF //All still does not include the XDR formats
     }
 
@@ -62,9 +60,7 @@ namespace System.Xml.Schema
             GMonthDay,
             GDay,
             GMonth,
-#if !SILVERLIGHT // XDR is not supported in Silverlight
             XdrDateTime,
-#endif
         }
 
         // Internal representation of DateTimeKind
@@ -111,16 +107,6 @@ namespace System.Xml.Schema
         private static readonly int s_Lz___ = "---".Length;
         private static readonly int s_lz___dd = "---dd".Length;
 
-
-#if !SILVERLIGHT
-        /// <summary>
-        /// Constructs an XsdDateTime from a string trying all possible formats.
-        /// </summary>
-        public XsdDateTime(string text) : this(text, XsdDateTimeFlags.AllXsd)
-        {
-        }
-#endif
-
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
         /// </summary>
@@ -134,12 +120,10 @@ namespace System.Xml.Schema
             InitiateXsdDateTime(parser);
         }
 
-#if !SILVERLIGHT
         private XsdDateTime(Parser parser) : this()
         {
             InitiateXsdDateTime(parser);
         }
-#endif
 
         private void InitiateXsdDateTime(Parser parser)
         {
@@ -151,7 +135,6 @@ namespace System.Xml.Schema
             _extra = (uint)(((int)parser.typeCode << TypeShift) | ((int)parser.kind << KindShift) | (parser.zoneHour << ZoneHourShift) | parser.zoneMinute);
         }
 
-#if !SILVERLIGHT
         internal static bool TryParse(string text, XsdDateTimeFlags kinds, out XsdDateTime result)
         {
             Parser parser = new Parser();
@@ -163,7 +146,6 @@ namespace System.Xml.Schema
             result = new XsdDateTime(parser);
             return true;
         }
-#endif
 
         /// <summary>
         /// Constructs an XsdDateTime from a DateTime.
@@ -254,7 +236,6 @@ namespace System.Xml.Schema
             get { return (XsdDateTimeKind)((_extra & KindMask) >> KindShift); }
         }
 
-#if !SILVERLIGHT
         /// <summary>
         /// Returns XmlTypeCode of the value being stored
         /// </summary>
@@ -262,28 +243,6 @@ namespace System.Xml.Schema
         {
             get { return s_typeCodes[(int)InternalTypeCode]; }
         }
-
-        /// <summary>
-        /// Returns whether object represent local, UTC or unspecified time
-        /// </summary>
-        public DateTimeKind Kind
-        {
-            get
-            {
-                switch (InternalKind)
-                {
-                    case XsdDateTimeKind.Unspecified:
-                        return DateTimeKind.Unspecified;
-                    case XsdDateTimeKind.Zulu:
-                        return DateTimeKind.Utc;
-                    default:
-                        // XsdDateTimeKind.LocalEastOfZulu:
-                        // XsdDateTimeKind.LocalWestOfZulu:
-                        return DateTimeKind.Local;
-                }
-            }
-        }
-#endif
 
         /// <summary>
         /// Returns the year part of XsdDateTime
@@ -374,7 +333,6 @@ namespace System.Xml.Schema
             }
         }
 
-#if !SILVERLIGHT
         public DateTime ToZulu()
         {
             switch (InternalKind)
@@ -392,7 +350,6 @@ namespace System.Xml.Schema
                     return _dt;
             }
         }
-#endif
 
         /// <summary>
         /// Cast to DateTime
@@ -513,43 +470,6 @@ namespace System.Xml.Schema
 
             return result;
         }
-
-#if !SILVERLIGHT
-        /// <summary>
-        /// Compares two DateTime values, returning an integer that indicates
-        /// their relationship.
-        /// </summary>
-        public static int Compare(XsdDateTime left, XsdDateTime right)
-        {
-            if (left._extra == right._extra)
-            {
-                return DateTime.Compare(left._dt, right._dt);
-            }
-            else
-            {
-                // Xsd types should be the same for it to be comparable
-                if (left.InternalTypeCode != right.InternalTypeCode)
-                {
-                    throw new ArgumentException(SR.Format(SR.Sch_XsdDateTimeCompare, left.TypeCode, right.TypeCode));
-                }
-                // Convert both to UTC
-                return DateTime.Compare(left.GetZuluDateTime(), right.GetZuluDateTime());
-            }
-        }
-
-        // Compares this DateTime to a given object. This method provides an
-        // implementation of the IComparable interface. The object
-        // argument must be another DateTime, or otherwise an exception
-        // occurs.  Null is considered less than any instance.
-        //
-        // Returns a value less than zero if this  object
-        /// <include file='doc\DateTime.uex' path='docs/doc[@for="DateTime.CompareTo"]/*' />
-        public int CompareTo(Object value)
-        {
-            if (value == null) return 1;
-            return Compare(this, (XsdDateTime)value);
-        }
-#endif
 
         /// <summary>
         /// Serialization to a string
@@ -701,25 +621,6 @@ namespace System.Xml.Schema
             text[start + 1] = (char)(value % 10 + '0');
         }
 
-#if !SILVERLIGHT
-        // Auxiliary for compare. 
-        // Returns UTC DateTime
-        private DateTime GetZuluDateTime()
-        {
-            switch (InternalKind)
-            {
-                case XsdDateTimeKind.Zulu:
-                    return _dt;
-                case XsdDateTimeKind.LocalEastOfZulu:
-                    return _dt.Subtract(new TimeSpan(ZoneHour, ZoneMinute, 0));
-                case XsdDateTimeKind.LocalWestOfZulu:
-                    return _dt.Add(new TimeSpan(ZoneHour, ZoneMinute, 0));
-                default:
-                    return _dt.ToUniversalTime();
-            }
-        }
-#endif
-
         private static readonly XmlTypeCode[] s_typeCodes = {
             XmlTypeCode.DateTime,
             XmlTypeCode.Time,
@@ -766,13 +667,8 @@ namespace System.Xml.Schema
                     start++;
                 }
                 // Choose format starting from the most common and trying not to reparse the same thing too many times
-
-#if !SILVERLIGHT // XDR is not supported in Silverlight
                 if (Test(kinds, XsdDateTimeFlags.DateTime | XsdDateTimeFlags.Date | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrDateTimeNoTz))
                 {
-#else
-                if (Test(kinds, XsdDateTimeFlags.DateTime | XsdDateTimeFlags.Date)) {
-#endif
                     if (ParseDate(start))
                     {
                         if (Test(kinds, XsdDateTimeFlags.DateTime))
@@ -791,7 +687,7 @@ namespace System.Xml.Schema
                                 return true;
                             }
                         }
-#if !SILVERLIGHT // XDR is not supported in Silverlight
+
                         if (Test(kinds, XsdDateTimeFlags.XdrDateTime))
                         {
                             if (ParseZoneAndWhitespace(start + s_lzyyyy_MM_dd) || (ParseChar(start + s_lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_lzyyyy_MM_ddT)))
@@ -816,7 +712,6 @@ namespace System.Xml.Schema
                                 return true;
                             }
                         }
-#endif
                     }
                 }
 
@@ -832,7 +727,6 @@ namespace System.Xml.Schema
                     }
                 }
 
-#if !SILVERLIGHT // XDR is not supported in Silverlight
                 if (Test(kinds, XsdDateTimeFlags.XdrTimeNoTz))
                 {
                     if (ParseTimeAndWhitespace(start))
@@ -844,7 +738,6 @@ namespace System.Xml.Schema
                         return true;
                     }
                 }
-#endif
 
                 if (Test(kinds, XsdDateTimeFlags.GYearMonth | XsdDateTimeFlags.GYear))
                 {
@@ -950,7 +843,6 @@ namespace System.Xml.Schema
                 return false;
             }
 
-#if !SILVERLIGHT // XDR is not supported in Silverlight
             private bool ParseTimeAndWhitespace(int start)
             {
                 if (ParseTime(ref start))
@@ -963,7 +855,6 @@ namespace System.Xml.Schema
                 }
                 return false;
             }
-#endif
 
             private static int[] s_power10 = new int[maxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
             private bool ParseTime(ref int start)

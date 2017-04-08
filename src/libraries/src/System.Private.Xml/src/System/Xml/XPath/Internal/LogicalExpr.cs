@@ -431,14 +431,5 @@ namespace MS.Internal.Xml.XPath
         private static string Rtf(object o) { return ((XPathNavigator)o).Value; }
 
         public override XPathResultType StaticType { get { return XPathResultType.Boolean; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("op", _op.ToString());
-            _opnd1.PrintQuery(w);
-            _opnd2.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

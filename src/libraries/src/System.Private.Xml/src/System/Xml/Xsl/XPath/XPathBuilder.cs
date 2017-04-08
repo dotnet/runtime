@@ -304,7 +304,6 @@ namespace System.Xml.Xsl.XPath
             right = _f.EnsureNodeSet(right);
             if (left.NodeType == QilNodeType.Sequence)
             {
-                // ToDo: drop this logic or move it to QilPatternFactory.Union()
                 ((QilList)left).Add(right);
                 return left;
             }
@@ -349,8 +348,7 @@ namespace System.Xml.Xsl.XPath
                 //        <xsl:value-of select="descendant::author/@id | comment()" />
                 //    </xsl:template>
                 //</xsl:stylesheet>
-
-                // ToDo: remove this code when IlGen bug will be fixed.
+                
                 if (qilAxis.NodeType == QilNodeType.Filter)
                 {
                     QilLoop filter = (QilLoop)qilAxis;
@@ -507,13 +505,13 @@ namespace System.Xml.Xsl.XPath
             //      for $i in nodeset
             //      where predicate
             //      return $i
-            //   ToDo: Currently we are keepeing old output to minimize diff.
+            //   Note: Currently we are keepeing old output to minimize diff.
             // 2. Predicate contains 1 last()
             //      let $cach := nodeset return
             //          for $i in $cach
             //          where predicate(length($cach))
             //          return $i
-            //   ToDo: This is a little optimisation we can do or don't do.
+            //   Suggestion: This is a little optimisation we can do or don't do.
             // 3. Predicate contains 2+ last()
             //      let $cash := nodeset return
             //          let $size := length($cash) return
@@ -638,7 +636,6 @@ namespace System.Xml.Xsl.XPath
         private QilNode NameOf(QilNode arg)
         {
             _f.CheckNodeNotRtf(arg);
-            // ToDo: NameOf QIL node returns QName, so we cannot use it here.
             // We may want to introduce a new QIL node that returns a string.
             if (arg is QilIterator)
             {

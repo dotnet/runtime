@@ -148,7 +148,7 @@ namespace System.Xml.Serialization
 #else
         internal string DefaultNamespace = null;
 #endif
-        private Type rootType;
+        private Type _rootType;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -248,7 +248,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentNullException(nameof(type));
 
             DefaultNamespace = defaultNamespace;
-            rootType = type;
+            _rootType = type;
 
             _mapping = GetKnownMapping(type, defaultNamespace);
             if (_mapping != null)
@@ -321,7 +321,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentNullException(nameof(type));
 
             DefaultNamespace = defaultNamespace;
-            rootType = type;
+            _rootType = type;
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
             {
@@ -329,19 +329,10 @@ namespace System.Xml.Serialization
                     importer.IncludeType(extraTypes[i]);
             }
             _mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
-            if (location != null)
-            {
-                DemandForUserLocationOrEvidence();
-            }
 
 #if !uapaot
             _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
 #endif
-        }
-
-        private void DemandForUserLocationOrEvidence()
-        {
-            // Ensure full trust before asserting full file access to the user-provided location or evidence
         }
 
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping)
@@ -459,7 +450,7 @@ namespace System.Xml.Serialization
                     else
                     {
                         XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
                     }
 
                     var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
@@ -512,7 +503,7 @@ namespace System.Xml.Serialization
                         else
                         {
                             XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                            mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                            mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
                         }
 
                         var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
@@ -520,7 +511,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
+                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this._rootType, typeof(XmlSerializer).Name));
                     }
                 }
 #endif
@@ -606,7 +597,7 @@ namespace System.Xml.Serialization
                     else
                     {
                         XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
                     }
 
                     var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
@@ -660,7 +651,7 @@ namespace System.Xml.Serialization
                         else
                         {
                             XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                            mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                            mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
                         }
 
                         var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
@@ -669,7 +660,7 @@ namespace System.Xml.Serialization
                     else
                     {
 
-                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
+                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this._rootType, typeof(XmlSerializer).Name));
                     }
                 }
 #endif
@@ -751,7 +742,7 @@ namespace System.Xml.Serialization
             for(int i=0;i<mappings.Length;i++)
             {
                 serializers[i] = new XmlSerializer();
-                serializers[i].rootType = type;
+                serializers[i]._rootType = type;
                 serializers[i]._mapping = mappings[i];
             }
 

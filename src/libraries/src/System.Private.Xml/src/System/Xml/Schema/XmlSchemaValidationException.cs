@@ -18,10 +18,11 @@ namespace System.Xml.Schema
         private Object _sourceNodeObject;
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
-        protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context) {}
+        protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.GetObjectData"]/*' />
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
             base.GetObjectData(info, context);
         }
 
@@ -46,21 +47,8 @@ namespace System.Xml.Schema
         {
         }
 
-        internal XmlSchemaValidationException(string res, string[] args) : base(res, args, null, null, 0, 0, null)
-        {
-        }
-
-        internal XmlSchemaValidationException(string res, string arg) : base(res, new string[] { arg }, null, null, 0, 0, null)
-        {
-        }
-
         internal XmlSchemaValidationException(string res, string arg, string sourceUri, int lineNumber, int linePosition) :
             base(res, new string[] { arg }, null, sourceUri, lineNumber, linePosition, null)
-        {
-        }
-
-        internal XmlSchemaValidationException(string res, string sourceUri, int lineNumber, int linePosition) :
-            base(res, (string[])null, null, sourceUri, lineNumber, linePosition, null)
         {
         }
 
@@ -76,18 +64,6 @@ namespace System.Xml.Schema
 
         internal XmlSchemaValidationException(string res, string[] args, object sourceNode) :
             base(res, args, null, null, 0, 0, null)
-        {
-            _sourceNodeObject = sourceNode;
-        }
-
-        internal XmlSchemaValidationException(string res, string[] args, string sourceUri, object sourceNode) :
-            base(res, args, null, sourceUri, 0, 0, null)
-        {
-            _sourceNodeObject = sourceNode;
-        }
-
-        internal XmlSchemaValidationException(string res, string[] args, string sourceUri, int lineNumber, int linePosition, XmlSchemaObject source, object sourceNode) :
-            base(res, args, null, sourceUri, lineNumber, linePosition, source)
         {
             _sourceNodeObject = sourceNode;
         }

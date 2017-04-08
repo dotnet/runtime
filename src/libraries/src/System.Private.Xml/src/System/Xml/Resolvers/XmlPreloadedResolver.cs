@@ -4,9 +4,7 @@
 
 using System.IO;
 using System.Xml;
-#if !SILVERLIGHT
 using System.Net;
-#endif
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
@@ -253,7 +251,6 @@ namespace System.Xml.Resolvers
             }
         }
 
-#if !SILVERLIGHT
         public override ICredentials Credentials
         {
             set
@@ -264,7 +261,6 @@ namespace System.Xml.Resolvers
                 }
             }
         }
-#endif
 
         public override bool SupportsType(Uri absoluteUri, Type type)
         {

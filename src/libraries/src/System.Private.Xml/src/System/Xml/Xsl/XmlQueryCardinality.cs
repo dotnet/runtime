@@ -148,14 +148,6 @@ namespace System.Xml.Xsl
         }
 
         /// <summary>
-        /// Return intersection with other
-        /// </summary>
-        public static XmlQueryCardinality operator &(XmlQueryCardinality left, XmlQueryCardinality right)
-        {
-            return new XmlQueryCardinality(left._value & right._value);
-        }
-
-        /// <summary>
         /// Return this product other
         /// </summary>
         public static XmlQueryCardinality operator *(XmlQueryCardinality left, XmlQueryCardinality right)
@@ -190,7 +182,7 @@ namespace System.Xml.Xsl
 
         /// <summary>
         /// Returns true is right is subset of left.
-        /// </summary>
+        /// /// </summary>
         public static bool operator >=(XmlQueryCardinality left, XmlQueryCardinality right)
         {
             return (right._value & ~left._value) == 0;
@@ -300,22 +292,6 @@ namespace System.Xml.Xsl
         public override string ToString()
         {
             return s_toString[_value];
-        }
-
-        /// <summary>
-        /// Deserialization
-        /// </summary>
-        public XmlQueryCardinality(string s)
-        {
-            _value = 0x00;
-            for (int i = 0; i < s_serialized.Length; i++)
-            {
-                if (s == s_serialized[i])
-                {
-                    _value = i;
-                    break;
-                }
-            }
         }
 
         /// <summary>

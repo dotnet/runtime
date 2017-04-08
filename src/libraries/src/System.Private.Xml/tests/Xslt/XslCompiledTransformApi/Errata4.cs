@@ -171,7 +171,6 @@ namespace System.Xml.Tests
                     {
                         using (XmlReader r = XmlReader.Create(new StringReader("<root/>"))) transf.Transform(r, arguments, new StringWriter(sb));
                         Assert.True(isValidChar);
-                        // TODO: verification for valid case
                     }
                     catch (Exception)
                     {
@@ -237,7 +236,6 @@ namespace System.Xml.Tests
                     // if loading of the stylesheet passed, then we should be able to provide
                     StringBuilder sb = new StringBuilder();
                     using (XmlReader r = XmlReader.Create(new StringReader("<root/>"))) transf.Transform(r, null, new StringWriter(sb));
-                    // TODO: verification for valid case
                 }
             }
             return;

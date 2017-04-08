@@ -19,7 +19,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class XsltFunctions
     {

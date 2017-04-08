@@ -55,24 +55,5 @@ namespace MS.Internal.Xml.XPath
             }
             return null;
         }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            if (matchSelf)
-            {
-                w.WriteAttributeString("self", "yes");
-            }
-            if (NameTest)
-            {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
-            }
-            if (TypeTest != XPathNodeType.Element)
-            {
-                w.WriteAttributeString("nodeType", TypeTest.ToString());
-            }
-            qyInput.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

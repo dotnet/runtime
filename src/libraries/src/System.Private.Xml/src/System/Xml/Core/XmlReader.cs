@@ -1709,12 +1709,6 @@ namespace System.Xml
             }
         }
 
-        internal static Encoding GetEncoding(XmlReader reader)
-        {
-            XmlTextReaderImpl tri = GetXmlTextReaderImpl(reader);
-            return tri != null ? tri.Encoding : null;
-        }
-
         internal static ConformanceLevel GetV1ConformanceLevel(XmlReader reader)
         {
             XmlTextReaderImpl tri = GetXmlTextReaderImpl(reader);
@@ -1851,7 +1845,6 @@ namespace System.Xml
             return settings.CreateReader(reader);
         }
 
-		// TODO: Validate if this comment is still valid
         // !!!!!!
         // NOTE: This method is called via reflection from System.Data.dll and from Analysis Services in Yukon. 
         // Do not change its signature without notifying the appropriate teams!
@@ -1878,7 +1871,7 @@ namespace System.Xml
             {
                 read = input.Read(bytes, byteCount, bytes.Length - byteCount);
                 byteCount += read;
-            } while (read > 0 && byteCount < 2);
+            } while (read > 0 && byteCount< 2);
 
             // create text or binary XML reader depenting on the stream first 2 bytes
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))

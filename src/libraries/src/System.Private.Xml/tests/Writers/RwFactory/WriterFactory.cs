@@ -199,7 +199,7 @@ namespace System.Xml.Tests
             if (_settings.ConformanceLevel != ConformanceLevel.Auto)
                 CError.Compare(actual.ConformanceLevel, _settings.ConformanceLevel, "ConformanceLevel");
 
-            CError.Compare(actual.Encoding, _settings.Encoding, "Encoding");//TODO : Compare two encodings?
+            CError.Compare(actual.Encoding, _settings.Encoding, "Encoding");
             CError.Compare(actual.Indent, _settings.Indent, "Indent");
             CError.Compare(actual.IndentChars, _settings.IndentChars, "IndentChars");
             CError.Compare(actual.NewLineChars, _settings.NewLineChars, "NewLineChars");

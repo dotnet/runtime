@@ -353,7 +353,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        bool IsSequence(Member[] members)
+        private bool IsSequence(Member[] members)
         {
             // #10586: Currently the reflection based method treat this kind of type as normal types. 
             // But potentially we can do some optimization for types that have ordered properties. 
@@ -379,7 +379,7 @@ namespace System.Xml.Serialization
             member = null;
             bool foundElement = false;
             int elementIndex = -1;
-            foreach (var m in  expectedMembers)
+            foreach (var m in expectedMembers)
             {
                 if (m.Mapping.Xmlns != null)
                     continue;
@@ -414,7 +414,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (anyElementMember!= null && anyElementMember.Mapping != null)
+                if (anyElementMember != null && anyElementMember.Mapping != null)
                 {
                     var anyElement = anyElementMember.Mapping;
 
@@ -427,7 +427,7 @@ namespace System.Xml.Serialization
                         if (element.Any && element.Name.Length == 0)
                         {
                             string ns = element.Form == XmlSchemaForm.Qualified ? element.Namespace : "";
-                            WriteElement(ref o, collectionMember, element, choice, anyElement.CheckSpecified == SpecifiedAccessor.ReadWrite, false, false, ns, fixup: fixup, masterObject : masterObject);
+                            WriteElement(ref o, collectionMember, element, choice, anyElement.CheckSpecified == SpecifiedAccessor.ReadWrite, false, false, ns, fixup: fixup, masterObject: masterObject);
                             break;
                         }
                     }
@@ -483,7 +483,6 @@ namespace System.Xml.Serialization
                         value = ReadElementQualifiedName();
                     else
                     {
-
                         if (element.Mapping.TypeDesc.FormatterName == "ByteArrayBase64")
                         {
                             value = ToByteArrayBase64(false);
@@ -515,7 +514,7 @@ namespace System.Xml.Serialization
                         value = rre;
                         Referenced(value);
                     }
-                    
+
                     if (fixupIndex >= 0)
                     {
                         if (member == null)
@@ -556,7 +555,7 @@ namespace System.Xml.Serialization
                             value = ReadXmlDocument(!element.Any);
                         }
                         else
-                        {                            
+                        {
                             value = ReadXmlNode(!element.Any);
                         }
 
@@ -570,7 +569,6 @@ namespace System.Xml.Serialization
                             XmlQualifiedName tser = GetXsiType();
                             if (tser == null || QNameEqual(tser, sm.XsiType.Name, sm.XsiType.Namespace, defaultNamespace))
                             {
-
                             }
                             else
                             {
@@ -603,7 +601,7 @@ namespace System.Xml.Serialization
 
             if (choice != null && masterObject != null)
             {
-                foreach(var name in choice.MemberIds)
+                foreach (var name in choice.MemberIds)
                 {
                     if (name == element.Name)
                     {
@@ -753,7 +751,6 @@ namespace System.Xml.Serialization
                     }
 
                     SetCollectionObjectWithCollectionMember(ref o, collectionMember, collectionType);
-
                 }
             }
         }
@@ -859,7 +856,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        object WriteStructMethod(StructMapping mapping, bool isNullable, bool checkType, string defaultNamespace)
+        private object WriteStructMethod(StructMapping mapping, bool isNullable, bool checkType, string defaultNamespace)
         {
             if (mapping.IsSoap)
                 return WriteEncodedStructMethod(mapping);
@@ -867,11 +864,11 @@ namespace System.Xml.Serialization
                 return WriteLiteralStructMethod(mapping, isNullable, checkType, defaultNamespace);
         }
 
-        object WriteNullableMethod(NullableMapping nullableMapping, bool checkType, string defaultNamespace)
+        private object WriteNullableMethod(NullableMapping nullableMapping, bool checkType, string defaultNamespace)
         {
             object o = Activator.CreateInstance(nullableMapping.TypeDesc.Type);
             if (!ReadNull())
-            { 
+            {
                 ElementAccessor element = new ElementAccessor();
                 element.Mapping = nullableMapping.BaseMapping;
                 element.Any = false;
@@ -934,7 +931,7 @@ namespace System.Xml.Serialization
         private object ReflectionCreateObject(Type type)
         {
             object obj = null;
-            
+
             if (type.IsArray)
             {
                 obj = Activator.CreateInstance(type, 32);
@@ -1059,7 +1056,7 @@ namespace System.Xml.Serialization
         private XmlSerializationFixupCallback CreateWriteFixupMethod(Member[] members)
         {
             return (fixupObject) =>
-            { 
+            {
                 var fixup = (Fixup)fixupObject;
                 object o = fixup.Source;
                 string[] ids = fixup.Ids;
@@ -1159,7 +1156,6 @@ namespace System.Xml.Serialization
                         if (structMapping.TypeDesc.IsValueType)
                         {
                             return ReflectionCreateObject(structMapping.TypeDesc.Type);
-
                         }
                         else
                         {
@@ -1222,8 +1218,8 @@ namespace System.Xml.Serialization
 
                 if (isSequence)
                 {
-                   // #10586: Currently the reflection based method treat this kind of type as normal types. 
-                   // But potentially we can do some optimization for types that have ordered properties.
+                    // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                    // But potentially we can do some optimization for types that have ordered properties.
                 }
 
                 var allMembersList = new List<Member>(mappings.Length);
@@ -1265,7 +1261,6 @@ namespace System.Xml.Serialization
                         }
                         else if (!mapping.TypeDesc.IsArray)
                         {
-
                         }
                     }
 
@@ -1276,7 +1271,7 @@ namespace System.Xml.Serialization
                     {
                         anyElementMember = member;
                     }
-                    else if(mapping == anyText)
+                    else if (mapping == anyText)
                     {
                         anyTextMember = member;
                     }
@@ -1347,9 +1342,9 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        bool WriteDerivedTypes(out object o, StructMapping mapping, XmlQualifiedName xsiType, string defaultNamespace, bool checkType, bool isNullable)
+        private bool WriteDerivedTypes(out object o, StructMapping mapping, XmlQualifiedName xsiType, string defaultNamespace, bool checkType, bool isNullable)
         {
-            for (StructMapping derived = mapping.DerivedMappings; derived != null;derived = derived.NextDerivedMapping)
+            for (StructMapping derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
                 if (QNameEqual(xsiType, derived.TypeName, derived.Namespace, defaultNamespace))
                 {
@@ -1453,7 +1448,6 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-
                         elseCall(o);
                     }
                 }
@@ -1484,7 +1478,6 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
-
                     string listValues = Reader.Value;
                     string[] vals = listValues.Split(null);
                     Array arrayValue = Array.CreateInstance(member.TypeDesc.Type.GetElementType(), vals.Length);
@@ -1585,14 +1578,9 @@ namespace System.Xml.Serialization
             {
                 Mapping = mapping;
             }
-
-            public Member(MemberMapping mapping, CollectionMember collectionMember) : this(mapping)
-            {
-                Collection = collectionMember;
-            }
         }
 
-        enum UnknownNodeAction
+        private enum UnknownNodeAction
         {
             CreateUnknownNodeException,
             ReadUnknownNode

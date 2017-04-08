@@ -19,8 +19,6 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-
-        //todo: use rootpath
         public bool bWarningCallback;
 
         public bool bErrorCallback;
@@ -140,7 +138,3 @@ namespace System.Xml.Tests
         }
     }
 }
-
-//todo: add tests for include
-//add tests for intranet
-//add tests for custom resolver

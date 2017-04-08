@@ -22,13 +22,8 @@ namespace System.Xml
         //
         // DtdParserProxy: IDtdParserAdapter proxy for XmlTextReaderImpl
         //
-#if SILVERLIGHT
-        internal partial class DtdParserProxy : IDtdParserAdapter {
-#else
         internal partial class DtdParserProxy : IDtdParserAdapterV1
         {
-#endif
-
             Task<int> IDtdParserAdapter.ReadDataAsync()
             {
                 return _reader.DtdParserProxy_ReadDataAsync();

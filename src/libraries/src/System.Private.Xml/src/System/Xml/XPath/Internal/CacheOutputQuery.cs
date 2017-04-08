@@ -74,12 +74,5 @@ namespace MS.Internal.Xml.XPath
         public override int CurrentPosition { get { return count; } }
         public override int Count { get { return outputBuffer.Count; } }
         public override QueryProps Properties { get { return QueryProps.Merge | QueryProps.Cached | QueryProps.Position | QueryProps.Count; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            input.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

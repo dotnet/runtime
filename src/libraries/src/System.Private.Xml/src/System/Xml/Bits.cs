@@ -43,14 +43,6 @@ namespace System.Xml
         }
 
         /// <summary>
-        /// Returns true if the unsigned integer has more than one bit set.
-        /// </summary>
-        public static bool MoreThanOne(uint num)
-        {
-            return (num & (num - 1)) != 0;
-        }
-
-        /// <summary>
         /// Clear the least significant bit that is set and return the result.
         /// </summary>
         public static uint ClearLeast(uint num)

@@ -61,11 +61,6 @@ namespace MS.Internal.Xml.XPath
             _argumentList = new List<AstNode>(argumentList);
         }
 
-        public Function(FunctionType ftype)
-        {
-            _functionType = ftype;
-        }
-
         public Function(FunctionType ftype, AstNode arg)
         {
             _functionType = ftype;

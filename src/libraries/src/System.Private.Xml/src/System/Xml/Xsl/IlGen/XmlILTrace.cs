@@ -25,35 +25,34 @@ namespace System.Xml.Xsl.IlGen
         /// Check environment variable in order to determine whether to write out trace files.  This really should be a
         /// check of the configuration file, but System.Xml does not yet have a good tracing story.
         /// </summary>
-        private static volatile string dirName = null;
-        private static volatile bool alreadyCheckedEnabled = false;
+        private static volatile string s_dirName = null;
+        private static volatile bool s_alreadyCheckedEnabled = false;
 
         /// <summary>
         /// True if tracing has been enabled (environment variable set).
         /// </summary>
         public static bool IsEnabled
         {
-
             // SxS: This property poses potential SxS issue. However the class is used only in debug builds (it won't 
             // get compiled into ret build) so it's OK to suppress the SxS warning.
             get
             {
                 // If environment variable has not yet been checked, do so now
-                if (!alreadyCheckedEnabled)
+                if (!s_alreadyCheckedEnabled)
                 {
                     try
                     {
-                        dirName = Environment.GetEnvironmentVariable("XmlILTrace");
+                        s_dirName = Environment.GetEnvironmentVariable("XmlILTrace");
                     }
                     catch (SecurityException)
                     {
                         // If user does not have access to environment variables, tracing will remain disabled
                     }
 
-                    alreadyCheckedEnabled = true;
+                    s_alreadyCheckedEnabled = true;
                 }
 
-                return (dirName != null);
+                return (s_dirName != null);
             }
         }
 
@@ -66,7 +65,7 @@ namespace System.Xml.Xsl.IlGen
             if (!IsEnabled)
                 return;
 
-            File.Delete(dirName + "\\" + fileName);
+            File.Delete(s_dirName + "\\" + fileName);
         }
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace System.Xml.Xsl.IlGen
             if (!IsEnabled)
                 return null;
 
-            return new StreamWriter(dirName + "\\" + fileName, true);
+            return new StreamWriter(s_dirName + "\\" + fileName, true);
         }
 
         /// <summary>
@@ -89,7 +88,7 @@ namespace System.Xml.Xsl.IlGen
             if (!IsEnabled)
                 return;
 
-            XmlWriter w = XmlWriter.Create(dirName + "\\" + fileName);
+            XmlWriter w = XmlWriter.Create(s_dirName + "\\" + fileName);
             try
             {
                 WriteQil(qil, w);
@@ -108,7 +107,7 @@ namespace System.Xml.Xsl.IlGen
             if (!IsEnabled)
                 return;
 
-            XmlWriter w = XmlWriter.Create(dirName + "\\" + fileName);
+            XmlWriter w = XmlWriter.Create(s_dirName + "\\" + fileName);
 
             w.WriteStartDocument();
             w.WriteProcessingInstruction("xml-stylesheet", "href='qilo.xslt' type='text/xsl'");
@@ -121,7 +120,7 @@ namespace System.Xml.Xsl.IlGen
                 // Then, rewrite the graph until "done" or some max value is reached.
                 for (int i = 1; i < MAX_REWRITES; i++)
                 {
-                    QilExpression qilTemp = (QilExpression) (new QilCloneVisitor(qil.Factory).Clone(qil));
+                    QilExpression qilTemp = (QilExpression)(new QilCloneVisitor(qil.Factory).Clone(qil));
 
                     XmlILOptimizerVisitor visitor = new XmlILOptimizerVisitor(qilTemp, !qilTemp.IsDebug);
                     visitor.Threshold = i;

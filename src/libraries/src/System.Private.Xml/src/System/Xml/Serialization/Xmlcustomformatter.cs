@@ -174,8 +174,8 @@ namespace System.Xml.Serialization
         internal static string FromEnum(long val, string[] vals, long[] ids, string typeName)
         {
 #if DEBUG
-                // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (ids.Length != vals.Length) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid enum"));
+            // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+            if (ids.Length != vals.Length) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid enum"));
 #endif
 
             long originalValue = val;

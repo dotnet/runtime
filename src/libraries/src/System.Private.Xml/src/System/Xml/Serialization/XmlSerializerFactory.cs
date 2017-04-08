@@ -95,10 +95,5 @@ namespace System.Xml.Serialization
         {
             return new XmlSerializer(type, overrides, extraTypes, root, defaultNamespace, location);
         }
-
-        private void DemandForUserLocationOrEvidence()
-        {
-            // Ensure full trust before asserting full file access to the user-provided location or evidence
-        }
     }
 }

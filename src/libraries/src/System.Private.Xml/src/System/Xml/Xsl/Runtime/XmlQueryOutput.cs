@@ -11,7 +11,6 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     internal enum XmlState
     {
         WithinSequence = 0,     // Adding items to a top-level sequence

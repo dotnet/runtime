@@ -15,13 +15,6 @@ namespace System.Xml.Schema
 
     internal sealed partial class Parser
     {
-        public async Task<SchemaType> ParseAsync(XmlReader reader, string targetNamespace)
-        {
-            await StartParsingAsync(reader, targetNamespace).ConfigureAwait(false);
-            while (ParseReaderNode() && await reader.ReadAsync().ConfigureAwait(false)) { }
-            return FinishParsing();
-        }
-
         public async Task StartParsingAsync(XmlReader reader, string targetNamespace)
         {
             _reader = reader;

@@ -14,7 +14,6 @@ using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     /// <summary>
     /// Contains conversion routines used by Xslt.  These conversions fall into several categories:
     ///   1. Internal type to internal type: These are conversions from one of the five Xslt types to another

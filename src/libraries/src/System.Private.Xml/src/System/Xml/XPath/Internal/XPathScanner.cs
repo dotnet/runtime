@@ -122,7 +122,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        void SkipSpace()
+        private void SkipSpace()
         {
             while (_xmlCharType.IsWhiteSpace(this.CurrentChar) && NextChar()) ;
         }
@@ -346,7 +346,7 @@ namespace MS.Internal.Xml.XPath
             int start = _xpathExprIndex - 1;
             int len = 0;
 
-            for (; ;)
+            for (;;)
             {
                 if (_xmlCharType.IsNCNameSingleChar(this.CurrentChar))
                 {

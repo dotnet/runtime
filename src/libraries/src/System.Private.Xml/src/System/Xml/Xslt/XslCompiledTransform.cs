@@ -49,7 +49,7 @@ namespace System.Xml.Xsl
         private static readonly XmlReaderSettings s_readerSettings = null;
 
         // Version for GeneratedCodeAttribute
-        private readonly string Version = typeof(XslCompiledTransform).Assembly.GetName().Version.ToString();
+        private readonly string _version = typeof(XslCompiledTransform).Assembly.GetName().Version.ToString();
 
         static XslCompiledTransform()
         {
@@ -218,9 +218,9 @@ namespace System.Xml.Xsl
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
             {
-                if (new Version(Version).CompareTo(new Version(generatedCodeAttr.Version)) < 0)
+                if (new Version(_version).CompareTo(new Version(generatedCodeAttr.Version)) < 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, Version), nameof(compiledStylesheet));
+                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, _version), nameof(compiledStylesheet));
                 }
 
                 FieldInfo fldData = compiledStylesheet.GetField(XmlQueryStaticData.DataFieldName, BindingFlags.Static | BindingFlags.NonPublic);
@@ -492,19 +492,6 @@ namespace System.Xml.Xsl
         {
             _command.Execute(inputUri, documentResolver, arguments, results);
         }
-
-        internal static void PrintQil(object qil, XmlWriter xw, bool printComments, bool printTypes, bool printLineInfo)
-        {
-            QilExpression qilExpr = (QilExpression)qil;
-            QilXmlWriter.Options options = QilXmlWriter.Options.None;
-            QilValidationVisitor.Validate(qilExpr);
-            if (printComments) options |= QilXmlWriter.Options.Annotations;
-            if (printTypes) options |= QilXmlWriter.Options.TypeInfo;
-            if (printLineInfo) options |= QilXmlWriter.Options.LineInfo;
-            QilXmlWriter qw = new QilXmlWriter(xw, options);
-            qw.ToXml(qilExpr);
-            xw.Flush();
-        }
     }
 #endif // ! HIDE_XSL
-        }
+}

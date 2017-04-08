@@ -57,11 +57,6 @@ namespace System.Xml.Schema
             get { return _last + 1; }
         }
 
-        public int CountOfNames
-        {
-            get { return _names.Count; }
-        }
-
         /// <summary>
         /// True is particle can be deterministically attributed from the symbol and conversion to DFA is possible.
         /// </summary>
@@ -281,11 +276,6 @@ namespace System.Xml.Schema
         public abstract void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions);
 
         /// <summary>
-        /// Clone the syntaxTree. We need to pass symbolsByPosition because leaf nodes have to add themselves to it.
-        /// </summary>
-        public abstract SyntaxTreeNode Clone(Positions positions);
-
-        /// <summary>
         /// From a regular expression to a DFA
         /// Compilers by Aho, Sethi, Ullman.
         /// ISBN 0-201-10088-6, p135 
@@ -340,11 +330,6 @@ namespace System.Xml.Schema
             // do nothing
         }
 
-        public override SyntaxTreeNode Clone(Positions positions)
-        {
-            return new LeafNode(positions.Add(positions[_pos].symbol, positions[_pos].particle));
-        }
-
         public override void ConstructPos(BitSet firstpos, BitSet lastpos, BitSet[] followpos)
         {
             firstpos.Set(_pos);
@@ -357,7 +342,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             bb.Append("\"" + symbols.NameOf(positions[_pos].symbol) + "\"");
         }
 #endif
@@ -375,12 +361,6 @@ namespace System.Xml.Schema
         {
             this.namespaceList = namespaceList;
             this.particle = particle;
-        }
-
-        public override SyntaxTreeNode Clone(Positions positions)
-        {
-            // NamespaceListNode nodes have to be removed prior to that
-            throw new InvalidOperationException();
         }
 
         public virtual ICollection GetResolvedSymbols(SymbolsDictionary symbols)
@@ -433,7 +413,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             bb.Append("[" + namespaceList.ToString() + "]");
         }
 #endif
@@ -457,17 +438,6 @@ namespace System.Xml.Schema
         {
             get { return _rightChild; }
             set { _rightChild = value; }
-        }
-
-        public override SyntaxTreeNode Clone(Positions positions)
-        {
-            InteriorNode other = (InteriorNode)this.MemberwiseClone();
-            other.LeftChild = _leftChild.Clone(positions);
-            if (_rightChild != null)
-            {
-                other.RightChild = _rightChild.Clone(positions);
-            }
-            return other;
         }
 
         //no recursive version of expand tree for Sequence and Choice node
@@ -604,7 +574,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        internal static void WritePos(BitSet firstpos, BitSet lastpos, BitSet[] followpos) {
+        internal static void WritePos(BitSet firstpos, BitSet lastpos, BitSet[] followpos)
+        {
             Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "FirstPos:  ");
             WriteBitSet(firstpos);
 
@@ -612,29 +583,36 @@ namespace System.Xml.Schema
             WriteBitSet(lastpos);
 
             Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "Followpos:  ");
-            for(int i =0; i < followpos.Length; i++) {
+            for (int i = 0; i < followpos.Length; i++)
+            {
                 WriteBitSet(followpos[i]);
             }
         }
-        internal static void WriteBitSet(BitSet curpos) {
+        internal static void WriteBitSet(BitSet curpos)
+        {
             int[] list = new int[curpos.Count];
-            for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos)) {
+            for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos))
+            {
                 list[pos] = 1;
             }
-            for(int i = 0; i < list.Length; i++) {
+            for (int i = 0; i < list.Length; i++)
+            {
                 Debug.WriteIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, list[i] + " ");
             }
             Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "");
         }
-       
 
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             Stack<SequenceNode> nodeStack = new Stack<SequenceNode>();
             SequenceNode this_ = this;
 
-            while (true) {
+            while (true)
+            {
                 bb.Append("(");
-                if (this_.LeftChild is SequenceNode) {
+                if (this_.LeftChild is SequenceNode)
+                {
                     nodeStack.Push(this_);
                     this_ = (SequenceNode)this_.LeftChild;
                     continue;
@@ -708,13 +686,16 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             Stack<ChoiceNode> nodeStack = new Stack<ChoiceNode>();
             ChoiceNode this_ = this;
 
-            while (true) {
+            while (true)
+            {
                 bb.Append("(");
-                if (this_.LeftChild is ChoiceNode) {
+                if (this_.LeftChild is ChoiceNode)
+                {
                     nodeStack.Push(this_);
                     this_ = (ChoiceNode)this_.LeftChild;
                     continue;
@@ -752,7 +733,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             LeftChild.Dump(bb, symbols, positions);
             bb.Append("+");
         }
@@ -772,7 +754,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             LeftChild.Dump(bb, symbols, positions);
             bb.Append("?");
         }
@@ -796,7 +779,8 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
+        public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
+        {
             LeftChild.Dump(bb, symbols, positions);
             bb.Append("*");
         }
@@ -950,11 +934,6 @@ namespace System.Xml.Schema
             {
                 _nextIteration = value;
             }
-        }
-
-        public override SyntaxTreeNode Clone(Positions positions)
-        {
-            return new LeafRangeNode(this.Pos, _min, _max);
         }
 
         public override bool IsRangeNode
@@ -1288,11 +1267,6 @@ namespace System.Xml.Schema
             }
         }
 
-        public ContentValidator Finish()
-        {
-            return Finish(true);
-        }
-
         public ContentValidator Finish(bool useDFA)
         {
             Debug.Assert(ContentType == XmlSchemaContentType.ElementOnly || ContentType == XmlSchemaContentType.Mixed);
@@ -1315,7 +1289,7 @@ namespace System.Xml.Schema
 #if DEBUG
             StringBuilder bb = new StringBuilder();
             _contentNode.Dump(bb, _symbols, _positions);
-            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled,  "\t\t\tContent :   " + bb.ToString());
+            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "\t\t\tContent :   " + bb.ToString());
 #endif
 
             // Add end marker
@@ -1330,7 +1304,7 @@ namespace System.Xml.Schema
 #if DEBUG
             bb = new StringBuilder();
             contentRoot.LeftChild.Dump(bb, _symbols, _positions);
-            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled,  "\t\t\tExpended:   " + bb.ToString());
+            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "\t\t\tExpended:   " + bb.ToString());
 #endif
 
             // calculate followpos
@@ -1382,7 +1356,7 @@ namespace System.Xml.Schema
                 }
 #if DEBUG
                 bb = new StringBuilder();
-                Dump(bb, followpos, transitionTable);    
+                Dump(bb, followpos, transitionTable);
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, bb.ToString());
 #endif
                 if (transitionTable != null)
@@ -1600,7 +1574,7 @@ namespace System.Xml.Schema
         {
             // Temporary printout
             bb.AppendLine("Positions");
-            for (int i = 0; i < _positions.Count; i ++)
+            for (int i = 0; i < _positions.Count; i++)
             {
                 bb.AppendLine(i + " " + _positions[i].symbol.ToString(NumberFormatInfo.InvariantInfo) + " " + _symbols.NameOf(_positions[i].symbol));
             }
@@ -1611,7 +1585,7 @@ namespace System.Xml.Schema
                 {
                     bb.Append(followpos[i][j] ? "X" : "O");
                 }
-               bb.AppendLine();
+                bb.AppendLine();
             }
             if (transitionTable != null)
             {
@@ -2269,7 +2243,7 @@ namespace System.Xml.Schema
         public override void InitValidation(ValidationState context)
         {
             Debug.Assert(_elements.Count > 0);
-            context.AllElementsSet = new BitSet(_elements.Count); //TODO if already non-null can clear 
+            context.AllElementsSet = new BitSet(_elements.Count);
             context.CurrentState.AllElementsRequired = -1; // no elements at all
         }
 

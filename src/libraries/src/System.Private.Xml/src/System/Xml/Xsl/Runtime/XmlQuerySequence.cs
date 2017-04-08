@@ -16,7 +16,6 @@ using System.ComponentModel;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     /// <summary>
     /// A sequence of Xml values that dynamically expands and allows random access to items.
     /// </summary>
@@ -578,9 +577,12 @@ namespace System.Xml.Xsl.Runtime
             set
             {
 #if DEBUG
-                if (Count > 1) {
-                    if (value) {
-                        for (int iNav = 0; iNav < Count - 1; iNav++) {
+                if (Count > 1)
+                {
+                    if (value)
+                    {
+                        for (int iNav = 0; iNav < Count - 1; iNav++)
+                        {
                             XmlNodeOrder cmp = this[iNav].ComparePosition(this[iNav + 1]);
                             Debug.Assert(cmp == XmlNodeOrder.Before || cmp == XmlNodeOrder.Unknown);
                         }

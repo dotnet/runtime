@@ -6,16 +6,11 @@ namespace System.Xml
 {
     using System.Diagnostics;
 
-#if DEBUG
-    public static class DiagnosticsSwitches {
-#else
     internal static class DiagnosticsSwitches
     {
-#endif
         private static volatile BooleanSwitch s_xmlSchemaContentModel;
         private static volatile TraceSwitch s_xmlSchema;
         private static volatile BooleanSwitch s_keepTempFiles;
-        private static volatile BooleanSwitch s_pregenEventLog;
         private static volatile TraceSwitch s_xmlSerialization;
         private static volatile TraceSwitch s_xslTypeInference;
         private static volatile BooleanSwitch s_nonRecursiveTypeLoading;
@@ -53,18 +48,6 @@ namespace System.Xml
                     s_keepTempFiles = new BooleanSwitch("XmlSerialization.Compilation", "Keep XmlSerialization generated (temp) files.");
                 }
                 return s_keepTempFiles;
-            }
-        }
-
-        public static BooleanSwitch PregenEventLog
-        {
-            get
-            {
-                if (s_pregenEventLog == null)
-                {
-                    s_pregenEventLog = new BooleanSwitch("XmlSerialization.PregenEventLog", "Log failures while loading pre-generated XmlSerialization assembly.");
-                }
-                return s_pregenEventLog;
             }
         }
 

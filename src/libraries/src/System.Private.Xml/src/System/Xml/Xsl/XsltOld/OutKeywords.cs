@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.XsltOld
     internal class OutKeywords
     {
 #if DEBUG
-        XmlNameTable _NameTable;
+        private XmlNameTable _NameTable;
 #endif
         internal OutKeywords(XmlNameTable nameTable)
         {
@@ -113,7 +113,7 @@ namespace System.Xml.Xsl.XsltOld
         {
 #if DEBUG
             Debug.Assert(keyword != null);
-            Debug.Assert((object) keyword == (object) _NameTable.Get(keyword));
+            Debug.Assert((object)keyword == (object)_NameTable.Get(keyword));
 #endif
         }
     }

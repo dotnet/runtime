@@ -41,12 +41,14 @@ namespace System.Xml.Serialization
         private bool _soap12;
         private bool _escapeName = true;
 
+#if uapaot
         // this method must be called before any generated serialization methods are called
         internal void Init(XmlWriter w, XmlSerializerNamespaces namespaces, string encodingStyle, string idBase)
         {
             _w = w;
             _namespaces = namespaces;
         }
+#endif
 
         // this method must be called before any generated serialization methods are called
         internal void Init(XmlWriter w, XmlSerializerNamespaces namespaces, string encodingStyle, string idBase, TempAssembly tempAssembly)
@@ -226,12 +228,12 @@ namespace System.Xml.Serialization
                         typeName = "guid";
                         typeNs = UrtTypes.Namespace;
                     }
-                    else if (type == typeof (TimeSpan))
+                    else if (type == typeof(TimeSpan))
                     {
                         typeName = "TimeSpan";
                         typeNs = UrtTypes.Namespace;
                     }
-                    else if (type == typeof (XmlNode[]))
+                    else if (type == typeof(XmlNode[]))
                     {
                         typeName = Soap.UrType;
                     }
@@ -622,8 +624,8 @@ namespace System.Xml.Serialization
             if (o != null && _objectsInUse != null)
             {
 #if DEBUG
-                    // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (!_objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
+                // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+                if (!_objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
 #endif
 
                 _objectsInUse.Remove(o);
@@ -1149,16 +1151,6 @@ namespace System.Xml.Serialization
             _typeEntries[type] = entry;
         }
 
-        internal bool ExistTypeEntry(Type type)
-        {
-            if (_typeEntries == null)
-            {
-                _typeEntries = new Hashtable();
-            }
-
-            return _typeEntries.ContainsKey(type);
-        }
-
         private void WriteArray(string name, string ns, object o, Type type)
         {
             Type elementType = TypeScope.GetArrayElementType(type, null);
@@ -1256,8 +1248,8 @@ namespace System.Xml.Serialization
             else
             {
 #if DEBUG
-                    // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (!typeof(IEnumerable).IsAssignableFrom(type)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "not array like type " + type.FullName));
+                // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+                if (!typeof(IEnumerable).IsAssignableFrom(type)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "not array like type " + type.FullName));
 #endif
 
                 int arrayLength = typeof(ICollection).IsAssignableFrom(type) ? ((ICollection)o).Count : -1;
@@ -1495,7 +1487,7 @@ namespace System.Xml.Serialization
             return (bool)oIsTypeDynamic;
         }
 
-
+#if XMLSERIALIZERGENERATOR
         internal static bool IsTypeDynamic(Type[] arguments)
         {
             foreach (Type t in arguments)
@@ -1535,15 +1527,22 @@ namespace System.Xml.Serialization
                 }
             }
         }
+#endif
+
         internal static Assembly Get(string fullName)
         {
             return s_nameToAssemblyMap != null ? (Assembly)s_nameToAssemblyMap[fullName] : null;
         }
+
+#if XMLSERIALIZERGENERATOR
         internal static string GetName(Assembly a)
         {
-            return s_assemblyToNameMap != null ? (string)s_assemblyToNameMap[a] : null;
+            return s_assemblyToNameMap != null ? (string) s_assemblyToNameMap[a] : null;
         }
+#endif
     }
+
+#if XMLSERIALIZERGENERATOR
     internal class ReflectionAwareCodeGen
     {
         private const string hexDigits = "0123456789ABCDEF";
@@ -2197,4 +2196,5 @@ namespace System.Xml.Serialization
     }}
 ";
     }
+#endif
 }

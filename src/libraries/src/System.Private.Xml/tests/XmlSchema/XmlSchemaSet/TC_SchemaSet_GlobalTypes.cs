@@ -269,6 +269,3 @@ namespace System.Xml.Tests
         }
     }
 }
-
-//todo: add sanity test for include
-//todo: copy count checks from element

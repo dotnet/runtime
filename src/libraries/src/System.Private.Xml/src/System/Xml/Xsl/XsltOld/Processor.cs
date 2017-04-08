@@ -222,7 +222,6 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return null;
             }
-            // TODO: use typecode there.
             if (
                 parameter is XPathNodeIterator ||
                 parameter is XPathNavigator ||
@@ -270,13 +269,13 @@ namespace System.Xml.Xsl.XsltOld
         }
 
 #if DEBUG
-        private bool stringBuilderLocked = false;
+        private bool _stringBuilderLocked = false;
 #endif
 
         internal StringBuilder GetSharedStringBuilder()
         {
 #if DEBUG
-            Debug.Assert(! stringBuilderLocked);
+            Debug.Assert(!_stringBuilderLocked);
 #endif
             if (_sharedStringBuilder == null)
             {
@@ -287,7 +286,7 @@ namespace System.Xml.Xsl.XsltOld
                 _sharedStringBuilder.Length = 0;
             }
 #if DEBUG
-            stringBuilderLocked = true;
+            _stringBuilderLocked = true;
 #endif
             return _sharedStringBuilder;
         }
@@ -296,7 +295,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             // don't clean stringBuilderLocked here. ToString() will happen after this call
 #if DEBUG
-            stringBuilderLocked = false;
+            _stringBuilderLocked = false;
 #endif
         }
 
@@ -320,11 +319,6 @@ namespace System.Xml.Xsl.XsltOld
         internal HWStack ActionStack
         {
             get { return _actionStack; }
-        }
-
-        internal RecordBuilder Builder
-        {
-            get { return _builder; }
         }
 
         internal XsltOutput Output
@@ -669,7 +663,6 @@ namespace System.Xml.Xsl.XsltOld
             object result = query.Evaluate(context);
             if (result is XPathNodeIterator)
             {
-                // ToDo: We create XPathSelectionIterator to count positions, but it's better create special query in this case at compile time.
                 return new XPathSelectionIterator(context.Current, query);
             }
             throw XsltException.Create(SR.XPath_NodeSetExpected);

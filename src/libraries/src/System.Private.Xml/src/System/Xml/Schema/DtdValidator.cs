@@ -544,7 +544,8 @@ namespace System.Xml.Schema
                 attdef.DefaultValueTyped = dtype.ParseValue(value, readerAdapter.NameTable, readerAdapter.NamespaceResolver);
             }
 #if DEBUG
-            catch (XmlSchemaException ex) {
+            catch (XmlSchemaException ex)
+            {
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
 #else
             catch (Exception)
@@ -609,7 +610,8 @@ namespace System.Xml.Schema
                 }
             }
 #if DEBUG
-            catch (XmlSchemaException ex) {
+            catch (XmlSchemaException ex)
+            {
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
 #else
             catch (Exception)

@@ -4,9 +4,6 @@
 
 #if XMLSERIALIZERGENERATOR
 namespace Microsoft.XmlSerializer.Generator
-#else
-namespace System.Xml.Serialization
-#endif
 {
     using System.IO;
 
@@ -77,3 +74,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif

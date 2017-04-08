@@ -29,7 +29,6 @@ namespace System.Xml.Schema
         public bool NeedValidateChildren;  // whether need to validate the children of this element   
         public bool CheckRequiredAttribute; //PSVI
         public bool ValidationSkipped;
-        public int Depth;         // The validation state  
         public XmlSchemaContentProcessing ProcessContents;
         public XmlSchemaValidity Validity;
         public SchemaElementDecl ElementDecl;            // ElementDecl

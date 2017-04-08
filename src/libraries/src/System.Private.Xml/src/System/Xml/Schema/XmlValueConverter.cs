@@ -155,91 +155,47 @@ namespace System.Xml.Schema
     //
     internal abstract class XmlValueConverter
     {
-        public abstract bool ToBoolean(bool value);
         public abstract bool ToBoolean(long value);
         public abstract bool ToBoolean(int value);
-        public abstract bool ToBoolean(decimal value);
-        public abstract bool ToBoolean(float value);
         public abstract bool ToBoolean(double value);
         public abstract bool ToBoolean(DateTime value);
-        public abstract bool ToBoolean(DateTimeOffset value);
         public abstract bool ToBoolean(string value);
         public abstract bool ToBoolean(object value);
 
         public abstract int ToInt32(bool value);
-        public abstract int ToInt32(int value);
         public abstract int ToInt32(long value);
-        public abstract int ToInt32(decimal value);
-        public abstract int ToInt32(float value);
         public abstract int ToInt32(double value);
         public abstract int ToInt32(DateTime value);
-        public abstract int ToInt32(DateTimeOffset value);
         public abstract int ToInt32(string value);
         public abstract int ToInt32(object value);
 
         public abstract long ToInt64(bool value);
         public abstract long ToInt64(int value);
-        public abstract long ToInt64(long value);
-        public abstract long ToInt64(decimal value);
-        public abstract long ToInt64(float value);
         public abstract long ToInt64(double value);
         public abstract long ToInt64(DateTime value);
-        public abstract long ToInt64(DateTimeOffset value);
         public abstract long ToInt64(string value);
         public abstract long ToInt64(object value);
-
-        public abstract decimal ToDecimal(bool value);
-        public abstract decimal ToDecimal(int value);
-        public abstract decimal ToDecimal(long value);
-        public abstract decimal ToDecimal(decimal value);
-        public abstract decimal ToDecimal(float value);
-        public abstract decimal ToDecimal(double value);
-        public abstract decimal ToDecimal(DateTime value);
-        public abstract decimal ToDecimal(DateTimeOffset value);
         public abstract decimal ToDecimal(string value);
         public abstract decimal ToDecimal(object value);
 
         public abstract double ToDouble(bool value);
         public abstract double ToDouble(int value);
         public abstract double ToDouble(long value);
-        public abstract double ToDouble(decimal value);
-        public abstract double ToDouble(float value);
-        public abstract double ToDouble(double value);
         public abstract double ToDouble(DateTime value);
-        public abstract double ToDouble(DateTimeOffset value);
         public abstract double ToDouble(string value);
         public abstract double ToDouble(object value);
-
-        public abstract float ToSingle(bool value);
-        public abstract float ToSingle(int value);
-        public abstract float ToSingle(long value);
-        public abstract float ToSingle(decimal value);
-        public abstract float ToSingle(float value);
         public abstract float ToSingle(double value);
-        public abstract float ToSingle(DateTime value);
-        public abstract float ToSingle(DateTimeOffset value);
         public abstract float ToSingle(string value);
         public abstract float ToSingle(object value);
 
         public abstract DateTime ToDateTime(bool value);
         public abstract DateTime ToDateTime(int value);
         public abstract DateTime ToDateTime(long value);
-        public abstract DateTime ToDateTime(decimal value);
-        public abstract DateTime ToDateTime(float value);
         public abstract DateTime ToDateTime(double value);
-        public abstract DateTime ToDateTime(DateTime value);
         public abstract DateTime ToDateTime(DateTimeOffset value);
         public abstract DateTime ToDateTime(string value);
         public abstract DateTime ToDateTime(object value);
-
-        public abstract DateTimeOffset ToDateTimeOffset(bool value);
-        public abstract DateTimeOffset ToDateTimeOffset(int value);
-        public abstract DateTimeOffset ToDateTimeOffset(long value);
-        public abstract DateTimeOffset ToDateTimeOffset(decimal value);
-        public abstract DateTimeOffset ToDateTimeOffset(float value);
-        public abstract DateTimeOffset ToDateTimeOffset(double value);
         public abstract DateTimeOffset ToDateTimeOffset(DateTime value);
-        public abstract DateTimeOffset ToDateTimeOffset(DateTimeOffset value);
         public abstract DateTimeOffset ToDateTimeOffset(string value);
         public abstract DateTimeOffset ToDateTimeOffset(object value);
 
@@ -251,8 +207,6 @@ namespace System.Xml.Schema
         public abstract string ToString(double value);
         public abstract string ToString(DateTime value);
         public abstract string ToString(DateTimeOffset value);
-        public abstract string ToString(string value);
-        public abstract string ToString(string value, IXmlNamespaceResolver nsResolver);
         public abstract string ToString(object value);
         public abstract string ToString(object value, IXmlNamespaceResolver nsResolver);
 
@@ -260,11 +214,8 @@ namespace System.Xml.Schema
         public abstract object ChangeType(int value, Type destinationType);
         public abstract object ChangeType(long value, Type destinationType);
         public abstract object ChangeType(decimal value, Type destinationType);
-        public abstract object ChangeType(float value, Type destinationType);
         public abstract object ChangeType(double value, Type destinationType);
         public abstract object ChangeType(DateTime value, Type destinationType);
-        public abstract object ChangeType(DateTimeOffset value, Type destinationType);
-        public abstract object ChangeType(string value, Type destinationType);
         public abstract object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver);
         public abstract object ChangeType(object value, Type destinationType);
         public abstract object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver);
@@ -366,92 +317,47 @@ namespace System.Xml.Schema
         protected static readonly Type UriType = typeof(Uri);
         protected static readonly Type TimeSpanType = typeof(TimeSpan);
         protected static readonly Type XPathNavigatorType = typeof(XPathNavigator);
-
-        public override bool ToBoolean(bool value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(DateTime value) { return (bool)ChangeType((object)value, BooleanType, null); }
-        public override bool ToBoolean(DateTimeOffset value) { return (bool)ChangeType((object)value, BooleanType, null); }
-        public override bool ToBoolean(decimal value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(double value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(int value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(long value) { return (bool)ChangeType((object)value, BooleanType, null); }
-        public override bool ToBoolean(float value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(string value) { return (bool)ChangeType((object)value, BooleanType, null); }
         public override bool ToBoolean(object value) { return (bool)ChangeType((object)value, BooleanType, null); }
 
         public override DateTime ToDateTime(bool value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
-        public override DateTime ToDateTime(DateTime value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(DateTimeOffset value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
-        public override DateTime ToDateTime(decimal value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(double value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(int value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(long value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
-        public override DateTime ToDateTime(float value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(string value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
         public override DateTime ToDateTime(object value) { return (DateTime)ChangeType((object)value, DateTimeType, null); }
-
-        public override DateTimeOffset ToDateTimeOffset(bool value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
         public override DateTimeOffset ToDateTimeOffset(DateTime value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(DateTimeOffset value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(decimal value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(double value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(int value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(long value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-        public override DateTimeOffset ToDateTimeOffset(float value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
         public override DateTimeOffset ToDateTimeOffset(string value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
         public override DateTimeOffset ToDateTimeOffset(object value) { return (DateTimeOffset)ChangeType((object)value, DateTimeOffsetType, null); }
-
-        public override decimal ToDecimal(bool value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(DateTime value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(DateTimeOffset value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(decimal value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(double value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(int value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(long value) { return (decimal)ChangeType((object)value, DecimalType, null); }
-        public override decimal ToDecimal(float value) { return (decimal)ChangeType((object)value, DecimalType, null); }
         public override decimal ToDecimal(string value) { return (decimal)ChangeType((object)value, DecimalType, null); }
         public override decimal ToDecimal(object value) { return (decimal)ChangeType((object)value, DecimalType, null); }
 
         public override double ToDouble(bool value) { return (double)ChangeType((object)value, DoubleType, null); }
         public override double ToDouble(DateTime value) { return (double)ChangeType((object)value, DoubleType, null); }
-        public override double ToDouble(DateTimeOffset value) { return (double)ChangeType((object)value, DoubleType, null); }
-        public override double ToDouble(decimal value) { return (double)ChangeType((object)value, DoubleType, null); }
-        public override double ToDouble(double value) { return (double)ChangeType((object)value, DoubleType, null); }
         public override double ToDouble(int value) { return (double)ChangeType((object)value, DoubleType, null); }
         public override double ToDouble(long value) { return (double)ChangeType((object)value, DoubleType, null); }
-        public override double ToDouble(float value) { return (double)ChangeType((object)value, DoubleType, null); }
         public override double ToDouble(string value) { return (double)ChangeType((object)value, DoubleType, null); }
         public override double ToDouble(object value) { return (double)ChangeType((object)value, DoubleType, null); }
 
         public override int ToInt32(bool value) { return (int)ChangeType((object)value, Int32Type, null); }
         public override int ToInt32(DateTime value) { return (int)ChangeType((object)value, Int32Type, null); }
-        public override int ToInt32(DateTimeOffset value) { return (int)ChangeType((object)value, Int32Type, null); }
-        public override int ToInt32(decimal value) { return (int)ChangeType((object)value, Int32Type, null); }
         public override int ToInt32(double value) { return (int)ChangeType((object)value, Int32Type, null); }
-        public override int ToInt32(int value) { return (int)ChangeType((object)value, Int32Type, null); }
         public override int ToInt32(long value) { return (int)ChangeType((object)value, Int32Type, null); }
-        public override int ToInt32(float value) { return (int)ChangeType((object)value, Int32Type, null); }
         public override int ToInt32(string value) { return (int)ChangeType((object)value, Int32Type, null); }
         public override int ToInt32(object value) { return (int)ChangeType((object)value, Int32Type, null); }
 
         public override long ToInt64(bool value) { return (long)ChangeType((object)value, Int64Type, null); }
         public override long ToInt64(DateTime value) { return (long)ChangeType((object)value, Int64Type, null); }
-        public override long ToInt64(DateTimeOffset value) { return (long)ChangeType((object)value, Int64Type, null); }
-        public override long ToInt64(decimal value) { return (long)ChangeType((object)value, Int64Type, null); }
         public override long ToInt64(double value) { return (long)ChangeType((object)value, Int64Type, null); }
         public override long ToInt64(int value) { return (long)ChangeType((object)value, Int64Type, null); }
-        public override long ToInt64(long value) { return (long)ChangeType((object)value, Int64Type, null); }
-        public override long ToInt64(float value) { return (long)ChangeType((object)value, Int64Type, null); }
         public override long ToInt64(string value) { return (long)ChangeType((object)value, Int64Type, null); }
         public override long ToInt64(object value) { return (long)ChangeType((object)value, Int64Type, null); }
-
-        public override float ToSingle(bool value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(DateTime value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(DateTimeOffset value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(decimal value) { return (float)ChangeType((object)value, SingleType, null); }
         public override float ToSingle(double value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(int value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(long value) { return (float)ChangeType((object)value, SingleType, null); }
-        public override float ToSingle(float value) { return (float)ChangeType((object)value, SingleType, null); }
         public override float ToSingle(string value) { return (float)ChangeType((object)value, SingleType, null); }
         public override float ToSingle(object value) { return (float)ChangeType((object)value, SingleType, null); }
 
@@ -463,21 +369,16 @@ namespace System.Xml.Schema
         public override string ToString(int value) { return (string)ChangeType((object)value, StringType, null); }
         public override string ToString(long value) { return (string)ChangeType((object)value, StringType, null); }
         public override string ToString(float value) { return (string)ChangeType((object)value, StringType, null); }
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver) { return (string)ChangeType((object)value, StringType, nsResolver); }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver) { return (string)ChangeType((object)value, StringType, nsResolver); }
-        public override string ToString(string value) { return this.ToString(value, null); }
         public override string ToString(object value) { return this.ToString(value, null); }
 
         public override object ChangeType(bool value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(DateTime value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
-        public override object ChangeType(DateTimeOffset value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(decimal value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(double value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(int value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(long value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
-        public override object ChangeType(float value, Type destinationType) { return (object)ChangeType((object)value, destinationType, null); }
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver) { return (object)ChangeType((object)value, destinationType, nsResolver); }
-        public override object ChangeType(string value, Type destinationType) { return this.ChangeType(value, destinationType, null); }
         public override object ChangeType(object value, Type destinationType) { return this.ChangeType(value, destinationType, null); }
 
         #endregion
@@ -973,37 +874,6 @@ namespace System.Xml.Schema
         }
 
         #region AUTOGENERATED_XMLNUMERIC10CONVERTER
-
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Boolean.
-
-
-        //-----------------------------------------------
-        // ToDateTime
-        //-----------------------------------------------
-
-        // This converter does not support conversions to DateTime.
-
-
-        //-----------------------------------------------
-        // ToDecimal
-        //-----------------------------------------------
-
-        public override decimal ToDecimal(decimal value)
-        {
-            return ((decimal)value);
-        }
-        public override decimal ToDecimal(int value)
-        {
-            return ((decimal)(int)value);
-        }
-        public override decimal ToDecimal(long value)
-        {
-            return ((decimal)(long)value);
-        }
         public override decimal ToDecimal(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1024,27 +894,6 @@ namespace System.Xml.Schema
             if (sourceType == XmlAtomicValueType) return ((decimal)((XmlAtomicValue)value).ValueAs(DecimalType));
 
             return (decimal)ChangeTypeWildcardDestination(value, DecimalType, null);
-        }
-
-
-        //-----------------------------------------------
-        // ToDouble
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Double.
-
-
-        //-----------------------------------------------
-        // ToInt32
-        //-----------------------------------------------
-
-        public override int ToInt32(decimal value)
-        {
-            return DecimalToInt32((decimal)value);
-        }
-        public override int ToInt32(int value)
-        {
-            return ((int)value);
         }
         public override int ToInt32(long value)
         {
@@ -1071,23 +920,9 @@ namespace System.Xml.Schema
 
             return (int)ChangeTypeWildcardDestination(value, Int32Type, null);
         }
-
-
-        //-----------------------------------------------
-        // ToInt64
-        //-----------------------------------------------
-
-        public override long ToInt64(decimal value)
-        {
-            return DecimalToInt64((decimal)value);
-        }
         public override long ToInt64(int value)
         {
             return ((long)(int)value);
-        }
-        public override long ToInt64(long value)
-        {
-            return ((long)value);
         }
         public override long ToInt64(string value)
         {
@@ -1135,12 +970,6 @@ namespace System.Xml.Schema
         public override string ToString(long value)
         {
             return XmlConvert.ToString((long)value);
-        }
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
@@ -1311,40 +1140,6 @@ namespace System.Xml.Schema
         }
 
         #region AUTOGENERATED_XMLNUMERIC2CONVERTER
-
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Boolean.
-
-
-        //-----------------------------------------------
-        // ToDateTime
-        //-----------------------------------------------
-
-        // This converter does not support conversions to DateTime.
-
-
-        //-----------------------------------------------
-        // ToDecimal
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Decimal.
-
-
-        //-----------------------------------------------
-        // ToDouble
-        //-----------------------------------------------
-
-        public override double ToDouble(double value)
-        {
-            return ((double)value);
-        }
-        public override double ToDouble(float value)
-        {
-            return ((double)(float)value);
-        }
         public override double ToDouble(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1389,10 +1184,6 @@ namespace System.Xml.Schema
         {
             return ((float)(double)value);
         }
-        public override float ToSingle(float value)
-        {
-            return ((float)value);
-        }
         public override float ToSingle(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1429,12 +1220,6 @@ namespace System.Xml.Schema
             if (TypeCode == XmlTypeCode.Float) return XmlConvert.ToString((float)value);
             return XmlConvert.ToString((double)(float)value);
         }
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
-        }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1464,20 +1249,6 @@ namespace System.Xml.Schema
             if (destinationType == StringType) return this.ToString((double)value);
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(SchemaType, (double)value));
             if (destinationType == XPathItemType) return (new XmlAtomicValue(SchemaType, (double)value));
-
-            return ChangeListType(value, destinationType, null);
-        }
-
-        public override object ChangeType(float value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == DoubleType) return ((double)(float)value);
-            if (destinationType == SingleType) return ((float)value);
-            if (destinationType == StringType) return this.ToString((float)value);
-            if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(SchemaType, value));
-            if (destinationType == XPathItemType) return (new XmlAtomicValue(SchemaType, value));
 
             return ChangeListType(value, destinationType, null);
         }
@@ -1541,22 +1312,6 @@ namespace System.Xml.Schema
 
         #region AUTOGENERATED_XMLDATETIMECONVERTER
 
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Boolean.
-
-
-        //-----------------------------------------------
-        // ToDateTime
-        //-----------------------------------------------
-
-        public override DateTime ToDateTime(DateTime value)
-        {
-            return ((DateTime)value);
-        }
-
         public override DateTime ToDateTime(DateTimeOffset value)
         {
             return DateTimeOffsetToDateTime(value);
@@ -1599,11 +1354,6 @@ namespace System.Xml.Schema
         public override DateTimeOffset ToDateTimeOffset(DateTime value)
         {
             return new DateTimeOffset(value);
-        }
-
-        public override DateTimeOffset ToDateTimeOffset(DateTimeOffset value)
-        {
-            return ((DateTimeOffset)value);
         }
 
         public override DateTimeOffset ToDateTimeOffset(string value)
@@ -1705,13 +1455,6 @@ namespace System.Xml.Schema
             }
             return DateTimeOffsetToString((DateTimeOffset)value);
         }
-
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
-        }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1741,20 +1484,6 @@ namespace System.Xml.Schema
             if (destinationType == StringType) return this.ToString((DateTime)value);
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(SchemaType, (DateTime)value));
             if (destinationType == XPathItemType) return (new XmlAtomicValue(SchemaType, (DateTime)value));
-
-            return ChangeListType(value, destinationType, null);
-        }
-
-        public override object ChangeType(DateTimeOffset value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == DateTimeType) return this.ToDateTime((DateTimeOffset)value);
-            if (destinationType == DateTimeOffsetType) return ((DateTimeOffset)value);
-            if (destinationType == StringType) return this.ToString((DateTimeOffset)value);
-            if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(SchemaType, (DateTimeOffset)value));
-            if (destinationType == XPathItemType) return (new XmlAtomicValue(SchemaType, (DateTimeOffset)value));
 
             return ChangeListType(value, destinationType, null);
         }
@@ -1817,15 +1546,6 @@ namespace System.Xml.Schema
         }
 
         #region AUTOGENERATED_XMLBOOLEANCONVERTER
-
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        public override bool ToBoolean(bool value)
-        {
-            return ((bool)value);
-        }
         public override bool ToBoolean(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -1895,12 +1615,6 @@ namespace System.Xml.Schema
         public override string ToString(bool value)
         {
             return XmlConvert.ToString((bool)value);
-        }
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
@@ -1987,66 +1701,6 @@ namespace System.Xml.Schema
         }
 
         #region AUTOGENERATED_XMLMISCCONVERTER
-
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Boolean.
-
-
-        //-----------------------------------------------
-        // ToDateTime
-        //-----------------------------------------------
-
-        // This converter does not support conversions to DateTime.
-
-
-        //-----------------------------------------------
-        // ToDecimal
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Decimal.
-
-
-        //-----------------------------------------------
-        // ToDouble
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Double.
-
-
-        //-----------------------------------------------
-        // ToInt32
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Int32.
-
-
-        //-----------------------------------------------
-        // ToInt64
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Int64.
-
-
-        //-----------------------------------------------
-        // ToSingle
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Single.
-
-
-        //-----------------------------------------------
-        // ToString
-        //-----------------------------------------------
-
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return (string)value;
-        }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -2275,66 +1929,6 @@ namespace System.Xml.Schema
         }
 
         #region AUTOGENERATED_XMLSTRINGCONVERTER
-
-        //-----------------------------------------------
-        // ToBoolean
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Boolean.
-
-
-        //-----------------------------------------------
-        // ToDateTime
-        //-----------------------------------------------
-
-        // This converter does not support conversions to DateTime.
-
-
-        //-----------------------------------------------
-        // ToDecimal
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Decimal.
-
-
-        //-----------------------------------------------
-        // ToDouble
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Double.
-
-
-        //-----------------------------------------------
-        // ToInt32
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Int32.
-
-
-        //-----------------------------------------------
-        // ToInt64
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Int64.
-
-
-        //-----------------------------------------------
-        // ToSingle
-        //-----------------------------------------------
-
-        // This converter does not support conversions to Single.
-
-
-        //-----------------------------------------------
-        // ToString
-        //-----------------------------------------------
-
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
-        }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -2620,12 +2214,6 @@ namespace System.Xml.Schema
         {
             return XmlConvert.ToString((float)value);
         }
-        public override string ToString(string value, IXmlNamespaceResolver nsResolver)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-
-            return ((string)value);
-        }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -2681,16 +2269,6 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(DateTimeOffset value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == StringType) return DateTimeOffsetToString((DateTimeOffset)value);
-
-            return ChangeTypeWildcardSource(value, destinationType, null);
-        }
-
         public override object ChangeType(decimal value, Type destinationType)
         {
             if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
@@ -2727,16 +2305,6 @@ namespace System.Xml.Schema
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((long)value);
-
-            return ChangeTypeWildcardSource(value, destinationType, null);
-        }
-
-        public override object ChangeType(float value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == StringType) return XmlConvert.ToString((float)value);
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
@@ -3203,16 +2771,6 @@ namespace System.Xml.Schema
             return ChangeTypeWildcardSource(value, destinationType, null);
         }
 
-        public override object ChangeType(DateTimeOffset value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.DateTime), (DateTimeOffset)value));
-
-            return ChangeTypeWildcardSource(value, destinationType, null);
-        }
-
         public override object ChangeType(decimal value, Type destinationType)
         {
             if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
@@ -3249,16 +2807,6 @@ namespace System.Xml.Schema
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Long), (long)value));
-
-            return ChangeTypeWildcardSource(value, destinationType, null);
-        }
-
-        public override object ChangeType(float value, Type destinationType)
-        {
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
-
-            if (destinationType == ObjectType) destinationType = DefaultClrType;
-            if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Float), value));
 
             return ChangeTypeWildcardSource(value, destinationType, null);
         }

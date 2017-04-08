@@ -23,12 +23,6 @@ namespace MS.Internal.Xml.XPath
             _val = val;
         }
 
-        public Operand(bool val)
-        {
-            _type = XPathResultType.Boolean;
-            _val = val;
-        }
-
         public override AstType Type { get { return AstType.ConstantOperand; } }
         public override XPathResultType ReturnType { get { return _type; } }
 

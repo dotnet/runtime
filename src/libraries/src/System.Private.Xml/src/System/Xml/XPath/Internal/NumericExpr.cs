@@ -72,14 +72,5 @@ namespace MS.Internal.Xml.XPath
         public override XPathResultType StaticType { get { return XPathResultType.Number; } }
 
         public override XPathNodeIterator Clone() { return new NumericExpr(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("op", _op.ToString());
-            _opnd1.PrintQuery(w);
-            _opnd2.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

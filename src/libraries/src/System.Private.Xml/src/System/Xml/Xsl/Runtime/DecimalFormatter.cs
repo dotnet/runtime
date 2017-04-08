@@ -8,7 +8,6 @@ using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     internal class DecimalFormat
     {
         public NumberFormatInfo info;

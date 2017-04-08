@@ -118,18 +118,6 @@ namespace System.Xml.Schema
             CheckForwardRefs();
         }
 
-        //for frag validation
-        public ValidationState Context
-        {
-            set { context = value; }
-        }
-
-        //share for frag validation
-        public static XmlSchemaDatatype DtQName
-        {
-            get { return s_dtQName; }
-        }
-
         private bool IsInlineSchemaStarted
         {
             get { return _inlineSchemaParser != null; }

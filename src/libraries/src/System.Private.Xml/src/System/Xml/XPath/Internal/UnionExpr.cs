@@ -160,19 +160,5 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator Current { get { return _currentNode; } }
         public override int CurrentPosition { get { throw new InvalidOperationException(); } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            if (qy1 != null)
-            {
-                qy1.PrintQuery(w);
-            }
-            if (qy2 != null)
-            {
-                qy2.PrintQuery(w);
-            }
-            w.WriteEndElement();
-        }
     }
 }

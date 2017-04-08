@@ -249,11 +249,6 @@ namespace System.Xml.Schema
             SendValidationEvent(new XmlSchemaException(code, arg, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
         }
 
-        protected void SendValidationEvent(string code, string arg1, string arg2)
-        {
-            SendValidationEvent(new XmlSchemaException(code, new string[] { arg1, arg2 }, reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition));
-        }
-
         protected void SendValidationEvent(XmlSchemaException e)
         {
             SendValidationEvent(e, XmlSeverityType.Error);

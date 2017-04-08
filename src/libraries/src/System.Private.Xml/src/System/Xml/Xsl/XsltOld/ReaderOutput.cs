@@ -227,11 +227,6 @@ namespace System.Xml.Xsl.XsltOld
             get { return GetAttribute(i); }
         }
 
-        public override string this[string name]
-        {
-            get { return GetAttribute(name); }
-        }
-
         public override string this[string name, string namespaceURI]
         {
             get { return GetAttribute(name, namespaceURI); }

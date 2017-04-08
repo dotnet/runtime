@@ -138,7 +138,7 @@ namespace System.Xml
         {
             return ns == null || ns.Length == 0 ? name : ns + ":" + name;
         }
-		
+
         // --------- Some useful internal stuff -----------------
         internal void Init(string name, string ns)
         {

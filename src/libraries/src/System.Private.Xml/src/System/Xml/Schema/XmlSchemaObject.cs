@@ -3,11 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
-{
-#if SILVERLIGHT
-    //Empty parent class for XmlSchema
-    public abstract class XmlSchemaObject {}
-#else    
+{ 
     using System.Diagnostics;
     using System.Xml.Serialization;
 
@@ -119,5 +115,4 @@ namespace System.Xml.Schema
             return (XmlSchemaObject)MemberwiseClone();
         }
     }
-#endif
 }

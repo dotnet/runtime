@@ -2171,7 +2171,6 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Reader, Stream", Desc = "READER,STREAM")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Reader, Writer", Desc = "READER,WRITER")]
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    // TODO: Fix security issue
     ////[TestCase(Name="XsltArgumentList - AddExtensionObject : URI, Reader", Desc="URI,READER")]
     ////[TestCase(Name="XsltArgumentList - AddExtensionObject : URI, Stream", Desc="URI,STREAM")]
     ////[TestCase(Name="XsltArgumentList - AddExtensionObject : URI, Writer", Desc="URI,WRITER")]
@@ -3222,7 +3221,6 @@ namespace System.Xml.Tests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Reader , Reader", Desc = "READER,READER")]
-    // TODO: Fix security issue
     ////[TestCase(Name="XsltArgumentList - RemoveParam : URI, Stream", Desc="URI,STREAM")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
@@ -3862,7 +3860,6 @@ namespace System.Xml.Tests
 
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Reader, Stream", Desc = "READER,STREAM")]
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Reader, TextWriter", Desc = "READER,TEXTWRITER")]
-    // TODO: Fix security issue
     ////[TestCase(Name="XsltArgumentList - RemoveExtensionObject : URI, Reader", Desc="URI,READER")]
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     public class CArgRemoveExtObj : XsltApiTestCaseBase

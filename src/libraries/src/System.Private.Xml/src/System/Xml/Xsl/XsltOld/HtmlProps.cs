@@ -37,7 +37,6 @@ namespace System.Xml.Xsl.XsltOld
         public bool AbrParent { get { return _abrParent; } }
         public bool UriParent { get { return _uriParent; } }
         public bool NoEntities { get { return _noEntities; } }
-        public bool BlockWS { get { return _blockWS; } }
         public bool Head { get { return _head; } }
         public bool NameParent { get { return _nameParent; } }
 

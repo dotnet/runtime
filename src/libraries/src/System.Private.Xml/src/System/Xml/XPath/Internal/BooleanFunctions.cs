@@ -64,7 +64,7 @@ namespace MS.Internal.Xml.XPath
 
             string str = result as string;
             if (str != null)
-				return toBoolean(str);
+                return toBoolean(str);
 
             if (result is double) return toBoolean((double)result);
             if (result is bool) return (bool)result;
@@ -90,16 +90,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathNodeIterator Clone() { return new BooleanFunctions(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", _funcType.ToString());
-            if (_arg != null)
-            {
-                _arg.PrintQuery(w);
-            }
-            w.WriteEndElement();
-        }
     }
 }

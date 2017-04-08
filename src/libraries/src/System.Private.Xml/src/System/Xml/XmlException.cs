@@ -30,17 +30,20 @@ namespace System.Xml
         // message == null for V2 or higher exceptions; the exception message is stored on the base class (Exception._message)
         private string _message;
 
-        protected XmlException(SerializationInfo info, StreamingContext context) : base(info, context) {
-            _res                 = (string)  info.GetValue("_res"  , typeof(string));
-            _args                = (string[])info.GetValue("_args", typeof(string[]));
-            _lineNumber          = (int)     info.GetValue("_lineNumber", typeof(int));
-            _linePosition        = (int)     info.GetValue("_linePosition", typeof(int));
+        protected XmlException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            _res = (string)info.GetValue("_res", typeof(string));
+            _args = (string[])info.GetValue("_args", typeof(string[]));
+            _lineNumber = (int)info.GetValue("_lineNumber", typeof(int));
+            _linePosition = (int)info.GetValue("_linePosition", typeof(int));
 
             // deserialize optional members
             _sourceUri = string.Empty;
             string version = null;
-            foreach ( SerializationEntry e in info ) {
-                switch ( e.Name ) {
+            foreach (SerializationEntry e in info)
+            {
+                switch (e.Name)
+                {
                     case "sourceUri":
                         _sourceUri = (string)e.Value;
                         break;
@@ -50,24 +53,27 @@ namespace System.Xml
                 }
             }
 
-            if ( version == null ) {
+            if (version == null)
+            {
                 // deserializing V1 exception
-                _message = CreateMessage( _res, _args, _lineNumber, _linePosition );
+                _message = CreateMessage(_res, _args, _lineNumber, _linePosition);
             }
-            else {
+            else
+            {
                 // deserializing V2 or higher exception -> exception message is serialized by the base class (Exception._message)
                 _message = null;
             }
         }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
             base.GetObjectData(info, context);
-            info.AddValue("res",                _res);
-            info.AddValue("args",               _args);
-            info.AddValue("lineNumber",         _lineNumber);
-            info.AddValue("linePosition",       _linePosition);
-            info.AddValue("sourceUri",          _sourceUri);
-            info.AddValue("version",            "2.0");
+            info.AddValue("res", _res);
+            info.AddValue("args", _args);
+            info.AddValue("lineNumber", _lineNumber);
+            info.AddValue("linePosition", _linePosition);
+            info.AddValue("sourceUri", _sourceUri);
+            info.AddValue("version", "2.0");
         }
 
         //provided to meet the ECMA standards
@@ -109,10 +115,6 @@ namespace System.Xml
             this(res, args, null, 0, 0, null)
         { }
 
-        internal XmlException(string res, string[] args, string sourceUri) :
-            this(res, args, null, 0, 0, sourceUri)
-        { }
-
         internal XmlException(string res, string arg) :
             this(res, new string[] { arg }, null, 0, 0, null)
         { }
@@ -129,10 +131,6 @@ namespace System.Xml
             this(res, new string[] { arg }, innerException, (lineInfo == null ? 0 : lineInfo.LineNumber), (lineInfo == null ? 0 : lineInfo.LinePosition), null)
         { }
 
-        internal XmlException(string res, String arg, IXmlLineInfo lineInfo, string sourceUri) :
-            this(res, new string[] { arg }, lineInfo, sourceUri)
-        { }
-
         internal XmlException(string res, string[] args, IXmlLineInfo lineInfo) :
             this(res, args, lineInfo, null)
         { }
@@ -141,10 +139,6 @@ namespace System.Xml
             this(res, args, null, (lineInfo == null ? 0 : lineInfo.LineNumber), (lineInfo == null ? 0 : lineInfo.LinePosition), sourceUri)
         {
         }
-
-        internal XmlException(string res, int lineNumber, int linePosition) :
-            this(res, (string[])null, null, lineNumber, linePosition)
-        { }
 
         internal XmlException(string res, string arg, int lineNumber, int linePosition) :
             this(res, new string[] { arg }, null, lineNumber, linePosition, null)
@@ -229,11 +223,6 @@ namespace System.Xml
         internal static string[] BuildCharExceptionArgs(string data, int invCharIndex)
         {
             return BuildCharExceptionArgs(data[invCharIndex], invCharIndex + 1 < data.Length ? data[invCharIndex + 1] : '\0');
-        }
-
-        internal static string[] BuildCharExceptionArgs(char[] data, int invCharIndex)
-        {
-            return BuildCharExceptionArgs(data, data.Length, invCharIndex);
         }
 
         internal static string[] BuildCharExceptionArgs(char[] data, int length, int invCharIndex)
