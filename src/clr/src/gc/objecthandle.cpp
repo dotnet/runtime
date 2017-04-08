@@ -907,30 +907,6 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
 //----------------------------------------------------------------------------
 
 /*
- * CreateVariableHandle.
- *
- * Creates a variable-strength handle.
- *
- * N.B. This routine is not a macro since we do validation in RETAIL.
- * We always validate the type here because it can come from external callers.
- */
-OBJECTHANDLE CreateVariableHandle(HHANDLETABLE hTable, OBJECTREF object, uint32_t type)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // verify that we are being asked to create a valid type
-    if (!IS_VALID_VHT_VALUE(type))
-    {
-        // bogus value passed in
-        _ASSERTE(FALSE);
-        return NULL;
-    }
-
-    // create the handle
-    return HndCreateHandle(hTable, HNDTYPE_VARIABLE, object, (uintptr_t)type);
-}
-
-/*
 * GetVariableHandleType.
 *
 * Retrieves the dynamic type of a variable-strength handle.
