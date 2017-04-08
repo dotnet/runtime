@@ -13,7 +13,6 @@ using System.ComponentModel;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     // List of all XPath/XSLT runtime methods
     internal static class XsltMethods
     {

@@ -132,10 +132,7 @@ namespace System.Xml.Schema
                 for (schemaIndex = 0; schemaIndex < _lockList.Count; schemaIndex++)
                 {
                     listSchema = (XmlSchema)_lockList.GetByIndex(schemaIndex);
-#pragma warning disable 0618 
-                    //@TODO: This overload of Monitor.Enter is obsolete.  Please change this to use Monitor.Enter(ref bool), and remove the pragmas   -- ericeil
                     Monitor.Enter(listSchema);
-#pragma warning restore 0618
                     listSchema.IsProcessing = false; //Reset processing flag from LoadExternals
                 }
                 //Preprocess
@@ -684,7 +681,7 @@ namespace System.Xml.Schema
                         case Compositor.Include:
                             if (_processedExternals[includedSchema] != null)
                             {
-                                continue; //Already processed this included schema; TODO Need to look at other option than using HashTable
+                                continue; //Already processed this included schema;
                             }
                             _processedExternals.Add(includedSchema, external);
                             CopyIncludedComponents(includedSchema, schema);
@@ -698,7 +695,7 @@ namespace System.Xml.Schema
                             _redefinedList.Add(new RedefineEntry(external as XmlSchemaRedefine, _rootSchemaForRedefine));
                             if (_processedExternals[includedSchema] != null)
                             {
-                                continue; //Already processed this included schema; TODO Need to look at other option than using HashTable
+                                continue; //Already processed this included schema;
                             }
                             _processedExternals.Add(includedSchema, external);
                             CopyIncludedComponents(includedSchema, schema);
@@ -710,7 +707,7 @@ namespace System.Xml.Schema
                                 XmlSchemaImport import = external as XmlSchemaImport;
                                 string importNS = import.Namespace != null ? import.Namespace : string.Empty;
                                 if (!imports.Contains(includedSchema))
-                                { //TODO Change ImportedSchemas to Hashtable
+                                {
                                     imports.Add(includedSchema);
                                 }
                                 if (!_rootSchema.ImportedNamespaces.Contains(importNS))

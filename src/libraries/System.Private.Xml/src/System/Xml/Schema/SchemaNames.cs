@@ -11,11 +11,6 @@ namespace System.Xml.Schema
     {
         private XmlNameTable _nameTable;
 
-        public XmlNameTable NameTable
-        {
-            get { return _nameTable; }
-        }
-
         public string NsDataType;
         public string NsDataTypeAlias;
         public string NsDataTypeOld;
@@ -473,11 +468,6 @@ namespace System.Xml.Schema
         public bool IsXDRRoot(string localName, string ns)
         {
             return Ref.Equal(ns, NsXdr) && Ref.Equal(localName, XdrSchema);
-        }
-
-        public XmlQualifiedName GetName(SchemaNames.Token token)
-        {
-            return TokenToQName[(int)token];
         }
 
         public enum Token

@@ -32,8 +32,6 @@ namespace System.Xml.Serialization
 
     internal class CodeGenerator
     {
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method does validation only without any user input")]
-        internal static bool IsValidLanguageIndependentIdentifier(string ident) { return CSharpHelpers.IsValidLanguageIndependentIdentifier(ident); }
         internal static BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
         internal static BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         internal static BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -1423,12 +1421,6 @@ namespace System.Xml.Serialization
             MarkLabel(whileState.EndLabel);
         }
 
-        internal void WhileBreak()
-        {
-            WhileState whileState = (WhileState)_whileStack.Peek();
-            Br(whileState.EndLabel);
-        }
-
         internal void WhileContinue()
         {
             WhileState whileState = (WhileState)_whileStack.Peek();
@@ -1570,11 +1562,6 @@ namespace System.Xml.Serialization
             this.parent = parent;
         }
 
-        public void Add(string key, LocalBuilder value)
-        {
-            _locals.Add(key, value);
-        }
-
         public bool ContainsKey(string key)
         {
             return _locals.ContainsKey(key) || (parent != null && parent.ContainsKey(key));
@@ -1649,7 +1636,8 @@ namespace System.Xml.Serialization
             Debug.Assert(this.MethodBuilder.ReturnType == returnType);
             Debug.Assert(this.MethodBuilder.Attributes == attributes);
             Debug.Assert(this.ParameterTypes.Length == parameterTypes.Length);
-            for (int i = 0; i < parameterTypes.Length; ++i) {
+            for (int i = 0; i < parameterTypes.Length; ++i)
+            {
                 Debug.Assert(this.ParameterTypes[i] == parameterTypes[i]);
             }
 #endif

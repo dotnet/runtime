@@ -11,7 +11,6 @@ using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl
 {
-
     [Serializable]
     internal class XslTransformException : XsltException
     {

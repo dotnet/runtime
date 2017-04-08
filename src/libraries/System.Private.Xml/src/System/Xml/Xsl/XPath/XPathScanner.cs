@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.XPath
 {
-
     // Extends XPathOperator enumeration
     internal enum LexKind
     {

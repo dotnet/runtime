@@ -19,7 +19,6 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        //todo: use rootpath
         public bool bWarningCallback;
 
         public bool bErrorCallback;

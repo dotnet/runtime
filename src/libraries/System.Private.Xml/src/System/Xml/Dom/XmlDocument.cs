@@ -22,7 +22,6 @@ namespace System.Xml
         private DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode _lastChild;
         private XmlNamedNodeMap _entities;
-		// TODO: _htElementIdMap can be Dictionary<string, List<WeakReference<XmlElement>>>
         private Hashtable _htElementIdMap;
         private Hashtable _htElementIDAttrDecl; //key: id; object: the ArrayList of the elements that have the same id (connected or disconnected)
         private SchemaInfo _schemaInfo;

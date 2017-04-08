@@ -166,7 +166,6 @@ namespace System.Xml
         //
         internal partial class DtdParserProxy : IDtdParserAdapterV1
         {
-
             // Fields
             private XmlTextReaderImpl _reader;
 

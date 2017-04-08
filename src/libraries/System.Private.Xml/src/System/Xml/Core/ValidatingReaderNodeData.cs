@@ -182,13 +182,6 @@ namespace System.Xml
             _linePos = 0;
         }
 
-        internal void ClearName()
-        {
-            _localName = string.Empty;
-            _prefix = string.Empty;
-            _namespaceUri = string.Empty;
-        }
-
         internal void SetLineInfo(int lineNo, int linePos)
         {
             _lineNo = lineNo;
@@ -202,14 +195,6 @@ namespace System.Xml
                 _lineNo = lineInfo.LineNumber;
                 _linePos = lineInfo.LinePosition;
             }
-        }
-
-        internal void SetItemData(string localName, string prefix, string ns, string value)
-        {
-            _localName = localName;
-            _prefix = prefix;
-            _namespaceUri = ns;
-            _rawValue = value;
         }
 
         internal void SetItemData(string localName, string prefix, string ns, int depth)

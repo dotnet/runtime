@@ -139,7 +139,7 @@ namespace System.Xml
                 }
             }
 
-            class SingleObjectEnumerator : IEnumerator
+            private class SingleObjectEnumerator : IEnumerator
             {
                 private object _loneValue;
                 private int _position = -1;

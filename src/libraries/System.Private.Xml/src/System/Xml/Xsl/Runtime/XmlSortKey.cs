@@ -224,8 +224,8 @@ namespace System.Xml.Xsl.Runtime
     internal class XmlStringSortKey : XmlSortKey
     {
         private readonly SortKey _sortKey;
-        private readonly  byte[] _sortKeyBytes;
-        private readonly  bool _descendingOrder;
+        private readonly byte[] _sortKeyBytes;
+        private readonly bool _descendingOrder;
 
         public XmlStringSortKey(SortKey sortKey, bool descendingOrder)
         {

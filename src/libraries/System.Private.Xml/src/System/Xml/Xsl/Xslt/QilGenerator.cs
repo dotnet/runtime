@@ -904,7 +904,6 @@ namespace System.Xml.Xsl.Xslt
             }
 
             _outputScope.PushScope();
-            // ToDo if we don't have AVT we shouldn't do this:
             _outputScope.InvalidateAllPrefixes();
             QilNode content = CompileInstructions(node.Content);
             _outputScope.PopScope();

@@ -115,16 +115,5 @@ namespace MS.Internal.Xml.XPath
         public override XPathResultType StaticType { get { return XPathResultType.Number; } }
 
         public override XPathNodeIterator Clone() { return new NumberFunctions(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", _ftype.ToString());
-            if (_arg != null)
-            {
-                _arg.PrintQuery(w);
-            }
-            w.WriteEndElement();
-        }
     }
 }

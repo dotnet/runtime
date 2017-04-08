@@ -280,16 +280,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathNodeIterator Clone() { return new StringFunctions(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", _funcType.ToString());
-            foreach (Query arg in _argList)
-            {
-                arg.PrintQuery(w);
-            }
-            w.WriteEndElement();
-        }
     }
 }

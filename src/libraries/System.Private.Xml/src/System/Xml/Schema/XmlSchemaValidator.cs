@@ -336,8 +336,7 @@ namespace System.Xml.Schema
             Hashtable schemaLocations = _schemaSet.SchemaLocations;
             DictionaryEntry[] oldLocations = new DictionaryEntry[schemaLocations.Count];
             schemaLocations.CopyTo(oldLocations, 0);
-
-            //TODO should i not error if SOM reference same as one in the set or should i assume that inline schema will always be a new SOM ref
+            
             Debug.Assert(_validatedNamespaces != null);
             if (_validatedNamespaces[tns] != null && _schemaSet.FindSchemaByNSAndUrl(schema.BaseUri, tns, oldLocations) == null)
             {
@@ -555,7 +554,7 @@ namespace System.Xml.Schema
             }
 
             if (!Ref.Equal(namespaceUri, _nsXsi))
-            { //TODO add xmlns check here
+            {
                 XmlSchemaObject pvtAttribute = _currentState == ValidatorState.TopLevelAttribute ? _partialValidationType : null;
                 AttributeMatchState attributeMatchState;
                 attributeDef = _compiledSchemaInfo.GetAttributeXsd(currentElementDecl, attQName, pvtAttribute, out attributeMatchState);
@@ -1949,7 +1948,7 @@ namespace System.Xml.Schema
             Exception exception = null;
 
             if (stringValue != null)
-            { //TODO: Combine both ParseValue with same signature in XmlSchemaDatatype
+            {
                 exception = dtype.TryParseValue(stringValue, _nameTable, _nsResolver, out typedValue);
                 if (exception != null) goto Error;
             }
@@ -2062,22 +2061,6 @@ namespace System.Xml.Schema
             get
             {
                 return (_validationFlags & XmlSchemaValidationFlags.ReportValidationWarnings) != 0;
-            }
-        }
-
-        internal bool ProcessInlineSchema
-        {
-            get
-            {
-                return (_validationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0;
-            }
-        }
-
-        internal bool ProcessSchemaLocation
-        {
-            get
-            {
-                return (_validationFlags & XmlSchemaValidationFlags.ProcessSchemaLocation) != 0;
             }
         }
 

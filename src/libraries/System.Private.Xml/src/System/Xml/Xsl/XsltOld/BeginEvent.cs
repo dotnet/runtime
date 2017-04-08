@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.XsltOld
         private bool _empty;
         private object _htmlProps;
 #if DEBUG
-        private bool          replaceNSAliasesDone;
+        private bool _replaceNSAliasesDone;
 #endif
 
         public BeginEvent(Compiler compiler)
@@ -44,8 +44,8 @@ namespace System.Xml.Xsl.XsltOld
         public override void ReplaceNamespaceAlias(Compiler compiler)
         {
 #if DEBUG
-            Debug.Assert(! replaceNSAliasesDone, "Second attempt to replace NS aliases!. This bad.");
-            replaceNSAliasesDone = true;
+            Debug.Assert(!_replaceNSAliasesDone, "Second attempt to replace NS aliases!. This bad.");
+            _replaceNSAliasesDone = true;
 #endif
             if (_nodeType == XPathNodeType.Attribute && _namespaceUri.Length == 0)
             {

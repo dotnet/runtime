@@ -69,13 +69,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathNodeIterator Clone() { return new MergeFilterQuery(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            input.PrintQuery(w);
-            _child.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

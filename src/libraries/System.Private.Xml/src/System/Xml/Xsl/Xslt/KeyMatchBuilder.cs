@@ -61,7 +61,6 @@ namespace System.Xml.Xsl.Xslt
 
         // This code depends on particula shapes that XPathBuilder generates.
         // It works only on pathes.
-        // ToDo: We can do better here.
         internal class PathConvertor : QilReplaceVisitor
         {
             private new XPathQilFactory f;

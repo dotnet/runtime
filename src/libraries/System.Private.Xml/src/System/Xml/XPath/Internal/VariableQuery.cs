@@ -67,12 +67,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathNodeIterator Clone() { return new VariableQuery(this); }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", prefix.Length != 0 ? prefix + ":" + name : name);
-            w.WriteEndElement();
-        }
     }
 }

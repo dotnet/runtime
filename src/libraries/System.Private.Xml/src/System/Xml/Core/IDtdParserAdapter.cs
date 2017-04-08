@@ -46,7 +46,6 @@ namespace System.Xml
         void Throw(Exception e);
     }
 
-#if !SILVERLIGHT
     internal interface IDtdParserAdapterWithValidation : IDtdParserAdapter
     {
         bool DtdValidation { get; }
@@ -59,5 +58,4 @@ namespace System.Xml
         bool Normalization { get; }
         bool Namespaces { get; }
     }
-#endif
 }

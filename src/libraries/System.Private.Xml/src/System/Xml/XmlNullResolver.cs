@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !SILVERLIGHT
 using System.Net;
-#endif
 
 namespace System.Xml
 {
@@ -20,11 +18,9 @@ namespace System.Xml
             throw new XmlException(SR.Xml_NullResolver, string.Empty);
         }
 
-#if !SILVERLIGHT
         public override ICredentials Credentials
         {
             set { /* Do nothing */ }
         }
-#endif
     }
 }

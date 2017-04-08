@@ -478,20 +478,10 @@ namespace MS.Internal.Xml.Cache
         private XPathNode[] _page;
         private int _idx;
 
-        public static XPathNodeRef Null
-        {
-            get { return new XPathNodeRef(); }
-        }
-
         public XPathNodeRef(XPathNode[] page, int idx)
         {
             _page = page;
             _idx = idx;
-        }
-
-        public bool IsNull
-        {
-            get { return _page == null; }
         }
 
         public XPathNode[] Page

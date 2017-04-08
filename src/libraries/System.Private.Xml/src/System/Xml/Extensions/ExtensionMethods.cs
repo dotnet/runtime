@@ -14,47 +14,6 @@ namespace System.Xml.Extensions
 {
     internal static class ExtensionMethods
     {
-        internal static void CopyTo(this Dictionary<object, object>.ValueCollection source, Array a, int index)
-        {
-            int arrayIndex = index;
-            foreach (object value in source)
-            {
-                a.SetValue(value, arrayIndex++);
-            }
-        }
-
-        internal static bool Contains(this Dictionary<object, object> source, object a)
-        {
-            return source.ContainsKey(a);
-        }
-
-        internal static string ReadElementString(this XmlReader source)
-        {
-            return source.ReadElementContentAsString();
-        }
-
-        internal static string ReadString(this XmlReader source)
-        {
-            // Note: maintain behavior from \ndp\fx\src\Xml\System\Xml\Core\XmlReader.cs
-            source.MoveToElement();
-            if (source.NodeType == XmlNodeType.Element)
-            {
-                if (source.IsEmptyElement)
-                {
-                    return string.Empty;
-                }
-                else if (!source.Read())
-                {
-                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
-                }
-                if (source.NodeType == XmlNodeType.EndElement)
-                {
-                    return string.Empty;
-                }
-            }
-            return source.ReadContentAsString();
-        }
-
         #region Contract compliance for System.Type
 
         private static bool TypeSequenceEqual(Type[] seq1, Type[] seq2)
@@ -93,8 +52,7 @@ namespace System.Xml.Extensions
             return methodInfo != null ? (MethodInfo)methodInfo : null;
         }
 
-        #endregion
-
+#if XMLSERIALIZERGENERATOR
         internal static string ToBinHexString(byte[] inArray)
         {
             if (inArray == null)
@@ -112,6 +70,8 @@ namespace System.Xml.Extensions
             }
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
+#endif
+        #endregion
 
         internal static Uri ToUri(string s)
         {

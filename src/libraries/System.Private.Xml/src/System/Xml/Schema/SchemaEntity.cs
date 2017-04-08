@@ -102,7 +102,6 @@ namespace System.Xml.Schema
         //
         // Internal methods and properties
         //
-#if !SILVERLIGHT
         internal static bool IsPredefinedEntity(String n)
         {
             return (n == "lt" ||
@@ -111,7 +110,6 @@ namespace System.Xml.Schema
                    n == "apos" ||
                    n == "quot");
         }
-#endif
 
         internal XmlQualifiedName Name
         {

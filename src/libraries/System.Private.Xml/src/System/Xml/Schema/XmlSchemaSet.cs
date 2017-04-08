@@ -10,14 +10,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Schema
 {
-#if SILVERLIGHT
-    public class XmlSchemaSet
-    {
-        //Empty XmlSchemaSet class to enable backward compatibility of XmlSchemaProvideAttribute        
-        //Add private ctor to prevent constructing of this class
-        XmlSchemaSet() { }
-    }
-#else
     /// <include file='doc\XmlSchemaSet.uex' path='docs/doc[@for="XmlSchemaSet"]/*' />
     /// <devdoc>
     ///    <para>The XmlSchemaSet contains a set of namespace URI's.
@@ -266,7 +258,6 @@ namespace System.Xml.Schema
         /// <devdoc>
         ///    <para></para>
         /// </devdoc>
-        /// TODO: Need to make this public    
         internal XmlSchemaObjectTable SubstitutionGroups
         {
             get
@@ -342,7 +333,7 @@ namespace System.Xml.Schema
                     XmlReader reader = XmlReader.Create(schemaUri, _readerSettings);
                     try
                     {
-                        schema = Add(targetNamespace, ParseSchema(targetNamespace, reader)); //TODO can move parsing outside lock boundary
+                        schema = Add(targetNamespace, ParseSchema(targetNamespace, reader));
                         while (reader.Read()) ;// wellformness check; 
                     }
                     finally
@@ -432,7 +423,6 @@ namespace System.Xml.Schema
                 }
 
                 XmlSchema currentSchema;
-                //TODO Need to copy chameleon Schemas and schemaLocations from other set
                 if (schemas.IsCompiled)
                 {
                     CopyFromCompiledSet(schemas);
@@ -640,10 +630,7 @@ namespace System.Xml.Schema
                             currentSchema = (XmlSchema)_schemas.GetByIndex(schemaIndex);
 
                             //Lock schema to be compiled
-#pragma warning disable 0618
-                            //@TODO: This overload of Monitor.Enter is obsolete.  Please change this to use Monitor.Enter(ref bool), and remove the pragmas   -- ericeil
                             Monitor.Enter(currentSchema);
-#pragma warning restore 0618
                             if (!currentSchema.IsPreprocessed)
                             {
                                 SendValidationEvent(new XmlSchemaException(SR.Sch_SchemaNotPreprocessed, string.Empty), XmlSeverityType.Error);
@@ -1312,11 +1299,10 @@ namespace System.Xml.Schema
                     goto RemoveAll;
                 }
             }
-            //TODO get otherSet's substitutionGroups
             ProcessNewSubstitutionGroups(otherSet.SubstitutionGroups, false);
 
             newCompiledInfo.Add(_cachedCompiledInfo, _eventHandler); //Add all the items from the old to the new compiled object
-            newCompiledInfo.Add(otherSet.CompiledInfo, _eventHandler); //TODO: Throw error on conflicting types that are not from the same schema / baseUri
+            newCompiledInfo.Add(otherSet.CompiledInfo, _eventHandler);
             _cachedCompiledInfo = newCompiledInfo; //Replace the compiled info in the set after successful compilation
             if (setIsCompiled)
             {
@@ -1465,14 +1451,6 @@ namespace System.Xml.Schema
             get
             {
                 return _schemas;
-            }
-        }
-
-        internal bool CompileAll
-        {
-            get
-            {
-                return _compileAll;
             }
         }
 
@@ -1638,5 +1616,4 @@ namespace System.Xml.Schema
             }
         }
     };
-#endif
 }

@@ -604,7 +604,6 @@ namespace System.Xml.XPath.DataBinding
                 }
             }
             if (0 == rows.Count) {
-                // TODO:
                 throw new NotImplementedException("XPath failed to match an elements");
             }
             if (null == schemaInfo) {

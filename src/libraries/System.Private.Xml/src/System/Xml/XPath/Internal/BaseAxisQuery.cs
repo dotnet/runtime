@@ -68,7 +68,6 @@ namespace MS.Internal.Xml.XPath
         }
 
         protected string Name { get { return _name; } }
-        protected string Prefix { get { return _prefix; } }
         protected string Namespace { get { return _nsUri; } }
         protected bool NameTest { get { return _nameTest; } }
         protected XPathNodeType TypeTest { get { return _typeTest; } }
@@ -132,20 +131,5 @@ namespace MS.Internal.Xml.XPath
         }
 
         public override XPathResultType StaticType { get { return XPathResultType.NodeSet; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            if (NameTest)
-            {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
-            }
-            if (TypeTest != XPathNodeType.Element)
-            {
-                w.WriteAttributeString("nodeType", TypeTest.ToString());
-            }
-            qyInput.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

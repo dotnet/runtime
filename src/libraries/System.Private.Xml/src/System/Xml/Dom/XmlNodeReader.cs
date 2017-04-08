@@ -159,24 +159,6 @@ namespace System.Xml
             }
         }
 
-        internal bool IsOnAttrVal
-        {
-            get
-            {
-                return _bOnAttrVal;
-            }
-        }
-
-        internal XmlNode OwnerElementNode
-        {
-            get
-            {
-                if (_bCreatedOnAttribute)
-                    return null;
-                return _elemNode;
-            }
-        }
-
         internal bool CreatedOnAttribute
         {
             get

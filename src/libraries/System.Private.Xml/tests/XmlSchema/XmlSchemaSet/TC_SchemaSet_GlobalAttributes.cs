@@ -162,6 +162,3 @@ namespace System.Xml.Tests
         }
     }
 }
-
-//todo: copy include/import tests from element
-//todo: copy count checks from element

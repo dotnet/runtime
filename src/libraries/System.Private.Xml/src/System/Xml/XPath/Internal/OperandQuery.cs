@@ -24,12 +24,5 @@ namespace MS.Internal.Xml.XPath
         }
         public override XPathResultType StaticType { get { return GetXPathType(val); } }
         public override XPathNodeIterator Clone() { return this; }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("value", Convert.ToString(val, CultureInfo.InvariantCulture));
-            w.WriteEndElement();
-        }
     }
 }

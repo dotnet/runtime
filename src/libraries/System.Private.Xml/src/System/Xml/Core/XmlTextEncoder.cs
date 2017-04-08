@@ -272,7 +272,7 @@ namespace System.Xml
             int i = 0;
             int startPos = 0;
             char ch = (char)0;
-            for (; ;)
+            for (;;)
             {
                 unsafe
                 {
@@ -308,7 +308,7 @@ namespace System.Xml
             }
 
             char[] helperBuffer = new char[256];
-            for (; ;)
+            for (;;)
             {
                 if (startPos < i)
                 {
@@ -415,7 +415,7 @@ namespace System.Xml
             int i = 0;
             char ch = (char)0;
 
-            for (; ;)
+            for (;;)
             {
                 unsafe
                 {
@@ -457,15 +457,6 @@ namespace System.Xml
 
             _textWriter.Write(text);
             return;
-        }
-
-        internal void WriteRaw(string value)
-        {
-            if (_cacheAttrValue)
-            {
-                _attrValue.Append(value);
-            }
-            _textWriter.Write(value);
         }
 
         internal void WriteRaw(char[] array, int offset, int count)
@@ -525,10 +516,6 @@ namespace System.Xml
                 _attrValue.Append(';');
             }
             WriteEntityRefImpl(name);
-        }
-
-        internal void Flush()
-        {
         }
 
         //

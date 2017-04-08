@@ -7,7 +7,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.Qil
 {
-
     /// <summary>A internal class that validates QilExpression graphs.</summary>
     /// <remarks>
     /// QilValidationVisitor traverses the QilExpression graph once to enforce the following constraints:
@@ -45,26 +44,31 @@ namespace System.Xml.Xsl.Qil
         protected QilValidationVisitor() { }
 
 #if DEBUG
-        protected Hashtable allNodes        = new ObjectHashtable();
-        protected Hashtable parents         = new ObjectHashtable();
-        protected Hashtable scope           = new ObjectHashtable();
+        protected Hashtable allNodes = new ObjectHashtable();
+        protected Hashtable parents = new ObjectHashtable();
+        protected Hashtable scope = new ObjectHashtable();
 
 
         //-----------------------------------------------
         // QilVisitor overrides
         //-----------------------------------------------
 
-        protected override QilNode VisitChildren(QilNode parent) {
-            if (this.parents.Contains(parent)) {
+        protected override QilNode VisitChildren(QilNode parent)
+        {
+            if (this.parents.Contains(parent))
+            {
                 // We have already visited the node that starts the infinite loop, but don't visit its children
                 SetError(parent, "Infinite loop");
             }
-            else if (AddNode(parent)) {
-                if (parent.XmlType == null) {
+            else if (AddNode(parent))
+            {
+                if (parent.XmlType == null)
+                {
                     SetError(parent, "Type information missing");
                 }
-                else {
-                    XmlQueryType type = this._typeCheck.Check(parent);
+                else
+                {
+                    XmlQueryType type = _typeCheck.Check(parent);
 
                     // BUGBUG: Hack to account for Xslt compiler type fixups
                     if (!type.IsSubtypeOf(parent.XmlType))
@@ -73,8 +77,10 @@ namespace System.Xml.Xsl.Qil
 
                 this.parents.Add(parent, parent);
 
-                for (int i = 0; i < parent.Count; i++) {
-                    if (parent[i] == null) {
+                for (int i = 0; i < parent.Count; i++)
+                {
+                    if (parent[i] == null)
+                    {
                         // Allow parameter name and default value to be null
                         if (parent.NodeType == QilNodeType.Parameter)
                             continue;
@@ -85,8 +91,9 @@ namespace System.Xml.Xsl.Qil
 
                     if (parent.NodeType == QilNodeType.GlobalVariableList ||
                         parent.NodeType == QilNodeType.GlobalParameterList ||
-                        parent.NodeType == QilNodeType.FunctionList) {
-                        if (((QilReference) parent[i]).DebugName == null)
+                        parent.NodeType == QilNodeType.FunctionList)
+                    {
+                        if (((QilReference)parent[i]).DebugName == null)
                             SetError(parent[i], "DebugName must not be null");
                     }
 
@@ -106,7 +113,8 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Ensure that the function or iterator reference is already in scope.
         /// </summary>
-        protected override QilNode VisitReference(QilNode node) {
+        protected override QilNode VisitReference(QilNode node)
+        {
             if (!this.scope.Contains(node))
                 SetError(node, "Out-of-scope reference");
 
@@ -121,7 +129,8 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Add an iterator or function to scope if it hasn't been added already.
         /// </summary>
-        protected override void BeginScope(QilNode node) {
+        protected override void BeginScope(QilNode node)
+        {
             if (this.scope.Contains(node))
                 SetError(node, "Reference already in scope");
             else
@@ -131,7 +140,8 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Pop scope.
         /// </summary>
-        protected override void EndScope(QilNode node) {
+        protected override void EndScope(QilNode node)
+        {
             this.scope.Remove(node);
         }
 
@@ -140,18 +150,23 @@ namespace System.Xml.Xsl.Qil
         // Helper methods
         //-----------------------------------------------
 
-        private class ObjectHashtable : Hashtable {
-            protected override bool KeyEquals(object item, object key) {
+        private class ObjectHashtable : Hashtable
+        {
+            protected override bool KeyEquals(object item, object key)
+            {
                 return item == key;
             }
         }
 
-        private bool AddNode(QilNode n) {
-            if (!this.allNodes.Contains(n)) {
+        private bool AddNode(QilNode n)
+        {
+            if (!this.allNodes.Contains(n))
+            {
                 this.allNodes.Add(n, n);
                 return true;
             }
-            else {
+            else
+            {
                 SetError(n, "Duplicate " + n.NodeType + " node");
                 return false;
             }

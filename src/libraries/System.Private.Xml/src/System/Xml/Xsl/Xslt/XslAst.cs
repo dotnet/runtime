@@ -145,25 +145,29 @@ namespace System.Xml.Xsl.Xslt
 #if DEBUG
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 string nodeTypeName;
-                switch (NodeType) {
-                case XslNodeType.AttributeSet : nodeTypeName = "attribute-set"; break;
-                case XslNodeType.Template     : nodeTypeName = "template";      break;
-                case XslNodeType.Param        : nodeTypeName = "param";         break;
-                case XslNodeType.Variable     : nodeTypeName = "variable";      break;
-                case XslNodeType.WithParam    : nodeTypeName = "with-param";    break;
-                default                       : nodeTypeName = NodeType.ToString(); break;
+                switch (NodeType)
+                {
+                    case XslNodeType.AttributeSet: nodeTypeName = "attribute-set"; break;
+                    case XslNodeType.Template: nodeTypeName = "template"; break;
+                    case XslNodeType.Param: nodeTypeName = "param"; break;
+                    case XslNodeType.Variable: nodeTypeName = "variable"; break;
+                    case XslNodeType.WithParam: nodeTypeName = "with-param"; break;
+                    default: nodeTypeName = NodeType.ToString(); break;
                 }
                 sb.Append(nodeTypeName);
-                if (Name != null) {
+                if (Name != null)
+                {
                     sb.Append(' ');
                     sb.Append(Name.QualifiedName);
                 }
                 ISourceLineInfo lineInfo = SourceLine;
-                if (lineInfo == null && NodeType == XslNodeType.AttributeSet) {
+                if (lineInfo == null && NodeType == XslNodeType.AttributeSet)
+                {
                     lineInfo = Content[0].SourceLine;
                     Debug.Assert(lineInfo != null);
                 }
-                if (lineInfo != null) {
+                if (lineInfo != null)
+                {
                     string fileName = SourceLineInfo.GetFileName(lineInfo.Uri);
                     int idx = fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar) + 1;
                     sb.Append(" (");

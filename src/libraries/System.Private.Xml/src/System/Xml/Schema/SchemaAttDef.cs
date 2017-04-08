@@ -30,17 +30,10 @@ namespace System.Xml.Schema
 
         private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space   
 
-#if SILVERLIGHT
-        XmlTokenizedType tokenizedType;
-#endif
-
-#if !SILVERLIGHT
         private bool _defaultValueChecked;
-        private bool _hasEntityRef;  // whether there is any entity reference in the default value
         private XmlSchemaAttribute _schemaAttribute;
 
         public static readonly SchemaAttDef Empty = new SchemaAttDef();
-#endif
 
         //
         // Constructors
@@ -50,12 +43,10 @@ namespace System.Xml.Schema
         {
         }
 
-#if !SILVERLIGHT
         public SchemaAttDef(XmlQualifiedName name) : base(name, null)
         {
         }
         private SchemaAttDef() { }
-#endif
 
         //
         // IDtdAttributeInfo interface
@@ -109,11 +100,7 @@ namespace System.Xml.Schema
 
         object IDtdDefaultAttributeInfo.DefaultValueTyped
         {
-#if SILVERLIGHT
-            get { return null; }
-#else
             get { return ((SchemaAttDef)this).DefaultValueTyped; }
-#endif
         }
 
         int IDtdDefaultAttributeInfo.ValueLineNumber
@@ -164,19 +151,11 @@ namespace System.Xml.Schema
         {
             get
             {
-#if SILVERLIGHT
-                return tokenizedType;
-#else
                 return Datatype.TokenizedType;
-#endif
             }
             set
             {
-#if SILVERLIGHT
-                tokenizedType = value;
-#else
                 this.Datatype = XmlSchemaDatatype.FromXmlTokenizedType(value);
-#endif
             }
         }
 
@@ -186,19 +165,12 @@ namespace System.Xml.Schema
             set { _reserved = value; }
         }
 
-#if !SILVERLIGHT
         internal bool DefaultValueChecked
         {
             get
             {
                 return _defaultValueChecked;
             }
-        }
-
-        internal bool HasEntityRef
-        {
-            get { return _hasEntityRef; }
-            set { _hasEntityRef = value; }
         }
 
         internal XmlSchemaAttribute SchemaAttribute
@@ -240,6 +212,5 @@ namespace System.Xml.Schema
         {
             return (SchemaAttDef)MemberwiseClone();
         }
-#endif
     }
 }

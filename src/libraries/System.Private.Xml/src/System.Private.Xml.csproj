@@ -22,8 +22,10 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
+    <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
+    <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
+    <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
     <Compile Include="Misc\HResults.cs" />
-    <Compile Include="Misc\InvariantComparer.cs" />
     <Compile Include="System\Xml\AsyncHelper.cs" />
     <Compile Include="System\Xml\Base64Decoder.cs" />
     <Compile Include="System\Xml\Base64Encoder.cs" />
@@ -184,10 +186,6 @@
     <Compile Include="System\Xml\Dom\XmlUnspecifiedAttribute.cs" />
     <Compile Include="System\Xml\Dom\XmlWhitespace.cs" />
     <Compile Include="System\Xml\Dom\XPathNodeList.cs" />
-    <Compile Include="System\Xml\BinaryXml\BinXmltoken.cs" />
-    <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
-    <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
-    <Compile Include="System\Xml\BinaryXml\XmlBinaryReaderAsync.cs" />
     <Compile Include="System\Xml\Cache\XPathDocumentBuilder.cs" />
     <Compile Include="System\Xml\Cache\XPathDocumentIterator.cs" />
     <Compile Include="System\Xml\Cache\XPathDocumentNavigator.cs" />
@@ -393,7 +391,6 @@
     <Compile Include="System\Xml\Schema\XsdValidator.cs" />
     <Compile Include="System\Xml\Schema\Inference\Infer.cs" />
     <Compile Include="System\Xml\Schema\Inference\XmlSchemaInferenceException.cs" />
-    <Compile Include="System\Xml\Serialization\AppSettings.cs" />
     <Compile Include="System\Xml\Serialization\CodeGenerationoptions.cs" />
     <Compile Include="System\Xml\Serialization\CodeGenerator.cs" />
     <Compile Include="System\Xml\Serialization\CodeIdentifier.cs" />
@@ -578,7 +575,6 @@
     <Compile Include="System\Xml\Xsl\QIL\QilUnary.cs" />
     <Compile Include="System\Xml\Xsl\QIL\QilValidationVisitor.cs" />
     <Compile Include="System\Xml\Xsl\QIL\QilVisitor.cs" />
-    <Compile Include="System\Xml\Xsl\QIL\QilXmlReader.cs" />
     <Compile Include="System\Xml\Xsl\QIL\QilXmlWriter.cs" />
     <Compile Include="System\Xml\Xsl\QIL\SerializationHints.cs" />
     <Compile Include="System\Xml\Xsl\QIL\SubstitutionList.cs" />
@@ -620,7 +616,6 @@
     <Compile Include="System\Xml\Xsl\Runtime\XsltFunctions.cs" />
     <Compile Include="System\Xml\Xsl\Runtime\XsltLibrary.cs" />
     <Compile Include="System\Xml\Xsl\SourceLineInfo.cs" />
-    <Compile Include="System\Xml\Xsl\XmlCommand.cs" />
     <Compile Include="System\Xml\Xsl\XmlILCommand.cs" />
     <Compile Include="System\Xml\Xsl\XmlIlGenerator.cs" />
     <Compile Include="System\Xml\Xsl\XmlNodeKindFlags.cs" />
@@ -731,7 +726,6 @@
     <Compile Include="System\Xml\Xsl\Xslt\XslAst.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslAstAnalyzer.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslFlags.cs" />
-    <Compile Include="System\Xml\Xsl\Xslt\XsltAnnotation.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltInput.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />

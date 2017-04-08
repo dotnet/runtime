@@ -101,7 +101,8 @@ namespace System.Xml.Serialization
         private void IncludeTypes(ICustomAttributeProvider provider, RecursionLimiter limiter)
         {
             object[] attrs = provider.GetCustomAttributes(typeof(XmlIncludeAttribute), false);
-            for (int i = 0; i < attrs.Length; i++) {
+            for (int i = 0; i < attrs.Length; i++)
+            {
                 Type type = ((XmlIncludeAttribute)attrs[i]).Type;
                 IncludeType(type, limiter);
             }
@@ -569,13 +570,6 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        internal static void ValidationCallbackWithErrorCode(object sender, ValidationEventArgs args)
-        {
-            // CONSIDER: need the real type name
-            if (args.Severity == XmlSeverityType.Error)
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, typeof(IXmlSerializable).Name, args.Message));
-        }
-
 #if !XMLSERIALIZERGENERATOR
         internal void SetBase(SerializableMapping mapping, XmlQualifiedName baseQname)
         {
@@ -769,11 +763,11 @@ namespace System.Xml.Serialization
                         // if InitializeStructMembers returns true, then there were *no* changes to the DeferredWorkItems
                         //
 #if DEBUG
-                    // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (index != limiter.DeferredWorkItems.Count - 1)
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Count have changed"));
-                    if (item != limiter.DeferredWorkItems[index])
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Top have changed"));
+                        // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+                        if (index != limiter.DeferredWorkItems.Count - 1)
+                            throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Count have changed"));
+                        if (item != limiter.DeferredWorkItems[index])
+                            throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Top have changed"));
 #endif
                         // Remove the last work item
                         limiter.DeferredWorkItems.RemoveAt(index);

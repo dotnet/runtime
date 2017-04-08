@@ -37,20 +37,25 @@ namespace System.Xml.Xsl
 
 #if DEBUG
         // Returns the next representable neighbor of x in the direction toward y
-        public static double NextAfter(double x, double y) {
+        public static double NextAfter(double x, double y)
+        {
             long bits;
 
-            if (Double.IsNaN(x)) {
+            if (Double.IsNaN(x))
+            {
                 return x;
             }
-            if (Double.IsNaN(y)) {
+            if (Double.IsNaN(y))
+            {
                 return y;
             }
-            if (x == y) {
+            if (x == y)
+            {
                 return y;
             }
-            if (x == 0) {
-                bits = BitConverter.DoubleToInt64Bits(y) & 1L<<63;
+            if (x == 0)
+            {
+                bits = BitConverter.DoubleToInt64Bits(y) & 1L << 63;
                 return BitConverter.Int64BitsToDouble(bits | 1);
             }
 
@@ -60,19 +65,24 @@ namespace System.Xml.Xsl
             // integer.
 
             bits = BitConverter.DoubleToInt64Bits(x);
-            if (0 < x && x < y || 0 > x && x > y) {
+            if (0 < x && x < y || 0 > x && x > y)
+            {
                 bits++;
-            } else {
+            }
+            else
+            {
                 bits--;
             }
             return BitConverter.Int64BitsToDouble(bits);
         }
 
-        public static double Succ(double x) {
+        public static double Succ(double x)
+        {
             return NextAfter(x, Double.PositiveInfinity);
         }
 
-        public static double Pred(double x) {
+        public static double Pred(double x)
+        {
             return NextAfter(x, Double.NegativeInfinity);
         }
 #endif
@@ -1015,15 +1025,17 @@ namespace System.Xml.Xsl
 
 #if DEBUG
                 // Verify that precise is working and gives the same answer
-                if (mantissaSize > 0) {
+                if (mantissaSize > 0)
+                {
                     byte[] mantissaPrec = new byte[20];
-                    int    exponentPrec, mantissaSizePrec, idx;
+                    int exponentPrec, mantissaSizePrec, idx;
 
                     DblToRgbPrecise(dbl, mantissaPrec, out exponentPrec, out mantissaSizePrec);
                     Debug.Assert(exponent == exponentPrec && mantissaSize == mantissaSizePrec);
                     // Assert(!memcmp(mantissa, mantissaPrec, mantissaSizePrec - 1));
                     bool equal = true;
-                    for (idx = 0; idx < mantissaSize; idx++) {
+                    for (idx = 0; idx < mantissaSize; idx++)
+                    {
                         equal &= (
                             (mantissa[idx] == mantissaPrec[idx]) ||
                             (idx == mantissaSize - 1) && Math.Abs(mantissa[idx] - mantissaPrec[idx]) <= 1
@@ -2369,13 +2381,16 @@ namespace System.Xml.Xsl
             }
 
 #if DEBUG
-            private bool Equals(FloatingDecimal other) {
+            private bool Equals(FloatingDecimal other)
+            {
                 if (_exponent != other._exponent || _sign != other._sign || _mantissaSize != other._mantissaSize)
                 {
                     return false;
                 }
-                for (int idx = 0; idx < _mantissaSize; idx++) {
-                    if (_mantissa[idx] != other._mantissa[idx]) {
+                for (int idx = 0; idx < _mantissaSize; idx++)
+                {
+                    if (_mantissa[idx] != other._mantissa[idx])
+                    {
                         return false;
                     }
                 }
@@ -2509,7 +2524,8 @@ namespace System.Xml.Xsl
                     // verify that the results are the same.
                     dblLowPrec = dbl;
                 }
-                else {
+                else
+                {
                     dblLowPrec = Double.NaN;
                 }
 #else

@@ -18,7 +18,7 @@ namespace MS.Internal.Xml.XPath
         //       For paths order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
         // Input flags. We pass them Up->Down. 
         // Using them upper query set states which controls how inner query will be built.
-        enum Flags
+        private enum Flags
         {
             None = 0x00,
             SmartDesc = 0x01,
@@ -31,7 +31,7 @@ namespace MS.Internal.Xml.XPath
         // They have the following difference: 
         //      QueryProps describe property of node they are (belong like Reverse)
         //      these Props describe accumulated properties of the tree (like nonFlat)
-        enum Props
+        private enum Props
         {
             None = 0x00,
             PosFilter = 0x01,  // This filter or inner filter was positional: foo[1] or foo[1][true()]
@@ -232,7 +232,7 @@ namespace MS.Internal.Xml.XPath
             // We don't want DescendantOverDescendant pattern to be recognized here (in case descendent::foo[expr]/descendant::bar)
             // So we clean this flag here:
             flags &= ~Flags.SmartDesc;
-            // ToDo: Instead it would be nice to wrap descendent::foo[expr] into special query that will flatten it -- i.e.
+            // Suggestion: Instead it would be nice to wrap descendent::foo[expr] into special query that will flatten it -- i.e.
             //       remove all nodes that are descendant of other nodes. This is very easy because for sorted nodesets all children 
             //       follow its parent. One step caching. This can be easily done by rightmost DescendantQuery itself.
             //       Interesting note! Can we guarantee that DescendantOverDescendant returns flat nodeset? This definitely true if it's input is flat.
@@ -438,7 +438,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        List<Query> ProcessArguments(List<AstNode> args, out Props props)
+        private List<Query> ProcessArguments(List<AstNode> args, out Props props)
         {
             int numArgs = args != null ? args.Count : 0;
             List<Query> argList = new List<Query>(numArgs);

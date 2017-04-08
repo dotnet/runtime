@@ -99,13 +99,6 @@ namespace System.Xml.Xsl.Qil
             return _f.ActualParameterList();
         }
 
-        public QilList ActualParameterList(QilNode arg1)
-        {
-            QilList result = _f.ActualParameterList();
-            result.Add(arg1);
-            return result;
-        }
-
         public QilList ActualParameterList(QilNode arg1, QilNode arg2)
         {
             QilList result = _f.ActualParameterList();
@@ -124,13 +117,6 @@ namespace System.Xml.Xsl.Qil
             return _f.FormalParameterList();
         }
 
-        public QilList FormalParameterList(QilNode arg1)
-        {
-            QilList result = _f.FormalParameterList();
-            result.Add(arg1);
-            return result;
-        }
-
         public QilList FormalParameterList(QilNode arg1, QilNode arg2)
         {
             QilList result = _f.FormalParameterList();
@@ -142,18 +128,6 @@ namespace System.Xml.Xsl.Qil
         public QilList FormalParameterList(params QilNode[] args)
         {
             return _f.FormalParameterList(args);
-        }
-
-        public QilList SortKeyList()
-        {
-            return _f.SortKeyList();
-        }
-
-        public QilList SortKeyList(QilSortKey key)
-        {
-            QilList list = _f.SortKeyList();
-            list.Add(key);
-            return list;
         }
 
         public QilList BranchList(params QilNode[] args)
@@ -250,8 +224,6 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         // boolean operators
         //-----------------------------------------------
-
-        // ToDo: Why we have nulls here at all?
         private static void CheckLogicArg(QilNode arg)
         {
             Debug.Assert(arg != null, "Argulent shouldn't be null");
@@ -547,11 +519,6 @@ namespace System.Xml.Xsl.Qil
         public QilNode Is(QilNode left, QilNode right)
         {
             return _f.Is(left, right);
-        }
-
-        public QilNode After(QilNode left, QilNode right)
-        {
-            return _f.After(left, right);
         }
 
         public QilNode Before(QilNode left, QilNode right)

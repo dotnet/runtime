@@ -189,11 +189,7 @@ namespace System.Xml
             {
                 throw new ArgumentNullException(nameof(value));
             }
-#if SILVERLIGHT // TODO
-            WriteString(XmlUntypedStringConverter.Instance.ToString( value, resolver ) );
-#else
             WriteString(XmlUntypedConverter.Untyped.ToString(value, resolver));
-#endif
         }
 
         // Override in order to handle Xml simple typed values and to pass resolver for QName values

@@ -1579,17 +1579,6 @@ namespace System.Xml
             }
         }
 
-        //
-        // Internal methods
-        //
-        internal XmlWriter InnerWriter
-        {
-            get
-            {
-                return _writer;
-            }
-        }
-
         internal XmlRawWriter RawWriter
         {
             get

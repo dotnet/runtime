@@ -71,10 +71,5 @@ namespace System.Xml.XPath
             }
             return expr;
         }
-
-        private void PrintQuery(XmlWriter w)
-        {
-            ((CompiledXpathExpr)this).QueryTree.PrintQuery(w);
-        }
     }
 }

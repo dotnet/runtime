@@ -61,24 +61,5 @@ namespace MS.Internal.Xml.XPath
         public override XPathNodeIterator Clone() { return new XPathAncestorQuery(this); }
         public override int CurrentPosition { get { return outputBuffer.Count - count + 1; } }
         public override QueryProps Properties { get { return base.Properties | QueryProps.Reverse; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            if (_matchSelf)
-            {
-                w.WriteAttributeString("self", "yes");
-            }
-            if (NameTest)
-            {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
-            }
-            if (TypeTest != XPathNodeType.Element)
-            {
-                w.WriteAttributeString("nodeType", TypeTest.ToString());
-            }
-            qyInput.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

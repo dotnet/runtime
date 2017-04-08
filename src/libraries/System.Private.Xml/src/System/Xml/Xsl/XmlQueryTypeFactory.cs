@@ -160,17 +160,6 @@ namespace System.Xml.Xsl
         }
 
         /// <summary>
-        /// Compute a sequence with cardinality *= c.
-        /// </summary>
-        /// <param name="t">the type to sequence</param>
-        /// <param name="c">the cardinality multiplier</param>
-        /// <returns>the sequence of t with cardinality *= c</returns>
-        public static XmlQueryType Product(XmlQueryType t, XmlQueryCardinality c)
-        {
-            return PrimeProduct(t, t.Cardinality * c);
-        }
-
-        /// <summary>
         /// Compute a sequence of zero to some max cardinality.
         /// </summary>
         /// <param name="t">the type to sequence</param>
@@ -359,7 +348,7 @@ namespace System.Xml.Xsl
             {
 #if DEBUG
                 Array arrEnum = Enum.GetValues(typeof(XmlTypeCode));
-                Debug.Assert((XmlTypeCode) arrEnum.GetValue(arrEnum.Length - 1) == XmlTypeCode.DayTimeDuration,
+                Debug.Assert((XmlTypeCode)arrEnum.GetValue(arrEnum.Length - 1) == XmlTypeCode.DayTimeDuration,
                              "DayTimeDuration is no longer the last item in XmlTypeCode.  This code expects it to be.");
 #endif
 

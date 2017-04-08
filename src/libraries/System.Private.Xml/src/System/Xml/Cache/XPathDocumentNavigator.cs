@@ -1001,15 +1001,6 @@ namespace MS.Internal.Xml.Cache
         }
 
         /// <summary>
-        /// Return true if navigator is positioned to a content node of the specified kind.  Whitespace/SignficantWhitespace/Text are
-        /// all treated the same (i.e. they all match each other).
-        /// </summary>
-        public bool IsContentKindMatch(XPathNodeType typ)
-        {
-            return (((1 << (int)_pageCurrent[_idxCurrent].NodeType) & GetContentKindMask(typ)) != 0);
-        }
-
-        /// <summary>
         /// Return true if navigator is positioned to a node of the specified kind.  Whitespace/SignficantWhitespace/Text are
         /// all treated the same (i.e. they all match each other).
         /// </summary>

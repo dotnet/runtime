@@ -455,15 +455,6 @@ namespace System.Xml
             }
         }
 
-        public override string this[string name, string namespaceURI]
-        {
-            get
-            {
-                CheckAsync();
-                return _coreReader[name, namespaceURI];
-            }
-        }
-
         public override bool MoveToAttribute(string name)
         {
             CheckAsync();

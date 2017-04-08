@@ -56,14 +56,5 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNodeIterator Clone() { return new BooleanExpr(this); }
         public override XPathResultType StaticType { get { return XPathResultType.Boolean; } }
-
-        public override void PrintQuery(XmlWriter w)
-        {
-            w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("op", (_isOr ? Operator.Op.OR : Operator.Op.AND).ToString());
-            _opnd1.PrintQuery(w);
-            _opnd2.PrintQuery(w);
-            w.WriteEndElement();
-        }
     }
 }

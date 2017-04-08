@@ -80,11 +80,5 @@ namespace System.Xml.Xsl.XsltOld
                     break;
             }
         }
-
-        internal override DbgData GetDbgData(ActionFrame frame)
-        {
-            Debug.Assert(frame.Counter < _copyEvents.Count);
-            return ((Event)_copyEvents[frame.Counter]).DbgData;
-        }
     }
 }

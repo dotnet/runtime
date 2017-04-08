@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -65,11 +65,20 @@ namespace System.Xml
             byte b = data[offset];
             switch (b)
             {
-                case 7: m_bLen = 1; break;
-                case 11: m_bLen = 2; break;
-                case 15: m_bLen = 3; break;
-                case 19: m_bLen = 4; break;
-                default: throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null);
+                case 7:
+                    m_bLen = 1;
+                    break;
+                case 11:
+                    m_bLen = 2;
+                    break;
+                case 15:
+                    m_bLen = 3;
+                    break;
+                case 19:
+                    m_bLen = 4;
+                    break;
+                default:
+                    throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null);
             }
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
@@ -92,35 +101,6 @@ namespace System.Xml
             }
         }
 
-        public void Write(Stream strm)
-        {
-            strm.WriteByte((byte)(this.m_bLen * 4 + 3));
-            strm.WriteByte(this.m_bPrec);
-            strm.WriteByte(this.m_bScale);
-            strm.WriteByte(0 == this.m_bSign ? (byte)1 : (byte)0);
-            WriteUI4(this.m_data1, strm);
-            if (this.m_bLen > 1)
-            {
-                WriteUI4(this.m_data2, strm);
-                if (this.m_bLen > 2)
-                {
-                    WriteUI4(this.m_data3, strm);
-                    if (this.m_bLen > 3)
-                    {
-                        WriteUI4(this.m_data4, strm);
-                    }
-                }
-            }
-        }
-
-        private void WriteUI4(uint val, Stream strm)
-        {
-            strm.WriteByte((byte)(val & 0xFF));
-            strm.WriteByte((byte)((val >> 8) & 0xFF));
-            strm.WriteByte((byte)((val >> 16) & 0xFF));
-            strm.WriteByte((byte)((val >> 24) & 0xFF));
-        }
-
         private static uint UIntFromByteArray(byte[] data, int offset)
         {
             int val = (data[offset]) << 0;
@@ -129,29 +109,6 @@ namespace System.Xml
             val |= (data[offset + 3]) << 24;
             return unchecked((uint)val);
         }
-
-        // check whether is zero
-        private bool FZero()
-        {
-            return (m_data1 == 0) && (m_bLen <= 1);
-        }
-        // Store data back from rguiData[] to m_data*
-        private void StoreFromWorkingArray(uint[] rguiData)
-        {
-            Debug.Assert(rguiData.Length == 4);
-            m_data1 = rguiData[0];
-            m_data2 = rguiData[1];
-            m_data3 = rguiData[2];
-            m_data4 = rguiData[3];
-        }
-
-        // Find the case where we overflowed 10**38, but not 2**128
-        private bool FGt10_38(uint[] rglData)
-        {
-            //Debug.Assert(rglData.Length == 4, "rglData.Length == 4", "Wrong array length: " + rglData.Length.ToString(CultureInfo.InvariantCulture));
-            return rglData[3] >= 0x4b3b4ca8L && ((rglData[3] > 0x4b3b4ca8L) || (rglData[2] > 0x5a86c47aL) || (rglData[2] == 0x5a86c47aL) && (rglData[1] >= 0x098a2240L));
-        }
-
 
         // Multi-precision one super-digit divide in place.
         // U = U / D,
@@ -191,245 +148,6 @@ namespace System.Xml
         {
             while (ciulU > 1 && rgulU[ciulU - 1] == 0)
                 ciulU--;
-        }
-
-        //    AdjustScale()
-        //
-        //    Adjust number of digits to the right of the decimal point.
-        //    A positive adjustment increases the scale of the numeric value
-        //    while a negative adjustment decreases the scale.  When decreasing
-        //    the scale for the numeric value, the remainder is checked and
-        //    rounded accordingly.
-        //
-        internal void AdjustScale(int digits, bool fRound)
-        {
-            uint ulRem;                  //Remainder when downshifting
-            uint ulShiftBase;            //What to multiply by to effect scale adjust
-            bool fNeedRound = false;     //Do we really need to round?
-            byte bNewScale, bNewPrec;
-            int lAdjust = digits;
-
-            //If downshifting causes truncation of data
-            if (lAdjust + m_bScale < 0)
-                throw new XmlException(SR.SqlTypes_ArithTruncation, (string)null);
-
-            //If uphifting causes scale overflow
-            if (lAdjust + m_bScale > s_NUMERIC_MAX_PRECISION)
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-
-            bNewScale = (byte)(lAdjust + m_bScale);
-            bNewPrec = (byte)(Math.Min(s_NUMERIC_MAX_PRECISION, Math.Max(1, lAdjust + m_bPrec)));
-            if (lAdjust > 0)
-            {
-                m_bScale = bNewScale;
-                m_bPrec = bNewPrec;
-                while (lAdjust > 0)
-                {
-                    //if lAdjust>=9, downshift by 10^9 each time, otherwise by the full amount
-                    if (lAdjust >= 9)
-                    {
-                        ulShiftBase = s_rgulShiftBase[8];
-                        lAdjust -= 9;
-                    }
-                    else
-                    {
-                        ulShiftBase = s_rgulShiftBase[lAdjust - 1];
-                        lAdjust = 0;
-                    }
-
-                    MultByULong(ulShiftBase);
-                }
-            }
-            else if (lAdjust < 0)
-            {
-                do
-                {
-                    if (lAdjust <= -9)
-                    {
-                        ulShiftBase = s_rgulShiftBase[8];
-                        lAdjust += 9;
-                    }
-                    else
-                    {
-                        ulShiftBase = s_rgulShiftBase[-lAdjust - 1];
-                        lAdjust = 0;
-                    }
-
-                    ulRem = DivByULong(ulShiftBase);
-                } while (lAdjust < 0);
-
-                // Do we really need to round?
-                fNeedRound = (ulRem >= ulShiftBase / 2);
-                m_bScale = bNewScale;
-                m_bPrec = bNewPrec;
-            }
-
-            AssertValid();
-
-            // After adjusting, if the result is 0 and remainder is less than 5,
-            // set the sign to be positive and return.
-            if (fNeedRound && fRound)
-            {
-                // If remainder is 5 or above, increment/decrement by 1.
-                AddULong(1);
-            }
-            else if (FZero())
-                this.m_bSign = 0;
-        }
-        //    AddULong()
-        //
-        //    Add ulAdd to this numeric.  The result will be returned in *this.
-        //
-        //    Parameters:
-        //        this    - IN Operand1 & OUT Result
-        //        ulAdd    - IN operand2.
-        //
-        private void AddULong(uint ulAdd)
-        {
-            ulong dwlAccum = (ulong)ulAdd;
-            int iData;                  // which UI4 in this we are on
-            int iDataMax = (int)m_bLen; // # of UI4s in this
-            uint[] rguiData = new uint[4] { m_data1, m_data2, m_data3, m_data4 };
-
-            // Add, starting at the LS UI4 until out of UI4s or no carry
-            iData = 0;
-            do
-            {
-                dwlAccum += (ulong)rguiData[iData];
-                rguiData[iData] = (uint)dwlAccum;       // equivalent to mod x_dwlBaseUI4
-                dwlAccum >>= 32;                        // equivalent to dwlAccum /= x_dwlBaseUI4;
-                if (0 == dwlAccum)
-                {
-                    StoreFromWorkingArray(rguiData);
-                    return;
-                }
-
-                iData++;
-            } while (iData < iDataMax);
-
-            // There is carry at the end
-            Debug.Assert(dwlAccum < s_ulInt32Base, "dwlAccum < x_lInt32Base", "");
-
-            // Either overflowed
-            if (iData == s_cNumeMax)
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-
-            // Or need to extend length by 1 UI4
-            rguiData[iData] = (uint)dwlAccum;
-            m_bLen++;
-            if (FGt10_38(rguiData))
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-
-            StoreFromWorkingArray(rguiData);
-        }
-        // multiply by a long integer
-        private void MultByULong(uint uiMultiplier)
-        {
-            int iDataMax = m_bLen; // How many UI4s currently in *this
-            ulong dwlAccum = 0;       // accumulated sum
-            ulong dwlNextAccum = 0;   // accumulation past dwlAccum
-            int iData;              // which UI4 in *This we are on.
-            uint[] rguiData = new uint[4] { m_data1, m_data2, m_data3, m_data4 };
-
-            for (iData = 0; iData < iDataMax; iData++)
-            {
-                Debug.Assert(dwlAccum < s_ulInt32Base);
-
-                ulong ulTemp = (ulong)rguiData[iData];
-
-                dwlNextAccum = ulTemp * (ulong)uiMultiplier;
-                dwlAccum += dwlNextAccum;
-                if (dwlAccum < dwlNextAccum)        // Overflow of int64 add
-                    dwlNextAccum = s_ulInt32Base;   // how much to add to dwlAccum after div x_dwlBaseUI4
-                else
-                    dwlNextAccum = 0;
-
-                rguiData[iData] = (uint)dwlAccum;           // equivalent to mod x_dwlBaseUI4
-                dwlAccum = (dwlAccum >> 32) + dwlNextAccum; // equivalent to div x_dwlBaseUI4
-            }
-
-            // If any carry,
-            if (dwlAccum != 0)
-            {
-                // Either overflowed
-                Debug.Assert(dwlAccum < s_ulInt32Base, "dwlAccum < x_dwlBaseUI4", "Integer overflow");
-                if (iDataMax == s_cNumeMax)
-                    throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-
-                // Or extend length by one uint
-                rguiData[iDataMax] = (uint)dwlAccum;
-                m_bLen++;
-            }
-
-            if (FGt10_38(rguiData))
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-
-            StoreFromWorkingArray(rguiData);
-        }
-        //    DivByULong()
-        //
-        //    Divide numeric value by a ULONG.  The result will be returned
-        //    in the dividend *this.
-        //
-        //    Parameters:
-        //        this        - IN Dividend & OUT Result
-        //        ulDivisor    - IN Divisor
-        //    Returns:        - OUT Remainder
-        //
-        internal uint DivByULong(uint iDivisor)
-        {
-            ulong dwlDivisor = (ulong)iDivisor;
-            ulong dwlAccum = 0;           //Accumulated sum
-            uint ulQuotientCur = 0;      // Value of the current UI4 of the quotient
-            bool fAllZero = true;    // All of the quotient (so far) has been 0
-            int iData;              //Which UI4 currently on
-
-            // Check for zero divisor.
-            if (dwlDivisor == 0)
-                throw new XmlException(SR.SqlTypes_DivideByZero, (string)null);
-
-            // Copy into array, so that we can iterate through the data
-            uint[] rguiData = new uint[4] { m_data1, m_data2, m_data3, m_data4 };
-
-            // Start from the MS UI4 of quotient, divide by divisor, placing result
-            //        in quotient and carrying the remainder.
-            //DEVNOTE DWORDLONG sufficient accumulator since:
-            //        Accum < Divisor <= 2^32 - 1    at start each loop
-            //                                    initially,and mod end previous loop
-            //        Accum*2^32 < 2^64 - 2^32
-            //                                    multiply both side by 2^32 (x_dwlBaseUI4)
-            //        Accum*2^32 + m_rgulData < 2^64
-            //                                    rglData < 2^32
-            for (iData = m_bLen; iData > 0; iData--)
-            {
-                Debug.Assert(dwlAccum < dwlDivisor);
-                dwlAccum = (dwlAccum << 32) + (ulong)(rguiData[iData - 1]); // dwlA*x_dwlBaseUI4 + rglData
-                Debug.Assert((dwlAccum / dwlDivisor) < s_ulInt32Base);
-
-                //Update dividend to the quotient.
-                ulQuotientCur = (uint)(dwlAccum / dwlDivisor);
-                rguiData[iData - 1] = ulQuotientCur;
-
-                //Remainder to be carried to the next lower significant byte.
-                dwlAccum = dwlAccum % dwlDivisor;
-
-                // While current part of quotient still 0, reduce length
-                fAllZero = fAllZero && (ulQuotientCur == 0);
-                if (fAllZero)
-                    m_bLen--;
-            }
-
-            StoreFromWorkingArray(rguiData);
-
-            // If result is 0, preserve sign but set length to 5
-            if (fAllZero)
-                m_bLen = 1;
-
-            AssertValid();
-
-            // return the remainder
-            Debug.Assert(dwlAccum < s_ulInt32Base);
-            return (uint)dwlAccum;
         }
 
         //Determine the number of uints needed for a numeric given a precision
@@ -765,7 +483,7 @@ namespace System.Xml
             if (yr < -9999 || yr > 9999)
                 goto Error;
             return;
-        Error:
+Error:
             throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
@@ -790,7 +508,7 @@ namespace System.Xml
             if (yr < -9999 || yr > 9999)
                 goto Error;
             return;
-        Error:
+Error:
             throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
@@ -808,13 +526,19 @@ namespace System.Xml
             if (0 > hr || hr > 23)
                 goto Error;
             return;
-        Error:
+Error:
             throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
         public static string XsdDateTimeToString(long val)
         {
-            int yr; int mnth; int day; int hr; int min; int sec; int ms;
+            int yr;
+            int mnth;
+            int day;
+            int hr;
+            int min;
+            int sec;
+            int ms;
             BreakDownXsdDateTime(val, out yr, out mnth, out day, out hr, out min, out sec, out ms);
             StringBuilder sb = new StringBuilder(20);
             WriteDate(sb, yr, mnth, day);
@@ -825,14 +549,25 @@ namespace System.Xml
         }
         public static DateTime XsdDateTimeToDateTime(long val)
         {
-            int yr; int mnth; int day; int hr; int min; int sec; int ms;
+            int yr;
+            int mnth;
+            int day;
+            int hr;
+            int min;
+            int sec;
+            int ms;
             BreakDownXsdDateTime(val, out yr, out mnth, out day, out hr, out min, out sec, out ms);
             return new DateTime(yr, mnth, day, hr, min, sec, ms, DateTimeKind.Utc);
         }
 
         public static string XsdDateToString(long val)
         {
-            int yr; int mnth; int day; int hr; int min; bool negTimeZ;
+            int yr;
+            int mnth;
+            int day;
+            int hr;
+            int min;
+            bool negTimeZ;
             BreakDownXsdDate(val, out yr, out mnth, out day, out negTimeZ, out hr, out min);
             StringBuilder sb = new StringBuilder(20);
             WriteDate(sb, yr, mnth, day);
@@ -841,7 +576,12 @@ namespace System.Xml
         }
         public static DateTime XsdDateToDateTime(long val)
         {
-            int yr; int mnth; int day; int hr; int min; bool negTimeZ;
+            int yr;
+            int mnth;
+            int day;
+            int hr;
+            int min;
+            bool negTimeZ;
             BreakDownXsdDate(val, out yr, out mnth, out day, out negTimeZ, out hr, out min);
             DateTime d = new DateTime(yr, mnth, day, 0, 0, 0, DateTimeKind.Utc);
             // adjust for timezone
@@ -851,7 +591,10 @@ namespace System.Xml
 
         public static string XsdTimeToString(long val)
         {
-            int hr; int min; int sec; int ms;
+            int hr;
+            int min;
+            int sec;
+            int ms;
             BreakDownXsdTime(val, out hr, out min, out sec, out ms);
             StringBuilder sb = new StringBuilder(16);
             WriteTime(sb, hr, min, sec, ms);
@@ -860,7 +603,10 @@ namespace System.Xml
         }
         public static DateTime XsdTimeToDateTime(long val)
         {
-            int hr; int min; int sec; int ms;
+            int hr;
+            int min;
+            int sec;
+            int ms;
             BreakDownXsdTime(val, out hr, out min, out sec, out ms);
             return new DateTime(1, 1, 1, hr, min, sec, ms, DateTimeKind.Utc);
         }
@@ -938,25 +684,6 @@ namespace System.Xml
         {
             // read the timezoned value into DateTimeOffset and then convert to local time
             return XsdKatmaiTimeOffsetToDateTimeOffset(data, offset).LocalDateTime;
-        }
-
-        // Conversions of the Katmai date & time types to DateTimeOffset
-        public static DateTimeOffset XsdKatmaiDateToDateTimeOffset(byte[] data, int offset)
-        {
-            // read the value into DateTime and then convert it to DateTimeOffset, which adds local time zone
-            return (DateTimeOffset)XsdKatmaiDateToDateTime(data, offset);
-        }
-
-        public static DateTimeOffset XsdKatmaiDateTimeToDateTimeOffset(byte[] data, int offset)
-        {
-            // read the value into DateTime and then convert it to DateTimeOffset, which adds local time zone
-            return (DateTimeOffset)XsdKatmaiDateTimeToDateTime(data, offset);
-        }
-
-        public static DateTimeOffset XsdKatmaiTimeToDateTimeOffset(byte[] data, int offset)
-        {
-            // read the value into DateTime and then convert it to DateTimeOffset, which adds local time zone
-            return (DateTimeOffset)XsdKatmaiTimeToDateTime(data, offset);
         }
 
         public static DateTimeOffset XsdKatmaiDateOffsetToDateTimeOffset(byte[] data, int offset)
@@ -1090,56 +817,5 @@ namespace System.Xml
         {
             return (int)(dt.Ticks - new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second).Ticks);
         }
-
-        /*
-        const long SqlDateTicks2Ticks = (long)10000 * 1000 * 60 * 60 * 24;
-        const long SqlBaseDate = 693595;
-
-        public static void DateTime2SqlDateTime(DateTime datetime, out int dateticks, out uint timeticks) {
-            dateticks = (int)(datetime.Ticks / SqlDateTicks2Ticks) - 693595;
-            double time = (double)(datetime.Ticks % SqlDateTicks2Ticks);
-            time = time / 10000; // adjust to ms
-            time = time * 0.3 + .5;  // adjust to sqlticks (and round correctly)
-            timeticks = (uint)time;
-        }
-        public static void DateTime2SqlSmallDateTime(DateTime datetime, out short dateticks, out ushort timeticks) {
-            dateticks = (short)((int)(datetime.Ticks / SqlDateTicks2Ticks) - 693595);
-            int time = (int)(datetime.Ticks % SqlDateTicks2Ticks);
-            timeticks = (ushort)(time / (10000 * 1000 * 60)); // adjust to min
-        }
-        public static long DateTime2XsdTime(DateTime datetime) {
-            // adjust to ms
-            return (datetime.TimeOfDay.Ticks / 10000) * 4 + 0; 
-        }
-        public static long DateTime2XsdDateTime(DateTime datetime) {
-            long t = datetime.TimeOfDay.Ticks / 10000;
-            t += (datetime.Day-1) * (long)1000*60*60*24;
-            t += (datetime.Month-1) * (long)1000*60*60*24*31;
-            int year = datetime.Year;
-            if (year < -9999 || year > 9999)
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-            t += (datetime.Year+9999) * (long)1000*60*60*24*31*12;
-            return t*4 + 2;
-        }
-        public static long DateTime2XsdDate(DateTime datetime) {
-            // compute local offset
-            long tzOffset = -TimeZone.CurrentTimeZone.GetUtcOffset(datetime).Ticks  / TimeSpan.TicksPerMinute;
-            tzOffset += 14*60;
-            // adjust datetime to UTC
-            datetime = TimeZone.CurrentTimeZone.ToUniversalTime(datetime);
-
-            Debug.Assert( tzOffset >= 0 );
-
-            int year = datetime.Year;
-            if (year < -9999 || year > 9999)
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
-            long t = (datetime.Day - 1) 
-                 + 31*(datetime.Month - 1)
-                 + 31*12*((long)(year+9999));
-            t *= (29*60); // adjust in timezone
-            t += tzOffset;
-            return t*4+1;
-        }
-         * */
     }
 }

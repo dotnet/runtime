@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.Xslt
         private Compiler _compiler;
 #if DEBUG
         // List of all variables and parameters
-        private List<VarPar>    allVarPars    = new List<VarPar>();
+        private List<VarPar> _allVarPars = new List<VarPar>();
 #endif
         private int _forEachDepth = 0;
         private XPathAnalyzer _xpathAnalyzer;
@@ -304,30 +304,38 @@ namespace System.Xml.Xsl.Xslt
         private void TraceResults()
         {
 #if DEBUG
-            if (DiagnosticsSwitches.XslTypeInference.TraceVerbose) {
+            if (DiagnosticsSwitches.XslTypeInference.TraceVerbose)
+            {
                 Debug.WriteLine(string.Empty);
-                foreach (ProtoTemplate tmpl in _compiler.AllTemplates) {
+                foreach (ProtoTemplate tmpl in _compiler.AllTemplates)
+                {
                     Debug.WriteLine(tmpl.TraceName + " = " + (tmpl.Flags & XslFlags.FocusFilter));
                 }
 
                 Debug.WriteLine(string.Empty);
-                foreach (VarPar varPar in allVarPars) {
+                foreach (VarPar varPar in _allVarPars)
+                {
                     Debug.WriteLine(varPar.TraceName + " = " + (varPar.Flags & XslFlags.TypeFilter));
                 }
                 Debug.WriteLine(string.Empty);
             }
 
-            if (DiagnosticsSwitches.XslTypeInference.TraceInfo) {
+            if (DiagnosticsSwitches.XslTypeInference.TraceInfo)
+            {
                 int current = 0, position = 0, last = 0;
 
-                foreach (ProtoTemplate tmpl in _compiler.AllTemplates) {
-                    if ((tmpl.Flags & XslFlags.Current) != 0) {
+                foreach (ProtoTemplate tmpl in _compiler.AllTemplates)
+                {
+                    if ((tmpl.Flags & XslFlags.Current) != 0)
+                    {
                         current++;
                     }
-                    if ((tmpl.Flags & XslFlags.Position) != 0) {
+                    if ((tmpl.Flags & XslFlags.Position) != 0)
+                    {
                         position++;
                     }
-                    if ((tmpl.Flags & XslFlags.Last) != 0) {
+                    if ((tmpl.Flags & XslFlags.Last) != 0)
+                    {
                         last++;
                     }
                 }
@@ -335,20 +343,22 @@ namespace System.Xml.Xsl.Xslt
                 int stringType = 0, numberType = 0, booleanType = 0, nodeNotRtfType = 0, nodesetNotRtfType = 0;
                 int nodeType = 0, nodesetType = 0, noneType = 0, anyType = 0, totalVarPars = 0;
 
-                foreach (VarPar varPar in allVarPars) {
-                    switch (varPar.Flags & XslFlags.TypeFilter) {
-                    case XslFlags.String  : stringType++; break;
-                    case XslFlags.Number  : numberType++; break;
-                    case XslFlags.Boolean : booleanType++; break;
-                    case XslFlags.Node    : nodeNotRtfType++; break;
-                    case XslFlags.Nodeset : nodesetNotRtfType++; break;
-                    case XslFlags.Rtf     : nodeType++; break;
-                    case XslFlags.Node    | XslFlags.Rtf     : nodeType++; break;
-                    case XslFlags.Node    | XslFlags.Nodeset : nodesetNotRtfType++; break;
-                    case XslFlags.Nodeset | XslFlags.Rtf     : nodesetType++; break;
-                    case XslFlags.Node    | XslFlags.Nodeset | XslFlags.Rtf : nodesetType++; break;
-                    case XslFlags.None    : noneType++; break;
-                    default               : anyType++; break;
+                foreach (VarPar varPar in _allVarPars)
+                {
+                    switch (varPar.Flags & XslFlags.TypeFilter)
+                    {
+                        case XslFlags.String: stringType++; break;
+                        case XslFlags.Number: numberType++; break;
+                        case XslFlags.Boolean: booleanType++; break;
+                        case XslFlags.Node: nodeNotRtfType++; break;
+                        case XslFlags.Nodeset: nodesetNotRtfType++; break;
+                        case XslFlags.Rtf: nodeType++; break;
+                        case XslFlags.Node | XslFlags.Rtf: nodeType++; break;
+                        case XslFlags.Node | XslFlags.Nodeset: nodesetNotRtfType++; break;
+                        case XslFlags.Nodeset | XslFlags.Rtf: nodesetType++; break;
+                        case XslFlags.Node | XslFlags.Nodeset | XslFlags.Rtf: nodesetType++; break;
+                        case XslFlags.None: noneType++; break;
+                        default: anyType++; break;
                     }
                     totalVarPars++;
                 }
@@ -776,8 +786,9 @@ namespace System.Xml.Xsl.Xslt
         {
             XslFlags result;
 #if DEBUG
-            if (node.NodeType != XslNodeType.WithParam) {
-                allVarPars.Add(node);
+            if (node.NodeType != XslNodeType.WithParam)
+            {
+                _allVarPars.Add(node);
             }
 #endif
 

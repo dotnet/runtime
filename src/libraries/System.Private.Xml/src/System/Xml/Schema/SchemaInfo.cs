@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.Xml.Schema
 {
-#if !SILVERLIGHT
     internal enum AttributeMatchState
     {
         AttributeFound,
@@ -23,7 +22,6 @@ namespace System.Xml.Schema
         AttributeNameMismatch,
         ValidateAttributeInvalidCall,
     }
-#endif
 
     internal class SchemaInfo : IDtdInfo
     {
@@ -38,21 +36,17 @@ namespace System.Xml.Schema
         private bool _hasNonCDataAttributes = false;
         private bool _hasDefaultAttributes = false;
 
-#if !SILVERLIGHT
         private Dictionary<string, bool> _targetNamespaces = new Dictionary<string, bool>();
         private Dictionary<XmlQualifiedName, SchemaAttDef> _attributeDecls = new Dictionary<XmlQualifiedName, SchemaAttDef>();
         private int _errorCount;
         private SchemaType _schemaType;
         private Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDeclsByType = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
         private Dictionary<string, SchemaNotation> _notations;
-#endif
 
 
         internal SchemaInfo()
         {
-#if !SILVERLIGHT
             _schemaType = SchemaType.None;
-#endif
         }
 
         public XmlQualifiedName DocTypeName
@@ -101,7 +95,6 @@ namespace System.Xml.Schema
             }
         }
 
-#if !SILVERLIGHT
         internal SchemaType SchemaType
         {
             get { return _schemaType; }
@@ -163,26 +156,6 @@ namespace System.Xml.Schema
 
 
         internal XmlSchemaElement GetElement(XmlQualifiedName qname)
-        {
-            SchemaElementDecl ed = GetElementDecl(qname);
-            if (ed != null)
-            {
-                return ed.SchemaElement;
-            }
-            return null;
-        }
-
-        internal XmlSchemaAttribute GetAttribute(XmlQualifiedName qname)
-        {
-            SchemaAttDef attdef = (SchemaAttDef)_attributeDecls[qname];
-            if (attdef != null)
-            {
-                return attdef.SchemaAttribute;
-            }
-            return null;
-        }
-
-        internal XmlSchemaElement GetType(XmlQualifiedName qname)
         {
             SchemaElementDecl ed = GetElementDecl(qname);
             if (ed != null)
@@ -388,7 +361,6 @@ namespace System.Xml.Schema
                 }
             }
         }
-#endif
 
         internal void Finish()
         {

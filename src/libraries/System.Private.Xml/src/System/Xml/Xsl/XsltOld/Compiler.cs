@@ -780,12 +780,6 @@ namespace System.Xml.Xsl.XsltOld
             "System.Xml.XPath",
         };
 
-        private static int s_scriptClassCounter = 0;
-        private static string GenerateUniqueClassName()
-        {
-            return "ScriptClass_" + System.Threading.Interlocked.Increment(ref s_scriptClassCounter);
-        }
-
         internal void AddScript(string source, ScriptingLanguage lang, string ns, string fileName, int lineNumber)
         {
             ValidateExtensionNamespace(ns);

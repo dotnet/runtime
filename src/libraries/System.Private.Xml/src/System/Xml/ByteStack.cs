@@ -54,25 +54,5 @@ namespace System.Xml
                 return 0;
             }
         }
-
-        public byte Peek()
-        {
-            if (_top > 0)
-            {
-                return _stack[_top - 1];
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        public int Length
-        {
-            get
-            {
-                return _top;
-            }
-        }
     }
 }

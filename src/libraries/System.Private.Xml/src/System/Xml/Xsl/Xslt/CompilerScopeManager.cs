@@ -388,11 +388,6 @@ namespace System.Xml.Xsl.Xslt
                 _currentRecord = _lastRecord + 1;
             }
 
-            public void Reset()
-            {
-                _currentRecord = _lastRecord + 1;
-            }
-
             public bool MoveNext()
             {
                 while (LastPredefRecord < --_currentRecord)

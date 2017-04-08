@@ -605,7 +605,8 @@ namespace System.Xml.Schema
                 attdef.DefaultValueTyped = typedValue;
             }
 #if DEBUG
-            catch (XmlSchemaException ex) {
+            catch (XmlSchemaException ex)
+            {
                 Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceError, ex.Message);
 #else
             catch

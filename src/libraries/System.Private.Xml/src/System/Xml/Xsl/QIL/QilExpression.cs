@@ -28,18 +28,6 @@ namespace System.Xml.Xsl.Qil
         private QilNode _funList;
         private QilNode _rootNod;
 
-
-        //-----------------------------------------------
-        // Constructors
-        //-----------------------------------------------
-
-        /// <summary>
-        /// Construct QIL from a rooted graph of QilNodes with a new factory.
-        /// </summary>
-        public QilExpression(QilNodeType nodeType, QilNode root) : this(nodeType, root, new QilFactory())
-        {
-        }
-
         /// <summary>
         /// Construct QIL from a rooted graph of QilNodes with a specific factory.
         /// </summary>

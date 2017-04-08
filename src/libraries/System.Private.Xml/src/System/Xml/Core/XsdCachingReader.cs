@@ -292,15 +292,6 @@ namespace System.Xml
             }
         }
 
-        // Gets the value of the attribute with the specified Name.
-        public override string this[string name]
-        {
-            get
-            {
-                return GetAttribute(name);
-            }
-        }
-
         // Gets the value of the attribute with the specified LocalName and NamespaceURI.
         public override string this[string name, string namespaceURI]
         {

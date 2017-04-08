@@ -7,7 +7,6 @@ using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-
     internal static class CharUtil
     {
         // Checks whether a given character is alphanumeric.  Alphanumeric means any character that has

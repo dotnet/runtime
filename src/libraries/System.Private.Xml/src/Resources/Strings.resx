@@ -631,9 +631,6 @@
   <data name="Sch_NotTokenString" xml:space="preserve">
     <value>line-feed (#xA) or tab (#x9) characters, leading or trailing spaces and sequences of one or more spaces (#x20) are not allowed in 'xs:token'.</value>
   </data>
-  <data name="Sch_XsdDateTimeCompare" xml:space="preserve">
-    <value>Cannot compare '{0}' and '{1}'.</value>
-  </data>
   <data name="Sch_InvalidDateTimeOption" xml:space="preserve">
     <value>The '{0}' value for the 'dateTimeOption' parameter is not an allowed value for the 'XmlDateTimeSerializationMode' enumeration.</value>
   </data>
@@ -2125,12 +2122,6 @@
   <data name="SqlTypes_ArithOverflow" xml:space="preserve">
     <value>Arithmetic Overflow.</value>
   </data>
-  <data name="SqlTypes_ArithTruncation" xml:space="preserve">
-    <value>Numeric arithmetic causes truncation.</value>
-  </data>
-  <data name="SqlTypes_DivideByZero" xml:space="preserve">
-    <value>Divide by zero error encountered.</value>
-  </data>
   <data name="XmlMissingType" xml:space="preserve">
     <value>Invalid serialization assembly: Required type {0} cannot be found in the generated assembly '{1}'.</value>
   </data>
@@ -2223,9 +2214,6 @@
   </data>
   <data name="XmlInvalidConstantAttribute" xml:space="preserve">
     <value>Only XmlEnum may be used on enumerated constants.</value>
-  </data>
-  <data name="XmlIllegalDefault" xml:space="preserve">
-    <value>The default value for XmlAttribute or XmlElement may only be specified for primitive types.</value>
   </data>
   <data name="XmlIllegalAttributesArrayAttribute" xml:space="preserve">
     <value>XmlAttribute and XmlAnyAttribute cannot be used in conjunction with XmlElement, XmlText, XmlAnyElement, XmlArray, or XmlArrayItem.</value>
@@ -2734,15 +2722,6 @@
   <data name="XmlSerializableRootDupName" xml:space="preserve">
     <value>Cannot reconcile schema for '{0}'. Please use [XmlRoot] attribute to change default name or namespace of the top-level element to avoid duplicate element declarations: element name='{1}' namespace='{2}'.</value>
   </data>
-  <data name="XmlPregenMissingDirectory" xml:space="preserve">
-    <value>Could not find directory to save XmlSerializer generated assembly: {0}.</value>
-  </data>
-  <data name="XmlPregenMissingTempDirectory" xml:space="preserve">
-    <value>Could not find TEMP directory to save XmlSerializer generated assemblies.</value>
-  </data>
-  <data name="XmlPregenAssemblyDynamic" xml:space="preserve">
-    <value>Cannot pre-generate serialization assembly. Pre-generation of serialization assemblies is not supported for dynamic assemblies. Save the assembly and load it from disk to use it with XmlSerialization.</value>
-  </data>
   <data name="XmlNotSerializable" xml:space="preserve">
     <value>Type '{0}' is not serializable.</value>
   </data>
@@ -2799,9 +2778,6 @@
   </data>
   <data name="Arg_IncompatibleParamType" xml:space="preserve">
     <value>Type is incompatible.</value>
-  </data>
-  <data name="Xml_XapResolverCannotOpenUri" xml:space="preserve">
-    <value>Cannot open '{0}'. The Uri parameter must be a relative path pointing to content inside the Silverlight application's XAP package. If you need to load content from an arbitrary Uri, please see the documentation on Loading XML content using WebClient/HttpWebRequest.</value>
   </data>
   <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
     <value />
@@ -2967,9 +2943,6 @@
   </data>
   <data name="Xslt_ScriptMixedLanguages" xml:space="preserve">
     <value>All script blocks implementing the namespace '{0}' must use the same language.</value>
-  </data>
-  <data name="Xslt_AssemblyNameHref" xml:space="preserve">
-    <value>'msxsl:assembly' must have either a 'name' attribute or an 'href' attribute, but not both.</value>
   </data>
   <data name="Xslt_ScriptAndExtensionClash" xml:space="preserve">
     <value>Cannot have both an extension object and a script implementing the same namespace '{0}'.</value>
@@ -3298,12 +3271,6 @@
   <data name="Xslt_InvalidPattern" xml:space="preserve">
     <value>'{0}' is an invalid XSLT pattern.</value>
   </data>
-  <data name="InvalidNullEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be null or zero-length.</value>
-  </data>
-  <data name="DuplicateFileName" xml:space="preserve">
-    <value>The file name '{0}' was already in the collection.</value>
-  </data>
   <data name="XmlInvalidCharSchemaPrimitive" xml:space="preserve">
     <value>Char is not a valid schema primitive and should be treated as int in DataContract</value>
   </data>
@@ -3358,7 +3325,7 @@
   <data name="ErrLoadType" xml:space="preserve">
     <value>Type '{0}' was not found in the assembly '{1}'.</value>
   </data>
-  <data name="DicrectoryAccessDenied" xml:space="preserve">
+  <data name="DirectoryAccessDenied" xml:space="preserve">
     <value>Access to directory {0} is denied.  The process under which XmlSerializer is running does not have sufficient permission to access the directory.</value>
   </data>
 </root>

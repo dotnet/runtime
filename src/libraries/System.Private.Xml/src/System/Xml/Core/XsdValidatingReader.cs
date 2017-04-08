@@ -407,7 +407,7 @@ namespace System.Xml
                 switch (NodeType)
                 {
                     case XmlNodeType.Element:
-                    case XmlNodeType.EndElement: //TODO Check that context is not popped to parents in the validator
+                    case XmlNodeType.EndElement:
                         if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                         {
                             return _xmlSchemaInfo.SchemaType.Datatype.ValueType;
@@ -711,7 +711,7 @@ namespace System.Xml
 
             object typedValue = InternalReadContentAsObject(false, out originalStringValue);
 
-            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType; //TODO special case for xsd:duration and xsd:dateTime
+            XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
             try
             {
                 if (xmlType != null)

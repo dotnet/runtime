@@ -43,19 +43,6 @@ namespace System.Xml.Xsl.Qil
         }
 
         /// <summary>
-        /// Remove the last N substitution pairs
-        /// </summary>
-        public void RemoveLastNSubstitutionPairs(int n)
-        {
-            Debug.Assert(n >= 0, "n must be nonnegative");
-            if (n > 0)
-            {
-                n *= 2;
-                _s.RemoveRange(_s.Count - n, n);
-            }
-        }
-
-        /// <summary>
         /// Find the replacement for a node
         /// </summary>
         /// <param name="n">the node to replace</param>

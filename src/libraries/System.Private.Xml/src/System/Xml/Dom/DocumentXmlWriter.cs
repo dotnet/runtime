@@ -98,11 +98,6 @@ namespace System.Xml
             }
         }
 
-        internal void SetSettings(XmlWriterSettings value)
-        {
-            _settings = value;
-        }
-
         public DocumentXPathNavigator Navigator
         {
             set

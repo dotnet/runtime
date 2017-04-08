@@ -1322,80 +1322,14 @@ namespace System.Xml.Xsl.Xslt
             new XsltAttribute("name", V1Opt | V2Opt),
             new XsltAttribute("href", V1Opt | V2Opt)
         };
-        // SxS: This method reads resource names from source document and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
-        private void LoadMsAssembly(ScriptClass scriptClass)
-        {
-            _input.GetAttributes(_assemblyAttributes);
-
-            string name = ParseStringAttribute(0, "name");
-            string href = ParseStringAttribute(1, "href");
-
-            if ((name != null) == (href != null))
-            {
-                ReportError(/*[XT_046]*/SR.Xslt_AssemblyNameHref);
-            }
-            else
-            {
-                string asmLocation = null;
-                if (name != null)
-                {
-                    try
-                    {
-                        AssemblyName asmName = new AssemblyName(name);
-                        Assembly.Load(asmName);
-                        asmLocation = asmName.Name + ".dll";
-                    }
-                    catch
-                    {
-                        AssemblyName asmName = new AssemblyName(name);
-
-                        // If the assembly is simply named, let CodeDomProvider and Fusion resolve it
-                        byte[] publicKeyToken = asmName.GetPublicKeyToken();
-                        if ((publicKeyToken == null || publicKeyToken.Length == 0) && asmName.Version == null)
-                        {
-                            asmLocation = asmName.Name + ".dll";
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.Assert(href != null);
-                    asmLocation = Assembly.LoadFrom(ResolveUri(href, _input.BaseUri).ToString()).Location;
-                    scriptClass.refAssembliesByHref = true;
-                }
-
-                if (asmLocation != null)
-                {
-                    scriptClass.refAssemblies.Add(asmLocation);
-                }
-            }
-
-            CheckNoContent();
-        }
 
         private XsltAttribute[] _usingAttributes = {
             new XsltAttribute("namespace", V1Req | V2Req)
         };
-        private void LoadMsUsing(ScriptClass scriptClass)
-        {
-            _input.GetAttributes(_usingAttributes);
-
-            if (_input.MoveToXsltAttribute(0, "namespace"))
-            {
-                scriptClass.nsImports.Add(_input.Value);
-            }
-            CheckNoContent();
-        }
 
         // ----------------- Template level methods --------------------------
         // Each instruction in AST tree has nsdecl list attuched to it.
         // Load*() methods do this treek. Xsl*() methods rely on LoadOneInstruction() to do this.
-        // ToDo: check how LoadUnknown*() follows this gideline!
 
         private enum InstructionFlags
         {
@@ -2675,7 +2609,6 @@ namespace System.Xml.Xsl.Xslt
             _input.MoveToElement();
             ISourceLineInfo extElmLineInfo = _input.BuildNameLineInfo();
             List<XslNode> fallbacksArray = new List<XslNode>();
-            // TODO: Unknown element can have NS declarations that will be in affect in fallback clouse.
             /* Process children */
             if (_input.MoveToFirstChild())
             {
@@ -3142,8 +3075,6 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-
-        // ToDo: We don't need separation on SkipEmptyContent() and CheckNoContent(). Merge them back when we are done with parsing.
         private void CheckNoContent()
         {
             _input.MoveToElement();

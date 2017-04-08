@@ -33,87 +33,11 @@ namespace System.Xml.Xsl
         }
 
         /// <summary>
-        /// Return execute delegate.
-        /// </summary>
-        public ExecuteDelegate ExecuteDelegate
-        {
-            get { return _delExec; }
-        }
-
-        /// <summary>
         /// Return query static data required by the runtime.
         /// </summary>
         public XmlQueryStaticData StaticData
         {
             get { return _staticData; }
-        }
-
-#if false
-        /// <summary>
-        /// Default serialization options that will be used if the user does not supply an XmlWriter
-        /// at execution time.
-        /// </summary>
-        public override XmlWriterSettings DefaultWriterSettings {
-            get { return this.staticData.DefaultWriterSettings; }
-        }
-
-        /// <summary>
-        /// Default document as XPathNavigator.
-        /// </summary>
-        public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-
-            if (contextDocument != null)
-                Execute(contextDocument.CreateNavigator(), dataSources, argumentList, results, false);
-            else
-                Execute(null, dataSources, argumentList, results, false);
-        }
-
-        /// <summary>
-        /// Default document as XPathNavigator.
-        /// </summary>
-        public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, TextWriter results) {
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-
-            Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings));
-        }
-
-        /// <summary>
-        /// Default document as XPathNavigator.
-        /// </summary>
-        public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, Stream results) {
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-
-            Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings));
-        }
-
-        /// <summary>
-        /// Executes the query by accessing datasources via the XmlResolver and using run-time parameters
-        /// as provided by the XsltArgumentList. The default document is mapped into the XmlResolver with the
-        /// provided name. The results are output to the provided XmlWriter.
-        /// </summary>
-        public void Execute(string contextDocumentUri, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
-
-            Execute(contextDocumentUri, dataSources, argumentList, results, false);
-        }
-#endif
-
-        /// <summary>
-        /// Executes the query by accessing datasources via the XmlResolver and using
-        /// run-time parameters as provided by the XsltArgumentList. The default document
-        /// is mapped into the XmlResolver with the provided name. The results are returned
-        /// as an IList.
-        /// </summary>
-        public IList Evaluate(string contextDocumentUri, XmlResolver dataSources, XsltArgumentList argumentList)
-        {
-            XmlCachedSequenceWriter seqwrt = new XmlCachedSequenceWriter();
-            Execute(contextDocumentUri, dataSources, argumentList, seqwrt);
-            return seqwrt.ResultSequence;
         }
 
 #if false
