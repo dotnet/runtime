@@ -6,6 +6,7 @@
       <TypeInstantiation Name="System.Linq.Expressions.ExpressionCreator" Arguments="System.Func{System.Boolean}" Dynamic="Required All" />
       <TypeInstantiation Name="System.Runtime.CompilerServices.CallSite" Arguments="System.Func{System.Runtime.CompilerServices.CallSite, System.Object, System.Int32}" Dynamic="Required All" /> 
       <Type Name="System.Runtime.CompilerServices.CallSiteOps" Dynamic="Required All" />
+      <Type Name="System.Runtime.CompilerServices.RuntimeOps" Dynamic="Required All" />
       <Namespace Name="System.Linq.Expressions">
         <Type Name="Expression&lt;TDelegate&gt;">
           <GenericParameter Name="TDelegate" Dynamic="Public"/>
