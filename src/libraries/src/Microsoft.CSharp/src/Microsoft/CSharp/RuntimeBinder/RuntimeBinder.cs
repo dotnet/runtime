@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -1412,9 +1413,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     int numIndexArguments = ExpressionIterator.Count(optionalIndexerArguments);
                     // We could have an array access here. See if its just an array.
-                    if ((argument.Type.IsArray && argument.Type.GetArrayRank() == numIndexArguments) ||
-                        argument.Type == typeof(string))
+                    Type type = argument.Type;
+                    if (type.IsArray || type == typeof(string))
                     {
+                        if (type.IsArray && type.GetArrayRank() != numIndexArguments)
+                        {
+                            _semanticChecker.GetErrorContext().Error(ErrorCode.ERR_BadIndexCount, type.GetArrayRank());
+                        }
+
                         return CreateArray(callingObject, optionalIndexerArguments);
                     }
                 }
