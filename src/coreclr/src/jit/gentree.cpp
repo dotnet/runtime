@@ -15975,11 +15975,7 @@ size_t GenTreeIndir::Offset()
 
 bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 {
-#ifdef RELOC_SUPPORT
     return comp->opts.compReloc && (gtOper == GT_CNS_INT) && IsIconHandle();
-#else
-    return false;
-#endif
 }
 
 //------------------------------------------------------------------------

@@ -40,9 +40,7 @@ typedef unsigned __int64 code_t;
 struct CnsVal
 {
     ssize_t cnsVal;
-#ifdef RELOC_SUPPORT
-    bool cnsReloc;
-#endif
+    bool    cnsReloc;
 };
 
 UNATIVE_OFFSET emitInsSize(code_t code);
