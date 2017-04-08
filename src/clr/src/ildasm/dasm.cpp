@@ -7370,6 +7370,13 @@ BOOL DumpFile()
         }
         CORCOMPILE_HEADER * pNativeHeader;
         g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pNativeHeader);
+
+        if (pNativeHeader->Signature != CORCOMPILE_SIGNATURE)
+        {
+            printError( g_pFile, "/native only works on NGen images." );
+            goto exit;
+        }
+
         g_pPELoader->getVAforRVA(VAL32(pNativeHeader->ManifestMetaData.VirtualAddress), &g_pMetaData);
         g_cbMetaData = VAL32(pNativeHeader->ManifestMetaData.Size);
     }
