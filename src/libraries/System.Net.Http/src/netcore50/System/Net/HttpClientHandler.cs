@@ -373,8 +373,10 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != null)
                 {
+                    /* 
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(ServerCertificateCustomValidationCallback)));
+                   */
                 }
             }
         }
@@ -388,11 +390,13 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
+                /*TODO#18116
                 if (!value)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(CheckCertificateRevocationList)));
                 }
+                */
             }
         }
 
@@ -404,8 +408,11 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != SslProtocols.None)
                 {
+                    /*
+                    TODO:#18116
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(SslProtocols)));
+                   */
                 }
             }
         }
