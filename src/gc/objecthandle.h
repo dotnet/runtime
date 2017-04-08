@@ -189,8 +189,6 @@ inline void DestroyDependentHandle(OBJECTHANDLE handle)
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-
-OBJECTHANDLE CreateVariableHandle(HHANDLETABLE hTable, OBJECTREF object, uint32_t type);
 uint32_t     GetVariableHandleType(OBJECTHANDLE handle);
 void         UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type);
 uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType, uint32_t newType);

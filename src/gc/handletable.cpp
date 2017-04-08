@@ -313,6 +313,10 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     }
 #endif // _DEBUG && !FEATURE_REDHAWK
 
+    // If we are creating a variable-strength handle, verify that the
+    // requested variable handle type is valid.
+    _ASSERTE(uType != HNDTYPE_VARIABLE || IS_VALID_VHT_VALUE(lExtraInfo));
+
     VALIDATEOBJECTREF(object);
 
     // fetch the handle table pointer
