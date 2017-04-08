@@ -161,11 +161,14 @@ namespace System.Net.Http
             get { return true; }
             set
             {
+                /*
+                TODO:#18104
                 if (value != PreAuthenticate)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(PreAuthenticate)));
                 }
+                */
                 CheckDisposedOrStarted();
             }
         }
