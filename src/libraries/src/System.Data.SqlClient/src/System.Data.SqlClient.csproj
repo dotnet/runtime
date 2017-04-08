@@ -5,7 +5,6 @@
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <!-- Although we have a NS configuration, we know we use API that's not currently whitelisted: just validate against OneCore -->
     <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
@@ -332,10 +331,6 @@
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Reference Include="Microsoft.Win32.Registry" />
