@@ -6334,19 +6334,35 @@ BOOL ClassLoader::CanAccessFamily(
     _ASSERTE(pCurrentClass);
     _ASSERTE(pTargetClass);
 
+    BOOL bIsInterface = pTargetClass->IsInterface();
+
     //Look to see if Current is a child of the Target.
     while (pCurrentClass) {
-        MethodTable *pCurInstance = pCurrentClass;
-
-        while (pCurInstance) {
-            //This is correct.  csc is incredibly lax about generics.  Essentially if you are a subclass of
-            //any type of generic it lets you access it.  Since the standard is totally unclear, mirror that
-            //behavior here.
-            if (pCurInstance->HasSameTypeDefAs(pTargetClass)) {
-                return TRUE;
+        if (bIsInterface)
+        {
+            // Calling a protected interface member
+            MethodTable::InterfaceMapIterator it = pCurrentClass->IterateInterfaceMap();
+            while (it.Next())
+            {
+                // We only loosely check if they are of the same generic type
+                if (it.GetInterface()->HasSameTypeDefAs(pTargetClass))
+                    return TRUE;
             }
+        }
+        else
+        {
+            MethodTable *pCurInstance = pCurrentClass;
 
-            pCurInstance = pCurInstance->GetParentMethodTable();
+            while (pCurInstance) {
+                //This is correct.  csc is incredibly lax about generics.  Essentially if you are a subclass of
+                //any type of generic it lets you access it.  Since the standard is totally unclear, mirror that
+                //behavior here.
+                if (pCurInstance->HasSameTypeDefAs(pTargetClass)) {
+                    return TRUE;
+                }
+
+                pCurInstance = pCurInstance->GetParentMethodTable();
+            }
         }
 
         ///Looking at 8.5.3, it looks like a protected member of a nested class in a parent type is also
