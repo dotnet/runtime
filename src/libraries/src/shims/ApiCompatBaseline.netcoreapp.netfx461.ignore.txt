@@ -44,6 +44,107 @@ MembersMustExist : Member 'System.AppDomain.SetupInformation.get()' does not exi
 // SetAccessControl in FileStream not going to be implemented in netcore20 as no ACL support:
 MembersMustExist : Member 'System.IO.FileStream.SetAccessControl(System.Security.AccessControl.FileSecurity)' does not exist in the implementation but it does exist in the contract.
 
+// StackTrace ctor deprecated in netfx and won't be implemented in any netcoreapp versions:
+MembersMustExist : Member 'System.Diagnostics.StackTrace..ctor(System.Threading.Thread, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+
+// Dan said there is a reason for those in System.Resrouces to ignore:
+MembersMustExist : Member 'System.String System.Resources.ResourceManager.BaseNameField' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.Hashtable System.Resources.ResourceSet.Table' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the implementation but it does exist in the contract.
+
+// Thread.CurrentContext is not supported because of remoting:
+MembersMustExist : Member 'System.Threading.Thread.CurrentContext.get()' does not exist in the implementation but it does exist in the contract.
+
+// Debug.Listeners won't be implemented in netstandard20 and netcoreapp20. See here: https://github.com/dotnet/standard/issues/84
+MembersMustExist : Member 'System.Diagnostics.Debug.Listeners.get()' does not exist in the implementation but it does exist in the contract.
+
+// IsolatedStorage methods won't be implemented in netstandard20 and netcoreapp20. See here: https://github.com/dotnet/corefx/issues/18071
+MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorage.GetPermission(System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorageFile.GetPermission(System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorageFile.GetStore(System.IO.IsolatedStorage.IsolatedStorageScope, System.Security.Policy.Evidence, System.Type, System.Security.Policy.Evidence, System.Type)' does not exist in the implementation but it does exist in the contract.
+
+// Reflection.Emit future unclear and won't be implemented till netcoreapp20. See here: https://github.com/dotnet/corefx/issues/18072
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String, System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineResource(System.String, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineResource(System.String, System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineUnmanagedResource(System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineUnmanagedResource(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineVersionInfoResource()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineVersionInfoResource(System.String, System.String, System.String, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Evidence.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.PermissionSet.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Save(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Save(System.String, System.Reflection.PortableExecutableKinds, System.Reflection.ImageFileMachine)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.SetEntryPoint(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.SetEntryPoint(System.Reflection.MethodInfo, System.Reflection.Emit.PEFileKinds)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilderAccess System.Reflection.Emit.AssemblyBuilderAccess.ReflectionOnly' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilderAccess System.Reflection.Emit.AssemblyBuilderAccess.RunAndSave' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilderAccess System.Reflection.Emit.AssemblyBuilderAccess.Save' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.AddDeclarativeSecurity(System.Security.Permissions.SecurityAction, System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.ReturnType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.SetMethodBody(System.Byte[], System.Int32, System.Byte[], System.Collections.Generic.IEnumerable<System.Reflection.Emit.ExceptionHandler>, System.Collections.Generic.IEnumerable<System.Int32>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.SetSymCustomAttribute(System.String, System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.Signature.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.DefineParameter(System.Int32, System.Reflection.ParameterAttributes, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.GetDynamicILInfo()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.EventBuilder.GetEventToken()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.EmitCalli(System.Reflection.Emit.OpCode, System.Runtime.InteropServices.CallingConvention, System.Type, System.Type[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter, System.Int32, System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.AddDeclarativeSecurity(System.Security.Permissions.SecurityAction, System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.CreateMethodBody(System.Byte[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetMethodBody(System.Byte[], System.Int32, System.Byte[], System.Collections.Generic.IEnumerable<System.Reflection.Emit.ExceptionHandler>, System.Collections.Generic.IEnumerable<System.Int32>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetSymCustomAttribute(System.String, System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.Signature.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineDocument(System.String, System.Guid, System.Guid, System.Guid)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineManifestResource(System.String, System.IO.Stream, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefinePInvokeMethod(System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineResource(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineResource(System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineUnmanagedResource(System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.DefineUnmanagedResource(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetArrayMethodToken(System.Type, System.String, System.Reflection.CallingConventions, System.Type, System.Type[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo, System.Collections.Generic.IEnumerable<System.Type>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetFieldToken(System.Reflection.FieldInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetMethodToken(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetMethodToken(System.Reflection.MethodInfo, System.Collections.Generic.IEnumerable<System.Type>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Byte[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Reflection.Emit.SignatureHelper)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSignerCertificate()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetStringConstant(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetSymWriter()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.IsTransient()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.SetSymCustomAttribute(System.String, System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.SetUserEntryPoint(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ParameterBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.ParameterBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.PropertyBuilder.PropertyToken.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHelper(System.Reflection.Module, System.Runtime.InteropServices.CallingConvention, System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHelper(System.Runtime.InteropServices.CallingConvention, System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.AddDeclarativeSecurity(System.Security.Permissions.SecurityAction, System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Type[], System.Type[], System.Type[][], System.Type[][], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
+
 // Interfaces were intentional removals
 TypesMustExist : Type 'System.Runtime.InteropServices._Activator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices._Assembly' does not exist in the implementation but it does exist in the contract.
