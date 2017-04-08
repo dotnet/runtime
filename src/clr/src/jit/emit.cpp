@@ -1381,7 +1381,6 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
-#if RELOC_SUPPORT
     // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef _TARGET_AMD64_
@@ -1400,7 +1399,6 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
         /* instruction has an immediate constant that is relocatable */
         id->idSetIsCnsReloc();
     }
-#endif
 
 #if EMITTER_STATS
     emitTotalInsCnt++;
