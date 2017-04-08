@@ -282,9 +282,6 @@
     + "cted methods on interface can be called"
     IL_0078:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_007d:  nop
-
-/* THIS DOESN"T WORK YET
- 
     IL_007e:  ldloc.0
     IL_007f:  callvirt   instance int32 FooBar::CallBlahProtected()
     IL_0084:  ldc.i4.3
@@ -293,7 +290,6 @@
     IL_008c:  call       void Test::Assert(bool,
                                            string)
     IL_0091:  nop
-*/
     IL_0092:  call       int32 Test::Ret()
     IL_0097:  stloc.s    V_4
     IL_0099:  br.s       IL_009b
