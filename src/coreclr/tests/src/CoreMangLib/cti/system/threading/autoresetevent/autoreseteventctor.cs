@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 public class AutoResetEventCtor
@@ -70,8 +72,8 @@ public class AutoResetEventCtor
     {
         bool           retVal = true;
         AutoResetEvent are;
-	long           ticksBefore;
-	long           ticksAfter;
+        Stopwatch      sw;
+        long           elapsedTicks;
 
         TestLibrary.TestFramework.BeginScenario("PosTest1: AutoResetEvent.Ctor(false)");
 
@@ -80,19 +82,20 @@ public class AutoResetEventCtor
             // true means that the initial state should be signaled
             are = new AutoResetEvent(false);
 
-            ticksBefore = DateTime.Now.Ticks;
+            sw = Stopwatch.StartNew();
 
             // verify that the autoreset event is signaled
             // if it is not signaled the following call will block for ever
             TestLibrary.TestFramework.LogInformation("Calling AutoResetEvent.WaitOne()... if the event is signaled it will not wait long enough");
             are.WaitOne(c_MILLISECONDS_TOWAIT);
 
-            ticksAfter = DateTime.Now.Ticks;
+            sw.Stop();
+            elapsedTicks = sw.Elapsed.Ticks;
 
-            if (c_DELTA < Math.Abs((ticksAfter - ticksBefore) - (c_MILLISECONDS_TOWAIT*10000)))
+            if (c_DELTA < Math.Abs(elapsedTicks - (c_MILLISECONDS_TOWAIT*10000)))
             {
                 TestLibrary.TestFramework.LogError("002", "AutoResetEvent did not wait long enough... this implies that the parameter was not respected.");
-                TestLibrary.TestFramework.LogError("002", " WaitTime=" + (ticksAfter-ticksBefore) + " (ticks)");
+                TestLibrary.TestFramework.LogError("002", " WaitTime=" + elapsedTicks + " (ticks)");
                 TestLibrary.TestFramework.LogError("002", " Execpted=" + (c_MILLISECONDS_TOWAIT*10000) + " (ticks)");
                 TestLibrary.TestFramework.LogError("002", " Acceptable Delta=" + c_DELTA + " (ticks)");
                 retVal = false;
