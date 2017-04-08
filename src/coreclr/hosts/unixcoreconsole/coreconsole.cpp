@@ -93,7 +93,6 @@ bool ParseArguments(
 int main(const int argc, const char* argv[])
 {
     // Make sure we have a full path for argv[0].
-    std::string argv0AbsolutePath;
     std::string entryPointExecutablePath;
 
     if (!GetEntrypointExecutableAbsolutePath(entryPointExecutablePath))
@@ -102,15 +101,9 @@ int main(const int argc, const char* argv[])
         return -1;
     }
 
-    if (!GetAbsolutePath(entryPointExecutablePath.c_str(), argv0AbsolutePath))
-    {
-        perror("Could not normalize full path to current executable");
-        return -1;
-    }
-
     // We will try to load the managed assembly with the same name as this executable
     // but with the .dll extension.
-    std::string programPath(argv0AbsolutePath);
+    std::string programPath(entryPointExecutablePath);
     programPath.append(".dll");
     const char* managedAssemblyAbsolutePath = programPath.c_str();
 
@@ -146,13 +139,13 @@ int main(const int argc, const char* argv[])
     }
 
     std::string clrFilesAbsolutePath;
-    if(!GetClrFilesAbsolutePath(argv0AbsolutePath.c_str(), clrFilesPath, clrFilesAbsolutePath))
+    if(!GetClrFilesAbsolutePath(entryPointExecutablePath.c_str(), clrFilesPath, clrFilesAbsolutePath))
     {
         return -1;
     }
 
     int exitCode = ExecuteManagedAssembly(
-                            argv0AbsolutePath.c_str(),
+                            entryPointExecutablePath.c_str(),
                             clrFilesAbsolutePath.c_str(),
                             managedAssemblyAbsolutePath,
                             managedAssemblyArgc,
