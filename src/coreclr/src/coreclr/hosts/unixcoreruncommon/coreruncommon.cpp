@@ -49,21 +49,7 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
 
     // Get path to the executable for the current process using
     // platform specific means.
-#if defined(__linux__) || (defined(__NetBSD__) && !defined(KERN_PROC_PATHNAME))
-    // On Linux, fetch the entry point EXE absolute path, inclusive of filename.
-    char exe[PATH_MAX];
-    ssize_t res = readlink(symlinkEntrypointExecutable, exe, PATH_MAX - 1);
-    if (res != -1)
-    {
-        exe[res] = '\0';
-        entrypointExecutable.assign(exe);
-        result = true;
-    }
-    else
-    {
-        result = false;
-    }
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
     
     // On Mac, we ask the OS for the absolute path to the entrypoint executable
     uint32_t lenActualPath = 0;
@@ -115,10 +101,9 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
         result = false;
     }
 #else
-    // On non-Mac OS, return the symlink that will be resolved by GetAbsolutePath
+    // On other OSs, return the symlink that will be resolved by GetAbsolutePath
     // to fetch the entrypoint EXE absolute path, inclusive of filename.
-    entrypointExecutable.assign(symlinkEntrypointExecutable);
-    result = true;
+    result = GetAbsolutePath(symlinkEntrypointExecutable, entrypointExecutable);
 #endif 
 
     return result;
