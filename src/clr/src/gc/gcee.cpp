@@ -408,12 +408,8 @@ BlockAgain:
         dwWaitResult = WaitForGCEvent->Wait(DETECT_DEADLOCK_TIMEOUT, FALSE );
 
         if (dwWaitResult == WAIT_TIMEOUT) {
-            //  Even in retail, stop in the debugger if available.  Ideally, the
-            //  following would use DebugBreak, but debspew.h makes this a null
-            //  macro in retail.  Note that in debug, we don't use the debspew.h
-            //  macros because these take a critical section that may have been
-            //  taken by a suspended thread.
-            FreeBuildDebugBreak();
+            //  Even in retail, stop in the debugger if available.
+            GCToOSInterface::DebugBreak();
             goto BlockAgain;
         }
 
