@@ -30,6 +30,10 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/signal.hpp"
 
 #include "pal/palinternal.h"
+
+#include <errno.h>
+#include <signal.h>
+
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
 #include "pal/process.h"
@@ -37,8 +41,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/virtual.h"
 #include "pal/utils.h"
 
-#include <signal.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/ucontext.h>
 #include <sys/utsname.h>
@@ -47,8 +49,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/context.h"
 
-using namespace CorUnix;
-
 #ifdef SIGRTMIN
 #define INJECT_ACTIVATION_SIGNAL SIGRTMIN
 #endif
@@ -56,6 +56,9 @@ using namespace CorUnix;
 #if !defined(INJECT_ACTIVATION_SIGNAL) && defined(FEATURE_HIJACK)
 #error FEATURE_HIJACK requires INJECT_ACTIVATION_SIGNAL to be defined
 #endif
+#endif // !HAVE_MACH_EXCEPTIONS
+
+using namespace CorUnix;
 
 /* local type definitions *****************************************************/
 
@@ -67,15 +70,19 @@ typedef void *siginfo_t;
 #endif  /* !HAVE_SIGINFO_T */
 typedef void (*SIGFUNC)(int, siginfo_t *, void *);
 
+#if !HAVE_MACH_EXCEPTIONS
 // Return context and status for the signal_handler_worker.
 struct SignalHandlerWorkerReturnPoint
 {
     bool returnFromHandler;
     CONTEXT context;
 };
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /* internal function declarations *********************************************/
 
+static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
+#if !HAVE_MACH_EXCEPTIONS
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context);
@@ -83,19 +90,23 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
-static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
 #endif
+#endif // !HAVE_MACH_EXCEPTIONS
 
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
 
 /* internal data declarations *********************************************/
 
+static bool registered_sigterm_handler = false;
+
+struct sigaction g_previous_sigterm;
+#if !HAVE_MACH_EXCEPTIONS
 struct sigaction g_previous_sigill;
 struct sigaction g_previous_sigtrap;
 struct sigaction g_previous_sigfpe;
@@ -103,9 +114,6 @@ struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
-struct sigaction g_previous_sigterm;
-
-static bool registered_sigterm_handler = false;
 
 #ifdef INJECT_ACTIVATION_SIGNAL
 struct sigaction g_previous_activation;
@@ -114,9 +122,11 @@ struct sigaction g_previous_activation;
 // Offset of the local variable containing native context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
 int g_common_signal_handler_context_locvar_offset = 0;
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
 
+#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function :
     EnsureSignalAlternateStack
@@ -198,6 +208,7 @@ void FreeSignalAlternateStack()
         free(oss.ss_sp);
     }
 }
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :
@@ -215,6 +226,7 @@ BOOL SEHInitializeSignals(DWORD flags)
 {
     TRACE("Initializing signal handlers\n");
 
+#if !HAVE_MACH_EXCEPTIONS
     /* we call handle_signal for every possible signal, even
        if we don't provide a signal handler.
 
@@ -241,6 +253,7 @@ BOOL SEHInitializeSignals(DWORD flags)
     {
         return FALSE;
     }
+#endif // !HAVE_MACH_EXCEPTIONS
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER)
     {
@@ -248,6 +261,7 @@ BOOL SEHInitializeSignals(DWORD flags)
         registered_sigterm_handler = true;
     }
 
+#if !HAVE_MACH_EXCEPTIONS
 #ifdef INJECT_ACTIVATION_SIGNAL
     handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
 #endif
@@ -261,6 +275,7 @@ BOOL SEHInitializeSignals(DWORD flags)
        issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     */
     signal(SIGPIPE, SIG_IGN);
+#endif // !HAVE_MACH_EXCEPTIONS
 
     return TRUE;
 }
@@ -285,6 +300,7 @@ void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
+#if !HAVE_MACH_EXCEPTIONS
     restore_signal(SIGILL, &g_previous_sigill);
     restore_signal(SIGTRAP, &g_previous_sigtrap);
     restore_signal(SIGFPE, &g_previous_sigfpe);
@@ -292,19 +308,23 @@ void SEHCleanupSignals()
     restore_signal(SIGSEGV, &g_previous_sigsegv);
     restore_signal(SIGINT, &g_previous_sigint);
     restore_signal(SIGQUIT, &g_previous_sigquit);
+#endif // !HAVE_MACH_EXCEPTIONS
 
     if (registered_sigterm_handler)
     {
         restore_signal(SIGTERM, &g_previous_sigterm);
     }
 
+#if !HAVE_MACH_EXCEPTIONS
 #ifdef INJECT_ACTIVATION_SIGNAL
     restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
 #endif
+#endif // !HAVE_MACH_EXCEPTIONS
 }
 
 /* internal function definitions **********************************************/
 
+#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function :
     sigill_handler
@@ -571,6 +591,7 @@ static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
     restore_signal(code, &g_previous_sigquit);
     kill(gPID, code);
 }
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :
@@ -601,6 +622,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
     }
 }
 
+#if !HAVE_MACH_EXCEPTIONS
 #ifdef INJECT_ACTIVATION_SIGNAL
 /*++
 Function :
@@ -799,6 +821,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     return false;
 }
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :
@@ -856,5 +879,3 @@ void restore_signal(int signal_id, struct sigaction *previousAction)
             errno, strerror(errno));
     }
 }
-
-#endif // !HAVE_MACH_EXCEPTIONS
