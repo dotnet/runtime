@@ -41,5 +41,36 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Contains("int[,,]", ex.Message);
 
         }
+
+        [Fact]
+        public void IncorrectNumberOfIndices()
+        {
+            dynamic d = new int[2, 2, 2];
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d[1] = 0);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'3'", ex.Message);
+
+            ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4] = 0);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'3'", ex.Message);
+
+            ex = Assert.Throws<RuntimeBinderException>(() => d[1]);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'3'", ex.Message);
+
+            ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4]);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'3'", ex.Message);
+
+            d = new int[2];
+            ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4] = 0);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'1'", ex.Message);
+
+            ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4]);
+            Assert.Contains("[]", ex.Message);
+            Assert.Contains("'1'", ex.Message);
+
+        }
     }
 }
