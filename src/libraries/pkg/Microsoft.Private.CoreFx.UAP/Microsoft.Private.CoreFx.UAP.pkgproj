@@ -3,23 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
-    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>     
     <TargetFrameworkName>uap</TargetFrameworkName>
     <TargetFrameworkVersion>10.1</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <SkipValidatePackage>true</SkipValidatePackage>
 
     <RefBinDir>$(UAPPackageRefPath)</RefBinDir>
     <LibBinDir>$(UAPPackageRuntimePath)</LibBinDir>
     <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
 
-    <NETStandardVersion>2.0</NETStandardVersion>
-
     <IsFrameworkPackage>true</IsFrameworkPackage>
 
-    <!-- Include symbols in package by default-->
+    <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
   </PropertyGroup>
 
