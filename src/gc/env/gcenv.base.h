@@ -65,6 +65,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define E_UNEXPECTED            0x8000FFFF
 #define E_NOTIMPL               0x80004001
 #define E_INVALIDARG            0x80070057
+#define COR_E_EXECUTIONENGINE   0x80131506
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
