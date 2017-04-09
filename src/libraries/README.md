@@ -22,7 +22,7 @@ Great starting page: http://dotnet.github.io
     * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/articles/core/preview3/deploying)
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
-* [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md)
+* [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md) (and why some APIs will be left out)
 
 
 
