@@ -1394,3 +1394,9 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
 
     return false;
 }
+
+MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
+{
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return g_pFreeObjectMethodTable;
+}
