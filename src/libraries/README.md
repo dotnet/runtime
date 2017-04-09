@@ -30,10 +30,10 @@ Great starting page: http://dotnet.github.io
 
 Some of the best ways to contribute are to try things out, file bugs, join in design conversations, and fix issues.
 
-If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is at [Connect](http://connect.microsoft.com/VisualStudio) or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
-
 * [Dogfooding daily builds](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md)
 * If you have a question or idea, [file a new issue](https://github.com/dotnet/corefx/issues/new).
+
+If you are having issues with the "full" .NET Framework (also called "Desktop"), the best way to file a bug is at [Connect](http://connect.microsoft.com/VisualStudio) or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
 
 ### Issue Guide
 
