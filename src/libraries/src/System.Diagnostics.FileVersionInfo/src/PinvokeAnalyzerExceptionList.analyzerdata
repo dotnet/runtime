@@ -1,0 +1,4 @@
+kernel32.dll!VerLanguageNameW
+version.dll!GetFileVersionInfoExW
+version.dll!GetFileVersionInfoSizeExW
+version.dll!VerQueryValueW
