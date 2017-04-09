@@ -3376,13 +3376,34 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
     }
 }
 
+// Generate code for a load pair from some address + offset
+//   base: tree node which can be either a local address or arbitrary node
+//   offset: distance from the base from which to load
+void CodeGen::genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* base, unsigned offset)
+{
+    emitter* emit = getEmitter();
+
+    if (base->OperIsLocalAddr())
+    {
+        if (base->gtOper == GT_LCL_FLD_ADDR)
+            offset += base->gtLclFld.gtLclOffs;
+
+        // TODO-ARM64-CQ: Implement support for using a ldp instruction with a varNum (see emitIns_R_S)
+        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+    }
+    else
+    {
+        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, dst, dst2, base->gtRegNum, offset);
+    }
+}
+
 // Generate code for a store to some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
 void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset)
 {
-#if 0
-    emitter *emit = getEmitter();
+    emitter* emit = getEmitter();
 
     if (base->OperIsLocalAddr())
     {
@@ -3392,11 +3413,30 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
     }
     else
     {
-        emit->emitIns_AR_R(ins, size, src, base->gtRegNum, offset);
+        emit->emitIns_R_R_I(ins, size, src, base->gtRegNum, offset);
     }
-#else  // !0
-    NYI("genCodeForStoreOffset");
-#endif // !0
+}
+
+// Generate code for a store pair to some address + offset
+//   base: tree node which can be either a local address or arbitrary node
+//   offset: distance from the base from which to load
+void CodeGen::genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* base, unsigned offset)
+{
+    emitter* emit = getEmitter();
+
+    if (base->OperIsLocalAddr())
+    {
+        if (base->gtOper == GT_LCL_FLD_ADDR)
+            offset += base->gtLclFld.gtLclOffs;
+
+        // TODO-ARM64-CQ: Implement support for using a stp instruction with a varNum (see emitIns_S_R)
+        emit->emitIns_S_R(INS_str, EA_8BYTE, src, base->gtLclVarCommon.gtLclNum, offset);
+        emit->emitIns_S_R(INS_str, EA_8BYTE, src2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+    }
+    else
+    {
+        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, src, src2, base->gtRegNum, offset);
+    }
 }
 
 // Generates CpBlk code by performing a loop unroll
@@ -3405,80 +3445,96 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
 //  This may seem small but covers >95% of the cases in several framework assemblies.
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
-#if 0
     // Make sure we got the arguments of the cpblk operation in the right registers
     unsigned   size    = cpBlkNode->Size();
     GenTreePtr dstAddr = cpBlkNode->Addr();
     GenTreePtr source  = cpBlkNode->Data();
-    noway_assert(source->gtOper == GT_IND);
-    GenTreePtr srcAddr = source->gtGetOp1();
+    GenTreePtr srcAddr = nullptr;
 
-    assert((size != 0 ) && (size <= CPBLK_UNROLL_LIMIT));
+    assert((size != 0) && (size <= CPBLK_UNROLL_LIMIT));
 
-    emitter *emit = getEmitter();
+    emitter* emit = getEmitter();
 
-    if (!srcAddr->isContained())
-        genConsumeReg(srcAddr);
+    if (source->gtOper == GT_IND)
+    {
+        srcAddr = source->gtGetOp1();
+        if (srcAddr->isUsedFromReg())
+        {
+            genConsumeReg(srcAddr);
+        }
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        // TODO-Cleanup: Consider making the addrForm() method in Rationalize public, e.g. in GenTree.
+        // OR: transform source to GT_IND(GT_LCL_VAR_ADDR)
+        if (source->OperGet() == GT_LCL_VAR)
+        {
+            source->SetOper(GT_LCL_VAR_ADDR);
+        }
+        else
+        {
+            assert(source->OperGet() == GT_LCL_FLD);
+            source->SetOper(GT_LCL_FLD_ADDR);
+        }
+        srcAddr = source;
+    }
 
-    if (!dstAddr->isContained())
+    if (dstAddr->isUsedFromReg())
+    {
         genConsumeReg(dstAddr);
+    }
 
     unsigned offset = 0;
 
-    // If the size of this struct is larger than 16 bytes
-    // let's use SSE2 to be able to do 16 byte at a time 
-    // loads and stores.
-    if (size >= XMM_REGSIZE_BYTES)
+    // Grab the integer temp register to emit the loads and stores.
+    regMaskTP tmpMask = genFindLowestBit(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
+    regNumber tmpReg  = genRegNumFromMask(tmpMask);
+
+    if (size >= 2 * REGSIZE_BYTES)
     {
-        assert(cpBlkNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(cpBlkNode->gtRsvdRegs) == 1);
-        regNumber xmmReg = genRegNumFromMask(cpBlkNode->gtRsvdRegs);
-        assert(genIsValidFloatReg(xmmReg));
-        size_t slots = size / XMM_REGSIZE_BYTES;
+        regMaskTP tmp2Mask = cpBlkNode->gtRsvdRegs & RBM_ALLINT & ~tmpMask;
+        regNumber tmp2Reg  = genRegNumFromMask(tmp2Mask);
+
+        size_t slots = size / (2 * REGSIZE_BYTES);
 
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, srcAddr, offset);
+            genCodeForLoadPairOffset(tmpReg, tmp2Reg, srcAddr, offset);
             // Store
-            genCodeForStoreOffset(INS_movdqu, EA_8BYTE, xmmReg, dstAddr, offset);
-            offset += XMM_REGSIZE_BYTES;
+            genCodeForStorePairOffset(tmpReg, tmp2Reg, dstAddr, offset);
+            offset += 2 * REGSIZE_BYTES;
         }
     }
 
     // Fill the remainder (15 bytes or less) if there's one.
     if ((size & 0xf) != 0)
     {
-        // Grab the integer temp register to emit the remaining loads and stores.
-        regNumber tmpReg = genRegNumFromMask(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
-
         if ((size & 8) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_8BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_mov, EA_8BYTE, tmpReg, dstAddr, offset);
+            genCodeForLoadOffset(INS_ldr, EA_8BYTE, tmpReg, srcAddr, offset);
+            genCodeForStoreOffset(INS_str, EA_8BYTE, tmpReg, dstAddr, offset);
             offset += 8;
         }
         if ((size & 4) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_mov, EA_4BYTE, tmpReg, dstAddr, offset);
+            genCodeForLoadOffset(INS_ldr, EA_4BYTE, tmpReg, srcAddr, offset);
+            genCodeForStoreOffset(INS_str, EA_4BYTE, tmpReg, dstAddr, offset);
             offset += 4;
         }
         if ((size & 2) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_2BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_mov, EA_2BYTE, tmpReg, dstAddr, offset);
+            genCodeForLoadOffset(INS_ldrh, EA_2BYTE, tmpReg, srcAddr, offset);
+            genCodeForStoreOffset(INS_strh, EA_2BYTE, tmpReg, dstAddr, offset);
             offset += 2;
         }
         if ((size & 1) != 0)
         {
-            genCodeForLoadOffset(INS_mov, EA_1BYTE, tmpReg, srcAddr, offset);
-            genCodeForStoreOffset(INS_mov, EA_1BYTE, tmpReg, dstAddr, offset);
+            genCodeForLoadOffset(INS_ldrb, EA_1BYTE, tmpReg, srcAddr, offset);
+            genCodeForStoreOffset(INS_strb, EA_1BYTE, tmpReg, dstAddr, offset);
         }
     }
-#else  // !0
-    NYI("genCodeForCpBlkUnroll");
-#endif // !0
 }
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
@@ -3618,13 +3674,10 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
 
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-#if 0
-    // Enable this when we support cpblk loop unrolling.
     if (blockSize != 0)
     {
-        assert(blockSize->gtIntCon.gtIconVal >= CPBLK_UNROLL_LIMIT);
+        assert(blockSize > CPBLK_UNROLL_LIMIT);
     }
-#endif // 0
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 }
