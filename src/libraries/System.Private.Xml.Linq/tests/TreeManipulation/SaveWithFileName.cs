@@ -17,8 +17,6 @@ namespace XLinqTests
 {
     public class SaveWithFileName
     {
-        private string _fileName = "SaveBaseline";
-
         [Fact]
         public void XDocumentSaveToFile()
         {
@@ -29,16 +27,14 @@ namespace XLinqTests
         public void XDocumentSave()
         {
             string markup = "<e> <e2 /> </e>";
-            try
+
+            using (TempFile temp = TempFile.Create())
             {
                 XDocument d = XDocument.Parse(markup, LoadOptions.PreserveWhitespace);
-                d.Save(_fileName);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
-                File.Delete(_fileName);
+                d.Save(temp.Path);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(temp.ReadAllText()));
             }
         }
 
@@ -46,16 +42,13 @@ namespace XLinqTests
         public void XDocumentSave_SaveOptions()
         {
             string markup = "<e> <e2 /> </e>";
-            try
+            using (TempFile temp = TempFile.Create())
             {
                 XDocument d = XDocument.Parse(markup, LoadOptions.PreserveWhitespace);
-                d.Save(_fileName, SaveOptions.DisableFormatting);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, File.ReadAllText(_fileName));
-                File.Delete(_fileName);
+                d.Save(temp.Path, SaveOptions.DisableFormatting);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, temp.ReadAllText());
             }
         }
 
@@ -77,16 +70,13 @@ namespace XLinqTests
         public void XElementSave()
         {
             string markup = "<e a=\"value\"> <e2 /> </e>";
-            try
+            using (TempFile temp = TempFile.Create())
             {
                 XElement e = XElement.Parse(markup, LoadOptions.PreserveWhitespace);
-                e.Save(_fileName);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
-                File.Delete(_fileName);
+                e.Save(temp.Path);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(temp.ReadAllText()));
             }
         }
 
@@ -94,16 +84,13 @@ namespace XLinqTests
         public void XElementSave_SaveOptions()
         {
             string markup = "<e a=\"value\"> <e2 /> </e>";
-            try
+            using (TempFile temp = TempFile.Create())
             {
                 XElement e = XElement.Parse(markup, LoadOptions.PreserveWhitespace);
-                e.Save(_fileName, SaveOptions.DisableFormatting);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, File.ReadAllText(_fileName));
-                File.Delete(_fileName);
+                e.Save(temp.Path, SaveOptions.DisableFormatting);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, temp.ReadAllText());
             }
         }
 
@@ -127,17 +114,14 @@ namespace XLinqTests
         public void XStreamingElementSave()
         {
             string markup = "<e a=\"value\"> <!--comment--> <e2> <![CDATA[cdata]]> </e2> <?pi target?> </e>";
-            try
+            using (TempFile temp = TempFile.Create())
             {
                 XElement e = XElement.Parse(markup, LoadOptions.PreserveWhitespace);
                 XStreamingElement e2 = new XStreamingElement(e.Name, e.Attributes(), e.Nodes());
-                e2.Save(_fileName);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
-                File.Delete(_fileName);
+                e2.Save(temp.Path);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(temp.ReadAllText()));
             }
         }
 
@@ -145,17 +129,14 @@ namespace XLinqTests
         public void XStreamingElementSave_SaveOptions()
         {
             string markup = "<e a=\"value\"> <!--comment--> <e2> <![CDATA[cdata]]> </e2> <?pi target?> </e>";
-            try
+            using (TempFile temp = TempFile.Create())
             {
                 XElement e = XElement.Parse(markup, LoadOptions.PreserveWhitespace);
                 XStreamingElement e2 = new XStreamingElement(e.Name, e.Attributes(), e.Nodes());
-                e2.Save(_fileName, SaveOptions.DisableFormatting);
-            }
-            finally
-            {
-                Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, File.ReadAllText(_fileName));
-                File.Delete(_fileName);
+                e2.Save(temp.Path, SaveOptions.DisableFormatting);
+
+                temp.AssertExists();
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, temp.ReadAllText());
             }
         }
 
@@ -164,42 +145,32 @@ namespace XLinqTests
         //
         private static string SerializeXDocumentSaveToFile(XNode node)
         {
-            string filename = "DontExist";
             string result;
-            try
+            using (TempFile temp = TempFile.Create())
             {
-                filename = Path.GetTempFileName();
-                ((XDocument)node).Save(filename);
-                using (TextReader tr = new StreamReader(filename))
+                ((XDocument)node).Save(temp.Path);
+                using (TextReader tr = new StreamReader(temp.Path))
                 {
                     result = StripOffXmlDeclaration(tr.ReadToEnd());
                 }
-            }
-            finally
-            {
-                Assert.True(File.Exists(filename));
-                File.Delete(filename);
+
+                temp.AssertExists();
             }
             return result;
         }
 
         private static string SerializeXElementSaveToFile(XNode node)
         {
-            string filename = "DontExist";
             string result;
-            try
+            using (TempFile temp = TempFile.Create())
             {
-                filename = Path.GetTempFileName();
-                ((XElement)node).Save(filename);
-                using (TextReader tr = new StreamReader(filename))
+                ((XElement)node).Save(temp.Path);
+                using (TextReader tr = new StreamReader(temp.Path))
                 {
                     result = StripOffXmlDeclaration(tr.ReadToEnd());
                 }
-            }
-            finally
-            {
-                Assert.True(File.Exists(filename));
-                File.Delete(filename);
+
+                temp.AssertExists();
             }
             return result;
         }

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+using Xunit;
+
 namespace System.IO
 {
     /// <summary>
@@ -16,10 +19,30 @@ namespace System.IO
         public TempFile(string path, long length = 0)
         {
             Path = path;
-            File.WriteAllBytes(path, new byte[length]);
+
+            if (length > -1)
+                File.WriteAllBytes(path, new byte[length]);
         }
 
         ~TempFile() { DeleteFile(); }
+
+        public static TempFile Create(long length = -1, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            string file = string.Format("{0}_{1}_{2}", System.IO.Path.GetRandomFileName(), memberName, lineNumber);
+            string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), file);
+
+            return new TempFile(path, length);
+        }
+
+        public void AssertExists()
+        {
+            Assert.True(File.Exists(Path));
+        }
+
+        public string ReadAllText()
+        {
+            return File.ReadAllText(Path);
+        }
 
         public void Dispose()
         {
