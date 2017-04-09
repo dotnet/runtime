@@ -2,11 +2,15 @@
 
 * [Announcement: Driving towards zero 2.0 bugs by **2017/5/10** (ZBB)](https://github.com/dotnet/corefx/issues/17619)
 
+
+
 # .NET Core Libraries (CoreFX)
 
 This repo contains the library implementation (called "CoreFX") for .NET Core. It includes System.Collections, System.IO, System.Xml, and many other components.
 The corresponding [.NET Core Runtime repo](https://github.com/dotnet/coreclr) (called "CoreCLR") contains the runtime implementation for .NET Core. It includes RyuJIT, the .NET GC, and many other components.
 Runtime-specific library code ([mscorlib](https://github.com/dotnet/coreclr/tree/master/src/mscorlib)) lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime (e.g. [CoreRT](https://github.com/dotnet/corert)).
+
+
 
 ## .NET Core
 
@@ -19,6 +23,8 @@ Great starting page: http://dotnet.github.io
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 * [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md)
+
+
 
 ## How to Engage, Contribute and Provide Feedback
 
@@ -61,15 +67,17 @@ up via email to ensure we received your original message. Further information,
 including the MSRC PGP key, can be found in the
 [Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
 
+
+
 ## License
 
 .NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE).
 
+
+
 ## .NET Foundation
 
 .NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
-
-## Related Projects
 
 There are many .NET related projects on GitHub.
 
