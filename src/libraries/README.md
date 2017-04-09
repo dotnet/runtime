@@ -1,4 +1,4 @@
-# Latest News and Announcements
+### Latest News and Announcements
 
 * [Announcement: Driving towards zero 2.0 bugs by **2017/5/10** (ZBB)](https://github.com/dotnet/corefx/issues/17619)
 
