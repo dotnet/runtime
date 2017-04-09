@@ -94,21 +94,21 @@ namespace System.Linq.Expressions.Tests
         {
             PropertyInfo property = typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.EnumerableProperty));
             MemberInfo member = typeof(ListWrapper<int>).GetMember(nameof(ListWrapper<int>.EnumerableProperty))[0];
-            yield return new object[] {Expression.ListBind(property)};
-            yield return new object[] {Expression.ListBind(property, Enumerable.Empty<ElementInit>())};
-            yield return new object[] {Expression.ListBind(member)};
-            yield return new object[] {Expression.ListBind(member, Enumerable.Empty<ElementInit>())};
+            yield return new object[] { Expression.ListBind(property) };
+            yield return new object[] { Expression.ListBind(property, Enumerable.Empty<ElementInit>()) };
+            yield return new object[] { Expression.ListBind(member) };
+            yield return new object[] { Expression.ListBind(member, Enumerable.Empty<ElementInit>()) };
         }
 
         [Theory, PerCompilationType(nameof(NonAddableListExpressions))]
         public void NonAddableListType(MemberListBinding listBinding, bool useInterpreter)
         {
             Func<ListWrapper<int>> func = Expression.Lambda<Func<ListWrapper<int>>>(
-                            Expression.MemberInit(
-                                Expression.New(typeof(ListWrapper<int>)),
-                                listBinding
-                                )
-                            ).Compile(useInterpreter);
+                Expression.MemberInit(
+                    Expression.New(typeof(ListWrapper<int>)),
+                    listBinding
+                )
+            ).Compile(useInterpreter);
             Assert.Empty(func().EnumerableProperty);
         }
 
@@ -140,12 +140,12 @@ namespace System.Linq.Expressions.Tests
             PropertyInfo property = typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty));
             MemberInfo member = typeof(ListWrapper<int>).GetMember(nameof(ListWrapper<int>.ListProperty))[0];
             MemberInfo fieldMember = typeof(ListWrapper<int>).GetMember(nameof(ListWrapper<int>.ListField))[0];
-            yield return new object[] {Expression.ListBind(property)};
-            yield return new object[] {Expression.ListBind(property, Enumerable.Empty<ElementInit>())};
-            yield return new object[] {Expression.ListBind(member)};
-            yield return new object[] {Expression.ListBind(member, Enumerable.Empty<ElementInit>())};
-            yield return new object[] {Expression.ListBind(fieldMember)};
-            yield return new object[] {Expression.ListBind(fieldMember, Enumerable.Empty<ElementInit>())};
+            yield return new object[] { Expression.ListBind(property) };
+            yield return new object[] { Expression.ListBind(property, Enumerable.Empty<ElementInit>()) };
+            yield return new object[] { Expression.ListBind(member) };
+            yield return new object[] { Expression.ListBind(member, Enumerable.Empty<ElementInit>()) };
+            yield return new object[] { Expression.ListBind(fieldMember) };
+            yield return new object[] { Expression.ListBind(fieldMember, Enumerable.Empty<ElementInit>()) };
         }
 
         [Theory]
@@ -156,8 +156,8 @@ namespace System.Linq.Expressions.Tests
                 Expression.MemberInit(
                     Expression.New(typeof(ListWrapper<int>)),
                     binding
-                    )
-                ).Compile(useInterpreter);
+                )
+            ).Compile(useInterpreter);
             Assert.Empty(func().ListProperty);
         }
 
@@ -184,10 +184,10 @@ namespace System.Linq.Expressions.Tests
                         Expression.ElementInit(
                             typeof(List<int>).GetMethod(nameof(List<int>.Add)),
                             Expression.Constant(0)
-                            )
                         )
                     )
-                );
+                )
+            );
 
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
@@ -204,10 +204,10 @@ namespace System.Linq.Expressions.Tests
                         Expression.ElementInit(
                             typeof(List<int>).GetMethod(nameof(List<int>.Add)),
                             Expression.Constant(0)
-                            )
                         )
                     )
-                );
+                )
+            );
 
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
@@ -215,17 +215,17 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void InitializeVoidAdd(bool useInterperter)
         {
-            Expression<Func<ListWrapper<int>>> listInit = () => new ListWrapper<int> {ListProperty = {1, 4, 9, 16}};
+            Expression<Func<ListWrapper<int>>> listInit = () => new ListWrapper<int> { ListProperty = { 1, 4, 9, 16 } };
             Func<ListWrapper<int>> func = listInit.Compile(useInterperter);
-            Assert.Equal(new[] {1, 4, 9, 16}, func().ListProperty);
+            Assert.Equal(new[] { 1, 4, 9, 16 }, func().ListProperty);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void InitializeNonVoidAdd(bool useInterpreter)
         {
-            Expression<Func<ListWrapper<int>>> hashInit = () => new ListWrapper<int> {HashSetField = {1, 4, 9, 16}};
+            Expression<Func<ListWrapper<int>>> hashInit = () => new ListWrapper<int> { HashSetField = { 1, 4, 9, 16 } };
             Func<ListWrapper<int>> func = hashInit.Compile(useInterpreter);
-            Assert.Equal(new[] {1, 4, 9, 16}, func().HashSetField.OrderBy(i => i));
+            Assert.Equal(new[] { 1, 4, 9, 16 }, func().HashSetField.OrderBy(i => i));
         }
 
         [Fact]
@@ -272,6 +272,23 @@ namespace System.Linq.Expressions.Tests
             MemberListBinding binding = Expression.ListBind(
                 typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), initializers);
             Assert.Same(binding, binding.Update(initializers));
+        }
+
+        [Fact]
+        public void OpenGenericTypesMembers()
+        {
+            MemberInfo member = typeof(ListWrapper<>).GetMember(nameof(ListWrapper<int>.ListProperty))[0];
+            PropertyInfo property = typeof(ListWrapper<>).GetProperty(nameof(ListWrapper<int>.ListProperty));
+            FieldInfo field = typeof(ListWrapper<>).GetField(nameof(ListWrapper<int>.ListField));
+            MethodInfo method = property.GetMethod;
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(member));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(property, Enumerable.Empty<ElementInit>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(property));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(field, Enumerable.Empty<ElementInit>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(field));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(method, Enumerable.Empty<ElementInit>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(method));
         }
 
 #if FEATURE_COMPILE
