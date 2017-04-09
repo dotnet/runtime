@@ -9,7 +9,6 @@ Many of the CoreFX libraries type-forward their public APIs to the implementatio
 **Staging the changes**
 
 Make the changes to CoreCLR, including System.Private.CoreLib
-- Update `coreclr/src/mscorlib/model.xml` with the new APIs. APIs that are not listed in this file will be stripped out prior to publishing.
 - Merge the changes
 - Wait for a new System.Private.CoreLib to be published. Check the latest published version [here](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.TargetingPack.Private.CoreCLR).
 
