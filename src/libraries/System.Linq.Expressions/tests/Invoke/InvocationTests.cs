@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -143,5 +144,106 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal(i, ((ConstantExpression)invoke.GetArgument(i)).Value);
             }
         }
+
+        [Fact]
+        public static void ArgumentCountMismatchLambda()
+        {
+            Expression<Func<int, int, int>> adder = (x, y) => x + y;
+            Assert.Throws<InvalidOperationException>(() => Expression.Invoke(adder, Expression.Constant(1)));
+            Assert.Throws<InvalidOperationException>(() => Expression.Invoke(adder, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void ArgumentTypeMismatchLambda()
+        {
+            Expression<Func<int, int, int>> adder = (x, y) => x + y;
+            Assert.Throws<ArgumentException>("arg1", () => Expression.Invoke(adder, Expression.Constant(1), Expression.Constant(1L)));
+            Assert.Throws<ArgumentException>("arg0", () => Expression.Invoke(adder, Expression.Constant(1L), Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void ArgumentCountMismatchDelegate()
+        {
+            Func<int, int, int> adder = (x, y) => x + y;
+            Assert.Throws<InvalidOperationException>(() => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1)));
+            Assert.Throws<InvalidOperationException>(() => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void ArgumentTypeMismatchDelegate()
+        {
+            Func<int, int, int> adder = (x, y) => x + y;
+            Assert.Throws<ArgumentException>("arg1", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1), Expression.Constant(1L)));
+            Assert.Throws<ArgumentException>("arg0", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1L), Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void UpdateSameReturnsSame()
+        {
+            Expression<Func<int, int, int>> adder = (x, y) => x + y;
+            Expression lhs = Expression.Constant(1);
+            Expression rhs = Expression.Constant(2);
+            var invoke = Expression.Invoke(adder, lhs, rhs);
+            Assert.Same(invoke, invoke.Update(adder, new[] {lhs, rhs}));
+        }
+
+        [Fact]
+        public static void UpdateDifferentLambdaReturnsDifferent()
+        {
+            Expression<Func<int, int, int>> adder = (x, y) => x + y;
+            Expression lhs = Expression.Constant(1);
+            Expression rhs = Expression.Constant(2);
+            var invoke = Expression.Invoke(adder, lhs, rhs);
+            adder = (x, y) => y + x;
+            Assert.NotSame(invoke, invoke.Update(adder, new[] { lhs, rhs }));
+        }
+
+        [Fact]
+        public static void UpdateDifferentArgReturnsDifferent()
+        {
+            Expression<Func<int, int, int>> adder = (x, y) => x + y;
+            Expression lhs = Expression.Constant(1);
+            Expression rhs = Expression.Constant(2);
+            var invoke = Expression.Invoke(adder, lhs, rhs);
+            Assert.NotSame(invoke, invoke.Update(adder, new[] { lhs, Expression.Constant(2) }));
+        }
+
+        private static IEnumerable<object[]> InvocationExpressions()
+        {
+            for (int i = 0; i <= 6; ++i)
+            {
+                Type[] genArgs = Enumerable.Repeat(typeof(int), i + 1).ToArray();
+                Type delegateType = Expression.GetFuncType(genArgs);
+
+                ParameterExpression instance = Expression.Parameter(delegateType);
+
+                yield return new object[] {Expression.Invoke(instance, Enumerable.Repeat(Expression.Constant(0), i))};
+            }
+        }
+
+        private class ParameterChangingVisitor : ExpressionVisitor
+        {
+            protected override Expression VisitParameter(ParameterExpression node) => Expression.Parameter(node.Type);
+        }
+
+        private class ParameterAndConstantChangingVisitor : ParameterChangingVisitor
+        {
+            protected override Expression VisitConstant(ConstantExpression node) => Expression.Constant(node.Value, node.Type);
+        }
+
+        [Theory, MemberData(nameof(InvocationExpressions))]
+        public static void LambdaChangeVisit(InvocationExpression invoke)
+        {
+            Assert.NotSame(invoke, new ParameterChangingVisitor().Visit(invoke));
+        }
+
+
+        [Theory, MemberData(nameof(InvocationExpressions))]
+        public static void LambdaAndArgChangeVisit(InvocationExpression invoke)
+        {
+            Assert.NotSame(invoke, new ParameterAndConstantChangingVisitor().Visit(invoke));
+        }
+
+
     }
 }
