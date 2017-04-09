@@ -232,7 +232,13 @@ void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 
 void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
 
-void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
+void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset);
+
+#ifdef _TARGET_ARM64_
+void genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* base, unsigned offset);
+
+void genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* base, unsigned offset);
+#endif // _TARGET_ARM64_
 
 void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
 
