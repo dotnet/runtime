@@ -125,39 +125,21 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StateMachineAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\INotifyCompletion.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
   </ItemGroup>
@@ -181,17 +163,13 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CallingConvention.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\HandleRef.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
@@ -310,7 +288,6 @@
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ICloneable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArraySegment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
@@ -327,6 +304,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BCLDebug.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AccessViolationException.cs" />
@@ -336,7 +314,6 @@
     <Compile Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ArgumentException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgumentOutOfRangeException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />
@@ -368,16 +345,12 @@
     <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MissingMethodException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Number.cs" />
     <Compile Include="$(BclSourcesRoot)\System\OperatingSystem.cs" />
     <Compile Include="$(BclSourcesRoot)\System\OperationCanceledException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ParamsArray.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\PlatformID.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Progress.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Random.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ResId.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
@@ -401,7 +374,6 @@
     <Compile Include="$(BclSourcesRoot)\System\UInt64.cs" />
     <Compile Include="$(BclSourcesRoot)\System\UIntPtr.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Version.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
     <Compile Include="$(BclSourcesRoot)\System\XmlIgnoreMemberAttribute.cs" />
@@ -628,23 +600,15 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\File.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\SeekOrigin.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\Stream.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\TextReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
@@ -654,13 +618,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilters.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsUnix)' != 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
@@ -677,7 +639,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\ContractsBCL.cs" />
   </ItemGroup>
@@ -699,9 +660,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IFormatterConverter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IObjectReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISerializable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
@@ -709,13 +667,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\NonVersionableAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
@@ -758,20 +711,13 @@
     <Compile Include="$(BclSourcesRoot)\System\Resources\__HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceReader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\LooselyLinkedResourceReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\MissingManifestResourceException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\MissingSatelliteAssemblyException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\NeutralResourcesLanguageAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceFallbackManager.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceReader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceSet.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceTypeCode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\RuntimeResourceSet.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\SatelliteContractVersionAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\UltimateResourceFallbackLocation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Nullable.cs" />
@@ -801,13 +747,11 @@
     <Compile Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\kernel32\Interop.Globalization.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Normaliz\Interop.Idna.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Normaliz\Interop.Normalization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.Windows.cs" />
     <!-- Interop sources -->
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
@@ -815,7 +759,6 @@
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
@@ -833,7 +776,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />
-    <Compile Include="src\System\ValueTuple.cs" />
   </ItemGroup>
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <PropertyGroup>
