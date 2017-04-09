@@ -97,7 +97,7 @@ namespace System
             if (enc.CodePage != Encoding.Unicode.CodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
@@ -111,7 +111,7 @@ namespace System
             if (enc.CodePage != Encoding.Unicode.CodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
@@ -421,7 +421,7 @@ namespace System
 
                 int mode = 0;
                 if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
                 return (mode & Interop.Kernel32.ENABLE_PROCESSED_INPUT) == 0;
             }
@@ -444,7 +444,7 @@ namespace System
                 }
 
                 if (!Interop.Kernel32.SetConsoleMode(handle, mode))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
