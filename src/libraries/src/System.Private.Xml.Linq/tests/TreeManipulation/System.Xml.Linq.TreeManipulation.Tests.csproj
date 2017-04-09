@@ -13,6 +13,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <Compile Include="AddFirstAddFirstIntoDocument.cs" />
     <Compile Include="AddFirstInvalidIntoXDocument.cs" />
     <Compile Include="AddFirstSingeNodeAddIntoElement.cs" />
