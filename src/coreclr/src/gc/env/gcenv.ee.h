@@ -73,6 +73,7 @@ public:
     static bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj);
     static bool ForceFullGCToBeBlocking();
     static bool EagerFinalized(Object* obj);
+    static MethodTable* GetFreeObjectMethodTable();
 };
 
 #endif // __GCENV_EE_H__

@@ -286,6 +286,11 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     return false;
 }
 
+MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
+{
+    return g_pFreeObjectMethodTable;
+}
+
 bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC

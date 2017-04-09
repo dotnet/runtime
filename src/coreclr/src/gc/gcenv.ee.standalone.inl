@@ -231,6 +231,11 @@ ALWAYS_INLINE bool GCToEEInterface::EagerFinalized(Object* obj)
     return g_theGCToCLR->EagerFinalized(obj);
 }
 
+ALWAYS_INLINE MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->GetFreeObjectMethodTable();
+}
 #undef ALWAYS_INLINE
 
 #endif // __GCTOENV_EE_STANDALONE_INL__
