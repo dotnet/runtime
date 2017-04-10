@@ -752,11 +752,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrArgKind.Str:
                     psz = parg.psz;
                     break;
-                case ErrArgKind.PredefName:
-                    BeginString();
-                    ErrAppendName(NameManager.GetPredefinedName(parg.pdn));
-                    EndString(out psz);
-                    break;
                 case ErrArgKind.SymWithType:
                     {
                         SubstContext ctx = new SubstContext(parg.swtMemo.ats, null);

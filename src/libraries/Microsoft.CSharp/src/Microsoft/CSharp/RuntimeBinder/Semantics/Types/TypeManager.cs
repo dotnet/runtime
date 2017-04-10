@@ -827,11 +827,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public void ReportMissingPredefTypeError(ErrorHandling errorContext, PredefinedType pt)
-        {
-            _predefTypes.ReportMissingPredefTypeError(errorContext, pt);
-        }
-
         public static bool TypeContainsType(CType type, CType typeFind)
         {
         LRecurse:  // Label used for "tail" recursion.
