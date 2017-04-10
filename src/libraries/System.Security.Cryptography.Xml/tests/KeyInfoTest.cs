@@ -274,18 +274,28 @@ namespace System.Security.Cryptography.Xml.Tests
                         Assert.Equal(Convert.FromBase64String(dsaJ), dsaParams.J);
                     }
 
-                    Assert.Equal(Convert.FromBase64String(dsaSeed), dsaParams.Seed);
-
-                    byte[] counter = Convert.FromBase64String(dsaPgenCounter);
-                    Assert.InRange(counter.Length, 1, 4);
-                    int counterVal = 0;
-                    for (int j = 0; j < counter.Length; j++)
+                    // Seed and Counter are not guaranteed to roundtrip
+                    // they should either both be non-null or both null
+                    if (dsaParams.Seed != null)
                     {
-                        counterVal <<= 8;
-                        counterVal |= counter[j];
-                    }
+                        Assert.Equal(Convert.FromBase64String(dsaSeed), dsaParams.Seed);
 
-                    Assert.Equal(counterVal, dsaParams.Counter);
+                        byte[] counter = Convert.FromBase64String(dsaPgenCounter);
+                        Assert.InRange(counter.Length, 1, 4);
+                        int counterVal = 0;
+                        for (int j = 0; j < counter.Length; j++)
+                        {
+                            counterVal <<= 8;
+                            counterVal |= counter[j];
+                        }
+
+                        Assert.Equal(counterVal, dsaParams.Counter);
+                    }
+                    else
+                    {
+                        Assert.Null(dsaParams.Seed);
+                        Assert.Equal(default(int), dsaParams.Counter);
+                    }
                 }
                 else if (clause is RSAKeyValue)
                 {
