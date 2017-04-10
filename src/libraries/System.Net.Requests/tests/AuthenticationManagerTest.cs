@@ -37,7 +37,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void RegisteredModules_DefaultCount_ExpectedValue()
+        public void RegisteredModules_DefaultCount_ExpectedValue()
         {
             int count = 0;
             IEnumerator modules = AuthenticationManager.RegisteredModules;
