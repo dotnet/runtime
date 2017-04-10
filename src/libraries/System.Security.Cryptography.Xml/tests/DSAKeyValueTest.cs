@@ -127,12 +127,12 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ImportDSAKeyValue()
         {
-            string p = "nHoAAyz1ZrA/4ajJnY09oVYvr/juj6cJHhVKnrIpIlWRh2EHIFsDiHR7hFvTvvTwmPiNRKBqO7Q1LST5qabEkvbvhk11d5wwItTWmLqO969NkUzA2cTqebEdshDhnl8YN7DrkCdrYu0PE0ZL/ho5yp6aRYME/Zoq2qDet+He3v9ZkjlJLg5mLPK6Q6tmLeSNTob/6fABv1RCREsyvYegWp4TxLvrgb/fd6Wtt7GC4fwWQlBeRmBIYFklNcE2g6iYMQOkgM7D/a0YrhUI3Vy3vfFNR/kKF+OBhB82V+QPhqPbdkXA+StpwOYj48mHHyr3ZvmlQdHJSkEY/p5JFbG8vw==";
-            string q = "ni1fE84dSrJerbAmEAYI/0w+q97KSFmqrzUFyHk2V48=";
-            string g = "m46FXiDGgIUpO7ehefrbdGqVn1+VOEc6Cyxi5xKXIDTYtLST6wy+FPybWOuYv1Sya8AeEOmz6HAht/k3GQZwVkt1ZSZCJZw8/p/zwyHTST+NdnCHXGDGvFh/wnEa0UsmTBmqBsxPiCOahWXsQ4VvTI5exRsu+/qwc/Nqbw1K8eq6pzn67ZA2/RyLepLPZGBo9vkdPmYtFKRj3PmC7/mjVWfA3tyPa0coFIx9XtjPiVtnmG9lJ9dVhGIY2cO7j8iDdBLdx6enMu67sDyHlPBDpLYSRx2Qqkcy1IdlAyxF6fOnxsDBC/N7LXNHea52XQn1TO2CvbIG7KXI8SxLr+CVbA==";
-            string y = "Yt23Dtp7UT1h/HsE6qlLBX+PIwdK0N0p0wFdWmIkw91hD41Y7OKC5xXs5jkHqSfQtiGYsUaS4aYoxQiuE9wnjiPUEii5Zau7s3jVkeZAvmRDQkjvl6SPb7kNIcw2PYdL9wSsL1euaTCWeH6m7fhO0tBJN0INYFXZ3ca4bWBYwNgs2UgCooaoO2df6eMf/1rFSr5gDZLqOtGgXJTOvb1MO/R8pTmaNmbkpGp4X5ApbExzqyb9v4dPNna3qgPBJn0vwTw0RUyLPlFOjaMHBeoRuC77e2TNqVMXGxRRnlB25XJsCsFY/+bePsPQZXGIFB1gsMzDtB/M6WKcPuAsevZDrw==";
-            string seed = "3Y9u5gc5dVKPhwiUzwmMV09ojummGzJ87A0llG9ey60=";
-            string pgenCounter = "AWs=";
+            string p = "kkos0S7rZLGluCzOcQ/S9L79be47MxRp3kB07vkX+iin4daLcSo1pg/K9aP0UJzZAKUAyT8uj7jci6c5sfVWdqmlRqtm0mwnfh88JgmH/Eu5LkMrUAV2gDQ8Cs8ihd2UbbQ0s47P65qrINVpkHaNOFJbz8vcSP598kNLg73QKh0=";
+            string q = "l4A4DwlgltuK00dcNNW5Yw2SbcM=";
+            string g = "NiI1mc0jI7JQa21Pbxo2e87cJtUfO1kCor0LHbOk1T0W5h6uhIgdNwlmE/ARTqfcw+RamtHTEI9HfxTg1TCNPQnWYenEIOGaot0qRZs2a2WzD2xjictcEA2D8up0sqpK/qTcnNV9g6hcc3HAm9mU6DjQ21MOsIoYbQB1VW91FrA=";
+            string y = "Q2vVSH6O8/v6jJq4r3PQaCLKThnbRXxluEq9mEY0XnXTwefwTJ67fUcCxhJJhwh157gQN2LWmte5gnM11VJMWT07DLIGPb7he2wPRGmgnS4nkChGgJGKXss5unzFkX4m+BxCCXZrClrJyahlZWAJY5CbLanzHSZQtRHIDdINxf4=";
+            string seed = "zfYSHDy431BKUVSpA6KqGnCsbrE=";
+            string pgenCounter = "sg==";
             string dsaKeyXml = $@"<KeyInfo xmlns=""http://www.w3.org/2000/09/xmldsig#""><KeyValue><DSAKeyValue><P>{p}</P><Q>{q}</Q><G>{g}</G><Y>{y}</Y><Seed>{seed}</Seed><PgenCounter>{pgenCounter}</PgenCounter></DSAKeyValue></KeyValue></KeyInfo>";
 
             var expected = new Dictionary<string, string>()
