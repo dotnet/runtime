@@ -114,7 +114,7 @@ namespace System.Collections.Generic
             this.comparer = comparer ?? EqualityComparer<TKey>.Default;
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
-            if (HashHelpers.s_UseRandomizedStringHashing && comparer == EqualityComparer<string>.Default)
+            if (HashHelpers.s_UseRandomizedStringHashing && this.comparer == EqualityComparer<string>.Default)
             {
                 this.comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.Default;
             }
