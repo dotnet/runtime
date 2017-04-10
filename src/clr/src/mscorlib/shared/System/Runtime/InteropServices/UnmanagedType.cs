@@ -43,5 +43,6 @@ namespace System.Runtime.InteropServices
         Error = 0x2d,
         IInspectable = 0x2e,
         HString = 0x2f,     // Windows Runtime HSTRING
+        LPUTF8Str = 0x30,   // UTF8 string
     }
 }
