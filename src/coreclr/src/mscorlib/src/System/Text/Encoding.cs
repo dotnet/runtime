@@ -505,7 +505,7 @@ namespace System.Text
         [Pure]
         public virtual byte[] GetPreamble()
         {
-            return EmptyArray<Byte>.Value;
+            return Array.Empty<Byte>();
         }
 
         private void GetDataItem()
@@ -1353,13 +1353,13 @@ namespace System.Text
         internal virtual char[] GetBestFitUnicodeToBytesData()
         {
             // Normally we don't have any best fit data.
-            return EmptyArray<Char>.Value;
+            return Array.Empty<Char>();
         }
 
         internal virtual char[] GetBestFitBytesToUnicodeData()
         {
             // Normally we don't have any best fit data.
-            return EmptyArray<Char>.Value;
+            return Array.Empty<Char>();
         }
 
         internal void ThrowBytesOverflow()

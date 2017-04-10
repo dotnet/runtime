@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
                     return s_anonymouslyHostedDynamicMethodsModule;
 
                 ConstructorInfo transparencyCtor = typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes);
-                CustomAttributeBuilder transparencyAttribute = new CustomAttributeBuilder(transparencyCtor, EmptyArray<Object>.Value);
+                CustomAttributeBuilder transparencyAttribute = new CustomAttributeBuilder(transparencyCtor, Array.Empty<Object>());
                 List<CustomAttributeBuilder> assemblyAttributes = new List<CustomAttributeBuilder>();
                 assemblyAttributes.Add(transparencyAttribute);
 
@@ -683,7 +683,7 @@ namespace System.Reflection.Emit
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                     return new Object[] { new MethodImplAttribute(GetMethodImplementationFlags()) };
                 else
-                    return EmptyArray<Object>.Value;
+                    return Array.Empty<Object>();
             }
 
             public override Object[] GetCustomAttributes(bool inherit)
@@ -770,12 +770,12 @@ namespace System.Reflection.Emit
 
                 Object[] ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit)
                 {
-                    return EmptyArray<Object>.Value;
+                    return Array.Empty<Object>();
                 }
 
                 Object[] ICustomAttributeProvider.GetCustomAttributes(bool inherit)
                 {
-                    return EmptyArray<Object>.Value;
+                    return Array.Empty<Object>();
                 }
 
                 bool ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit)

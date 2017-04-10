@@ -962,7 +962,7 @@ namespace System.Reflection.Emit
 
             if (m_typeInterfaces == null)
             {
-                return EmptyArray<Type>.Value;
+                return Array.Empty<Type>();
             }
 
             return m_typeInterfaces.ToArray();

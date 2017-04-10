@@ -1234,7 +1234,7 @@ namespace System
 
             if ((count == 0) || (omitEmptyEntries && this.Length == 0))
             {
-                return EmptyArray<String>.Value;
+                return Array.Empty<String>();
             }
 
             if (count == 1)
@@ -1310,7 +1310,7 @@ namespace System
 
             if ((count == 0) || (omitEmptyEntries && this.Length == 0))
             {
-                return EmptyArray<String>.Value;
+                return Array.Empty<String>();
             }
 
             if (count == 1 || (singleSeparator && separator.Length == 0))
