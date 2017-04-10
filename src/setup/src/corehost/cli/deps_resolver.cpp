@@ -133,34 +133,34 @@ void deps_resolver_t::get_dir_assemblies(
     }
 }
 
-void deps_resolver_t::setup_shared_package_probes(
+void deps_resolver_t::setup_shared_store_probes(
     const hostpolicy_init_t& init,
     const arguments_t& args)
 {
-    for (const auto& shared : args.env_shared_packages)
+    for (const auto& shared : args.env_shared_store)
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Packages probe: DOTNET_SHARED_PACKAGES
+            // Shared Store probe: DOTNET_SHARED_STORE
             m_probes.push_back(probe_config_t::lookup(shared));
         }
     }
 
-    if (pal::directory_exists(args.local_shared_packages))
+    if (pal::directory_exists(args.local_shared_store))
     {
-        // Shared Packages probe: $HOME/.dotnet/packages or %USERPROFILE%\.dotnet\packages
-        m_probes.push_back(probe_config_t::lookup(args.local_shared_packages));
+        // Shared Store probe: $HOME/.dotnet/store or %USERPROFILE%\.dotnet\store
+        m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
     }
 
-    if (pal::directory_exists(args.dotnet_shared_packages))
+    if (pal::directory_exists(args.dotnet_shared_store))
     {
-        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_packages));
+        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
     }
 
-    if (args.global_shared_packages != args.dotnet_shared_packages && pal::directory_exists(args.global_shared_packages))
+    if (args.global_shared_store != args.dotnet_shared_store && pal::directory_exists(args.global_shared_store))
     {
-        // Shared Packages probe: /usr/share/dotnet/packages or C:\Program Files (x86)\dotnet\packages
-        m_probes.push_back(probe_config_t::lookup(args.global_shared_packages));
+        // Shared Store probe: /usr/share/dotnet/store or C:\Program Files (x86)\dotnet\store
+        m_probes.push_back(probe_config_t::lookup(args.global_shared_store));
     }
 }
 
@@ -194,7 +194,7 @@ void deps_resolver_t::setup_probe_config(
     // The probe directory will be available at probe time.
     m_probes.push_back(probe_config_t::published_deps_dir());
 
-    setup_shared_package_probes(init, args);
+    setup_shared_store_probes(init, args);
 
     for (const auto& probe : m_additional_probes)
     {

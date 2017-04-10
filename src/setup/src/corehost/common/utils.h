@@ -14,6 +14,7 @@ struct host_option
 
 #define _STRINGIFY(s) _X(s)
 #define DOTNET_CORE_URL _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409")
+#define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
@@ -38,7 +39,7 @@ bool parse_known_args(
     std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
     int* num_args);
 bool skip_utf8_bom(pal::ifstream_t* stream);
-bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
-bool get_local_shared_package_dir(pal::string_t* recv);
-bool get_global_shared_package_dir(pal::string_t* recv);
+bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
+bool get_local_shared_store_dir(pal::string_t* recv);
+bool get_global_shared_store_dir(pal::string_t* recv);
 #endif

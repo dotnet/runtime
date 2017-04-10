@@ -9,15 +9,15 @@ The package store can be either a global system-wide folder or a user local fold
 
 + **Global**:
     - The `dotnet` root location -- on Windows, the folder is located in `C:\Program Files (x86)\`. See layout below.
-    - In the `packages/install` folder we expect packages to be installed ONLY through platform installers like MSI, pkg, deb, apt-get etc.
-    - The package layout composed with the `dotnet cache` command (details follow) are expected to be unzipped directly into the `packages` folder. Note, that this unzip step is a manual action.
+    - In the `store/install` folder we expect packages to be installed ONLY through platform installers like MSI, pkg, deb, apt-get etc.
+    - The package layout composed with the `dotnet store` command (details follow) are expected to be unzipped directly into the `store` folder. Note, that this unzip step is a manual action.
 
 ```
     - dotnet.exe
     - shared
         - netcoreapp2.0
             + 2.0.0-preview2-00001
-    - packages
+    - store
         - install
             + refs
             + netcoreapp2.0
@@ -34,7 +34,7 @@ The layout within `netcoreapp*` folders is a NuGet cache layout.
 ```
     - %USERPROFILE% or $HOME/
         - .dotnet
-          - packages 
+          - store 
             - {arch=x86|x64}
                 = do =
 ```
@@ -43,7 +43,7 @@ The layout within `netcoreapp*` folders is a NuGet cache layout.
 
 ### Composing a runtime (non-ref) package store
 
-To compose the layout of the shared package store, we will use a dotnet command called `dotnet cache`. We expect the *hosting providers* (ex: Antares) to use the command to prime their machines and framework authors who want to provide *pre-optimized package archives* create the compressed archive layouts.
+To compose the layout of the shared package store, we will use a dotnet command called `dotnet store`. We expect the *hosting providers* (ex: Antares) to use the command to prime their machines and framework authors who want to provide *pre-optimized package archives* create the compressed archive layouts.
 
 The layout is composed from a list of package names and versions specified as xml: 
 
@@ -62,7 +62,7 @@ The layout is composed from a list of package names and versions specified as xm
 and issue a command like below:
 
 ```
-dotnet cache --entries packages.xml --framework netcoreapp2.0 [--output C:\Foo] --runtime win7-x64 --framework-version 2.0.0-preview2-00001 [--no-optimize]
+dotnet store --manifest packages.xml --framework netcoreapp2.0 [--output C:\Foo] --runtime win7-x64 --framework-version 2.0.0-preview2-00001 [--no-optimize]
 
 --framework          Specifies the TFM that the package store is applicable to
 --output       The output directory to create the package store in (default: %USERPROFILE%\.dotnet or ~/.dotnet)
@@ -75,11 +75,11 @@ dotnet cache --entries packages.xml --framework netcoreapp2.0 [--output C:\Foo] 
 ```
 NOTE: It is a requirement that `packages.xml` is of msbuild format, because it forms the entry point from which the rest of the SDK's functionality can be accessed
 
-Hosting providers would create a `packages.xml` file corresponding to the packages that will be shared in their hosting environment and specify the file to `dotnet cache`. The file can be on the file system or from an URL. The TFM argument is used in the shared package layout described above.
+Hosting providers would create a `packages.xml` file corresponding to the packages that will be shared in their hosting environment and specify the file to `dotnet store`. The file can be on the file system or from an URL. The TFM argument is used in the shared package layout described above.
 
 If `--optimize` is specified, we would precompile all the managed assets to native code in a temp folder before copying to the output folder. If crossgen is used, it would be the one acquired in the closure of the `Microsoft.NETCore.App` specified by the `--framework-version` option. Also, if no `--output` folder is specified, then the default is `~/.dotnet` or `%USERPROFILE%\.dotnet\`. The output asset files will be present in the following layout: `$HOME/.dotnet/packages/{tfm}/{package-name}/{package-version}/{asset-path}`.
 
-The output folder will be consumed by the runtime by adding to the `DOTNET_SHARED_PACKAGES_ROOTS` environment variable. See probe precedence below.
+The output folder will be consumed by the runtime by adding to the `DOTNET_SHARED_STORE` environment variable. See probe precedence below.
 
 # Building apps with shared packages
 
@@ -109,18 +109,18 @@ Note that this is different from current behavior of `dotnet run` for an applica
 **Current Behavior:** Picks `M.N.A` assemblies out of the NuGet cache without taking advantage of optimizations available from the shared `Microsoft.NETCore.App`.
 **New Behavior:** Picks `M.N.A` assemblies from the shared framework and the rest of them from the shared package store or the NuGet cache.
 
-`dotnet build` can take advantage of the `refs` folder available at the `packages/install/` folder from the `dotnet` root directory enabling the offline-restore-build scenario. Although we are designing to augment `dotnet build` in the future regarding the reference assemblies, for the scope of this work we'll focus only on runtime assemblies.
+`dotnet build` can take advantage of the `refs` folder available at the `store/install/` folder from the `dotnet` root directory enabling the offline-restore-build scenario. Although we are designing to augment `dotnet build` in the future regarding the reference assemblies, for the scope of this work we'll focus only on runtime assemblies.
 
 ## Host probe precedence
 
 The host will probe in the following order of precedence for `dotnet run` and application activations post `dotnet publish`:
 
 + `$CORE_SERVICING` on Unix or `%ProgramFiles(x86)%\coreservicing` on Windows.
-+ `DOTNET_SHARED_PACKAGES_ROOTS` in the chained order
-+ The user local shared package store in `%USERPROFILE%\.dotnet\packages` or `$HOME/.dotnet/`
++ `DOTNET_SHARED_STORE` in the chained order
++ The user local shared package store in `%USERPROFILE%\.dotnet\store` or `$HOME/.dotnet/store`
 + The global shared package store
 + The Shared Framework directory
-+ ~~`DOTNET_HOSTING_OPTIMIZATION_CACHE` deprecated in favor of `DOTNET_SHARED_PACKAGES_ROOTS`~~
++ ~~`DOTNET_HOSTING_OPTIMIZATION_CACHE` deprecated in favor of `DOTNET_SHARED_STORE`~~
 + `--additionalprobingpaths` specified in the command line
 + `runtimeOptions.additionalProbingPaths` (includes NuGet cache probe specified by the CLI for `dotnet run`)
 + Application `bin` directory
@@ -158,20 +158,20 @@ Note that the `profile.xml` specifies exact RID-specific or IL packages to filte
 ### ASP .NET
 + If authoring shared package installers (eager cache):
     - Start from a clean directory and a list of packages in `packages.xml` file.
-    - Use `dotnet cache` to produce the layout in the directory.
+    - Use `dotnet store` to produce the layout in the directory.
     - Make MSI/pkg/deb and zips of this layout.
     - Publish the `profile.xml` file that users can use in sync with the installers.
     - Developer/Deployment-admin installs the MSIs/zips to the deployment machines.
 + If letting app deployers cache shared packages (lazy cache):
-    - Publish `packages.xml` file that can be used to perform `dotnet cache`.
+    - Publish `packages.xml` file that can be used to perform `dotnet store`.
     - Publish `profile.xml` file that can perform publish filtering.
-    - Deployment-admin issues `dotnet cache` when running the app.
+    - Deployment-admin issues `dotnet store` when running the app.
 + Developer/Deployment-admin issues `dotnet publish filter profile.xml` to produce an ASP.NET app without containing shared components.
    - Or developer/Deployment-admin issues `dotnet run` after installing MSIs or zips.
 
 ### Antares
-+ Antares produces the layout using a list of packages and `dotnet cache` in a folder.
-+ This folder is then chained into environment variable: `DOTNET_SHARED_PACKAGES`.
++ Antares produces the layout using a list of packages and `dotnet store` in a folder.
++ This folder is then chained into environment variable: `DOTNET_SHARED_STORE`.
 + When building app from source, issue `dotnet run` to pick up the shared packages.
 + When publishing an app to run, issue `dotnet publish filter profile.xml` with Antares profile.
 
@@ -184,8 +184,8 @@ Note that the `profile.xml` specifies exact RID-specific or IL packages to filte
 
 ### Hosting Primers
 + I host apps that are already published
-    - Use `dotnet cache` and produce layout or unzip an earlier layout.
-    - Set `DOTNET_SHARED_PACKAGES` to point to layout.
+    - Use `dotnet store` and produce layout or unzip an earlier layout.
+    - Set `DOTNET_SHARED_STORE` to point to layout.
     - Nature of publish:
         + Using my hosting profile
           + App publish directory doesn't contain the filtered files picked from layout.
@@ -193,7 +193,7 @@ Note that the `profile.xml` specifies exact RID-specific or IL packages to filte
           + Assemblies from app publish directory are overridden (*status quo*)
 
 + I build user apps from source
-    - dotnet cache
+    - dotnet store
     - Zip the layout
     - Deploy on hosting servers
     - Publish apps with filter
@@ -214,6 +214,6 @@ Note that the `profile.xml` specifies exact RID-specific or IL packages to filte
 + Make `dotnet restore` restore as though project is `type: platform`.
 + Make `dotnet build` treat projects as though they are `type: platform`.
 + `dotnet publish filter` support.
-+ `dotnet cache` full implementation.
++ `dotnet store` full implementation.
 
 
