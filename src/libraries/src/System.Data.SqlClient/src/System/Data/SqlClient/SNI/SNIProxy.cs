@@ -18,9 +18,8 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIProxy
     {
-        private const char SemicolonSeparator = ';';
-        private const int SqlServerBrowserPort = 1434;
         private const int DefaultSqlServerPort = 1433;
+        private const int DefaultSqlServerDacPort = 1434;
         private const string SqlServerSpnHeader = "MSSQLSvc";
 
         internal class SspiClientContextResult
@@ -300,15 +299,13 @@ namespace System.Data.SqlClient.SNI
             SNIHandle sniHandle = null;
             switch (details.ConnectionProtocol)
             {
+                case DataSource.Protocol.Admin:
+                case DataSource.Protocol.None: // default to using tcp if no protocol is provided
                 case DataSource.Protocol.TCP:
                     sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel);
                     break;
                 case DataSource.Protocol.NP:
                     sniHandle = CreateNpHandle(details, timerExpire, callbackObject, parallel);
-                    break;
-                case DataSource.Protocol.None:
-                    // default to using tcp if no protocol is provided
-                    sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel);
                     break;
                 default:
                     Debug.Fail($"Unexpected connection protocol: {details.ConnectionProtocol}");
@@ -333,7 +330,7 @@ namespace System.Data.SqlClient.SNI
         private static byte[] GetSqlServerSPN(DataSource dataSource)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(dataSource.ServerName));
-            
+
             string hostName = dataSource.ServerName;
             string postfix = null;
             if (dataSource.Port != -1)
@@ -388,11 +385,14 @@ namespace System.Data.SqlClient.SNI
             }
 
             int port = -1;
+            bool isAdminConnection = details.ConnectionProtocol == DataSource.Protocol.Admin;
             if (details.IsSsrpRequired)
             {
                 try
                 {
-                    port = GetPortByInstanceName(hostName, details.InstanceName);
+                    port = isAdminConnection ?
+                            SSRP.GetDacPortByInstanceName(hostName, details.InstanceName) :
+                            SSRP.GetPortByInstanceName(hostName, details.InstanceName);
                 }
                 catch (SocketException se)
                 {
@@ -406,109 +406,13 @@ namespace System.Data.SqlClient.SNI
             }
             else
             {
-                port = DefaultSqlServerPort;
+                port = isAdminConnection ? DefaultSqlServerDacPort : DefaultSqlServerPort;
             }
 
             return new SNITCPHandle(hostName, port, timerExpire, callbackObject, parallel);
         }
 
-        /// <summary>
-        /// Sends CLNT_UCAST_INST request for given instance name to SQL Sever Browser, and receive SVR_RESP from the Browser.
-        /// </summary>
-        /// <param name="browserHostName">SQL Sever Browser hostname</param>
-        /// <param name="instanceName">instance name for CLNT_UCAST_INST request</param>
-        /// <returns>SVR_RESP packets from SQL Sever Browser</returns>
-        private static byte[] SendInstanceInfoRequest(string browserHostName, string instanceName)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostName));
-            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
 
-            byte[] instanceInfoRequest = CreateInstanceInfoRequest(instanceName);
-            byte[] responsePacket = SendUDPRequest(browserHostName, SqlServerBrowserPort, instanceInfoRequest);
-
-            const byte SvrResp = 0x05;
-            if (responsePacket == null || responsePacket.Length <= 3 || responsePacket[0] != SvrResp ||
-                BitConverter.ToUInt16(responsePacket, 1) != responsePacket.Length - 3)
-            {
-                throw new SocketException();
-            }
-
-            return responsePacket;
-        }
-
-        /// <summary>
-        /// Finds port number for given instance name.
-        /// </summary>
-        /// <param name="browserHostname">SQL Sever Browser hostname</param>
-        /// <param name="instanceName">instance name to find port number</param>
-        /// <returns>port number for given instance name</returns>
-        private static int GetPortByInstanceName(string browserHostname, string instanceName)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
-            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
-
-            byte[] responsePacket = SendInstanceInfoRequest(browserHostname, instanceName);
-
-            string serverMessage = Encoding.ASCII.GetString(responsePacket, 3, responsePacket.Length - 3);
-            string[] elements = serverMessage.Split(SemicolonSeparator);
-            int tcpIndex = Array.IndexOf(elements, "tcp");
-            if (tcpIndex < 0 || tcpIndex == elements.Length - 1)
-            {
-                throw new SocketException();
-            }
-
-            return ushort.Parse(elements[tcpIndex + 1]);
-        }
-
-        /// <summary>
-        /// Creates UDP request of CLNT_UCAST_INST payload in SSRP to get information about SQL Server instance
-        /// </summary>
-        /// <param name="instanceName">SQL Server instance name</param>
-        /// <returns>CLNT_UCAST_INST request packet</returns>
-        private static byte[] CreateInstanceInfoRequest(string instanceName)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
-
-            const byte ClntUcastInst = 0x04;
-            int byteCount = Encoding.ASCII.GetByteCount(instanceName);
-            byte[] requestPacket = new byte[byteCount + 1];
-            requestPacket[0] = ClntUcastInst;
-            Encoding.ASCII.GetBytes(instanceName, 0, instanceName.Length, requestPacket, 1);
-            return requestPacket;
-        }
-
-        /// <summary>
-        /// Sends UDP request to server, and receive response.
-        /// </summary>
-        /// <param name="browserHostname">UDP server hostname</param>
-        /// <param name="port">UDP server port</param>
-        /// <param name="requestPacket">request packet</param>
-        /// <returns>response packet from UDP server</returns>
-        private static byte[] SendUDPRequest(string browserHostname, int port, byte[] requestPacket)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
-            Debug.Assert(port >= 0 || port <= 65535);
-            Debug.Assert(requestPacket != null && requestPacket.Length > 0);
-
-            const int sendTimeOut = 1000;
-            const int receiveTimeOut = 1000;
-
-            IPAddress address = null;
-            IPAddress.TryParse(browserHostname, out address);
-
-            byte[] responsePacket = null;
-            using (UdpClient client = new UdpClient(address == null ? AddressFamily.InterNetwork : address.AddressFamily))
-            {
-                Task<int> sendTask = client.SendAsync(requestPacket, requestPacket.Length, browserHostname, port);
-                Task<UdpReceiveResult> receiveTask = null;
-                if (sendTask.Wait(sendTimeOut) && (receiveTask = client.ReceiveAsync()).Wait(receiveTimeOut))
-                {
-                    responsePacket = receiveTask.Result.Buffer;
-                }
-            }
-
-            return responsePacket;
-        }
 
         /// <summary>
         /// Creates an SNINpHandle object
