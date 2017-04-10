@@ -1869,26 +1869,26 @@ bool CodeGen::genCreateAddrMode(GenTreePtr  addr,
         The following indirections are valid address modes on x86/x64:
 
             [                  icon]      * not handled here
-            [reg                   ]      * not handled here
+            [reg                   ]
             [reg             + icon]
-            [reg2 +     reg1       ]
-            [reg2 +     reg1 + icon]
-            [reg2 + 2 * reg1       ]
-            [reg2 + 4 * reg1       ]
-            [reg2 + 8 * reg1       ]
-            [       2 * reg1 + icon]
-            [       4 * reg1 + icon]
-            [       8 * reg1 + icon]
-            [reg2 + 2 * reg1 + icon]
-            [reg2 + 4 * reg1 + icon]
-            [reg2 + 8 * reg1 + icon]
+            [reg1 +     reg2       ]
+            [reg1 +     reg2 + icon]
+            [reg1 + 2 * reg2       ]
+            [reg1 + 4 * reg2       ]
+            [reg1 + 8 * reg2       ]
+            [       2 * reg2 + icon]
+            [       4 * reg2 + icon]
+            [       8 * reg2 + icon]
+            [reg1 + 2 * reg2 + icon]
+            [reg1 + 4 * reg2 + icon]
+            [reg1 + 8 * reg2 + icon]
 
         The following indirections are valid address modes on arm64:
 
             [reg]
             [reg  + icon]
-            [reg2 + reg1]
-            [reg2 + reg1 * natural-scale]
+            [reg1 + reg2]
+            [reg1 + reg2 * natural-scale]
 
      */
 
@@ -2447,6 +2447,11 @@ FOUND_AM:
     noway_assert(rv1 || mul != 1);
 
     noway_assert(FitsIn<INT32>(cns));
+
+    if (rv1 == nullptr && rv2 == nullptr)
+    {
+        return false;
+    }
 
     /* Success - return the various components to the caller */
 
