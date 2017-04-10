@@ -78,11 +78,11 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public void NotImplementedMembers_Throws()
+        public void UseDefaultCredentials_GetOrSet_Throws()
         {
             WebRequest request = WebRequest.Create("file://anything");
-            Assert.Throws<NotImplementedException>(() => request.UseDefaultCredentials);
-            Assert.Throws<NotImplementedException>(() => request.UseDefaultCredentials = true);
+            Assert.Throws<NotSupportedException>(() => request.UseDefaultCredentials);
+            Assert.Throws<NotSupportedException>(() => request.UseDefaultCredentials = true);
         }
     }
 
@@ -91,6 +91,7 @@ namespace System.Net.Tests
         public abstract Task<WebResponse> GetResponseAsync(WebRequest request);
         public abstract Task<Stream> GetRequestStreamAsync(WebRequest request);
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public async Task ReadFile_ContainsExpectedContent()
         {
@@ -230,6 +231,7 @@ namespace System.Net.Tests
 
     public abstract class AsyncFileWebRequestTestBase : FileWebRequestTestBase
     {
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
         {

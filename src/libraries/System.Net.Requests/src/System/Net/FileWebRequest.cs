@@ -306,8 +306,9 @@ namespace System.Net
 
         public override bool UseDefaultCredentials
         {
-            get { throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException); }
-            set { throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException); }
+            // Same behavior as .NET Framework.
+            get { throw new NotSupportedException(SR.net_PropertyNotSupportedException); }
+            set { throw new NotSupportedException(SR.net_PropertyNotSupportedException); }
         }
 
         public override void Abort()

@@ -102,7 +102,7 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        public void HttpWebRequest_EndGetRequestStreamContext_Null(Uri remoteServer)
+        public void HttpWebRequest_EndGetRequestStreamContext_ExpectedValue(Uri remoteServer)
         {
             System.Net.TransportContext context;
             HttpWebRequest httpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
@@ -110,7 +110,14 @@ namespace System.Net.Tests
 
             using (httpWebRequest.EndGetRequestStream(httpWebRequest.BeginGetRequestStream(null, null), out context))
             {
-                Assert.Equal(null, context); // NetFX behavior difference.
+                if (PlatformDetection.IsFullFramework)
+                {
+                    Assert.NotNull(context);
+                }
+                else
+                {
+                    Assert.Null(context);
+                }
             }
         }
 
@@ -127,6 +134,7 @@ namespace System.Net.Tests
             Assert.Equal(Cache.RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hangs in desktop.
         [OuterLoop]
         [Theory, MemberData(nameof(EchoServers))]
         public void HttpWebRequest_ProxySetAfterGetResponse_Fails(Uri remoteServer)

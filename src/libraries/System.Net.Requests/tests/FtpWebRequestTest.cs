@@ -40,7 +40,7 @@ namespace System.Net.Tests
             Assert.False(request.EnableSsl);
             Assert.NotNull(request.Headers);
             Assert.Equal(0, request.Headers.Count);
-            Assert.False(request.KeepAlive);
+            Assert.True(request.KeepAlive);
             Assert.Equal(request.Method, WebRequestMethods.Ftp.DownloadFile);
             Assert.Null(request.Proxy);
             Assert.Equal(request.ReadWriteTimeout, 5 * 60 * 1000);

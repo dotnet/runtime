@@ -1576,7 +1576,7 @@ namespace System.Net
         {
             get
             {
-                return false;
+                return true;
             }
             set
             {
