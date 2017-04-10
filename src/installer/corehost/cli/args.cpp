@@ -19,16 +19,16 @@ arguments_t::arguments_t() :
 
 /**
  *
- * Setup the shared package directories.
+ * Setup the shared store directories.
  *
- *  o %DOTNET_SHARED_PACKAGES% -- multiple delimited paths
+ *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
  *  o $HOME/.dotnet/{x86|x64}/ or %USERPROFILE%\.dotnet\{x86|x64}
- *  o dotnet.exe relative shared packages
+ *  o dotnet.exe relative shared store
  *  o Global location
  *      Windows: C:\Program Files (x86) or
  *      Unix: directory of dotnet on the path.
  */
-void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
+void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
 {
     if (init.tfm.empty())
     {
@@ -36,29 +36,29 @@ void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string
         return;
     }
 
-    // Environment variable DOTNET_SHARED_PACKAGES
-    (void) get_env_shared_package_dirs(&args->env_shared_packages, get_arch(), init.tfm);
+    // Environment variable DOTNET_SHARED_STORE
+    (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), init.tfm);
 
-    // User profile based packages
-    pal::string_t local_shared_packages;
-    if (get_local_shared_package_dir(&local_shared_packages))
+    // User profile based store
+    pal::string_t local_shared_store;
+    if (get_local_shared_store_dir(&local_shared_store))
     {
-        append_path(&local_shared_packages, init.tfm.c_str());
-        args->local_shared_packages = local_shared_packages;
+        append_path(&local_shared_store, init.tfm.c_str());
+        args->local_shared_store = local_shared_store;
     }
 
-    // "dotnet.exe" relative shared packages folder
+    // "dotnet.exe" relative shared store folder
     if (init.host_mode == host_mode_t::muxer)
     {
-        args->dotnet_shared_packages = own_dir;
-        append_path(&args->dotnet_shared_packages, _X("packages"));
-        append_path(&args->dotnet_shared_packages, init.tfm.c_str());
+        args->dotnet_shared_store = own_dir;
+        append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
+        append_path(&args->dotnet_shared_store, init.tfm.c_str());
     }
 
-    // Global shared package dir
-    if (get_global_shared_package_dir(&args->global_shared_packages))
+    // Global shared store dir
+    if (get_global_shared_store_dir(&args->global_shared_store))
     {
-        append_path(&args->global_shared_packages, init.tfm.c_str());
+        append_path(&args->global_shared_store, init.tfm.c_str());
     }
 }
 
@@ -137,7 +137,7 @@ bool parse_arguments(
 
     pal::get_default_servicing_directory(&args.core_servicing);
 
-    setup_shared_package_paths(init, own_dir, &args);
+    setup_shared_store_paths(init, own_dir, &args);
 
     return true;
 }
