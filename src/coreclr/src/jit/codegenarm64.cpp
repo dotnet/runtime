@@ -3287,7 +3287,6 @@ BAILOUT:
 //   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 {
-#if 0
     // Make sure we got the arguments of the initblk/initobj operation in the right registers
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
@@ -3297,24 +3296,57 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
         initVal = initVal->gtGetOp1();
     }
 
-    assert(!dstAddr->isContained());
-    assert(!initVal->isContained());
+    assert(dstAddr->isUsedFromReg());
+    assert(initVal->isUsedFromReg() && !initVal->IsIntegralConst(0) || initVal->IsIntegralConst(0));
     assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
-    assert(initVal->gtSkipReloadOrCopy()->IsCnsIntOrI());
 
-    emitter *emit = getEmitter();
+    emitter* emit = getEmitter();
 
     genConsumeOperands(initBlkNode);
 
-    // If the initVal was moved, or spilled and reloaded to a different register,
-    // get the original initVal from below the GT_RELOAD, but only after capturing the valReg,
-    // which needs to be the new register.
-    regNumber valReg = initVal->gtRegNum;
-    initVal = initVal->gtSkipReloadOrCopy();
-#else  // !0
-    NYI("genCodeForInitBlkUnroll");
-#endif // !0
+    regNumber valReg = initVal->IsIntegralConst(0) ? REG_ZR : initVal->gtRegNum;
+
+    assert(!initVal->IsIntegralConst(0) || (valReg == REG_ZR));
+
+    unsigned offset = 0;
+
+    // Perform an unroll using stp.
+    if (size >= 2 * REGSIZE_BYTES)
+    {
+        // Determine how many 16 byte slots
+        size_t slots = size / (2 * REGSIZE_BYTES);
+
+        while (slots-- > 0)
+        {
+            emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, valReg, valReg, dstAddr->gtRegNum, offset);
+            offset += (2 * REGSIZE_BYTES);
+        }
+    }
+
+    // Fill the remainder (15 bytes or less) if there's any.
+    if ((size & 0xf) != 0)
+    {
+        if ((size & 8) != 0)
+        {
+            emit->emitIns_R_R_I(INS_str, EA_8BYTE, valReg, dstAddr->gtRegNum, offset);
+            offset += 8;
+        }
+        if ((size & 4) != 0)
+        {
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, valReg, dstAddr->gtRegNum, offset);
+            offset += 4;
+        }
+        if ((size & 2) != 0)
+        {
+            emit->emitIns_R_R_I(INS_strh, EA_2BYTE, valReg, dstAddr->gtRegNum, offset);
+            offset += 2;
+        }
+        if ((size & 1) != 0)
+        {
+            emit->emitIns_R_R_I(INS_strb, EA_1BYTE, valReg, dstAddr->gtRegNum, offset);
+        }
+    }
 }
 
 // Generates code for InitBlk by calling the VM memset helper function.
@@ -3343,14 +3375,10 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
         assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
     }
 
-// TODO-ARM64-CQ: When initblk loop unrolling is implemented
-//                put this assert back on.
-#if 0
     if (size != 0)
     {
-        assert(blockSize >= INITBLK_UNROLL_LIMIT);
+        assert(size > INITBLK_UNROLL_LIMIT);
     }
-#endif // 0
 
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
