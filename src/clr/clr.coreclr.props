@@ -37,7 +37,6 @@
     <FeatureUseAsmGCWriteBarriers>true</FeatureUseAsmGCWriteBarriers>
     <!-- Setting this to "false" works only for workstation GC, not server. -->
     <FeatureSymDiff>true</FeatureSymDiff>
-    <FeatureReadyToRun Condition="'$(TargetArch)'!='arm64'">true</FeatureReadyToRun>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureICastable>true</FeatureICastable>
