@@ -45,6 +45,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\NtDll\Interop.ZeroMemory.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysFreeString.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysStringLen.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs"/>
@@ -63,6 +67,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FSync.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FTruncate.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetCwd.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.LockFileRegion.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.LSeek.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.MksTemps.cs"/>
@@ -323,6 +328,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerMemberNameAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxationsAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DefaultDependencyAttribute.cs"/>
@@ -335,6 +341,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FormattableStringFactory.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IAsyncStateMachine.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IndexerNameAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\INotifyCompletion.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsVolatile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs"/>
@@ -357,9 +364,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CallingConvention.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CharSet.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComVisibleAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExternalException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\LayoutKind.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StringBuffer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedType.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VarEnum.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\IFormatterConverter.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\IObjectReference.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\ISafeSerializationData.cs"/>
@@ -386,8 +397,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparison.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingInfo.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingNLS.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF32Encoding.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs"/>
@@ -427,6 +447,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.StringBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SafeBSTRHandle.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"/>
