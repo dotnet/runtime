@@ -6077,7 +6077,7 @@ bool ThreadStore::ShouldTriggerGCForDeadThreads()
 void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
     }
     CONTRACTL_END;
