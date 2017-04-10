@@ -136,7 +136,6 @@ namespace System.Net
 
         public virtual bool AllowReadStreamBuffering
         {
-            // Same behavior as .NET Framework.
             get
             {
                 return false;
