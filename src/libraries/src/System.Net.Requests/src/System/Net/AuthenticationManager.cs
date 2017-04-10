@@ -27,6 +27,10 @@ namespace System.Net
 
         public static void Register(IAuthenticationModule authenticationModule)
         {
+            if (authenticationModule == null)
+            {
+                throw new ArgumentNullException(nameof(authenticationModule));
+            }
         }
 
         public static void Unregister(IAuthenticationModule authenticationModule)
