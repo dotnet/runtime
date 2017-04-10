@@ -1199,6 +1199,11 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
         {
             // No additional temporaries required
+            ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
+            if (fill == 0)
+            {
+                MakeSrcContained(blkNode, source);
+            }
         }
         else
         {
