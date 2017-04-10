@@ -42,7 +42,9 @@ namespace System.Diagnostics
         {
             get
             {
+#if NET46 || NETFX
                 GC.KeepAlive(HttpHandlerDiagnosticListener.s_instance);
+#endif
 
                 if (s_allListenerObservable == null)
                 {
