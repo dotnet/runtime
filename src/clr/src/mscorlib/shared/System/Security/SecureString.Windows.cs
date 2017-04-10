@@ -157,7 +157,7 @@ namespace System.Security
                 _buffer.AcquirePointer(ref bufferPtr);
                 int resultByteLength = (length + 1) * sizeof(char);
 
-                ptr = Win32Native.SysAllocStringLen(null, length);
+                ptr = Interop.OleAut32.SysAllocStringLen(null, length);
                 if (ptr == IntPtr.Zero)
                 {
                     throw new OutOfMemoryException();
@@ -175,7 +175,7 @@ namespace System.Security
                 if (result == IntPtr.Zero && ptr != IntPtr.Zero)
                 {
                     Interop.NtDll.ZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
-                    Win32Native.SysFreeString(ptr);
+                    Interop.OleAut32.SysFreeString(ptr);
                 }
 
                 if (bufferPtr != null)

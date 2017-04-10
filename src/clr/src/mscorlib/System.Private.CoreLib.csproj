@@ -129,13 +129,11 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FriendAccessAllowedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
@@ -376,7 +374,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\XmlIgnoreMemberAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
     <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
@@ -674,29 +671,20 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Text\ASCIIEncoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Decoder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderBestFitFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderExceptionFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderReplacementFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Encoder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderNLS.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderBestFitFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderExceptionFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingNLS.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\UnicodeEncoding.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\UTF8Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\UTF32Encoding.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
@@ -750,16 +738,6 @@
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\kernel32\Interop.Globalization.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Normaliz\Interop.Idna.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Normaliz\Interop.Normalization.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.Windows.cs" />
-    <!-- Interop sources -->
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>

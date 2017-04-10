@@ -11,8 +11,8 @@ namespace System.Text
     public sealed class EncodingInfo
     {
         private int iCodePage;          // Code Page #
-        private String strEncodingName;    // Short name (web name)
-        private String strDisplayName;     // Full localized name
+        private string strEncodingName;    // Short name (web name)
+        private string strDisplayName;     // Full localized name
 
         internal EncodingInfo(int codePage, string name, string displayName)
         {
@@ -31,7 +31,7 @@ namespace System.Text
         }
 
 
-        public String Name
+        public string Name
         {
             get
             {
@@ -40,7 +40,7 @@ namespace System.Text
         }
 
 
-        public String DisplayName
+        public string DisplayName
         {
             get
             {
