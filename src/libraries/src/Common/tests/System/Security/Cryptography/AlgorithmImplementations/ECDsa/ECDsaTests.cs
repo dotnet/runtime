@@ -517,6 +517,20 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(ecdsa.VerifyData(halfData, dataSignature, HashAlgorithmName.SHA256));
         }
 
+        [Fact]
+        public void PublicKey_CannotSign()
+        {
+            using (ECDsa ecdsaPriv = ECDsaFactory.Create())
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                ECParameters keyParameters = ecdsaPriv.ExportParameters(false);
+                ecdsa.ImportParameters(keyParameters);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => ecdsa.SignData(new byte[] { 1, 2, 3, 4, 5 }, HashAlgorithmName.SHA256));
+            }
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         [Theory]

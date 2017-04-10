@@ -174,6 +174,10 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
+                if (hash == null)
+                    throw new ArgumentNullException(nameof(hash));
+                if (padding == null)
+                    throw new ArgumentNullException(nameof(padding));
                 if (padding != RSASignaturePadding.Pkcs1)
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
@@ -184,10 +188,26 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
 
+                int expectedSize;
+                Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
+                    PalAlgorithmFromAlgorithmName(hashAlgorithm, out expectedSize);
+
+                if (hash.Length != expectedSize)
+                {
+                    // Windows: NTE_BAD_DATA ("Bad Data.")
+                    // OpenSSL: RSA_R_INVALID_MESSAGE_LENGTH ("invalid message length")
+                    throw new CryptographicException(
+                        SR.Format(
+                            SR.Cryptography_BadHashSize_ForAlgorithm,
+                            hash.Length,
+                            expectedSize,
+                            hashAlgorithm.Name));
+                }
+
                 return Interop.AppleCrypto.GenerateSignature(
                     keys.PrivateKey,
                     hash,
-                    PalAlgorithmFromAlgorithmName(hashAlgorithm));
+                    palAlgId);
             }
 
             public override bool VerifyHash(
@@ -199,11 +219,15 @@ namespace System.Security.Cryptography
                 if (padding != RSASignaturePadding.Pkcs1)
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
+                int expectedSize;
+                Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
+                    PalAlgorithmFromAlgorithmName(hashAlgorithm, out expectedSize);
+
                 return Interop.AppleCrypto.VerifySignature(
                     GetKeys().PublicKey,
                     hash,
                     signature,
-                    PalAlgorithmFromAlgorithmName(hashAlgorithm));
+                    palAlgId);
             }
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -231,26 +255,32 @@ namespace System.Security.Cryptography
             }
 
             private static Interop.AppleCrypto.PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(
-                HashAlgorithmName hashAlgorithmName)
+                HashAlgorithmName hashAlgorithmName,
+                out int hashSizeInBytes)
             {
                 if (hashAlgorithmName == HashAlgorithmName.MD5)
                 {
+                    hashSizeInBytes = 128 >> 3;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Md5;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA1)
                 {
+                    hashSizeInBytes = 160 >> 3;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha1;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA256)
                 {
+                    hashSizeInBytes = 256 >> 3;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha256;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA384)
                 {
+                    hashSizeInBytes = 384 >> 3;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha384;
                 }
                 else if (hashAlgorithmName == HashAlgorithmName.SHA512)
                 {
+                    hashSizeInBytes = 512 >> 3;
                     return Interop.AppleCrypto.PAL_HashAlgorithm.Sha512;
                 }
 
