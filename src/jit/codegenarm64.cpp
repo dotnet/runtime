@@ -3297,23 +3297,21 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     }
 
     assert(dstAddr->isUsedFromReg());
-    assert(initVal->isUsedFromReg() || (initVal->IsIntegralConst(0) && ((size & 0xf) == 0)));
+    assert(initVal->isUsedFromReg() && !initVal->IsIntegralConst(0) || initVal->IsIntegralConst(0));
     assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
-    assert(initVal->gtSkipReloadOrCopy()->IsCnsIntOrI());
 
     emitter* emit = getEmitter();
 
     genConsumeOperands(initBlkNode);
 
-    // If the initVal was moved, or spilled and reloaded to a different register,
-    // get the original initVal from below the GT_RELOAD, but only after capturing the valReg,
-    // which needs to be the new register.
-    regNumber valReg = initVal->gtRegNum;
+    regNumber valReg = initVal->IsIntegralConst(0) ? REG_ZR : initVal->gtRegNum;
+
+    assert(!initVal->IsIntegralConst(0) || (valReg == REG_ZR));
 
     unsigned offset = 0;
 
-    // Perform an unroll using SSE2 loads and stores.
+    // Perform an unroll using stp.
     if (size >= 2 * REGSIZE_BYTES)
     {
         // Determine how many 16 byte slots
@@ -3341,12 +3339,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
         }
         if ((size & 2) != 0)
         {
-            emit->emitIns_R_R_I(INS_str, EA_2BYTE, valReg, dstAddr->gtRegNum, offset);
+            emit->emitIns_R_R_I(INS_strh, EA_2BYTE, valReg, dstAddr->gtRegNum, offset);
             offset += 2;
         }
         if ((size & 1) != 0)
         {
-            emit->emitIns_R_R_I(INS_str, EA_1BYTE, valReg, dstAddr->gtRegNum, offset);
+            emit->emitIns_R_R_I(INS_strb, EA_1BYTE, valReg, dstAddr->gtRegNum, offset);
         }
     }
 }
