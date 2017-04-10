@@ -15,6 +15,15 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
+    <Content Include="NativeConsoleApp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SecondNativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -30,18 +39,6 @@
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
-    <ProjectReference Include="..\NativeConsoleApp\NativeConsoleApp.vcxproj">
-      <Project>{3002560a-5097-4a65-b562-93e335e64163}</Project>
-      <Name>NativeConsoleApp</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NativeLibrary\NativeLibrary.vcxproj">
-      <Project>{32c9bb6c-46f4-43d8-b89e-3a1afa70f38b}</Project>
-      <Name>NativeLibrary</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SecondNativeLibrary\SecondNativeLibrary.vcxproj">
-      <Project>{925d347c-697c-4777-8995-62426c6866f2}</Project>
-      <Name>SecondNativeLibrary</Name>
-    </ProjectReference>
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
