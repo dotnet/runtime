@@ -46,7 +46,7 @@ class T {
     static void Main (string[] args) {
         int iterations = 0;
 
-        for (TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1)); timeout.HaveTimeLeft;)
+        for (TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 120 : 5)); timeout.HaveTimeLeft;)
         {
             count = 0;
 

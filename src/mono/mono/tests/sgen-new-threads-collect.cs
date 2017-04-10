@@ -11,7 +11,7 @@ class Driver
 	{
 		int gcCount = 0;
 		int joinCount = 0;
-		TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 1));
+		TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 5));
 
 		Thread gcThread = new Thread (() => {
 			while (timeout.HaveTimeLeft) {
