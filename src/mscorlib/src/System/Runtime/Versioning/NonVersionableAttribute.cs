@@ -25,9 +25,6 @@ using System.Diagnostics;
 
 namespace System.Runtime.Versioning
 {
-    // This Conditional is here to strip the annotations for targets where ReadyToRun is not supported.
-    // If this attribute is ever made public, this Conditional should be removed.
-    [Conditional("FEATURE_READYTORUN")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor,
                     AllowMultiple = false, Inherited = false)]
     internal sealed class NonVersionableAttribute : Attribute
