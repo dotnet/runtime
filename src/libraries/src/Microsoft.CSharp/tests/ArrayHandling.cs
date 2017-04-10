@@ -114,5 +114,36 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                 Assert.Contains("'1'", ex.Message);
             }
         }
+
+        [Fact]
+        public void SZArrayLength()
+        {
+            dynamic d = new int[23];
+            Assert.Equal(23, d.Length);
+
+            d = new[]
+            {
+                "A", "\"Hello,", "World!\"", "program", "is", "a", "computer", "program", "that", "outputs", "or",
+                "displays", "\"Hello,", "World!\"", "to", "the", "user."
+            };
+            Assert.Equal(17, d.Length);
+        }
+
+        [Fact]
+        public void MDArrayLength()
+        {
+            dynamic d = new int[2, 3, 4];
+            Assert.Equal(2 * 3 * 4, d.Length);
+
+            d = Array.CreateInstance(typeof(string), new[] {5, 6, 8}, new[] {-2, 4, 3});
+            Assert.Equal(5 * 6 * 8, d.Length);
+        }
+
+        [Fact]
+        public void NonSZ1RArrayLenght()
+        {
+            dynamic d = Array.CreateInstance(typeof(int), new[] {23}, new[] {-2});
+            Assert.Equal(23, d.Length);
+        }
     }
 }

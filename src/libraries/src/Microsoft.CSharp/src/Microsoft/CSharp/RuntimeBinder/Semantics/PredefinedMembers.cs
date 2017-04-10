@@ -19,8 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         PM_FIRST = 0,
 
-        PM_ARRAY_GETLENGTH,
-
         PM_DECIMAL_OPDECREMENT,
         PM_DECIMAL_OPDIVISION,
         PM_DECIMAL_OPEQUALITY,
@@ -152,7 +150,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal enum PREDEFPROP
     {
         PP_FIRST = 0,
-        PP_ARRAY_LENGTH,
         PP_G_OPTIONAL_VALUE,
         PP_COUNT,
     };
@@ -700,8 +697,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // This list must be in the same order as the PREDEFPROP enum.
         private static readonly PredefinedPropertyInfo[] s_predefinedProperties = {
             new PredefinedPropertyInfo(   PREDEFPROP.PP_FIRST,                                           MethodRequiredEnum.Optional,   PredefinedName.PN_COUNT,                   PREDEFMETH.PM_COUNT,                                           PREDEFMETH.PM_COUNT  ),
-
-            new PredefinedPropertyInfo(   PREDEFPROP.PP_ARRAY_LENGTH,                                    MethodRequiredEnum.Optional,   PredefinedName.PN_LENGTH,                  PREDEFMETH.PM_ARRAY_GETLENGTH,                                 PREDEFMETH.PM_COUNT  ),
             new PredefinedPropertyInfo(   PREDEFPROP.PP_G_OPTIONAL_VALUE,                                MethodRequiredEnum.Optional,   PredefinedName.PN_CAP_VALUE,               PREDEFMETH.PM_G_OPTIONAL_GETVALUE,                             PREDEFMETH.PM_COUNT  ),
         };
 
@@ -760,7 +755,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // This list must be in the same order as the PREDEFMETH enum.
         private static readonly PredefinedMethodInfo[] s_predefinedMethods = new PredefinedMethodInfo[(int)PREDEFMETH.PM_COUNT] {
             new PredefinedMethodInfo(   PREDEFMETH.PM_FIRST,                                           MethodRequiredEnum.Optional,   PredefinedType.PT_COUNT,               PredefinedName.PN_COUNT,                   MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_VOID, 0  }),
-            new PredefinedMethodInfo(   PREDEFMETH.PM_ARRAY_GETLENGTH,                                 MethodRequiredEnum.Optional,   PredefinedType.PT_ARRAY,               PredefinedName.PN_GETLENGTH,               MethodCallingConventionEnum.Instance,   ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_INT, 0  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_DECIMAL_OPDECREMENT,                             MethodRequiredEnum.Optional,   PredefinedType.PT_DECIMAL,             PredefinedName.PN_OPDECREMENT,             MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_DECIMAL, 1, (int)PredefinedType.PT_DECIMAL  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_DECIMAL_OPDIVISION,                              MethodRequiredEnum.Optional,   PredefinedType.PT_DECIMAL,             PredefinedName.PN_OPDIVISION,              MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_DECIMAL, 2, (int)PredefinedType.PT_DECIMAL, (int)PredefinedType.PT_DECIMAL  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_DECIMAL_OPEQUALITY,                              MethodRequiredEnum.Optional,   PredefinedType.PT_DECIMAL,             PredefinedName.PN_OPEQUALITY,              MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_BOOL, 2, (int)PredefinedType.PT_DECIMAL, (int)PredefinedType.PT_DECIMAL  }),
