@@ -66,11 +66,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool _isAbstract;      // Can it be instantiated?
         private bool _isSealed;        // Can it be derived from?
 
-        // Attribute
-
-        private bool _isUnmanagedStruct; // Set if the struct is known to be un-managed (for unsafe code). Set in FUNCBREC.
-        private bool _isManagedStruct; // Set if the struct is known to be managed (for unsafe code). Set during import.
-
         // Constructors
         private bool _hasPubNoArgCtor; // Whether it has a public instance constructor taking no args
 
@@ -326,26 +321,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-
-        private bool IsUnmanagedStruct()
-        {
-            return _isUnmanagedStruct;
-        }
-
-        public void SetUnmanagedStruct(bool unmanagedStruct)
-        {
-            _isUnmanagedStruct = unmanagedStruct;
-        }
-
-        public bool IsManagedStruct()
-        {
-            return _isManagedStruct == true;
-        }
-
-        public void SetManagedStruct(bool managedStruct)
-        {
-            _isManagedStruct = managedStruct;
-        }
 
         public bool HasPubNoArgCtor()
         {
