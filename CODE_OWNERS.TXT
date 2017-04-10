@@ -19,5 +19,13 @@ N: Kshama Pawar
 G: kspawa
 D: Profiling APIs and implementation
 
+N: Gaurav Khanna
+G: gkhanna79
+D: Nuget packaging implementation
+
+N: Eric StJohn
+G: ericstj
+D: Nuget packaging implementation
+
 This list is incomplete, if you need to find other owners work with Jan Kotas
 to get them filled in.
