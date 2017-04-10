@@ -23,6 +23,19 @@ using Xunit;
 
 public static partial class DataContractSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationOptionSetterName = "set_Option";
+
+    static DataContractSerializerTests()
+    {
+        if (!PlatformDetection.IsFullFramework)
+        {
+            MethodInfo method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
+            method.Invoke(null, new object[] { 1 });
+        }
+    }
+#endif
     [Fact]
     public static void DCS_DateTimeOffsetAsRoot()
     {
