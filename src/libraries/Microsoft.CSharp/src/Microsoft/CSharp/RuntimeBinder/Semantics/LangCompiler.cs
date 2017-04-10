@@ -61,10 +61,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             _pController.SubmitError(pError);
         }
-
-        public int ErrorCount()
-        {
-            return 0;
-        }
     }
 }
