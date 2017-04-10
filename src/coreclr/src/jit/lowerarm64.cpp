@@ -134,11 +134,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         srcAddrOrFill = initVal;
 
-#if 0
-        // TODO-ARM64-CQ: Currently we generate a helper call for every
-        // initblk we encounter.  Later on we should implement loop unrolling
-        // code sequences to improve CQ.
-        // For reference see the code in LowerXArch.cpp.
         if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT) && initVal->IsCnsIntOrI())
         {
             // The fill value of an initblk is interpreted to hold a
@@ -156,12 +151,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             else
             {
                 initVal->gtIntCon.gtIconVal = 0x0101010101010101LL * fill;
-                initVal->gtType = TYP_LONG;
+                initVal->gtType             = TYP_LONG;
             }
-            initBlkNode->gtBlkOpKind = GenTreeBlkOp::BlkOpKindUnroll;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
         else
-#endif // 0
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
