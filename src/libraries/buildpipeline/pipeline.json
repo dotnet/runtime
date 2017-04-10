@@ -118,18 +118,6 @@
             "Type": "build/product/",
             "ConfigurationGroup": "Release"
           }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
-            "PB_DockerTag": "alpine_prereqs",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\""
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Alpine 3.4.3",
-            "Type": "build/product/",
-            "ConfigurationGroup": "Release"
-          }
         }
       ]
     },
@@ -625,18 +613,6 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.10",
-            "Type": "build/product/",
-            "ConfigurationGroup": "Debug"
-          }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
-            "PB_DockerTag": "alpine_prereqs",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\""
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Alpine 3.4.3",
             "Type": "build/product/",
             "ConfigurationGroup": "Debug"
           }

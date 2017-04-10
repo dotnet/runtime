@@ -4,6 +4,7 @@
     <TargetGroups Include="netcore50">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcore50</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
@@ -11,6 +12,7 @@
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcore50</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
@@ -18,18 +20,21 @@
     <TargetGroups Include="uap101aot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50aot</Imports>
       <CompatibleWith>uap101;netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap101">
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap">
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <Imports>uap101</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
@@ -37,18 +42,21 @@
     <TargetGroups Include="uapaot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
       <Imports>uap101aot</Imports>
       <CompatibleWith>uap;netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.0</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
     </TargetGroups>
     <TargetGroups Include="netstandard1.1">
       <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.1</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -56,6 +64,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard1.2">
       <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.2</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -63,6 +72,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard1.3">
       <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.3</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -70,6 +80,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard1.4">
       <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -77,6 +88,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard1.5">
       <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.5</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -84,6 +96,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard1.6">
       <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard1.6</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -91,6 +104,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard2.0">
       <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard2.0</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -98,6 +112,7 @@
     </TargetGroups>
     <TargetGroups Include="netstandard">
       <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netstandard2.0</NuGetTargetMonikerShort>
       <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
            set this to false in the project to force otherwise. -->
       <UWPCompatible>true</UWPCompatible>
@@ -105,80 +120,96 @@
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.0">
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp1.0</NuGetTargetMonikerShort>
       <CompatibleWith>netstandard1.6</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp2.0">
       <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
       <Imports>netcoreapp1.0</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp">
       <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
       <Imports>netcoreapp2.0</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2">
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp1.2</NuGetTargetMonikerShort>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2corert">
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp1.2</NuGetTargetMonikerShort>
     </TargetGroups>
     <TargetGroups Include="net45">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net45</NuGetTargetMonikerShort>
       <CompatibleWith>netstandard1.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net451">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net451</NuGetTargetMonikerShort>
       <Imports>net45</Imports>
       <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net46">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net46</NuGetTargetMonikerShort>
       <Imports>net451</Imports>
       <CompatibleWith>netstandard1.3</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net461">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
       <Imports>net46</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net462">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net462</NuGetTargetMonikerShort>
       <Imports>net461</Imports>
       <CompatibleWith>netstandard1.5</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net463">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
       <Imports>net462</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netfx">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
       <Imports>net463</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>win8</NuGetTargetMonikerShort>
       <CompatibleWith>netstandard1.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="wpa81">
       <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>wpa81</NuGetTargetMonikerShort>
       <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="portable_net45+win8+sl5">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Portable.v4.0.Profile47</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>portable-net45+win8+sl5</NuGetTargetMonikerShort>
     </TargetGroups>
     <TargetGroups Include="portable_net40+sl4+win8+wp8">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Portable.v4.0.Profile36</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>portable-net40+sl4+win8+wp8</NuGetTargetMonikerShort>
     </TargetGroups>
     <TargetGroups Include="package">
       <!-- this targetgroup is not considered compatible with any other targetgroup so it should only
@@ -186,6 +217,7 @@
     </TargetGroups>
     <TargetGroups Include="mono">
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
     </TargetGroups>
   </ItemGroup>
 </Project>

@@ -143,7 +143,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
+    <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

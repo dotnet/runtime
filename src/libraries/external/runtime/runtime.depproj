@@ -7,18 +7,43 @@
     <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
     <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uap'">win10-$(ArchGroup)</NugetRuntimeIdentifier>
     <NugetRuntimeIdentifier Condition="'$(TargetGroup)' == 'uapaot'">win10-$(ArchGroup)-aot</NugetRuntimeIdentifier>
+    <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
     <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
+      <Version>1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
+    </PackageReference>
     <FileToExclude Include="System.Private.CoreLib.Augments" />
     <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
     <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
+    <PackageReference Include="Microsoft.NETCore.Platforms">
+      <Version>2.0.0-$(CoreFxExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.TestHost">
+      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
+      <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.DotNetHost">
+      <Version>1.2.0-beta-001259-00</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
+      <Version>1.2.0-beta-001259-00</Version>
+    </PackageReference>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <!-- Setup the testing shared framework host -->

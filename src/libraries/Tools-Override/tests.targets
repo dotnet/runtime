@@ -281,6 +281,7 @@
       <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT'" Include="call $(TestCommandLine)"/>
 
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="export COMPlus_GCStress=$(TestGCStressLevel)"/>
+      <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="chmod +x $(TestProgram)"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="$(TestCommandLine)"/>
     </ItemGroup>
 
@@ -299,6 +300,7 @@
       RunnerScriptTemplate="$(MSBuildThisFileDirectory)/$(RunnerTemplateName)"
       ScriptOutputPath ="$(OutputPathForScriptGenerator)"
     />
+    <Exec Condition="'$(TargetOS)'!='Windows_NT'" Command="chmod +x $(OutputPathForScriptGenerator)" />
   </Target>
 
   <Target Name="RunTestsForProject"
