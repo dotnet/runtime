@@ -16204,11 +16204,6 @@ void Compiler::fgSetOptions()
     if (info.compXcptnsCount > 0)
     {
         codeGen->setFramePointerRequiredEH(true);
-#ifdef UNIX_X86_ABI
-        assert(!codeGen->isGCTypeFixed());
-        // Enforce fully interruptible codegen for funclet unwinding
-        genInterruptible = true;
-#endif // UNIX_X86_ABI
     }
 
 #else // !_TARGET_X86_
@@ -16219,6 +16214,15 @@ void Compiler::fgSetOptions()
     }
 
 #endif // _TARGET_X86_
+
+#ifdef UNIX_X86_ABI
+    if (info.compXcptnsCount > 0)
+    {
+        assert(!codeGen->isGCTypeFixed());
+        // Enforce fully interruptible codegen for funclet unwinding
+        genInterruptible = true;
+    }
+#endif // UNIX_X86_ABI
 
     fgCheckArgCnt();
 
