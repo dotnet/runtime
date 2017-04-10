@@ -347,13 +347,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _isManagedStruct = managedStruct;
         }
 
-        public bool IsKnownManagedStructStatus()
-        {
-            Debug.Assert(IsStruct());
-            Debug.Assert(!IsManagedStruct() || !IsUnmanagedStruct());
-            return IsManagedStruct() || IsUnmanagedStruct();
-        }
-
         public bool HasPubNoArgCtor()
         {
             return _hasPubNoArgCtor == true;
