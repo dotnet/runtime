@@ -2413,16 +2413,16 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
 #endif
 
-    bool      isPartialArgInfo;
+    bool      hasPartialArgInfo;
 
 #ifndef UNIX_X86_ABI
-    isPartialArgInfo = info->ebpFrame;
+    hasPartialArgInfo = info->ebpFrame;
 #else
     // For x86/Linux, interruptible code always has full arg info
     //
     // This should be aligned with emitFullArgInfo setting at
     // emitter::emitEndCodeGen (in JIT)
-    isPartialArgInfo = false;
+    hasPartialArgInfo = false;
 #endif
 
   /*
@@ -2623,7 +2623,7 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
 
                         argOfs--;
                     }
-                    else if (isPartialArgInfo)
+                    else if (hasPartialArgInfo)
                         argCnt--;
                     else /* full arg info && not a ref */
                         argOfs--;
@@ -2634,11 +2634,11 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
                 }
                 while (argOfs);
 
-                _ASSERTE(!isPartialArgInfo     ||
+                _ASSERTE(!hasPartialArgInfo    ||
                          isZero(argHigh)       ||
                         (argHigh == CONSTRUCT_ptrArgTP(1, (argCnt-1))));
 
-                if (isPartialArgInfo)
+                if (hasPartialArgInfo)
                 {
                     while (!intersect(argHigh, ptrArgs) && (!isZero(argHigh)))
                         argHigh >>= 1;
@@ -2658,7 +2658,7 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
                     /* Full arg info reports all pushes, and thus
                        argOffs has to be consistent with argCnt */
 
-                    _ASSERTE(isPartialArgInfo || argCnt == argOfs);
+                    _ASSERTE(hasPartialArgInfo || argCnt == argOfs);
 
                     /* store arg count */
 
@@ -2704,7 +2704,7 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
             }
             else {
                 /* non-ptr arg push */
-                _ASSERTE(!isPartialArgInfo);
+                _ASSERTE(!hasPartialArgInfo);
                 ptrOffs += (val & 0x07);
                 if (ptrOffs > curOffs) {
                     iptr = isThis = false;
@@ -2767,7 +2767,7 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
 
             // For partial arg info, need to find the next higest pointer for argHigh
 
-            if (isPartialArgInfo)
+            if (hasPartialArgInfo)
             {
                 for(argHigh = ptrArgTP(0); !isZero(argMask); argMask >>= 1)
                 {
@@ -2806,7 +2806,7 @@ REPORT_REFS:
     info->thisPtrResult  = thisPtrReg;
     _ASSERTE(thisPtrReg == REGI_NA || (regNumToMask(thisPtrReg) & info->regMaskResult));
 
-    if (isPartialArgInfo)
+    if (hasPartialArgInfo)
     {
         return 0;
     }
