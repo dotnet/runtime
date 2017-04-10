@@ -8,5 +8,8 @@
     <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Linux'">linux</RuntimeOS>
     -->
     <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <!-- We need configuration-specific assets files. -->
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
   </PropertyGroup>
 </Project>

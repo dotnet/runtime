@@ -4,11 +4,14 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netstandard1.5</NuGetTargetMonikerShort>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net46'">.NETFramework,Version=v4.6</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'net46'">net46</NuGetTargetMonikerShort>
     <CLSCompliant>false</CLSCompliant>
     <ProjectGuid>{360F25FA-3CD9-4338-B961-A4F3122B88B2}</ProjectGuid>
     <OutputPath Condition="'$(TargetGroup)' != 'net46'">$(CoreFxToolsDir)</OutputPath>
     <OutputPath Condition="'$(TargetGroup)' == 'net46'">$(CoreFxDesktopToolsDir)</OutputPath>
+    <ProjectJson>$(MSBuildThisFileDirectory)PackageReferences.msbuild</ProjectJson>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'net46_Debug'" />
@@ -42,9 +45,6 @@
     <TargetingPackReference Include="System.Runtime" />
     <TargetingPackReference Include="System.Collections" />
     <TargetingPackReference Include="System.IO" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -6,8 +6,11 @@
   <UsingTask TaskName="IsRestoreRequired" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
   <PropertyGroup>
-    <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
-    <ProjectLockJson Condition="Exists('$(ProjectJson)') and '$(ProjectLockJson)'==''">$(MSBuildProjectDirectory)/project.lock.json</ProjectLockJson>
+    <ProjectJson Condition="'$(ProjectJson)' == '' and '$(ContainsPackageReferences)' == 'true'">$(MSBuildProjectFullPath)</ProjectJson>
+    <RestoreOutputPath Condition="'$(RestoreOutputPath)' == ''">$(MSBuildProjectDirectory)</RestoreOutputPath>
+    <RestoreOutputPath Condition="'$(ContainsPackageReferences)' != 'true' And '$(ProjectJson)' != ''">$([System.IO.Path]::GetDirectoryName('$(ProjectJson)'))/obj</RestoreOutputPath>
+    <!-- SDK targets need this to be set in addition to RestoreOutputPath. See https://github.com/dotnet/sdk/issues/1057 -->
+    <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
     <ResolveNugetProjectFile Condition="'$(ResolveNugetProjectFile)' == ''">$(MSBuildProjectFullPath)</ResolveNugetProjectFile>
     <RestorePackages Condition="'$(RestorePackages)'!='false' and Exists('$(ProjectJson)') and '$(DesignTimeBuild)' != 'true'">true</RestorePackages>
     <PrereleaseResolveNuGetPackages Condition="'$(PrereleaseResolveNuGetPackages)'!='false' and Exists('$(ProjectJson)')">true</PrereleaseResolveNuGetPackages>
@@ -32,16 +35,19 @@
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
 
-    <Exec Condition="Exists('$(ProjectJson)') AND '$(RestoreRequired)' == 'true'" Command="$(DnuRestoreCommand) &quot;$(ProjectJson)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+    <PropertyGroup>
+      <_DnuRestoreCommandRidPortion Condition="'$(RidSpecificAssets)' == 'true'">-r $(NuGetRuntimeIdentifier)</_DnuRestoreCommandRidPortion>
+      <_DnuRestoreCommandFull>$(DnuRestoreCommand) $(ProjectJson) /p:TargetGroup=$(TargetGroup) /p:ConfigurationGroup=$(ConfigurationGroup) /p:ArchGroup=$(ArchGroup) /p:OSGroup=$(OSGroup) /p:TargetFramework=$(NuGetTargetMonikerShort) $(_DnuRestoreCommandRidPortion)</_DnuRestoreCommandFull>
+    </PropertyGroup>
+    <Exec Condition="Exists('$(ProjectJson)') AND '$(RestoreRequired)' == 'true'" Command="$(_DnuRestoreCommandFull)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
     
     <!-- if lock file exists be sure to update timestamp otherwise we could get in a state of aways calling restore but the lock file not being updated -->
-    <Touch Condition="Exists('$(ProjectLockJson)') AND '$(RestoreRequired)' == 'true'" Files="$(ProjectLockJson)" />
+    <Touch Condition="Exists('$(ProjectAssetsFile)') AND '$(RestoreRequired)' == 'true'" Files="$(ProjectAssetsFile)" />
   </Target>
 
   <ItemGroup Condition="'$(ResolvePackages)'=='true' or '$(PrereleaseResolveNuGetPackages)'=='true'">
     <CustomAdditionalCompileInputs Condition="Exists('$(ProjectJson)')" Include="$(ProjectJson)" />
   </ItemGroup>
-
   <PropertyGroup>
     <ResolveAssemblyReferencesDependsOn>
       $(ResolveAssemblyReferencesDependsOn);
@@ -77,13 +83,13 @@
           Condition="'$(PrereleaseResolveNuGetPackages)'=='true'"
           DependsOnTargets="$(ResolveNugetPackagesDependsOn)">
 
-    <PrereleaseResolveNuGetPackageAssets Condition="Exists('$(ProjectLockJson)')"
+    <PrereleaseResolveNuGetPackageAssets Condition="Exists('$(ProjectAssetsFile)')"
                                AllowFallbackOnTargetSelection="true"
                                IncludeFrameworkReferences="false"
                                NuGetPackagesDirectory="$(PackagesDir)"
                                RuntimeIdentifier="$(NuGetRuntimeIdentifier)"
                                ProjectLanguage="$(Language)"
-                               ProjectLockFile="$(ProjectLockJson)"
+                               ProjectLockFile="$(ProjectAssetsFile)"
                                TargetMonikers="$(NuGetTargetMoniker)">
       <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
       <Output TaskParameter="ResolvedReferences" ItemName="_ReferenceFromPackage" />
