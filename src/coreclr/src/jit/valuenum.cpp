@@ -211,7 +211,7 @@ struct FloatTraits
     static float NaN()
     {
         unsigned bits = 0xFFC00000u;
-        float result;
+        float    result;
         static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned) must equal sizeof(float)");
         memcpy(&result, &bits, sizeof(result));
         return result;
@@ -223,7 +223,7 @@ struct DoubleTraits
     static double NaN()
     {
         unsigned long long bits = 0xFFF8000000000000ull;
-        double result;
+        double             result;
         static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned long long) must equal sizeof(double)");
         memcpy(&result, &bits, sizeof(result));
         return result;
