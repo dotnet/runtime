@@ -938,14 +938,8 @@ namespace System.Collections
                 // If the comparer is null or a compatible comparer, serialize Hashtable
                 // in a format that can be deserialized on Everett and RTM.            
                 //
-                // Also, if the Hashtable is using randomized hashing, serialize the old
-                // view of the _keycomparer so perevious frameworks don't see the new types
 #pragma warning disable 618
-#if FEATURE_RANDOMIZED_STRING_HASHING
-                IEqualityComparer keyComparerForSerilization = (IEqualityComparer)HashHelpers.GetEqualityComparerForSerialization(_keycomparer);
-#else
-            IEqualityComparer keyComparerForSerilization = _keycomparer;
-#endif
+                IEqualityComparer keyComparerForSerilization = _keycomparer;
 
                 if (keyComparerForSerilization == null)
                 {
@@ -1561,29 +1555,5 @@ namespace System.Collections
 
         // This is the maximum prime smaller than Array.MaxArrayLength
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-
-        public static object GetEqualityComparerForSerialization(object comparer)
-        {
-            if (comparer == null)
-            {
-                return null;
-            }
-
-            IWellKnownStringEqualityComparer cmp = comparer as IWellKnownStringEqualityComparer;
-
-            if (cmp != null)
-            {
-                return cmp.GetEqualityComparerForSerialization();
-            }
-
-            return comparer;
-        }
-
-        private const int bufferSize = 1024;
-        private static int currentIndex = bufferSize;
-        private static readonly object lockObj = new Object();
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
     }
 }
