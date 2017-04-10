@@ -6,7 +6,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseECMAKey>true</UseECMAKey>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
