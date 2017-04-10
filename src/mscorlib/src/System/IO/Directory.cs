@@ -117,10 +117,10 @@ namespace System.IO
 
                 buffer.Length = (int)result;
 
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
                 if (buffer.Contains('~'))
                     return Path.GetFullPath(buffer.ToString());
-#endif
+#endif // PLATFORM_WINDOWS
 
                 return buffer.ToString();
             }
