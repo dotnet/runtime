@@ -206,6 +206,52 @@ T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
     }
 }
 
+struct FloatTraits
+{
+    static float NaN()
+    {
+        unsigned bits = 0xFFC00000u;
+        float    result;
+        static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned) must equal sizeof(float)");
+        memcpy(&result, &bits, sizeof(result));
+        return result;
+    }
+};
+
+struct DoubleTraits
+{
+    static double NaN()
+    {
+        unsigned long long bits = 0xFFF8000000000000ull;
+        double             result;
+        static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned long long) must equal sizeof(double)");
+        memcpy(&result, &bits, sizeof(result));
+        return result;
+    }
+};
+
+template <typename TFp, typename TFpTraits>
+TFp FpRem(TFp dividend, TFp divisor)
+{
+    // From the ECMA standard:
+    //
+    // If [divisor] is zero or [dividend] is infinity
+    //   the result is NaN.
+    // If [divisor] is infinity,
+    //   the result is [dividend]
+
+    if (divisor == 0 || !_finite(dividend))
+    {
+        return TFpTraits::NaN();
+    }
+    else if (!_finite(divisor) && !_isnan(divisor))
+    {
+        return dividend;
+    }
+
+    return (TFp)fmod((double)dividend, (double)divisor);
+}
+
 // Specialize for double for floating operations, that doesn't involve unsigned.
 template <>
 double ValueNumStore::EvalOp<double>(VNFunc vnf, double v0, double v1, ValueNum* pExcSet)
@@ -223,7 +269,7 @@ double ValueNumStore::EvalOp<double>(VNFunc vnf, double v0, double v1, ValueNum*
         case GT_DIV:
             return v0 / v1;
         case GT_MOD:
-            return fmod(v0, v1);
+            return FpRem<double, DoubleTraits>(v0, v1);
 
         default:
             unreached();
@@ -247,7 +293,7 @@ float ValueNumStore::EvalOp<float>(VNFunc vnf, float v0, float v1, ValueNum* pEx
         case GT_DIV:
             return v0 / v1;
         case GT_MOD:
-            return fmodf(v0, v1);
+            return FpRem<float, FloatTraits>(v0, v1);
 
         default:
             unreached();
