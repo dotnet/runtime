@@ -22,10 +22,7 @@
 
     <ItemGroup>
       <!-- This is for HostPolicy, CoreCLR and Jit dependencies to continue to remain inside of the dep.json -->
-      <ExceptionForDepsJson Include="Microsoft.NETCore.DotNetHostPolicy" />
-      <ExceptionForDepsJson Include="Microsoft.NETCore.DotNetHostResolver" />
-      <ExceptionForDepsJson Include="Microsoft.NETCore.Runtime.CoreCLR" />
-      <ExceptionForDepsJson Include="Microsoft.NETCore.Jit" />
+      <ExceptionForDepsJson Include="microsoft.netcore.app" />
     </ItemGroup>
     <GenerateDepsJson DepsJsonPath="$(_OriginalDepsJsonPath)"
                       RuntimeDirectory="$(NETCoreAppTestSharedFrameworkPath)"
