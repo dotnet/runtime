@@ -114,7 +114,7 @@ namespace System.Collections
         {
             get
             {
-                return EmptyArray<Object>.Value;
+                return Array.Empty<Object>();
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Collections
         {
             get
             {
-                return EmptyArray<Object>.Value;
+                return Array.Empty<Object>();
             }
         }
 

@@ -1279,7 +1279,7 @@ namespace System.Reflection
             Contract.Requires(caType != null);
 
             if (type.GetElementType() != null)
-                return (caType.IsValueType) ? EmptyArray<Object>.Value : CreateAttributeArrayHelper(caType, 0);
+                return (caType.IsValueType) ? Array.Empty<Object>() : CreateAttributeArrayHelper(caType, 0);
 
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition() as RuntimeType;

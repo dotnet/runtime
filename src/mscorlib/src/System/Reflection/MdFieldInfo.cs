@@ -128,12 +128,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return EmptyArray<Type>.Value;
+            return Array.Empty<Type>();
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return EmptyArray<Type>.Value;
+            return Array.Empty<Type>();
         }
 
         #endregion

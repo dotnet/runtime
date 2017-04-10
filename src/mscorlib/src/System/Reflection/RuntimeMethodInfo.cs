@@ -723,7 +723,7 @@ namespace System.Reflection
 
             if (types == null)
             {
-                types = EmptyArray<Type>.Value;
+                types = Array.Empty<Type>();
             }
             return types;
         }
