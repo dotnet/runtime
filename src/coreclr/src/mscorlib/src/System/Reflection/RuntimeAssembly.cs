@@ -657,7 +657,7 @@ namespace System.Reflection
                 ((codebase[j + 1] == '/') || (codebase[j + 1] == '\\')) &&
                 ((codebase[j + 2] == '/') || (codebase[j + 2] == '\\')))
                 return codebase;
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
             else if ((len > 2) && (codebase[0] == '\\') && (codebase[1] == '\\'))
                 return "file://" + codebase;
             else
@@ -665,7 +665,7 @@ namespace System.Reflection
 #else
             else
                 return "file://" + Path.GetFullPath(codebase);
-#endif // !PLATFORM_UNIX
+#endif // PLATFORM_WINDOWS
         }
 
         internal Stream GetManifestResourceStream(
