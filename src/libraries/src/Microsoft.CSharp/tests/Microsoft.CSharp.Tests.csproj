@@ -16,6 +16,7 @@
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
+    <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
