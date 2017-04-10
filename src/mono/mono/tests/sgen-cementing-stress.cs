@@ -17,6 +17,8 @@ class PinList
 	next = n;
     }
 
+    static int list_size = 0;
+
     static PinList MakeList (int length)
     {
 	PinList l = null;
@@ -42,7 +44,7 @@ class PinList
 	{
 	    for (int j = 0; j < 10; ++j)
 	    {
-		MakeList (1 << 19);
+		MakeList (list_size >> 5);
 		AssignReferences (list, objs);
 	    }
 	    return null;
@@ -64,10 +66,19 @@ class PinList
 
     public static void Main ()
     {
-	PinList list = MakeList (1 << 24);
-	Console.WriteLine ("long list constructed");
-	Benchmark (list, 10);
-	GC.Collect (1);
-	Benchmark (list, 100);
+	list_size = 1 << 15;
+	TestTimeout timeout = TestTimeout.Start(TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 5));
+
+	for (int it1 = 1; it1 <= 10; it1++, list_size <<= 1) {
+		PinList list = MakeList (list_size);
+		Console.WriteLine ("long list constructed {0}", it1);
+		for (int it2 = 0; it2 < 5; it2++) {
+			Benchmark (list, 10 * it1);
+			GC.Collect (1);
+
+			if (!timeout.HaveTimeLeft)
+				return;
+		}
+	}
     }
 }
