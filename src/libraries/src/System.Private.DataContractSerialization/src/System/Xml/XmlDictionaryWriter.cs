@@ -84,6 +84,12 @@ namespace System.Xml
             return dictionaryWriter;
         }
 
+        public override Task WriteBase64Async(byte[] buffer, int index, int count)
+        {
+            WriteBase64(buffer, index, count);
+            return Task.CompletedTask;
+        }
+
         public void WriteStartElement(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             WriteStartElement((string)null, localName, namespaceUri);
