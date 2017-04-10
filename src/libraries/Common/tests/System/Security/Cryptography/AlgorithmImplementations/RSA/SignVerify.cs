@@ -25,6 +25,39 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void PublicKey_CannotSign()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsaPub = RSAFactory.Create())
+            {
+                rsaPub.ImportParameters(rsa.ExportParameters(false));
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsaPub.SignData(TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Fact]
+        public static void SignEmptyHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.SignHash(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Fact]
+        public static void SignNullHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.ThrowsAny<ArgumentNullException>(
+                    () => rsa.SignHash(null, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Fact]
         public static void ExpectedSignature_SHA1_384()
         {
             byte[] expectedSignature =

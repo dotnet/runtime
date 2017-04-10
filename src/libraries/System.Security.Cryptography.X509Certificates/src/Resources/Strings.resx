@@ -100,6 +100,9 @@
   <data name="Chain_NoPolicyMatch" xml:space="preserve">
     <value>The certificate has invalid policy.</value>
   </data>
+  <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
+    <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
+  </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>

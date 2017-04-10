@@ -40,6 +40,39 @@ static int GetOpenSslPadding(RsaPadding padding)
     return padding == Pkcs1 ? RSA_PKCS1_PADDING : RSA_PKCS1_OAEP_PADDING;
 }
 
+static int HasNoPrivateKey(RSA* rsa)
+{
+    if (rsa == nullptr)
+        return 1;
+
+    // Shared pointer, don't free.
+    const RSA_METHOD* meth = RSA_get_method(rsa);
+
+    // The method has descibed itself as having the private key external to the structure.
+    // That doesn't mean it's actually present, but we can't tell.
+    if (meth->flags & RSA_FLAG_EXT_PKEY)
+       return 0;
+
+    // In the event that there's a middle-ground where we report failure when success is expected,
+    // one could do something like check if the RSA_METHOD intercepts all private key operations:
+    //
+    // * meth->rsa_priv_enc
+    // * meth->rsa_priv_dec
+    // * meth->rsa_sign (in 1.0.x this is only respected if the RSA_FLAG_SIGN_VER flag is asserted)
+    //
+    // But, for now, leave it at the EXT_PKEY flag test.
+
+    // The module is documented as accepting either d or the full set of CRT parameters (p, q, dp, dq, qInv)
+    // So if we see d, we're good. Otherwise, if any of the rest are missing, we're public-only.
+    if (rsa->d != nullptr)
+        return 0;
+
+    if (rsa->p == nullptr || rsa->q == nullptr || rsa->dmp1 == nullptr || rsa->dmq1 == nullptr || rsa->iqmp == nullptr)
+        return 1;
+
+    return 0;
+}
+
 extern "C" int32_t
 CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
@@ -50,6 +83,12 @@ CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RS
 extern "C" int32_t
 CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
+    if (HasNoPrivateKey(rsa))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        return -1;
+    }
+
     int openSslPadding = GetOpenSslPadding(padding);
     return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
 }
@@ -67,9 +106,28 @@ extern "C" int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM*
 extern "C" int32_t
 CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {
-    if (!siglen)
+    if (siglen == nullptr)
     {
         assert(false);
+        return 0;
+    }
+
+    *siglen = 0;
+
+    if (HasNoPrivateKey(rsa))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        return 0;
+    }
+
+    // Shared pointer to the metadata about the message digest algorithm
+    const EVP_MD* digest = EVP_get_digestbynid(type);
+
+    // If the digest itself isn't known then RSA_R_UNKNOWN_ALGORITHM_TYPE will get reported, but
+    // we have to check that the digest size matches what we expect.
+    if (digest != nullptr && mlen != EVP_MD_size(digest))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_INVALID_MESSAGE_LENGTH, __FILE__, __LINE__);
         return 0;
     }
 

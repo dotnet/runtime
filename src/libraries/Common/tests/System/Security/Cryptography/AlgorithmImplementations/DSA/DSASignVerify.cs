@@ -67,6 +67,21 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        public static void PublicKey_CannotSign()
+        {
+            DSAParameters keyParameters = DSATestData.GetDSA1024Params();
+            keyParameters.X = null;
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(keyParameters);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => dsa.SignData(DSATestData.HelloBytes, HashAlgorithmName.SHA1));
+            }
+        }
+
+        [Fact]
         public static void SignAndVerifyDataExplicit1024()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);

@@ -172,6 +172,7 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(EVP_DigestFinal_ex, true) \
     PER_FUNCTION_BLOCK(EVP_DigestInit_ex, true) \
     PER_FUNCTION_BLOCK(EVP_DigestUpdate, true) \
+    PER_FUNCTION_BLOCK(EVP_get_digestbyname, true) \
     PER_FUNCTION_BLOCK(EVP_md5, true) \
     PER_FUNCTION_BLOCK(EVP_MD_CTX_create, true) \
     PER_FUNCTION_BLOCK(EVP_MD_CTX_destroy, true) \
@@ -205,6 +206,7 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(i2d_X509_PUBKEY, true) \
     PER_FUNCTION_BLOCK(OBJ_ln2nid, true) \
     PER_FUNCTION_BLOCK(OBJ_nid2ln, true) \
+    PER_FUNCTION_BLOCK(OBJ_nid2sn, true) \
     PER_FUNCTION_BLOCK(OBJ_nid2obj, true) \
     PER_FUNCTION_BLOCK(OBJ_obj2nid, true) \
     PER_FUNCTION_BLOCK(OBJ_obj2txt, true) \
@@ -228,6 +230,7 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(RAND_poll, true) \
     PER_FUNCTION_BLOCK(RSA_free, true) \
     PER_FUNCTION_BLOCK(RSA_generate_key_ex, true) \
+    PER_FUNCTION_BLOCK(RSA_get_method, true) \
     PER_FUNCTION_BLOCK(RSA_new, true) \
     PER_FUNCTION_BLOCK(RSA_private_decrypt, true) \
     PER_FUNCTION_BLOCK(RSA_public_encrypt, true) \
@@ -458,6 +461,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
+#define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
 #define EVP_MD_CTX_create EVP_MD_CTX_create_ptr
 #define EVP_MD_CTX_destroy EVP_MD_CTX_destroy_ptr
@@ -491,6 +495,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
 #define OBJ_ln2nid OBJ_ln2nid_ptr
 #define OBJ_nid2ln OBJ_nid2ln_ptr
+#define OBJ_nid2sn OBJ_nid2sn_ptr
 #define OBJ_nid2obj OBJ_nid2obj_ptr
 #define OBJ_obj2nid OBJ_obj2nid_ptr
 #define OBJ_obj2txt OBJ_obj2txt_ptr
@@ -514,6 +519,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RAND_poll RAND_poll_ptr
 #define RSA_free RSA_free_ptr
 #define RSA_generate_key_ex RSA_generate_key_ex_ptr
+#define RSA_get_method RSA_get_method_ptr
 #define RSA_new RSA_new_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
 #define RSA_public_encrypt RSA_public_encrypt_ptr
