@@ -232,7 +232,8 @@ namespace System.Net
             {
                 if (_boundaryType == BoundaryType.None)
                 {
-                    if (GetKnownHeader(HttpRequestHeader.TransferEncoding).Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                    string transferEncodingHeader = GetKnownHeader(HttpRequestHeader.TransferEncoding);
+                    if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
                         _contentLength = -1;

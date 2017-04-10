@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -120,31 +118,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public async Task RequestTransferEncoding_MixedCaseChunked_Success()
-        {
-            Task<HttpListenerContext> serverContext = _listener.GetContextAsync();
-
-            using (HttpClient client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.TransferEncodingChunked = true;
-                Task<HttpResponseMessage> clientTask = client.PostAsync(_factory.ListeningUrl, new StringContent("Z"));
-
-                HttpListenerContext context = await serverContext;
-                Assert.Equal(-1, context.Request.ContentLength64);
-                Assert.Equal("chunked", context.Request.Headers["Transfer-Encoding"]);
-                byte[] buffer = new byte[10];
-                Assert.Equal(1, context.Request.InputStream.Read(buffer, 0, buffer.Length));
-                Assert.Equal((byte)'Z', buffer[0]);
-                context.Response.Close();
-
-                using (HttpResponseMessage response = await clientTask)
-                {
-                    Assert.Equal(200, (int)response.StatusCode);
-                }
-            }
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task UnknownHeaders_Success()
         {
             Task<HttpListenerContext> server = _listener.GetContextAsync();
@@ -162,7 +135,7 @@ namespace System.Net.Tests
 
                 Task<HttpResponseMessage> clientTask = client.SendAsync(requestMessage);
                 HttpListenerContext context = await server;
-                
+
                 for (int i = 0; i < 1000; i++)
                 {
                     Assert.Equal(i.ToString(), context.Request.Headers[$"custom{i}"]);
@@ -176,33 +149,6 @@ namespace System.Net.Tests
                 }
             }
         }
-        
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public async Task SimpleRequest_Succeeds()
-        {
-            const string expectedResponse = "hello from HttpListener";
-            Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
-
-            using (HttpClient client = new HttpClient())
-            {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
-
-                HttpListenerContext serverContext = await serverContextTask;
-                using (var response = serverContext.Response)
-                {
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes(expectedResponse);
-                    response.ContentLength64 = responseBuffer.Length;
-
-                    using (var output = response.OutputStream)
-                    {
-                        await output.WriteAsync(responseBuffer, 0, responseBuffer.Length);
-                    }
-                }
-
-                var clientString = await clientTask;
-
-                Assert.Equal(expectedResponse, clientString);
-            }
-        }
     }
 }
+    
