@@ -306,7 +306,6 @@ namespace System.Net
 
         public override bool UseDefaultCredentials
         {
-            // Same behavior as .NET Framework.
             get { throw new NotSupportedException(SR.net_PropertyNotSupportedException); }
             set { throw new NotSupportedException(SR.net_PropertyNotSupportedException); }
         }
