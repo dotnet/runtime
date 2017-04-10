@@ -1196,16 +1196,16 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         }
         srcAddrOrFill = initVal;
 
-#if 0
         if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
         {
-            // TODO-ARM64-CQ: Currently we generate a helper call for every
-            // initblk we encounter.  Later on we should implement loop unrolling
-            // code sequences to improve CQ.
-            // For reference see the code in lsraxarch.cpp.
+            // No additional temporaries required
+            ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
+            if (fill == 0)
+            {
+                MakeSrcContained(blkNode, source);
+            }
         }
         else
-#endif // 0
         {
             assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
             // The helper follows the regular ABI.
