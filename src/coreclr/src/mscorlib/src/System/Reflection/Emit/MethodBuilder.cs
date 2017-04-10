@@ -335,7 +335,7 @@ namespace System.Reflection.Emit
         internal override Type[] GetParameterTypes()
         {
             if (m_parameterTypes == null)
-                m_parameterTypes = EmptyArray<Type>.Value;
+                m_parameterTypes = Array.Empty<Type>();
 
             return m_parameterTypes;
         }
@@ -375,7 +375,7 @@ namespace System.Reflection.Emit
         internal SignatureHelper GetMethodSignature()
         {
             if (m_parameterTypes == null)
-                m_parameterTypes = EmptyArray<Type>.Value;
+                m_parameterTypes = Array.Empty<Type>();
 
             m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
                 m_returnType == null ? typeof(void) : m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
