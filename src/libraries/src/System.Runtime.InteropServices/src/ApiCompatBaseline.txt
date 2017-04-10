@@ -1,0 +1,3 @@
+Compat issues with assembly System.Runtime.InteropServices:
+MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.LPUTF8Str' does not exist in the implementation but it does exist in the contract.
+Total Issues: 1
