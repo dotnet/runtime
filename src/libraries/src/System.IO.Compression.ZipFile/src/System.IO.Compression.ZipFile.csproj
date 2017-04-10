@@ -2,7 +2,6 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <UseECMAKey>true</UseECMAKey>
     <AssemblyName>System.IO.Compression.ZipFile</AssemblyName>
     <ProjectGuid>{ACF967ED-7FC9-435C-B2C9-306626B7B6C6}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

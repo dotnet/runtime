@@ -10,19 +10,28 @@
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="WriteSigningRequired" />
 
   <PropertyGroup Condition="'$(SkipSigning)'!='true'">
-    <AssemblyOriginatorKeyFile Condition="'$(AssemblyOriginatorKeyFile)' == ''">$(ToolsDir)MSFT.snk</AssemblyOriginatorKeyFile>
-    <AssemblyOriginatorKeyFile Condition="'$(UseECMAKey)' == 'true'">$(ToolsDir)ECMA.snk</AssemblyOriginatorKeyFile>
-    <AssemblyOriginatorKeyFile Condition="'$(UseOpenKey)' == 'true'">$(ToolsDir)Open.snk</AssemblyOriginatorKeyFile>
+
+    <!-- For older support set AssemblyKey base on Use*Key properties but moving forward projects should just set AssemblyKey -->
+    <AssemblyKey Condition="'$(AssemblyKey)'=='' and '$(UseOpenKey)' == 'true'">Open</AssemblyKey>
+    <AssemblyKey Condition="'$(AssemblyKey)'=='' and '$(UseECMAKey)' == 'true'">ECMA</AssemblyKey>
+    <AssemblyKey Condition="'$(AssemblyKey)'=='' and '$(UseMSFTKey)' == 'true'">MSFT</AssemblyKey>
+
+    <!-- Force all test projects to use the Test key -->
+    <AssemblyKey Condition="'$(IsTestProject)' == 'true'">Test</AssemblyKey>
+
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'MSFT'">$(ToolsDir)MSFT.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'ECMA'">$(ToolsDir)ECMA.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'Open'">$(ToolsDir)Open.snk</AssemblyOriginatorKeyFile>
 
     <!-- Don't sign test assemblies with the Microsoft Key, as this affects APIs checking if the test assembly is an MS Key -->
-    <AssemblyOriginatorKeyFile Condition="'$(IsTestProject)' == 'true'">$(ToolsDir)Test.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'Test'">$(ToolsDir)Test.snk</AssemblyOriginatorKeyFile>
 
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
 
     <!-- For full keys we should disable delay signing -->
-    <FullPublicPrivateKey Condition="'$(AssemblyOriginatorKeyFile)' == '$(ToolsDir)Open.snk'">true</FullPublicPrivateKey>
-    <FullPublicPrivateKey Condition="'$(AssemblyOriginatorKeyFile)' == '$(ToolsDir)Test.snk'">true</FullPublicPrivateKey>
+    <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Open'">true</FullPublicPrivateKey>
+    <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Test'">true</FullPublicPrivateKey>
 
     <DelaySign Condition="'$(FullPublicPrivateKey)' == 'true'">false</DelaySign>
 

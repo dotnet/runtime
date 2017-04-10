@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <UseOpenKey>true</UseOpenKey>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
          we also have a separate complilation of this DLL that works for V4.5
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
