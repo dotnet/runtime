@@ -76,7 +76,7 @@ public:
         return true;
     }
 
-    void setup_shared_package_probes(
+    void setup_shared_store_probes(
         const hostpolicy_init_t& init,
         const arguments_t& args);
 
