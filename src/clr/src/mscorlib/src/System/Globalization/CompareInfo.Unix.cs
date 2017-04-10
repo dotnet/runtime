@@ -298,7 +298,7 @@ namespace System.Globalization
             byte [] keyData;
             if (source.Length == 0)
             { 
-                keyData = EmptyArray<Byte>.Value;
+                keyData = Array.Empty<Byte>();
             }
             else
             {

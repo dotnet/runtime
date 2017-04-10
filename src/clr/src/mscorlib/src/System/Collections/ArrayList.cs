@@ -46,7 +46,7 @@ namespace System.Collections
         private Object _syncRoot;
 
         private const int _defaultCapacity = 4;
-        private static readonly Object[] emptyArray = EmptyArray<Object>.Value;
+        private static readonly Object[] emptyArray = Array.Empty<Object>();
 
         // Constructs a ArrayList. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
