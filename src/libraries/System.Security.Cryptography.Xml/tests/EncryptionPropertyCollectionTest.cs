@@ -52,9 +52,12 @@ namespace System.Security.Cryptography.Xml.Tests
         public void IndexOf_Contains()
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty);
-            Assert.Equal(0, encPropertyCollection.IndexOf(encProperty));
+            EncryptionProperty encProperty1 = new EncryptionProperty();
+            EncryptionProperty encProperty2 = new EncryptionProperty();
+            encPropertyCollection.Add(encProperty1);
+            encPropertyCollection.Add(encProperty2);
+            Assert.Equal(0, encPropertyCollection.IndexOf(encProperty1));
+            Assert.Equal(1, encPropertyCollection.IndexOf(encProperty2));
         }
 
         [Fact]
@@ -66,12 +69,51 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void Insert()
+        public void Insert_EmptyCollection()
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
             EncryptionProperty encProperty = new EncryptionProperty();
             encPropertyCollection.Insert(0, encProperty);
             Assert.Equal(0, encPropertyCollection.IndexOf(encProperty));
+        }
+
+        [Fact]
+        public void Insert_Beginning()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            EncryptionProperty encProperty1 = new EncryptionProperty();
+            EncryptionProperty encProperty2 = new EncryptionProperty();
+            EncryptionProperty encProperty3 = new EncryptionProperty();
+            encPropertyCollection.Add(encProperty1);
+            encPropertyCollection.Add(encProperty2);
+            encPropertyCollection.Insert(0, encProperty3);
+            Assert.Equal(0, encPropertyCollection.IndexOf(encProperty3));
+        }
+
+        [Fact]
+        public void Insert_Middle()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            EncryptionProperty encProperty1 = new EncryptionProperty();
+            EncryptionProperty encProperty2 = new EncryptionProperty();
+            EncryptionProperty encProperty3 = new EncryptionProperty();
+            encPropertyCollection.Add(encProperty1);
+            encPropertyCollection.Add(encProperty2);
+            encPropertyCollection.Insert(1, encProperty3);
+            Assert.Equal(1, encPropertyCollection.IndexOf(encProperty3));
+        }
+
+        [Fact]
+        public void Insert_End()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            EncryptionProperty encProperty1 = new EncryptionProperty();
+            EncryptionProperty encProperty2 = new EncryptionProperty();
+            EncryptionProperty encProperty3 = new EncryptionProperty();
+            encPropertyCollection.Add(encProperty1);
+            encPropertyCollection.Add(encProperty2);
+            encPropertyCollection.Insert(2, encProperty3);
+            Assert.Equal(2, encPropertyCollection.IndexOf(encProperty3));
         }
 
         [Fact]
