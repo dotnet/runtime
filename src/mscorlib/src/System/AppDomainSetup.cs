@@ -272,7 +272,6 @@ namespace System
             }
         }
 
-        [XmlIgnoreMember]
         public AppDomainInitializer AppDomainInitializer
         {
             get
@@ -310,7 +309,6 @@ namespace System
             _ApplicationTrust = permissionSetName;
         }
 
-        [XmlIgnoreMember]
         internal ApplicationTrust ApplicationTrust
         {
             get

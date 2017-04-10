@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
 
@@ -15,14 +14,14 @@
 // the problem is fastloop-specific.
 #define FASTLOOP
 
+using System;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+
 namespace System.Text
 {
-    using System;
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     // Encodes text into and out of UTF-8.  UTF-8 is a way of writing
     // Unicode characters with variable numbers of bytes per character,
     // optimized for the lower 127 ASCII characters.  It's an efficient way
@@ -66,9 +65,9 @@ namespace System.Text
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        private bool emitUTF8Identifier = false;
+        private bool _emitUTF8Identifier = false;
 
-        private bool isThrowException = false;
+        private bool _isThrowException = false;
 
 
         public UTF8Encoding() : this(false)
@@ -85,18 +84,18 @@ namespace System.Text
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier, bool throwOnInvalidBytes) :
             base(UTF8_CODEPAGE)
         {
-            emitUTF8Identifier = encoderShouldEmitUTF8Identifier;
-            isThrowException = throwOnInvalidBytes;
+            _emitUTF8Identifier = encoderShouldEmitUTF8Identifier;
+            _isThrowException = throwOnInvalidBytes;
 
             // Encoding's constructor already did this, but it'll be wrong if we're throwing exceptions
-            if (isThrowException)
+            if (_isThrowException)
                 SetDefaultFallbacks();
         }
 
         internal override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
-            if (isThrowException)
+            if (_isThrowException)
             {
                 this.encoderFallback = EncoderFallback.ExceptionFallback;
                 this.decoderFallback = DecoderFallback.ExceptionFallback;
@@ -2492,13 +2491,13 @@ namespace System.Text
 
         public override byte[] GetPreamble()
         {
-            if (emitUTF8Identifier)
+            if (_emitUTF8Identifier)
             {
                 // Allocate new array to prevent users from modifying it.
                 return new byte[3] { 0xEF, 0xBB, 0xBF };
             }
             else
-                return EmptyArray<Byte>.Value;
+                return Array.Empty<byte>();
         }
 
 
@@ -2507,8 +2506,7 @@ namespace System.Text
             UTF8Encoding that = value as UTF8Encoding;
             if (that != null)
             {
-                return (emitUTF8Identifier == that.emitUTF8Identifier) &&
-                       //                       (isThrowException == that.isThrowException) && // Same as encoder/decoderfallbacks being exception
+                return (_emitUTF8Identifier == that._emitUTF8Identifier) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
@@ -2520,7 +2518,7 @@ namespace System.Text
         {
             //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
-                   UTF8_CODEPAGE + (emitUTF8Identifier ? 1 : 0);
+                   UTF8_CODEPAGE + (_emitUTF8Identifier ? 1 : 0);
         }
 
         [Serializable]

@@ -6,7 +6,6 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
-
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -41,9 +40,9 @@ namespace System.Text
         internal static readonly UTF32Encoding s_default = new UTF32Encoding(bigEndian: false, byteOrderMark: true);
         internal static readonly UTF32Encoding s_bigEndianDefault = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
 
-        private bool emitUTF32ByteOrderMark = false;
-        private bool isThrowException = false;
-        private bool bigEndian = false;
+        private bool _emitUTF32ByteOrderMark = false;
+        private bool _isThrowException = false;
+        private bool _bigEndian = false;
 
 
         public UTF32Encoding() : this(false, true, false)
@@ -60,19 +59,19 @@ namespace System.Text
         public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) :
             base(bigEndian ? 12001 : 12000)
         {
-            this.bigEndian = bigEndian;
-            emitUTF32ByteOrderMark = byteOrderMark;
-            isThrowException = throwOnInvalidCharacters;
+            _bigEndian = bigEndian;
+            _emitUTF32ByteOrderMark = byteOrderMark;
+            _isThrowException = throwOnInvalidCharacters;
 
             // Encoding constructor already did this, but it'll be wrong if we're throwing exceptions
-            if (isThrowException)
+            if (_isThrowException)
                 SetDefaultFallbacks();
         }
 
         internal override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
-            if (isThrowException)
+            if (_isThrowException)
             {
                 this.encoderFallback = EncoderFallback.ExceptionFallback;
                 this.decoderFallback = DecoderFallback.ExceptionFallback;
@@ -604,7 +603,7 @@ namespace System.Text
                             break;
                         }
 
-                        if (bigEndian)
+                        if (_bigEndian)
                         {
                             *(bytes++) = (byte)(0x00);
                             *(bytes++) = (byte)(iTemp >> 16);       // Implies & 0xFF, which isn't needed cause high are all 0
@@ -676,7 +675,7 @@ namespace System.Text
                     break;                                              // Didn't throw, stop
                 }
 
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     *(bytes++) = (byte)(0x00);
                     *(bytes++) = (byte)(0x00);
@@ -764,7 +763,7 @@ namespace System.Text
             while (bytes < end && charCount >= 0)
             {
                 // Get our next character
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     // Scoot left and add it to the bottom
                     iChar <<= 8;
@@ -791,7 +790,7 @@ namespace System.Text
                 {
                     // Need to fall back these 4 bytes
                     byte[] fallbackBytes;
-                    if (bigEndian)
+                    if (_bigEndian)
                     {
                         fallbackBytes = new byte[] {
                             unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
@@ -830,7 +829,7 @@ namespace System.Text
             {
                 // Oops, there's something left over with no place to go.
                 byte[] fallbackBytes = new byte[readCount];
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     while (readCount > 0)
                     {
@@ -912,7 +911,7 @@ namespace System.Text
             while (bytes < byteEnd)
             {
                 // Get our next character
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     // Scoot left and add it to the bottom
                     iChar <<= 8;
@@ -939,7 +938,7 @@ namespace System.Text
                 {
                     // Need to fall back these 4 bytes
                     byte[] fallbackBytes;
-                    if (bigEndian)
+                    if (_bigEndian)
                     {
                         fallbackBytes = new byte[] {
                             unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
@@ -1025,7 +1024,7 @@ namespace System.Text
                 // Oops, there's something left over with no place to go.
                 byte[] fallbackBytes = new byte[readCount];
                 int tempCount = readCount;
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     while (tempCount > 0)
                     {
@@ -1163,10 +1162,10 @@ namespace System.Text
 
         public override byte[] GetPreamble()
         {
-            if (emitUTF32ByteOrderMark)
+            if (_emitUTF32ByteOrderMark)
             {
                 // Allocate new array to prevent users from modifying it.
-                if (bigEndian)
+                if (_bigEndian)
                 {
                     return new byte[4] { 0x00, 0x00, 0xFE, 0xFF };
                 }
@@ -1176,7 +1175,7 @@ namespace System.Text
                 }
             }
             else
-                return EmptyArray<Byte>.Value;
+                return Array.Empty<byte>();
         }
 
 
@@ -1185,9 +1184,8 @@ namespace System.Text
             UTF32Encoding that = value as UTF32Encoding;
             if (that != null)
             {
-                return (emitUTF32ByteOrderMark == that.emitUTF32ByteOrderMark) &&
-                       (bigEndian == that.bigEndian) &&
-                       //                       (isThrowException == that.isThrowException) && // same as encoder/decoderfallback being exceptions
+                return (_emitUTF32ByteOrderMark == that._emitUTF32ByteOrderMark) &&
+                       (_bigEndian == that._bigEndian) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
@@ -1199,7 +1197,7 @@ namespace System.Text
         {
             //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
-                   CodePage + (emitUTF32ByteOrderMark ? 4 : 0) + (bigEndian ? 8 : 0);
+                   CodePage + (_emitUTF32ByteOrderMark ? 4 : 0) + (_bigEndian ? 8 : 0);
         }
 
         [Serializable]

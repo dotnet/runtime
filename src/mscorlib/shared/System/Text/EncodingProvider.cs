@@ -59,7 +59,7 @@ namespace System.Text
                     return;
                 }
 
-                var providers = new EncodingProvider[s_providers.Length + 1];
+                EncodingProvider[] providers = new EncodingProvider[s_providers.Length + 1];
                 Array.Copy(s_providers, providers, s_providers.Length);
                 providers[providers.Length - 1] = provider;
                 s_providers = providers;
@@ -71,7 +71,7 @@ namespace System.Text
             if (s_providers == null)
                 return null;
 
-            var providers = s_providers;
+            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding enc = provider.GetEncoding(codepage);
@@ -87,7 +87,7 @@ namespace System.Text
             if (s_providers == null)
                 return null;
 
-            var providers = s_providers;
+            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding enc = provider.GetEncoding(encodingName);
@@ -103,7 +103,7 @@ namespace System.Text
             if (s_providers == null)
                 return null;
 
-            var providers = s_providers;
+            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding encing = provider.GetEncoding(codepage, enc, dec);
@@ -119,7 +119,7 @@ namespace System.Text
             if (s_providers == null)
                 return null;
 
-            var providers = s_providers;
+            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding encoding = provider.GetEncoding(encodingName, enc, dec);
