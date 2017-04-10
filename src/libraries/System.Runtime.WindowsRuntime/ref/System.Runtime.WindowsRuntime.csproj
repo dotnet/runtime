@@ -2,7 +2,6 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <UseECMAKey>true</UseECMAKey>
     <!--
          NOTE: Suppress false positive warning for the special case where we're building System.Runtime.WindowsRuntime itself
                at a version other than 4.0.0.0, which is referenced indirectly via the mscorlib.dll design-time facade, which
