@@ -171,9 +171,6 @@ namespace System
 
     [Serializable]
     internal sealed class CultureAwareComparer : StringComparer
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        , IWellKnownStringEqualityComparer
-#endif
     {
         private readonly CompareInfo _compareInfo;
         private readonly CompareOptions _options;
@@ -223,17 +220,10 @@ namespace System
             int hashCode = _compareInfo.GetHashCode();
             return _options == CompareOptions.None ? hashCode : ~hashCode;
         }
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
-#endif
     }
 
     [Serializable]
     internal sealed class OrdinalComparer : StringComparer 
-#if FEATURE_RANDOMIZED_STRING_HASHING           
-        , IWellKnownStringEqualityComparer
-#endif
     {
         public override int Compare(string x, string y) => string.CompareOrdinal(x, y);
 
@@ -255,17 +245,10 @@ namespace System
         // Equals/GetHashCode methods for the comparer itself. 
         public override bool Equals(object obj) => obj is OrdinalComparer;
         public override int GetHashCode() => nameof(OrdinalComparer).GetHashCode();
-
-#if FEATURE_RANDOMIZED_STRING_HASHING           
-        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
-#endif
     }
 
     [Serializable]
     internal sealed class OrdinalIgnoreCaseComparer : StringComparer
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        , IWellKnownStringEqualityComparer
-#endif
     {
         public override int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
 
@@ -287,19 +270,5 @@ namespace System
         // Equals/GetHashCode methods for the comparer itself. 
         public override bool Equals(object obj) => obj is OrdinalIgnoreCaseComparer;
         public override int GetHashCode() => nameof(OrdinalIgnoreCaseComparer).GetHashCode();
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
-#endif
     }
-
-#if FEATURE_RANDOMIZED_STRING_HASHING           
-    // This interface is implemented by string comparers in the framework that can opt into
-    // randomized hashing behaviors. 
-    internal interface IWellKnownStringEqualityComparer
-    {
-        // Get an IEqaulityComparer that can be serailzied (e.g., it exists in older versions). 
-        IEqualityComparer GetEqualityComparerForSerialization();
-    }
-#endif
 }

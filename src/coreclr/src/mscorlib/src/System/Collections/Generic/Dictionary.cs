@@ -382,13 +382,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
             info.AddValue(VersionName, version);
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            info.AddValue(ComparerName, HashHelpers.GetEqualityComparerForSerialization(comparer), typeof(IEqualityComparer<TKey>));
-#else
             info.AddValue(ComparerName, comparer, typeof(IEqualityComparer<TKey>));
-#endif
-
             info.AddValue(HashSizeName, buckets == null ? 0 : buckets.Length); //This is the length of the bucket array.
             if (buckets != null)
             {
