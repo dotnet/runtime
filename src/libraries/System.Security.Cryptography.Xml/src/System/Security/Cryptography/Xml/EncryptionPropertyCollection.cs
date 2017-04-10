@@ -148,7 +148,6 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        /// <internalonly/>
         public void CopyTo(Array array, int index)
         {
             _props.CopyTo(array, index);
