@@ -6,15 +6,14 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
+using System;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
-
     [Serializable]
     public class UnicodeEncoding : Encoding
     {
@@ -1908,7 +1907,7 @@ namespace System.Text
                 else
                     return new byte[2] { 0xff, 0xfe };
             }
-            return EmptyArray<Byte>.Value;
+            return Array.Empty<Byte>();
         }
 
 
