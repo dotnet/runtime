@@ -45,24 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _bsetFilter.Contains(aid);
         }
 
-        public void DeclAdded(NamespaceDeclaration decl)
-        {
-            Debug.Assert(decl.Bag() == this);
-            //Debug.Assert(this.pdeclAttach == &decl.declNext);
-
-            InputFile infile = decl.getInputFile();
-
-            if (infile.isSource)
-            {
-                _bsetFilter.Add(KAID.kaidGlobal);
-                _bsetFilter.Add(KAID.kaidThisAssembly);
-            }
-            else
-            {
-                infile.UnionAliasFilter(ref _bsetFilter);
-            }
-        }
-
         public void AddAid(KAID aid)
         {
             if (aid == KAID.kaidThisAssembly)

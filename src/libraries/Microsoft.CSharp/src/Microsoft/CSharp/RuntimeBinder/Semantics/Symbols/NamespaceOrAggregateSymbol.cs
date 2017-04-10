@@ -33,8 +33,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(decl != null);
             Debug.Assert(IsNamespaceSymbol() || IsAggregateSymbol());
-            Debug.Assert(decl.IsNamespaceDeclaration() || decl.IsAggregateDeclaration());
-            Debug.Assert(!IsNamespaceSymbol() == !decl.IsNamespaceDeclaration());
+            Debug.Assert(decl.IsAggregateDeclaration());
+            Debug.Assert(!IsNamespaceSymbol());
 
             // If parent is set it should be set to us!
             Debug.Assert(decl.bag == null || decl.bag == this);
@@ -62,9 +62,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             decl.declNext = null;
             decl.bag = this;
-
-            if (decl.IsNamespaceDeclaration())
-                decl.AsNamespaceDeclaration().Bag().DeclAdded(decl.AsNamespaceDeclaration());
         }
     }
 }
