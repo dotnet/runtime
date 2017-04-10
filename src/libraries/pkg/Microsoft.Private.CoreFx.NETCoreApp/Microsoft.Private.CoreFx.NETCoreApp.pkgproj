@@ -2,132 +2,29 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <Import Project="$(MSBuildProjectName).props" />
-
-  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
-  <Choose>
-    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
-    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <ItemGroup>
-    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
-  </ItemGroup>
-
   <PropertyGroup>
-    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
-    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
     <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <SkipValidatePackage>true</SkipValidatePackage>
 
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
     <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
 
-    <NETStandardVersion>2.0</NETStandardVersion>
+    <IsFrameworkPackage>true</IsFrameworkPackage>
 
-    <!-- Include symbols in package by default-->
+    <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
   </PropertyGroup>
 
-  <Import Condition="'$(PackageTargetRuntime)' == ''" Project="$(RefBinDir)\*.props" />
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <!-- Include refs -->
-    <File Include="@(FileToPackage)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">ref/$(TargetFramework)</TargetPath>
-    </File>
-    <!-- force a missing file if ref build is absent -->
-    <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(FileToPackage)' == ''" />
-
-    <_buildRIDWithMetadata Include="@(BuildRID)">
-      <TargetRuntime>%(Identity)</TargetRuntime>
-      <Version>$(PackageVersion)</Version>
-    </_buildRIDWithMetadata>
-    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
-
-    <Dependency Include="Microsoft.NETCore.Platforms">
-      <Version>$(PlatformPackageVersion)</Version>
-    </Dependency>
-  </ItemGroup>
-
-  <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(LibBinDir)\*.props" />
-  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <!-- Include lib -->
-    <File Include="@(FileToPackage)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</TargetPath>
-    </File>
-    <!-- force a missing file if lib build is absent -->
-    <File Include="$(LibBinDir)/MISSING_LIB_BUILD" Condition="'@(FileToPackage)' == ''" />
-
-    <!-- Include native -->
-    <ExcludeNative Include="$(NativeBinDir)/*.lib" />
-    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </NativeFile>
-    <File Include="@(NativeFile)" />
-    <!-- force a missing file if native build is absent -->
-    <File Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
-  </ItemGroup>
-
   <ItemGroup>
     <IgnoredReference Include="System.Private.CoreLib" />
+
+    <!-- Exclude shims from the closure verification -->
+    <ExcludeFromClosure Include="mscorlib" />
+    <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Core" />
+    <ExcludeFromClosure Include="System.Data" />
   </ItemGroup>
-
-  <Target Name="VerifyClosure" AfterTargets="Build">
-    <ItemGroup>
-      <!-- Exclude shims from the closure verification -->
-      <ExcludeFromClosure Include="mscorlib" />
-      <ExcludeFromClosure Include="System" />
-      <ExcludeFromClosure Include="System.Core" />
-      <ExcludeFromClosure Include="System.Data" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_fileExisting Include="@(File)" Condition="Exists(%(FullPath))"/>
-
-      <_fileNames Include="@(_fileExisting -> '%(FileName)')" Exclude="@(ExcludeFromClosure)">
-        <Original>%(_fileExisting.Identity)</Original>
-      </_fileNames>
-      <_filesFiltered Include="@(_fileNames->'%(Original)')" />
-    </ItemGroup>
-
-    <VerifyClosure Sources="@(_filesFiltered)"
-                   IgnoredReferences="@(IgnoredReference)" />
-  </Target>
-
-  <Target Name="VerifyNETStandard" AfterTargets="Build">
-    <ItemGroup>
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\*.dll" />
-      <!-- force a missing file there are no files found in the package -->
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\MISSING_REF_BUILD" Condition="'@(_NETStandardFile)' == ''" />
-      <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(File->'%(FileName)')" />
-      <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
-      <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
-    </ItemGroup>
-    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package.  This error has been suppressed." />
-    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package." />
-  </Target>
-
-  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
-    <ItemGroup>
-      <File>
-        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
-        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
-      </File>
-    </ItemGroup>
-  </Target>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
