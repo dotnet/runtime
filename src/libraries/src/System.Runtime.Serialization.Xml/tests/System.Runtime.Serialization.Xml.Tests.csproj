@@ -23,6 +23,9 @@
     <Compile Include="$(TestSourceFolder)MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)XmlDictionaryWriterTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="$(TestSourceFolder)SerializationTypes.CoreCLR.cs" />
