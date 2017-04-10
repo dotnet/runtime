@@ -18,12 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly Name _pName; // The name that we're looking for.
 
-        public CMemberLookupResults()
-        {
-            _pName = null;
-            ContainingTypes = null;
-        }
-
         public CMemberLookupResults(
                 TypeArray containingTypes,
                 Name name)

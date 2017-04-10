@@ -714,10 +714,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual Expr VisitRANGE(ExprBinOp pExpr)
-        {
-            return VisitBINOP(pExpr);
-        }
+
         protected virtual Expr VisitLT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);

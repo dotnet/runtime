@@ -12,11 +12,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 {
     internal static class RuntimeBinderExtensions
     {
-        public static bool IsEquivalentTo(this Type t1, Type t2)
-        {
-            return t1 == t2;
-        }
-
         public static bool IsNullableType(this Type type)
         {
             return type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);

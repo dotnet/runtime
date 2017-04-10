@@ -160,11 +160,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return BSYMMGR.LookupNextSym(sym, parent, kindmask);
         }
 
-        public bool isManagedType(CType type)
-        {
-            return type.computeManagedType(this);
-        }
-
         // It would be nice to make this a virtual method on typeSym.
         public AggregateType GetAggTypeSym(CType typeSym)
         {

@@ -161,9 +161,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class PropWithType : MethPropWithType
     {
-        public PropWithType()
-        { }
-
         public PropWithType(PropertySymbol prop, AggregateType ats)
         {
             Set(prop, ats);
@@ -177,10 +174,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class EventWithType : SymWithType
     {
-        public EventWithType()
-        {
-        }
-
         public EventWithType(EventSymbol @event, AggregateType ats)
         {
             Set(@event, ats);
@@ -189,10 +182,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class FieldWithType : SymWithType
     {
-        public FieldWithType()
-        {
-        }
-
         public FieldWithType(FieldSymbol field, AggregateType ats)
         {
             Set(field, ats);
@@ -250,9 +239,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class MethWithInst : MethPropWithInst
     {
-        public MethWithInst()
-        {
-        }
         public MethWithInst(MethodSymbol meth, AggregateType ats)
             : this(meth, ats, null)
         {
