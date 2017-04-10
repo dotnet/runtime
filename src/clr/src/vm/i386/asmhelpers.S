@@ -1135,10 +1135,18 @@ LOCAL_LABEL(main_loop):
     // be quick to reset the counter so we don't get a bunch of contending threads
     mov     dword ptr [edx], CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT
 
+    #define STACK_ALIGN_PADDING 12
+    sub     esp, STACK_ALIGN_PADDING
+
     // promote the entry to the beginning of the chain
     mov     ecx, eax
+
+    CHECK_STACK_ALIGNMENT
     // call C_FUNC(VirtualCallStubManager::PromoteChainEntry)
     call    C_FUNC(_ZN22VirtualCallStubManager17PromoteChainEntryEP16ResolveCacheElem)
+
+    add     esp, STACK_ALIGN_PADDING
+    #undef  STACK_ALIGN_PADDING
 
 LOCAL_LABEL(nopromote):
 
