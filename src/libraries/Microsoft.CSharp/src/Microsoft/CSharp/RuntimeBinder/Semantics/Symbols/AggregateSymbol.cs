@@ -50,8 +50,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private AggKindEnum _aggKind;
 
-        private bool _isLayoutError; // Whether there is a cycle in the layout for the struct
-
         // Where this came from - fabricated, source, import
         // Fabricated AGGs have isSource == true but hasParseTree == false.
         // N.B.: in incremental builds, it is quite possible for
@@ -291,16 +289,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetPredefType(PredefinedType predef)
         {
             _iPredef = predef;
-        }
-
-        public bool IsLayoutError()
-        {
-            return _isLayoutError == true;
-        }
-
-        public void SetLayoutError(bool layoutError)
-        {
-            _isLayoutError = layoutError;
         }
 
         public bool IsSealed()

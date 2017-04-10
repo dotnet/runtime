@@ -1115,7 +1115,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     PredefinedTypes.InitializePredefinedType(agg, PredefinedTypeFacts.GetPredefTypeIndex(typeName));
                 }
             }
-            agg.SetLayoutError(false);
+
             agg.SetSealed(type.IsSealed);
             agg.SetUnmanagedStruct(false);
             agg.SetManagedStruct(false);
