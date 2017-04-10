@@ -47,12 +47,12 @@ namespace System.Threading
                 // Empty name is treated as an unnamed mutex. Set to null, and we will check for null from now on.
                 name = null;
             }
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
             if (name != null && System.IO.Path.MaxPath < name.Length)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
-#endif
+#endif // PLATFORM_WINDOWS
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
 

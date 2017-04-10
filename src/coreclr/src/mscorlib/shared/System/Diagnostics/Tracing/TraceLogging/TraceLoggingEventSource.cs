@@ -5,13 +5,13 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
 #define FEATURE_MANAGED_ETW
 
 #if !ES_BUILD_STANDALONE
 #define FEATURE_ACTIVITYSAMPLING
 #endif
-#endif // PLATFORM_UNIX
+#endif // PLATFORM_WINDOWS
 
 #if ES_BUILD_STANDALONE
 #define FEATURE_MANAGED_ETW_CHANNELS
