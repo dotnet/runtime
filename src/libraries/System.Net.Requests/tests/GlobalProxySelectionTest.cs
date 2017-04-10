@@ -38,6 +38,7 @@ namespace System.Net.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public void Select_Success()
         {
@@ -86,6 +87,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public void GetEmptyWebProxy_Success()
         {

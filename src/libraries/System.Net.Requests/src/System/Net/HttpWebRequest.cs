@@ -138,14 +138,17 @@ namespace System.Net
         {
             get
             {
-                return _allowReadStreamBuffering;
+                return false;
             }
             set
             {
-                _allowReadStreamBuffering = value;
-            }
+                if (value)
+                {
+                    throw new InvalidOperationException(SR.net_OperationNotSupportedException);
+                }
+            }            
         }
-    
+
         public int MaximumResponseHeadersLength
         {
             get
