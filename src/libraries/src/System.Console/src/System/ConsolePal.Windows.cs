@@ -97,7 +97,7 @@ namespace System
             if (enc.CodePage != Encoding.Unicode.CodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
@@ -111,7 +111,7 @@ namespace System
             if (enc.CodePage != Encoding.Unicode.CodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
@@ -421,7 +421,7 @@ namespace System
 
                 int mode = 0;
                 if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
                 return (mode & Interop.Kernel32.ENABLE_PROCESSED_INPUT) == 0;
             }
@@ -444,7 +444,7 @@ namespace System
                 }
 
                 if (!Interop.Kernel32.SetConsoleMode(handle, mode))
-                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
         }
 
@@ -629,12 +629,6 @@ namespace System
 
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                if (value.Length > MaxConsoleTitleLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_ConsoleTitleTooLong);
-                Contract.EndContractBlock();
-
                 if (!Interop.Kernel32.SetConsoleTitle(value))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
@@ -790,15 +784,6 @@ namespace System
 
         public static void SetCursorPosition(int left, int top)
         {
-            // Note on argument checking - the upper bounds are NOT correct 
-            // here!  But it looks slightly expensive to compute them.  Let
-            // Windows calculate them, then we'll give a nice error message.
-            if (left < 0 || left >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (top < 0 || top >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            Contract.EndContractBlock();
-
             IntPtr hConsole = OutputHandle;
             Interop.Kernel32.COORD coords = new Interop.Kernel32.COORD();
             coords.X = (short)left;
@@ -808,9 +793,9 @@ namespace System
                 // Give a nice error message for out of range sizes
                 int errorCode = Marshal.GetLastWin32Error();
                 Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                if (left < 0 || left >= csbi.dwSize.X)
+                if (left >= csbi.dwSize.X)
                     throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-                if (top < 0 || top >= csbi.dwSize.Y)
+                if (top >= csbi.dwSize.Y)
                     throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
