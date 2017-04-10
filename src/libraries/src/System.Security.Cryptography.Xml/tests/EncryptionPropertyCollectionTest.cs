@@ -77,63 +77,99 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(0, encPropertyCollection.IndexOf(encProperty));
         }
 
-        [Fact]
-        public void Insert_Beginning()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void InsertAt(int idx)
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty1 = new EncryptionProperty();
-            EncryptionProperty encProperty2 = new EncryptionProperty();
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(new EncryptionProperty());
+            }
             EncryptionProperty encProperty3 = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty1);
-            encPropertyCollection.Add(encProperty2);
-            encPropertyCollection.Insert(0, encProperty3);
-            Assert.Equal(0, encPropertyCollection.IndexOf(encProperty3));
+            encPropertyCollection.Insert(idx, encProperty3);
+            Assert.Equal(idx, encPropertyCollection.IndexOf(encProperty3));
+        }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(5, 2)]
+        public void Remove(int collectionSize, int removeIdx)
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            EncryptionProperty toRemove = null;
+
+            for (int i = 0; i < collectionSize; i++)
+            {
+                EncryptionProperty property = new EncryptionProperty();
+                encPropertyCollection.Add(property);
+
+                if (i == removeIdx)
+                {
+                    toRemove = property;
+                }
+            }
+
+            encPropertyCollection.Remove(toRemove);
+            Assert.Equal(-1, encPropertyCollection.IndexOf(toRemove));
+            Assert.Equal(collectionSize - 1, encPropertyCollection.Count);
         }
 
         [Fact]
-        public void Insert_Middle()
+        public void Remove_NotExisting()
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty1 = new EncryptionProperty();
-            EncryptionProperty encProperty2 = new EncryptionProperty();
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(new EncryptionProperty());
+            }
             EncryptionProperty encProperty3 = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty1);
-            encPropertyCollection.Add(encProperty2);
-            encPropertyCollection.Insert(1, encProperty3);
-            Assert.Equal(1, encPropertyCollection.IndexOf(encProperty3));
+            encPropertyCollection.Remove(encProperty3);
+            Assert.Equal(2, encPropertyCollection.Count);
         }
 
         [Fact]
-        public void Insert_End()
+        public void Remove_MultipleOccurences()
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty1 = new EncryptionProperty();
-            EncryptionProperty encProperty2 = new EncryptionProperty();
-            EncryptionProperty encProperty3 = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty1);
-            encPropertyCollection.Add(encProperty2);
-            encPropertyCollection.Insert(2, encProperty3);
-            Assert.Equal(2, encPropertyCollection.IndexOf(encProperty3));
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(new EncryptionProperty());
+            }
+            EncryptionProperty multiple = new EncryptionProperty();
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(multiple);
+            }
+            encPropertyCollection.Remove(multiple);
+            // Only the first occurence will be removed.
+            Assert.Equal(3, encPropertyCollection.Count);
         }
 
-        [Fact]
-        public void Remove()
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(5, 2)]
+        public void RemoveAt(int collectionSize, int removeIdx)
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty);
-            encPropertyCollection.Remove(encProperty);
-            Assert.Equal(-1, encPropertyCollection.IndexOf(encProperty));
-        }
+            EncryptionProperty toRemove = null;
 
-        [Fact]
-        public void RemoveAt()
-        {
-            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
-            EncryptionProperty encProperty = new EncryptionProperty();
-            encPropertyCollection.Add(encProperty);
-            encPropertyCollection.RemoveAt(0);
-            Assert.Equal(-1, encPropertyCollection.IndexOf(encProperty));
+            for (int i = 0; i < collectionSize; i++)
+            {
+                EncryptionProperty property = new EncryptionProperty();
+                encPropertyCollection.Add(property);
+
+                if (i == removeIdx)
+                {
+                    toRemove = property;
+                }
+            }
+
+            encPropertyCollection.RemoveAt(removeIdx);
+            Assert.Equal(-1, encPropertyCollection.IndexOf(toRemove));
+            Assert.Equal(collectionSize - 1, encPropertyCollection.Count);
         }
 
         [Fact]
@@ -175,6 +211,39 @@ namespace System.Security.Cryptography.Xml.Tests
             EncryptionProperty[] encPropertyArray = new EncryptionProperty[encPropertyCollection.Count];
             encPropertyCollection.CopyTo(encPropertyArray, 0);
             Assert.Equal(encProperty, encPropertyArray[0]);
+        }
+
+        [Fact]
+        public void CopyTo_ArrayNull()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            EncryptionProperty encProperty = new EncryptionProperty();
+            encPropertyCollection.Add(encProperty);
+            Assert.Throws<ArgumentNullException>(() => encPropertyCollection.CopyTo(null, 0));
+        }
+
+        [Fact]
+        public void CopyTo_ArrayTooSmall()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(new EncryptionProperty());
+            }
+            EncryptionProperty[] encPropertyArray = new EncryptionProperty[1];
+            Assert.Throws<ArgumentException>(() => encPropertyCollection.CopyTo(encPropertyArray, 0));
+        }
+
+        [Fact]
+        public void CopyTo_IndexOutOfRange()
+        {
+            EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
+            for (int i = 0; i < 2; i++)
+            {
+                encPropertyCollection.Add(new EncryptionProperty());
+            }
+            EncryptionProperty[] encPropertyArray = new EncryptionProperty[2];
+            Assert.Throws<ArgumentOutOfRangeException>(() => encPropertyCollection.CopyTo(encPropertyArray, -1));
         }
 
         [Fact]
