@@ -188,7 +188,6 @@ namespace System.Reflection.Tests
             {
                 new object[] { 1234 },
                 new object[] { typeof(ModuleTests).GetMethod("ResolveType").MetadataToken },
-                new object[] { typeof(ModuleTests).MetadataToken + 10000 },
             };
 
         [Theory]
