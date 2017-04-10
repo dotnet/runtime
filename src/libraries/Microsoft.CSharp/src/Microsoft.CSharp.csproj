@@ -128,7 +128,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\VariableSymbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ArrayIndex.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ArrayInitialization.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ArrayLength.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Assignment.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\BinaryOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Block.cs" />
@@ -138,7 +137,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Class.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\CompoundOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Concatenate.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\ConditionalOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Constant.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Event.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\EXPR.cs" />
