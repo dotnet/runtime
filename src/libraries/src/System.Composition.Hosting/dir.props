@@ -3,6 +3,7 @@
   <PropertyGroup>
     <PackageVersion>1.1.0</PackageVersion>
     <AssemblyVersion>1.0.32.0</AssemblyVersion>
+    <AssemblyKey>MSFT</AssemblyKey>
   </PropertyGroup>
 </Project>
 
