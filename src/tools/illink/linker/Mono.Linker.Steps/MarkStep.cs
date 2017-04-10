@@ -524,7 +524,7 @@ namespace Mono.Linker.Steps {
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
 			MarkDefaultConstructor (type);
-			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructorPredicate);
+			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor);
 		}
 
 		protected virtual TypeDefinition MarkType (TypeReference reference)
@@ -584,7 +584,7 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasMethods) {
 				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
-				MarkMethodsIf (type.Methods, IsStaticConstructorPredicate);
+				MarkMethodsIf (type.Methods, IsStaticConstructor);
 				MarkMethodsIf (type.Methods, HasSerializationAttribute);
 			}
 
@@ -826,8 +826,6 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		static MethodPredicate IsSpecialSerializationConstructorPredicate = new MethodPredicate (IsSpecialSerializationConstructor);
-
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
 		{
 			if (!IsConstructor (method))
@@ -841,9 +839,7 @@ namespace Mono.Linker.Steps {
 				parameters [1].ParameterType.Name == "StreamingContext";
 		}
 
-		delegate bool MethodPredicate (MethodDefinition method);
-
-		void MarkMethodsIf (ICollection methods, MethodPredicate predicate)
+		void MarkMethodsIf (ICollection methods, Func<MethodDefinition, bool> predicate)
 		{
 			foreach (MethodDefinition method in methods)
 				if (predicate (method)) {
@@ -852,8 +848,6 @@ namespace Mono.Linker.Steps {
 					Annotations.Pop ();
 				}
 		}
-
-		static MethodPredicate IsDefaultConstructorPredicate = new MethodPredicate (IsDefaultConstructor);
 
 		static bool IsDefaultConstructor (MethodDefinition method)
 		{
@@ -870,10 +864,8 @@ namespace Mono.Linker.Steps {
 			if ((type == null) || !type.HasMethods)
 				return;
 
-			MarkMethodsIf (type.Methods, IsDefaultConstructorPredicate);
+			MarkMethodsIf (type.Methods, IsDefaultConstructor);
 		}
-
-		static MethodPredicate IsStaticConstructorPredicate = new MethodPredicate (IsStaticConstructor);
 
 		static bool IsStaticConstructor (MethodDefinition method)
 		{
