@@ -130,9 +130,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs_o\chaos65204782cs_o.cmd">
             <Issue>6714</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\gc\regress\vswhidbey\143837\143837.cmd">
-            <Issue>6718</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd">
             <Issue>2414</Issue>
         </ExcludeList>
@@ -336,9 +333,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\549411\exploit\exploit.cmd">
-            <Issue>6717</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedInterfaces\HelloWorld\HelloWorld.cmd">
             <Issue>6714</Issue>
