@@ -232,7 +232,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_Scope:
                 case SYMKIND.SK_LambdaScope:
                 case SYMKIND.SK_NamespaceSymbol:
-                case SYMKIND.SK_NamespaceDeclaration:
                 default:
                     Debug.Assert(false, "CheckBogus with invalid Symbol kind");
                     setBogus(false);
@@ -249,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public bool IsNamespaceSymbol() { return _kind == SYMKIND.SK_NamespaceSymbol; }
-        public bool IsNamespaceDeclaration() { return _kind == SYMKIND.SK_NamespaceDeclaration; }
+
         public bool IsAggregateSymbol() { return _kind == SYMKIND.SK_AggregateSymbol; }
         public bool IsAggregateDeclaration() { return _kind == SYMKIND.SK_AggregateDeclaration; }
         public bool IsFieldSymbol() { return _kind == SYMKIND.SK_FieldSymbol; }
@@ -327,7 +326,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return this.AsAggregateDeclaration().GetAssembly();
                 case SYMKIND.SK_AggregateSymbol:
                     return this.AsAggregateSymbol().AssociatedAssembly;
-                case SYMKIND.SK_NamespaceDeclaration:
                 case SYMKIND.SK_NamespaceSymbol:
                 case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
                 default:
@@ -355,7 +353,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return this.AsAggregateDeclaration().Agg().InternalsVisibleTo(assembly);
                 case SYMKIND.SK_AggregateSymbol:
                     return this.AsAggregateSymbol().InternalsVisibleTo(assembly);
-                case SYMKIND.SK_NamespaceDeclaration:
                 case SYMKIND.SK_ExternalAliasDefinitionSymbol:
                 case SYMKIND.SK_NamespaceSymbol:
                 case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
@@ -387,9 +384,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // namespaces don't have input files
                     // call with a NamespaceDeclaration instead
                     Debug.Assert(false);
-                    return null;
-
-                case SYMKIND.SK_NamespaceDeclaration:
                     return null;
 
                 case SYMKIND.SK_AggregateSymbol:
@@ -577,7 +571,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         internal static NamespaceOrAggregateSymbol AsNamespaceOrAggregateSymbol(this Symbol symbol) { return symbol as NamespaceOrAggregateSymbol; }
         internal static NamespaceSymbol AsNamespaceSymbol(this Symbol symbol) { return symbol as NamespaceSymbol; }
         internal static AssemblyQualifiedNamespaceSymbol AsAssemblyQualifiedNamespaceSymbol(this Symbol symbol) { return symbol as AssemblyQualifiedNamespaceSymbol; }
-        internal static NamespaceDeclaration AsNamespaceDeclaration(this Symbol symbol) { return symbol as NamespaceDeclaration; }
+
         internal static AggregateSymbol AsAggregateSymbol(this Symbol symbol) { return symbol as AggregateSymbol; }
         internal static AggregateDeclaration AsAggregateDeclaration(this Symbol symbol) { return symbol as AggregateDeclaration; }
         internal static FieldSymbol AsFieldSymbol(this Symbol symbol) { return symbol as FieldSymbol; }

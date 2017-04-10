@@ -37,10 +37,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     sym = new NamespaceSymbol();
                     sym.name = name;
                     break;
-                case SYMKIND.SK_NamespaceDeclaration:
-                    sym = new NamespaceDeclaration();
-                    sym.name = name;
-                    break;
                 case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
                     sym = new AssemblyQualifiedNamespaceSymbol();
                     sym.name = name;

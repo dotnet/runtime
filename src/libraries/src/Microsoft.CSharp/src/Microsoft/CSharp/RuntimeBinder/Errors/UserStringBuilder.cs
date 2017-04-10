@@ -427,11 +427,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             switch (sym.getKind())
             {
-                case SYMKIND.SK_NamespaceDeclaration:
-                    // for namespace declarations just convert the namespace
-                    ErrAppendSym(sym.AsNamespaceDeclaration().NameSpace(), null);
-                    break;
-
                 case SYMKIND.SK_GlobalAttributeDeclaration:
                     ErrAppendName(sym.name);
                     break;

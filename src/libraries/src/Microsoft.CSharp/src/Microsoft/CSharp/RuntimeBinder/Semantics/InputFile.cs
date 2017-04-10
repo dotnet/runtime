@@ -55,11 +55,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _bsetFilter.Add(aid);
         }
 
-        public void UnionAliasFilter(ref HashSet<KAID> bsetDst)
-        {
-            bsetDst.UnionWith(_bsetFilter);
-        }
-
         public KAID GetAssemblyID()
         {
             Debug.Assert(_aid >= KAID.kaidThisAssembly);
