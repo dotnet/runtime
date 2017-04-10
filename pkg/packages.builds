@@ -3,7 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" />
+  	<ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT'" />
+    <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
