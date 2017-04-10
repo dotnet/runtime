@@ -722,7 +722,7 @@ const unsigned char AbbrevTable[] = {
         DW_FORM_ref4, DW_AT_location, DW_FORM_exprloc, 0, 0,
 
     7, DW_TAG_class_type, DW_CHILDREN_yes,
-        DW_AT_name, DW_FORM_strp, DW_AT_byte_size, DW_FORM_data1, 0, 0,
+        DW_AT_name, DW_FORM_strp, DW_AT_byte_size, DW_FORM_data4, 0, 0,
 
     8, DW_TAG_member, DW_CHILDREN_no,
         DW_AT_name, DW_FORM_strp, DW_AT_type, DW_FORM_ref4, DW_AT_data_member_location, DW_FORM_data4, 0, 0,
@@ -871,7 +871,7 @@ struct __attribute__((packed)) DebugInfoClassType
 {
     uint8_t m_type_abbrev;
     uint32_t m_type_name;
-    uint8_t m_byte_size;
+    uint32_t m_byte_size;
 };
 
 struct __attribute__((packed)) DebugInfoInheritance
