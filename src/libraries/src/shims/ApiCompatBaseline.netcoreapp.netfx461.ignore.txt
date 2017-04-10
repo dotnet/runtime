@@ -63,6 +63,14 @@ MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorage.GetPermissi
 MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorageFile.GetPermission(System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorageFile.GetStore(System.IO.IsolatedStorage.IsolatedStorageScope, System.Security.Policy.Evidence, System.Type, System.Security.Policy.Evidence, System.Type)' does not exist in the implementation but it does exist in the contract.
 
+// Known Colors intentionally removed from netstandard20 and netcoreapp20: https://github.com/dotnet/corefx/pull/17669
+MembersMustExist : Member 'System.Drawing.Color.FromKnownColor(System.Drawing.KnownColor)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.IsKnownColor.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.IsSystemColor.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Drawing.Color.ToKnownColor()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Drawing.KnownColor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Drawing.SystemColors' does not exist in the implementation but it does exist in the contract.
+
 // Reflection.Emit future unclear and won't be implemented till netcoreapp20. See here: https://github.com/dotnet/corefx/issues/18072
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
@@ -3287,7 +3295,7 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.SignData(System
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ToXmlString(System.Security.Cryptography.ECKeyXmlFormat)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.Byte[], System.Byte[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.Byte[], System.Int32, System.Int32, System.Byte[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.IO.Stream, System.Byte[])' does not exist in the implementation but it does exist in the contract
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.IO.Stream, System.Byte[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.SecurityException..ctor(System.String, System.Object, System.Object, System.Reflection.MethodInfo, System.Object, System.Security.IPermission)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.SecurityException..ctor(System.String, System.Reflection.AssemblyName, System.Security.PermissionSet, System.Security.PermissionSet, System.Reflection.MethodInfo, System.Security.Permissions.SecurityAction, System.Object, System.Security.IPermission, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.SecurityException.Action.get()' does not exist in the implementation but it does exist in the contract.
