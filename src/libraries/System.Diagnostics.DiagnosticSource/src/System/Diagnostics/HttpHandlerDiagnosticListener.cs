@@ -7,23 +7,25 @@ using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization;
 
-// This HttpHandlerDiagnosticListener class is applicable only for .NET 4.5/4.6, and not for .NET core.
+// This HttpHandlerDiagnosticListener class is applicable only for .NET 4.6, and not for .NET core.
 // If you are making these changes, please test your changes manually via custom test applications.
 
 namespace System.Diagnostics
 {
     /// <summary>
-    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.5/4.6 where HttpClient
-    /// doesn't have a DiagnosticListener built-in. This class is not used for .NET Core because
+    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.6 where HttpClient
+    /// doesn't have a DiagnosticListener built in. This class is not used for .NET Core because
     /// HttpClient in .NET Core already emits DiagnosticSource events. This class compensates for
-    /// that in .NET 4.5/4.6. HttpHandlerDiagnosticListener has no public constructor, but it has a
-    /// singleton style Initialize method to control its creation.
-    /// 
-    /// To use this, the application just needs to call HttpHandlerDiagnosticListener.Initialize(), and this
-    /// will register itself with the DiagnosticListener's all listeners collection.
+    /// that in .NET 4.6. HttpHandlerDiagnosticListener has no public constructor. To use this, 
+    /// the application just needs to call <see cref="DiagnosticListener.AllListeners" /> and
+    /// <see cref="DiagnosticListener.AllListenerObservable.Subscribe(IObserver{DiagnosticListener})"/>,
+    /// then in the <see cref="IObserver{DiagnosticListener}.OnNext(DiagnosticListener)"/> method,
+    /// when it seems the System.Net.Http.Desktop source, subscribe to it. This will trigger the
+    /// initialization of this DiagnosticListener.
     /// </summary>
-    internal class HttpHandlerDiagnosticListener : DiagnosticListener
+    internal sealed class HttpHandlerDiagnosticListener : DiagnosticListener
     {
         /// <summary>
         /// Overriding base class implementation just to give us a chance to initialize.  
@@ -50,7 +52,7 @@ namespace System.Diagnostics
         /// </summary>
         private void Initialize()
         {
-            lock (this.initializationLock)
+            lock (this)
             {
                 if (!this.initialized)
                 {
@@ -64,9 +66,10 @@ namespace System.Diagnostics
                         PrepareReflectionObjects();
                         PerformInjection();
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        // If anything went wrong, just no-op
+                        // If anything went wrong, just no-op. Write an event so at least we can find out.
+                        this.Write(InitializationFailed, new { Exception = ex });
                     }
                 }
             }
@@ -74,13 +77,147 @@ namespace System.Diagnostics
 
 #region private helper classes
 
+        [Serializable]
+        private class SimpleHashtableWrapper : Hashtable, IEnumerable
+        {
+            protected Hashtable _table;
+            public override int Count
+            {
+                get
+                {
+                    return this._table.Count;
+                }
+            }
+            public override bool IsReadOnly
+            {
+                get
+                {
+                    return this._table.IsReadOnly;
+                }
+            }
+            public override bool IsFixedSize
+            {
+                get
+                {
+                    return this._table.IsFixedSize;
+                }
+            }
+            public override bool IsSynchronized
+            {
+                get
+                {
+                    return this._table.IsSynchronized;
+                }
+            }
+            public override object this[object key]
+            {
+                get
+                {
+                    return this._table[key];
+                }
+                set
+                {
+                    this._table[key] = value;
+                }
+            }
+            public override object SyncRoot
+            {
+                get
+                {
+                    return this._table.SyncRoot;
+                }
+            }
+            public override ICollection Keys
+            {
+                get
+                {
+                    return this._table.Keys;
+                }
+            }
+            public override ICollection Values
+            {
+                get
+                {
+                    return this._table.Values;
+                }
+            }
+            internal SimpleHashtableWrapper(Hashtable table) : base()
+            {
+                this._table = table;
+            }
+            internal SimpleHashtableWrapper(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+                this._table = (Hashtable)info.GetValue("ParentTable", typeof(Hashtable));
+                if (this._table == null)
+                {
+                    throw new SerializationException("Parent table is missing for deserialization");
+                }
+            }
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException("info");
+                }
+
+                info.AddValue("ParentTable", this._table, typeof(Hashtable));
+            }
+            public override void Add(object key, object value)
+            {
+                this._table.Add(key, value);
+            }
+            public override void Clear()
+            {
+                this._table.Clear();
+            }
+            public override bool Contains(object key)
+            {
+                return this._table.Contains(key);
+            }
+            public override bool ContainsKey(object key)
+            {
+                return this._table.ContainsKey(key);
+            }
+            public override bool ContainsValue(object key)
+            {
+                return this._table.ContainsValue(key);
+            }
+            public override void CopyTo(Array array, int arrayIndex)
+            {
+                this._table.CopyTo(array, arrayIndex);
+            }
+            public override object Clone()
+            {
+                return new SimpleHashtableWrapper((Hashtable)this._table.Clone());
+            }
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this._table.GetEnumerator();
+            }
+            public override IDictionaryEnumerator GetEnumerator()
+            {
+                return this._table.GetEnumerator();
+            }
+            public override void Remove(object key)
+            {
+                this._table.Remove(key);
+            }
+            public override void OnDeserialization(object sender)
+            {
+            }
+        }
+
         /// <summary>
         /// Helper class used for ServicePointManager.s_ServicePointTable. The goal here is to
         /// intercept each new ServicePoint object being added to ServicePointManager.s_ServicePointTable
         /// and replace its ConnectionGroupList hashtable field.
         /// </summary>
-        private class ServicePointHashtable : Hashtable
+        private sealed class ServicePointHashtable : SimpleHashtableWrapper
         {
+            public ServicePointHashtable(Hashtable table) : base(table)
+            {
+            }
+
             public override object this[object key]
             {
                 get
@@ -99,14 +236,16 @@ namespace System.Diagnostics
                             // which allows us to intercept each new ConnectionGroup object added under
                             // this ServicePoint.
                             Hashtable originalTable = s_connectionGroupListField.GetValue(servicePoint) as Hashtable;
-                            ConnectionGroupHashtable newTable = new ConnectionGroupHashtable();
+                            ConnectionGroupHashtable newTable;
                             if (originalTable != null)
                             {
-                                foreach (DictionaryEntry entry in originalTable)
-                                {
-                                    newTable[entry.Key] = entry.Value;
-                                }
+                                newTable = new ConnectionGroupHashtable(originalTable);
                             }
+                            else
+                            {
+                                newTable = new ConnectionGroupHashtable(new Hashtable());
+                            }
+
                             s_connectionGroupListField.SetValue(servicePoint, newTable);
                         }
                     }
@@ -117,12 +256,16 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Helper class used for ServicePoint.m_ConnectiopGroupList. The goal here is to
+        /// Helper class used for ServicePoint.m_ConnectionGroupList. The goal here is to
         /// intercept each new ConnectionGroup object being added to ServicePoint.m_ConnectionGroupList
         /// and replace its m_ConnectionList arraylist field.
         /// </summary>
-        private class ConnectionGroupHashtable : Hashtable
+        private sealed class ConnectionGroupHashtable : SimpleHashtableWrapper
         {
+            public ConnectionGroupHashtable(Hashtable table) : base(table)
+            {
+            }
+
             public override object this[object key]
             {
                 get
@@ -137,14 +280,16 @@ namespace System.Diagnostics
                         // which allows us to intercept each new Connection object added under
                         // this ConnectionGroup.
                         ArrayList originalArrayList = s_connectionListField.GetValue(value) as ArrayList;
-                        ConnectionArrayList newArrayList = new ConnectionArrayList();
+                        ConnectionArrayList newArrayList;
                         if (originalArrayList != null)
                         {
-                            foreach (object entry in originalArrayList)
-                            {
-                                newArrayList.Add(entry);
-                            }
+                            newArrayList = new ConnectionArrayList(originalArrayList);
                         }
+                        else
+                        {
+                            newArrayList = new ConnectionArrayList(new ArrayList());
+                        }
+
                         s_connectionListField.SetValue(value, newArrayList);
                     }
 
@@ -154,12 +299,220 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Helper class used to wrap the array list object. This class itself doesn't actually
+        /// have the array elements, but rather access another array list that's given at 
+        /// construction time.
+        /// </summary>
+        private class SimpleArrayListWrapper : ArrayList
+        {
+            private ArrayList _list;
+
+            public override int Capacity
+            {
+                get
+                {
+                    return this._list.Capacity;
+                }
+                set
+                {
+                    this._list.Capacity = value;
+                }
+            }
+            public override int Count
+            {
+                get
+                {
+                    return this._list.Count;
+                }
+            }
+            public override bool IsReadOnly
+            {
+                get
+                {
+                    return this._list.IsReadOnly;
+                }
+            }
+            public override bool IsFixedSize
+            {
+                get
+                {
+                    return this._list.IsFixedSize;
+                }
+            }
+            public override bool IsSynchronized
+            {
+                get
+                {
+                    return this._list.IsSynchronized;
+                }
+            }
+            public override object this[int index]
+            {
+                get
+                {
+                    return this._list[index];
+                }
+                set
+                {
+                    this._list[index] = value;
+                }
+            }
+            public override object SyncRoot
+            {
+                get
+                {
+                    return this._list.SyncRoot;
+                }
+            }
+            internal SimpleArrayListWrapper(ArrayList list) : base()
+            {
+                this._list = list;
+            }
+            public override int Add(object value)
+            {
+                return this._list.Add(value);
+            }
+            public override void AddRange(ICollection c)
+            {
+                this._list.AddRange(c);
+            }
+            public override int BinarySearch(object value)
+            {
+                return this._list.BinarySearch(value);
+            }
+            public override int BinarySearch(object value, IComparer comparer)
+            {
+                return this._list.BinarySearch(value, comparer);
+            }
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
+            {
+                return this._list.BinarySearch(index, count, value, comparer);
+            }
+            public override void Clear()
+            {
+                this._list.Clear();
+            }
+            public override object Clone()
+            {
+                return new SimpleArrayListWrapper((ArrayList)this._list.Clone());
+            }
+            public override bool Contains(object item)
+            {
+                return this._list.Contains(item);
+            }
+            public override void CopyTo(Array array)
+            {
+                this._list.CopyTo(array);
+            }
+            public override void CopyTo(Array array, int index)
+            {
+                this._list.CopyTo(array, index);
+            }
+            public override void CopyTo(int index, Array array, int arrayIndex, int count)
+            {
+                this._list.CopyTo(index, array, arrayIndex, count);
+            }
+            public override IEnumerator GetEnumerator()
+            {
+                return this._list.GetEnumerator();
+            }
+            public override IEnumerator GetEnumerator(int index, int count)
+            {
+                return this._list.GetEnumerator(index, count);
+            }
+            public override int IndexOf(object value)
+            {
+                return this._list.IndexOf(value);
+            }
+            public override int IndexOf(object value, int startIndex)
+            {
+                return this._list.IndexOf(value, startIndex);
+            }
+            public override int IndexOf(object value, int startIndex, int count)
+            {
+                return this._list.IndexOf(value, startIndex, count);
+            }
+            public override void Insert(int index, object value)
+            {
+                this._list.Insert(index, value);
+            }
+            public override void InsertRange(int index, ICollection c)
+            {
+                this._list.InsertRange(index, c);
+            }
+            public override int LastIndexOf(object value)
+            {
+                return this._list.LastIndexOf(value);
+            }
+            public override int LastIndexOf(object value, int startIndex)
+            {
+                return this._list.LastIndexOf(value, startIndex);
+            }
+            public override int LastIndexOf(object value, int startIndex, int count)
+            {
+                return this._list.LastIndexOf(value, startIndex, count);
+            }
+            public override void Remove(object value)
+            {
+                this._list.Remove(value);
+            }
+            public override void RemoveAt(int index)
+            {
+                this._list.RemoveAt(index);
+            }
+            public override void RemoveRange(int index, int count)
+            {
+                this._list.RemoveRange(index, count);
+            }
+            public override void Reverse(int index, int count)
+            {
+                this._list.Reverse(index, count);
+            }
+            public override void SetRange(int index, ICollection c)
+            {
+                this._list.SetRange(index, c);
+            }
+            public override ArrayList GetRange(int index, int count)
+            {
+                return this._list.GetRange(index, count);
+            }
+            public override void Sort()
+            {
+                this._list.Sort();
+            }
+            public override void Sort(IComparer comparer)
+            {
+                this._list.Sort(comparer);
+            }
+            public override void Sort(int index, int count, IComparer comparer)
+            {
+                this._list.Sort(index, count, comparer);
+            }
+            public override object[] ToArray()
+            {
+                return this._list.ToArray();
+            }
+            public override Array ToArray(Type type)
+            {
+                return this._list.ToArray(type);
+            }
+            public override void TrimToSize()
+            {
+                this._list.TrimToSize();
+            }
+        }
+
+        /// <summary>
         /// Helper class used for ConnectionGroup.m_ConnectionList. The goal here is to
         /// intercept each new Connection object being added to ConnectionGroup.m_ConnectionList
         /// and replace its m_WriteList arraylist field.
         /// </summary>
-        private class ConnectionArrayList : ArrayList
+        private sealed class ConnectionArrayList : SimpleArrayListWrapper
         {
+            public ConnectionArrayList(ArrayList list) : base(list)
+            {
+            }
+
             public override int Add(object value)
             {
                 if (s_connectionType.IsInstanceOfType(value))
@@ -168,14 +521,16 @@ namespace System.Diagnostics
                     // which allows us to intercept each new HttpWebRequest object added under
                     // this Connection.
                     ArrayList originalArrayList = s_writeListField.GetValue(value) as ArrayList;
-                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList();
+                    HttpWebRequestArrayList newArrayList;
                     if (originalArrayList != null)
                     {
-                        foreach (object entry in originalArrayList)
-                        {
-                            newArrayList.Add(entry);
-                        }
+                        newArrayList = new HttpWebRequestArrayList(originalArrayList);
                     }
+                    else
+                    {
+                        newArrayList = new HttpWebRequestArrayList(new ArrayList());
+                    }
+
                     s_writeListField.SetValue(value, newArrayList);
                 }
 
@@ -190,8 +545,12 @@ namespace System.Diagnostics
         /// It also intercepts all HttpWebRequest objects that are about to get removed from
         /// Connection.m_WriteList as they have completed the request.
         /// </summary>
-        private class HttpWebRequestArrayList : ArrayList
+        private sealed class HttpWebRequestArrayList : SimpleArrayListWrapper
         {
+            public HttpWebRequestArrayList(ArrayList list) : base(list)
+            {
+            }
+
             public override int Add(object value)
             {
                 HttpWebRequest request = value as HttpWebRequest;
@@ -219,13 +578,12 @@ namespace System.Diagnostics
             }
         }
 
-#endregion
+        #endregion
 
-#region private methods
+        #region private methods
 
         /// <summary>
-        /// Private constructor. Make sure every caller has to create this object via the Initialize
-        /// method.
+        /// Private constructor. This class implements a singleton pattern and only this class is allowed to create an instance.
         /// </summary>
         private HttpHandlerDiagnosticListener() : base(DiagnosticListenerName)
         {
@@ -233,18 +591,14 @@ namespace System.Diagnostics
 
         private void RaiseRequestEvent(HttpWebRequest request)
         {
-            Guid loggingRequestId = Guid.Empty;
-
             // If System.Net.Http.Request is on, raise the event
             if (this.IsEnabled(RequestWriteName))
             {
                 long timestamp = Stopwatch.GetTimestamp();
-                loggingRequestId = Guid.NewGuid();
                 this.Write(RequestWriteName,
                     new
                     {
                         Request = request,
-                        //LoggingRequestId = loggingRequestId,
                         Timestamp = timestamp
                     }
                 );
@@ -253,18 +607,6 @@ namespace System.Diagnostics
 
         private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
         {
-            Guid loggingRequestId = Guid.Empty;
-
-            // TODO: Figure what's the right way to detect error conditions here.
-            if (response.StatusCode >= (HttpStatusCode)400)
-            {
-                if (this.IsEnabled(ExceptionEventName))
-                {
-                    //this.Write(ExceptionEventName, new { Exception = ex, Request = request });
-                    this.Write(ExceptionEventName, new { Response = response });
-                }
-            }
-
             if (this.IsEnabled(ResponseWriteName))
             {
                 long timestamp = Stopwatch.GetTimestamp();
@@ -273,9 +615,7 @@ namespace System.Diagnostics
                     {
                         Request = request,
                         Response = response,
-                        //LoggingRequestId = loggingRequestId,
                         TimeStamp = timestamp
-                        //RequestTaskStatus = responseTask.Status
                     }
                 );
             }
@@ -283,8 +623,7 @@ namespace System.Diagnostics
 
         private static void PrepareReflectionObjects()
         {
-            // At any point, if the operation failed, it should just throw, including NullReferenceException.
-            // The caller should catch all exceptions and swallow.
+            // At any point, if the operation failed, it should just throw. The caller should catch all exceptions and swallow.
 
             // First step: Get all the reflection objects we will ever need.
             Assembly systemNetHttpAssembly = typeof(ServicePoint).Assembly;
@@ -316,6 +655,7 @@ namespace System.Diagnostics
                 s_writeListField == null ||
                 s_httpResponseAccessor == null)
             {
+                // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to initialize all required reflection objects");
             }
         }
@@ -325,19 +665,21 @@ namespace System.Diagnostics
             FieldInfo servicePointTableField = typeof(ServicePointManager).GetField("s_ServicePointTable", BindingFlags.Static | BindingFlags.NonPublic);
             if (servicePointTableField == null)
             {
+                // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to access the ServicePointTable field");
             }
 
             Hashtable originalTable = servicePointTableField.GetValue(null) as Hashtable;
-            ServicePointHashtable newTable = new ServicePointHashtable();
+            ServicePointHashtable newTable;
 
             // Copy the existing entries over to the new table, and replace the field with our new table
             if (originalTable != null)
             {
-                foreach (DictionaryEntry entry in originalTable)
-                {
-                    newTable[entry.Key] = entry.Value;
-                }
+                newTable = new ServicePointHashtable(originalTable);
+            }
+            else
+            {
+                newTable = new ServicePointHashtable(new Hashtable());
             }
 
             servicePointTableField.SetValue(null, newTable);
@@ -348,13 +690,12 @@ namespace System.Diagnostics
         internal static HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
 
 #region private fields
-        private const string DiagnosticListenerName = "System.Net.Http.Desktop.V4";
+        private const string DiagnosticListenerName = "System.Net.Http.Desktop";
         private const string RequestWriteName = "System.Net.Http.Request";
         private const string ResponseWriteName = "System.Net.Http.Response";
-        private const string ExceptionEventName = "System.Net.Http.Exception";
+        private const string InitializationFailed = "System.Net.Http.InitializationFailed";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
-        private object initializationLock = new object();
         private bool initialized = false;
 
         // Fields for reflection
