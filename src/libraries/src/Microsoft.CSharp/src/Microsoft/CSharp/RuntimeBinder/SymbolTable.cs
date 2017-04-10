@@ -1117,8 +1117,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             agg.SetSealed(type.IsSealed);
-            agg.SetUnmanagedStruct(false);
-            agg.SetManagedStruct(false);
             agg.SetHasExternReference(false);
 
             AggregateType baseAggType = agg.getThisType();
