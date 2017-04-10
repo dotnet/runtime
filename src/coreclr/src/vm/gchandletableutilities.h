@@ -139,9 +139,21 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 #ifdef FEATURE_COMINTEROP
 inline OBJECTHANDLE CreateWinRTWeakHandle(HHANDLETABLE table, OBJECTREF object, IWeakReference* pWinRTWeakReference)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table, OBJECTREFToObject(object), HNDTYPE_WEAK_WINRT, (void*)pWinRTWeakReference);
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table,
+                                                                                 OBJECTREFToObject(object),
+                                                                                 HNDTYPE_WEAK_WINRT,
+                                                                                 (void*)pWinRTWeakReference);
 }
 #endif // FEATURE_COMINTEROP
+
+// Creates a variable-strength handle
+inline OBJECTHANDLE CreateVariableHandle(HHANDLETABLE table, OBJECTREF object, uint32_t type)
+{
+    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table,
+                                                                                 OBJECTREFToObject(object),
+                                                                                 HNDTYPE_VARIABLE,
+                                                                                 (void*)((uintptr_t)type));
+}
 
 #endif // !DACCESS_COMPILE
 
