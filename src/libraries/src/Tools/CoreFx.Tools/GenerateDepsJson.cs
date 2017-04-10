@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 AssemblyName = assemblyName;
                 FileName = fileName;
-            } 
+            }
         }
 
         public string RuntimeDirectory { get; set; }
@@ -40,12 +40,17 @@ namespace Microsoft.DotNet.Build.Tasks
             List<string> filesInDir = Directory.EnumerateFiles(Path.GetDirectoryName(RuntimeDirectory)).ToList();
 
             List<FileNameAssemblyPair> assemblyNames = new List<FileNameAssemblyPair>();
+            List<string> nonManagedAssemblyFilePaths = new List<string>();
             foreach (string file in filesInDir)
             {
                 AssemblyName result;
                 if (TryGetManagedAssemblyName(file, out result))
                 {
                     assemblyNames.Add(new FileNameAssemblyPair(result, Path.GetFileNameWithoutExtension(file)));
+                }
+                else
+                {
+                    nonManagedAssemblyFilePaths.Add(Path.GetFileName(file));
                 }
             }
 
@@ -60,19 +65,41 @@ namespace Microsoft.DotNet.Build.Tasks
 
             string runtimeTarget = newDepsJson["runtimeTarget"]["name"].ToString();
             string rid = runtimeTarget.Split('/')[1];
-            JObject targetsSection = (JObject) newDepsJson["targets"];
+            JObject targetsSection = (JObject)newDepsJson["targets"];
 
             JObject targetValue = new JObject();
             JObject libraryValue = new JObject();
-            
+
             //Allow Exceptions to be preserved
-            JObject runtimeTargetSection = (JObject) targetsSection[runtimeTarget];
+            JObject runtimeTargetSection = (JObject)targetsSection[runtimeTarget];
             foreach (ITaskItem item in DepsExceptions)
             {
                 foreach (var p in runtimeTargetSection.Properties())
                 {
                     if (p.Name.Contains(item.ItemSpec))
                     {
+                        // Based on the runtime being used, there will be some child property with a list of "native" dependencies.
+                        // We need to filter this list to the set of files that are actually contained in our test folder,
+                        // because the host will fail to launch if the deps file references missing files.
+                        var childProps = p.Descendants().Where(jt => jt is JProperty).Select(jt2 => (JProperty)jt2);
+                        var nativeSection = childProps.Where(jp => jp.Name == "native").SingleOrDefault();
+                        if (nativeSection != null)
+                        {
+                            List<JProperty> removedProperties = new List<JProperty>();
+                            foreach (var child in nativeSection.Value.Children<JProperty>())
+                            {
+                                // If there is no matching file in our list, then remove it from the deps file.
+                                if (!nonManagedAssemblyFilePaths.Any(s => child.Name.ToLowerInvariant().Contains(s.ToLowerInvariant())))
+                                {
+                                    removedProperties.Add(child);
+                                }
+                            }
+                            foreach (var rp in removedProperties)
+                            {
+                                rp.Remove();
+                            }
+                        }
+
                         targetValue.Add(p);
                         libraryValue.Add(p.Name, ConstructLibraryNode());
                     }
@@ -94,7 +121,7 @@ namespace Microsoft.DotNet.Build.Tasks
                 }
                 catch (System.ArgumentException)
                 {
-                    
+
                 }
 
                 try
