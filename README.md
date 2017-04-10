@@ -1,18 +1,45 @@
 .NET Core Runtime & Host Setup Repo
 ===================================
 
-This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for 
-all supported platforms. It **does not** contain the actual sources to .NET Core runtime; this source is split across 
-the dotnet/coreclr repo (runtime) and dotnet/corefx repo (libraries). 
+This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
+all supported platforms. It **does not** contain the actual sources to .NET Core runtime; this source is split across
+the dotnet/coreclr repo (runtime) and dotnet/corefx repo (libraries).
 
 ## Installation experience
-The all-up installation experience is described in the [installation scenarios](https://github.com/dotnet/cli/blob/rel/1.0.0/Documentation/cli-installation-scenarios.md) 
-document in the dotnet/cli repo. That is the first step to get acquantied with the overall plan and experience we have
-thought up for installing .NET Core bits. 
+The all-up installation experience is described in the [installation scenarios](https://github.com/dotnet/cli/blob/rel/1.0.0/Documentation/cli-installation-scenarios.md)
+document in the dotnet/cli repo. That is the first step to get acquainted with the overall plan and experience we have
+thought up for installing .NET Core bits.
+
+# Debian daily feed
+
+Newest Runtime binaries for 2.0.0 in debian feed may be delayed due to external issues by up to 24h.
+
+## Obtaining binaries
+
+Add debian feed:
+
+For ubuntu 14.04 : trusty , ubuntu 16.04:xenial
+```
+sudo sh -c 'echo "deb [arch=amd64] http://apt-mo.trafficmanager.net/repos/dotnet/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
+
+sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+
+sudo apt-get update
+```
+
+Install:
+```
+sudo apt-get install <DebianPackageName>=<Version>
+```
+
+To list available packages:
+```
+apt-cache search dotnet-sharedframework | grep 2.0.0
+```
 
 ## Filing issues
-This repo should contain issues that are tied to the installation of the "muxer" (the `dotnet` binary) and installation 
-of the .NET Core runtime and libraries. 
+This repo should contain issues that are tied to the installation of the "muxer" (the `dotnet` binary) and installation
+of the .NET Core runtime and libraries.
 
 For other issues, please use the following repos:
 
