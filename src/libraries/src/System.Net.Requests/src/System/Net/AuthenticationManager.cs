@@ -29,7 +29,7 @@ namespace System.Net
         {
             if (authenticationModule == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(authenticationModule));
             }
         }
 
