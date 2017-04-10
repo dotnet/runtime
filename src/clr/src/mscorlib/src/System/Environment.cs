@@ -334,11 +334,11 @@ namespace System
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-#if !PLATFORM_UNIX
+#if PLATFORM_WINDOWS
                 return "\r\n";
 #else
                 return "\n";
-#endif // !PLATFORM_UNIX
+#endif // PLATFORM_WINDOWS
             }
         }
 
