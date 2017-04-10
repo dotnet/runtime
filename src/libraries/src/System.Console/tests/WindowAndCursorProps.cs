@@ -162,12 +162,6 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    public static void Title_Set_Windows_Empty_ThrowsArgumentNullException()
-    {
-        //Assert.Throws<ArgumentNullException>("value", () => Console.Title = "");
-    }
-
-    [Fact]
     public static void Title_Set_Windows_GreaterThan24500Chars_ThrowsArgumentOutOfRangeException()
     {
         string newTitle = new string('a', 24501);
@@ -184,6 +178,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
 
     [Fact]
     [OuterLoop] // makes noise, not very inner-loop friendly
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static void BeepWithFrequency()
     {
         // Nothing to verify; just run the code.

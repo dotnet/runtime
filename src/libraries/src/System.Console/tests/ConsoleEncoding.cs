@@ -7,10 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 using Xunit;
 
-public class ConsoleEncoding : RemoteExecutorTestBase
+public partial class ConsoleEncoding : RemoteExecutorTestBase
 {
     public static IEnumerable<object[]> InputData()
     {
@@ -78,7 +77,7 @@ public class ConsoleEncoding : RemoteExecutorTestBase
         }
     }
 
-    public class NoSuchCodePage : Encoding
+    public class NonexistentCodePageEncoding : Encoding
     {
         public override int CodePage => int.MinValue;
 
@@ -93,39 +92,6 @@ public class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void InputEncoding_SetDefaultEncoding_Success()
-    {
-        RemoteInvoke(() =>
-        {
-            Encoding encoding = Encoding.GetEncoding(0);
-            Console.InputEncoding = encoding;
-            Assert.Equal(encoding, Console.InputEncoding);
-            Assert.Equal((uint)encoding.CodePage, GetConsoleCP());
-
-            return SuccessExitCode;
-        }).Dispose();
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void InputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
-    {
-        RemoteInvoke(() =>
-        {
-            Encoding unicodeEncoding = Encoding.Unicode;
-            Encoding oldEncoding = Console.InputEncoding;
-            Assert.NotEqual(unicodeEncoding.CodePage, oldEncoding.CodePage);
-
-            Console.InputEncoding = unicodeEncoding;
-            Assert.Equal(unicodeEncoding, Console.InputEncoding);
-            Assert.Equal((uint)oldEncoding.CodePage, GetConsoleCP());
-
-            return SuccessExitCode;
-        }).Dispose();
-    }
-
-    [Fact]
     public void InputEncoding_SetWithInInitialized_ResetsIn()
     {
         RemoteInvoke(() =>
@@ -135,7 +101,7 @@ public class ConsoleEncoding : RemoteExecutorTestBase
             Assert.NotNull(inReader);
             Assert.Same(inReader, Console.In);
 
-            // Chang the InputEncoding
+            // Change the InputEncoding
             Console.InputEncoding = Encoding.ASCII;
             Assert.Equal(Encoding.ASCII, Console.InputEncoding);
 
@@ -155,42 +121,9 @@ public class ConsoleEncoding : RemoteExecutorTestBase
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetEncodingWithInvalidCodePage_ThrowsIOException()
     {
-        NoSuchCodePage invalidEncoding = new NoSuchCodePage();
+        NonexistentCodePageEncoding invalidEncoding = new NonexistentCodePageEncoding();
         Assert.Throws<IOException>(() => Console.InputEncoding = invalidEncoding);
-        Assert.NotEqual(invalidEncoding, Console.InputEncoding);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void OutputEncoding_SetDefaultEncoding_Success()
-    {
-        RemoteInvoke(() =>
-        {
-            Encoding encoding = Encoding.GetEncoding(0);
-            Console.OutputEncoding = encoding;
-            Assert.Equal(encoding, Console.OutputEncoding);
-            Assert.Equal((uint)encoding.CodePage, GetConsoleOutputCP());
-
-            return SuccessExitCode;
-        }).Dispose();
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void OutputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
-    {
-        RemoteInvoke(() =>
-        {
-            Encoding unicodeEncoding = Encoding.Unicode;
-            Encoding oldEncoding = Console.OutputEncoding;
-            Assert.NotEqual(unicodeEncoding.CodePage, oldEncoding.CodePage);
-            Console.OutputEncoding = unicodeEncoding;
-            Assert.Equal(unicodeEncoding, Console.OutputEncoding);
-
-            Assert.Equal((uint)oldEncoding.CodePage, GetConsoleOutputCP());
-
-            return SuccessExitCode;
-        }).Dispose();
+        Assert.NotSame(invalidEncoding, Console.InputEncoding);
     }
 
     [Fact]
@@ -208,7 +141,7 @@ public class ConsoleEncoding : RemoteExecutorTestBase
             Assert.NotNull(outWriter);
             Assert.Same(outWriter, Console.Out);
 
-            // Chang the OutputEncoding
+            // Change the OutputEncoding
             Console.OutputEncoding = Encoding.ASCII;
             Assert.Equal(Encoding.ASCII, Console.OutputEncoding);
 
@@ -229,14 +162,8 @@ public class ConsoleEncoding : RemoteExecutorTestBase
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetEncodingWithInvalidCodePage_ThrowsIOException()
     {
-        NoSuchCodePage invalidEncoding = new NoSuchCodePage();
+        NonexistentCodePageEncoding invalidEncoding = new NonexistentCodePageEncoding();
         Assert.Throws<IOException>(() => Console.OutputEncoding = invalidEncoding);
-        Assert.NotEqual(invalidEncoding, Console.OutputEncoding);
+        Assert.NotSame(invalidEncoding, Console.OutputEncoding);
     }
-
-    [DllImport("kernel32.dll")]
-    public extern static uint GetConsoleCP();
-
-    [DllImport("kernel32.dll")]
-    public extern static uint GetConsoleOutputCP();
 }

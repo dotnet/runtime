@@ -25,6 +25,7 @@
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
+    <Compile Include="ConsoleEncoding.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
     <Compile Include="Timeout.cs" />
