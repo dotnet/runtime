@@ -140,9 +140,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 { "P", p },
                 { "Q", q },
                 { "G", g },
-                { "Y", y },
-                { "Seed", seed },
-                { "PgenCounter", pgenCounter }
+                { "Y", y }
             };
 
             XmlDocument doc = new XmlDocument();
@@ -158,6 +156,17 @@ namespace System.Security.Cryptography.Xml.Tests
                 XmlNode node = el.SelectSingleNode($"//*[local-name()='DSAKeyValue']/*[local-name()='{kv.Key}']");
                 Assert.NotNull(node);
                 Assert.Equal(kv.Value, node.InnerText);
+            }
+
+            // Either both null or both have correct values
+            XmlNode seedNode = el.SelectSingleNode($"//*[local-name()='DSAKeyValue']/*[local-name()='Seed']");
+            XmlNode counterNode = el.SelectSingleNode($"//*[local-name()='DSAKeyValue']/*[local-name()='PgenCounter']");
+
+            Assert.Equal(seedNode != null, counterNode != null);
+            if (seedNode != null)
+            {
+                Assert.Equal(seed, seedNode.InnerText);
+                Assert.Equal(pgenCounter, counterNode.InnerText);
             }
         }
     }
