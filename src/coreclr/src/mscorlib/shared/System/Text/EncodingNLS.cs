@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics.Contracts;
+using System.Collections;
+using System.Globalization;
+using System.Threading;
+
 namespace System.Text
 {
-    using System;
-    using System.Diagnostics.Contracts;
-    using System.Collections;
-    using System.Runtime.Remoting;
-    using System.Globalization;
-    using System.Threading;
-    using Win32Native = Microsoft.Win32.Win32Native;
-
     // This class overrides Encoding with the things we need for our NLS Encodings
     //
     // All of the GetBytes/Chars GetByte/CharCount methods are just wrappers for the pointer

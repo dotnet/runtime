@@ -10,13 +10,10 @@ internal partial class Interop
 {
     internal partial class OleAut32
     {
-        [DllImport(Libraries.OleAut32)]
-        internal static extern uint SysStringLen(SafeBSTRHandle bstr);
+        [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
+        internal static extern SafeBSTRHandle SysAllocStringLen(IntPtr src, uint len);
 
-        [DllImport(Libraries.OleAut32)]
-        internal static extern uint SysStringLen(IntPtr bstr);
-
-        [DllImport(Libraries.OleAut32)]
-        internal static extern void SysFreeString(IntPtr bstr);
+        [DllImport(Libraries.OleAut32, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr SysAllocStringLen(String src, int len);
     }
 }

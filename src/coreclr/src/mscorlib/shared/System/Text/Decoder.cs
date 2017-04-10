@@ -95,7 +95,7 @@ namespace System.Text
         //
         // If the caller doesn't want to try again after GetChars() throws an error, then they need to call Reset().
         //
-        // Virtual implimentation has to call GetChars with flush and a big enough buffer to clear a 0 byte string
+        // Virtual implementation has to call GetChars with flush and a big enough buffer to clear a 0 byte string
         // We avoid GetMaxCharCount() because a) we can't call the base encoder and b) it might be really big.
         public virtual void Reset()
         {
@@ -120,7 +120,7 @@ namespace System.Text
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
         public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
@@ -169,7 +169,7 @@ namespace System.Text
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -178,7 +178,7 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetChars() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the char[] to our char* output buffer.  If the result count was wrong, we
@@ -215,7 +215,7 @@ namespace System.Text
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than charCount chars no matter the value
             // of result
             if (result < charCount)
