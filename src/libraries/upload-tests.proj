@@ -2,12 +2,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <!-- CoreFX-Specific Helix test submission project.
        TODOS:
-         - Add support for UWP runs, specifically the additional payloads required.  
-         - Refactor HelixJobProperties to not require ugly XML-inlined-JSON for submissions.
          - Add support for storing test-project-specific timeouts, use this instead of default if available
   -->
 
-  <UsingTask TaskName="ZipFileCreateFromDirectory"       AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="SimulateHelixExecution"     AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
   <PropertyGroup>
     <!-- Workaround for dealing with building on Linux/OSX.  
@@ -15,12 +14,18 @@
          Checking for the existence of a connection string will happen inside CloudTest.Helix.targets -->
     <CloudDropConnectionString    Condition="'$(CloudDropConnectionString)'==''"   >DefaultEndpointsProtocol=https;AccountName=$(CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net</CloudDropConnectionString>
     <CloudResultsConnectionString Condition="'$(CloudResultsConnectionString)'==''">DefaultEndpointsProtocol=https;AccountName=$(CloudResultsAccountName);AccountKey=$(CloudResultsAccessToken);EndpointSuffix=core.windows.net</CloudResultsConnectionString>
-    
+
+    <!-- Set this to true to simulate Helix execution.  Will fail if Python 2.7.X is unavailable 
+         We'll also opportunistically set SkipSendToHelix true here, since if the user is doing 
+         local execution they likely don't want to run in the cloud. -->
+    <LocalHelixExecution>false</LocalHelixExecution>
+    <SkipSendToHelix Condition="'$(LocalHelixExecution)'=='true'">true</SkipSendToHelix>
+
     <!-- Indicates that commands will use ScriptRunner.py.  This requires:
          - Command must produce testResults.xml on successful execution.
          - Command is expressed in terms of an .SH file if on *Nix -->
-    <UseScriptRunner>true</UseScriptRunner>    
-    
+    <UseScriptRunner>true</UseScriptRunner>
+
     <!-- Test builds consist of the tests that are platform specific in one root, plus others in AnyOS. -->
     <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>
     <AnyOsArchivesRoot>$(TestWorkingDir)$(AnyOSPlatformConfig)/archive/</AnyOsArchivesRoot>
@@ -70,7 +75,7 @@
   <Target Name="CoreFXPreCloudBuild" >
     <!-- Put anything you want to do before submitting the general purpose helix job here.
          Helix requires properly formatted work items and accessible zip files / others to upload, which we'll construct here. -->
-    
+
     <!-- Gather the test archives for this build 
          If you change binplacing behavior and official runs break, 
          this is a good place to check.-->
@@ -89,8 +94,7 @@
          NOTE: It may be better to make this an error, but in the past we chose not to as this causes a build break when triggered, versus just no tests run. -->
     <Warning Condition="'@(HelixWorkItem->Count())' == '0'" Text="Didn't find any test archives in supplied folders!!! Review logs to see where test archive(s) were placed and fix." />
 
-    <ItemGroup>      
-      <HelixCorrelationPayloadFile Include="$(TestRuntimeArchiveFile)"/>
+    <ItemGroup>
       <HelixWorkItem>
         <Command Condition="'$(TargetsWindows)' == 'true'">RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</Command>
         <Command Condition="'$(TargetsWindows)' != 'true'">RunTests.sh $HELIX_CORRELATION_PAYLOAD</Command>
@@ -98,7 +102,7 @@
         <WorkItemId>%(Filename)</WorkItemId>
         <TimeoutInSeconds>$(TimeoutInSeconds)</TimeoutInSeconds>
         <RelativeBlobPath>$(Platform)-$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
-      </HelixWorkItem>      
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 
@@ -121,8 +125,37 @@
   <!-- main Entrypoint -->
   <Target Name="Build">
     <Message Text="CoreFX-specific Helix test upload project, beginning submission to Helix" />
-    <Message Condition="'$(EnableCloudTest)' == 'false'" Text="... skipping upload / submission due to property 'EnableCloudTest' being set to 'false'" />
+    <Message Condition="'$(EnableCloudTest)' == 'false'" Text="... will skip upload / submission due to property 'EnableCloudTest' being set to 'false'" />
+    <Message Condition="'$(SkipSendToHelix)' == 'true'"  Text="... will skip submission due to property 'SkipSendToHelix' being set to 'true'" />
     <CallTarget Condition="'$(EnableCloudTest)' != 'false'" Targets="CoreFXPreCloudBuild;CompressRuntimeDir;HelixCloudBuild" />
+    <CallTarget Condition="'$(LocalHelixExecution)' == 'true'" Targets="ExecuteLocally" />
+
   </Target>
-  
+
+  <!-- Local Execution entrypoint, can be invoked directly -->
+  <!-- Sample direct command line:
+          msbuild upload-tests.proj /t:ExecuteLocally /p:LocalExecutionTestList=C:\GIT\corefx\bin\tests\Windows_NT.AnyCPU.Release\archive\TestList.json 
+                                    /p:LocalExecutionTestFilter=System.IO
+  -->
+  <Target Name="ExecuteLocally">
+    <PropertyGroup>
+      <LocalExecutionTestList Condition="'$(LocalExecutionTestList)'==''">$(HelixLogFolder)$(TestListFilename)</LocalExecutionTestList>
+      <LocalExecutionCorrelationId Condition="'$(LocalExecutionCorrelationId)'==''"></LocalExecutionCorrelationId>
+      <LocalExecutionFolder Condition="'$(LocalExecutionFolder)'==''">HelixLocalExecution</LocalExecutionFolder>
+      <LocalExecutionTestFilter Condition="'$(LocalExecutionTestFilter)'==''"></LocalExecutionTestFilter>
+    </PropertyGroup>
+
+    <Message Text="Test List: $(LocalExecutionTestList)" />
+    <Message Text="Execution Folder: $(LocalExecutionFolder)" />
+    <Message Text="Test Filter: $(LocalExecutionTestFilter)" />
+    <SimulateHelixExecution JobList="$(LocalExecutionTestList)"
+                            WorkItemExecutionFilter="$(LocalExecutionTestFilter)"
+                            ExecutionFolder="$(LocalExecutionFolder)"
+                            CorrelationId="$(LocalExecutionCorrelationId)">
+      <Output TaskParameter="ExecutionLogs" ItemName="LocalExecutionLogs"/>
+    </SimulateHelixExecution>
+    <Message Text="Execution complete.%0aLogs:%0a" />
+    <Message Text="Work Item:%(LocalExecutionLogs.WorkItemFriendlyName)%0a@(LocalExecutionLogs, '%0a')%0a" />
+  </Target>
+
 </Project>
