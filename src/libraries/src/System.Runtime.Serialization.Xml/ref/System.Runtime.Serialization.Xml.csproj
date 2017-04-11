@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{025743B4-6E1E-4602-BE7F-1E479CC8EEBE}</ProjectGuid>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);netfx</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -12,11 +13,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Xml.cs" />
-    <Compile Include="System.Runtime.Serialization.Xml.Manual.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System.Runtime.Serialization.Xml.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
+    <Reference Include="System.Runtime.Serialization" />
     <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\ref\System.Runtime.Serialization.Primitives.csproj" />
     <Reference Include="System.Xml" />
   </ItemGroup>
