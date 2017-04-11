@@ -104,10 +104,13 @@ set( JIT_AMD64_SOURCES
 
 set( JIT_ARM_SOURCES
   ${JIT_ARM_LEGACY_SOURCES}
+  codegenarmarch.cpp
   codegenarm.cpp
   decomposelongs.cpp
   emitarm.cpp
+  lowerarmarch.cpp
   lowerarm.cpp
+  lsraarmarch.cpp
   lsraarm.cpp
   targetarm.cpp
   unwindarm.cpp
@@ -127,9 +130,12 @@ set( JIT_I386_SOURCES
 )
 
 set( JIT_ARM64_SOURCES
+  codegenarmarch.cpp
   codegenarm64.cpp
   emitarm64.cpp
+  lowerarmarch.cpp
   lowerarm64.cpp
+  lsraarmarch.cpp
   lsraarm64.cpp
   targetarm64.cpp
   unwindarm.cpp
