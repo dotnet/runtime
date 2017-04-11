@@ -164,6 +164,10 @@ namespace System.Diagnostics
                     Write(eventCache.ProcessId.ToString(CultureInfo.InvariantCulture));
                 Write(Delimiter); // Use get_Delimiter
 
+                if (IsEnabled(TraceOptions.LogicalOperationStack))
+                    WriteStackEscaped(eventCache.LogicalOperationStack);
+                Write(Delimiter); // Use get_Delimiter
+
                 if (IsEnabled(TraceOptions.ThreadId))
                     WriteEscaped(eventCache.ThreadId);
                 Write(Delimiter); // Use get_Delimiter
@@ -187,22 +191,50 @@ namespace System.Diagnostics
 
         private void WriteEscaped(string message)
         {
-            if (!String.IsNullOrEmpty(message))
+            if (!string.IsNullOrEmpty(message))
             {
                 StringBuilder sb = new StringBuilder("\"");
-                int index;
-                int lastindex = 0;
-                while ((index = message.IndexOf('"', lastindex)) != -1)
-                {
-                    sb.Append(message, lastindex, index - lastindex);
-                    sb.Append("\"\"");
-                    lastindex = index + 1;
-                }
-
-                sb.Append(message, lastindex, message.Length - lastindex);
+                EscapeMessage(message, sb);
                 sb.Append("\"");
                 Write(sb.ToString());
             }
+        }
+
+        private void WriteStackEscaped(Stack stack)
+        {
+            StringBuilder sb = new StringBuilder("\"");
+            bool first = true;
+            foreach (object obj in stack)
+            {
+                if (!first)
+                {
+                    sb.Append(", ");
+                }
+                else
+                {
+                    first = false;
+                }
+                
+                string operation = obj.ToString();
+                EscapeMessage(operation, sb);
+            }
+
+            sb.Append("\"");
+            Write(sb.ToString());
+        }
+
+        private void EscapeMessage(string message, StringBuilder sb)
+        {
+            int index;
+            int lastindex = 0;
+            while ((index = message.IndexOf('"', lastindex)) != -1)
+            {
+                sb.Append(message, lastindex, index - lastindex);
+                sb.Append("\"\"");
+                lastindex = index + 1;
+            }
+
+            sb.Append(message, lastindex, message.Length - lastindex);
         }
 
         private bool IsEnabled(TraceOptions opts)

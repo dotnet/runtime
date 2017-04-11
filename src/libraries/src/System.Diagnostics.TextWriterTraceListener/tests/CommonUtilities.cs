@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -86,6 +87,8 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             {
                 builder.Append(cache.ProcessId);
                 builder.Append(delimiter);
+                builder.Append(EscapedStack(cache.LogicalOperationStack));
+                builder.Append(delimiter);
                 builder.Append(EscapedString(cache.ThreadId));
                 builder.Append(delimiter);
                 builder.Append(EscapedString(cache.DateTime.ToString("o", CultureInfo.InvariantCulture)));
@@ -102,19 +105,51 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         private static string EscapedString(string str)
         {
+            if (!string.IsNullOrEmpty(str))
+            {
+                StringBuilder sb = new StringBuilder("\"");
+                EscapeMessage(str, sb);
+                sb.Append("\"");
+                return sb.ToString();
+            }
+            return string.Empty;
+        }
+
+        private static string EscapedStack(Stack stack)
+        {
+            StringBuilder sb = new StringBuilder("\"");
+            bool first = true;
+            foreach (object obj in stack)
+            {
+                if (!first)
+                {
+                    sb.Append(", ");
+                }
+                else
+                {
+                    first = false;
+                }
+                
+                string operation = obj.ToString();
+                EscapeMessage(operation, sb);
+            }
+
+            sb.Append("\"");
+            return sb.ToString();
+        }
+
+        private static void EscapeMessage(string message, StringBuilder sb)
+        {
             int index;
             int lastindex = 0;
-            StringBuilder sb = new StringBuilder("\"");
-            while ((index = str.IndexOf('"', lastindex)) != -1)
+            while ((index = message.IndexOf('"', lastindex)) != -1)
             {
-                sb.Append(str, lastindex, index - lastindex);
+                sb.Append(message, lastindex, index - lastindex);
                 sb.Append("\"\"");
                 lastindex = index + 1;
             }
 
-            sb.Append(str, lastindex, str.Length - lastindex);
-            sb.Append("\"");
-            return sb.ToString();
+            sb.Append(message, lastindex, message.Length - lastindex);
         }
     }
 }

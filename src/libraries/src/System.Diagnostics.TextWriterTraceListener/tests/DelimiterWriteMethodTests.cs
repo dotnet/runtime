@@ -50,7 +50,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             using (var target = new DelimitedListTraceListener(_stream))
             {
                 target.Filter = filter;
-                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack;
                 target.TraceEvent(eventCache, source, eventType, id, format, args);
             }
 
@@ -66,7 +66,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             using (var target = new DelimitedListTraceListener(_stream))
             {
                 target.Filter = filter;
-                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack;
                 target.TraceEvent(eventCache, source, eventType, id, message);
             }
 
@@ -102,7 +102,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             using (var target = new DelimitedListTraceListener(_stream))
             {
                 target.Filter = filter;
-                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack;
                 target.TraceData(eventCache, source, eventType, id, data);
             }
 
@@ -138,7 +138,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             {
                 target.Delimiter = delimiter;
                 target.Filter = filter;
-                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack;
                 target.TraceData(eventCache, source, eventType, id, data);
             }
 
