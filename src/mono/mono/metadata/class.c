@@ -10033,7 +10033,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		/* Be conservative with checks */
 		if (!friend_->name)
 			continue;
-		if (strcmp (accessing->aname.name, friend_->name))
+		if (g_ascii_strcasecmp (accessing->aname.name, friend_->name))
 			continue;
 		if (friend_->public_key_token [0]) {
 			if (!accessing->aname.public_key_token [0])

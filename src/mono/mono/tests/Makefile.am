@@ -15,6 +15,7 @@ check-local:
 	$(MAKE) test-appdomain-unload || ok=false; \
 	$(MAKE) test-process-stress || ok=false; \
 	$(MAKE) test-pedump || ok=false; \
+	$(MAKE) test-internalsvisibleto || ok=false; \
 	$(MAKE) rm-empty-logs || ok=false; \
 	$(MAKE) runtest-gac-loading || ok=false; \
 	$$ok
@@ -2079,5 +2080,21 @@ libtest_la_LDFLAGS = -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
+
+test-internalsvisibleto: internalsvisibleto-runtimetest.exe internalsvisibleto-compilertest.exe internalsvisibleto-library.dll
+	$(Q) $(RUNTIME) internalsvisibleto-runtimetest.exe 1>internalsvisibleto-runtimetest.exe.stdout 2>internalsvisibleto-runtimetest.exe.stderr
+	$(Q) $(RUNTIME) internalsvisibleto-compilertest.exe 1>internalsvisibleto-compilertest.exe.stdout 2>internalsvisibleto-compilertest.exe.stderr
+
+internalsvisibleto-runtimetest.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs
+	$(Q) $(MCS) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs	
+	$(Q) $(MCS) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE -d:PERMISSIVE internalsvisibleto-library.cs
+	$(Q) $(MCS) -out:internalsvisibleto-runtimetest.exe -warn:0 -r:internalsvisibleto-correctcase.dll -r:internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.cs
+	$(Q) $(MCS) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
+
+internalsvisibleto-compilertest.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs
+	$(Q) $(MCS) -out:internalsvisibleto-correctcase-2.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS) -out:internalsvisibleto-wrongcase-2.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
+	$(Q) $(MCS) -out:internalsvisibleto-compilertest.exe -warn:0 -r:internalsvisibleto-correctcase-2.dll -r:internalsvisibleto-wrongcase-2.dll internalsvisibleto-compilertest.cs
 
 CLEANFILES = $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat

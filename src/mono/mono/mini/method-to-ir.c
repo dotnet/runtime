@@ -10035,6 +10035,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
+					
+			if (!dont_verify && !cfg->skip_visibility) {
+				MonoMethod *cil_method = cmethod;
+				MonoMethod *target_method = cil_method;
+
+				if (method->is_inflated) {
+					target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context), &cfg->error);
+					CHECK_CFG_ERROR;
+				}
+				
+				if (!mono_method_can_access_method (method_definition, target_method) &&
+					!mono_method_can_access_method (method, cil_method))
+					emit_method_access_failure (cfg, method, cil_method);
+			}
 
 			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
