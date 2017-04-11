@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <PropertyGroup>
+    <OptimizationDataVersion Condition="'$(OptimizationDataVersion)'==''">2.0.0-rc-61101-16</OptimizationDataVersion>
+    <OptimizationDataPackageName Condition="'$(OptimizationDataPackageName)'==''">RoslynDependencies.OptimizationData</OptimizationDataPackageName>
+    <OptimizationDataDir Condition="'$(OptimizationDataDir)'==''">$(ToolsDir)OptimizationData/</OptimizationDataDir>
+  </PropertyGroup>
+
+  <!-- We should only run this target on Windows and only if EnableProfileGuidedOptimization is set and we have training data -->
+  <Target Name="OptimizeWithTrainingData"
+          AfterTargets="AfterBuild"
+          BeforeTargets="CopyFilesToOutputDirectory"
+          DependsOnTargets="RestoreOptimizationDataPackage;ResolveOptionalTools"
+          Condition="'$(OS)'=='Windows_NT' and '$(EnableProfileGuidedOptimization)'=='true' and Exists('$(OptimizationDataDir)$(AssemblyName).pgo')">
+
+    <!-- Find IBCMerge as a resolved optional tool. -->
+    <PropertyGroup>
+      <IBCMergeToolPath Condition="'%(Filename)%(Extension)'=='ibcmerge.exe'">@(ResolvedOptionalToolReferences)</IBCMergeToolPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <OptimizedAssemblyDir>$(IntermediateOutputPath)/OptimizedAssembly</OptimizedAssemblyDir>
+      <OptimizedAssemblyFile>$(OptimizedAssemblyDir)/$(AssemblyName).dll</OptimizedAssemblyFile>
+    </PropertyGroup>
+
+    <!-- Copy the compiled assembly into a folder for further processing -->
+    <MakeDir Directories="$(OptimizedAssemblyDir)" />
+    <Copy SourceFiles="@(IntermediateAssembly)" DestinationFolder="$(OptimizedAssemblyDir)" />
+
+    <!-- Apply optimization data to the compiled assembly -->
+    <Exec Command="$(IBCMergeToolPath) -q -f -partialNGEN -minify -mo $(OptimizedAssemblyFile) -incremental $(OptimizationDataDir)$(AssemblyName).pgo" />
+
+    <!-- Verify that the optimization data has been applied -->
+    <Exec Command="$(IBCMergeToolPath) -mi $(OptimizedAssemblyFile)" />
+
+    <!-- We need to make sure that the assembly that gets packaged is the one with the optimization data -->
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)"/>
+      <IntermediateAssembly Include="$(OptimizedAssemblyDir)/$(AssemblyName).dll"/>
+    </ItemGroup>
+  </Target>
+
+  <!-- We need the OptimizationData package in order to be able to optimize the assembly -->
+  <Target Name="RestoreOptimizationDataPackage" BeforeTargets="CoreCompile"
+          Condition="'$(EnableProfileGuidedOptimization)'=='true' and !Exists('$(OptimizationDataDir)project.csproj')">
+    <!-- Dynamically create a project.json file used to restore the optimization data-->
+    <PropertyGroup>
+      <OptimizationDataSourceProject>$(MSBuildThisFileDirectory)OptimizationData.msbuild</OptimizationDataSourceProject>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+      <OptimizationDataRestoreTarget>$(OptimizationDataDir)project.csproj</OptimizationDataRestoreTarget>
+      <OptimizationDataNuGetFeed Condition="'$(OptimizationDataNuGetFeed)'==''">https:%2F%2Fdotnet.myget.org/F/roslyn/api/v3/index.json</OptimizationDataNuGetFeed>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(OptimizationDataDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(OptimizationDataSourceProject)" DestinationFiles="$(OptimizationDataRestoreTarget)" />
+
+    <!-- Restore the OptimizationData package -->
+    <Exec Command="$(DnuRestoreCommand) $(OptimizationDataRestoreTarget) --source $(OptimizationDataNuGetFeed) /p:OptimizationDataPackageName=$(OptimizationDataPackageName) /p:OptimizationDataVersion=$(OptimizationDataVersion)" StandardOutputImportance="Low"/>
+
+    <!-- Copy the restored files into a more accessible location -->
+    <ItemGroup>
+      <_OptimizationDataFiles Include="$(PackagesDir)/$(OptimizationDataPackageName)/$(OptimizationDataVersion)/content/OptimizationData/*.pgo" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_OptimizationDataFiles)"
+          DestinationFiles="@(_OptimizationDataFiles->'$(OptimizationDataDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          ContinueOnError="true"/>
+  </Target>
+</Project>
