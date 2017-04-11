@@ -19,11 +19,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         MASK_MethodSymbol = 1 << (int)SYMKIND.SK_MethodSymbol,
         MASK_PropertySymbol = 1 << (int)SYMKIND.SK_PropertySymbol,
         MASK_EventSymbol = 1 << (int)SYMKIND.SK_EventSymbol,
-        MASK_TransparentIdentifierMemberSymbol = 1 << (int)SYMKIND.SK_TransparentIdentifierMemberSymbol,
         MASK_Scope = 1 << (int)SYMKIND.SK_Scope,
         MASK_CachedNameSymbol = 1 << (int)SYMKIND.SK_CachedNameSymbol,
-        MASK_LabelSymbol = 1 << (int)SYMKIND.SK_LabelSymbol,
-        MASK_GlobalAttributeDeclaration = 1 << (int)SYMKIND.SK_GlobalAttributeDeclaration,
         MASK_LambdaScope = 1 << (int)SYMKIND.SK_LambdaScope,
         MASK_ALL = ~0,
         LOOKUPMASK = (MASK_AssemblyQualifiedNamespaceSymbol | MASK_FieldSymbol | MASK_LocalVariableSymbol | MASK_MethodSymbol | MASK_PropertySymbol)

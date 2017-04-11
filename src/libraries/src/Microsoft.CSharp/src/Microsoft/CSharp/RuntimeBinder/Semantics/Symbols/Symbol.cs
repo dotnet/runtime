@@ -441,25 +441,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_EventSymbol:
                     return this.AsEventSymbol().containingDeclaration().getInputFile();
 
-                /*
-                case SK_PointerType:
-                case SK_NullableType:
-                case SK_ArrayType:
-                case SK_PinnedType:
-                case SK_ParameterModifierType:
-                case SK_OptionalModifierType:
-                    return AsType().GetBaseOrParameterOrElementType().getInputFile();
-                 */
-
-                case SYMKIND.SK_GlobalAttributeDeclaration:
-                    return parent.getInputFile();
-
-                /*
-                case SK_NullType:
-                case SK_VoidType:
-                    return null;
-                 */
-
                 default:
                     Debug.Assert(false);
                     break;
