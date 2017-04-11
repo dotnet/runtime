@@ -54,7 +54,7 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 	for (i = 0; i < info->map_count; ++i) {
 		int src = info->map [i * 2];
 		int dst = info->map [(i * 2) + 1];
-		int arg_marshal = (src >> 16) & 0xff;
+		int arg_marshal = (src >> 24) & 0xff;
 
 		switch (arg_marshal) {
 		case GSHAREDVT_ARG_NONE:
@@ -67,8 +67,8 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 			break;
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL: {
 			/* gsharedvt argument passed by value */
-			int nslots = (src >> 4) & 0xff;
-			int src_slot = src & 0xf;
+			int nslots = (src >> 8) & 0xff;
+			int src_slot = src & 0xff;
 			int j;
 			gpointer *addr = caller [src_slot];
 
@@ -77,28 +77,28 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_I1: {
-			int src_slot = src & 0xf;
+			int src_slot = src & 0xff;
 			gpointer *addr = caller [src_slot];
 
 			callee [dst] = GINT_TO_POINTER ((int)*(gint8*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_I2: {
-			int src_slot = src & 0xf;
+			int src_slot = src & 0xff;
 			gpointer *addr = caller [src_slot];
 
 			callee [dst] = GINT_TO_POINTER ((int)*(gint16*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U1: {
-			int src_slot = src & 0xf;
+			int src_slot = src & 0xff;
 			gpointer *addr = caller [src_slot];
 
 			callee [dst] = GUINT_TO_POINTER ((guint)*(guint8*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U2: {
-			int src_slot = src & 0xf;
+			int src_slot = src & 0xff;
 			gpointer *addr = caller [src_slot];
 
 			callee [dst] = GUINT_TO_POINTER ((guint)*(guint16*)addr);
