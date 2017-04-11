@@ -25,10 +25,7 @@ namespace System.Net.Tests
         {
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
-            if (!PlatformDetection.IsWindows7)
-            {
-                _helper = new GetContextHelper(_listener, _factory.ListeningUrl);
-            }
+            _helper = new GetContextHelper(_listener, _factory.ListeningUrl);
         }
 
         public void Dispose()
@@ -392,7 +389,7 @@ namespace System.Net.Tests
         {
             HttpListenerRequest request1 = await _helper.GetRequest();
             HttpListenerRequest request2 = await _helper.GetRequest();
-            
+
             using (Stream inputStream1 = request1.InputStream)
             using (Stream inputStream2 = request2.InputStream)
             {
@@ -478,4 +475,3 @@ namespace System.Net.Tests
         }
     }
 }
-    
