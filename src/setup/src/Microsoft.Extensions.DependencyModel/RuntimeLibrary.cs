@@ -43,6 +43,33 @@ namespace Microsoft.Extensions.DependencyModel
             bool serviceable,
             string path,
             string hashPath)
+            : this(type,
+                  name,
+                  version,
+                  hash,
+                  runtimeAssemblyGroups,
+                  nativeLibraryGroups,
+                  resourceAssemblies,
+                  dependencies,
+                  serviceable,
+                  path,
+                  hashPath,
+                  runtimeStoreManifestName : null)
+         {
+         }
+
+        public RuntimeLibrary(string type,
+            string name,
+            string version,
+            string hash,
+            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
+            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
+            IEnumerable<ResourceAssembly> resourceAssemblies,
+            IEnumerable<Dependency> dependencies,
+            bool serviceable,
+            string path,
+            string hashPath,
+            string runtimeStoreManifestName)
             : base(type,
                   name,
                   version,
@@ -50,7 +77,8 @@ namespace Microsoft.Extensions.DependencyModel
                   dependencies,
                   serviceable,
                   path,
-                  hashPath)
+                  hashPath,
+                  runtimeStoreManifestName)
         {
             if (runtimeAssemblyGroups == null)
             {
