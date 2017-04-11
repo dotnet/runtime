@@ -10,7 +10,6 @@ using System.Reflection.Emit;
 using System.Runtime.Serialization;
 
 // This HttpHandlerDiagnosticListener class is applicable only for .NET 4.6, and not for .NET core.
-// If you are making these changes, please test your changes manually via custom test applications.
 
 namespace System.Diagnostics
 {
@@ -33,16 +32,7 @@ namespace System.Diagnostics
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
             IDisposable result = base.Subscribe(observer, isEnabled);
-            try
-            {
-                Initialize();
-            }
-            catch (Exception ex)
-            {
-                // If anything went wrong, just no-op. Write an event so at least we can find out.
-                this.Write(InitializationFailed, new { Exception = ex });
-            }
-
+            Initialize();
             return result;
         }
 
@@ -52,16 +42,7 @@ namespace System.Diagnostics
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
             IDisposable result = base.Subscribe(observer, isEnabled);
-            try
-            {
-                Initialize();
-            }
-            catch (Exception ex)
-            {
-                // If anything went wrong, just no-op. Write an event so at least we can find out.
-                this.Write(InitializationFailed, new { Exception = ex });
-            }
-
+            Initialize();
             return result;
         }
 
@@ -71,16 +52,7 @@ namespace System.Diagnostics
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
         {
             IDisposable result = base.Subscribe(observer);
-            try
-            {
-                Initialize();
-            }
-            catch (Exception ex)
-            {
-                // If anything went wrong, just no-op. Write an event so at least we can find out.
-                this.Write(InitializationFailed, new { Exception = ex });
-            }
-
+            Initialize();
             return result;
         }
 
@@ -93,15 +65,23 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                if (!this.initialized)
+                try
                 {
-                    // This flag makes sure we only do this once. Even if we failed to initialize in an
-                    // earlier time, we should not retry because this initialization is not cheap and
-                    // the likelihood it will succeed the second time is very small.
-                    this.initialized = true;
+                    if (!this.initialized)
+                    {
+                        // This flag makes sure we only do this once. Even if we failed to initialize in an
+                        // earlier time, we should not retry because this initialization is not cheap and
+                        // the likelihood it will succeed the second time is very small.
+                        this.initialized = true;
 
-                    PrepareReflectionObjects();
-                    PerformInjection();
+                        PrepareReflectionObjects();
+                        PerformInjection();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // If anything went wrong, just no-op. Write an event so at least we can find out.
+                    this.Write(InitializationFailed, new { Exception = ex });
                 }
             }
         }
