@@ -7,9 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Resources
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Resources.ResourceManager")]
-#endif
     [Serializable]
     public class MissingManifestResourceException : SystemException
     {
