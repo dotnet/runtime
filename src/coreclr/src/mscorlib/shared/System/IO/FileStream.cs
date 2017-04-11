@@ -9,9 +9,6 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem")]
-#endif
     public partial class FileStream : Stream
     {
         private const FileShare DefaultShare = FileShare.Read;
