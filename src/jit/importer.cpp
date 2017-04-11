@@ -10109,7 +10109,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     const bool isSingleILStoreLocal =
                         !lvaTable[lclNum].lvHasMultipleILStoreOp && !lvaTable[lclNum].lvHasLdAddrOp;
 
-                    if (isSingleILStoreLocal)
+                    // Conservative check that there is just one
+                    // definition that reaches this store.
+                    const bool hasSingleReachingDef = (block->bbStackDepthOnEntry() == 0);
+
+                    if (isSingleILStoreLocal && hasSingleReachingDef)
                     {
                         lvaUpdateClass(lclNum, op1, clsHnd);
                     }
