@@ -11,9 +11,6 @@ namespace System.IO
     // 
     [Serializable]
     [Flags]
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem.Primitives")]
-#endif
     public enum FileAccess
     {
         // Specifies read access to the file. Data can be read from the file and
