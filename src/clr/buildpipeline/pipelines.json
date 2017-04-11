@@ -18,7 +18,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Debian 8.2",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -30,7 +31,8 @@
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -42,7 +44,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -54,7 +57,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -66,7 +70,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.10",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -78,7 +83,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -90,7 +96,8 @@
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -102,7 +109,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Alpine 3.4.3",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -115,7 +123,8 @@
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -126,7 +135,8 @@
           "ReportingParameters": {
             "OperatingSystem": "OSX 10.12",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -139,7 +149,8 @@
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "SubType": "PortableBuild",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -150,7 +161,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -163,7 +175,8 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "SubType" : "PortableBuild",
-            "Architecture": "x64"
+            "Architecture": "x64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -174,7 +187,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "arm64"
+            "Architecture": "arm64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -187,7 +201,8 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "SubType" : "PortableBuild",
-            "Architecture": "arm64"
+            "Architecture": "arm64",
+            "PB_BuildType": { }
           }
         },
         {
@@ -198,7 +213,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_BuildType": { }
           }
         },
         {
@@ -211,7 +227,8 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "SubType" : "PortableBuild",
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_BuildType": { }
           }
         },
         {
@@ -219,7 +236,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "x86"
+            "Architecture": "x86",
+            "PB_BuildType": { }
           }
         },
         {
@@ -231,7 +249,8 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "SubType" : "PortableBuild",
-            "Architecture": "x86"
+            "Architecture": "x86",
+            "PB_BuildType": { }
           }
         }
       ]
@@ -250,7 +269,8 @@
             "OperatingSystem": "Ubuntu 14.04",
             "SubType": "CrossBuild",
             "Type": "build/product/",
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_BuildType": { }
           }
         },
         {
@@ -265,7 +285,8 @@
             "OperatingSystem": "Ubuntu 14.04",
             "SubType": "PortableCrossBuild",
             "Type": "build/product/",
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_BuildType": { }
           }
         },
         {
@@ -279,7 +300,8 @@
             "OperatingSystem": "Ubuntu 16.04",
             "SubType": "CrossBuild",
             "Type": "build/product/",
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_BuildType": { }
           }
         }
       ]
@@ -295,7 +317,7 @@
         "PB_BuildType": "Release"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Release"
       },
       "DefinitionGroupRefs": [
         "Product-Build"
@@ -310,7 +332,7 @@
         "PB_BuildType": "Debug"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Debug"
       },
       "DefinitionGroupRefs": [
         "Product-Build"
@@ -325,7 +347,7 @@
         "PB_BuildType": "Checked"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Checked"
       },
       "DefinitionGroupRefs": [
         "Product-Build"
@@ -340,7 +362,7 @@
         "PB_BuildType": "Release"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Release"
       },
       "DefinitionGroupRefs": [
         "Linux-CrossBuild"
@@ -355,7 +377,7 @@
         "PB_BuildType": "Debug"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Debug"
       },
       "DefinitionGroupRefs": [
         "Linux-CrossBuild"
@@ -370,7 +392,7 @@
         "PB_BuildType": "Checked"
       },
       "ReportingParameters": {
-        "PB_BuildType": { }
+        "PB_BuildType": "Checked"
       },
       "DefinitionGroupRefs": [
         "Linux-CrossBuild"
