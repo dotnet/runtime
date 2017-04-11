@@ -1,6 +1,5 @@
 Compat issues with assembly netstandard:
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CompareInfo' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
@@ -19,7 +18,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.AuthenticatedStream'
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.NegotiateStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.SslStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptoStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Text.Encoding.BodyName.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Encoding.GetEncodings()' does not exist in the implementation but it does exist in the contract.
@@ -51,4 +49,4 @@ MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSing
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.UInt32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 52
+Total Issues: 50
