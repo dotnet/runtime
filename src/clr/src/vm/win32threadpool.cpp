@@ -553,7 +553,7 @@ BOOL ThreadpoolMgr::SetMaxThreadsHelper(DWORD MaxWorkerThreads,
 
 /************************************************************************/
 BOOL ThreadpoolMgr::SetMaxThreads(DWORD MaxWorkerThreads,
-                                     DWORD MaxIOCompletionThreads)
+                                  DWORD MaxIOCompletionThreads)
 {
     CONTRACTL
     {
@@ -563,31 +563,13 @@ BOOL ThreadpoolMgr::SetMaxThreads(DWORD MaxWorkerThreads,
     }
     CONTRACTL_END;
 
+    EnsureInitialized();
 
-    if (IsInitialized())
-    {
-        return SetMaxThreadsHelper(MaxWorkerThreads, MaxIOCompletionThreads);
-    }
-
-    if (InterlockedCompareExchange(&Initialization, 1, 0) == 0)
-    {
-        Initialize();
-
-        BOOL helper_result = FALSE;
-        helper_result = SetMaxThreadsHelper(MaxWorkerThreads, MaxIOCompletionThreads);
-
-        Initialization = -1;
-        return helper_result;
-    }
-    else // someone else is initializing. Too late, return false
-    {
-        return FALSE;
-    }
-
+    return SetMaxThreadsHelper(MaxWorkerThreads, MaxIOCompletionThreads);
 }
 
 BOOL ThreadpoolMgr::GetMaxThreads(DWORD* MaxWorkerThreads,
-                                     DWORD* MaxIOCompletionThreads)
+                                  DWORD* MaxIOCompletionThreads)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -598,44 +580,15 @@ BOOL ThreadpoolMgr::GetMaxThreads(DWORD* MaxWorkerThreads,
         return FALSE;
     }
 
-    if (IsInitialized())
-    {
-        *MaxWorkerThreads = (DWORD)MaxLimitTotalWorkerThreads;
-        *MaxIOCompletionThreads = MaxLimitTotalCPThreads;
-    }
-    else
-    {
-        BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), *MaxWorkerThreads = 1024);
+    EnsureInitialized();
 
-        //ThreadPool_CPUGroup
-        CPUGroupInfo::EnsureInitialized();
-        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-            NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
-        else
-            NumberOfProcessors = GetCurrentProcessCpuCount();
-        DWORD min = GetForceMinWorkerThreadsValue();
-        if (min == 0)
-            min = NumberOfProcessors;
-
-        DWORD forceMax = GetForceMaxWorkerThreadsValue();
-        if (forceMax > 0)
-        {
-            *MaxWorkerThreads = forceMax;
-        }
-        else
-        {
-            *MaxWorkerThreads = GetDefaultMaxLimitWorkerThreads(min);
-        }
-
-        END_SO_INTOLERANT_CODE;
-
-        *MaxIOCompletionThreads = MaxLimitTotalCPThreads;
-    }
+    *MaxWorkerThreads = (DWORD)MaxLimitTotalWorkerThreads;
+    *MaxIOCompletionThreads = MaxLimitTotalCPThreads;
     return TRUE;
 }
 
 BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
-                                     DWORD MinIOCompletionThreads)
+                                  DWORD MinIOCompletionThreads)
 {
     CONTRACTL
     {
@@ -645,75 +598,61 @@ BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
     }
     CONTRACTL_END;
 
+    EnsureInitialized();
 
-    if (!IsInitialized())
+    // doesn't need to be WorkerCS, but using it to avoid race condition between setting min and max, and didn't want to create a new CS.
+    CrstHolder csh(&WorkerCriticalSection);
+
+    BOOL init_result = FALSE;
+
+    if (MinWorkerThreads >= 0 && MinIOCompletionThreads >= 0 &&
+        MinWorkerThreads <= (DWORD) MaxLimitTotalWorkerThreads &&
+        MinIOCompletionThreads <= (DWORD) MaxLimitTotalCPThreads)
     {
-        if (InterlockedCompareExchange(&Initialization, 1, 0) == 0)
+        BEGIN_SO_INTOLERANT_CODE(GetThread());
+
+        if (GetForceMinWorkerThreadsValue() == 0)
         {
-            Initialize();
-            Initialization = -1;
-        }
-    }
+            MinLimitTotalWorkerThreads = min(MinWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount);
 
-    if (IsInitialized())
-    {
-        // doesn't need to be WorkerCS, but using it to avoid race condition between setting min and max, and didn't want to create a new CS.
-        CrstHolder csh(&WorkerCriticalSection);
-
-        BOOL init_result = false;
-
-        if (MinWorkerThreads >= 0 && MinIOCompletionThreads >= 0 &&
-            MinWorkerThreads <= (DWORD) MaxLimitTotalWorkerThreads &&
-            MinIOCompletionThreads <= (DWORD) MaxLimitTotalCPThreads)
-        {
-            BEGIN_SO_INTOLERANT_CODE(GetThread());
-
-            if (GetForceMinWorkerThreadsValue() == 0)
+            ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
+            while (counts.MaxWorking < MinLimitTotalWorkerThreads)
             {
-                MinLimitTotalWorkerThreads = min(MinWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount);
+                ThreadCounter::Counts newCounts = counts;
+                newCounts.MaxWorking = MinLimitTotalWorkerThreads;
 
-                ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
-                while (counts.MaxWorking < MinLimitTotalWorkerThreads)
+                ThreadCounter::Counts oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
+                if (oldCounts == counts)
                 {
-                    ThreadCounter::Counts newCounts = counts;
-                    newCounts.MaxWorking = MinLimitTotalWorkerThreads;
+                    counts = newCounts;
 
-                    ThreadCounter::Counts oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
-                    if (oldCounts == counts)
+                    // if we increased the limit, and there are pending workitems, we need
+                    // to dispatch a thread to process the work.
+                    if (newCounts.MaxWorking > oldCounts.MaxWorking &&
+                        PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains())
                     {
-                        counts = newCounts;
-
-                        // if we increased the limit, and there are pending workitems, we need
-                        // to dispatch a thread to process the work.
-                        if (newCounts.MaxWorking > oldCounts.MaxWorking &&
-                            PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains())
-                        {
-                            MaybeAddWorkingWorker();
-                        }
-                    }
-                    else
-                    {
-                        counts = oldCounts;
+                        MaybeAddWorkingWorker();
                     }
                 }
+                else
+                {
+                    counts = oldCounts;
+                }
             }
-
-            END_SO_INTOLERANT_CODE;
-
-            MinLimitTotalCPThreads = min(MinIOCompletionThreads, (DWORD)ThreadCounter::MaxPossibleCount);
-
-            init_result = TRUE;
         }
 
-        return init_result;
-    }
-    // someone else is initializing. Too late, return false
-    return FALSE;
+        END_SO_INTOLERANT_CODE;
 
+        MinLimitTotalCPThreads = min(MinIOCompletionThreads, (DWORD)ThreadCounter::MaxPossibleCount);
+
+        init_result = TRUE;
+    }
+
+    return init_result;
 }
 
 BOOL ThreadpoolMgr::GetMinThreads(DWORD* MinWorkerThreads,
-                                     DWORD* MinIOCompletionThreads)
+                                  DWORD* MinIOCompletionThreads)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -724,25 +663,10 @@ BOOL ThreadpoolMgr::GetMinThreads(DWORD* MinWorkerThreads,
         return FALSE;
     }
 
-    if (IsInitialized())
-    {
-        *MinWorkerThreads = (DWORD)MinLimitTotalWorkerThreads;
-        *MinIOCompletionThreads = MinLimitTotalCPThreads;
-    }
-    else
-    {
-        CPUGroupInfo::EnsureInitialized();
-        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
-            NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
-        else
-            NumberOfProcessors = GetCurrentProcessCpuCount();
-        DWORD forceMin;
-        BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), forceMin=0);
-        forceMin = GetForceMinWorkerThreadsValue();
-        END_SO_INTOLERANT_CODE;
-        *MinWorkerThreads = forceMin > 0 ? forceMin : NumberOfProcessors;
-        *MinIOCompletionThreads = NumberOfProcessors;
-    }
+    EnsureInitialized();
+
+    *MinWorkerThreads = (DWORD)MinLimitTotalWorkerThreads;
+    *MinIOCompletionThreads = MinLimitTotalCPThreads;
     return TRUE;
 }
 
@@ -751,32 +675,26 @@ BOOL ThreadpoolMgr::GetAvailableThreads(DWORD* AvailableWorkerThreads,
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsInitialized())
+    if (!AvailableWorkerThreads || !AvailableIOCompletionThreads)
     {
-
-        if (!AvailableWorkerThreads || !AvailableIOCompletionThreads)
-        {
-            SetLastHRError(ERROR_INVALID_DATA);
-            return FALSE;
-        }
-
-        ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
-
-        if (MaxLimitTotalWorkerThreads < counts.NumActive)
-            *AvailableWorkerThreads = 0;
-        else
-            *AvailableWorkerThreads = MaxLimitTotalWorkerThreads - counts.NumWorking;
-
-        counts = CPThreadCounter.GetCleanCounts();
-        if (MaxLimitTotalCPThreads < counts.NumActive)
-            *AvailableIOCompletionThreads = counts.NumActive - counts.NumWorking;
-        else
-            *AvailableIOCompletionThreads = MaxLimitTotalCPThreads - counts.NumWorking;
+        SetLastHRError(ERROR_INVALID_DATA);
+        return FALSE;
     }
+
+    EnsureInitialized();
+
+    ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
+
+    if (MaxLimitTotalWorkerThreads < counts.NumActive)
+        *AvailableWorkerThreads = 0;
     else
-    {
-        GetMaxThreads(AvailableWorkerThreads,AvailableIOCompletionThreads);
-    }
+        *AvailableWorkerThreads = MaxLimitTotalWorkerThreads - counts.NumWorking;
+
+    counts = CPThreadCounter.GetCleanCounts();
+    if (MaxLimitTotalCPThreads < counts.NumActive)
+        *AvailableIOCompletionThreads = counts.NumActive - counts.NumWorking;
+    else
+        *AvailableIOCompletionThreads = MaxLimitTotalCPThreads - counts.NumWorking;
     return TRUE;
 }
 
