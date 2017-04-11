@@ -39,18 +39,26 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
 
             string pingOutput = p.StandardOutput.ReadToEnd();
-            // Validate that the returned data size is correct.
-            // It should be equal to the bytes we sent plus the size of the ICMP header.
-            int receivedBytes = ParseReturnedPacketSize(pingOutput);
-            int expected = Math.Max(16, payloadSize) + IcmpHeaderLengthInBytes;
-            Assert.Equal(expected, receivedBytes);
 
-            // Validate that we only sent one ping with the "-c 1" argument.
-            int numPingsSent = ParseNumPingsSent(pingOutput);
-            Assert.Equal(1, numPingsSent);
+            try
+            {
+                // Validate that the returned data size is correct.
+                // It should be equal to the bytes we sent plus the size of the ICMP header.
+                int receivedBytes = ParseReturnedPacketSize(pingOutput);
+                int expected = Math.Max(16, payloadSize) + IcmpHeaderLengthInBytes;
+                Assert.Equal(expected, receivedBytes);
 
-            long rtt = UnixCommandLinePing.ParseRoundTripTime(pingOutput);
-            Assert.InRange(rtt, 0, long.MaxValue);
+                // Validate that we only sent one ping with the "-c 1" argument.
+                int numPingsSent = ParseNumPingsSent(pingOutput);
+                Assert.Equal(1, numPingsSent);
+
+                long rtt = UnixCommandLinePing.ParseRoundTripTime(pingOutput);
+                Assert.InRange(rtt, 0, long.MaxValue);
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Ping output was <{pingOutput}>", e);
+            }
         }
 
         private static int ParseReturnedPacketSize(string pingOutput)
