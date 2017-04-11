@@ -141,6 +141,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         echo "Initializing BuildTools..."
         echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
 
+        # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
         chmod +x $__BUILD_TOOLS_PATH/init-tools.sh
         $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
         if [ "$?" != "0" ]; then
@@ -152,6 +153,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     Tools-Override/crossgen.sh $__scriptpath/Tools
 
     echo "Making all .sh files executable under Tools."
+    # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
     ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 

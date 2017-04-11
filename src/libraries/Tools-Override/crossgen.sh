@@ -31,6 +31,7 @@ restore_crossgen()
     fi
     cp $__crossgenInPackage $__sharedFxDir
     __crossgen=$__sharedFxDir/crossgen
+    # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
     chmod +x $__crossgen
 }
 
