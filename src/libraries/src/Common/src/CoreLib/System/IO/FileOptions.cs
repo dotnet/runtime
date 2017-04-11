@@ -11,9 +11,6 @@ namespace System.IO
     // We didn't expose a number of these values because we didn't believe 
     // a number of them made sense in managed code, at least not yet.
     [Flags]
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem")]
-#endif
     public enum FileOptions
     {
         // NOTE: any change to FileOptions enum needs to be 
