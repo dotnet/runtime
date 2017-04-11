@@ -523,14 +523,11 @@ namespace System.Diagnostics.Tests
         public void TestSessionId()
         {
             uint sessionId;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
+#if TargetsWindows
                 Interop.ProcessIdToSessionId((uint)_process.Id, out sessionId);
-            }
-            else
-            {
+#else
                 sessionId = (uint)Interop.getsid(_process.Id);
-            }
+#endif
 
             Assert.Equal(sessionId, (uint)_process.SessionId);
         }
@@ -541,9 +538,12 @@ namespace System.Diagnostics.Tests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                Interop.GetCurrentProcessId() :
+            int currentProcessId =
+#if TargetsWindows
+                Interop.GetCurrentProcessId();
+#else
                 Interop.getpid();
+#endif
 
             Assert.Equal(currentProcessId, current.Id);
         }
@@ -622,6 +622,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
         [ConditionalTheory(nameof(ProcessPeformanceCounterEnabled))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/18212")]
         [MemberData(nameof(GetTestProcess))]
         public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
         {
@@ -759,36 +760,6 @@ namespace System.Diagnostics.Tests
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
         }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
-        [Fact]
-        public void TestStartOnUnixWithBadPermissions()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.Equal(0, chmod(path, 644)); // no execute permissions
-
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
-            Assert.NotEqual(0, e.NativeErrorCode);
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
-        [Fact]
-        public void TestStartOnUnixWithBadFormat()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.Equal(0, chmod(path, 744)); // execute permissions
-
-            using (Process p = Process.Start(path))
-            {
-                p.WaitForExit();
-                Assert.NotEqual(0, p.ExitCode);
-            }
-        }
-
-        [DllImport("libc")]
-        private static extern int chmod(string path, int mode);
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX

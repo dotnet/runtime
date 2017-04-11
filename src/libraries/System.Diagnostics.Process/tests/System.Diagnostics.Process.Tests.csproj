@@ -4,10 +4,13 @@
   <PropertyGroup>
     <ProjectGuid>{E1114510-844C-4BB2-BBAD-8595BD16E24B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
@@ -22,12 +25,14 @@
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
     <Compile Include="Interop.cs" />
+    <Compile Include="Interop.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessCollectionTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
     <Compile Include="ProcessTests.cs" />
+    <Compile Include="ProcessTests.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
