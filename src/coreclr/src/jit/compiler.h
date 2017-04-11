@@ -3137,6 +3137,11 @@ private:
 
     //---------------- Spilling the importer stack ----------------------------
 
+    // The maximum number of bytes of IL processed without clean stack state.
+    // It allows to limit the maximum tree size and depth.
+    static const unsigned MAX_TREE_SIZE = 200;
+    bool impCanSpillNow(OPCODE prevOpcode);
+
     struct PendingDsc
     {
         PendingDsc*   pdNext;
