@@ -353,8 +353,8 @@ function create_core_overlay {
     fi
     mkdir "$coreOverlayDir"
 
+    cp -f -v "$coreFxBinDir/"* "$coreOverlayDir/" 2>/dev/null
     cp -f -v "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
-    cp -n -v "$coreFxBinDir/"* "$coreOverlayDir/" 2>/dev/null
     if [ -d "$mscorlibDir/bin" ]; then
         cp -f -v "$mscorlibDir/bin/"* "$coreOverlayDir/" 2>/dev/null
     fi
