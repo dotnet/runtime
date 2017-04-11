@@ -498,6 +498,7 @@ namespace Microsoft.Extensions.DependencyModel
             bool serviceable = false;
             string path = null;
             string hashPath = null;
+            string runtimeStoreManifestName = null;
 
             reader.ReadStartObject();
 
@@ -520,6 +521,9 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.HashPathPropertyName:
                         hashPath = reader.ReadAsString();
                         break;
+                    case DependencyContextStrings.RuntimeStoreManifestPropertyName:
+                        runtimeStoreManifestName = reader.ReadAsString();
+                        break;
                     default:
                         reader.Skip();
                         break;
@@ -534,7 +538,8 @@ namespace Microsoft.Extensions.DependencyModel
                 Type = Pool(type),
                 Serviceable = serviceable,
                 Path = path,
-                HashPath = hashPath
+                HashPath = hashPath,
+                RuntimeStoreManifestName = runtimeStoreManifestName
             };
         }
 
@@ -645,7 +650,8 @@ namespace Microsoft.Extensions.DependencyModel
                     dependencies: targetLibrary.Dependencies,
                     serviceable: stub.Serviceable,
                     path: stub.Path,
-                    hashPath: stub.HashPath);
+                    hashPath: stub.HashPath,
+                    runtimeStoreManifestName : stub.RuntimeStoreManifestName);
             }
             else
             {
@@ -725,6 +731,8 @@ namespace Microsoft.Extensions.DependencyModel
             public string Path;
 
             public string HashPath;
+
+            public string RuntimeStoreManifestName;
         }
     }
 }

@@ -69,6 +69,7 @@ void deps_json_t::reconcile_libraries_with_targets(
 
         pal::string_t library_path = get_optional_path(properties, _X("path"));
         pal::string_t library_hash_path = get_optional_path(properties, _X("hashPath"));
+        pal::string_t runtime_store_manifest_list = get_optional_path(properties, _X("runtimeStoreManifestName"));
 
         for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
@@ -91,6 +92,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
+                entry.runtime_store_manifest_list = runtime_store_manifest_list;
                 entry.asset_name = asset_name;
                 entry.asset_type = (deps_entry_t::asset_types) i;
                 entry.relative_path = rel_path;
