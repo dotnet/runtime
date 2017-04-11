@@ -10,6 +10,7 @@
     <SkipValidatePackage>true</SkipValidatePackage>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
+    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
 
     <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
     <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
@@ -40,6 +41,7 @@
 
     <Dependency Include="Microsoft.NETCore.Platforms">
       <Version>$(PlatformPackageVersion)</Version>
+      <TargetFramework>$(TargetFramework)</TargetFramework>
     </Dependency>
   </ItemGroup>
 
@@ -67,14 +69,14 @@
 
   <Target Name="_getFinalFilesExisting">
     <ItemGroup>
-      <_refFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND $([System.String]::new('%(File.TargetPath)').StartsWith('ref'))" />
+      <_refFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND ($([System.String]::new('%(File.TargetPath)').StartsWith('ref')) OR '%(File.TargetPath)' == '$(RefFileTargetPath)')" />
       <_refFileNames Include="@(_refFileExisting -> '%(FileName)')">
         <Original>%(_refFileExisting.Identity)</Original>
       </_refFileNames>
       <_refFileNamesFiltered Include="@(_refFileNames)" Exclude="@(ExcludeFromClosure)" />
       <_refFilesFiltered Include="@(_refFileNamesFiltered->'%(Original)')" />
 
-      <_runtimeFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND ($([System.String]::new('%(File.TargetPath)').StartsWith('lib')) OR  $([System.String]::new('%(File.TargetPath)').StartsWith('runtimes')))" />
+      <_runtimeFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND ($([System.String]::new('%(File.TargetPath)').StartsWith('lib')) OR $([System.String]::new('%(File.TargetPath)').StartsWith('runtimes')) OR '%(File.TargetPath)' == '$(LibFileTargetPath)')" />
       <_runtimeFileNames Include="@(_runtimeFileExisting -> '%(FileName)')">
         <Original>%(_runtimeFileExisting.Identity)</Original>
       </_runtimeFileNames>
@@ -101,9 +103,9 @@
 
   <Target Name="VerifyNETStandard" DependsOnTargets="_getFinalFilesExisting" AfterTargets="Build">
     <ItemGroup>
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\*.dll" />
+      <_NETStandardFile Include="$(NETStandardPackageRefPath)\*.dll" />
       <!-- force a missing file there are no files found in the package -->
-      <_NETStandardFile Include="$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref\MISSING_NETSTANDARD_PACKAGE" Condition="'@(_NETStandardFile)' == ''" />
+      <_NETStandardFile Include="$(NETStandardPackageRefPath)\MISSING_NETSTANDARD_PACKAGE" Condition="'@(_NETStandardFile)' == ''" />
 
       <_NETStandardRefMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(_refFileNames)" />
       <_NETStandardRefMissingFileError Include="@(_NETStandardRefMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />

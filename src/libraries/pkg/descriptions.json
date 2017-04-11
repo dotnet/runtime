@@ -149,14 +149,8 @@
     "CommonTypes": []
   },
   {
-    "Name": "NETStandard.Library",
-    "Description": "A set of standard .NET APIs that are prescribed to be used and supported together. This includes all of the APIs in the NETStandard.Platform package plus additional libraries that are core to .NET but built on top of NETStandard.Platform.",
-    "CommonTypes": [
-    ]
-  },
-  {
-    "Name": "NETStandard.Platform",
-    "Description": "A set of low level APIs that all .NET platforms must support.",
+    "Name": "NETStandard.Library.NETFramework",
+    "Description": "Adds NETStandard2.0 support to .NET Framework.",
     "CommonTypes": [
     ]
   },
