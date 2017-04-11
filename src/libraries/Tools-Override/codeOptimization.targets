@@ -44,27 +44,22 @@
 
   <!-- We need the OptimizationData package in order to be able to optimize the assembly -->
   <Target Name="RestoreOptimizationDataPackage" BeforeTargets="CoreCompile"
-          Condition="'$(EnableProfileGuidedOptimization)'=='true' and !Exists('$(OptimizationDataDir)project.json')">
-
+          Condition="'$(EnableProfileGuidedOptimization)'=='true' and !Exists('$(OptimizationDataDir)project.csproj')">
     <!-- Dynamically create a project.json file used to restore the optimization data-->
-    <Message Text="Generating project.json for optimization data"  Importance="low" />
-    <ItemGroup>
-      <_OptimizationDataJsonLine Include="{&quot;dependencies&quot;: {" />
-      <_OptimizationDataJsonLine Include="&quot;$(OptimizationDataPackageName)&quot; : &quot;$(OptimizationDataVersion)&quot; " />
-      <_OptimizationDataJsonLine Include="},&quot;frameworks&quot;: {&quot;netcoreapp1.0&quot;: {},&quot;net46&quot;: {}}}"/>
-    </ItemGroup>
+    <PropertyGroup>
+      <OptimizationDataSourceProject>$(MSBuildThisFileDirectory)OptimizationData.msbuild</OptimizationDataSourceProject>
+    </PropertyGroup>
     
     <PropertyGroup>
-      <OptimizationDataProjectJson>$(OptimizationDataDir)project.json</OptimizationDataProjectJson>
+      <OptimizationDataRestoreTarget>$(OptimizationDataDir)project.csproj</OptimizationDataRestoreTarget>
       <OptimizationDataNuGetFeed Condition="'$(OptimizationDataNuGetFeed)'==''">https:%2F%2Fdotnet.myget.org/F/roslyn/api/v3/index.json</OptimizationDataNuGetFeed>
     </PropertyGroup>
 
     <MakeDir Directories="$(OptimizationDataDir)" ContinueOnError="true" />
-    <WriteLinesToFile File="$(OptimizationDataProjectJson)" Lines="@(_OptimizationDataJsonLine)" Overwrite="true" />
+    <Copy SourceFiles="$(OptimizationDataSourceProject)" DestinationFiles="$(OptimizationDataRestoreTarget)" />
 
     <!-- Restore the OptimizationData package -->
-    <Exec Command="$(DnuRestoreCommand) $(OptimizationDataProjectJson) --source $(OptimizationDataNuGetFeed)"
-          StandardOutputImportance="Low"/>
+    <Exec Command="$(DnuRestoreCommand) $(OptimizationDataRestoreTarget) --source $(OptimizationDataNuGetFeed) /p:OptimizationDataPackageName=$(OptimizationDataPackageName) /p:OptimizationDataVersion=$(OptimizationDataVersion)" StandardOutputImportance="Low"/>
 
     <!-- Copy the restored files into a more accessible location -->
     <ItemGroup>
