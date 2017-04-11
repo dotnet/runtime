@@ -6,10 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.IO")]
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
-#endif
     [Serializable]
     public class EndOfStreamException : IOException
     {
