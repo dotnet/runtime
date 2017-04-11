@@ -403,6 +403,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.        
         public async Task Write_HeadersToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -418,7 +419,7 @@ namespace System.Net.Tests
                 HttpListenerContext context = await listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Dispose();
+                client.Close();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 
@@ -434,6 +435,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
         public async Task Write_HeadersToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -465,6 +467,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -506,6 +509,7 @@ namespace System.Net.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
