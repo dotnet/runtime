@@ -97,6 +97,9 @@
   <data name="CryptGetUserKey_Failed" xml:space="preserve">
     <value>CryptGetUserKey failed with error code  </value>
   </data>
+  <data name="Cryptography_CAPI_Required" xml:space="preserve">
+    <value>'{0}' requires Windows Cryptographic API (CAPI), which is not available on this platform.</value>
+  </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>

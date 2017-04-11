@@ -27,8 +27,11 @@
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
-      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

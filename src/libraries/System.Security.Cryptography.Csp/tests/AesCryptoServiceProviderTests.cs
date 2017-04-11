@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.Cryptography.Csp.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -70,34 +71,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void TestShims()
+        public static void TestShimProperties()
         {
             using (var alg = new AesCryptoServiceProvider())
             {
-                alg.BlockSize = 128;
-                Assert.Equal(128, alg.BlockSize);
-
-                var emptyIV = new byte[alg.BlockSize / 8];
-                alg.IV = emptyIV;
-                Assert.Equal(emptyIV, alg.IV);
-                alg.GenerateIV();
-                Assert.NotEqual(emptyIV, alg.IV);
-
-                var emptyKey = new byte[alg.KeySize / 8];
-                alg.Key = emptyKey;
-                Assert.Equal(emptyKey, alg.Key);
-                alg.GenerateKey();
-                Assert.NotEqual(emptyKey, alg.Key);
-
-                alg.KeySize = 128;
-                Assert.Equal(128, alg.KeySize);
-
-                alg.Mode = CipherMode.ECB;
-                Assert.Equal(CipherMode.ECB, alg.Mode);
-
-                alg.Padding = PaddingMode.PKCS7;
-                Assert.Equal(PaddingMode.PKCS7, alg.Padding);
+                ShimHelpers.TestSymmetricAlgorithmProperties(alg, blockSize: 128, keySize: 128);
             }
+        }
+
+        [Fact]
+        public static void TestShimOverloads()
+        {
+            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(AesCryptoServiceProvider));
         }
     }
 }

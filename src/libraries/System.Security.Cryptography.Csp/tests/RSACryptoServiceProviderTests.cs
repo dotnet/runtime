@@ -60,6 +60,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
         public static void CreateKey_LegacyProvider()
         {
             CspParameters cspParameters = new CspParameters(PROV_RSA_FULL);
@@ -72,6 +73,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters\CspKeyContainerInfo on Unix
         public static void CreateKey_LegacyProvider_RoundtripBlob()
         {
             const int KeySize = 512;
@@ -101,6 +103,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters\CspKeyContainerInfo on Unix
         public static void DefaultKey_Parameters()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -140,6 +143,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
         public static void NamedKey_DefaultProvider()
         {
             const int KeySize = 2048;
@@ -184,6 +188,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
         public static void NamedKey_AlternateProvider()
         {
             const int KeySize = 512;
@@ -232,6 +237,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
         public static void NonExportable_Ephemeral()
         {
             CspParameters cspParameters = new CspParameters
@@ -250,6 +256,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CspParameters on Unix
         public static void NonExportable_Persisted()
         {
             CspParameters cspParameters = new CspParameters
@@ -268,6 +275,139 @@ namespace System.Security.Cryptography.Csp.Tests
                     Assert.Throws<CryptographicException>(() => rsa.ExportParameters(true));
                 }
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void Ctor_UseCspParameter_Throws_Unix()
+        {
+            var cspParameters = new CspParameters();
+            Assert.Throws<PlatformNotSupportedException>(() => new RSACryptoServiceProvider(cspParameters));
+            Assert.Throws<PlatformNotSupportedException>(() => new RSACryptoServiceProvider(0, cspParameters));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void CspKeyContainerInfo_Throws_Unix()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => (rsa.CspKeyContainerInfo));
+            }
+        }
+
+        [Fact]
+        public static void ImportParameters_ExponentTooBig_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                // Verify that Unix shims and Windows Csp both throws the same exception when large Exponent imported
+                Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(TestData.RsaBigExponentParams));
+            }
+        }
+
+        [Fact]
+        public static void SignHash_DefaultAlgorithm_Success()
+        {
+            byte[] hashVal;
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                hashVal = sha1.ComputeHash(TestData.HelloBytes);
+            }
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                byte[] signVal = rsa.SignHash(hashVal, null);
+                Assert.True(rsa.VerifyHash(hashVal, null, signVal));
+            }
+        }
+
+        [Fact]
+        public static void VerifyHash_DefaultAlgorithm_Success()
+        {
+            byte[] hashVal;
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                hashVal = sha1.ComputeHash(TestData.HelloBytes);
+            }
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                byte[] signVal = rsa.SignData(TestData.HelloBytes, "SHA1");
+                Assert.True(rsa.VerifyHash(hashVal, null, signVal));
+            }
+        }
+
+        [Fact]
+        public static void Encrypt_InvalidPaddingMode_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                Assert.Throws<CryptographicException>(() => rsa.Encrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA256));
+            }
+        }
+
+        [Fact]
+        public static void Decrypt_InvalidPaddingMode_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                Assert.Throws<CryptographicException>(() => rsa.Decrypt(TestData.HelloBytes, RSAEncryptionPadding.OaepSHA256));
+            }
+        }
+
+        [Fact]
+        public static void Sign_InvalidPaddingMode_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                Assert.Throws<CryptographicException>(() => rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Fact]
+        public static void Verify_InvalidPaddingMode_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                byte[] sig = rsa.SignData(TestData.HelloBytes, "SHA1");
+                Assert.Throws<CryptographicException>(() => rsa.VerifyData(TestData.HelloBytes, sig, HashAlgorithmName.SHA1, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Fact]
+        public static void SignatureAlgorithm_Success()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                Assert.Equal("http://www.w3.org/2000/09/xmldsig#rsa-sha1", rsa.SignatureAlgorithm);
+            }
+        }
+
+        [Fact]
+        public static void SignData_VerifyHash_CaseInsensitive_Success()
+        {
+            byte[] hashVal;
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                hashVal = sha1.ComputeHash(TestData.HelloBytes);
+            }
+
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                byte[] signVal = rsa.SignData(TestData.HelloBytes, "SHA1");
+                Assert.True(rsa.VerifyHash(hashVal, "SHA1", signVal));
+
+                signVal = rsa.SignData(TestData.HelloBytes, "sha1");
+                Assert.True(rsa.VerifyHash(hashVal, "sha1", signVal));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Only Unix has _impl shim pattern
+        public static void TestShimOverloads_Unix()
+        {
+            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(RSACryptoServiceProvider));
         }
 
         private sealed class RsaKeyLifetime : IDisposable

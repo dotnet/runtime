@@ -9,7 +9,7 @@ using System.ComponentModel;
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public sealed class RC2CryptoServiceProvider : RC2 
+    public sealed class RC2CryptoServiceProvider : RC2
     {
         private bool _use40bitSalt = false;
         private const int BitsPerByte = 8;

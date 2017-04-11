@@ -291,7 +291,20 @@ namespace System.Security.Cryptography
         public override DSAParameters ExportParameters(bool includePrivateParameters)
         {
             byte[] cspBlob = ExportCspBlob(includePrivateParameters);
-            return cspBlob.ToDSAParameters(includePrivateParameters, SafeKeyHandle);
+            byte[] cspPublicBlob = null;
+
+            if (includePrivateParameters)
+            {
+                byte bVersion = CapiHelper.GetKeyBlobHeaderVersion(cspBlob);
+                if (bVersion <= 2)
+                {
+                    // Since DSSPUBKEY is used for either public or private key, we got X
+                    // but not Y. To get Y, do another export and ask for public key blob.
+                    cspPublicBlob = ExportCspBlob(false);
+                }
+            }
+
+            return cspBlob.ToDSAParameters(includePrivateParameters, cspPublicBlob);
         }
 
         /// <summary>

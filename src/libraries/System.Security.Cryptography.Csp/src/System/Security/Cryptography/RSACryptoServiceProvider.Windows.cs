@@ -384,7 +384,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public override void ImportParameters(RSAParameters parameters)
         {
-            byte[] keyBlob = parameters.ToKeyBlob(CapiHelper.CALG_RSA_KEYX);
+            byte[] keyBlob = parameters.ToKeyBlob();
             ImportCspBlob(keyBlob);
         }
 
@@ -412,7 +412,7 @@ namespace System.Security.Cryptography
         /// <param name="buffer">The input data for which to compute the hash</param>
         /// <param name="halg">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignData(byte[] buffer, Object halg)
+        public byte[] SignData(byte[] buffer, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
@@ -427,7 +427,7 @@ namespace System.Security.Cryptography
         /// <param name="inputStream">The input data for which to compute the hash</param>
         /// <param name="halg">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignData(Stream inputStream, Object halg)
+        public byte[] SignData(Stream inputStream, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);

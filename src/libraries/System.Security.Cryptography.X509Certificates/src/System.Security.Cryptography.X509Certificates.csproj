@@ -285,8 +285,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
-      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
