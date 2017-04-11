@@ -5,6 +5,7 @@
       netcoreapp;
       uap;
       portable_net40+sl4+win8+wp8;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
