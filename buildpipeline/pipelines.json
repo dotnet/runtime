@@ -16,7 +16,8 @@
             "Rid": "debian.8"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Debian 8.2"
+            "OperatingSystem": "Debian 8.2",
+            "Type": "build/product/"
           }
         },
         {
@@ -26,7 +27,8 @@
             "Rid": "rhel.7"
           },
           "ReportingParameters": {
-            "OperatingSystem": "RedHat 7"
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/"
           }
         },
         {
@@ -36,7 +38,8 @@
             "Rid": "ubuntu.14.04"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04"
+            "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/"
           }
         },
         {
@@ -46,7 +49,8 @@
             "Rid": "ubuntu.16.04"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04"
+            "OperatingSystem": "Ubuntu 16.04",
+            "Type": "build/product/"
           }
         },
         {
@@ -56,7 +60,8 @@
             "Rid": "ubuntu.16.10"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.10"
+            "OperatingSystem": "Ubuntu 16.10",
+            "Type": "build/product/"
           }
         },
         {
@@ -66,7 +71,8 @@
             "Rid": "fedora.24"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Fedora 24"
+            "OperatingSystem": "Fedora 24",
+            "Type": "build/product/"
           }
         },
         {
@@ -76,7 +82,8 @@
             "Rid": "opensuse.42.1"
           },
           "ReportingParameters": {
-            "OperatingSystem": "openSUSE 42.1"
+            "OperatingSystem": "openSUSE 42.1",
+            "Type": "build/product/"
           }
         },
         {
@@ -86,7 +93,8 @@
             "Rid": "alpine.3.4.3"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Alpine 3.4.3"
+            "OperatingSystem": "Alpine 3.4.3",
+            "Type": "build/product/"
           }
         },
         {
@@ -97,13 +105,18 @@
             "Rid": "linux"
           },
           "ReportingParameters": {
-            "OperatingSystem": "RedHat 7"
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/"
           }
         },
         {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
             "Rid": "osx.10.12"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "OSX 10.12",
+            "Type": "build/product/"
           }
         },
         {
@@ -111,12 +124,21 @@
           "Parameters": {
             "Rid": "osx",
             "portableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/",
+            "SubType": "PortableBuild"
           }
         },
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
             "Architecture": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/"
           }
         },
         {
@@ -124,12 +146,21 @@
           "Parameters": {
             "Architecture": "x64",
             "portableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "SubType" : "PortableBuild"
           }
         },
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
             "Architecture": "arm64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/"
           }
         },
         {
@@ -137,12 +168,21 @@
           "Parameters": {
             "Architecture": "arm64",
             "portableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "SubType" : "PortableBuild"
           }
         },
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
             "Architecture": "arm"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/"
           }
         },
         {
@@ -150,6 +190,11 @@
           "Parameters": {
             "Architecture": "arm",
             "portableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "SubType" : "PortableBuild"
           }
         },
         {
@@ -159,6 +204,11 @@
           "Name": "DotNet-CoreClr-Trusted-Windows-x86",
           "Parameters": {
             "portableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "SubType" : "PortableBuild"
           }
         }
       ]
@@ -175,7 +225,8 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
-            "SubType": "CrossBuild"
+            "SubType": "CrossBuild",
+            "Type": "build/product/"
           }
         },
         {
@@ -188,7 +239,8 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
-            "SubType": "CrossBuild"
+            "SubType": "PortableCrossBuild",
+            "Type": "build/product/"
           }
         },
         {
@@ -200,7 +252,8 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
-            "SubType": "CrossBuild"
+            "SubType": "CrossBuild",
+            "Type": "build/product/"
           }
         }
       ]
@@ -288,7 +341,8 @@
         "PB_BuildType": "Release"
       },
       "ReportingParameters": {
-        "SubType":  "Publish"
+        "SubType":  "Publish",
+        "Type": "build/publish/"
       },
       "Definitions": [
         {
@@ -315,7 +369,8 @@
         "PB_BuildType": "Debug"
       },
       "ReportingParameters": {
-        "SubType": "Publish"
+        "SubType": "Publish",
+        "Type": "build/publish/"
       },
       "Definitions": [
         {
@@ -340,7 +395,8 @@
         "PB_BuildType": "Checked"
       },
       "ReportingParameters": {
-        "SubType": "Publish"
+        "SubType": "Publish",
+        "Type": "build/publish/"
       },
 
       "Definitions": [
@@ -376,7 +432,8 @@
             "RuntimeIDArg": " "
           },
           "ReportingParameters": {
-            "OperatingSystem": "Windows"
+            "OperatingSystem": "Windows",
+            "Type": "build/product/"
           }
         },
         {
@@ -389,7 +446,8 @@
             "RuntimeIDArg": "runtimeid osx.10.12-x64"
           },
           "ReportingParameters": {
-            "OperatingSystem": "OSX"
+            "OperatingSystem": "OSX",
+            "Type": "build/product/"
           }
         },
         {
@@ -402,7 +460,8 @@
             "RuntimeIDArg": "runtimeid linux-x64"
           },
           "ReportingParameters": {
-            "OperatingSystem": "RedHat 7"
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/"
           }
         }
       ],
