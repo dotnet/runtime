@@ -265,7 +265,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         default:
         {
             JITDUMP("Illegal TYP_LONG node %s in Decomposition.", GenTree::NodeName(tree->OperGet()));
-            noway_assert(!"Illegal TYP_LONG node in Decomposition.");
+            assert(!"Illegal TYP_LONG node in Decomposition.");
             break;
         }
     }
@@ -607,9 +607,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             hiResult->gtFlags &= ~GTF_UNSIGNED;
             hiResult->gtOp.gtOp1 = hiSrcOp;
 
-            Range().Remove(cast);
             Range().Remove(srcOp);
-            Range().InsertAfter(hiSrcOp, hiResult);
         }
         else
         {
@@ -654,8 +652,8 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
                 loResult = cast->gtGetOp1();
                 hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
 
+                Range().InsertAfter(cast, hiResult);
                 Range().Remove(cast);
-                Range().InsertAfter(loResult, hiResult);
             }
             else
             {
@@ -668,9 +666,10 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
                 GenTree* shiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
                 hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, loCopy, shiftBy);
 
-                Range().Remove(cast);
-                Range().InsertAfter(loResult, loCopy, shiftBy, hiResult);
+                Range().InsertAfter(cast, loCopy, shiftBy, hiResult);
                 m_compiler->lvaIncRefCnts(loCopy);
+
+                Range().Remove(cast);
             }
         }
     }
