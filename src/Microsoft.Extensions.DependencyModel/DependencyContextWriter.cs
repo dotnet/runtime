@@ -143,6 +143,7 @@ namespace Microsoft.Extensions.DependencyModel
                     Debug.Assert(compilationLibrary.Type == runtimeLibrary.Type);
                     Debug.Assert(compilationLibrary.Path == runtimeLibrary.Path);
                     Debug.Assert(compilationLibrary.HashPath == runtimeLibrary.HashPath);
+                    Debug.Assert(compilationLibrary.RuntimeStoreManifestName == null);
                 }
 
                 var library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
@@ -335,6 +336,11 @@ namespace Microsoft.Extensions.DependencyModel
             if (library.HashPath != null)
             {
                 libraryJson.Add(new JProperty(DependencyContextStrings.HashPathPropertyName, library.HashPath));
+            }
+
+            if (library.RuntimeStoreManifestName != null)
+            {
+                libraryJson.Add(new JProperty(DependencyContextStrings.RuntimeStoreManifestPropertyName, library.RuntimeStoreManifestName));
             }
 
             return libraryJson;
