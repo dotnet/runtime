@@ -854,9 +854,9 @@ int fx_muxer_t::parse_args_and_execute(
 
     if (cur_i != 1)
     {
-        vec_argv.resize(argc - cur_i + 1, 0); // +1 for dotnet
-        memcpy(vec_argv.data() + 1, argv + cur_i, (argc - cur_i) * sizeof(pal::char_t*));
-        vec_argv[0] = argv[0];
+        vec_argv.reserve(argc - cur_i + 1); // +1 for dotnet
+        vec_argv.push_back(argv[0]);
+        vec_argv.insert(vec_argv.end(), argv + cur_i, argv + argc);
         new_argv = vec_argv.data();
         new_argc = vec_argv.size();
     }
@@ -1065,10 +1065,11 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
-    std::vector<const pal::char_t*> new_argv(argc + 1);
-    memcpy(&new_argv.data()[2], argv + 1, (argc - 1) * sizeof(pal::char_t*));
-    new_argv[0] = argv[0];
-    new_argv[1] = sdk_dotnet.c_str();
+    std::vector<const pal::char_t*> new_argv;
+    new_argv.reserve(argc + 1);
+    new_argv.push_back(argv[0]);
+    new_argv.push_back(sdk_dotnet.c_str());
+    new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
     result = parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
