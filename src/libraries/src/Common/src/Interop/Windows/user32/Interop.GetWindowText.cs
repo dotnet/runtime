@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32)]
+        [DllImport(Libraries.User32, EntryPoint = "GetWindowTextW")]
         public static extern int GetWindowText(IntPtr hWnd, [Out]StringBuilder lpString, int nMaxCount);
     }
 }

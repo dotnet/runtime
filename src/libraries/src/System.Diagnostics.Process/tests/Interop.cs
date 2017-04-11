@@ -9,7 +9,7 @@ using System.Security.Principal;
 
 namespace System.Diagnostics.Tests
 {
-    internal class Interop
+    internal partial class Interop
     {
         [StructLayout(LayoutKind.Sequential, Size = 40)]
         public struct PROCESS_MEMORY_COUNTERS
@@ -57,12 +57,6 @@ namespace System.Diagnostics.Tests
         
         [DllImport("kernel32.dll")]
         internal static extern int GetCurrentProcessId();
-
-        [DllImport("libc")]
-        internal static extern int getpid();
-
-        [DllImport("libc")]
-        internal static extern int getsid(int pid);
 
         [DllImport("kernel32.dll")]
         internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
