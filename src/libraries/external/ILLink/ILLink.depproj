@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.ILLink">
-      <Version>0.1.8-preview</Version>
+      <Version>0.1.9-preview</Version>
       <IncludeAssets>Analyzers;Build;ContentFiles;Native;Runtime</IncludeAssets>
     </PackageReference>
     <Content Include="illink.runtimeconfig.json">
