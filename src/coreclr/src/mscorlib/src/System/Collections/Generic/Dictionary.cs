@@ -584,6 +584,9 @@ namespace System.Collections.Generic
             entries = newEntries;
         }
 
+        // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
+        // statement to copy the value for entry being removed into the output parameter.
+        // Code has been intentionally duplicated for performance reasons.
         public bool Remove(TKey key)
         {
             if (key == null)
@@ -619,6 +622,51 @@ namespace System.Collections.Generic
                     }
                 }
             }
+            return false;
+        }
+
+        // This overload is a copy of the overload Remove(TKey key) with one additional
+        // statement to copy the value for entry being removed into the output parameter.
+        // Code has been intentionally duplicated for performance reasons.
+        public bool Remove(TKey key, out TValue value)
+        {
+            if (key == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            if (buckets != null)
+            {
+                int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
+                int bucket = hashCode % buckets.Length;
+                int last = -1;
+                for (int i = buckets[bucket]; i >= 0; last = i, i = entries[i].next)
+                {
+                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    {
+                        if (last < 0)
+                        {
+                            buckets[bucket] = entries[i].next;
+                        }
+                        else
+                        {
+                            entries[last].next = entries[i].next;
+                        }
+
+                        value = entries[i].value;
+
+                        entries[i].hashCode = -1;
+                        entries[i].next = freeList;
+                        entries[i].key = default(TKey);
+                        entries[i].value = default(TValue);
+                        freeList = i;
+                        freeCount++;
+                        version++;
+                        return true;
+                    }
+                }
+            }
+            value = default(TValue);
             return false;
         }
 
