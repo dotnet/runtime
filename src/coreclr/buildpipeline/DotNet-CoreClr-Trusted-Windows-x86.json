@@ -203,7 +203,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild) -ExtraParameters=/p:PackageCompatJit=1",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
