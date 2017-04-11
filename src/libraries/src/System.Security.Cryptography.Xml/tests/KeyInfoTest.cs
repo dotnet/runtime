@@ -10,6 +10,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -195,18 +196,149 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16779")]
+        [Fact]
         public void ImportKeyNode()
         {
-            string value = "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyName>Mono::</KeyName><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=</P><Q>tf0K9rMyvUrU4cIkwbCrDRhQAJk=</Q><G>S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=</G><Y>LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=</Y><J>9RhE5TycDtdEIXxS3HfxFyXYgpy81zY5lVjwD6E9JP37MWEi80BlX6ab1YPm6xYSEoqReMPP9RgGiW6DuACpgI7+8vgCr4i/7VhzModJAA56PwvTu6UMt9xxKU/fT672v8ucREkMWoc7lEey</J><Seed>HxW3N4RHWVgqDQKuGg7iJTUTiCs=</Seed><PgenCounter>Asw=</PgenCounter></DSAKeyValue></KeyValue>";
-            value += "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><RSAKeyValue><Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><RetrievalElement URI=\"http://www.go-mono.org/\" /><X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\">";
-            value += "<X509Certificate>MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=</X509Certificate></X509Data></KeyInfo>";
+            string keyName = "Mono::";
+            string dsaP = "rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=";
+            string dsaQ = "tf0K9rMyvUrU4cIkwbCrDRhQAJk=";
+            string dsaG = "S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=";
+            string dsaY = "LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=";
+            string dsaJ = "9RhE5TycDtdEIXxS3HfxFyXYgpy81zY5lVjwD6E9JP37MWEi80BlX6ab1YPm6xYSEoqReMPP9RgGiW6DuACpgI7+8vgCr4i/7VhzModJAA56PwvTu6UMt9xxKU/fT672v8ucREkMWoc7lEey";
+            string dsaSeed = "HxW3N4RHWVgqDQKuGg7iJTUTiCs=";
+            string dsaPgenCounter = "Asw=";
+            string rsaModulus = "9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=";
+            string rsaExponent = "AQAB";
+            string x509cert = "MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=";
+            string retrievalElementUri = @"http://www.go-mono.org/";
+
+            string value = $@"<KeyInfo xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <KeyName>{keyName}</KeyName>
+                <KeyValue xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                    <DSAKeyValue>
+                        <P>{dsaP}</P>
+                        <Q>{dsaQ}</Q>
+                        <G>{dsaG}</G>
+                        <Y>{dsaY}</Y>
+                        <J>{dsaJ}</J>
+                        <Seed>{dsaSeed}</Seed>
+                        <PgenCounter>{dsaPgenCounter}</PgenCounter>
+                    </DSAKeyValue>
+                </KeyValue>
+                <KeyValue xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                    <RSAKeyValue>
+                        <Modulus>{rsaModulus}</Modulus>
+                        <Exponent>{rsaExponent}</Exponent>
+                    </RSAKeyValue>
+                </KeyValue>
+                <RetrievalElement URI=""{retrievalElementUri}"" />
+                <X509Data xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                    <X509Certificate>{x509cert}</X509Certificate>
+                </X509Data>
+            </KeyInfo>";
+
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(value);
             info.LoadXml(doc.DocumentElement);
 
-            AssertCrypto.AssertXmlEquals("Import", value, (info.GetXml().OuterXml));
             Assert.Equal(5, info.Count);
+            int i = 0;
+            int pathsCovered = 0;
+            foreach (var clause in info)
+            {
+                i++;
+                
+                if (clause is KeyInfoName)
+                {
+                    pathsCovered |= 1 << 0;
+
+                    var name = clause as KeyInfoName;
+                    Assert.Equal(keyName, name.Value);
+                }
+                else if (clause is DSAKeyValue)
+                {
+                    pathsCovered |= 1 << 1;
+
+                    var dsaKV = clause as DSAKeyValue;
+                    DSA dsaKey = dsaKV.Key;
+                    DSAParameters dsaParams = dsaKey.ExportParameters(false);
+
+                    Assert.Equal(Convert.FromBase64String(dsaP), dsaParams.P);
+                    Assert.Equal(Convert.FromBase64String(dsaQ), dsaParams.Q);
+                    Assert.Equal(Convert.FromBase64String(dsaG), dsaParams.G);
+                    Assert.Equal(Convert.FromBase64String(dsaY), dsaParams.Y);
+
+                    // J is an optimization it should either be null or correct value
+                    if (dsaParams.J != null)
+                    {
+                        Assert.Equal(Convert.FromBase64String(dsaJ), dsaParams.J);
+                    }
+
+                    // Seed and Counter are not guaranteed to roundtrip
+                    // they should either both be non-null or both null
+                    if (dsaParams.Seed != null)
+                    {
+                        Assert.Equal(Convert.FromBase64String(dsaSeed), dsaParams.Seed);
+
+                        byte[] counter = Convert.FromBase64String(dsaPgenCounter);
+                        Assert.InRange(counter.Length, 1, 4);
+                        int counterVal = 0;
+                        for (int j = 0; j < counter.Length; j++)
+                        {
+                            counterVal <<= 8;
+                            counterVal |= counter[j];
+                        }
+
+                        Assert.Equal(counterVal, dsaParams.Counter);
+                    }
+                    else
+                    {
+                        Assert.Null(dsaParams.Seed);
+                        Assert.Equal(default(int), dsaParams.Counter);
+                    }
+                }
+                else if (clause is RSAKeyValue)
+                {
+                    pathsCovered |= 1 << 2;
+
+                    var rsaKV = clause as RSAKeyValue;
+                    RSA rsaKey = rsaKV.Key;
+                    RSAParameters rsaParameters = rsaKey.ExportParameters(false);
+
+                    Assert.Equal(Convert.FromBase64String(rsaModulus), rsaParameters.Modulus);
+                    Assert.Equal(Convert.FromBase64String(rsaExponent), rsaParameters.Exponent);
+                }
+                else if (clause is KeyInfoNode)
+                {
+                    pathsCovered |= 1 << 3;
+
+                    var keyInfo = clause as KeyInfoNode;
+                    XmlElement keyInfoEl = keyInfo.GetXml();
+                    Assert.Equal("RetrievalElement", keyInfoEl.LocalName);
+                    Assert.Equal("http://www.w3.org/2000/09/xmldsig#", keyInfoEl.NamespaceURI);
+                    Assert.Equal(1, keyInfoEl.Attributes.Count);
+                    Assert.Equal("URI", keyInfoEl.Attributes[0].Name);
+                    Assert.Equal(retrievalElementUri, keyInfoEl.GetAttribute("URI"));
+                }
+                else if (clause is KeyInfoX509Data)
+                {
+                    pathsCovered |= 1 << 4;
+
+                    var x509data = clause as KeyInfoX509Data;
+                    Assert.Equal(1, x509data.Certificates.Count);
+                    X509Certificate cert = x509data.Certificates[0] as X509Certificate;
+                    Assert.NotNull(cert);
+                    Assert.Equal(Convert.FromBase64String(x509cert), cert.GetRawCertData());
+                }
+                else
+                {
+                    Assert.True(false, $"Unexpected clause type: {clause.GetType().FullName}");
+                }
+            }
+
+            // 0x1f = b11111, number of ones = 5
+            Assert.Equal(pathsCovered, 0x1f);
+            Assert.Equal(5, i);
         }
 
         [Fact]
