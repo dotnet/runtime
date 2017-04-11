@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class ParentSymbol : Symbol
+    internal abstract class ParentSymbol : Symbol
     {
         public Symbol firstChild;       // List of all children of this symbol
         private Symbol _lastChild;
