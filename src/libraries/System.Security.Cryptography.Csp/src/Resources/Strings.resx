@@ -1,5 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -59,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
-    <value>Enum value was invalid</value>
+    <value>Illegal enum value: {0}.</value>
   </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
@@ -73,30 +132,6 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="CryptDecrypt_Failed" xml:space="preserve">
-    <value>CryptDecrypt failed with error code </value>
-  </data>
-  <data name="CryptEncrypt_Failed" xml:space="preserve">
-    <value>CryptEncrypt failed with error code </value>
-  </data>
-  <data name="CryptExportKey_Failed" xml:space="preserve">
-    <value>CryptExportKey failed with error code </value>
-  </data>
-  <data name="CryptGenKey_Failed" xml:space="preserve">
-    <value>CryptGenKey failed with error code </value>
-  </data>
-  <data name="CryptGetDefaultProvider_Fail" xml:space="preserve">
-    <value>CryptGetDefaultProvider failed with Error code </value>
-  </data>
-  <data name="CryptGetKeyParam_Failed" xml:space="preserve">
-    <value>CryptGetKeyParam failed with error code </value>
-  </data>
-  <data name="CryptGetProvParam_Failed" xml:space="preserve">
-    <value>CryptGetProvParam failed with error code </value>
-  </data>
-  <data name="CryptGetUserKey_Failed" xml:space="preserve">
-    <value>CryptGetUserKey failed with error code  </value>
-  </data>
   <data name="Cryptography_CAPI_Required" xml:space="preserve">
     <value>'{0}' requires Windows Cryptographic API (CAPI), which is not available on this platform.</value>
   </data>
@@ -104,10 +139,10 @@
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
   <data name="Cryptography_CSP_NotFound" xml:space="preserve">
-    <value>Cryptography CSP not found</value>
+    <value>The requested key container was not found.</value>
   </data>
   <data name="Cryptography_CSP_WrongKeySpec" xml:space="preserve">
-    <value>Wrong Cryptography key</value>
+    <value>The specified cryptographic service provider (CSP) does not support this key algorithm: {0}.</value>
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
@@ -149,7 +184,7 @@
     <value>Cannot open an invalid handle.</value>
   </data>
   <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
-    <value>Cryptographic padding data is too big</value>
+    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
   </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
@@ -164,7 +199,7 @@
     <value>Requested number of bytes exceeds the maximum.</value>
   </data>
   <data name="Cryptography_PasswordDerivedBytes_ValuesFixed" xml:space="preserve">
-    <value> Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
+    <value>Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
   </data>
   <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
     <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>
@@ -179,7 +214,7 @@
     <value>Unknown padding mode used.</value>
   </data>
   <data name="CryptSetKeyParam_Failed" xml:space="preserve">
-    <value>CryptSetKeyParam failed with error code {0}</value>
+    <value>CryptSetKeyParam failed with error code {0}.</value>
   </data>
   <data name="CspParameter_invalid" xml:space="preserve">
     <value>CSPParameters cannot be null</value>
@@ -189,8 +224,5 @@
   </data>
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
-  </data>
-  <data name="OpenCSP_Failed" xml:space="preserve">
-    <value>OpenCSP failed with error code {0}.</value>
   </data>
 </root>

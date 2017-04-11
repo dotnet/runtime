@@ -188,8 +188,8 @@ namespace System.Security.Cryptography.Csp.Tests
                 // Ephemeral keys don't successfully request the exportable bit.
                 Assert.ThrowsAny<CryptographicException>(() => dsa.CspKeyContainerInfo.Exportable);
 
-                Assert.Throws<CryptographicException>(() => dsa.ExportCspBlob(true));
-                Assert.Throws<CryptographicException>(() => dsa.ExportParameters(true));
+                Assert.ThrowsAny<CryptographicException>(() => dsa.ExportCspBlob(true));
+                Assert.ThrowsAny<CryptographicException>(() => dsa.ExportParameters(true));
             }
         }
 
@@ -210,8 +210,8 @@ namespace System.Security.Cryptography.Csp.Tests
                 {
                     Assert.False(dsa.CspKeyContainerInfo.Exportable, "dsa.CspKeyContainerInfo.Exportable");
 
-                    Assert.Throws<CryptographicException>(() => dsa.ExportCspBlob(true));
-                    Assert.Throws<CryptographicException>(() => dsa.ExportParameters(true));
+                    Assert.ThrowsAny<CryptographicException>(() => dsa.ExportCspBlob(true));
+                    Assert.ThrowsAny<CryptographicException>(() => dsa.ExportParameters(true));
                 }
             }
         }
