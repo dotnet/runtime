@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public class ImportExportCspBlob
+    public class RSAImportExportCspBlobTests
     {
         [Fact]
         public static void ExportImportPublicOnly()

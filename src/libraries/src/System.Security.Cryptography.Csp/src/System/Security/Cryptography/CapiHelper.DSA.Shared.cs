@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Cryptography;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -12,82 +11,45 @@ namespace Internal.NativeCrypto
 {
     internal static partial class CapiHelper
     {
-        // Provider type to use by default for DSS operations.
-        internal const int DefaultDssProviderType = (int)ProviderType.PROV_DSS_DH;
+        private const int DSS_Q_LEN = 20;
 
         internal const int DSS_MAGIC = 0x31535344;          // Encoding of "DSS1"
         internal const int DSS_PRIVATE_MAGIC = 0x32535344;  // Encoding of "DSS2"
         internal const int DSS_PUB_MAGIC_VER3 = 0x33535344; // Encoding of "DSS3"
         internal const int DSS_PRIV_MAGIC_VER3 = 0x34535344;// Encoding of "DSS4"
 
-        private const int DSS_Q_LEN = 20;
-
-        /// <summary>
-        /// Check to see if a better CSP than the one requested is available
-        /// DSS providers are supersets of each other in the following order:
-        ///    1. MS_ENH_DSS_DH_PROV
-        ///    2. MS_DEF_DSS_DH_PROV
-        ///
-        /// This will return the best provider which is a superset of wszProvider,
-        /// or NULL if there is no upgrade available on the machine.
-        /// </summary>
-        /// <param name="dwProvType">provider type</param>
-        /// <param name="wszProvider">provider name</param>
-        /// <returns>Returns upgrade CSP name</returns>
-        public static string UpgradeDSS(int dwProvType, string wszProvider)
-        {
-            string wszUpgrade = null;
-            if (string.Equals(wszProvider, MS_DEF_DSS_DH_PROV, StringComparison.Ordinal))
-            {
-                SafeProvHandle safeProvHandle;
-                // If this is the base DSS/DH provider, see if we can use the enhanced provider instead.
-                if (S_OK == AcquireCryptContext(out safeProvHandle,
-                    null,
-                    MS_ENH_DSS_DH_PROV,
-                    dwProvType,
-                    (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
-                {
-                    wszUpgrade = MS_ENH_DSS_DH_PROV;
-                }
-                safeProvHandle.Dispose();
-            }
-            return wszUpgrade;
-        }
-
         /// <summary>
         /// Helper for DsaCryptoServiceProvider.ImportParameters()
         /// </summary>
         internal static byte[] ToKeyBlob(this DSAParameters dsaParameters)
         {
-            const int NTE_BAD_DATA = unchecked((int)CryptKeyError.NTE_BAD_DATA);
-
             // Validate the DSA structure first
             // P and Q are required. Q is a 160 bit divisor of P-1.
             if (dsaParameters.P == null || dsaParameters.P.Length == 0 || dsaParameters.Q == null || dsaParameters.Q.Length != DSS_Q_LEN)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             // G is required. G is an element of Z_p
             if (dsaParameters.G == null || dsaParameters.G.Length != dsaParameters.P.Length)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             // If J is present, it should be less than the size of P: J = (P-1) / Q
             // This is only a sanity check. Not doing it here is not really an issue as CAPI will fail.
             if (dsaParameters.J != null && dsaParameters.J.Length >= dsaParameters.P.Length)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             // Y is present for V3 DSA key blobs, Y = g^j mod P
             if (dsaParameters.Y != null && dsaParameters.Y.Length != dsaParameters.P.Length)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             // The seed is always a 20 byte array
             if (dsaParameters.Seed != null && dsaParameters.Seed.Length != 20)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             bool isPrivate = (dsaParameters.X != null && dsaParameters.X.Length > 0);
 
             // The private key should be the same length as Q
             if (isPrivate && dsaParameters.X.Length != DSS_Q_LEN)
-                throw NTE_BAD_DATA.ToCryptographicException();
+                throw GetBadDataException();
 
             uint bitLenP = (uint)dsaParameters.P.Length * 8;
             uint bitLenJ = dsaParameters.J == null ? 0 : (uint)dsaParameters.J.Length * 8;
@@ -185,7 +147,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for DSACryptoServiceProvider.ExportParameters()
         /// </summary>
-        internal static DSAParameters ToDSAParameters(this byte[] cspBlob, bool includePrivateParameters, SafeKeyHandle safeKeyHandle)
+        internal static DSAParameters ToDSAParameters(this byte[] cspBlob, bool includePrivateParameters, byte[] cspPublicBlob)
         {
             try
             {
@@ -199,6 +161,8 @@ namespace Internal.NativeCrypto
 
                     if (bVersion > 2)
                     {
+                        Debug.Assert(cspPublicBlob == null);
+
                         // We need to read a key blob (DSSPUBKEY_VER3 or DSSPRIVKEY_VER3) as follows:
                         //  DWORD           magic
                         //  DWORD           bitlenP
@@ -276,10 +240,17 @@ namespace Internal.NativeCrypto
 
                         if (includePrivateParameters)
                         {
-                            // Since DSSPUBKEY key is used for both public and private keys, we got X
-                            // but not Y. To get Y, do another export and ask for public key blob.
-                            byte[] cspPublicBlob = ExportKeyBlob(false, safeKeyHandle);
+                            // If a previous call to CAPI returned a v2 private blob, which was then passed
+                            // to ImportCspBlob(byte[] keyBlob) under Unix then that is not supported.
+                            // Only Unix calls ToDSAParameters from ImportCspBlob; Windows imports directly via CAPI.
+                            // This can only happen if a v2 private blob was obtained directly through
+                            // CAPI and saved away for later use, because exporting a private blob with ExportCspBlob
+                            // will always export a v3 blob which contains both public and private keys.
+                            if (cspPublicBlob == null)
+                                throw new CryptographicUnexpectedOperationException();
 
+                            // Since DSSPUBKEY is used for either public or private key, we got X
+                            // but not Y. To get Y, use the public key blob.
                             using (var msPublicBlob = new MemoryStream(cspPublicBlob))
                             using (var brPublicBlob = new BinaryReader(msPublicBlob))
                             {
@@ -296,7 +267,7 @@ namespace Internal.NativeCrypto
             {
                 // For compat reasons, we throw an E_FAIL CrytoException if CAPI returns a smaller blob than expected.
                 // For compat reasons, we ignore the extra bits if the CAPI returns a larger blob than expected.
-                throw E_FAIL.ToCryptographicException();
+                throw GetEFailException();
             }
         }
 
@@ -382,17 +353,6 @@ namespace Internal.NativeCrypto
                 bw.Write((int)dsaParameters.Counter);
                 bw.WriteReversed(dsaParameters.Seed);
             }
-        }
-
-        private static void ReverseDsaSignature(byte[] signature, int cbSignature)
-        {
-            // A DSA signature consists of two 20-byte components, each of which
-            // must be reversed in place.
-            if (cbSignature != 40)
-                throw new CryptographicException(SR.Cryptography_InvalidDSASignatureSize);
-
-            Array.Reverse(signature, 0, 20);
-            Array.Reverse(signature, 20, 20);
         }
     }
 }

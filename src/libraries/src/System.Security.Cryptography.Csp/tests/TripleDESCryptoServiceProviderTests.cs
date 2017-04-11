@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.Cryptography.Csp.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -49,38 +50,25 @@ namespace System.Security.Cryptography.Encryption.TripleDES.Tests
         }
 
         [Fact]
-        public static void TestShims()
+        public static void TestShimProperties()
         {
             using (var alg = new TripleDESCryptoServiceProvider())
             {
-                alg.BlockSize = 64;
-                Assert.Equal(64, alg.BlockSize);
-
-                var emptyIV = new byte[8];
-                alg.IV = emptyIV;
-                Assert.Equal(emptyIV, alg.IV);
-                alg.GenerateIV();
-                Assert.NotEqual(emptyIV, alg.IV);
-
-                alg.KeySize = 64 * 3;
-                Assert.Equal(64 * 3, alg.KeySize);
                 var knownKey = new byte[]
                 {
                     /* k1 */ 0, 1, 2, 3, 4, 5, 6, 7,
                     /* k2 */ 0, 0, 0, 2, 4, 6, 0, 1,
                     /* k3 */ 0, 1, 2, 3, 4, 5, 6, 7,
                 };
-                alg.Key = knownKey;
-                Assert.Equal(knownKey, alg.Key);
-                alg.GenerateKey();
-                Assert.NotEqual(knownKey, alg.Key);
 
-                alg.Mode = CipherMode.ECB;
-                Assert.Equal(CipherMode.ECB, alg.Mode);
-
-                alg.Padding = PaddingMode.PKCS7;
-                Assert.Equal(PaddingMode.PKCS7, alg.Padding);
+                ShimHelpers.TestSymmetricAlgorithmProperties(alg, blockSize:64, keySize:64 * 3, key:knownKey);
             }
+        }
+
+        [Fact]
+        public static void TestShimOverloads()
+        {
+            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(TripleDESCryptoServiceProvider));
         }
     }
 }

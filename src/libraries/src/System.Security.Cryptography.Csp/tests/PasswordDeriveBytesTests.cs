@@ -400,6 +400,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_KnownValues_TripleDes()
         {
             byte[] key = TestKnownValue_CryptDeriveKey(
@@ -430,6 +431,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_KnownValues_RC2()
         {
             TestKnownValue_CryptDeriveKey(
@@ -458,6 +460,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_KnownValues_RC2_NoSalt()
         {
             TestKnownValue_CryptDeriveKey(
@@ -470,6 +473,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_KnownValues_DES()
         {
             TestKnownValue_CryptDeriveKey(
@@ -482,6 +486,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_Invalid_KeyLength()
         {
             using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
@@ -492,6 +497,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_Invalid_Algorithm()
         {
             using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
@@ -501,6 +507,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_Invalid_HashAlgorithm()
         {
             using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
@@ -510,12 +517,23 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // No support for CryptDeriveKey on Unix
         public static void CryptDeriveKey_Invalid_IV()
         {
             using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
             {
                 Assert.Throws<CryptographicException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, null));
                 Assert.Throws<CryptographicException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[1]));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void CryptDeriveKey_Throws_Unix()
+        {
+            using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => (deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, null)));
             }
         }
 

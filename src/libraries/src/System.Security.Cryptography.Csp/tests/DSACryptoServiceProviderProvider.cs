@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         public bool SupportsFips186_3 => false;
-        public bool SupportsKeyGeneration => true;
+        public bool SupportsKeyGeneration => !PlatformDetection.IsOSX;
     }
 
     public partial class DSAFactory
