@@ -25,13 +25,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Posix-net_4_x", "mcs/c
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Core-net_4_x", "mcs/class/System.Core/System.Core-net_4_x.csproj", "{359142A1-D80F-401E-AA64-7167C9317649}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "resgen-net_4_x", "mcs/tools/resgen/resgen-net_4_x.csproj", "{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing-net_4_x", "mcs/class/System.Drawing/System.Drawing-net_4_x.csproj", "{584A5E46-2958-4CB2-8DF9-188B420D0BB0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression-net_4_x", "mcs/class/System.IO.Compression/System.IO.Compression-net_4_x.csproj", "{6187D26C-54C8-4298-829E-A99B0E6036B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.FileSystem-net_4_x", "mcs/class/System.IO.Compression.FileSystem/System.IO.Compression.FileSystem-net_4_x.csproj", "{9E61FF2E-493E-4CA0-BBDA-2EF96A4CB058}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing-net_4_x", "mcs/class/System.Drawing/System.Drawing-net_4_x.csproj", "{584A5E46-2958-4CB2-8DF9-188B420D0BB0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Transactions-net_4_x", "mcs/class/System.Transactions/System.Transactions-net_4_x.csproj", "{3821C69F-220D-4231-992C-0FE05311A005}"
 EndProject
@@ -579,6 +577,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nunit-console-net_4_x", "mc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ilasm-net_4_x", "mcs/ilasm/ilasm-net_4_x.csproj", "{D32B01EF-8E8D-41C1-848D-6DAEAA3FCA6C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "resgen-net_4_x", "mcs/tools/resgen/resgen-net_4_x.csproj", "{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gacutil-net_4_x", "mcs/tools/gacutil/gacutil-net_4_x.csproj", "{6B9993FC-E28D-4D55-8F96-C8A35B2BC6E7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "culevel-net_4_x", "mcs/tools/culevel/culevel-net_4_x.csproj", "{ED867AC1-079C-4B5E-ADF9-E7722053B360}"
@@ -729,10 +729,10 @@ Global
 		{359142A1-D80F-401E-AA64-7167C9317649}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{359142A1-D80F-401E-AA64-7167C9317649}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{359142A1-D80F-401E-AA64-7167C9317649}.Release|Any CPU.Build.0 = Release|Any CPU
-		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6187D26C-54C8-4298-829E-A99B0E6036B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6187D26C-54C8-4298-829E-A99B0E6036B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6187D26C-54C8-4298-829E-A99B0E6036B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -741,10 +741,6 @@ Global
 		{9E61FF2E-493E-4CA0-BBDA-2EF96A4CB058}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E61FF2E-493E-4CA0-BBDA-2EF96A4CB058}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9E61FF2E-493E-4CA0-BBDA-2EF96A4CB058}.Release|Any CPU.Build.0 = Release|Any CPU
-		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{584A5E46-2958-4CB2-8DF9-188B420D0BB0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3821C69F-220D-4231-992C-0FE05311A005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3821C69F-220D-4231-992C-0FE05311A005}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3821C69F-220D-4231-992C-0FE05311A005}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -1837,6 +1833,10 @@ Global
 		{D32B01EF-8E8D-41C1-848D-6DAEAA3FCA6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D32B01EF-8E8D-41C1-848D-6DAEAA3FCA6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D32B01EF-8E8D-41C1-848D-6DAEAA3FCA6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6B9993FC-E28D-4D55-8F96-C8A35B2BC6E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6B9993FC-E28D-4D55-8F96-C8A35B2BC6E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B9993FC-E28D-4D55-8F96-C8A35B2BC6E7}.Release|Any CPU.ActiveCfg = Release|Any CPU

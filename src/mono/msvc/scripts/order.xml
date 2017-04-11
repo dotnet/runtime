@@ -616,6 +616,17 @@
       <resources></resources>
       <response>System.IO.Compression.dll.sources</response>
     </project>
+    <project dir="class/System.Drawing" library="System.Drawing-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/build/System.dll</flags>
+      <output>System.Drawing.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/System.Drawing.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>System.Drawing.dll.sources</response>
+    </project>
     <project dir="class/Mono.Cecil" library="Mono.Cecil-build">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -keyfile:../mono.snk -d:NET_4_0 /publicsign -r:./../../class/lib/build/System.Core.dll -r:./../../class/lib/build/System.dll</flags>
@@ -1001,6 +1012,17 @@
       <resources></resources>
       <response>System.Text.Encoding.CodePages.dll.sources</response>
     </project>
+    <project dir="tools/resgen" library="resgen-build">
+      <boot></boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:System -r:System.Xml -r:System.Core -r:System.Drawing</flags>
+      <output>resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/resgen.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>resgen.exe.sources</response>
+    </project>
     <project dir="tools/gacutil" library="gacutil-build">
       <boot></boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -define:NO_SYMBOL_WRITER -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:System -r:Mono.Security -r:System.Security</flags>
@@ -1309,16 +1331,27 @@
       <resources></resources>
       <response>./../../build/deps/net_4_x_System.Configuration_test.dll.response</response>
     </project>
-    <project dir="tools/resgen" library="resgen-net_4_x">
-      <boot></boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:System.Xml -r:System.Core</flags>
-      <output>resgen.exe</output>
+    <project dir="class/System.Drawing" library="System.Drawing-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Drawing.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/resgen.exe</library_output>
+      <library_output>./../../class/lib/net_4_x/System.Drawing.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
-      <response>resgen.exe.sources</response>
+      <response>System.Drawing.dll.sources</response>
+    </project>
+    <project dir="class/System.Drawing" library="System.Drawing-tests-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Drawing.dll /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll -define:TEST -resource:Test/resources/indexed.png,indexed.png -nowarn:0618 -nowarn:219 -nowarn:169</flags>
+      <output>net_4_x_System.Drawing_test.dll</output>
+      <built_sources></built_sources>
+      <library_output>net_4_x_System.Drawing_test.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>./../../build/deps/net_4_x_System.Drawing_test.dll.response</response>
     </project>
     <project dir="class/System.IO.Compression" library="System.IO.Compression-net_4_x">
       <boot>false</boot>
@@ -1363,28 +1396,6 @@
       <profile>net_4_x</profile>
       <resources></resources>
       <response>./../../build/deps/net_4_x_System.IO.Compression.FileSystem_test.dll.response</response>
-    </project>
-    <project dir="class/System.Drawing" library="System.Drawing-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Drawing.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/System.Drawing.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Drawing.dll.sources</response>
-    </project>
-    <project dir="class/System.Drawing" library="System.Drawing-tests-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Drawing.dll /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll -define:TEST -resource:Test/resources/indexed.png,indexed.png -nowarn:0618 -nowarn:219 -nowarn:169</flags>
-      <output>net_4_x_System.Drawing_test.dll</output>
-      <built_sources></built_sources>
-      <library_output>net_4_x_System.Drawing_test.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>./../../build/deps/net_4_x_System.Drawing_test.dll.response</response>
     </project>
     <project dir="class/System.Transactions" library="System.Transactions-net_4_x">
       <boot>false</boot>
@@ -5093,6 +5104,17 @@
       <resources></resources>
       <response>ilasm.exe.sources</response>
     </project>
+    <project dir="tools/resgen" library="resgen-net_4_x">
+      <boot></boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:System.Xml -r:System.Core -r:System.Drawing</flags>
+      <output>resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/resgen.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>resgen.exe.sources</response>
+    </project>
     <project dir="tools/gacutil" library="gacutil-net_4_x">
       <boot></boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -define:NO_SYMBOL_WRITER -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:Mono.Security -r:System.Security</flags>
@@ -5227,7 +5249,7 @@
     </project>
     <project dir="tools/resgen" library="resgen-net_4_x">
       <boot></boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:System.Xml -r:System.Core</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:System.Xml -r:System.Core -r:System.Drawing</flags>
       <output>resgen.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/resgen.exe</library_output>
