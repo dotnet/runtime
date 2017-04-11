@@ -2594,6 +2594,21 @@ inline IL_OFFSETX Compiler::impCurILOffset(IL_OFFSET offs, bool callInstruction)
     }
 }
 
+//------------------------------------------------------------------------
+// impCanSpillNow: check is it possible to spill all values from eeStack to local variables.
+//
+// Arguments:
+//    prevOpcode - last importer opcode
+//
+// Return Value:
+//    true if it is legal, false if it could be a sequence that we do not want to divide.
+bool Compiler::impCanSpillNow(OPCODE prevOpcode)
+{
+    // Don't spill after ldtoken, because it could be a part of the InitializeArray sequence.
+    // Avoid breaking up to guarantee that impInitializeArrayIntrinsic can succeed.
+    return prevOpcode != CEE_LDTOKEN;
+}
+
 /*****************************************************************************
  *
  *  Remember the instr offset for the statements
@@ -9554,7 +9569,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             /* Has it been a while since we last saw a non-empty stack (which
                guarantees that the tree depth isnt accumulating. */
 
-            if ((opcodeOffs - lastSpillOffs) > 200)
+            if ((opcodeOffs - lastSpillOffs) > MAX_TREE_SIZE && impCanSpillNow(prevOpcode))
             {
                 impSpillStackEnsure();
                 lastSpillOffs = opcodeOffs;
