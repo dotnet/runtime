@@ -22,7 +22,7 @@ namespace System.Diagnostics
     /// the application just needs to call <see cref="DiagnosticListener.AllListeners" /> and
     /// <see cref="DiagnosticListener.AllListenerObservable.Subscribe(IObserver{DiagnosticListener})"/>,
     /// then in the <see cref="IObserver{DiagnosticListener}.OnNext(DiagnosticListener)"/> method,
-    /// when it seems the System.Net.Http.Desktop source, subscribe to it. This will trigger the
+    /// when it sees the System.Net.Http.Desktop source, subscribe to it. This will trigger the
     /// initialization of this DiagnosticListener.
     /// </summary>
     internal sealed class HttpHandlerDiagnosticListener : DiagnosticListener
@@ -32,8 +32,18 @@ namespace System.Diagnostics
         /// </summary>
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
-            Initialize();
-            return base.Subscribe(observer, isEnabled);
+            IDisposable result = base.Subscribe(observer, isEnabled);
+            try
+            {
+                Initialize();
+            }
+            catch (Exception ex)
+            {
+                // If anything went wrong, just no-op. Write an event so at least we can find out.
+                this.Write(InitializationFailed, new { Exception = ex });
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -41,8 +51,37 @@ namespace System.Diagnostics
         /// </summary>
         public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
-            Initialize();
-            return base.Subscribe(observer, isEnabled);
+            IDisposable result = base.Subscribe(observer, isEnabled);
+            try
+            {
+                Initialize();
+            }
+            catch (Exception ex)
+            {
+                // If anything went wrong, just no-op. Write an event so at least we can find out.
+                this.Write(InitializationFailed, new { Exception = ex });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Overriding base class implementation just to give us a chance to initialize.  
+        /// </summary>
+        public override IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
+        {
+            IDisposable result = base.Subscribe(observer);
+            try
+            {
+                Initialize();
+            }
+            catch (Exception ex)
+            {
+                // If anything went wrong, just no-op. Write an event so at least we can find out.
+                this.Write(InitializationFailed, new { Exception = ex });
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -61,16 +100,8 @@ namespace System.Diagnostics
                     // the likelihood it will succeed the second time is very small.
                     this.initialized = true;
 
-                    try
-                    {
-                        PrepareReflectionObjects();
-                        PerformInjection();
-                    }
-                    catch (Exception ex)
-                    {
-                        // If anything went wrong, just no-op. Write an event so at least we can find out.
-                        this.Write(InitializationFailed, new { Exception = ex });
-                    }
+                    PrepareReflectionObjects();
+                    PerformInjection();
                 }
             }
         }
@@ -78,7 +109,7 @@ namespace System.Diagnostics
 #region private helper classes
 
         [Serializable]
-        private class SimpleHashtableWrapper : Hashtable, IEnumerable
+        private class HashtableWrapper : Hashtable, IEnumerable
         {
             protected Hashtable _table;
             public override int Count
@@ -141,13 +172,13 @@ namespace System.Diagnostics
                     return this._table.Values;
                 }
             }
-            internal SimpleHashtableWrapper(Hashtable table) : base()
+            internal HashtableWrapper(Hashtable table) : base()
             {
                 this._table = table;
             }
-            internal SimpleHashtableWrapper(SerializationInfo info, StreamingContext context) : base(info, context)
+            internal HashtableWrapper(SerializationInfo info, StreamingContext context) : base(info, context)
             {
-                this._table = (Hashtable)info.GetValue("ParentTable", typeof(Hashtable));
+                this._table = (Hashtable)info.GetValue(ParentTableSerializationField, typeof(Hashtable));
                 if (this._table == null)
                 {
                     throw new SerializationException("Parent table is missing for deserialization");
@@ -160,7 +191,7 @@ namespace System.Diagnostics
                     throw new ArgumentNullException("info");
                 }
 
-                info.AddValue("ParentTable", this._table, typeof(Hashtable));
+                info.AddValue(ParentTableSerializationField, this._table, typeof(Hashtable));
             }
             public override void Add(object key, object value)
             {
@@ -188,7 +219,7 @@ namespace System.Diagnostics
             }
             public override object Clone()
             {
-                return new SimpleHashtableWrapper((Hashtable)this._table.Clone());
+                return new HashtableWrapper((Hashtable)this._table.Clone());
             }
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -205,6 +236,8 @@ namespace System.Diagnostics
             public override void OnDeserialization(object sender)
             {
             }
+
+            private const string ParentTableSerializationField = "ParentTable";
         }
 
         /// <summary>
@@ -212,7 +245,7 @@ namespace System.Diagnostics
         /// intercept each new ServicePoint object being added to ServicePointManager.s_ServicePointTable
         /// and replace its ConnectionGroupList hashtable field.
         /// </summary>
-        private sealed class ServicePointHashtable : SimpleHashtableWrapper
+        private sealed class ServicePointHashtable : HashtableWrapper
         {
             public ServicePointHashtable(Hashtable table) : base(table)
             {
@@ -236,15 +269,7 @@ namespace System.Diagnostics
                             // which allows us to intercept each new ConnectionGroup object added under
                             // this ServicePoint.
                             Hashtable originalTable = s_connectionGroupListField.GetValue(servicePoint) as Hashtable;
-                            ConnectionGroupHashtable newTable;
-                            if (originalTable != null)
-                            {
-                                newTable = new ConnectionGroupHashtable(originalTable);
-                            }
-                            else
-                            {
-                                newTable = new ConnectionGroupHashtable(new Hashtable());
-                            }
+                            ConnectionGroupHashtable newTable = new ConnectionGroupHashtable(originalTable ?? new Hashtable());
 
                             s_connectionGroupListField.SetValue(servicePoint, newTable);
                         }
@@ -260,7 +285,7 @@ namespace System.Diagnostics
         /// intercept each new ConnectionGroup object being added to ServicePoint.m_ConnectionGroupList
         /// and replace its m_ConnectionList arraylist field.
         /// </summary>
-        private sealed class ConnectionGroupHashtable : SimpleHashtableWrapper
+        private sealed class ConnectionGroupHashtable : HashtableWrapper
         {
             public ConnectionGroupHashtable(Hashtable table) : base(table)
             {
@@ -280,15 +305,7 @@ namespace System.Diagnostics
                         // which allows us to intercept each new Connection object added under
                         // this ConnectionGroup.
                         ArrayList originalArrayList = s_connectionListField.GetValue(value) as ArrayList;
-                        ConnectionArrayList newArrayList;
-                        if (originalArrayList != null)
-                        {
-                            newArrayList = new ConnectionArrayList(originalArrayList);
-                        }
-                        else
-                        {
-                            newArrayList = new ConnectionArrayList(new ArrayList());
-                        }
+                        ConnectionArrayList newArrayList = new ConnectionArrayList(originalArrayList ?? new ArrayList());
 
                         s_connectionListField.SetValue(value, newArrayList);
                     }
@@ -303,7 +320,7 @@ namespace System.Diagnostics
         /// have the array elements, but rather access another array list that's given at 
         /// construction time.
         /// </summary>
-        private class SimpleArrayListWrapper : ArrayList
+        private class ArrayListWrapper : ArrayList
         {
             private ArrayList _list;
 
@@ -364,7 +381,7 @@ namespace System.Diagnostics
                     return this._list.SyncRoot;
                 }
             }
-            internal SimpleArrayListWrapper(ArrayList list) : base()
+            internal ArrayListWrapper(ArrayList list) : base()
             {
                 this._list = list;
             }
@@ -394,7 +411,7 @@ namespace System.Diagnostics
             }
             public override object Clone()
             {
-                return new SimpleArrayListWrapper((ArrayList)this._list.Clone());
+                return new ArrayListWrapper((ArrayList)this._list.Clone());
             }
             public override bool Contains(object item)
             {
@@ -507,7 +524,7 @@ namespace System.Diagnostics
         /// intercept each new Connection object being added to ConnectionGroup.m_ConnectionList
         /// and replace its m_WriteList arraylist field.
         /// </summary>
-        private sealed class ConnectionArrayList : SimpleArrayListWrapper
+        private sealed class ConnectionArrayList : ArrayListWrapper
         {
             public ConnectionArrayList(ArrayList list) : base(list)
             {
@@ -521,15 +538,7 @@ namespace System.Diagnostics
                     // which allows us to intercept each new HttpWebRequest object added under
                     // this Connection.
                     ArrayList originalArrayList = s_writeListField.GetValue(value) as ArrayList;
-                    HttpWebRequestArrayList newArrayList;
-                    if (originalArrayList != null)
-                    {
-                        newArrayList = new HttpWebRequestArrayList(originalArrayList);
-                    }
-                    else
-                    {
-                        newArrayList = new HttpWebRequestArrayList(new ArrayList());
-                    }
+                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList(originalArrayList ?? new ArrayList());
 
                     s_writeListField.SetValue(value, newArrayList);
                 }
@@ -545,7 +554,7 @@ namespace System.Diagnostics
         /// It also intercepts all HttpWebRequest objects that are about to get removed from
         /// Connection.m_WriteList as they have completed the request.
         /// </summary>
-        private sealed class HttpWebRequestArrayList : SimpleArrayListWrapper
+        private sealed class HttpWebRequestArrayList : ArrayListWrapper
         {
             public HttpWebRequestArrayList(ArrayList list) : base(list)
             {
@@ -670,17 +679,7 @@ namespace System.Diagnostics
             }
 
             Hashtable originalTable = servicePointTableField.GetValue(null) as Hashtable;
-            ServicePointHashtable newTable;
-
-            // Copy the existing entries over to the new table, and replace the field with our new table
-            if (originalTable != null)
-            {
-                newTable = new ServicePointHashtable(originalTable);
-            }
-            else
-            {
-                newTable = new ServicePointHashtable(new Hashtable());
-            }
+            ServicePointHashtable newTable = new ServicePointHashtable(originalTable ?? new Hashtable());
 
             servicePointTableField.SetValue(null, newTable);
         }
