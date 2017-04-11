@@ -4206,3 +4206,175 @@ public class TypeWithDelegate : ISerializable
         info.AddValue("IntValue", IntProperty);
     }
 }
+
+[XmlInclude(typeof(DerivedClass))]
+public class BaseClass
+{
+    public string value { get; set; }
+    public string Value;
+}
+
+public class DerivedClass : BaseClass
+{
+    public new string value;
+    public new string Value { get; set; }
+}
+
+public class DefaultValuesSetToNaN
+{
+    [DefaultValue(double.NaN)]
+    public double DoubleProp { get; set; }
+
+    [DefaultValue(float.NaN)]
+    public float FloatProp { get; set; }
+
+    [DefaultValue(Double.NaN)]
+    public Double DoubleField;
+
+    [DefaultValue(Single.NaN)]
+    public Single SingleField;
+
+    public override bool Equals(object obj)
+    {
+        var other = obj as DefaultValuesSetToNaN;
+        return other == null ? false :
+            other.DoubleProp == this.DoubleProp && other.FloatProp == this.FloatProp &&
+            other.DoubleField == this.DoubleField && other.SingleField == this.SingleField;
+    }
+
+    public override int GetHashCode()
+    {
+        return this.DoubleProp.GetHashCode() ^ this.FloatProp.GetHashCode() ^
+            this.DoubleField.GetHashCode() ^ this.SingleField.GetHashCode();
+    }
+}
+
+[XmlRootAttribute("PurchaseOrder", Namespace = "http://www.contoso1.com", IsNullable = false)]
+public class PurchaseOrder
+{
+    public Address ShipTo;
+    public string OrderDate;
+
+    [XmlArrayAttribute("Items")]
+    public OrderedItem[] OrderedItems;
+    public decimal SubTotal;
+    public decimal ShipCost;
+    public decimal TotalCost;
+
+    public static PurchaseOrder CreateInstance()
+    {
+        PurchaseOrder po = new PurchaseOrder();
+        Address billAddress = new Address();
+        billAddress.Name = "John Doe";
+        billAddress.Line1 = "1 Main St.";
+        billAddress.City = "AnyTown";
+        billAddress.State = "WA";
+        billAddress.Zip = "00000";
+        po.ShipTo = billAddress;
+        po.OrderDate = new DateTime(2017,4,10).ToLongDateString();
+
+        OrderedItem item = new OrderedItem();
+        item.ItemName = "Widget S";
+        item.Description = "Small widget";
+        item.UnitPrice = (decimal)5.23;
+        item.Quantity = 3;
+        item.Calculate();
+
+        OrderedItem[] items = { item };
+        po.OrderedItems = items;
+        decimal subTotal = new decimal();
+        foreach (OrderedItem oi in items)
+        {
+            subTotal += oi.LineTotal;
+        }
+        po.SubTotal = subTotal;
+        po.ShipCost = (decimal)12.51;
+        po.TotalCost = po.SubTotal + po.ShipCost;
+        return po;
+    }
+}
+
+public class Address
+{
+    [XmlAttribute]
+    public string Name;
+    public string Line1;
+
+    [XmlElementAttribute(IsNullable = false)]
+    public string City;
+    public string State;
+    public string Zip;
+
+    public static void CreateInstance()
+    {
+        Address obj = new Address();
+        obj.City = "Pune";
+        obj.State = "WA";
+        obj.Zip = "98052";
+    }
+}
+
+public class OrderedItem
+{
+    public string ItemName;
+    public string Description;
+    public decimal UnitPrice;
+    public int Quantity;
+    public decimal LineTotal;
+
+    public void Calculate()
+    {
+        LineTotal = UnitPrice * Quantity;
+    }
+}
+
+[XmlType("AliasedTestType")]
+public class AliasedTestType
+{
+    [XmlElement("X", typeof(List<int>))]
+    [XmlElement("Y", typeof(List<string>))]
+    [XmlElement("Z", typeof(List<double>))]
+    public object Aliased { get; set; }
+}
+
+public class BaseClass1
+{
+    [XmlElement]
+    public MyCollection1 Prop;
+}
+
+public class DerivedClass1 : BaseClass1
+{
+    [XmlElement]
+    new public MyCollection1 Prop;
+}
+
+public class MyCollection1 : IEnumerable<DateTime>, IEnumerable
+{
+    private List<DateTime> _values = new List<DateTime>();
+
+    public void Add(DateTime value)
+    {
+        this._values.Add(value);
+    }
+
+    IEnumerator<DateTime> IEnumerable<DateTime>.GetEnumerator()
+    {
+        return this._values.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return this._values.GetEnumerator();
+    }
+}
+
+public static class Outer
+{
+    public class Person
+    {
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public string LastName { get; set; }
+    }
+}
