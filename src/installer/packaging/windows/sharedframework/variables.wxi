@@ -6,6 +6,7 @@
   <?define ProductLanguage  =   "1033" ?>
   <?define ProductVersion   =   "$(var.BuildVersion)" ?>
   <?define LCID  = "$(var.ProductLanguage)"?>
+  <?define Link_PreReqPage  = "https://go.microsoft.com/fwlink/?linkid=846817"?>
   <?define DowngradeErrorMessage  = "A newer version is already installed; please uninstall it and re-run setup."?>
 
   <?define Platform   =   "$(sys.BUILDARCH)" ?>

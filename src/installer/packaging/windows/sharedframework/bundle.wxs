@@ -9,6 +9,11 @@
           Version="$(var.DisplayVersion)" UpgradeCode="$(var.UpgradeCode)"
           AboutUrl="http://dotnet.github.io/"
           Compressed="yes">
+    
+    <bal:Condition
+     Message="The $(var.ProductName) is not supported on this operating system. For more information, see $(var.Link_PreReqPage).">
+    ((VersionNT &gt; v6.1) OR (VersionNT = v6.1 AND ServicePackLevel &gt;= 1))
+    </bal:Condition>
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.Foundation">
       <bal:WixStandardBootstrapperApplication
