@@ -19,6 +19,7 @@
     <Compile Include="System\Diagnostics\TextWriterTraceListener.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Resources.ResourceManager" />
