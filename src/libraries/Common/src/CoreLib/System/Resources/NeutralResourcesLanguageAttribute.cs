@@ -4,9 +4,6 @@
 
 namespace System.Resources
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Resources.ResourceManager")]
-#endif
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed class NeutralResourcesLanguageAttribute : Attribute
     {
