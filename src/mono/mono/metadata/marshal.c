@@ -9163,7 +9163,7 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 
 /**
  * mono_marshal_get_isinst_with_cache:
- * This does the equivalent of \c mono_object_isinst_with_cache.
+ * This does the equivalent of \c mono_marshal_isinst_with_cache.
  */
 MonoMethod *
 mono_marshal_get_isinst_with_cache (void)
@@ -9933,8 +9933,6 @@ get_virtual_stelemref_wrapper (int kind)
 		break;
 
 	case STELEMREF_CLASS: {
-		int b_fast;
-
 		/*
 		the method:
 		<ldelema (bound check)>
@@ -9975,17 +9973,6 @@ get_virtual_stelemref_wrapper (int kind)
 		/* vklass = value->vtable->klass */
 		load_value_class (mb, vklass);
 
-		/* fastpath */
-		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldloc (mb, aklass);
-		b_fast = mono_mb_emit_branch (mb, CEE_BEQ);
-
-		/*if (mono_object_isinst (value, aklass)) */
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_icall (mb, mono_object_isinst_icall);
-		b2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
 		/* if (vklass->idepth < aklass->idepth) goto failue */
 		mono_mb_emit_ldloc (mb, vklass);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
@@ -10017,14 +10004,12 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* do_store: */
 		mono_mb_patch_branch (mb, b1);
-		mono_mb_patch_branch (mb, b_fast);
 		mono_mb_emit_ldloc (mb, array_slot_addr);
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		/* do_exception: */
-		mono_mb_patch_branch (mb, b2);
 		mono_mb_patch_branch (mb, b3);
 		mono_mb_patch_branch (mb, b4);
 
