@@ -817,15 +817,18 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     mov         esi, esp
 
+    #define STACK_ALIGN_PADDING 4
+    sub         esp, STACK_ALIGN_PADDING
+
     push        ecx
     push        edx
-
     push        eax
-
-    // pTransitionBlock
-    push        esi
-
+    push        esi // pTransitionBlock
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(ExternalMethodFixupWorker)
+
+    add         esp, STACK_ALIGN_PADDING
+    #undef STACK_ALIGN_PADDING
 
     // eax now contains replacement stub. PreStubWorker will never return
     // NULL (it throws an exception if stub creation fails.)
