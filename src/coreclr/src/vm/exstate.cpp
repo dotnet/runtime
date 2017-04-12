@@ -102,7 +102,7 @@ void ThreadExceptionState::FreeAllStackTraces()
     }
 }
 
-void ThreadExceptionState::ClearThrowablesForUnload(void* handleTable)
+void ThreadExceptionState::ClearThrowablesForUnload(void* handleStore)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -118,7 +118,7 @@ void ThreadExceptionState::ClearThrowablesForUnload(void* handleTable)
           pNode != NULL;
           pNode = pNode->m_pPrevNestedInfo)
     {
-        if (pHandleTable->ContainsHandle(handleTable, pNode->m_hThrowable))
+        if (pHandleTable->ContainsHandle(handleStore, pNode->m_hThrowable))
         {
             pNode->DestroyExceptionHandle();
         }
