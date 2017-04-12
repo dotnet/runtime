@@ -740,10 +740,10 @@ BaseDomain::BaseDomain()
     m_pLargeHeapHandleTable = NULL;
 
 #ifndef CROSSGEN_COMPILE
-    // Note that m_gcHandleTable is overridden by app domains
-    m_gcHandleTable = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleTable();
+    // Note that m_handleStore is overridden by app domains
+    m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
 #else
-    m_gcHandleTable = NULL;
+    m_handleStore = NULL;
 #endif
 
     m_pMarshalingData = NULL;
@@ -4042,7 +4042,7 @@ AppDomain::AppDomain()
     m_pUMEntryThunkCache = NULL;
 
     m_pAsyncPool = NULL;
-    m_gcHandleTable = NULL;
+    m_handleStore = NULL;
 
     m_ExposedObject = NULL;
     m_pComIPForExposedObject = NULL;
@@ -4273,11 +4273,11 @@ void AppDomain::Init()
     // default domain cannot be unloaded.
     if (GetId().m_dwId == DefaultADID)
     {
-        m_gcHandleTable = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleTable();
+        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
     }
     else
     {
-        m_gcHandleTable = GCHandleTableUtilities::GetGCHandleTable()->GetNewHandleTable((void*)(uintptr_t)m_dwIndex.m_dwIndex);
+        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
     }
 
 #endif // CROSSGEN_COMPILE
@@ -4578,10 +4578,10 @@ void AppDomain::Terminate()
 
     BaseDomain::Terminate();
 
-    if (m_gcHandleTable) 
+    if (m_handleStore) 
     {
-        GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleTable(m_gcHandleTable);
-        m_gcHandleTable = NULL;
+        GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleStore(m_handleStore);
+        m_handleStore = NULL;
     }
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
@@ -9198,7 +9198,7 @@ void AppDomain::ClearGCHandles()
     HandleAsyncPinHandles();
 
     // Remove our handle table as a source of GC roots
-    GCHandleTableUtilities::GetGCHandleTable()->UprootHandleTable(m_gcHandleTable);
+    GCHandleTableUtilities::GetGCHandleTable()->UprootHandleStore(m_handleStore);
 }
 
 // When an AD is unloaded, we will release all objects in this AD.
@@ -9215,14 +9215,14 @@ void AppDomain::HandleAsyncPinHandles()
     CONTRACTL_END;
 
     // TODO: Temporarily casting stuff here until Ref_RelocateAsyncPinHandles is moved to the interface.
-    HandleTableBucket *pBucket = (HandleTableBucket*)m_gcHandleTable;
+    HandleTableBucket *pBucket = (HandleTableBucket*)m_handleStore;
 
     // IO completion port picks IO job using FIFO.  Here is how we know which AsyncPinHandle can be freed.
     // 1. We mark all non-pending AsyncPinHandle with READYTOCLEAN.
     // 2. We queue a dump Overlapped to the IO completion as a marker.
     // 3. When the Overlapped is picked up by completion port, we wait until all previous IO jobs are processed.
     // 4. Then we can delete all AsyncPinHandle marked with READYTOCLEAN.
-    HandleTableBucket *pBucketInDefault = (HandleTableBucket*)SystemDomain::System()->DefaultDomain()->m_gcHandleTable;
+    HandleTableBucket *pBucketInDefault = (HandleTableBucket*)SystemDomain::System()->DefaultDomain()->m_handleStore;
 
     // TODO: When this function is moved to the interface it will take void*s
     Ref_RelocateAsyncPinHandles(pBucket, pBucketInDefault);
@@ -9255,7 +9255,7 @@ void AppDomain::ClearGCRoots()
         pThread->DeleteThreadStaticData(this);
 
         // <TODO>@TODO: A pre-allocated AppDomainUnloaded exception might be better.</TODO>
-        if (pHandleTable->ContainsHandle(m_gcHandleTable, pThread->m_LastThrownObjectHandle))
+        if (pHandleTable->ContainsHandle(m_handleStore, pThread->m_LastThrownObjectHandle))
         {
             // Never delete a handle to a preallocated exception object.
             if (!CLRException::IsPreallocatedExceptionHandle(pThread->m_LastThrownObjectHandle))
@@ -9267,7 +9267,7 @@ void AppDomain::ClearGCRoots()
         }
 
         // Clear out the exceptions objects held by a thread.
-        pThread->GetExceptionState()->ClearThrowablesForUnload(m_gcHandleTable);
+        pThread->GetExceptionState()->ClearThrowablesForUnload(m_handleStore);
     }
 
     //delete them while we still have the runtime suspended
