@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Restore and build SharedFxLookupPortableApp from exe dir
             RepoDirectories = new RepoDirectoriesProvider(builtDotnet:_executableDir);
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
