@@ -159,11 +159,11 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j<bigShiftLoopLimit; j++)
                 {
-                    temp = temp << (int.MaxValue / 2);
+                    temp = temp << (int.MaxValue / 10);
                     double expected =
                         (double)startShift +
                         smallShift * (double)(i + 1) +
-                        (int.MaxValue / 2) * (double)(j + 1);
+                        (int.MaxValue / 10) * (double)(j + 1);
                     Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
                 }
                 
