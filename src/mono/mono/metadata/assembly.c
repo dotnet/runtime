@@ -247,6 +247,12 @@ prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refon
 static gboolean
 assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags);
 
+/* Assembly name matching */
+static gboolean
+exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
+static gboolean
+framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
+
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
@@ -3412,18 +3418,26 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 		g_free (s);
 	}
 
-	/* No wanted token, bail. */
+
+	/* Wanted name has no token, not strongly named: always matches. */
 	if (0 == wanted_name->public_key_token [0]) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE\n");
 		return TRUE;
 	}
 
+	/* Candidate name has no token, not strongly named: never matches */
 	if (0 == candidate_name->public_key_token [0]) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate has no token, returning FALSE\n");
 		return FALSE;
 	}
 
+	return exact_sn_match (wanted_name, candidate_name) ||
+		framework_assembly_sn_match (wanted_name, candidate_name);
+}
 
+gboolean
+exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
+{
 	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s\n",
@@ -3432,6 +3446,20 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 
 }
 
+gboolean
+framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
+{
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
+	if (vmap) {
+		/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
+		gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+		return result;
+	}
+#endif
+	return FALSE;
+}
 
 MonoAssembly*
 mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
