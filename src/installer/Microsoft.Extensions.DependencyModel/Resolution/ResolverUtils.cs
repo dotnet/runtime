@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 string fullName;
                 if (!TryResolveAssemblyFile(fileSystem, basePath, assembly, out fullName))
                 {
-                    throw new InvalidOperationException($"Can not find assembly file for package {library.Name} at '{fullName}'");
+                    throw new InvalidOperationException($"Cannot find assembly file for package {library.Name} at '{fullName}'");
                 }
                 yield return fullName;
             }
