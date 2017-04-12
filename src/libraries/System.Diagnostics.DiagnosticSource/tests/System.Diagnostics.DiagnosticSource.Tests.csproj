@@ -18,13 +18,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netfx'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="DiagnosticSourceTests.cs" />
-    <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
     <Compile Include="ActivityTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netfx'">
+    <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,18 +10,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [SkipOnTargetFramework(
-        TargetFrameworkMonikers.Net45|
-        TargetFrameworkMonikers.Net451 |
-        TargetFrameworkMonikers.Net452 |
-        TargetFrameworkMonikers.Netcore50 |
-        TargetFrameworkMonikers.Netcore50aot |
-        TargetFrameworkMonikers.Netcoreapp |
-        TargetFrameworkMonikers.Netcoreapp1_0 |
-        TargetFrameworkMonikers.Netcoreapp1_1 |
-        TargetFrameworkMonikers.NetcoreCoreRT |
-        TargetFrameworkMonikers.Uap |
-        TargetFrameworkMonikers.UapAot)]
     public class HttpHandlerDiagnosticListenerTests
     {
         /// <summary>
@@ -51,7 +40,7 @@ namespace System.Diagnostics.Tests
             EventObserverAndRecorder eventRecords = CreateEventRecorder();
 
             // Send a random Http request to generate some events
-            HttpResponseMessage message = new HttpClient().GetAsync("www.bing.com").Result;
+            HttpResponseMessage message = new HttpClient().GetAsync("http://www.bing.com").Result;
 
             // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
             // at least two events, one for request send, and one for response receive
@@ -75,7 +64,7 @@ namespace System.Diagnostics.Tests
             }));
 
             // Send a random Http request to generate some events
-            HttpResponseMessage message = new HttpClient().GetAsync("www.bing.com").Result;
+            HttpResponseMessage message = new HttpClient().GetAsync("http://www.bing.com").Result;
 
             // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
             // at least two events, one for request send, and one for response receive
@@ -99,7 +88,7 @@ namespace System.Diagnostics.Tests
             }));
 
             // Send a random Http request to generate some events
-            HttpResponseMessage message = new HttpClient().GetAsync("www.bing.com").Result;
+            HttpResponseMessage message = new HttpClient().GetAsync("http://www.bing.com").Result;
 
             // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
             // at least two events, one for request send, and one for response receive
@@ -115,7 +104,7 @@ namespace System.Diagnostics.Tests
             EventObserverAndRecorder eventRecords = CreateEventRecorder();
 
             // Send a random Http request to generate some events
-            HttpResponseMessage message = new HttpClient().GetAsync("www.bing.com").Result;
+            HttpResponseMessage message = new HttpClient().GetAsync("http://www.bing.com").Result;
 
             // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
             // at least two events, one for request send, and one for response receive
@@ -129,23 +118,23 @@ namespace System.Diagnostics.Tests
             for (int i = 0; i < eventRecords.Records.Count; i++)
             {
                 var pair = eventRecords.Records[i];
-                dynamic eventFields = pair.Value;
-                WebRequest thisRequest = eventFields.Request;
+                object eventFields = pair.Value;
+                WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventFields, "Request");
 
                 if (i == 0)
                 {
-                    Assert.Equal("System.Net.Http.Request", pair.Key);                    
-                    firstRequest = eventFields.Request;
+                    Assert.Equal("System.Net.Http.Request", pair.Key);
+                    firstRequest = thisRequest;
                 }
                 else if (i == eventRecords.Records.Count - 1)
                 {
                     Assert.Equal("System.Net.Http.Response", pair.Key);
-                    Assert.ReferenceEquals(firstRequest, eventFields.Request);
+                    Assert.Equal(firstRequest, thisRequest);
                 }
                 else
                 {
                     Assert.True(pair.Key == "System.Net.Http.Response" || pair.Key == "System.Net.Http.Request", "An unexpected event of name " + pair.Key + "was received");
-                    Assert.ReferenceEquals(firstRequest, eventFields.Request);
+                    Assert.Equal(firstRequest, thisRequest);
                 }
             }
         }
@@ -160,7 +149,7 @@ namespace System.Diagnostics.Tests
             long beginTimestamp = Stopwatch.GetTimestamp();
 
             // Send a random Http request to generate some events
-            HttpResponseMessage message = new HttpClient().GetAsync("www.bing.com").Result;
+            HttpResponseMessage message = new HttpClient().GetAsync("http://www.bing.com").Result;
 
             // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
             // at least two events, one for request send, and one for response receive
@@ -171,12 +160,12 @@ namespace System.Diagnostics.Tests
             for (int i = 0; i < eventRecords.Records.Count; i++)
             {
                 var pair = eventRecords.Records[i];
-                dynamic eventFields = pair.Value;
+                object eventFields = pair.Value;
 
                 Assert.True(pair.Key == "System.Net.Http.Response" || pair.Key == "System.Net.Http.Request", "An unexpected event of name " + pair.Key + "was received");
 
-                WebRequest request = eventFields.Request;
-                long timestamp = eventFields.Timestamp;
+                WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
+                long timestamp = ReadPublicProperty<long>(eventFields, "Timestamp");
 
                 Assert.Equal(request.GetType().Name, "HttpWebRequest");
 
@@ -186,7 +175,7 @@ namespace System.Diagnostics.Tests
 
                 if (pair.Key == "System.Net.Http.Response")
                 {
-                    object response = eventFields.Response;
+                    object response = ReadPublicProperty<WebResponse>(eventFields, "Response");
                     Assert.Equal(response.GetType().Name, "HttpWebResponse");
                 }
             }
@@ -202,24 +191,24 @@ namespace System.Diagnostics.Tests
             long beginTimestamp = Stopwatch.GetTimestamp();
 
             Dictionary<string, Tuple<WebRequest, WebResponse>> requestData = new Dictionary<string, Tuple<WebRequest, WebResponse>>();
-            requestData.Add("www.microsoft.com", null);
-            requestData.Add("www.bing.com", null);
-            requestData.Add("www.xbox.com", null);
-            requestData.Add("www.office.com", null);
-            requestData.Add("www.microsoftstore.com", null);
-            requestData.Add("www.msn.com", null);
-            requestData.Add("outlook.live.com", null);
-            requestData.Add("build.microsoft.com", null);
-            requestData.Add("azure.microsoft.com", null);
-            requestData.Add("www.nuget.org", null);
-            requestData.Add("support.microsoft.com", null);
-            requestData.Add("www.visualstudio.com", null);
-            requestData.Add("msdn.microsoft.com", null);
-            requestData.Add("onedrive.live.com", null);
-            requestData.Add("community.dynamics.com", null);
-            requestData.Add("login.live.com", null);
-            requestData.Add("www.skype.com", null);
-            requestData.Add("channel9.msdn.com", null);
+            requestData.Add("http://www.microsoft.com", null);
+            requestData.Add("http://www.bing.com", null);
+            requestData.Add("http://www.xbox.com", null);
+            requestData.Add("http://www.office.com", null);
+            requestData.Add("http://www.microsoftstore.com", null);
+            requestData.Add("http://www.msn.com", null);
+            requestData.Add("http://outlook.live.com", null);
+            requestData.Add("http://build.microsoft.com", null);
+            requestData.Add("http://azure.microsoft.com", null);
+            requestData.Add("http://www.nuget.org", null);
+            requestData.Add("http://support.microsoft.com", null);
+            requestData.Add("http://www.visualstudio.com", null);
+            requestData.Add("http://msdn.microsoft.com", null);
+            requestData.Add("http://onedrive.live.com", null);
+            requestData.Add("http://community.dynamics.com", null);
+            requestData.Add("http://login.live.com", null);
+            requestData.Add("http://www.skype.com", null);
+            requestData.Add("http://channel9.msdn.com", null);
 
             // Issue all requests simultaneously
             HttpClient httpClient = new HttpClient();
@@ -241,12 +230,12 @@ namespace System.Diagnostics.Tests
             for (int i = 0; i < eventRecords.Records.Count; i++)
             {
                 var pair = eventRecords.Records[i];
-                dynamic eventFields = pair.Value;
+                object eventFields = pair.Value;                
 
                 Assert.True(pair.Key == "System.Net.Http.Response" || pair.Key == "System.Net.Http.Request", "An unexpected event of name " + pair.Key + "was received");
 
-                WebRequest request = eventFields.Request;
-                long timestamp = eventFields.Timestamp;
+                WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
+                long timestamp = ReadPublicProperty<long>(eventFields, "Timestamp");
 
                 Assert.Equal(request.GetType().Name, "HttpWebRequest");
 
@@ -258,7 +247,7 @@ namespace System.Diagnostics.Tests
                 {
                     // Make sure this is an URL that we recognize. If not, just skip
                     Tuple<WebRequest, WebResponse> tuple = null;
-                    if (!requestData.TryGetValue(request.RequestUri.Host, out tuple))
+                    if (!requestData.TryGetValue(request.RequestUri.OriginalString, out tuple))
                     {
                         continue;
                     }
@@ -268,13 +257,13 @@ namespace System.Diagnostics.Tests
 
                     // We see have seen an HttpWebRequest before for this URL/host, make sure it's the same one,
                     // Then update the tuple with the request object, if we didn't have one
-                    Assert.True(previousSeenRequest == null || previousSeenRequest == request, "Didn't expect to see a different WebRequest object going to the same url host for: " + request.RequestUri.Host);
-                    requestData[request.RequestUri.Host] = new Tuple<WebRequest, WebResponse>(previousSeenRequest ?? request, previousSeenResponse);
+                    Assert.True(previousSeenRequest == null || previousSeenRequest == request, "Didn't expect to see a different WebRequest object going to the same url host for: " + request.RequestUri.OriginalString);
+                    requestData[request.RequestUri.OriginalString] = new Tuple<WebRequest, WebResponse>(previousSeenRequest ?? request, previousSeenResponse);
                 }
                 else
                 {
                     // This must be the response.
-                    WebResponse response = eventFields.Response;
+                    WebResponse response = ReadPublicProperty<WebResponse>(eventFields, "Response");
                     Assert.Equal(response.GetType().Name, "HttpWebResponse");
 
                     // By the time we see the response, the request object may already have been redirected with a different
@@ -293,7 +282,7 @@ namespace System.Diagnostics.Tests
 
                     // Update the tuple with the response object
                     Assert.NotNull(tuple);
-                    requestData[request.RequestUri.Host] = new Tuple<WebRequest, WebResponse>(request, response);
+                    requestData[request.RequestUri.OriginalString] = new Tuple<WebRequest, WebResponse>(request, response);
                 }
             }
 
@@ -304,6 +293,13 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(pair.Value.Item1);
                 Assert.NotNull(pair.Value.Item2);
             }
+        }
+
+        private static T ReadPublicProperty<T>(object obj, string propertyName)
+        {
+            Type type = obj.GetType();
+            PropertyInfo property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            return (T)property.GetValue(obj);
         }
 
         private EventObserverAndRecorder CreateEventRecorder()
@@ -341,11 +337,11 @@ namespace System.Diagnostics.Tests
         /// </summary>
         private class EventObserverAndRecorder : IObserver<KeyValuePair<string, object>>
         {
-            public List<KeyValuePair<string, object>> Records { get; private set; }
+            public List<KeyValuePair<string, object>> Records { get; } = new List<KeyValuePair<string, object>>();
 
             public void OnCompleted() { }
             public void OnError(Exception error) { }
-            public void OnNext(KeyValuePair<string, object> record) { Records.Add(record); }
+            public void OnNext(KeyValuePair<string, object> record) { Records.Add(record);  }
         }
     }
 }

@@ -65,9 +65,9 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                try
+                if (!this.initialized)
                 {
-                    if (!this.initialized)
+                    try
                     {
                         // This flag makes sure we only do this once. Even if we failed to initialize in an
                         // earlier time, we should not retry because this initialization is not cheap and
@@ -77,18 +77,17 @@ namespace System.Diagnostics
                         PrepareReflectionObjects();
                         PerformInjection();
                     }
-                }
-                catch (Exception ex)
-                {
-                    // If anything went wrong, just no-op. Write an event so at least we can find out.
-                    this.Write(InitializationFailed, new { Exception = ex });
+                    catch (Exception ex)
+                    {
+                        // If anything went wrong, just no-op. Write an event so at least we can find out.
+                        this.Write(InitializationFailed, new { Exception = ex });
+                    }
                 }
             }
         }
 
 #region private helper classes
 
-        [Serializable]
         private class HashtableWrapper : Hashtable, IEnumerable
         {
             protected Hashtable _table;
@@ -155,23 +154,6 @@ namespace System.Diagnostics
             internal HashtableWrapper(Hashtable table) : base()
             {
                 this._table = table;
-            }
-            internal HashtableWrapper(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-                this._table = (Hashtable)info.GetValue(ParentTableSerializationField, typeof(Hashtable));
-                if (this._table == null)
-                {
-                    throw new SerializationException("Parent table is missing for deserialization");
-                }
-            }
-            public override void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                if (info == null)
-                {
-                    throw new ArgumentNullException("info");
-                }
-
-                info.AddValue(ParentTableSerializationField, this._table, typeof(Hashtable));
             }
             public override void Add(object key, object value)
             {
@@ -604,7 +586,7 @@ namespace System.Diagnostics
                     {
                         Request = request,
                         Response = response,
-                        TimeStamp = timestamp
+                        Timestamp = timestamp
                     }
                 );
             }
