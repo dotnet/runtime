@@ -5671,7 +5671,11 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX i
     /* Get the function pointer */
 
     GenTreePtr fptr = impPopStack().val;
-    assert(genActualType(fptr->gtType) == TYP_I_IMPL);
+
+    // The function pointer is typically a sized to match the target pointer size
+    // However, stubgen IL optimization can change LDC.I8 to LDC.I4
+    // See ILCodeStream::LowerOpcode
+    assert(genActualType(fptr->gtType) == TYP_I_IMPL || genActualType(fptr->gtType) == TYP_INT);
 
 #ifdef DEBUG
     // This temporary must never be converted to a double in stress mode,
