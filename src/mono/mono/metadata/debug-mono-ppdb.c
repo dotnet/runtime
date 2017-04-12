@@ -434,6 +434,9 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (sfiles)
 		g_ptr_array_add (sfiles, docinfo);
 
+	if (source_file)
+		*source_file = g_strdup (docinfo->source_file);
+
 	iloffset = 0;
 	start_line = 0;
 	start_col = 0;
@@ -491,8 +494,6 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
 	}
 
-	if (source_file)
-		*source_file = g_strdup (((MonoDebugSourceInfo*)g_ptr_array_index (sfiles, 0))->source_file);
 	if (source_files) {
 		*source_files = g_new (int, sps->len);
 		for (i = 0; i < sps->len; ++i)
