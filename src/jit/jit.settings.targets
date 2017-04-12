@@ -120,6 +120,9 @@
         <CppCompile Include="..\TargetArm.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\registerfp.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\DecomposeLongs.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerArmArch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\lsraarmarch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenArmArch.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerArm.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\lsraarm.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenArm.cpp" />
@@ -129,6 +132,9 @@
         <!-- ARM64 target is always RyuJIT backend -->
         <CppCompile Include="..\emitarm64.cpp" />
         <CppCompile Include="..\TargetArm64.cpp" />
+        <CppCompile Include="..\LowerArmArch.cpp" />
+        <CppCompile Include="..\lsraarmarch.cpp" />
+        <CppCompile Include="..\CodeGenArmArch.cpp" />
         <CppCompile Include="..\LowerArm64.cpp" />
         <CppCompile Include="..\lsraarm64.cpp" />
         <CppCompile Include="..\CodeGenArm64.cpp" />
