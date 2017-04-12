@@ -31,14 +31,7 @@ namespace System.DirectoryServices
         public SortOption(string propertyName, SortDirection direction)
         {
             this.PropertyName = propertyName;
-            if (BinaryCompatibility.TargetsAtLeast_Desktop_V4_5_3)
-            {
-                this.Direction = direction;
-            }
-            else
-            {
-                this.Direction = _sortDirection;
-            }
+            this.Direction = direction;
         }
 
         /// <include file='doc\SortOption.uex' path='docs/doc[@for="SortOption.PropertyName"]/*' />
