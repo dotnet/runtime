@@ -132,6 +132,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
+            if (certificate.Handle == IntPtr.Zero)
+                throw new CryptographicException(SR.Cryptography_InvalidHandle, "pCertContext");
+
             _storePal.Add(certificate.Pal);
         }
 
