@@ -68,7 +68,7 @@
       },
       "inputs": {
         "filename": "build-test.cmd",
-        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages $(RuntimeIDArg) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
+        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
