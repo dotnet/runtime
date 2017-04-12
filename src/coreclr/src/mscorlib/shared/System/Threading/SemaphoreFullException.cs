@@ -4,12 +4,10 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
     [Serializable]
-    [ComVisibleAttribute(false)]
     public class SemaphoreFullException : SystemException
     {
         public SemaphoreFullException() : base(SR.Threading_SemaphoreFullException)
@@ -29,4 +27,3 @@ namespace System.Threading
         }
     }
 }
-
