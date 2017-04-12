@@ -17,12 +17,15 @@
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
     <Compile Include="System\DirectoryServices\AdsVLV.cs" />
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />
-    <Compile Include="System\DirectoryServices\BinaryCompatibility.cs" />
     <Compile Include="System\DirectoryServices\DerefAlias.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntries.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryEntry.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryEntry.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\DirectoryServices\DirectoryEntryConfiguration.cs" />
-    <Compile Include="System\DirectoryServices\DirectorySearcher.cs" />
+    <Compile Include="System\DirectoryServices\DirectorySearcher.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\DirectoryServices\DirectorySynchronization.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationFlags.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListView.cs" />
