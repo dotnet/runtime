@@ -822,7 +822,7 @@ namespace System.Net.Http
                 Debug.Assert(offset >= 0);
                 Debug.Assert(count >= 0);
 
-                EnsureCapacity(_buffer.Length + count);
+                EnsureCapacity(_length + count);
                 Buffer.BlockCopy(buffer, offset, _buffer, _length, count);
                 _length += count;
             }
@@ -841,7 +841,7 @@ namespace System.Net.Http
 
             public override void WriteByte(byte value)
             {
-                int newLength = _buffer.Length + 1;
+                int newLength = _length + 1;
                 EnsureCapacity(newLength);
                 _buffer[_length] = value;
                 _length = newLength;
