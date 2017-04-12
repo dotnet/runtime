@@ -216,18 +216,6 @@ FORCEINLINE BOOL HndIsNull(OBJECTHANDLE handle)
 }
 
 
-
-/*
- * inline handle checking
- */
-FORCEINLINE BOOL HndCheckForNullUnchecked(OBJECTHANDLE handle)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (handle == NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
-}
-
-
 /*
  *
  * Checks handle value for null or special value used for free handles in cache.
