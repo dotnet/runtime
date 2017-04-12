@@ -14,25 +14,25 @@ public:
 
     virtual void Shutdown();
 
-    virtual void* GetGlobalHandleTable();
+    virtual void* GetGlobalHandleStore();
 
-    virtual void* GetNewHandleTable(void* context);
+    virtual void* CreateHandleStore(void* context);
 
     virtual void* GetHandleContext(OBJECTHANDLE handle);
 
-    virtual void DestroyHandleTable(void* table);
+    virtual void DestroyHandleStore(void* store);
 
-    virtual void UprootHandleTable(void* table);
+    virtual void UprootHandleStore(void* store);
 
-    virtual bool ContainsHandle(void* table, OBJECTHANDLE handle);
+    virtual bool ContainsHandle(void* store, OBJECTHANDLE handle);
 
-    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type);
+    virtual OBJECTHANDLE CreateHandleOfType(void* store, Object* object, int type);
 
-    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type, int heapToAffinitizeTo);
+    virtual OBJECTHANDLE CreateHandleOfType(void* store, Object* object, int type, int heapToAffinitizeTo);
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo);
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* store, Object* object, int type, void* pExtraInfo);
 
-    virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary);
+    virtual OBJECTHANDLE CreateDependentHandle(void* store, Object* primary, Object* secondary);
 
     virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
 

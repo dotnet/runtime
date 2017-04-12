@@ -1246,39 +1246,39 @@ public:
         WRAPPER_NO_CONTRACT;
 
         IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-        return pHandleTable->CreateHandleOfType(m_gcHandleTable, OBJECTREFToObject(object), type);
+        return pHandleTable->CreateHandleOfType(m_handleStore, OBJECTREFToObject(object), type);
     }
 
     OBJECTHANDLE CreateHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
         CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateHandle(m_gcHandleTable, object);
+        return ::CreateHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateWeakHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateWeakHandle(m_gcHandleTable, object);
+        return ::CreateWeakHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateShortWeakHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateShortWeakHandle(m_gcHandleTable, object);
+        return ::CreateShortWeakHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateLongWeakHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
         CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateLongWeakHandle(m_gcHandleTable, object);
+        return ::CreateLongWeakHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateStrongHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateStrongHandle(m_gcHandleTable, object);
+        return ::CreateStrongHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
@@ -1288,7 +1288,7 @@ public:
         if(IsAppDomain())
             object->TryAssignAppDomain((AppDomain*)this,TRUE);
 #endif
-        return ::CreatePinningHandle(m_gcHandleTable, object);
+        return ::CreatePinningHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateSizedRefHandle(OBJECTREF object)
@@ -1297,11 +1297,11 @@ public:
         OBJECTHANDLE h;
         if (GCHeapUtilities::IsServerHeap())
         {
-            h = ::CreateSizedRefHandle(m_gcHandleTable, object, m_dwSizedRefHandles % m_iNumberOfProcessors);
+            h = ::CreateSizedRefHandle(m_handleStore, object, m_dwSizedRefHandles % m_iNumberOfProcessors);
         }
         else
         {
-            h = ::CreateSizedRefHandle(m_gcHandleTable, object);
+            h = ::CreateSizedRefHandle(m_handleStore, object);
         }
 
         InterlockedIncrement((LONG*)&m_dwSizedRefHandles);
@@ -1312,7 +1312,7 @@ public:
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateRefcountedHandle(m_gcHandleTable, object);
+        return ::CreateRefcountedHandle(m_handleStore, object);
     }
 
     OBJECTHANDLE CreateWinRTWeakHandle(OBJECTREF object, IWeakReference* pWinRTWeakReference)
@@ -1325,14 +1325,14 @@ public:
         }
         CONTRACTL_END;
 
-        return ::CreateWinRTWeakHandle(m_gcHandleTable, object, pWinRTWeakReference);
+        return ::CreateWinRTWeakHandle(m_handleStore, object, pWinRTWeakReference);
     }
 #endif // FEATURE_COMINTEROP
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
     {
         WRAPPER_NO_CONTRACT;
-        return ::CreateVariableHandle(m_gcHandleTable, object, type);
+        return ::CreateVariableHandle(m_handleStore, object, type);
     }
 
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
@@ -1346,7 +1346,7 @@ public:
         CONTRACTL_END;
 
         IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-        return pHandleTable->CreateDependentHandle(m_gcHandleTable, OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+        return pHandleTable->CreateDependentHandle(m_handleStore, OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
     }
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
@@ -1402,7 +1402,7 @@ protected:
 
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
-    void* m_gcHandleTable;
+    void* m_handleStore;
 
     // The large heap handle table.
     LargeHeapHandleTable        *m_pLargeHeapHandleTable;
