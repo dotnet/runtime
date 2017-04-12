@@ -38,9 +38,31 @@ void* GCHandleTable::GetHandleContext(OBJECTHANDLE handle)
     return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);
 }
 
+void GCHandleTable::DestroyHandleTable(void* table)
+{
+    Ref_DestroyHandleTableBucket((HandleTableBucket*) table);
+}
+
+void GCHandleTable::UprootHandleTable(void* table)
+{
+    Ref_RemoveHandleTableBucket((HandleTableBucket*) table);
+}
+
+bool GCHandleTable::ContainsHandle(void* table, OBJECTHANDLE handle)
+{
+    return ((HandleTableBucket*)table)->Contains(handle);
+}
+
 OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* table, Object* object, int type)
 {
-    return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object));
+    HHANDLETABLE handletable = ((HandleTableBucket*)table)->pTable[GetCurrentThreadHomeHeapNumber()];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
+}
+
+OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* table, Object* object, int type, int heapToAffinitizeTo)
+{
+    HHANDLETABLE handletable = ((HandleTableBucket*)table)->pTable[heapToAffinitizeTo];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 
 OBJECTHANDLE GCHandleTable::CreateGlobalHandleOfType(Object* object, int type)
@@ -50,12 +72,14 @@ OBJECTHANDLE GCHandleTable::CreateGlobalHandleOfType(Object* object, int type)
 
 OBJECTHANDLE GCHandleTable::CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo)
 {
-    return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
+    HHANDLETABLE handletable = ((HandleTableBucket*)table)->pTable[GetCurrentThreadHomeHeapNumber()];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
 }
 
 OBJECTHANDLE GCHandleTable::CreateDependentHandle(void* table, Object* primary, Object* secondary)
 {
-    OBJECTHANDLE handle = ::HndCreateHandle((HHANDLETABLE)table, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
+    HHANDLETABLE handletable = ((HandleTableBucket*)table)->pTable[GetCurrentThreadHomeHeapNumber()];
+    OBJECTHANDLE handle = ::HndCreateHandle(handletable, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
     ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
 
     return handle;

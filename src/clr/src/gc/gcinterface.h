@@ -415,7 +415,15 @@ public:
 
     virtual void* GetNewHandleTable(void* context) = 0;
 
+    virtual void DestroyHandleTable(void* table) = 0;
+
+    virtual void UprootHandleTable(void* table) = 0;
+
+    virtual bool ContainsHandle(void* table, OBJECTHANDLE handle) = 0;
+
     virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type, int heapToAffinitizeTo) = 0;
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo) = 0;
 

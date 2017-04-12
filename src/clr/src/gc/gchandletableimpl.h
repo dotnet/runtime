@@ -20,7 +20,15 @@ public:
 
     virtual void* GetHandleContext(OBJECTHANDLE handle);
 
+    virtual void DestroyHandleTable(void* table);
+
+    virtual void UprootHandleTable(void* table);
+
+    virtual bool ContainsHandle(void* table, OBJECTHANDLE handle);
+
     virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type);
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type, int heapToAffinitizeTo);
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo);
 
