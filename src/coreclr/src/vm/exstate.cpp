@@ -102,7 +102,7 @@ void ThreadExceptionState::FreeAllStackTraces()
     }
 }
 
-void ThreadExceptionState::ClearThrowablesForUnload(void* handleStore)
+void ThreadExceptionState::ClearThrowablesForUnload(IGCHandleStore* handleStore)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -112,13 +112,11 @@ void ThreadExceptionState::ClearThrowablesForUnload(void* handleStore)
     ExInfo*           pNode = &m_currentExInfo;
 #endif // WIN64EXCEPTIONS
 
-    IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-
     for ( ;
           pNode != NULL;
           pNode = pNode->m_pPrevNestedInfo)
     {
-        if (pHandleTable->ContainsHandle(handleStore, pNode->m_hThrowable))
+        if (handleStore->ContainsHandle(pNode->m_hThrowable))
         {
             pNode->DestroyExceptionHandle();
         }
