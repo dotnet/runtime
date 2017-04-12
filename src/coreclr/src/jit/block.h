@@ -1063,7 +1063,6 @@ struct BasicBlock : private LIR::Range
 
     GenTreeStmt* firstStmt() const;
     GenTreeStmt* lastStmt() const;
-    GenTreeStmt* lastTopLevelStmt();
 
     GenTree* firstNode();
     GenTree* lastNode();
