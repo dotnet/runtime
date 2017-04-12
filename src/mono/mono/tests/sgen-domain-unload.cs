@@ -45,8 +45,9 @@ class Driver {
 	}
 
 	static void CrossDomainTest (string name, CrossAppDomainDelegate dele) {
+		TestTimeout timeout = TestTimeout.Start (TimeSpan.FromSeconds(TestTimeout.IsStressTest ? 60 : 5));
 		Console.WriteLine ("----Testing {0}----", name);
-		for (int i = 0; i < 20; ++i) {
+		for (int i = 0; timeout.HaveTimeLeft; ++i) {
 			var ad = AppDomain.CreateDomain (string.Format ("domain-{0}-{1}", name, i));
 			ad.DoCallBack (dele);
 			AppDomain.Unload (ad);
