@@ -4067,11 +4067,6 @@ AppDomain::AppDomain()
     m_dwThreadEnterCount = 0;
     m_dwThreadsStillInAppDomain = (ULONG)-1;
 
-    m_pSecDesc = NULL;
-    m_hHandleTableBucket=NULL;
-
-    m_ExposedObject = NULL;
-
 #ifdef FEATURE_COMINTEROP
     m_pRefDispIDCache = NULL;
     m_hndMissing = NULL;
@@ -4091,7 +4086,7 @@ AppDomain::AppDomain()
     m_dwRefTakers=0;
     m_dwCreationHolders=0;
 #endif
-    
+
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     m_ullTotalProcessorUsage = 0;
     m_pullAllocBytes = NULL;
