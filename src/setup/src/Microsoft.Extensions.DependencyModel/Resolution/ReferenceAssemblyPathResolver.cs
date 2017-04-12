@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 string fullName;
                 if (!TryResolveReferenceAssembly(assembly, out fullName))
                 {
-                    throw new InvalidOperationException($"Can not find reference assembly '{assembly}' file for package {library.Name}");
+                    throw new InvalidOperationException($"Cannot find reference assembly '{assembly}' file for package {library.Name}");
                 }
                 assemblies.Add(fullName);
             }
