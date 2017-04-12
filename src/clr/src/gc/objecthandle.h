@@ -111,7 +111,6 @@ BOOL Ref_HandleAsyncPinHandles();
 void Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget);
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket);
 void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket);
-BOOL Ref_ContainHandle(HandleTableBucket *pBucket, OBJECTHANDLE handle);
 
 /*
  * GC-time scanning entrypoints

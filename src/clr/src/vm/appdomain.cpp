@@ -993,17 +993,6 @@ void BaseDomain::InitVSD()
 }
 
 #ifndef CROSSGEN_COMPILE
-BOOL BaseDomain::ContainsOBJECTHANDLE(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return Ref_ContainHandle(m_hHandleTableBucket,handle);
-}
 
 DWORD BaseDomain::AllocateContextStaticsOffset(DWORD* pOffsetSlot)
 {
