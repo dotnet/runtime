@@ -14,6 +14,39 @@ namespace System.Threading.ThreadPools.Tests
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
         private const int MaxPossibleThreadCount = 0x7fff;
 
+        static ThreadPoolTests()
+        {
+            // Run the following tests before any others
+            ConcurrentInitializeTest();
+        }
+
+        [Fact]
+        public static void ConcurrentInitializeTest()
+        {
+            int processorCount = Environment.ProcessorCount;
+            var countdownEvent = new CountdownEvent(processorCount);
+            Action threadMain =
+                () =>
+                {
+                    countdownEvent.Signal();
+                    countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                    Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                };
+
+            var waitForThreadArray = new Action[processorCount];
+            for (int i = 0; i < processorCount; ++i)
+            {
+                var t = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i], threadMain);
+                t.IsBackground = true;
+                t.Start();
+            }
+
+            foreach (Action waitForThread in waitForThreadArray)
+            {
+                waitForThread();
+            }
+        }
+
         [Fact]
         public static void GetMinMaxThreadsTest()
         {
