@@ -155,10 +155,14 @@ if [ "$build_arch" == "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-if [ "$build_arch" == "arm" -o "$build_arch" == "armel" ]; then
-    overridefile=clang-compiler-override-arm.txt  
+clang_version=$(echo $CC | awk -F- '{ print $NF }')
+# Use O1 option when the clang version is smaller than 3.9
+# Otherwise use O3 option in release build
+if [[ ( ${clang_version%.*} -eq 3  &&  ${clang_version#*.} -lt 9 ) &&
+      (  "$build_arch" == "arm" || "$build_arch" == "armel" ) ]]; then
+    overridefile=clang-compiler-override-arm.txt
 else
-    overridefile=clang-compiler-override.txt  
+    overridefile=clang-compiler-override.txt
 fi
 
 cmake \
