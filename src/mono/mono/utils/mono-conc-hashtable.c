@@ -245,6 +245,7 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 				kvs [i].value = NULL;
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
+				--hash_table->element_count;
 
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (key);
@@ -355,6 +356,31 @@ mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, g
 	for (i = 0; i < table->table_size; ++i) {
 		if (kvs [i].key && kvs [i].key != TOMBSTONE) {
 			func (kvs [i].key, kvs [i].value, userdata);
+		}
+	}
+}
+
+/**
+ * mono_conc_hashtable_foreach_steal:
+ *
+ * Calls @func for each entry in the hashtable, if @func returns true, remove from the hashtable. Requires external locking.
+ * Same semantics as g_hash_table_foreach_steal.
+ */
+void
+mono_conc_hashtable_foreach_steal (MonoConcurrentHashTable *hash_table, GHRFunc func, gpointer userdata)
+{
+	int i;
+	conc_table *table = (conc_table*)hash_table->table;
+	key_value_pair *kvs = table->kvs;
+
+	for (i = 0; i < table->table_size; ++i) {
+		if (kvs [i].key && kvs [i].key != TOMBSTONE) {
+			if (func (kvs [i].key, kvs [i].value, userdata)) {
+				kvs [i].value = NULL;
+				mono_memory_barrier ();
+				kvs [i].key = TOMBSTONE;
+				--hash_table->element_count;
+			}
 		}
 	}
 }

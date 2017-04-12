@@ -25,6 +25,6 @@ MONO_API gpointer mono_conc_hashtable_lookup (MonoConcurrentHashTable *hash_tabl
 MONO_API gpointer mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, gpointer value);
 MONO_API gpointer mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key);
 MONO_API void mono_conc_hashtable_foreach (MonoConcurrentHashTable *hashtable, GHFunc func, gpointer userdata);
-
+MONO_API void mono_conc_hashtable_foreach_steal (MonoConcurrentHashTable *hashtable, GHRFunc func, gpointer userdata);
 
 #endif
