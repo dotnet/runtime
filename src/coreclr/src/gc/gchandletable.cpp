@@ -23,6 +23,16 @@ void GCHandleTable::Shutdown()
     Ref_Shutdown();
 }
 
+void* GCHandleTable::GetGlobalHandleTable()
+{
+    return (void*)g_HandleTableMap.pBuckets[0];
+}
+
+void* GCHandleTable::GetNewHandleTable(void* context)
+{
+    return (void*)::Ref_CreateHandleTableBucket(ADIndex((uintptr_t)context));
+}
+
 void* GCHandleTable::GetHandleContext(OBJECTHANDLE handle)
 {
     return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);

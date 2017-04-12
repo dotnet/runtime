@@ -14,6 +14,10 @@ public:
 
     virtual void Shutdown();
 
+    virtual void* GetGlobalHandleTable();
+
+    virtual void* GetNewHandleTable(void* context);
+
     virtual void* GetHandleContext(OBJECTHANDLE handle);
 
     virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type);
