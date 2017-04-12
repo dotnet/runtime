@@ -7630,7 +7630,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
     return tree;
 }
 
-#if !defined(_TARGET_X86_)
+#if FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *
@@ -8005,7 +8005,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 #endif
 }
 
-#endif // !_TARGET_X86_
+#endif // FEATURE_EH_FUNCLETS
 
 //------------------------------------------------------------------------
 // fgAddReversePInvokeEnterExit: Add enter/exit calls for reverse PInvoke methods
@@ -8266,7 +8266,7 @@ void Compiler::fgAddInternal()
         }
     }
 
-#if !defined(_TARGET_X86_)
+#if FEATURE_EH_FUNCLETS
     // Add the synchronized method enter/exit calls and try/finally protection. Note
     // that this must happen before the one BBJ_RETURN block is created below, so the
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
@@ -8276,7 +8276,7 @@ void Compiler::fgAddInternal()
     {
         fgAddSyncMethodEnterExit();
     }
-#endif // !_TARGET_X86_
+#endif // FEATURE_EH_FUNCLETS
 
     if (oneReturn)
     {
@@ -8495,7 +8495,7 @@ void Compiler::fgAddInternal()
 #endif
     }
 
-#if defined(_TARGET_X86_)
+#if !FEATURE_EH_FUNCLETS
 
     /* Is this a 'synchronized' method? */
 
@@ -8571,7 +8571,7 @@ void Compiler::fgAddInternal()
         syncEndEmitCookie   = NULL;
     }
 
-#endif // _TARGET_X86_
+#endif // !FEATURE_EH_FUNCLETS
 
     /* Do we need to do runtime call out to check the security? */
 

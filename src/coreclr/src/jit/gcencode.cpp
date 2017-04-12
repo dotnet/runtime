@@ -1318,6 +1318,8 @@ size_t GCInfo::gcInfoBlockHdrSave(
 
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
+#ifndef UNIX_X86_ABI
+    // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
     if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
         assert(compiler->syncStartEmitCookie != NULL);
@@ -1332,6 +1334,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         // synchronized methods can't have more than 1 epilog
         assert(header->epilogCount <= 1);
     }
+#endif
 
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
 
