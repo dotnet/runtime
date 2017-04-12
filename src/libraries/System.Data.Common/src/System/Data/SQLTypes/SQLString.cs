@@ -305,7 +305,7 @@ namespace System.Data.SqlTypes
         /// </summary>
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : _value;
+            return IsNull ? SQLResource.NullString : _value;
         }
 
         public byte[] GetUnicodeBytes()
@@ -346,7 +346,7 @@ namespace System.Data.SqlTypes
                 return SqlString.Null;
 
             if (x._lcid != y._lcid || x._flag != y._flag)
-                throw new SqlTypeException(SQLResource.s_concatDiffCollationMessage);
+                throw new SqlTypeException(SQLResource.ConcatDiffCollationMessage);
 
             return new SqlString(x._lcid, x._flag, x._value + y._value,
                     (x._cmpInfo == null) ? y._cmpInfo : x._cmpInfo);
@@ -362,7 +362,7 @@ namespace System.Data.SqlTypes
                            "!x.IsNull && !y.IsNull", "Null condition should be handled by the caller of StringCompare method");
 
             if (x._lcid != y._lcid || x._flag != y._flag)
-                throw new SqlTypeException(SQLResource.s_compareDiffCollationMessage);
+                throw new SqlTypeException(SQLResource.CompareDiffCollationMessage);
 
             x.SetCompareInfo();
             y.SetCompareInfo();

@@ -63,7 +63,7 @@ namespace System.Data.SqlTypes
     public sealed class SqlNullValueException : SqlTypeException
     {
         // Creates a new SqlNullValueException with its message string set to the common string.
-        public SqlNullValueException() : this(SQLResource.s_nullValueMessage, null)
+        public SqlNullValueException() : this(SQLResource.NullValueMessage, null)
         {
         }
 
@@ -99,7 +99,7 @@ namespace System.Data.SqlTypes
     public sealed class SqlTruncateException : SqlTypeException
     {
         // Creates a new SqlTruncateException with its message string set to the empty string.
-        public SqlTruncateException() : this(SQLResource.s_truncationMessage, null)
+        public SqlTruncateException() : this(SQLResource.TruncationMessage, null)
         {
         }
 
@@ -135,7 +135,7 @@ namespace System.Data.SqlTypes
     public sealed class SqlNotFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.
-        public SqlNotFilledException() : this(SQLResource.s_notFilledMessage, null)
+        public SqlNotFilledException() : this(SQLResource.NotFilledMessage, null)
         {
         }
 
@@ -160,7 +160,7 @@ namespace System.Data.SqlTypes
     public sealed class SqlAlreadyFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.
-        public SqlAlreadyFilledException() : this(SQLResource.s_alreadyFilledMessage, null)
+        public SqlAlreadyFilledException() : this(SQLResource.AlreadyFilledMessage, null)
         {
         }
 

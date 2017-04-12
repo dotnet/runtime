@@ -191,7 +191,7 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : Value.ToString();
+            return IsNull ? SQLResource.NullString : Value.ToString();
         }
 
         public static SqlBoolean Parse(string s)
@@ -199,7 +199,7 @@ namespace System.Data.SqlTypes
             if (null == s)
                 // Let Boolean.Parse throw exception
                 return new SqlBoolean(bool.Parse(s));
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlBoolean.Null;
 
             s = s.TrimStart();

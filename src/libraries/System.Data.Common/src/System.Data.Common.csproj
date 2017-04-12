@@ -253,7 +253,9 @@
     <Compile Include="System\Data\SQLTypes\SQLInt32.cs" />
     <Compile Include="System\Data\SQLTypes\SQLInt64.cs" />
     <Compile Include="System\Data\SQLTypes\SQLMoney.cs" />
-    <Compile Include="System\Data\SQLTypes\SQLResource.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\SQLResource.cs">
+      <Link>System\Data\SQLTypes\SQLResource.cs</Link>
+    </Compile>
     <Compile Include="System\Data\SQLTypes\SQLSingle.cs" />
     <Compile Include="System\Data\SQLTypes\SQLString.cs" />
     <Compile Include="System\Data\SQLTypes\SQLUtility.cs" />
