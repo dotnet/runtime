@@ -409,7 +409,7 @@ public:
 
     virtual void Shutdown() = 0;
 
-    virtual void* GetHandleTableContext(void* handleTable) = 0;
+    virtual void* GetHandleContext(OBJECTHANDLE handle) = 0;
 
     virtual void* GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
 

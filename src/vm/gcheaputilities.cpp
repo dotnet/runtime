@@ -48,8 +48,7 @@ void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
 
     IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
 
-    void* handleTable = pHandleTable->GetHandleTableForHandle(handle);
-    DWORD context = (DWORD)pHandleTable->GetHandleTableContext(handleTable);
+    DWORD context = (DWORD)pHandleTable->GetHandleContext(handle);
 
     ADIndex appDomainIndex = ADIndex(context);
     AppDomain *domain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
