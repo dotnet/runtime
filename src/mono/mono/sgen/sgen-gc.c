@@ -1346,6 +1346,16 @@ scan_copy_context_for_scan_job (void *worker_data_untyped, ScanJob *job)
 {
 	WorkerData *worker_data = (WorkerData *)worker_data_untyped;
 
+	if (!job->ops) {
+		/*
+		 * For jobs enqueued on workers we set the ops at job runtime in order
+		 * to be able to profit from on the fly optimized object ops or other
+		 * object ops changes, like forced concurrent finish.
+		 */
+		SGEN_ASSERT (0, sgen_workers_is_worker_thread (mono_native_thread_id_get ()), "We need a context for the scan job");
+		job->ops = sgen_workers_get_idle_func_object_ops ();
+	}
+
 	return CONTEXT_FROM_OBJECT_OPERATIONS (job->ops, sgen_workers_get_job_gray_queue (worker_data, job->gc_thread_gray_queue));
 }
 
@@ -1494,7 +1504,6 @@ workers_finish_callback (void)
 	/* Mod union preclean jobs */
 	for (i = 0; i < split_count; i++) {
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("preclean major mod union cardtable", job_major_mod_union_preclean, sizeof (ParallelScanJob));
-		psj->scan_job.ops = sgen_workers_get_idle_func_object_ops ();
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
@@ -1502,14 +1511,12 @@ workers_finish_callback (void)
 
 	for (i = 0; i < split_count; i++) {
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("preclean los mod union cardtable", job_los_mod_union_preclean, sizeof (ParallelScanJob));
-		psj->scan_job.ops = sgen_workers_get_idle_func_object_ops ();
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
 	}
 
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan last pinned", job_scan_last_pinned, sizeof (ScanJob));
-	sj->ops = sgen_workers_get_idle_func_object_ops ();
 	sj->gc_thread_gray_queue = NULL;
 	sgen_workers_enqueue_job (&sj->job, TRUE);
 }
@@ -1703,7 +1710,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	remset.start_scan_remsets ();
 
-	enqueue_scan_remembered_set_jobs (&gc_thread_gray_queue, is_parallel ? object_ops_par : object_ops_nopar, is_parallel);
+	enqueue_scan_remembered_set_jobs (&gc_thread_gray_queue, is_parallel ? NULL : object_ops_nopar, is_parallel);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -1718,7 +1725,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
-	enqueue_scan_from_roots_jobs (&gc_thread_gray_queue, nursery_section->data, nursery_section->end_data, is_parallel ? object_ops_par : object_ops_nopar, is_parallel);
+	enqueue_scan_from_roots_jobs (&gc_thread_gray_queue, nursery_section->data, nursery_section->end_data, is_parallel ? NULL : object_ops_nopar, is_parallel);
 
 	if (is_parallel) {
 		gray_queue_redirect (&gc_thread_gray_queue);
@@ -2001,13 +2008,13 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			ParallelScanJob *psj;
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ParallelScanJob));
-			psj->scan_job.ops = object_ops_par ? object_ops_par : object_ops_nopar;
+			psj->scan_job.ops = parallel ? NULL : object_ops_nopar;
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			sgen_workers_enqueue_job (&psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));
-			psj->scan_job.ops = object_ops_par ? object_ops_par : object_ops_nopar;
+			psj->scan_job.ops = parallel ? NULL : object_ops_nopar;
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			sgen_workers_enqueue_job (&psj->scan_job.job, parallel);

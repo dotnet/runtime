@@ -536,7 +536,8 @@ sgen_workers_take_from_queue (SgenGrayQueue *queue)
 SgenObjectOperations*
 sgen_workers_get_idle_func_object_ops (void)
 {
-	return (idle_func_object_ops_par) ? idle_func_object_ops_par : idle_func_object_ops_nopar;
+	g_assert (idle_func_object_ops);
+	return idle_func_object_ops;
 }
 
 /*
