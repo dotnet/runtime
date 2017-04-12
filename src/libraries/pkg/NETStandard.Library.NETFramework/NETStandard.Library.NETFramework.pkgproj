@@ -19,9 +19,12 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <TargetsFile Include="targets\NETStandard.Library.NETFramework.targets">
+    <StampFile Include="targets\NETStandard.Library.NETFramework.props">
       <TargetPath>build/$(TargetFramework)</TargetPath>
-    </TargetsFile>
+    </StampFile>
+    <File Include="targets\NETStandard.Library.NETFramework.targets">
+      <TargetPath>build/$(TargetFramework)</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$(SourceDir)\shims\netfxreference.props" />
@@ -55,20 +58,20 @@
 
   <Target Name="StampPackageVersion" BeforeTargets="GetFiles" DependsOnTargets="CalculatePackageVersion">
     <ItemGroup>
-      <TargetsFile>
-        <StampedFile>$(IntermediateOutputPath)%(TargetsFile.RelativeDir)%(TargetsFile.FileName)%(TargetsFile.Extension)</StampedFile>
-      </TargetsFile>
+      <StampFile>
+        <StampedFile>$(IntermediateOutputPath)%(StampFile.RelativeDir)%(StampFile.FileName)%(StampFile.Extension)</StampedFile>
+      </StampFile>
     </ItemGroup>
   
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(TargetsFile.StampedFile)'))" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(StampFile.StampedFile)'))" />
     <!-- Update targets templates -->
     <WriteLinesToFile
-      File="%(TargetsFile.StampedFile)"
-      Lines="$([System.IO.File]::ReadAllText('%(TargetsFile.FullPath)').Replace('{PACKAGE_VERSION}', $(PackageVersion)))"
+      File="%(StampFile.StampedFile)"
+      Lines="$([System.IO.File]::ReadAllText('%(StampFile.FullPath)').Replace('{PACKAGE_VERSION}', $(PackageVersion)))"
       Overwrite="true"/>
 
     <ItemGroup>
-      <File Include="@(TargetsFile->'%(StampedFile)')" />
+      <File Include="@(StampFile->'%(StampedFile)')" />
     </ItemGroup>
   </Target>
   

@@ -1,9 +1,5 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <NETStandardLibraryNETFrameworkPackageVersion>{PACKAGE_VERSION}</NETStandardLibraryNETFrameworkPackageVersion>
-  </PropertyGroup>
-
-  <ItemGroup>
+  <ItemGroup Condition="'$(ImplicitlyExpandNETStandardFacades)' == 'true'">
     <Reference Include="$(MSBuildThisFileDirectory)\ref\*.dll">
       <!-- Private = false to make these reference only -->
       <Private>false</Private>
