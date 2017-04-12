@@ -1983,7 +1983,7 @@ namespace System.Linq.Expressions.Tests
                   IL_0006: dup
                   IL_0007: ldc.i4.0
                   IL_0008: ldarg.2
-                  IL_0009: newobj     instance void class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
+                  IL_0009: newobj     instance void class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
                   IL_000e: stelem.ref
                   IL_000f: stloc.0
 

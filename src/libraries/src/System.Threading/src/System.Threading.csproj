@@ -8,9 +8,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <!-- type LockRecursionPolicy conflicts with Corelib -->
-    <NoWarn>0436</NoWarn>
-    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <!-- Remove this define after enabling CdsSyncEtwBCLProvider (https://github.com/dotnet/corefx/issues/16881) -->
     <DefineConstants>$(DefineConstants);uapaot</DefineConstants>
   </PropertyGroup>
@@ -27,7 +24,6 @@
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\HostExecutionContext.cs" />
     <Compile Include="System\Threading\HostExecutionContextManager.cs" />
     <Compile Include="System\Threading\LockCookie.cs" />

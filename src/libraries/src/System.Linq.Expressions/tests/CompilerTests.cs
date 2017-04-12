@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Tests
                     IL_0006: dup
                     IL_0007: ldc.i4.0
                     IL_0008: ldarg.1
-                    IL_0009: newobj     instance void class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
+                    IL_0009: newobj     instance void class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
                     IL_000e: stelem.ref
                     IL_000f: stloc.0
                     IL_0010: ldarg.0
@@ -324,8 +324,8 @@ namespace System.Linq.Expressions.Tests
                     IL_0007: ldloc.0
                     IL_0008: ldc.i4.0
                     IL_0009: ldelem.ref
-                    IL_000a: castclass  class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>
-                    IL_000f: ldfld      class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::Value
+                    IL_000a: castclass  class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>
+                    IL_000f: ldfld      class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>::Value
                     IL_0014: ret
                   }",
                 appendInnerLambdas: true);
@@ -350,7 +350,7 @@ namespace System.Linq.Expressions.Tests
                     IL_0006: dup
                     IL_0007: ldc.i4.0
                     IL_0008: ldarg.1
-                    IL_0009: newobj     instance void class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
+                    IL_0009: newobj     instance void class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
                     IL_000e: stelem.ref
                     IL_000f: stloc.0
                     IL_0010: ldarg.0
@@ -382,8 +382,8 @@ namespace System.Linq.Expressions.Tests
                     IL_0007: ldloc.0
                     IL_0008: ldc.i4.0
                     IL_0009: ldelem.ref
-                    IL_000a: castclass  class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>
-                    IL_000f: ldfld      class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::Value
+                    IL_000a: castclass  class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>
+                    IL_000f: ldfld      class [System.Private.CoreLib]System.Runtime.CompilerServices.StrongBox`1<int32>::Value
                     IL_0014: ldarg.1
                     IL_0015: add
                     IL_0016: ret
