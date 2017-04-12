@@ -28,11 +28,6 @@ void* GCHandleTable::GetHandleContext(OBJECTHANDLE handle)
     return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);
 }
 
-void* GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
-{
-    return (void*)::HndGetHandleTable(handle);
-}
-
 OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* table, Object* object, int type)
 {
     return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object));
@@ -54,6 +49,11 @@ OBJECTHANDLE GCHandleTable::CreateDependentHandle(void* table, Object* primary, 
     ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
 
     return handle;
+}
+
+OBJECTHANDLE GCHandleTable::CreateDuplicateHandle(OBJECTHANDLE handle)
+{
+    return ::HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, ObjectFromHandle(handle));
 }
 
 void GCHandleTable::DestroyHandleOfType(OBJECTHANDLE handle, int type)

@@ -16,8 +16,6 @@ public:
 
     virtual void* GetHandleContext(OBJECTHANDLE handle);
 
-    virtual void* GetHandleTableForHandle(OBJECTHANDLE handle);
-
     virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type);
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo);
@@ -25,6 +23,8 @@ public:
     virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary);
 
     virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
+
+    virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle);
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type);
 
