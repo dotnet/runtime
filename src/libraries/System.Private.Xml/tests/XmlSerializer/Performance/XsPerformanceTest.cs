@@ -27,6 +27,7 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
+        [ActiveIssue(18249)]
         public void XsSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
             PerformanceTestCommon.RunSerializationPerformanceTest(numberOfRuns, testType, testSize, XsSerializerFactory.GetInstance());
@@ -34,6 +35,7 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
+        [ActiveIssue(18249)]
         public void XsDeSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
             PerformanceTestCommon.RunDeserializationPerformanceTest(numberOfRuns, testType, testSize, XsSerializerFactory.GetInstance());
