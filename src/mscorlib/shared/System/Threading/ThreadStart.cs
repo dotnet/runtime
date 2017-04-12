@@ -2,24 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
 /*=============================================================================
 **
 **
 **
-** Purpose: An example of a WaitHandle class
+** Purpose: This class is a Delegate which defines the start method
+**  for starting a thread.  That method must match this delegate.
 **
 **
 =============================================================================*/
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace System.Threading
 {
-    public sealed class AutoResetEvent : EventWaitHandle
-    {
-        public AutoResetEvent(bool initialState) : base(initialState, EventResetMode.AutoReset) { }
-    }
+    public delegate void ThreadStart();
 }
-

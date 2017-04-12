@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
 /*=============================================================================
 **
 **
@@ -13,7 +12,6 @@
 **
 =============================================================================*/
 
-using System;
 using System.Runtime.Serialization;
 
 namespace System.Threading
@@ -39,7 +37,8 @@ namespace System.Threading
             HResult = __HResults.COR_E_THREADSTATE;
         }
 
-        protected ThreadStateException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected ThreadStateException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

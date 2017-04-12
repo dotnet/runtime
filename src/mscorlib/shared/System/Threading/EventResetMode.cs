@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
 /*=============================================================================
 **
+** Enum: EventResetMode
 **
 **
-** Purpose: This class is a Delegate which defines the start method
-**  for starting a thread.  That method must match this delegate.
+** Purpose: Enum to determine the Event type to create
 **
 **
 =============================================================================*/
 
-
-using System.Threading;
-using System.Runtime.InteropServices;
-
 namespace System.Threading
 {
-    [ComVisibleAttribute(false)]
-    public delegate void ParameterizedThreadStart(object obj);
+    public enum EventResetMode
+    {
+        AutoReset = 0,
+        ManualReset = 1
+    }
 }

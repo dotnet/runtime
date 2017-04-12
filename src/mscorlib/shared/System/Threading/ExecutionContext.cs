@@ -1,29 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 /*============================================================
 **
 **
 **
 ** Purpose: Capture execution  context for a thread
 **
-** 
+**
 ===========================================================*/
 
-using System;
-using System.Security;
-using System.Runtime.Remoting;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
+
+using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Threading
 {
@@ -147,7 +140,6 @@ namespace System.Threading
             return executionContext != null && executionContext.m_isFlowSuppressed;
         }
 
-        [HandleProcessCorruptedStateExceptions]
         public static void Run(ExecutionContext executionContext, ContextCallback callback, Object state)
         {
             if (executionContext == null)
@@ -165,7 +157,7 @@ namespace System.Threading
             {
                 // Note: we have a "catch" rather than a "finally" because we want
                 // to stop the first pass of EH here.  That way we can restore the previous
-                // context before any of our callers' EH filters run.  That means we need to 
+                // context before any of our callers' EH filters run.  That means we need to
                 // end the scope separately in the non-exceptional case below.
                 ecsw.Undo(currentThread);
                 throw;
@@ -190,7 +182,7 @@ namespace System.Threading
             }
         }
 
-        static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
+        internal static void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
             Debug.Assert(currentThread == Thread.CurrentThread);
 
@@ -198,7 +190,6 @@ namespace System.Threading
             ecsw.m_sc = currentThread.SynchronizationContext;
         }
 
-        [HandleProcessCorruptedStateExceptions]
         private static void OnContextChanged(ExecutionContext previous, ExecutionContext current)
         {
             Debug.Assert(previous != null);
@@ -377,5 +368,3 @@ namespace System.Threading
         }
     }
 }
-
-
