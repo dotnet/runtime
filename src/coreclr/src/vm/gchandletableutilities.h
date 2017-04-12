@@ -64,54 +64,54 @@ inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
 
 // Handle creation convenience functions
 
-inline OBJECTHANDLE CreateHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_DEFAULT);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_DEFAULT);
 }
 
-inline OBJECTHANDLE CreateWeakHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_DEFAULT);
 }
 
-inline OBJECTHANDLE CreateShortWeakHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateShortWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_SHORT);
 }
 
-inline OBJECTHANDLE CreateLongWeakHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateLongWeakHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_WEAK_LONG);
 }
 
-inline OBJECTHANDLE CreateStrongHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateStrongHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_STRONG);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_STRONG);
 }
 
-inline OBJECTHANDLE CreatePinningHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreatePinningHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_PINNED);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_PINNED);
 }
 
-inline OBJECTHANDLE CreateAsyncPinningHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateAsyncPinningHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_ASYNCPINNED);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_ASYNCPINNED);
 }
 
-inline OBJECTHANDLE CreateRefcountedHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateRefcountedHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_REFCOUNTED);
 }
 
-inline OBJECTHANDLE CreateSizedRefHandle(void* table, OBJECTREF object)
+inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_SIZEDREF);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF);
 }
 
-inline OBJECTHANDLE CreateSizedRefHandle(void* table, OBJECTREF object, int heapToAffinitizeTo)
+inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object, int heapToAffinitizeTo)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleOfType(table, OBJECTREFToObject(object), HNDTYPE_SIZEDREF, heapToAffinitizeTo);
+    return store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF, heapToAffinitizeTo);
 }
 
 // Global handle creation convenience functions
@@ -157,22 +157,16 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 // Special handle creation convenience functions
 
 #ifdef FEATURE_COMINTEROP
-inline OBJECTHANDLE CreateWinRTWeakHandle(void* table, OBJECTREF object, IWeakReference* pWinRTWeakReference)
+inline OBJECTHANDLE CreateWinRTWeakHandle(IGCHandleStore* store, OBJECTREF object, IWeakReference* pWinRTWeakReference)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table,
-                                                                                 OBJECTREFToObject(object),
-                                                                                 HNDTYPE_WEAK_WINRT,
-                                                                                 (void*)pWinRTWeakReference);
+    return store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_WEAK_WINRT, (void*)pWinRTWeakReference);
 }
 #endif // FEATURE_COMINTEROP
 
 // Creates a variable-strength handle
-inline OBJECTHANDLE CreateVariableHandle(void* table, OBJECTREF object, uint32_t type)
+inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->CreateHandleWithExtraInfo(table,
-                                                                                 OBJECTREFToObject(object),
-                                                                                 HNDTYPE_VARIABLE,
-                                                                                 (void*)((uintptr_t)type));
+    return store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
 }
 
 // Handle destruction convenience functions
