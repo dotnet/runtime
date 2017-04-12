@@ -191,11 +191,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 throw new Exception($"Unable to find host packages directory, please ensure the build has been run: {repoDirectoriesProvider.CorehostPackages}");
             }
-
-            if (!Directory.Exists(repoDirectoriesProvider.CorehostDummyPackages))
-            {
-                throw new Exception($"Unable to find host dummy packages directory, please ensure the build has been run: {repoDirectoriesProvider.CorehostDummyPackages}");
-            }
         }
 
         public TestProjectFixture BuildProject(
