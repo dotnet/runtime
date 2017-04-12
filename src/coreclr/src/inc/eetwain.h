@@ -652,7 +652,10 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #ifdef WIN64EXCEPTIONS
     static void EnsureCallerContextIsValid( PREGDISPLAY pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo = NULL );
     static size_t GetCallerSp( PREGDISPLAY  pRD );
-#endif
+#ifdef _TARGET_X86_
+    static size_t GetResumeSp( PCONTEXT  pContext );
+#endif // _TARGET_X86_
+#endif // WIN64EXCEPTIONS
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
