@@ -7,10 +7,8 @@
 
   <PropertyGroup>
     <DiscoveryDirectory>$(TestWorkingDir)</DiscoveryDirectory>
-    <CoreRootDir Condition="'$(RuntimeID)' == '' ">$(CORE_ROOT)</CoreRootDir>
-    <CoreRootDir Condition="'$(RuntimeID)' != '' ">$(CORE_OVERLAY)</CoreRootDir>
-    <CoreRootName Condition="'$(RuntimeID)' == '' ">Core_Root_Windows_NT-$(__BuildArch)</CoreRootName>
-    <CoreRootName Condition="'$(RuntimeID)' != '' ">Core_Root_$(RuntimeID)</CoreRootName>
+    <CoreRootDir>$(CORE_ROOT)</CoreRootDir>
+    <CoreRootName>Core_Root_$(RuntimeID)</CoreRootName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -73,7 +71,7 @@
 
   <!-- Generate wrapper .cmd file for an Xunit wrapper -->
   <Target Name="GenerateWrapperCmd"
-    Condition="'$(RuntimeID)' == '' ">
+    Condition="'$(TargetsWindows)' == 'true' ">
 
     <PropertyGroup>
       <WrapperCmdContents>
@@ -104,7 +102,7 @@ EXIT /B %ERRORLEVEL%
   </Target>
 
   <Target Name="GenerateWrapperSh"
-    Condition="'$(RuntimeID)' != '' ">
+    Condition="'$(TargetsWindows)' != 'true' ">
 
     <!-- Need to force in Unix line endings for Shell script -->
     <PropertyGroup>

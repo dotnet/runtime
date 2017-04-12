@@ -23,11 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <NonWindowsProjectLockJsonFiles Include="@(CoreRootProjectLockJsonFiles)"/>
-    <NonWindowsProjectLockJsonFiles Include="$(SourceDir)Common\build_against_pkg_dependencies\project.lock.json"/>
-  </ItemGroup>
-
-  <ItemGroup>
     <RefProjectLockJsonFiles Include="$(SourceDir)Common\targeting_pack_ref\project.lock.json"/>
   </ItemGroup>
 
@@ -57,7 +52,7 @@
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="false"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="$(TestNugetRuntimeId)"
+                                         RuntimeIdentifier="$(TargetRid)"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="%(CoreRootProjectLockJsonFiles.Identity)"
                                          TargetMonikers="@(TestTargetFramework)">
@@ -90,70 +85,6 @@
     </Copy>
   </Target>
 
-  <Target Name="CopyNonWindowsDependecyToCoreRoot"
-    Inputs="@(NonWindowsProjectLockJsonFiles)"
-    Outputs="$(CORE_OVERLAY)\*.*">
-
-    <MSBuild Projects="$(SourceDir)Common\test_runtime\test_runtime.csproj"/>
-
-    <MSBuild Projects="$(SourceDir)Common\test_dependencies\test_dependencies.csproj"/>
-
-    <MSBuild Projects="$(SourceDir)Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj"/>
-
-    <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
-         for the xunit wrapper projects -->
-    <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
-                                         IncludeFrameworkReferences="false"
-                                         NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="$(RuntimeId)"
-                                         ProjectLanguage="$(Language)"
-                                         ProjectLockFile="%(NonWindowsProjectLockJsonFiles.Identity)"
-                                         TargetMonikers="@(TestTargetFramework)">
-      <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
-      <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
-      <Output TaskParameter="ResolvedCopyLocalItems" ItemName="RunTimeCopyLocal" />
-    </PrereleaseResolveNuGetPackageAssets>
-    <ItemGroup>
-      <RunTimeDependecyExclude Include="$(CORE_OVERLAY)\**\*.*"  />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName)%(Extension)')" />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName).ni%(Extension)')" />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName).pdb')" />
-      <AllResolvedRuntimeDependencies Include="@(RunTimeCopyLocal -> '%(FileName)%(Extension)')">
-        <File>%(Identity)</File>
-      </AllResolvedRuntimeDependencies>
-      <RunTimeDependecyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependecyExcludeFiles)"/>
-      <RunTimeDependecyCopyLocal Include="@(RunTimeDependecyCopyLocalFile -> '%(File)')"  />
-      <RunTimeDependecyCopyLocal Include="$(TargetingPackPath)/*" />
-    </ItemGroup>
-    
-    <Copy
-      SourceFiles="@(RunTimeDependecyCopyLocal)"
-      DestinationFolder="$(CORE_OVERLAY)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
-    <ItemGroup>
-      <NonWindowsCrossGenFiles Include="..\packages\runtime.$(RuntimeID).Microsoft.NETCore.Runtime.CoreCLR\$(CoreClrPackageVersion)\tools\crossgen"/>
-    </ItemGroup>
-
-    <Copy
-      SourceFiles="@(NonWindowsCrossGenFiles)"
-      DestinationFolder="$(CORE_OVERLAY)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
-  </Target>
-
   <Target Name="CopyDependencyToRef"
     Inputs="@(RefProjectLockJsonFiles)"
     Outputs="$(RefDestination)\*.*">
@@ -165,7 +96,7 @@
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="$(TestNugetRuntimeId)"
+                                         RuntimeIdentifier="$(TargetRid)"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="%(RefProjectLockJsonFiles.Identity)"
                                          TargetMonikers="@(TestTargetFramework)">
@@ -197,7 +128,7 @@
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="$(TestNugetRuntimeId)"
+                                         RuntimeIdentifier="$(TargetRid)"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="%(ProductProjectLockJsonFiles.Identity)"
                                          TargetMonikers="@(TestTargetFramework)">
@@ -219,6 +150,7 @@
   </Target>
 
   <Target Name="CopyCrossgenToProduct"
+    AfterTargets="CopyDependencyToProduct"
     Outputs="$(ProductDestination)\crossgen.exe;$(CORE_OVERLAY)\crossgen.exe">
 
     <Copy
