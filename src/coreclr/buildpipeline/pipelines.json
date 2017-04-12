@@ -121,7 +121,7 @@
             "Rid": "linux"
           },
           "ReportingParameters": {
-            "OperatingSystem": "RedHat 7",
+            "OperatingSystem": "Linux",
             "Type": "build/product/",
             "Architecture": "x64",
             "PB_BuildType": null
@@ -146,7 +146,7 @@
             "portableBuild": "-portable"
           },
           "ReportingParameters": {
-            "OperatingSystem": "RedHat 7",
+            "OperatingSystem": "OSX",
             "Type": "build/product/",
             "SubType": "PortableBuild",
             "Architecture": "x64",
@@ -282,7 +282,7 @@
             "Rid": "ubuntu.14.04"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
+            "OperatingSystem": "Linux",
             "SubType": "PortableCrossBuild",
             "Type": "build/product/",
             "Architecture": "arm",
@@ -501,6 +501,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "SubType":  "Build-Tests",
             "Type": "build/product/",
             "PB_BuildType": "Release"
           }
@@ -516,6 +517,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "OSX",
+            "SubType":  "Build-Tests",
             "Type": "build/product/",
             "PB_BuildType": "Release"
           }
@@ -531,6 +533,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
+            "SubType":  "Build-Tests",
             "Type": "build/product/",
             "PB_BuildType": "Release"
           }
