@@ -14,10 +14,10 @@ using System.Runtime.Serialization;
 namespace System.Diagnostics
 {
     /// <summary>
-    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.6 where HttpClient
-    /// doesn't have a DiagnosticListener built in. This class is not used for .NET Core because
-    /// HttpClient in .NET Core already emits DiagnosticSource events. This class compensates for
-    /// that in .NET 4.6. HttpHandlerDiagnosticListener has no public constructor. To use this, 
+    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.6 and above where
+    /// HttpClient doesn't have a DiagnosticListener built in. This class is not used for .NET Core
+    /// because HttpClient in .NET Core already emits DiagnosticSource events. This class compensates for
+    /// that in .NET 4.6 and above. HttpHandlerDiagnosticListener has no public constructor. To use this, 
     /// the application just needs to call <see cref="DiagnosticListener.AllListeners" /> and
     /// <see cref="DiagnosticListener.AllListenerObservable.Subscribe(IObserver{DiagnosticListener})"/>,
     /// then in the <see cref="IObserver{DiagnosticListener}.OnNext(DiagnosticListener)"/> method,
@@ -195,11 +195,6 @@ namespace System.Diagnostics
             {
                 this._table.Remove(key);
             }
-            public override void OnDeserialization(object sender)
-            {
-            }
-
-            private const string ParentTableSerializationField = "ParentTable";
         }
 
         /// <summary>
