@@ -158,6 +158,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
 
     echo "Making all .sh files executable under Tools."
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
+    ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 
     touch $__INIT_TOOLS_DONE_MARKER
 
