@@ -3663,6 +3663,72 @@
       <resources></resources>
       <response>System.Security.Cryptography.Algorithms.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Globalization.Extensions" library="Facades_System.Globalization.Extensions-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Globalization.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Globalization.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Globalization.Extensions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Data.Common" library="Facades_System.Data.Common-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.Xml.dll</flags>
+      <output>System.Data.Common.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Data.Common.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Data.Common.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Diagnostics.StackTrace" library="Facades_System.Diagnostics.StackTrace-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Diagnostics.StackTrace.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Diagnostics.StackTrace.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Diagnostics.StackTrace.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Security.SecureString" library="Facades_System.Security.SecureString-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Security.SecureString.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Security.SecureString.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Security.SecureString.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading.Overlapped" library="Facades_System.Threading.Overlapped-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Threading.Overlapped.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Threading.Overlapped.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.XPath.XDocument" library="Facades_System.Xml.XPath.XDocument-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll</flags>
+      <output>System.Xml.XPath.XDocument.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Xml.XPath.XDocument.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Xml.XPath.XDocument.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Drawing.Primitives" library="Facades_System.Drawing.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Drawing.dll</flags>
@@ -3673,6 +3739,17 @@
       <profile>net_4_x</profile>
       <resources></resources>
       <response>System.Drawing.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/netstandard" library="Facades_netstandard-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /nowarn:618 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll -r:./../../../class/lib/net_4_x/System.Runtime.Serialization.dll -r:./../../../class/lib/net_4_x/System.Core.dll -r:./../../../class/lib/net_4_x/System.Numerics.dll -r:./../../../class/lib/net_4_x/System.Numerics.Vectors.dll -r:./../../../class/lib/net_4_x/System.Net.Http.dll -r:./../../../class/lib/net_4_x/System.Transactions.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.ComponentModel.Composition.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll -r:./../../../class/lib/net_4_x/System.Runtime.InteropServices.RuntimeInformation.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.Cryptography.Algorithms.dll -r:./../../../class/lib/net_4_x/Facades/System.Globalization.Extensions.dll -r:./../../../class/lib/net_4_x/Facades/System.Data.Common.dll -r:./../../../class/lib/net_4_x/Facades/System.Diagnostics.StackTrace.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Xml.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Primitives.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.SecureString.dll -r:./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll -r:./../../../class/lib/net_4_x/Facades/System.Xml.XPath.XDocument.dll -r:./../../../class/lib/net_4_x/System.Web.dll -r:./../../../class/lib/net_4_x/System.Drawing.dll</flags>
+      <output>netstandard.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/netstandard.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>netstandard.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Collections.Concurrent" library="Facades_System.Collections.Concurrent-net_4_x">
       <boot>false</boot>
@@ -4268,17 +4345,6 @@
       <resources></resources>
       <response>System.Console.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Data.Common" library="Facades_System.Data.Common-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.Xml.dll</flags>
-      <output>System.Data.Common.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Data.Common.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Data.Common.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.Data.SqlClient" library="Facades_System.Data.SqlClient-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.Xml.dll</flags>
@@ -4796,28 +4862,6 @@
       <resources></resources>
       <response>Microsoft.Win32.Registry.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.StackTrace" library="Facades_System.Diagnostics.StackTrace-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Diagnostics.StackTrace.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Diagnostics.StackTrace.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Diagnostics.StackTrace.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Globalization.Extensions" library="Facades_System.Globalization.Extensions-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Globalization.Extensions.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Globalization.Extensions.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Globalization.Extensions.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.IO.FileSystem.AccessControl" library="Facades_System.IO.FileSystem.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
@@ -4873,17 +4917,6 @@
       <resources></resources>
       <response>System.Reflection.Emit.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.SecureString" library="Facades_System.Security.SecureString-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Security.SecureString.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Security.SecureString.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Security.SecureString.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.Threading.AccessControl" library="Facades_System.Threading.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
@@ -4895,17 +4928,6 @@
       <resources></resources>
       <response>System.Threading.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Overlapped" library="Facades_System.Threading.Overlapped-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Threading.Overlapped.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Threading.Overlapped.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.ValueTuple" library="Facades_System.ValueTuple-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699</flags>
@@ -4916,17 +4938,6 @@
       <profile>net_4_x</profile>
       <resources></resources>
       <response>System.ValueTuple.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Xml.XPath.XDocument" library="Facades_System.Xml.XPath.XDocument-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll</flags>
-      <output>System.Xml.XPath.XDocument.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.Xml.XPath.XDocument.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Xml.XPath.XDocument.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Security.Cryptography.Primitives" library="Facades_System.Security.Cryptography.Primitives-net_4_x">
       <boot>false</boot>
