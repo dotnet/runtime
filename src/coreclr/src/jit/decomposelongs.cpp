@@ -1149,11 +1149,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
                         Range().Remove(gtLong);
 
-                        // Since we're left shifting at least 64 bits, we can remove the lo part of the shifted value iff
-                        // it has no side effects.
+                        // Since we're left shifting at least 64 bits, we can remove the lo part of the shifted value
+                        // iff it has no side effects.
                         //
-                        // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
-                        // feeds the lo operand while there are no side effects)
+                        // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything
+                        // that feeds the lo operand while there are no side effects)
                         if ((loOp1->gtFlags & GTF_ALL_EFFECT) == 0)
                         {
                             Range().Remove(loOp1);
@@ -1237,11 +1237,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     {
                         assert(count >= 64);
 
-                        // Since we're right shifting at least 64 bits, we can remove the hi part of the shifted value iff
-                        // it has no side effects.
+                        // Since we're right shifting at least 64 bits, we can remove the hi part of the shifted value
+                        // iff it has no side effects.
                         //
-                        // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
-                        // feeds the hi operand while there are no side effects)
+                        // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything
+                        // that feeds the hi operand while there are no side effects)
                         if ((hiOp1->gtFlags & GTF_ALL_EFFECT) == 0)
                         {
                             Range().Remove(hiOp1);
