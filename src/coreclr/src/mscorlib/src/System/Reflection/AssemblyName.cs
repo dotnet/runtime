@@ -372,26 +372,26 @@ namespace System.Reflection
             nInit();
         }
 
-        static public bool ReferenceMatchesDefinition(AssemblyName reference,
-                                                             AssemblyName definition)
+        /// <summary>
+        /// Compares the simple names disregarding Version, Culture and PKT. While this clearly does not
+        /// match the intent of this api, this api has been broken this way since its debut and we cannot
+        /// change its behavior now.
+        /// </summary>
+        public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition)
         {
-            // Optimization for common use case
-            if (Object.ReferenceEquals(reference, definition))
-            {
+            if (object.ReferenceEquals(reference, definition))
                 return true;
-            }
-            return ReferenceMatchesDefinitionInternal(reference, definition, true);
+
+            if (reference == null)
+                throw new ArgumentNullException(nameof(reference));
+
+            if (definition == null)
+                throw new ArgumentNullException(nameof(definition));
+
+            string refName = reference.Name ?? string.Empty;
+            string defName = definition.Name ?? string.Empty;
+            return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
-
-
-        /// "parse" tells us to parse the simple name of the assembly as if it was the full name
-        /// almost never the right thing to do, but needed for compat
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern bool ReferenceMatchesDefinitionInternal(AssemblyName reference,
-                                                                     AssemblyName definition,
-                                                                     bool parse);
-
-
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void nInit(out RuntimeAssembly assembly, bool forIntrospection, bool raiseResolveEvent);
