@@ -42,6 +42,10 @@ namespace System.Diagnostics
         {
             get
             {
+#if NET46 || NETFX
+                GC.KeepAlive(HttpHandlerDiagnosticListener.s_instance);
+#endif
+
                 if (s_allListenerObservable == null)
                 {
                     s_allListenerObservable = new AllListenerObservable();
@@ -91,7 +95,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Same as other Subscribe overload where the predicate is assumed to always return true.  
         /// </summary>
-        public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
         {
             return SubscribeInternal(observer, null, null);
         }
