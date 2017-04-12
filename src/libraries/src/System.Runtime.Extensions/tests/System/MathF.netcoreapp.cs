@@ -1080,13 +1080,12 @@ namespace System.Tests
             AssertEqual(expectedResult, MathF.Sqrt(value), allowedVariance);
         }
 
-        [ActiveIssue(17518, TestPlatforms.Linux)]
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
         [InlineData(-3.14159265f,            -0.0f,                   CrossPlatformMachineEpsilon)]         // value: -(pi)
         [InlineData(-2.71828183f,             0.450549534f,           CrossPlatformMachineEpsilon)]         // value: -(e)
         [InlineData(-2.30258509f,             1.11340715f,            CrossPlatformMachineEpsilon * 10)]    // value: -(ln(10))
-        [InlineData(-1.57079633f,             22877332.0f,            0.0f)]                                // value: -(pi / 2)
+        [InlineData(-1.57079633f,             22877332.0f,            10.0f)]                               // value: -(pi / 2)
         [InlineData(-1.44269504f,            -7.76357567f,            CrossPlatformMachineEpsilon * 10)]    // value: -(log2(e))
         [InlineData(-1.41421356f,            -6.33411917f,            CrossPlatformMachineEpsilon * 10)]    // value: -(sqrt(2))
         [InlineData(-1.12837917f,            -2.11087684f,            CrossPlatformMachineEpsilon * 10)]    // value: -(2 / sqrt(pi))
@@ -1110,7 +1109,7 @@ namespace System.Tests
         [InlineData( 1.12837917f,             2.11087684f,            CrossPlatformMachineEpsilon * 10)]    // value:  (2 / sqrt(pi))
         [InlineData( 1.41421356f,             6.33411917f,            CrossPlatformMachineEpsilon * 10)]    // value:  (sqrt(2))
         [InlineData( 1.44269504f,             7.76357567f,            CrossPlatformMachineEpsilon * 10)]    // value:  (log2(e))
-        [InlineData( 1.57079633f,            -22877332.0f,            0.0f)]                                // value:  (pi / 2)
+        [InlineData( 1.57079633f,            -22877332.0f,            10.0f)]                               // value:  (pi / 2)
         [InlineData( 2.30258509f,            -1.11340715f,            CrossPlatformMachineEpsilon * 10)]    // value:  (ln(10))
         [InlineData( 2.71828183f,            -0.450549534f,           CrossPlatformMachineEpsilon)]         // value:  (e)
         [InlineData( 3.14159265f,             0.0f,                   CrossPlatformMachineEpsilon)]         // value:  (pi)
