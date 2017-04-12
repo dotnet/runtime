@@ -19,6 +19,8 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
+#include "gchandletableimpl.h"
+
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -663,6 +665,10 @@ bool Ref_Initialize()
         g_HandleTableMap.dwMaxIndex = INITIAL_HANDLE_TABLE_ARRAY_SIZE;
         g_HandleTableMap.pNext = NULL;
 
+        g_gcGlobalHandleStore = new (nothrow) GCHandleStore(g_HandleTableMap.pBuckets[0]);
+        if (g_gcGlobalHandleStore == NULL)
+            goto CleanupAndFail;
+
         // Allocate contexts used during dependent handle promotion scanning. There's one of these for every GC
         // heap since they're scanned in parallel.
         g_pDependentHandleContexts = new (nothrow) DhContext[n_slots];
@@ -671,6 +677,7 @@ bool Ref_Initialize()
 
         return true;
     }
+
 
 CleanupAndFail:
     if (pBuckets != NULL)
