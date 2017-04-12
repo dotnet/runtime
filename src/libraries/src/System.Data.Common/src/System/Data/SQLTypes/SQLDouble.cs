@@ -34,7 +34,7 @@ namespace System.Data.SqlTypes
         public SqlDouble(double value)
         {
             if (double.IsInfinity(value) || double.IsNaN(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
             {
                 _value = value;
@@ -74,12 +74,12 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : _value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : _value.ToString((IFormatProvider)null);
         }
 
         public static SqlDouble Parse(string s)
         {
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlDouble.Null;
             else
                 return new SqlDouble(double.Parse(s, CultureInfo.InvariantCulture));
@@ -104,7 +104,7 @@ namespace System.Data.SqlTypes
             double value = x._value + y._value;
 
             if (double.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlDouble(value);
         }
@@ -117,7 +117,7 @@ namespace System.Data.SqlTypes
             double value = x._value - y._value;
 
             if (double.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlDouble(value);
         }
@@ -130,7 +130,7 @@ namespace System.Data.SqlTypes
             double value = x._value * y._value;
 
             if (double.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlDouble(value);
         }
@@ -141,12 +141,12 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (y._value == 0.0)
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             double value = x._value / y._value;
 
             if (double.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlDouble(value);
         }

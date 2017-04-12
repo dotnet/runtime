@@ -137,7 +137,7 @@ namespace System.Data.SqlTypes
                 }
             }
 
-            throw new SqlTypeException(SQLResource.s_invalidDateTimeMessage);
+            throw new SqlTypeException(SQLResource.InvalidDateTimeMessage);
         }
 
         // constructor that take DBTIMESTAMP data members
@@ -153,7 +153,7 @@ namespace System.Data.SqlTypes
             if (dayTicks < s_minDay || dayTicks > s_maxDay || timeTicks < s_minTime || timeTicks > s_maxTime)
             {
                 _fNotNull = false;
-                throw new OverflowException(SQLResource.s_dateTimeOverflowMessage);
+                throw new OverflowException(SQLResource.DateTimeOverflowMessage);
             }
 
             _day = dayTicks;
@@ -164,7 +164,7 @@ namespace System.Data.SqlTypes
         internal SqlDateTime(double dblVal)
         {
             if ((dblVal < s_minDay) || (dblVal >= s_maxDay + 1))
-                throw new OverflowException(SQLResource.s_dateTimeOverflowMessage);
+                throw new OverflowException(SQLResource.DateTimeOverflowMessage);
 
             int day = (int)dblVal;
             int time = (int)((dblVal - day) * s_SQLTicksPerDay);
@@ -217,7 +217,7 @@ namespace System.Data.SqlTypes
         {
             if (daypart < s_minDay || daypart > s_maxDay || timepart < s_minTime || timepart > s_maxTime)
             {
-                throw new OverflowException(SQLResource.s_dateTimeOverflowMessage);
+                throw new OverflowException(SQLResource.DateTimeOverflowMessage);
             }
             long dayticks = daypart * TimeSpan.TicksPerDay;
             long timeticks = ((long)(timepart / s_SQLTicksPerMillisecond + 0.5)) * TimeSpan.TicksPerMillisecond;
@@ -230,7 +230,7 @@ namespace System.Data.SqlTypes
         private static SqlDateTime FromTimeSpan(TimeSpan value)
         {
             if (value < s_minTimeSpan || value > s_maxTimeSpan)
-                throw new SqlTypeException(SQLResource.s_dateTimeOverflowMessage);
+                throw new SqlTypeException(SQLResource.DateTimeOverflowMessage);
 
             int day = value.Days;
 
@@ -340,7 +340,7 @@ namespace System.Data.SqlTypes
         public override string ToString()
         {
             if (IsNull)
-                return SQLResource.s_nullString;
+                return SQLResource.NullString;
             DateTime dateTime = ToDateTime(this);
             return dateTime.ToString((IFormatProvider)null);
         }
@@ -349,7 +349,7 @@ namespace System.Data.SqlTypes
         {
             DateTime dt;
 
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlDateTime.Null;
 
             try
@@ -664,7 +664,7 @@ namespace System.Data.SqlTypes
                 //
                 if (dt.Kind != System.DateTimeKind.Unspecified)
                 {
-                    throw new SqlTypeException(SQLResource.s_timeZoneSpecifiedMessage);
+                    throw new SqlTypeException(SQLResource.TimeZoneSpecifiedMessage);
                 }
 
                 SqlDateTime st = FromDateTime(dt);

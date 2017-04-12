@@ -33,7 +33,7 @@ namespace System.Data.SqlTypes
         public SqlSingle(float value)
         {
             if (float.IsInfinity(value) || float.IsNaN(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
             {
                 _fNotNull = true;
@@ -77,12 +77,12 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : _value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : _value.ToString((IFormatProvider)null);
         }
 
         public static SqlSingle Parse(string s)
         {
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlSingle.Null;
             else
                 return new SqlSingle(float.Parse(s, CultureInfo.InvariantCulture));
@@ -107,7 +107,7 @@ namespace System.Data.SqlTypes
             float value = x._value + y._value;
 
             if (float.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlSingle(value);
         }
@@ -120,7 +120,7 @@ namespace System.Data.SqlTypes
             float value = x._value - y._value;
 
             if (float.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlSingle(value);
         }
@@ -133,7 +133,7 @@ namespace System.Data.SqlTypes
             float value = x._value * y._value;
 
             if (float.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlSingle(value);
         }
@@ -144,12 +144,12 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (y._value == (float)0.0)
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             float value = x._value / y._value;
 
             if (float.IsInfinity(value))
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return new SqlSingle(value);
         }

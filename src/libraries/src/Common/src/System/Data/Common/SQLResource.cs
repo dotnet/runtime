@@ -56,22 +56,22 @@ namespace System.Data.SqlTypes
 
         internal static string InvalidOpStreamClosed(string method)
         {
-            return SR.GetString(SR.SqlMisc_InvalidOpStreamClosed, method);
+            return SR.Format(SR.SqlMisc_InvalidOpStreamClosed, method);
         }
 
         internal static string InvalidOpStreamNonWritable(string method)
         {
-            return SR.GetString(SR.SqlMisc_InvalidOpStreamNonWritable, method);
+            return SR.Format(SR.SqlMisc_InvalidOpStreamNonWritable, method);
         }
 
         internal static string InvalidOpStreamNonReadable(string method)
         {
-            return SR.GetString(SR.SqlMisc_InvalidOpStreamNonReadable, method);
+            return SR.Format(SR.SqlMisc_InvalidOpStreamNonReadable, method);
         }
 
         internal static string InvalidOpStreamNonSeekable(string method)
         {
-            return SR.GetString(SR.SqlMisc_InvalidOpStreamNonSeekable, method);
+            return SR.Format(SR.SqlMisc_InvalidOpStreamNonSeekable, method);
         }
     } // SqlResource
 } // namespace System
