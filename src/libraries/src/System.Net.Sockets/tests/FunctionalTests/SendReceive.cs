@@ -61,6 +61,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(16945)] // Packet loss, potentially due to other tests running at the same time
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Loopbacks))]
