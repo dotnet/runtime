@@ -169,6 +169,23 @@ inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object
     return store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
 }
 
+// Handle object manipulation convenience functions
+
+inline void StoreObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
+{
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, OBJECTREFToObject(object));
+}
+
+inline bool StoreFirstObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
+{
+    return GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandleIfNull(handle, OBJECTREFToObject(object));
+}
+
+inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJECTREF object, OBJECTREF comparandObject)
+{
+    return GCHandleUtilities::GetGCHandleManager()->CompareAndSwapObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
+}
+
 // Handle destruction convenience functions
 
 inline void DestroyHandle(OBJECTHANDLE handle)
