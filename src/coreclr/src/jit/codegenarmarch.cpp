@@ -103,8 +103,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // This is the varNum for our store operations,
     // typically this is the varNum for the Outgoing arg space
     // When we are generating a tail call it will be the varNum for arg0
-    unsigned varNumOut;
-    unsigned argOffsetMax; // Records the maximum size of this area for assert checks
+    unsigned varNumOut    = (unsigned)-1;
+    unsigned argOffsetMax = (unsigned)-1; // Records the maximum size of this area for assert checks
 
     // Get argument offset to use with 'varNumOut'
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
