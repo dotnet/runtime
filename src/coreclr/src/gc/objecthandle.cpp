@@ -1856,51 +1856,6 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
     return FALSE;
 }
 
-void DestroySizedRefHandle(OBJECTHANDLE handle)
-{ 
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HHANDLETABLE hTable = HndGetHandleTable(handle);
-    HndDestroyHandle(hTable , HNDTYPE_SIZEDREF, handle);
-    AppDomain* pDomain = SystemDomain::GetAppDomainAtIndex(HndGetHandleTableADIndex(hTable));
-    pDomain->DecNumSizedRefHandles();
-}
-
-#ifdef FEATURE_COMINTEROP
-
-void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    // Release the WinRT weak reference if we have one.  We're assuming that this will not reenter the
-    // runtime, since if we are pointing at a managed object, we should not be using a HNDTYPE_WEAK_WINRT
-    // but rather a HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
-    IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(HndGetHandleExtraInfo(handle));
-    if (pWinRTWeakReference != NULL)
-    {
-        pWinRTWeakReference->Release();
-    }
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_WINRT, handle);
-}
-
-#endif // FEATURE_COMINTEROP
-
 #endif // !DACCESS_COMPILE
 
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle)

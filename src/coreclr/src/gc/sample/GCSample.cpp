@@ -229,7 +229,7 @@ int __cdecl main(int argc, char* argv[])
         return -1;
 
     // Destroy the strong handle so that nothing will be keeping out object alive
-    DestroyGlobalHandle(oh);
+    HndDestroyHandle(HndGetHandleTable(oh), HNDTYPE_DEFAULT, oh);
 
     // Explicitly trigger full GC
     pGCHeap->GarbageCollect();
