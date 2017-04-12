@@ -679,7 +679,7 @@
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
-  <data name="Arg_SerializationException" xml:space="preserve">
+  <data name="SerializationException" xml:space="preserve">
     <value>Serialization error.</value>
   </data>
   <data name="Arg_SetMethNotFnd" xml:space="preserve">
