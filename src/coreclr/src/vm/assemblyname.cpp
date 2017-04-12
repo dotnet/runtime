@@ -202,41 +202,4 @@ FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
 }
 FCIMPLEND
 
-/// "parse" tells us to parse the simple name of the assembly as if it was the full name
-/// almost never the right thing to do, but needed for compat
-/* static */
-FCIMPL3(FC_BOOL_RET, AssemblyNameNative::ReferenceMatchesDefinition, AssemblyNameBaseObject* refUNSAFE, AssemblyNameBaseObject* defUNSAFE, CLR_BOOL fParse)
-{
-    FCALL_CONTRACT;
 
-    struct _gc
-    {
-        ASSEMBLYNAMEREF pRef;
-        ASSEMBLYNAMEREF pDef;
-    } gc;
-    gc.pRef = (ASSEMBLYNAMEREF)ObjectToOBJECTREF (refUNSAFE);
-    gc.pDef = (ASSEMBLYNAMEREF)ObjectToOBJECTREF (defUNSAFE);
-
-    BOOL result = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    Thread *pThread = GetThread();
-
-    CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
-
-    if (gc.pRef == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-    if (gc.pDef == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-
-    AssemblySpec refSpec;
-    refSpec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &gc.pRef, fParse, FALSE);
-
-    AssemblySpec defSpec;
-    defSpec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &gc.pDef, fParse, FALSE);
-
-    result=AssemblySpec::RefMatchesDef(&refSpec,&defSpec);
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(result);
-}
-FCIMPLEND
