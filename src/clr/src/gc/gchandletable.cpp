@@ -23,19 +23,51 @@ void GCHandleTable::Shutdown()
     Ref_Shutdown();
 }
 
-void* GCHandleTable::GetHandleTableContext(void* handleTable)
+void* GCHandleTable::GetGlobalHandleStore()
 {
-    return (void*)((uintptr_t)::HndGetHandleTableADIndex((HHANDLETABLE)handleTable).m_dwIndex);
+    return (void*)g_HandleTableMap.pBuckets[0];
 }
 
-void* GCHandleTable::GetHandleTableForHandle(OBJECTHANDLE handle)
+void* GCHandleTable::CreateHandleStore(void* context)
 {
-    return (void*)::HndGetHandleTable(handle);
+#ifndef FEATURE_REDHAWK
+    return (void*)::Ref_CreateHandleTableBucket(ADIndex((DWORD)(uintptr_t)context));
+#else
+    assert("CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
+    return nullptr;
+#endif
 }
 
-OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* table, Object* object, int type)
+void* GCHandleTable::GetHandleContext(OBJECTHANDLE handle)
 {
-    return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object));
+    return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);
+}
+
+void GCHandleTable::DestroyHandleStore(void* store)
+{
+    Ref_DestroyHandleTableBucket((HandleTableBucket*) store);
+}
+
+void GCHandleTable::UprootHandleStore(void* store)
+{
+    Ref_RemoveHandleTableBucket((HandleTableBucket*) store);
+}
+
+bool GCHandleTable::ContainsHandle(void* store, OBJECTHANDLE handle)
+{
+    return ((HandleTableBucket*)store)->Contains(handle);
+}
+
+OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* store, Object* object, int type)
+{
+    HHANDLETABLE handletable = ((HandleTableBucket*)store)->pTable[GetCurrentThreadHomeHeapNumber()];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
+}
+
+OBJECTHANDLE GCHandleTable::CreateHandleOfType(void* store, Object* object, int type, int heapToAffinitizeTo)
+{
+    HHANDLETABLE handletable = ((HandleTableBucket*)store)->pTable[heapToAffinitizeTo];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 
 OBJECTHANDLE GCHandleTable::CreateGlobalHandleOfType(Object* object, int type)
@@ -43,17 +75,24 @@ OBJECTHANDLE GCHandleTable::CreateGlobalHandleOfType(Object* object, int type)
     return ::HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, ObjectToOBJECTREF(object)); 
 }
 
-OBJECTHANDLE GCHandleTable::CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo)
+OBJECTHANDLE GCHandleTable::CreateHandleWithExtraInfo(void* store, Object* object, int type, void* pExtraInfo)
 {
-    return ::HndCreateHandle((HHANDLETABLE)table, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
+    HHANDLETABLE handletable = ((HandleTableBucket*)store)->pTable[GetCurrentThreadHomeHeapNumber()];
+    return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object), reinterpret_cast<uintptr_t>(pExtraInfo));
 }
 
-OBJECTHANDLE GCHandleTable::CreateDependentHandle(void* table, Object* primary, Object* secondary)
+OBJECTHANDLE GCHandleTable::CreateDependentHandle(void* store, Object* primary, Object* secondary)
 {
-    OBJECTHANDLE handle = ::HndCreateHandle((HHANDLETABLE)table, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
+    HHANDLETABLE handletable = ((HandleTableBucket*)store)->pTable[GetCurrentThreadHomeHeapNumber()];
+    OBJECTHANDLE handle = ::HndCreateHandle(handletable, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
     ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
 
     return handle;
+}
+
+OBJECTHANDLE GCHandleTable::CreateDuplicateHandle(OBJECTHANDLE handle)
+{
+    return ::HndCreateHandle(HndGetHandleTable(handle), HNDTYPE_DEFAULT, ::HndFetchHandle(handle));
 }
 
 void GCHandleTable::DestroyHandleOfType(OBJECTHANDLE handle, int type)
