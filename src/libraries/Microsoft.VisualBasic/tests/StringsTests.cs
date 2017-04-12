@@ -20,5 +20,24 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal('3', Strings.AscW("3"));
             Assert.Equal('3', Strings.AscW("345"));
         }
+
+        [Theory]
+        [InlineData(-32769)]
+        [InlineData(65536)]
+        public void ChrW_CharCodeOutOfRange(int charCode)
+        {
+            Assert.Throws<ArgumentException>(() => Strings.ChrW(charCode));
+        }
+
+        [Theory]
+        [InlineData(97)]
+        [InlineData(65)]
+        [InlineData(65535)]
+        [InlineData(-32768)]
+        public void ChrW_CharCodeInRange(int charCode)
+        {
+            char result = Strings.ChrW(charCode);
+            Assert.Equal(Convert.ToChar(charCode & 0XFFFF), result);
+        }
     }
 }
