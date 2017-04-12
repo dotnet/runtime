@@ -183,11 +183,13 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     CONTRACTL_END;
 
     OBJECTREF  pObj = ObjectToOBJECTREF(pObjIn);
+    
+    HELPER_METHOD_FRAME_BEGIN_1(pObj);
 
     if (ptr == NULL)
-        FCThrowArgumentNullVoid(W("ptr"));
+        COMPlusThrowArgumentNull(W("ptr"));
     if (pObj == NULL) 
-        FCThrowArgumentNullVoid(W("structure"));
+        COMPlusThrowArgumentNull(W("structure"));
 
     // Code path will accept regular layout objects.
     MethodTable *pMT = pObj->GetMethodTable();
@@ -195,7 +197,7 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     // Validate that the object passed in is not a value class.
     if (!allowValueClasses && pMT->IsValueType())
     {
-        FCThrowArgumentVoid(W("structure"), W("Argument_StructMustNotBeValueClass"));
+        COMPlusThrowArgumentException(W("structure"), W("Argument_StructMustNotBeValueClass"));
     }
     else if (pMT->IsBlittable())
     {
@@ -203,14 +205,14 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     }
     else if (pMT->HasLayout())
     {
-        HELPER_METHOD_FRAME_BEGIN_1(pObj);
-            LayoutUpdateCLR((LPVOID*) &(pObj), Object::GetOffsetOfFirstField(), pMT, (LPBYTE)(ptr));
-        HELPER_METHOD_FRAME_END();
+        LayoutUpdateCLR((LPVOID*) &(pObj), Object::GetOffsetOfFirstField(), pMT, (LPBYTE)(ptr));
     }
     else
     {
-        FCThrowArgumentVoid(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
-    }
+        COMPlusThrowArgumentException(W("structure"), W("Argument_MustHaveLayoutOrBeBlittable"));
+    }   
+    
+    HELPER_METHOD_FRAME_END();  
 }
 FCIMPLEND
 
