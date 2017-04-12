@@ -1343,8 +1343,6 @@ public:
     }
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
-    BOOL ContainsOBJECTHANDLE(OBJECTHANDLE handle);
-
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
     
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
