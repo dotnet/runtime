@@ -206,26 +206,34 @@ namespace System
 
                 // We cannot use Type.GetType directly, because of AppCompat - assembly names starting with '[' would fail to load.
                 RuntimeType type = (RuntimeType)Assembly.GetType_Compat(de.assembly, de.type);
-                RuntimeType targetType = (RuntimeType)Assembly.GetType_Compat(de.targetTypeAssembly, de.targetTypeName);
+
+                // {de.targetTypeAssembly, de.targetTypeName} do not actually refer to the type of the target, but the reflected
+                // type of the method. Those types may be the same when the method is on the target's type or on a type in its
+                // inheritance chain, but those types may not be the same when the method is an extension method for the
+                // target's type or a type in its inheritance chain.
 
                 // If we received the new style delegate encoding we already have the target MethodInfo in hand.
                 if (m_methods != null)
                 {
-                    if (de.target != null && !targetType.IsInstanceOfType(de.target))
-                        throw new InvalidCastException();
-                    Object target = de.target;
-                    d = Delegate.CreateDelegateNoSecurityCheck(type, target, m_methods[index]);
+                    // The method info is serialized, so the target type info is redundant. The desktop framework does no
+                    // additional verification on the target type info.
+                    d = Delegate.CreateDelegateNoSecurityCheck(type, de.target, m_methods[index]);
                 }
                 else
                 {
                     if (de.target != null)
                     {
-                        if (!targetType.IsInstanceOfType(de.target))
-                            throw new InvalidCastException();
+                        // For consistency with the desktop framework, when the method info is not serialized for a closed
+                        // delegate, the method is assumed to be on the target's type or in its inheritance chain. An extension
+                        // method would not work on this path for the above reason and also because the delegate binds to
+                        // instance methods only. The desktop framework does no additional verification on the target type info.
                         d = Delegate.CreateDelegate(type, de.target, de.methodName);
                     }
                     else
+                    {
+                        RuntimeType targetType = (RuntimeType)Assembly.GetType_Compat(de.targetTypeAssembly, de.targetTypeName);
                         d = Delegate.CreateDelegate(type, targetType, de.methodName);
+                    }
                 }
             }
             catch (Exception e)
