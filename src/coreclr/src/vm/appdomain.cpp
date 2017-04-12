@@ -740,10 +740,10 @@ BaseDomain::BaseDomain()
     m_pLargeHeapHandleTable = NULL;
 
 #ifndef CROSSGEN_COMPILE
-    // Note that m_hHandleTableBucket is overridden by app domains
-    m_hHandleTableBucket = g_HandleTableMap.pBuckets[0];
+    // Note that m_handleStore is overridden by app domains
+    m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
 #else
-    m_hHandleTableBucket = NULL;
+    m_handleStore = NULL;
 #endif
 
     m_pMarshalingData = NULL;
@@ -993,17 +993,6 @@ void BaseDomain::InitVSD()
 }
 
 #ifndef CROSSGEN_COMPILE
-BOOL BaseDomain::ContainsOBJECTHANDLE(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return Ref_ContainHandle(m_hHandleTableBucket,handle);
-}
 
 DWORD BaseDomain::AllocateContextStaticsOffset(DWORD* pOffsetSlot)
 {
@@ -4053,7 +4042,7 @@ AppDomain::AppDomain()
     m_pUMEntryThunkCache = NULL;
 
     m_pAsyncPool = NULL;
-    m_hHandleTableBucket = NULL;
+    m_handleStore = NULL;
 
     m_ExposedObject = NULL;
     m_pComIPForExposedObject = NULL;
@@ -4284,17 +4273,12 @@ void AppDomain::Init()
     // default domain cannot be unloaded.
     if (GetId().m_dwId == DefaultADID)
     {
-        m_hHandleTableBucket = g_HandleTableMap.pBuckets[0];
+        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
     }
     else
     {
-        m_hHandleTableBucket = Ref_CreateHandleTableBucket(m_dwIndex);
+        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
     }
-
-#ifdef _DEBUG
-    if (((HandleTable *)(m_hHandleTableBucket->pTable[0]))->uADIndex != m_dwIndex)
-        _ASSERTE (!"AD index mismatch");
-#endif // _DEBUG
 
 #endif // CROSSGEN_COMPILE
 
@@ -4594,16 +4578,10 @@ void AppDomain::Terminate()
 
     BaseDomain::Terminate();
 
-#ifdef _DEBUG
-    if (m_hHandleTableBucket &&
-        m_hHandleTableBucket->pTable &&
-        ((HandleTable *)(m_hHandleTableBucket->pTable[0]))->uADIndex != m_dwIndex)
-        _ASSERTE (!"AD index mismatch");
-#endif // _DEBUG
-
-    if (m_hHandleTableBucket) {
-        Ref_DestroyHandleTableBucket(m_hHandleTableBucket);
-        m_hHandleTableBucket = NULL;
+    if (m_handleStore) 
+    {
+        GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleStore(m_handleStore);
+        m_handleStore = NULL;
     }
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
@@ -9220,14 +9198,7 @@ void AppDomain::ClearGCHandles()
     HandleAsyncPinHandles();
 
     // Remove our handle table as a source of GC roots
-    HandleTableBucket *pBucket = m_hHandleTableBucket;
-
-#ifdef _DEBUG
-    if (((HandleTable *)(pBucket->pTable[0]))->uADIndex != m_dwIndex)
-        _ASSERTE (!"AD index mismatch");
-#endif // _DEBUG
-
-    Ref_RemoveHandleTableBucket(pBucket);
+    GCHandleTableUtilities::GetGCHandleTable()->UprootHandleStore(m_handleStore);
 }
 
 // When an AD is unloaded, we will release all objects in this AD.
@@ -9243,13 +9214,17 @@ void AppDomain::HandleAsyncPinHandles()
     }
     CONTRACTL_END;
 
-    HandleTableBucket *pBucket = m_hHandleTableBucket;
+    // TODO: Temporarily casting stuff here until Ref_RelocateAsyncPinHandles is moved to the interface.
+    HandleTableBucket *pBucket = (HandleTableBucket*)m_handleStore;
+
     // IO completion port picks IO job using FIFO.  Here is how we know which AsyncPinHandle can be freed.
     // 1. We mark all non-pending AsyncPinHandle with READYTOCLEAN.
     // 2. We queue a dump Overlapped to the IO completion as a marker.
     // 3. When the Overlapped is picked up by completion port, we wait until all previous IO jobs are processed.
     // 4. Then we can delete all AsyncPinHandle marked with READYTOCLEAN.
-    HandleTableBucket *pBucketInDefault = SystemDomain::System()->DefaultDomain()->m_hHandleTableBucket;
+    HandleTableBucket *pBucketInDefault = (HandleTableBucket*)SystemDomain::System()->DefaultDomain()->m_handleStore;
+
+    // TODO: When this function is moved to the interface it will take void*s
     Ref_RelocateAsyncPinHandles(pBucket, pBucketInDefault);
 
     OverlappedDataObject::RequestCleanup();
@@ -9272,14 +9247,15 @@ void AppDomain::ClearGCRoots()
     // this point, so only need to synchronize the preemptive mode threads.
     ExecutionManager::Unload(GetLoaderAllocator());
 
+    IGCHandleTable* pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
+
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
         // Delete the thread local static store
         pThread->DeleteThreadStaticData(this);
 
-
         // <TODO>@TODO: A pre-allocated AppDomainUnloaded exception might be better.</TODO>
-        if (m_hHandleTableBucket->Contains(pThread->m_LastThrownObjectHandle))
+        if (pHandleTable->ContainsHandle(m_handleStore, pThread->m_LastThrownObjectHandle))
         {
             // Never delete a handle to a preallocated exception object.
             if (!CLRException::IsPreallocatedExceptionHandle(pThread->m_LastThrownObjectHandle))
@@ -9291,7 +9267,7 @@ void AppDomain::ClearGCRoots()
         }
 
         // Clear out the exceptions objects held by a thread.
-        pThread->GetExceptionState()->ClearThrowablesForUnload(m_hHandleTableBucket);
+        pThread->GetExceptionState()->ClearThrowablesForUnload(m_handleStore);
     }
 
     //delete them while we still have the runtime suspended
