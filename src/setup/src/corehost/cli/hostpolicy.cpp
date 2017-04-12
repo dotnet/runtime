@@ -73,11 +73,12 @@ int run(const arguments_t& args)
         // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
         "APP_CONTEXT_BASE_DIRECTORY",
         "APP_CONTEXT_DEPS_FILES",
-        "FX_DEPS_FILE"
+        "FX_DEPS_FILE",
+        "PROBING_DIRECTORIES"
     };
 
     // Note: these variables' lifetime should be longer than coreclr_initialize.
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr;
+    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
     pal::pal_clrstring(args.app_dir, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
@@ -85,6 +86,8 @@ int run(const arguments_t& args)
 
     pal::pal_clrstring(resolver.get_fx_deps_file(), &fx_deps);
     pal::pal_clrstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file(), &deps);
+
+    pal::pal_clrstring(resolver.get_probe_directories(), &probe_directories);
 
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -100,7 +103,9 @@ int run(const arguments_t& args)
         // APP_CONTEXT_DEPS_FILES,
         deps.data(),
         // FX_DEPS_FILE
-        fx_deps.data()
+        fx_deps.data(),
+        //PROBING_DIRECTORIES
+        probe_directories.data()
     };
 
     if (!clrjit_path.empty())
