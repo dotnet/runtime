@@ -7090,6 +7090,8 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	mcpath = mono_string_new (mono_domain_get (), path);
 	g_free (path);
 
+	g_assert (mcpath);
+
 	return mcpath;
 }
 

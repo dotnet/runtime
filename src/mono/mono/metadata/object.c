@@ -6170,24 +6170,25 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-    GError *eg_error = NULL;
-    MonoString *o = NULL;
-    guint16 *ut;
-    glong items_written;
-    int l;
+	GError *eg_error = NULL;
+	MonoString *o = NULL;
+	guint16 *ut;
+	glong items_written;
+	int l;
 
-    error_init (error);
-
-    l = strlen (text);
-   
-    ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &eg_error);
-
-    if (!eg_error)
-	    o = mono_string_new_utf16_checked (domain, ut, items_written, error);
-    else
-        g_error_free (eg_error);
-
-    g_free (ut);
+	error_init (error);
+	
+	l = strlen (text);
+	
+	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &eg_error);
+	
+	if (!eg_error) {
+		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+	} else {
+		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
+	}
+	
+	g_free (ut);
     
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
 #if 0
