@@ -23,11 +23,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             RepoDirectories = new RepoDirectoriesProvider();
 
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
 
             PreviouslyPublishedAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .PublishProject();
         }
 

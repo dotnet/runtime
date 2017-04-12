@@ -65,35 +65,6 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        // We need to generate stub host packages so we can restore our standalone test assets against the metapackage
-        // we built earlier in the build
-        // https://github.com/dotnet/cli/issues/2438
-        [Target]
-        public static BuildTargetResult GenerateStubHostPackages(BuildTargetContext c)
-        {
-            var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var currentRid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
-
-            var stubPackageBuilder = new StubPackageBuilder(DotNetCli.Stage0, Dirs.Intermediate, Dirs.CorehostDummyPackages);
-
-            foreach (var hostPackage in hostVersion.LatestHostPackages)
-            {
-                foreach (var rid in HostPackageSupportedRids.Values.Distinct())
-                {
-                    if (!rid.Equals(currentRid))
-                    {
-                        var basePackageId = hostPackage.Key;
-                        var packageVersion = hostPackage.Value.ToString();
-
-                        var packageId = $"runtime.{rid}.{basePackageId}";
-
-                        stubPackageBuilder.GeneratePackage(packageId, packageVersion);
-                    }
-                }
-            }
-            return c.Success();
-        }
-
         private static void GetVersionResourceForAssembly(
             string assemblyName,
             HostVersion.VerInfo hostVer,
@@ -414,7 +385,7 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target(nameof(GenerateStubHostPackages), nameof(GenerateMSbuildPropsFile))]
+        [Target(nameof(GenerateMSbuildPropsFile))]
         public static BuildTargetResult PackagePkgProjects(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
@@ -494,8 +465,7 @@ namespace Microsoft.DotNet.Host.Build
             File.WriteAllText(tempPjFile, projectJson);
 
             DotNetCli.Stage0.Restore("--verbosity", "verbose",
-                    "--fallbacksource", Dirs.CorehostLocalPackages,
-                    "--fallbacksource", Dirs.CorehostDummyPackages)
+                    "--fallbacksource", Dirs.CorehostLocalPackages)
                 .WorkingDirectory(tempPjDirectory)
                 .Execute()
                 .EnsureSuccessful();

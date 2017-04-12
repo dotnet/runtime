@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Restore and build PortableApp from exe dir
             RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 

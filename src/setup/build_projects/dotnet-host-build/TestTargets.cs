@@ -37,7 +37,6 @@ namespace Microsoft.DotNet.Host.Build
 
             dotnet.Restore(
                     "--fallbacksource", Dirs.CorehostLocalPackages,
-                    "--fallbacksource", Dirs.CorehostDummyPackages,
                     "--disable-parallel")
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "TestAssets"))
                 .Execute()

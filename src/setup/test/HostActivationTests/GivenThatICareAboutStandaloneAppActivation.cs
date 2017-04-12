@@ -27,12 +27,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             buildFixture
-                .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
                 .BuildProject(runtime: buildFixture.CurrentRid);
 
             var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             publishFixture
-                .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
                 .PublishProject(runtime: publishFixture.CurrentRid);
 
             ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);

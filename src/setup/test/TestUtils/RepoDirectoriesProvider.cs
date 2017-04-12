@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _builtDotnet;
         private string _nugetPackages;
         private string _corehostPackages;
-        private string _corehostDummyPackages;
 
         private string _targetRID;
 
@@ -27,18 +26,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string BuiltDotnet => _builtDotnet;
         public string NugetPackages => _nugetPackages;
         public string CorehostPackages => _corehostPackages;
-        public string CorehostDummyPackages => _corehostDummyPackages;
 
         public RepoDirectoriesProvider(
             string repoRoot = null,
             string artifacts = null,
             string builtDotnet = null,
             string nugetPackages = null,
-            string corehostPackages = null,
-            string corehostDummyPackages = null)
+            string corehostPackages = null)
         {
             _repoRoot = repoRoot ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..");
-            
+
             string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "artifacts");
 
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
@@ -48,7 +45,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
-            _corehostDummyPackages = corehostDummyPackages ?? Path.Combine(_artifacts, "corehostdummypackages");
             _builtDotnet = builtDotnet ?? Path.Combine(_artifacts, "intermediate", "sharedFrameworkPublish");
         }
     }
