@@ -5,12 +5,7 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// These types as extension methods support a better contract factoring between XDocument and XPath.
-
-namespace System.Xml.XPath
-{
-    public static partial class XDocumentExtensions
-    {
-        public static System.Xml.XPath.IXPathNavigable ToXPathNavigable(this System.Xml.Linq.XNode node) { throw null; }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Compression.CompressionLevel))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Compression.CompressionMode))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Compression.DeflateStream))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.Compression.GZipStream))]

@@ -5,9 +5,11 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.InvalidDataContractException))]
 
 namespace System.Runtime.Serialization
 {
+#if !netfx
     public abstract partial class DataContractResolver
     {
         protected DataContractResolver() { }
@@ -44,11 +46,13 @@ namespace System.Runtime.Serialization
         public override void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object graph) { }
         public override void WriteStartObject(System.Xml.XmlWriter writer, object graph) { }
     }
+#endif // !netfx
     public static partial class DataContractSerializerExtensions
     {
         public static System.Runtime.Serialization.ISerializationSurrogateProvider GetSerializationSurrogateProvider(this DataContractSerializer serializer) { throw null; }
         public static void SetSerializationSurrogateProvider(this DataContractSerializer serializer, System.Runtime.Serialization.ISerializationSurrogateProvider provider)  { }
     }
+#if !netfx
     public partial class DataContractSerializerSettings
     {
         public DataContractSerializerSettings() { }
@@ -430,4 +434,5 @@ namespace System.Xml
         public virtual void WriteXmlnsAttribute(string prefix, string namespaceUri) { }
         public virtual void WriteXmlnsAttribute(string prefix, System.Xml.XmlDictionaryString namespaceUri) { }
     }
+#endif // !netfx
 }

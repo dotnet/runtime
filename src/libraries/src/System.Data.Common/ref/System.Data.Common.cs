@@ -8,6 +8,7 @@
 
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.DBNull))]
 
+#if !netfx
 namespace System.Data
 {
     public enum AcceptRejectRule
@@ -1478,8 +1479,10 @@ namespace System.Data
         WriteSchema = 0,
     }
 }
+#endif // !netfx
 namespace System.Data.Common
 {
+#if !netfx
     public enum CatalogLocation
     {
         End = 2,
@@ -1656,6 +1659,7 @@ namespace System.Data.Common
         System.Data.ITableMapping System.Data.ITableMappingCollection.Add(string sourceTableName, string dataSetTableName) { throw null; }
         System.Data.ITableMapping System.Data.ITableMappingCollection.GetByDataSetTable(string dataSetTableName) { throw null; }
     }
+#endif // !netfx
     public abstract partial class DbColumn
     {
         public bool? AllowDBNull { get { throw null; } protected set { } }
@@ -1683,6 +1687,7 @@ namespace System.Data.Common
         public string DataTypeName { get { throw null; } protected set { } }
         public virtual object this[string property] { get { throw null; } }
     }
+#if !netfx
     public abstract partial class DbCommand : System.ComponentModel.Component, System.Data.IDbCommand, System.IDisposable
     {
         protected DbCommand() { }
@@ -1994,11 +1999,13 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.Task<bool> ReadAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         System.Data.IDataReader System.Data.IDataRecord.GetData(int ordinal) { throw null; }
     }
+#endif // !netfx
     public static class DbDataReaderExtensions
     {
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> GetColumnSchema(this System.Data.Common.DbDataReader reader) { throw null; }
         public static bool CanGetColumnSchema(this System.Data.Common.DbDataReader reader) { throw null; }
     }
+#if !netfx
     public abstract partial class DbDataRecord : System.ComponentModel.ICustomTypeDescriptor, System.Data.IDataRecord
     {
         protected DbDataRecord() { }
@@ -2237,10 +2244,12 @@ namespace System.Data.Common
         Unknown = 0,
         Unrelated = 2,
     }
+#endif // !netfx
     public partial interface IDbColumnSchemaGenerator
     {
         System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> GetColumnSchema();
     }
+#if !netfx
     public enum IdentifierCase
     {
         Insensitive = 1,
@@ -3302,4 +3311,5 @@ namespace System.Data.SqlTypes
         Stream = 1,
         UnmanagedBuffer = 2,
     }
+#endif // !netfx
 }

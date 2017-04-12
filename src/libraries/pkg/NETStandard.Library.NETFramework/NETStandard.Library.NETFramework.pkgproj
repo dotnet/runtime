@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" InitialTargets="FillInPackageContent"  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageVersion>2.0.0</PackageVersion>
+    <TargetFrameworkName>net</TargetFrameworkName>
+    <TargetFrameworkVersion>461</TargetFrameworkVersion>
+    <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
+
+    <RefBinDir>$(NetFxPackageRefPath)</RefBinDir>
+    <LibBinDir>$(NetFxPackageRuntimePath)</LibBinDir>
+
+    <IsFrameworkPackage>true</IsFrameworkPackage>
+    <IncludeLibFiles>true</IncludeLibFiles>
+
+    <RefFileTargetPath>build/$(TargetFramework)/ref</RefFileTargetPath>
+    <LibFileTargetPath>build/$(TargetFramework)/lib</LibFileTargetPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <StampFile Include="targets\NETStandard.Library.NETFramework.props">
+      <TargetPath>build/$(TargetFramework)</TargetPath>
+    </StampFile>
+    <File Include="targets\NETStandard.Library.NETFramework.targets">
+      <TargetPath>build/$(TargetFramework)</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$(SourceDir)\shims\netfxreference.props" />
+
+  <!-- runs as initial target -->
+  <Target Name="FillInPackageContent">
+    <ItemGroup>
+      <_refFileNames Include="@(RefFile->'%(FileName)')" Condition="'%(Extension)' == '.dll'" />
+      <_libFileNames Include="@(LibFile->'%(FileName)')" Condition="'%(Extension)' == '.dll'" />
+
+      <!-- remove any targeting pack assemblies that we build ourselves -->
+      <_netFxReference Include="@(NetFxReference)" Exclude="@(_refFileNames);@(_libFileNames)" />
+
+      <!-- ignore any assemblies we expect to come from the targeting pack -->
+      <IgnoredReference Include="@(_netFxReference)" />
+      <SuppressNETStandardMissingFile Include="@(_netFxReference)" />
+
+      <!-- don't include shims for anything from the targeting pack or built explicitly -->
+      <_excludeShimsRef Include="@(_netFxReference);@(_refFileNames)"/>
+      <_excludeShimsLib Include="@(_netFxReference);@(_libFileNames)"/>
+
+      <!-- fill in with netstandard.dll-based shims -->
+      <File Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsRef->'$(NETStandardPackageRefPath)\%(Identity).dll')">
+        <TargetPath>$(RefFileTargetPath)</TargetPath>
+      </File>
+      <File Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsLib->'$(NETStandardPackageRefPath)\%(Identity).dll')">
+        <TargetPath>$(LibFileTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="StampPackageVersion" BeforeTargets="GetFiles" DependsOnTargets="CalculatePackageVersion">
+    <ItemGroup>
+      <StampFile>
+        <StampedFile>$(IntermediateOutputPath)%(StampFile.RelativeDir)%(StampFile.FileName)%(StampFile.Extension)</StampedFile>
+      </StampFile>
+    </ItemGroup>
+  
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(StampFile.StampedFile)'))" />
+    <!-- Update targets templates -->
+    <WriteLinesToFile
+      File="%(StampFile.StampedFile)"
+      Lines="$([System.IO.File]::ReadAllText('%(StampFile.FullPath)').Replace('{PACKAGE_VERSION}', $(PackageVersion)))"
+      Overwrite="true"/>
+
+    <ItemGroup>
+      <File Include="@(StampFile->'%(StampedFile)')" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="AddNETStandardLibraryReference" AfterTargets="ApplyBaselineToStaticDependencies">
+    <ItemGroup>
+      <!-- ApplyBaseline doesn't handle NuGet versions, so workaround that by
+           adding after we've baselined.
+           https://github.com/dotnet/buildtools/issues/1432 -->
+      <Dependency Include="$(NETStandardPackageId)">
+        <Version>$(NETStandardPackageVersion)</Version>
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </Dependency>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

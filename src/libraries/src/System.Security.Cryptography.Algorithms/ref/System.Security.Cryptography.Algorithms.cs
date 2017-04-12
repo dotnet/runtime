@@ -8,6 +8,7 @@
 
 namespace System.Security.Cryptography
 {
+#if !netfx
     public abstract partial class Aes : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Aes() { }
@@ -299,6 +300,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
     }
+#endif // !netfx
     public sealed partial class IncrementalHash : System.IDisposable
     {
         internal IncrementalHash() { }
@@ -310,6 +312,7 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         public byte[] GetHashAndReset() { throw null; }
     }
+#if !netfx
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
         protected MD5() { }
@@ -607,4 +610,5 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.TripleDES Create(string str) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
     }
+#endif // !netfx
 }

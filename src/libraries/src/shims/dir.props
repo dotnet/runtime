@@ -11,34 +11,12 @@
 
   <Import Project="..\dir.props" />
 
-  <ItemGroup>
-    <NetFxReference Include="mscorlib" />
-    <NetFxReference Include="System" />
-    <NetFxReference Include="System.Core" />
-    <NetFxReference Include="System.ComponentModel.Composition" />
-    <NetFxReference Include="System.ComponentModel.DataAnnotations">
-      <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference>
-    <NetFxReference Include="System.Data" />
-    <NetFxReference Include="System.Drawing" />
-    <NetFxReference Include="System.IO.Compression.FileSystem" />
-    <NetFxReference Include="System.Net" />
-    <NetFxReference Include="System.Numerics" />
-    <NetFxReference Include="System.Runtime.Serialization" />
-    <NetFxReference Include="System.ServiceModel.Web">
-      <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference>
-    <NetFxReference Include="System.Transactions" />
-    <NetFxReference Include="System.Windows" />
-    <NetFxReference Include="System.Web" />
-    <NetFxReference Include="System.Xml" />
-    <NetFxReference Include="System.Xml.Serialization" />
-    <NetFxReference Include="System.Xml.Linq" />
-  </ItemGroup>
+  <Import Project="netfxreference.props" />
 
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
+    <IsNetFxNETStandard>true</IsNetFxNETStandard>
   </PropertyGroup>
 
   <PropertyGroup>

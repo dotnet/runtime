@@ -8,6 +8,7 @@
 
 namespace System.Threading
 {
+#if !netfx
     [System.CLSCompliantAttribute(false)]
     [System.Security.SecurityCriticalAttribute]
     public unsafe delegate void IOCompletionCallback(uint errorCode, uint numBytes, System.Threading.NativeOverlapped* pOVERLAP);
@@ -20,6 +21,7 @@ namespace System.Threading
         public int OffsetHigh;
         public int OffsetLow;
     }
+#endif // !netfx
     public sealed partial class PreAllocatedOverlapped : System.IDisposable
     {
         [System.CLSCompliantAttribute(false)]
@@ -41,6 +43,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static unsafe object GetNativeOverlappedState(System.Threading.NativeOverlapped* overlapped) { throw null; }
     }
+#if !netfx
     public partial class Overlapped
     {
         public Overlapped() { }
@@ -68,4 +71,5 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public unsafe System.Threading.NativeOverlapped* UnsafePack(System.Threading.IOCompletionCallback iocb, object userData) { throw null; }
     }
+#endif // !netfx
 }
