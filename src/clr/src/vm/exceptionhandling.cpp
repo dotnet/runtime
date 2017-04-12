@@ -123,6 +123,24 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
                              bool      fAborting
                              );
 
+void FixContext(PCONTEXT pContextRecord)
+{
+#define FIXUPREG(reg, value)                                                                \
+    do {                                                                                    \
+        STRESS_LOG2(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p\n",                 \
+                pContextRecord->reg,                                                        \
+                (value));                                                                   \
+        pContextRecord->reg = (value);                                                      \
+    } while (0)
+
+#ifdef _TARGET_X86_
+    size_t resumeSp = EECodeManager::GetResumeSp(pContextRecord);
+    FIXUPREG(ResumeEsp, resumeSp);
+#endif // _TARGET_X86_
+
+#undef FIXUPREG
+}
+
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 #ifdef FEATURE_PAL
@@ -440,6 +458,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
             pAbortContext->reg = pContextRecord->reg;                                       \
         }                                                                                   \
     } while (0)
+
 
 #if defined(_TARGET_X86_)
 
@@ -1180,6 +1199,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 #endif // defined(_TARGET_ARM_)            
 
                 pThread->SetFrame(pLimitFrame);
+
+                FixContext(pContextRecord);
 
                 SetIP(pContextRecord, (PCODE)uResumePC);
             }
