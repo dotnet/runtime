@@ -1637,7 +1637,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // Unpack the corefx binaries
                     buildCommands += "mkdir ./bin/CoreFxBinDir"
                     buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
-                    buildCommands += "chmod a+x ./bin/CoreFxBinDir/corerun"
+                    if (os != 'Tizen') {
+                        buildCommands += "chmod a+x ./bin/CoreFxBinDir/corerun"
+                    }
 
                     // Call the ARM CI script to cross build and test using docker
                     buildCommands += """./tests/scripts/arm32_ci_script.sh \\
