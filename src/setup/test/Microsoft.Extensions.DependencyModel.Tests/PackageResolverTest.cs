@@ -24,8 +24,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddVariable("NUGET_PACKAGES", PackagesPath)
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Unknown, environment);
-            result.Should().Be(PackagesPath);
+            var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Unknown, environment);
+            result.Should().Contain(PackagesPath);
         }
 
 
@@ -36,8 +36,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddVariable("USERPROFILE", "User Profile")
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Windows, environment);
-            result.Should().Be(Path.Combine("User Profile", ".nuget", "packages"));
+            var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Windows, environment);
+            result.Should().Contain(Path.Combine("User Profile", ".nuget", "packages"));
         }
 
         [Fact]
@@ -47,8 +47,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddVariable("HOME", "User Home")
                 .Build();
 
-            var result = PackageCompilationAssemblyResolver.GetDefaultPackageDirectory(Platform.Linux, environment);
-            result.Should().Be(Path.Combine("User Home", ".nuget", "packages"));
+            var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Linux, environment);
+            result.Should().Contain(Path.Combine("User Home", ".nuget", "packages"));
         }
 
         [Fact]
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
             var library = F.Create(assemblies: F.TwoAssemblies);
 
-            var resolver = new PackageCompilationAssemblyResolver(fileSystem, PackagesPath);
+            var resolver = new PackageCompilationAssemblyResolver(fileSystem, new string[] { PackagesPath });
             var assemblies = new List<string>();
 
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
             var library = F.Create(assemblies: F.TwoAssemblies);
 
-            var resolver = new PackageCompilationAssemblyResolver(fileSystem, PackagesPath);
+            var resolver = new PackageCompilationAssemblyResolver(fileSystem,  new string[] { PackagesPath });
             var assemblies = new List<string>();
 
             var exception = Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
