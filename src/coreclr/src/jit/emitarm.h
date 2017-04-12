@@ -243,6 +243,7 @@ static bool emitIns_valid_imm_for_small_mov(regNumber reg, int imm, insFlags fla
 static bool emitIns_valid_imm_for_add(int imm, insFlags flags);
 static bool emitIns_valid_imm_for_cmp(int imm, insFlags flags);
 static bool emitIns_valid_imm_for_add_sp(int imm);
+static bool emitIns_valid_imm_for_ldst_offset(int imm, emitAttr size);
 
 void emitIns(instruction ins);
 
