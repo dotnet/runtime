@@ -1338,24 +1338,6 @@ void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket 
 }
 #endif // !FEATURE_REDHAWK
 
-BOOL Ref_ContainHandle(HandleTableBucket *pBucket, OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    int limit = getNumberOfSlots();
-    for (int n = 0; n < limit; n ++ )
-    {
-        if (TableContainHandle(Table(pBucket->pTable[n]), handle))
-            return TRUE;
-    }
-
-    return FALSE;
-}
 /*--------------------------------------------------------------------------*/
 
 
