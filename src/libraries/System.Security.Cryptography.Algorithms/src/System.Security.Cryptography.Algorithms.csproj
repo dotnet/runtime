@@ -9,6 +9,8 @@
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <NoWarn>CA5351;$(NoWarn)</NoWarn>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'netfx'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
@@ -16,9 +18,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
@@ -103,7 +107,7 @@
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netfx'">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\DSACng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
@@ -473,7 +477,7 @@
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -489,6 +493,12 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Compile Include="System\Security\Cryptography\IncrementalHash.net46.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

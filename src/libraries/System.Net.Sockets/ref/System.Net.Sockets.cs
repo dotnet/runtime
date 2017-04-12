@@ -8,6 +8,7 @@
 
 namespace System.Net.Sockets
 {
+#if !netfx
     public enum IOControlCode : long
     {
         AbsorbRouterAlert = (long)2550136837,
@@ -460,6 +461,7 @@ namespace System.Net.Sockets
         UpdateConnectContext = 28688,
         UseLoopback = 64,
     }
+#endif // !netfx
     // Review note: RemoteEndPoint definition includes the Address and Port.
     // PacketInformation includes Address and Interface (physical interface number).
     // The redundancy could be removed by replacing RemoteEndPoint with Port.
@@ -492,12 +494,14 @@ namespace System.Net.Sockets
         public EndPoint RemoteEndPoint;
         public IPPacketInformation PacketInformation;
     }
+#if !netfx
     public enum SocketShutdown
     {
         Both = 2,
         Receive = 0,
         Send = 1,
     }
+#endif // !netfx
 
     public static partial class SocketTaskExtensions
     {
@@ -515,6 +519,7 @@ namespace System.Net.Sockets
         public static System.Threading.Tasks.Task<int> SendAsync(this System.Net.Sockets.Socket socket, System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags) { throw null; }
         public static System.Threading.Tasks.Task<int> SendToAsync(this System.Net.Sockets.Socket socket, System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
     }
+#if !netfx
     public enum SocketType
     {
         Dgram = 2,
@@ -650,4 +655,5 @@ namespace System.Net.Sockets
         public static bool operator ==(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }
         public static bool operator !=(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }
     }
+#endif // !netfx
 }

@@ -6,14 +6,18 @@
     <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(TargetGroup)' == 'netfx'">true</OmitResources>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
@@ -21,13 +25,15 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- All configurations -->
-    <Compile Include="System\Net\Sockets\TransmitFileOptions.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
-    <Compile Include="System\Net\Sockets\SocketTaskExtensions.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Compile Include="System\Net\Sockets\SocketTaskExtensions.netfx.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <!-- CoreCLR (All Operating Systems), .NET Native -->
+    <Compile Include="System\Net\Sockets\SocketTaskExtensions.cs" />
     <Compile Include="System\Net\SocketPerfCounters.cs" />
     <Compile Include="System\Net\Sockets\IOControlCode.cs" />
     <Compile Include="System\Net\Sockets\IPPacketInformation.cs" />
@@ -50,6 +56,7 @@
     <Compile Include="System\Net\Sockets\SocketShutdown.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.cs" />
     <Compile Include="System\Net\Sockets\TCPListener.cs" />
+    <Compile Include="System\Net\Sockets\TransmitFileOptions.cs" />
     <Compile Include="System\Net\Sockets\TransportType.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
@@ -128,7 +135,7 @@
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netfx'">
     <!-- Windows: CoreCLR and .NET Native -->
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
@@ -243,7 +250,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'netfx'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs">
       <Link>Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
@@ -397,7 +404,7 @@
       <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
@@ -418,6 +425,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

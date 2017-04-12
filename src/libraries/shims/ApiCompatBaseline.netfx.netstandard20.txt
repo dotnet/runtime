@@ -1,38 +1,17 @@
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.ValueTuple'.
 Compat issues with assembly mscorlib:
 MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly netstandard:
 MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.StringNormalizationExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.TupleExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.DbColumn' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.DbDataReaderExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.IDbColumnSchemaGenerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.StackFrameExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Tracing.EventCounter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Globalization.GlobalizationExtensions' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketReceiveFromResult' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketReceiveMessageFromResult' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketTaskExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.DataContractSerializerExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.ISerializationSurrogateProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.SecureStringMarshal' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
@@ -42,14 +21,10 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.IncrementalHash' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.PreAllocatedOverlapped' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.ThreadPoolBoundHandle' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.XPath.XDocumentExtensions' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
@@ -70,22 +45,21 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportParameters(S
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Diagnostics.Tracing:
-TypesMustExist : Type 'System.Diagnostics.Tracing.EventCounter' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Globalization.Extensions:
-TypesMustExist : Type 'System.StringNormalizationExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Globalization.GlobalizationExtensions' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.IO:
 TypesMustExist : Type 'System.IO.BufferedStream' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.IO.Compression:
+TypesMustExist : Type 'System.IO.Compression.CompressionLevel' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.Compression.CompressionMode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.Compression.DeflateStream' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.Compression.GZipStream' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Linq:
 MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Linq.Expressions:
 MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Net.Sockets:
-TypesMustExist : Type 'System.Net.Sockets.SocketReceiveFromResult' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketReceiveMessageFromResult' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketTaskExtensions' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Reflection:
 TypesMustExist : Type 'System.Reflection.BindingFlags' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.ICustomAttributeProvider' does not exist in the implementation but it does exist in the contract.
@@ -105,7 +79,6 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.IncrementalHash' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Principal.Windows:
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
@@ -141,8 +114,6 @@ MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Sec
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.SecureString:
-TypesMustExist : Type 'System.Security.SecureStringMarshal' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Text.RegularExpressions:
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
@@ -150,16 +121,4 @@ MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.RegularExpressions.RegexRunner' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.RegularExpressions.RegexRunnerFactory' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.ValueTuple:
-TypesMustExist : Type 'System.TupleExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
-Total Issues: 146
+Total Issues: 109

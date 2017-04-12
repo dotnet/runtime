@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
+      netfx-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

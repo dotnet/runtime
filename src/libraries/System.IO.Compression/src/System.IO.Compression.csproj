@@ -6,13 +6,18 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <!-- CSC adds a typeforward for the internal nested type DeflateStream.AsyncWriteDelegate but
+         GenFacades doesn't consider this as a viable target for a typeforward since it's internal -->
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'netfx'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
@@ -42,6 +47,11 @@
     <Compile Include="System\IO\Compression\DeflateManaged\OutputBuffer.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\OutputWindow.cs" />
     <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
     <Compile Include="System\IO\Compression\GZipStream.cs" />
@@ -54,9 +64,6 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -64,6 +71,8 @@
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netfx'">
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.Windows.cs" />
     <Compile Include="Interop\Interop.zlib.Windows.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
@@ -88,7 +97,7 @@
       <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Contracts" />
@@ -100,6 +109,11 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Compile Include="AssemblyInfo.cs" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
