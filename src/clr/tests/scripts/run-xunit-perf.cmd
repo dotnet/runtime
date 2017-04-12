@@ -94,7 +94,7 @@ if DEFINED TEST_ENV (
     )
 )
 
-corerun.exe PerfHarness.dll %WORKSPACE%\sandbox\%BENCHNAME%.%TEST_FILE_EXT% --perf:runid Perf > %BENCHNAME%.out
+corerun.exe PerfHarness.dll %CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT% --perf:runid Perf > %BENCHNAME%.out
 
 @rem optionally generate results for benchview
 if not [%BENCHVIEW_PATH%] == [] (
