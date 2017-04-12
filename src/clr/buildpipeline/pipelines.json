@@ -19,7 +19,7 @@
             "OperatingSystem": "Debian 8.2",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -32,7 +32,7 @@
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -45,7 +45,7 @@
             "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -58,7 +58,7 @@
             "OperatingSystem": "Ubuntu 16.04",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -71,7 +71,7 @@
             "OperatingSystem": "Ubuntu 16.10",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -84,7 +84,7 @@
             "OperatingSystem": "Fedora 24",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -97,7 +97,7 @@
             "OperatingSystem": "openSUSE 42.1",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -110,7 +110,7 @@
             "OperatingSystem": "Alpine 3.4.3",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -124,7 +124,7 @@
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -136,7 +136,7 @@
             "OperatingSystem": "OSX 10.12",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -150,7 +150,7 @@
             "Type": "build/product/",
             "SubType": "PortableBuild",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -162,7 +162,7 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -176,7 +176,7 @@
             "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "x64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -188,7 +188,7 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Architecture": "arm64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -202,7 +202,7 @@
             "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "arm64",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -214,7 +214,7 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Architecture": "arm",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -228,7 +228,7 @@
             "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "arm",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -237,7 +237,7 @@
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Architecture": "x86",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -250,7 +250,7 @@
             "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "x86",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         }
       ]
@@ -270,7 +270,7 @@
             "SubType": "CrossBuild",
             "Type": "build/product/",
             "Architecture": "arm",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -286,7 +286,7 @@
             "SubType": "PortableCrossBuild",
             "Type": "build/product/",
             "Architecture": "arm",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         },
         {
@@ -301,7 +301,7 @@
             "SubType": "CrossBuild",
             "Type": "build/product/",
             "Architecture": "arm",
-            "PB_BuildType": { }
+            "PB_BuildType": null
           }
         }
       ]
