@@ -242,13 +242,19 @@
 			<method name="AddTypeForwarder" />
 			<method name="EmbedResourceFile" />
 		</type>
-		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
 		<type fullname="System.Reflection.Emit.CustomAttributeBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" />
 		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
 		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields">
@@ -257,7 +263,9 @@
 		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields">
 			<method name="Mono_GetLocalIndex" />
 		</type>
-		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
 		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields">
 			<method name="Mono_GetGuid" />
 			<method name="RuntimeResolve" />
@@ -273,6 +281,27 @@
 		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields">
 			<method name="DefineCustom" />
 			<method name="DefineLPArrayInternal" />
+		</type>
+		<type fullname="System.Reflection.Emit.TypeBuilderInstantiation" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.ArrayType" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.ByRefType" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.PointerType" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.FieldOnTypeBuilderInst" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.MethodOnTypeBuilderInst" preserve="fields" >
+			<method name="RuntimeResolve" />
+		</type>
+		<type fullname="System.Reflection.Emit.ConstructorOnTypeBuilderInst" preserve="fields" >
+			<method name="RuntimeResolve" />
 		</type>
 
 		<!--
