@@ -216,7 +216,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
 
     <PropertyGroup>
-      <TestExecutableReplacement Condition="'$(RuntimeID)' != '' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
+      <TestExecutableReplacement Condition="'$(TargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
     </PropertyGroup>
 
     <ItemGroup>
@@ -323,23 +323,22 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="tests.targets" />
   <Import Project="publishdependency.targets" />
 
+  <PropertyGroup>
+    <TargetRid Condition="'$(RuntimeId)' != ''">$(RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
+  </PropertyGroup>
+
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependecyToCoreRoot"
-             Properties="Language=C#" />
-  </Target>
-
-  <Target Name="CreateNonWindowsTestOverlay">
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyNonWindowsDependecyToCoreRoot"
-             Properties="Language=C#;NonWindowsRuntimeId=$(NonWindowsRuntimeId)" />
+             Properties="Language=C#;TargetRid=$(TargetRid)" />
   </Target>
 
   <Target Name="BinPlaceRef">
     <!-- Copy mscorlib.dll from TargetingPack to bin/Product/ref, if we're building against packages -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToRef"
-             Properties="Language=C#"
+             Properties="Language=C#;TargetRid=$(TargetRid)"
              Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
   </Target>
 
@@ -347,7 +346,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- Copy test dependencies to bin/Product, if we're building against packages -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToProduct"
-             Properties="Language=C#"
+             Properties="Language=C#;TargetRid=$(TargetRid)"
              Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
   </Target>
 
