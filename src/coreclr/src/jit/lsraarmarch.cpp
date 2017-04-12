@@ -291,19 +291,13 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     if (index != nullptr && !modifiedSources)
     {
         info->srcCount++;
-
-#ifdef _TARGET_ARM_
-        info->internalIntCount++;
-#endif // _TARGET_ARM_
     }
 
-#ifdef _TARGET_ARM64_
-
-    // On ARM64 we may need a single internal register
+    // On ARM we may need a single internal register
     // (when both conditions are true then we still only need a single internal register)
     if ((index != nullptr) && (cns != 0))
     {
-        // ARM64 does not support both Index and offset so we need an internal register
+        // ARM does not support both Index and offset so we need an internal register
         info->internalIntCount = 1;
     }
     else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, emitTypeSize(indirTree)))
@@ -311,8 +305,6 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         // This offset can't be contained in the ldr/str instruction, so we need an internal register
         info->internalIntCount = 1;
     }
-
-#endif // _TARGET_ARM64_
 }
 
 //------------------------------------------------------------------------

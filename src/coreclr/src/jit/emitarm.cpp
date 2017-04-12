@@ -1422,6 +1422,20 @@ DONE:
 
 /*****************************************************************************
  *
+ *  emitIns_valid_imm_for_ldst_offset() returns true when the immediate 'imm'
+ *   can be encoded as the offset in a ldr/str instruction.
+ */
+/*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(int imm, emitAttr size)
+{
+    if ((imm & 0x0fff) == imm)
+        return true; // encodable using IF_T2_K1
+    if (unsigned_abs(imm) <= 0x0ff)
+        return true; // encodable using IF_T2_H0
+    return false;
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction with no operands.
  */
 
@@ -7608,10 +7622,26 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 }
             }
         }
-        else
+        else // no Index
         {
-            // TODO check offset is valid for encoding
-            emitIns_R_R_I(ins, attr, dataReg, memBase->gtRegNum, offset);
+            if (emitIns_valid_imm_for_ldst_offset(offset, attr))
+            {
+                // Then load/store dataReg from/to [memBase + offset]
+                emitIns_R_R_I(ins, attr, dataReg, memBase->gtRegNum, offset);
+            }
+            else
+            {
+                // We require a tmpReg to hold the offset
+                regMaskTP tmpRegMask = indir->gtRsvdRegs;
+                regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
+                noway_assert(tmpReg != REG_NA);
+
+                // First load/store tmpReg with the large offset constant
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+
+                // Then load/store dataReg from/to [memBase + tmpReg]
+                emitIns_R_R_R(ins, attr, dataReg, memBase->gtRegNum, tmpReg);
+            }
         }
     }
     else
