@@ -409,17 +409,29 @@ public:
 
     virtual void Shutdown() = 0;
 
-    virtual void* GetHandleTableContext(void* handleTable) = 0;
+    virtual void* GetHandleContext(OBJECTHANDLE handle) = 0;
 
-    virtual void* GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
+    virtual void* GetGlobalHandleStore() = 0;
 
-    virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type) = 0;
+    virtual void* CreateHandleStore(void* context) = 0;
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo) = 0;
+    virtual void DestroyHandleStore(void* store) = 0;
 
-    virtual OBJECTHANDLE CreateDependentHandle(void* table, Object* primary, Object* secondary) = 0;
+    virtual void UprootHandleStore(void* store) = 0;
+
+    virtual bool ContainsHandle(void* store, OBJECTHANDLE handle) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* store, Object* object, int type) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(void* store, Object* object, int type, int heapToAffinitizeTo) = 0;
+
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* store, Object* object, int type, void* pExtraInfo) = 0;
+
+    virtual OBJECTHANDLE CreateDependentHandle(void* store, Object* primary, Object* secondary) = 0;
 
     virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type) = 0;
+
+    virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) = 0;
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type) = 0;
 
