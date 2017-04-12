@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization
     [Serializable]
     public class SerializationException : SystemException
     {
-        private static String s_nullMessage = SR.Arg_SerializationException;
+        private static String s_nullMessage = SR.SerializationException;
 
         // Creates a new SerializationException with its message 
         // string set to a default message.
