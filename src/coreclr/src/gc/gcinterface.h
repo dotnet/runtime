@@ -411,6 +411,10 @@ public:
 
     virtual void* GetHandleContext(OBJECTHANDLE handle) = 0;
 
+    virtual void* GetGlobalHandleTable() = 0;
+
+    virtual void* GetNewHandleTable(void* context) = 0;
+
     virtual OBJECTHANDLE CreateHandleOfType(void* table, Object* object, int type) = 0;
 
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(void* table, Object* object, int type, void* pExtraInfo) = 0;
