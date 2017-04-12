@@ -14,7 +14,7 @@ public:
 
     virtual void Shutdown();
 
-    virtual void* GetHandleTableContext(void* handleTable);
+    virtual void* GetHandleContext(OBJECTHANDLE handle);
 
     virtual void* GetHandleTableForHandle(OBJECTHANDLE handle);
 
