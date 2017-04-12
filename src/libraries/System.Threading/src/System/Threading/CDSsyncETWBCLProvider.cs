@@ -49,34 +49,6 @@ namespace System.Threading
         private const int SPINWAIT_NEXTSPINWILLYIELD_ID = 2;
         private const int BARRIER_PHASEFINISHED_ID = 3;
 
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        // SpinLock Events
-        //
-
-        [Event(SPINLOCK_FASTPATHFAILED_ID, Level = EventLevel.Warning)]
-        public void SpinLock_FastPathFailed(int ownerID)
-        {
-            if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
-            {
-                WriteEvent(SPINLOCK_FASTPATHFAILED_ID, ownerID);
-            }
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        // SpinWait Events
-        //
-
-        [Event(SPINWAIT_NEXTSPINWILLYIELD_ID, Level = EventLevel.Informational)]
-        public void SpinWait_NextSpinWillYield()
-        {
-            if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
-            {
-                WriteEvent(SPINWAIT_NEXTSPINWILLYIELD_ID);
-            }
-        }
-
 
         //
         // Events below this point are used by the CDS types in System.dll
