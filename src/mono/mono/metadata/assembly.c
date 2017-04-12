@@ -62,6 +62,16 @@ typedef struct  {
 	gboolean only_lower_versions;
 } AssemblyVersionMap;
 
+/* Flag bits for assembly_names_equal_flags (). */
+typedef enum {
+	/* Default comparison: all fields must match */
+	ANAME_EQ_NONE = 0x0,
+	/* Don't compare public key token */
+	ANAME_EQ_IGNORE_PUBKEY = 0x1,
+
+	ANAME_EQ_MASK = 0x1
+} AssemblyNameEqFlags;
+
 /* the default search path is empty, the first slot is replaced with the computed value */
 static const char*
 default_path [] = {
@@ -233,6 +243,9 @@ mono_assembly_is_in_gac (const gchar *filanem);
 
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly);
+
+static gboolean
+assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags);
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -511,6 +524,12 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
 gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 {
+	return assembly_names_equal_flags (l, r, ANAME_EQ_NONE);
+}
+
+gboolean
+assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags)
+{
 	if (!l->name || !r->name)
 		return FALSE;
 
@@ -525,7 +544,7 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
 			return FALSE;
 
-	if (!l->public_key_token [0] || !r->public_key_token [0])
+	if (!l->public_key_token [0] || !r->public_key_token [0] || (flags & ANAME_EQ_IGNORE_PUBKEY) != 0)
 		return TRUE;
 
 	if (!mono_public_tokens_are_equal (l->public_key_token, r->public_key_token))
