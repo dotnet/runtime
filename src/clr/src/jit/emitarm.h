@@ -232,6 +232,13 @@ inline static bool insOptsROR(insOpts opt)
     return (opt == INS_OPTS_ROR);
 }
 
+// Returns the number of bits used by the given 'size'.
+inline static unsigned getBitWidth(emitAttr size)
+{
+    assert(size <= EA_8BYTE);
+    return (unsigned)size * BITS_PER_BYTE;
+}
+
 /************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
