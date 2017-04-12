@@ -493,37 +493,19 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\AbandonedMutexException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\AsyncLocal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\AutoResetEvent.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SendOrPostCallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\EventResetMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ExecutionContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\LockRecursionException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ParameterizedThreadStart.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPriority.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStart.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadState.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStateException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStartException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandleCannotBeOpenedException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ApartmentState.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinWait.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LazyInitializer.cs" />
@@ -617,15 +599,7 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\NonVersionableAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />

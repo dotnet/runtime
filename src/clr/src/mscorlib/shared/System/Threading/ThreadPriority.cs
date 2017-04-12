@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-/*=============================================================================
-**
-**
-**
-** Purpose: Enum to represent the different threading models
-**
-**
-=============================================================================*/
-
 namespace System.Threading
 {
-    [Serializable]
-    public enum ApartmentState
+    public enum ThreadPriority
     {
         /*=========================================================================
-        ** Constants for thread apartment states.
+        ** Constants for thread priorities.
         =========================================================================*/
-        STA = 0,
-        MTA = 1,
-        Unknown = 2
+        Lowest = 0,
+        BelowNormal = 1,
+        Normal = 2,
+        AboveNormal = 3,
+        Highest = 4
     }
 }

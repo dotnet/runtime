@@ -1,28 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-//
 //
 // AbandonedMutexException
 // Thrown when a wait completes because one or more mutexes was abandoned.
 // AbandonedMutexs indicate serious error in user code or machine state.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 using System;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Threading
 {
     [Serializable]
-    [ComVisibleAttribute(false)]
     public class AbandonedMutexException : SystemException
     {
-        private int m_MutexIndex = -1;
-        private Mutex m_Mutex = null;
+        private int _mutexIndex = -1;
+        private Mutex _mutex = null;
 
         public AbandonedMutexException()
             : base(SR.Threading_AbandonedMutexException)
@@ -63,32 +59,19 @@ namespace System.Threading
             SetupException(location, handle);
         }
 
+        protected AbandonedMutexException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+        }
+
         private void SetupException(int location, WaitHandle handle)
         {
-            m_MutexIndex = location;
+            _mutexIndex = location;
             if (handle != null)
-                m_Mutex = handle as Mutex;
+                _mutex = handle as Mutex;
         }
 
-        protected AbandonedMutexException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-
-        public Mutex Mutex
-        {
-            get
-            {
-                return m_Mutex;
-            }
-        }
-
-        public int MutexIndex
-        {
-            get
-            {
-                return m_MutexIndex;
-            }
-        }
+        public Mutex Mutex => _mutex;
+        public int MutexIndex => _mutexIndex;
     }
 }
-
