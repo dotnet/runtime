@@ -2780,7 +2780,7 @@
     <value>Type is incompatible.</value>
   </data>
   <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
-    <value />
+    <value>Cannot open '{0}'. The Uri parameter must be a file system relative or absolute path.</value>
   </data>
   <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
