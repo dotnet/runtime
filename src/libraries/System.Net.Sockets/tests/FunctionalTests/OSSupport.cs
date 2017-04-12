@@ -17,6 +17,7 @@ namespace System.Net.Sockets.Tests
 #pragma warning restore
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SupportsIPv6 factors in config data")]
         [Fact]
         public void SupportsIPv6_MatchesOSSupportsIPv6()
         {

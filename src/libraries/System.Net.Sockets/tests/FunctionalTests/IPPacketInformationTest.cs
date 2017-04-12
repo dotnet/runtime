@@ -10,6 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class IPPacketInformationTest
     {
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in IPPacketInformation.Equals that dereferences null address")]
         [Fact]
         public void Equals_DefaultValues_Success()
         {
@@ -18,6 +19,7 @@ namespace System.Net.Sockets.Tests
             Assert.False(default(IPPacketInformation) != default(IPPacketInformation));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in IPPacketInformation.GetHashCode that dereferences null address")]
         [Fact]
         public void GetHashCode_DefaultValues_Success()
         {
