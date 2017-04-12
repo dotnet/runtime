@@ -17778,13 +17778,6 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 size                         = info.compCompHnd->getClassSize(typeHnd);
             }
 
-            // Temporary change to make reordering no-diff: mark any promoted implicit-by-ref args
-            // dependent promotions, by marking them address-taken.
-            if (varDsc->lvPromoted)
-            {
-                lvaSetVarAddrExposed(lclNum);
-            }
-
             if (varDsc->lvPromoted)
             {
                 // This implicit-by-ref was promoted; create a new temp to represent the
@@ -17821,7 +17814,8 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // through the pointer parameter, the same as we'd do for this
                 // parameter if it weren't promoted at all (otherwise the initialization
                 // of the new temp would just be a needless memcpy at method entry).
-                bool undoPromotion = lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT;
+                bool undoPromotion = (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
+                                     (varDsc->lvRefCnt <= varDsc->lvFieldCnt);
 
                 if (!undoPromotion)
                 {
