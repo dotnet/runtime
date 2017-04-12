@@ -72,9 +72,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_Int_CanSend()
         {
-            using (var udpClient = new UdpClient(UnusedPort))
+            try
             {
-                Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
+                using (var udpClient = new UdpClient(UnusedPort))
+                {
+                    Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
+                }
+            }
+            catch (SocketException e)
+            {
+                // Some configurations require elevation to bind to UnusedPort
+                Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             }
         }
 
@@ -82,9 +90,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_IntAddressFamily_IPv4_CanSend()
         {
-            using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetwork))
+            try
             {
-                Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
+                using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetwork))
+                {
+                    Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
+                }
+            }
+            catch (SocketException e)
+            {
+                // Some configurations require elevation to bind to UnusedPort
+                Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             }
         }
 
@@ -92,9 +108,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_IntAddressFamily_IPv6_CanSend()
         {
-            using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetworkV6))
+            try
             {
-                Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
+                using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetworkV6))
+                {
+                    Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
+                }
+            }
+            catch (SocketException e)
+            {
+                // Some configurations require elevation to bind to UnusedPort
+                Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             }
         }
 
@@ -102,9 +126,17 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_IPEndPoint_CanSend()
         {
-            using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.IPv6Any, UnusedPort)))
+            try
             {
-                Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
+                using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.IPv6Any, UnusedPort)))
+                {
+                    Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
+                }
+            }
+            catch (SocketException e)
+            {
+                // Some configurations require elevation to bind to UnusedPort
+                Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             }
         }
 
