@@ -13,6 +13,8 @@ using System.Runtime.InteropServices;
 using System.Security.Principal;
 using Xunit;
 using System.Text;
+using System.ComponentModel;
+using System.Security;
 
 namespace System.Diagnostics.Tests
 {
@@ -234,7 +236,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)] // UseShellExecute currently not supported on Windows
         [Fact]
-        public void TestUseShellExecuteProperty_SetAndGet_Windows()
+        public void UseShellExecute_GetSetWindows_Success()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             Assert.False(psi.UseShellExecute);
@@ -312,16 +314,6 @@ namespace System.Diagnostics.Tests
 
                 Assert.True(testProcess.WaitForExit(WaitInMS));
             }
-        }
-
-
-        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]  // APIs throw PNSE on Unix
-        public void TestUserCredentialsPropertiesOnUnix()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
-            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.UserName);
-            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.PasswordInClearText);
-            Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.LoadUserProfile);
         }
 
         [Fact]
@@ -497,10 +489,9 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Test case is specific to Windows
         [Fact]
-        public void TestVerbsProperty()
+        public void Verbs_GetWithExeExtension_ReturnsExpected()
         {
-            var psi = new ProcessStartInfo();
-            psi.FileName = $"{Process.GetCurrentProcess().ProcessName}.exe";
+            var psi = new ProcessStartInfo { FileName = $"{Process.GetCurrentProcess().ProcessName}.exe" };
 
             Assert.Contains("open", psi.Verbs, StringComparer.OrdinalIgnoreCase);
             if (PlatformDetection.IsNotWindowsNanoServer)
@@ -510,6 +501,153 @@ namespace System.Diagnostics.Tests
             }
             Assert.DoesNotContain("printto", psi.Verbs, StringComparer.OrdinalIgnoreCase);
             Assert.DoesNotContain("closed", psi.Verbs, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("nofileextension")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithNoExtension_ReturnsEmpty(string fileName)
+        {
+            var info = new ProcessStartInfo { FileName = fileName };
+            Assert.Empty(info.Verbs);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithNoRegisteredExtension_ReturnsEmpty()
+        {
+            var info = new ProcessStartInfo { FileName = "file.nosuchextension" };
+            Assert.Empty(info.Verbs);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithNoEmptyStringKey_ReturnsEmpty()
+        {
+            const string Extension = ".noemptykeyextension";
+            const string FileName = "file" + Extension;
+
+            using (TempRegistryKey tempKey = new TempRegistryKey(Registry.ClassesRoot, Extension))
+            {
+                if (tempKey.Key == null)
+                {
+                    // Skip this test if the user doesn't have permission to
+                    // modify the registry.
+                    return;
+                }
+
+                var info = new ProcessStartInfo { FileName = FileName };
+                Assert.Empty(info.Verbs);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithEmptyStringValue_ReturnsEmpty()
+        {
+            const string Extension = ".emptystringextension";
+            const string FileName = "file" + Extension;
+
+            using (TempRegistryKey tempKey = new TempRegistryKey(Registry.ClassesRoot, Extension))
+            {
+                if (tempKey.Key == null)
+                {
+                    // Skip this test if the user doesn't have permission to
+                    // modify the registry.
+                    return;
+                }
+
+                tempKey.Key.SetValue("", "");
+
+                var info = new ProcessStartInfo { FileName = FileName };
+                Assert.Empty(info.Verbs);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework throws an InvalidCastException for non-string keys. See https://github.com/dotnet/corefx/issues/18187.")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithNonStringValue_ReturnsEmpty()
+        {
+            const string Extension = ".nonstringextension";
+            const string FileName = "file" + Extension;
+
+            using (TempRegistryKey tempKey = new TempRegistryKey(Registry.ClassesRoot, Extension))
+            {
+                if (tempKey.Key == null)
+                {
+                    // Skip this test if the user doesn't have permission to
+                    // modify the registry.
+                    return;
+                }
+                
+                tempKey.Key.SetValue("", 123);
+
+                var info = new ProcessStartInfo { FileName = FileName };
+                Assert.Empty(info.Verbs);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithNoShellSubKey_ReturnsEmpty()
+        {
+            const string Extension = ".noshellsubkey";
+            const string FileName = "file" + Extension;
+
+            using (TempRegistryKey tempKey = new TempRegistryKey(Registry.ClassesRoot, Extension))
+            {
+                if (tempKey.Key == null)
+                {
+                    // Skip this test if the user doesn't have permission to
+                    // modify the registry.
+                    return;
+                }
+                
+                tempKey.Key.SetValue("", "nosuchshell");
+
+                var info = new ProcessStartInfo { FileName = FileName };
+                Assert.Empty(info.Verbs);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetWithSubkeys_ReturnsEmpty()
+        {
+            const string Extension = ".customregistryextension";
+            const string FileName = "file" + Extension;
+            const string SubKeyValue = "customregistryextensionshell";
+
+            using (TempRegistryKey extensionKey = new TempRegistryKey(Registry.ClassesRoot, Extension))
+            using (TempRegistryKey shellKey = new TempRegistryKey(Registry.ClassesRoot, SubKeyValue + "\\shell"))
+            {
+                if (extensionKey.Key == null)
+                {
+                    // Skip this test if the user doesn't have permission to
+                    // modify the registry.
+                    return;
+                }
+
+                extensionKey.Key.SetValue("", SubKeyValue);
+                
+                shellKey.Key.CreateSubKey("verb1");
+                shellKey.Key.CreateSubKey("NEW");
+                shellKey.Key.CreateSubKey("new");
+                shellKey.Key.CreateSubKey("verb2");
+
+                var info = new ProcessStartInfo { FileName = FileName };
+                Assert.Equal(new string[] { "verb1", "verb2" }, info.Verbs);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Verbs_GetUnix_ReturnsEmpty()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Empty(info.Verbs);
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Test case is specific to Unix
@@ -631,6 +769,156 @@ namespace System.Diagnostics.Tests
                 KeyValuePair<string, string>[] kvpanull = null;
                 environmentVariables.CopyTo(kvpanull, 0);
             });
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("domain")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Domain_SetWindows_GetReturnsExpected(string domain)
+        {
+            var info = new ProcessStartInfo { Domain = domain };
+            Assert.Equal(domain ?? string.Empty, info.Domain);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Domain_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.Domain);
+            Assert.Throws<PlatformNotSupportedException>(() => info.Domain = "domain");
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("filename")]
+        public void FileName_Set_GetReturnsExpected(string fileName)
+        {
+            var info = new ProcessStartInfo { FileName = fileName };
+            Assert.Equal(fileName ?? string.Empty, info.FileName);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void LoadUserProfile_SetWindows_GetReturnsExpected(bool loadUserProfile)
+        {
+            var info = new ProcessStartInfo { LoadUserProfile = loadUserProfile };
+            Assert.Equal(loadUserProfile, info.LoadUserProfile);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void LoadUserProfile_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.LoadUserProfile);
+            Assert.Throws<PlatformNotSupportedException>(() => info.LoadUserProfile = false);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("passwordInClearText")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PasswordInClearText_SetWindows_GetReturnsExpected(string passwordInClearText)
+        {
+            var info = new ProcessStartInfo { PasswordInClearText = passwordInClearText };
+            Assert.Equal(passwordInClearText, info.PasswordInClearText);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void PasswordInClearText_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.PasswordInClearText);
+            Assert.Throws<PlatformNotSupportedException>(() => info.PasswordInClearText = "passwordInClearText");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Password_SetWindows_GetReturnsExpected()
+        {
+            using (SecureString password = new SecureString())
+            {
+                password.AppendChar('a');
+                var info = new ProcessStartInfo { Password = password };
+                Assert.Equal(password, info.Password);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Password_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.Password);
+            Assert.Throws<PlatformNotSupportedException>(() => info.Password = new SecureString());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("domain")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UserName_SetWindows_GetReturnsExpected(string userName)
+        {
+            var info = new ProcessStartInfo { UserName = userName };
+            Assert.Equal(userName ?? string.Empty, info.UserName);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UserName_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.UserName);
+            Assert.Throws<PlatformNotSupportedException>(() => info.UserName = "username");
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("verb")]
+        public void Verb_Set_GetReturnsExpected(string verb)
+        {
+            var info = new ProcessStartInfo { Verb = verb };
+            Assert.Equal(verb ?? string.Empty, info.Verb);
+        }
+
+        [Theory]
+        [InlineData(ProcessWindowStyle.Normal - 1)]
+        [InlineData(ProcessWindowStyle.Maximized + 1)]
+        public void WindowStyle_SetNoSuchWindowStyle_ThrowsInvalidEnumArgumentException(ProcessWindowStyle style)
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<InvalidEnumArgumentException>(() => info.WindowStyle = style);
+        }
+
+        [Theory]
+        [InlineData(ProcessWindowStyle.Hidden)]
+        [InlineData(ProcessWindowStyle.Maximized)]
+        [InlineData(ProcessWindowStyle.Minimized)]
+        [InlineData(ProcessWindowStyle.Normal)]
+        public void WindowStyle_Set_GetReturnsExpected(ProcessWindowStyle style)
+        {
+            var info = new ProcessStartInfo { WindowStyle = style };
+            Assert.Equal(style, info.WindowStyle);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("workingdirectory")]
+        public void WorkingDirectory_Set_GetReturnsExpected(string workingDirectory)
+        {
+            var info = new ProcessStartInfo { WorkingDirectory = workingDirectory };
+            Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
         }
     }
 }

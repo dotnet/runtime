@@ -188,5 +188,18 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => thread.WaitReason);
             }
         }
+
+        [Fact]
+        public void Threads_GetMultipleTimes_ReturnsSameInstance()
+        {
+            Assert.Same(_process.Threads, _process.Threads);
+        }
+
+        [Fact]
+        public void Threads_GetNotStarted_ThrowsInvalidOperationException()
+        {
+            var process = new Process();
+            Assert.Throws<InvalidOperationException>(() => process.Threads);
+        }
     }
 }

@@ -13,34 +13,24 @@ namespace System.Diagnostics
     {
         private string _userName;
         private string _domain;
-        private string _passwordInClearText;
-        private bool _loadUserProfile;
 
         private const bool CaseSensitiveEnvironmentVariables = false;
 
         public string UserName
         {
-            get { return _userName ?? string.Empty; }
-            set { _userName = value; }
+            get => _userName ?? string.Empty;
+            set => _userName = value;
         }
 
-        public string PasswordInClearText
-        {
-            get { return _passwordInClearText; }
-            set { _passwordInClearText = value; }
-        }
+        public string PasswordInClearText { get; set; }
 
         public string Domain
         {
-            get { return _domain ?? string.Empty; }
-            set { _domain = value; }
+            get => _domain ?? string.Empty;
+            set => _domain = value;
         }
 
-        public bool LoadUserProfile
-        {
-            get { return _loadUserProfile; }
-            set { _loadUserProfile = value; }
-        }
+        public bool LoadUserProfile { get; set; }
 
         public string[] Verbs 
         {
