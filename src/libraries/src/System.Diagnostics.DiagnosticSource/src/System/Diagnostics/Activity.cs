@@ -446,8 +446,9 @@ namespace System.Diagnostics
 #endif
         private static unsafe long GetRandomNumber()
         {
+            // Use the first 8 bytes of the GUID as a random number.  
             Guid g = Guid.NewGuid();
-            return (long)&g;
+            return *((long*)&g);
         }
 
         private string _rootId;
