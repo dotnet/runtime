@@ -48,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Field,
         Local,
         //EK_BASE,
-        ThisPointer,
+        //ThisPointer,
         Constant,
         //EK_TYPEORSIMPLENAME,
         // The following exprs are used to represent the results of typebinding.

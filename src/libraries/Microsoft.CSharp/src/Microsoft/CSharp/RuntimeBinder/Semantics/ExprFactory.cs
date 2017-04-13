@@ -196,26 +196,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return rval;
         }
 
-        public ExprThisPointer CreateThis(LocalVariableSymbol pLocal, bool fImplicit)
-        {
-            Debug.Assert(pLocal == null || pLocal.isThis);
-
-            EXPRFLAG flags = EXPRFLAG.EXF_CANTBENULL;
-            if (fImplicit)
-            {
-                flags |= EXPRFLAG.EXF_IMPLICITTHIS;
-            }
-            if (pLocal != null && pLocal.GetType().isStructType())
-            {
-                flags |= EXPRFLAG.EXF_LVALUE;
-            }
-
-            ExprThisPointer rval = new ExprThisPointer();
-            rval.Flags = flags;
-            rval.Local = pLocal;
-            return (rval);
-        }
-
         public ExprBoundLambda CreateAnonymousMethod(AggregateType delegateType)
         {
             Debug.Assert(delegateType == null || delegateType.isDelegateType());

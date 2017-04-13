@@ -356,7 +356,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprFactory GetExprFactory() { return ExprFactory; }
 
-        private ExprFactory ExprFactory { get { return Context.GetExprFactory(); } }
+        private ExprFactory ExprFactory { get { return Context.ExprFactory; } }
 
         private AggregateType GetReqPDT(PredefinedType pt)
         {
@@ -712,14 +712,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Exception: a readonly field is not an lvalue unless we're in the constructor/static constructor appropriate
             // for the field.
-            if (RespectReadonly() && fwt.Field().isReadOnly)
+            if (fwt.Field().isReadOnly)
             {
-                if (ContainingAgg() == null || !InMethod() || !InConstructor()
-                    || fwt.Field().getClass() != ContainingAgg() || InStaticMethod() != fwt.Field().isStatic
-                    || (pOptionalObject != null && !isThisPointer(pOptionalObject)) || InAnonymousMethod())
-                {
-                    isLValue = false;
-                }
+                isLValue = false;
             }
 
             CType fieldType = null;
@@ -1570,24 +1565,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pObject == null)
             {
-                if (InFieldInitializer() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent)
-                {
-                    ErrorContext.ErrorRef(ErrorCode.ERR_FieldInitRefNonstatic, swt); // give better error message for common mistake <BUGNUM>See VS7:119218</BUGNUM>
-                }
-                else if (InAnonymousMethod() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent && ContainingAgg().IsStruct())
-                {
-                    ErrorContext.Error(ErrorCode.ERR_ThisStructNotInAnonMeth);
-                }
-                else
-                {
-                    return null;
-                }
-
-                // For fields or structs, make a this pointer for us to use.
-
-                ExprThisPointer thisExpr = GetExprFactory().CreateThis(Context.GetThisPointer(), true);
-                thisExpr.SetMismatchedStaticBit();
-                return thisExpr;
+                return null;
             }
 
             CType typeObj = pObject.Type;
@@ -1680,14 +1658,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else if (pObject == null)
             {
                 // We're not static, and we don't have an object. This is ok in certain scenarios:
-                bool bNonStaticField = InFieldInitializer() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent;
-                bool bAnonymousMethod = InAnonymousMethod() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent && ContainingAgg().IsStruct();
-
-                if (!bNonStaticField && !bAnonymousMethod)
-                {
-                    return false;
-                }
+                return false;
             }
+
             return true;
         }
 
@@ -1699,9 +1672,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return (
                        pObject == null ||  // statics are always lvalues
-
-                       isThisPointer(pObject) ||  // the this pointer's fields or props are lvalues
-
                        (((pObject.Flags & EXPRFLAG.EXF_LVALUE) != 0) && (pObject.Kind != ExpressionKind.Property)) ||
                        // things marked as lvalues have props/fields which are lvalues, with one exception:  props of structs
                        // do not have fields/structs as lvalues
@@ -2367,7 +2337,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert((errCode != ErrorCode.ERR_SizeofUnsafe) || pArg != null);
             if (type == null || type.isUnsafe())
             {
-                if (!isUnsafeContext() && ReportUnsafeErrors())
+                if (ReportUnsafeErrors())
                 {
                     if (pArg != null)
                         ErrorContext.Error(errCode, pArg);
@@ -2378,60 +2348,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private bool InMethod()
-        {
-            return Context.InMethod();
-        }
-
-        private bool InStaticMethod()
-        {
-            return Context.InStaticMethod();
-        }
-
-        private bool InConstructor()
-        {
-            return Context.InConstructor();
-        }
-
-        private bool InAnonymousMethod()
-        {
-            return Context.InAnonymousMethod();
-        }
-
-        private bool InFieldInitializer()
-        {
-            return Context.InFieldInitializer();
-        }
-
         ////////////////////////////////////////////////////////////////////////////////
         private Declaration ContextForMemberLookup()
         {
-            return Context.ContextForMemberLookup();
-        }
-
-        private AggregateSymbol ContainingAgg()
-        {
-            return Context.ContainingAgg();
-        }
-
-        private bool isThisPointer(Expr expr)
-        {
-            return Context.IsThisPointer(expr);
-        }
-
-        private bool RespectReadonly()
-        {
-            return Context.RespectReadonly();
-        }
-
-        private bool isUnsafeContext()
-        {
-            return Context.IsUnsafeContext();
+            return Context.ContextForMemberLookup;
         }
 
         private bool ReportUnsafeErrors()
         {
-            return Context.ReportUnsafeErrors();
+            return Context.ReportUnsafeErrors;
         }
 
         private void RecordUnsafeUsage()
@@ -2451,11 +2376,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static void RecordUnsafeUsage(BindingContext context)
         {
-            if (!(context.GetUnsafeState() == UNSAFESTATES.UNSAFESTATES_Unsafe) &&
-                    !context.GetOutputContext().m_bUnsafeErrorGiven)
-            {
-                context.GetOutputContext().m_bUnsafeErrorGiven = true;
-            }
+            context.ReportUnsafeErrors = false;
         }
 
         internal static int CountArguments(Expr args, out bool typeErrors)

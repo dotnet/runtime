@@ -124,8 +124,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitFIELD(pExpr as ExprField);
                 case ExpressionKind.Local:
                     return VisitLOCAL(pExpr as ExprLocal);
-                case ExpressionKind.ThisPointer:
-                    return VisitTHISPOINTER(pExpr as ExprThisPointer);
                 case ExpressionKind.Constant:
                     return VisitCONSTANT(pExpr as ExprConstant);
                 case ExpressionKind.TypeArguments:
@@ -499,7 +497,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case ExpressionKind.Local:
-                case ExpressionKind.ThisPointer:
                 case ExpressionKind.Class:
                 case ExpressionKind.FunctionPointer:
                 case ExpressionKind.MultiGet:
@@ -529,10 +526,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected virtual Expr VisitBLOCK(ExprBlock pExpr)
         {
             return VisitSTMT(pExpr);
-        }
-        protected virtual Expr VisitTHISPOINTER(ExprThisPointer pExpr)
-        {
-            return VisitLOCAL(pExpr);
         }
         protected virtual Expr VisitRETURN(ExprReturn pExpr)
         {
