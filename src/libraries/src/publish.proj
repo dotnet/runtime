@@ -6,7 +6,6 @@
 
   <PropertyGroup>
     <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)**\*.nupkg</PublishPattern>
-    <PublishBuildDependsOn Condition="'$(DisablePublishPackages)' != 'true'">CreateContainerName;UploadToAzure</PublishBuildDependsOn>
   </PropertyGroup>
 
   <Target Name="CreateContainerName"
@@ -17,5 +16,5 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="Build" DependsOnTargets="$(PublishBuildDependsOn)" />
+  <Target Name="Build" DependsOnTargets="CreateContainerName;UploadToAzure" />
 </Project>
