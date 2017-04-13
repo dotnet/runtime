@@ -3517,7 +3517,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, NULL, NULL, status);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, &mono_assembly_candidate_predicate_sn_same_name, aname, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -3526,7 +3526,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, status, refonly, NULL, NULL);
+		result = load_in_path (filename, default_path, status, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);
