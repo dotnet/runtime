@@ -61,6 +61,11 @@ extern "C" void* JIT_GetSharedNonGCStaticBaseNoCtor_Slow(SIZE_T moduleDomainID, 
 extern "C" void* JIT_GetSharedGCStaticBase_Slow(SIZE_T moduleDomainID, DWORD dwModuleClassID);
 extern "C" void* JIT_GetSharedGCStaticBaseNoCtor_Slow(SIZE_T moduleDomainID, DWORD dwModuleClassID);
 
+extern "C" void* JIT_GetSharedNonGCStaticBase_SingleAppDomain(SIZE_T moduleDomainID, DWORD dwModuleClassID);
+extern "C" void* JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain(SIZE_T moduleDomainID, DWORD dwModuleClassID);
+extern "C" void* JIT_GetSharedGCStaticBase_SingleAppDomain(SIZE_T moduleDomainID, DWORD dwModuleClassID);
+extern "C" void* JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain(SIZE_T moduleDomainID, DWORD dwModuleClassID);
+
 #ifdef _TARGET_AMD64_
 extern WriteBarrierManager g_WriteBarrierManager;
 #endif // _TARGET_AMD64_
@@ -283,7 +288,17 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_MON_ENTER_STATIC, JIT_MonEnterStatic_Slow);
         SetJitHelperFunction(CORINFO_HELP_MON_EXIT_STATIC,  JIT_MonExitStatic_Slow);
     }
+#endif
 
+    if(IsSingleAppDomain())
+    {
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,       JIT_GetSharedNonGCStaticBase_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
+    }
+#ifndef FEATURE_IMPLICIT_TLS
+    else
     if (gAppDomainTLSIndex >= TLS_MINIMUM_AVAILABLE)
     {
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_Slow);
