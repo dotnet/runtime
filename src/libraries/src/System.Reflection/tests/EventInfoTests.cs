@@ -149,7 +149,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, eventInfo1.Equals(eventInfo2));
             if (expected)
             {
-                Assert.Equal(expected, eventInfo1.GetHashCode().Equals(eventInfo2.GetHashCode()));
+                Assert.Equal(eventInfo1.GetHashCode(), eventInfo2.GetHashCode());
             }
         }
 
