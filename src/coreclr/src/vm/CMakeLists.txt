@@ -317,6 +317,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
@@ -363,6 +364,7 @@ else(WIN32)
             ${ARCH_SOURCES_DIR}/getstate.S
             ${ARCH_SOURCES_DIR}/jithelpers_fast.S
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
+            ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
