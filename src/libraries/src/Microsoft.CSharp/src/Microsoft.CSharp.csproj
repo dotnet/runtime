@@ -12,11 +12,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Folder Include="Microsoft\CSharp\RuntimeBinder\Hosting\" />
-    <Folder Include="Microsoft\CSharp\RuntimeBinder\Semantics\Interfaces\" />
-    <Folder Include="Microsoft\CSharp\RuntimeBinder\Tokens\" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderHelper.cs" />
