@@ -8,6 +8,10 @@
     <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)**\*.nupkg</PublishPattern>
   </PropertyGroup>
 
+  <ItemGroup>
+    <_PackagesToPublish Include="$(PublishPattern)" />
+  </ItemGroup>
+  
   <Target Name="CreateContainerName"
           DependsOnTargets="CreateVersionFileDuringBuild"
           Condition="'$(ContainerName)' == ''">
@@ -16,5 +20,8 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="Build" DependsOnTargets="CreateContainerName;UploadToAzure" />
+  <Target Name="Build" DependsOnTargets="CreateContainerName">
+    <!-- skip uploadToAzure when there are no nupkgs -->
+    <CallTarget Targets="UploadToAzure" Condition="'@(_PackagesToPublish)' != ''" />
+  </Target>  
 </Project>
