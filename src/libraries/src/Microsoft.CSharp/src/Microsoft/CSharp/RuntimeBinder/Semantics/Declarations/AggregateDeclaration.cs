@@ -29,11 +29,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return bag.AsAggregateSymbol();
         }
 
-        public new InputFile getInputFile()
-        {
-            return null;
-        }
-
         public Assembly GetAssembly()
         {
             return Agg().AssociatedAssembly;
