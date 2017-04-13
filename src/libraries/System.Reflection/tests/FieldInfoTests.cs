@@ -525,6 +525,11 @@ namespace System.Reflection.Tests
 
         struct FieldData
         {
+            public Inner inner;
+        }
+
+        struct Inner
+        {
             public object field;
         }
 
@@ -540,12 +545,14 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         public static void SetValueDirect_GetValueDirectRoundDataTest(object value)
         {
-            FieldData testField = new FieldData { field = -1 };
+            FieldData testField = new FieldData { inner = new Inner() { field = -1 } };
+            FieldInfo innerFieldIinfo = typeof(FieldData).GetField(nameof(FieldData.inner));
+            FieldInfo[] fields = { innerFieldIinfo };
+            FieldInfo fieldFieldInfo = typeof(Inner).GetField(nameof(Inner.field));
+            TypedReference reference = TypedReference.MakeTypedReference(testField, fields);
+            fieldFieldInfo.SetValueDirect(reference, value);
+            object result = fieldFieldInfo.GetValueDirect(reference);
 
-            FieldInfo info = testField.GetType().GetField("field");
-            TypedReference reference = __makeref(testField);
-            info.SetValueDirect(reference, value);
-            object result = info.GetValueDirect(reference);
             Assert.Equal(value, result);
         }
     }
