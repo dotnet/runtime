@@ -38,14 +38,17 @@ namespace System.ComponentModel.DataAnnotations
 
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            // TODO - check that GetRuntimeProperty() returns the same as old ObjectType.GetProperty()
-            // in all situations regardless of property modifiers
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);
             if (otherPropertyInfo == null)
             {
                 return
                     new ValidationResult(string.Format(CultureInfo.CurrentCulture,
                         SR.CompareAttribute_UnknownProperty, OtherProperty));
+            }
+            if (otherPropertyInfo.GetIndexParameters().Any())
+            {
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
+                    SR.Common_PropertyNotFound, validationContext.ObjectType.FullName, OtherProperty));
             }
 
             object otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
@@ -66,8 +69,7 @@ namespace System.ComponentModel.DataAnnotations
                 .SingleOrDefault(
                     prop =>
                         IsPublic(prop) &&
-                        string.Equals(propertyName, prop.Name, StringComparison.OrdinalIgnoreCase) &&
-                        !prop.GetIndexParameters().Any());
+                        string.Equals(propertyName, prop.Name, StringComparison.OrdinalIgnoreCase));
 
             if (property == null)
             {
