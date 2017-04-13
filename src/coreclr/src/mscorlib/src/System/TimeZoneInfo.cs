@@ -284,10 +284,16 @@ namespace System
         /// </summary>
         private AdjustmentRule GetPreviousAdjustmentRule(AdjustmentRule rule)
         {
+            Debug.Assert(rule.NoDaylightTransitions, "GetPreviousAdjustmentRule should only be used with NoDaylightTransitions rules.");
+
             AdjustmentRule result = rule;
             for (int i = 1; i < _adjustmentRules.Length; i++)
             {
-                if (rule.Equals(_adjustmentRules[i]))
+                // use ReferenceEquals here instead of AdjustmentRule.Equals because 
+                // ReferenceEquals is much faster. This is safe because all the callers
+                // of GetPreviousAdjustmentRule pass in a rule that was retrieved from
+                // _adjustmentRules.  A different approach will be needed if this ever changes.
+                if (ReferenceEquals(rule, _adjustmentRules[i]))
                 {
                     result = _adjustmentRules[i - 1];
                     break;
