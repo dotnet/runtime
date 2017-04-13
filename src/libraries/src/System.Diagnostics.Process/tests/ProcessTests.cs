@@ -841,12 +841,10 @@ namespace System.Diagnostics.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, machineName));
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("NoSuchProcess")]
-        public void GetProcessesByName_NoSuchProcess_ReturnsEmpty(string processName)
+        [Fact]
+        public void GetProcessesByName_NoSuchProcess_ReturnsEmpty()
         {
+            string processName = Guid.NewGuid().ToString("N");
             Assert.Empty(Process.GetProcessesByName(processName));
         }
 
