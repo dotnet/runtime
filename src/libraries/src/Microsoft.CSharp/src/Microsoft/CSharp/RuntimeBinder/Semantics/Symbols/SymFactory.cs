@@ -118,19 +118,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        public MethodSymbol CreateMethod(Name name, ParentSymbol parent, AggregateDeclaration declaration)
+        public MethodSymbol CreateMethod(Name name, ParentSymbol parent)
         {
             MethodSymbol sym = newBasicSym(SYMKIND.SK_MethodSymbol, name, parent).AsMethodSymbol();
-            sym.declaration = declaration;
 
             return sym;
         }
 
-        public PropertySymbol CreateProperty(Name name, ParentSymbol parent, AggregateDeclaration declaration)
+        public PropertySymbol CreateProperty(Name name, ParentSymbol parent)
         {
             PropertySymbol sym = newBasicSym(SYMKIND.SK_PropertySymbol, name, parent).AsPropertySymbol();
             Debug.Assert(sym != null);
-            sym.declaration = declaration;
             return (sym);
         }
 
