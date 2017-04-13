@@ -321,7 +321,7 @@ int ExecuteManagedAssembly(
     {
         coreclr_initialize_ptr initializeCoreCLR = (coreclr_initialize_ptr)dlsym(coreclrLib, "coreclr_initialize");
         coreclr_execute_assembly_ptr executeAssembly = (coreclr_execute_assembly_ptr)dlsym(coreclrLib, "coreclr_execute_assembly");
-        coreclr_shutdown_ptr shutdownCoreCLR = (coreclr_shutdown_ptr)dlsym(coreclrLib, "coreclr_shutdown");
+        coreclr_shutdown_2_ptr shutdownCoreCLR = (coreclr_shutdown_2_ptr)dlsym(coreclrLib, "coreclr_shutdown_2");
 
         if (initializeCoreCLR == nullptr)
         {
@@ -333,7 +333,7 @@ int ExecuteManagedAssembly(
         }
         else if (shutdownCoreCLR == nullptr)
         {
-            fprintf(stderr, "Function coreclr_shutdown not found in the libcoreclr.so\n");
+            fprintf(stderr, "Function coreclr_shutdown_2 not found in the libcoreclr.so\n");
         }
         else
         {
@@ -416,11 +416,17 @@ int ExecuteManagedAssembly(
                     exitCode = -1;
                 }
 
-                st = shutdownCoreCLR(hostHandle, domainId);
+                int latchedExitCode = 0;
+                st = shutdownCoreCLR(hostHandle, domainId, &latchedExitCode);
                 if (!SUCCEEDED(st))
                 {
                     fprintf(stderr, "coreclr_shutdown failed - status: 0x%08x\n", st);
                     exitCode = -1;
+                }
+
+                if (exitCode != -1)
+                {
+                    exitCode = latchedExitCode;
                 }
             }
         }
