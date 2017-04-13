@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal abstract partial class Instruction
+    internal abstract class Instruction
     {
         public const int UnknownInstrIndex = int.MaxValue;
 

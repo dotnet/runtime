@@ -5,7 +5,6 @@
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
-using System.Reflection;
 
 namespace System.Linq.Expressions
 {
@@ -17,7 +16,7 @@ namespace System.Linq.Expressions
     /// classes whose functionality requires traversing, examining or copying
     /// an expression tree.
     /// </remarks>
-    public abstract partial class ExpressionVisitor
+    public abstract class ExpressionVisitor
     {
         /// <summary>
         /// Initializes a new instance of <see cref="ExpressionVisitor"/>.

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Dynamic.Utils;
-using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
 {

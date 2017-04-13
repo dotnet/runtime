@@ -2,20 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Dynamic.Utils
 {
     // Extensions on System.Type and friends
-    internal static partial class TypeExtensions
+    internal static class TypeExtensions
     {
+        private static readonly CacheDict<MethodBase, ParameterInfo[]> s_paramInfoCache = new CacheDict<MethodBase, ParameterInfo[]>(75);
+
         /// <summary>
         /// Returns the matching method if the parameter types are reference
         /// assignable from the provided type arguments, otherwise null.
         /// </summary>
         public static MethodInfo GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
+            Debug.Assert(types != null);
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
             {
                 if (method.Name == name && method.MatchesArgumentTypes(types))
@@ -38,10 +41,8 @@ namespace System.Dynamic.Utils
         /// </summary>
         private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes)
         {
-            if (mi == null || argTypes == null)
-            {
-                return false;
-            }
+            Debug.Assert(mi != null);
+            Debug.Assert(argTypes != null);
 
             ParameterInfo[] ps = mi.GetParametersCached();
 
@@ -61,11 +62,37 @@ namespace System.Dynamic.Utils
             return true;
         }
 
-        public static Type GetReturnType(this MethodBase mi)
-        {
-            return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
-        }
+        public static Type GetReturnType(this MethodBase mi) => mi.IsConstructor ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
 
         public static TypeCode GetTypeCode(this Type type) => Type.GetTypeCode(type);
+        internal static ParameterInfo[] GetParametersCached(this MethodBase method)
+        {
+            CacheDict<MethodBase, ParameterInfo[]> pic = s_paramInfoCache;
+            if (!pic.TryGetValue(method, out ParameterInfo[] pis))
+            {
+                pis = method.GetParameters();
+
+                Type t = method.DeclaringType;
+                if (t != null && t.CanCache())
+                {
+                    pic[method] = pis;
+                }
+            }
+
+            return pis;
+        }
+
+#if FEATURE_COMPILE
+        // Expression trees/compiler just use IsByRef, why do we need this?
+        // (see LambdaCompiler.EmitArguments for usage in the compiler)
+        internal static bool IsByRefParameter(this ParameterInfo pi)
+        {
+            // not using IsIn/IsOut properties as they are not available in Silverlight:
+            if (pi.ParameterType.IsByRef)
+                return true;
+
+            return (pi.Attributes & ParameterAttributes.Out) == ParameterAttributes.Out;
+        }
+#endif
     }
 }

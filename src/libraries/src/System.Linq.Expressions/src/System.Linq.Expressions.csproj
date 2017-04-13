@@ -51,7 +51,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Threading" />      
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -63,36 +63,8 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
-      <Link>Common\System\Dynamic\Utils\CacheDict.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.cs">
-      <Link>Common\System\Dynamic\Utils\ContractUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs">
-      <Link>Common\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\Error.cs">
-      <Link>Common\System\Dynamic\Utils\Error.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ExpressionUtils.cs">
-      <Link>Common\System\Dynamic\Utils\ExpressionUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\Strings.cs">
-      <Link>Common\System\Dynamic\Utils\Strings.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\TypeExtensions.cs">
-      <Link>Common\System\Dynamic\Utils\TypeExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\TypeUtils.cs">
-      <Link>Common\System\Dynamic\Utils\TypeUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.cs">
-      <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs">
-      <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs</Link>
-    </Compile>
+    <Compile Include="System\Dynamic\Utils\CacheDict.cs" />
+    <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
@@ -162,6 +134,7 @@
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSite.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSiteBinder.cs" />
@@ -208,9 +181,7 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">
       <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
-      <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
-    </Compile>
+    <Compile Include="System\Linq\Expressions\Compiler\AssemblyGen.cs" />
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\BoundConstants.cs" />
@@ -242,9 +213,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariableList.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsInterpreting)' == 'true' Or '$(FeatureInterpret)' == 'true'">
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\DelegateHelpers.cs">
-      <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
-    </Compile>
+    <Compile Include="System\Dynamic\Utils\DelegateHelpers.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\AndInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ArrayOperations.cs" />
@@ -290,7 +259,6 @@
     <Compile Include="System\Linq\Expressions\Interpreter\SubInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\TypeOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Utilities.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
