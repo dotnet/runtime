@@ -137,6 +137,7 @@ protected:
 
     STDMETHODIMP UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone);
 
+    STDMETHODIMP UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode);
 public:
     static ULONG GetHostVersion()
     {
@@ -275,7 +276,7 @@ class CorHost2 :
 #ifndef FEATURE_PAL    
     , public IPrivateManagedExceptionReporting /* This interface is for internal Watson testing only*/
 #endif // FEATURE_PAL    
-    , public ICLRRuntimeHost2
+    , public ICLRRuntimeHost4
     , public CorExecutionManager
 {
     friend struct _DacGlobals;
@@ -336,6 +337,8 @@ public:
         ICLRControl** pCLRControl);
 
     STDMETHODIMP UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone);
+
+    STDMETHODIMP UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode);
 
     STDMETHODIMP GetCurrentAppDomainId(DWORD *pdwAppDomainId);
 

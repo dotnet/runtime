@@ -1201,6 +1201,11 @@ HRESULT  GetCLRRuntimeHost(REFIID riid, IUnknown **ppUnk)
 
 STDMETHODIMP CorHost2::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
 {
+    return UnloadAppDomain2(dwDomainId, fWaitUntilDone, nullptr);
+}
+
+STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode)
+{
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_TOLERANT;
 
@@ -1249,14 +1254,23 @@ STDMETHODIMP CorHost2::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
         }
         END_ENTRYPOINT_NOTHROW;
 
+        if (pLatchedExitCode)
+        {
+            *pLatchedExitCode = GetLatchedExitCode();
+        }
+
         return hr;
     }
-    else
 
-    return CorRuntimeHostBase::UnloadAppDomain(dwDomainId, fWaitUntilDone);
+    return CorRuntimeHostBase::UnloadAppDomain2(dwDomainId, fWaitUntilDone, pLatchedExitCode);
 }
 
-HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fSync)
+HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fWaitUntilDone)
+{
+    return UnloadAppDomain2(dwDomainId, fWaitUntilDone, nullptr);
+}
+
+HRESULT CorRuntimeHostBase::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, int *pLatchedExitCode)
 {
     CONTRACTL
     {
@@ -1282,7 +1296,7 @@ HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fSync)
         //
         // However, for a thread that holds the loader lock, unloading the appDomain is
         // not a supported scenario. Thus, we should not be ending up in this code
-        // path for the FAULT violation. 
+        // path for the FAULT violation.
         //
         // Hence, the CONTRACT_VIOLATION below for overriding the FORBID_FAULT
         // for this scope only.
@@ -1292,17 +1306,22 @@ HRESULT CorRuntimeHostBase::UnloadAppDomain(DWORD dwDomainId, BOOL fSync)
         )
         {
             return HOST_E_CLRNOTAVAILABLE;
-        }   
+        }
     }
-    
+
     BEGIN_ENTRYPOINT_NOTHROW;
 
     // We do not use BEGIN_EXTERNAL_ENTRYPOINT here because
     // we do not want to setup Thread.  Process may be OOM, and we want Unload
     // to work.
-    hr =  AppDomain::UnloadById(ADID(dwDomainId), fSync);
+    hr =  AppDomain::UnloadById(ADID(dwDomainId), fWaitUntilDone);
 
     END_ENTRYPOINT_NOTHROW;
+
+    if (pLatchedExitCode)
+    {
+        *pLatchedExitCode = GetLatchedExitCode();
+    }
 
     return hr;
 }
@@ -1403,6 +1422,14 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
             FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
 
         *ppUnk = static_cast<ICLRRuntimeHost2 *>(this);
+    }
+    else if (riid == IID_ICLRRuntimeHost4)
+    {
+        ULONG version = 4;
+        if (m_Version == 0)
+            FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
+
+        *ppUnk = static_cast<ICLRRuntimeHost4 *>(this);
     }
     else if (riid == IID_ICLRExecutionManager)
     {

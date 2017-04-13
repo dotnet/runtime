@@ -112,8 +112,13 @@ typedef interface ICLRRuntimeHost ICLRRuntimeHost;
 #define __ICLRRuntimeHost2_FWD_DEFINED__
 typedef interface ICLRRuntimeHost2 ICLRRuntimeHost2;
 
-#endif 	/* __ICLRRuntimeHost2_FWD_DEFINED__ */
+#endif 	/* __ICLRRuntimeHost4_FWD_DEFINED__ */
 
+#ifndef __ICLRRuntimeHost4_FWD_DEFINED__
+#define __ICLRRuntimeHost4_FWD_DEFINED__
+typedef interface ICLRRuntimeHost4 ICLRRuntimeHost4;
+
+#endif  /* __ICLRRuntimeHost4_FWD_DEFINED__ */
 
 #ifndef __ICLRExecutionManager_FWD_DEFINED__
 #define __ICLRExecutionManager_FWD_DEFINED__
@@ -254,6 +259,7 @@ EXTERN_GUID(IID_ICLRErrorReportingManager, 0x980d2f1a, 0xbf79, 0x4c08, 0x81, 0x2
 EXTERN_GUID(IID_ICLRErrorReportingManager2, 0xc68f63b1, 0x4d8b, 0x4e0b, 0x95, 0x64, 0x9d, 0x2e, 0xfe, 0x2f, 0xa1, 0x8c);
 EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);
 EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0x7E, 0xF5, 0x01, 0xD7, 0xb7, 0x2C, 0x2D);
+EXTERN_GUID(IID_ICLRRuntimeHost4, 0x64F6D366, 0xD7C2, 0x4F1F, 0xB4, 0xB2, 0xE8, 0x16, 0x0C, 0xAC, 0x43, 0xAF);
 EXTERN_GUID(IID_ICLRExecutionManager, 0x1000A3E7, 0xB420, 0x4620, 0xAE, 0x30, 0xFB, 0x19, 0xB5, 0x87, 0xAD, 0x1D);
 EXTERN_GUID(IID_ITypeName, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x22);
 EXTERN_GUID(IID_ITypeNameBuilder, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x23);
@@ -1819,6 +1825,14 @@ EXTERN_C const IID IID_ICLRRuntimeHost2;
         
     };
     
+    MIDL_INTERFACE("64F6D366-D7C2-4F1F-B4B2-E8160CAC43AF")
+    ICLRRuntimeHost4 : public ICLRRuntimeHost2
+    {
+        virtual HRESULT STDMETHODCALLTYPE UnloadAppDomain2(
+            /* [in] */ DWORD dwAppDomainId,
+            /* [in] */ BOOL fWaitUntilDone,
+            /* [out] */ int *pLatchedExitCode) = 0;
+    };
     
 #else 	/* C style interface */
 
