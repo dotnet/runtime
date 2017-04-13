@@ -166,7 +166,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
     # Detect Linux ID
     if(DEFINED CLR_CMAKE_LINUX_ID)
-        if(CLR_CMAKE_LINUX_ID STREQUAL alpine)
+        if(CLR_CMAKE_LINUX_ID STREQUAL ubuntu)
+            set(CLR_CMAKE_TARGET_UBUNTU_LINUX 1)
+        elseif(CLR_CMAKE_LINUX_ID STREQUAL tizen)
+            set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
+        elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_PLATFORM_ALPINE_LINUX 1)
         endif()
         if(CLR_CMAKE_LINUX_ID STREQUAL ubuntu)
