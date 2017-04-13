@@ -183,9 +183,9 @@ int coreclr_initialize(
     }
 #endif
 
-    ReleaseHolder<ICLRRuntimeHost2> host;
+    ReleaseHolder<ICLRRuntimeHost4> host;
 
-    hr = CorHost2::CreateObject(IID_ICLRRuntimeHost2, (void**)&host);
+    hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
@@ -284,9 +284,40 @@ int coreclr_shutdown(
             void* hostHandle,
             unsigned int domainId)
 {
-    ReleaseHolder<ICLRRuntimeHost2> host(reinterpret_cast<ICLRRuntimeHost2*>(hostHandle));
+    ReleaseHolder<ICLRRuntimeHost4> host(reinterpret_cast<ICLRRuntimeHost4*>(hostHandle));
 
     HRESULT hr = host->UnloadAppDomain(domainId, true); // Wait until done
+    IfFailRet(hr);
+
+    hr = host->Stop();
+
+#ifdef FEATURE_PAL
+    PAL_Shutdown();
+#endif
+
+    return hr;
+}
+
+//
+// Shutdown CoreCLR. It unloads the app domain and stops the CoreCLR host.
+//
+// Parameters:
+//  hostHandle              - Handle of the host
+//  domainId                - Id of the domain
+//  latchedExitCode         - Latched exit code after domain unloaded
+//
+// Returns:
+//  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
+//
+extern "C"
+int coreclr_shutdown_2(
+            void* hostHandle,
+            unsigned int domainId,
+            int* latchedExitCode)
+{
+    ReleaseHolder<ICLRRuntimeHost4> host(reinterpret_cast<ICLRRuntimeHost4*>(hostHandle));
+
+    HRESULT hr = host->UnloadAppDomain2(domainId, true, latchedExitCode); // Wait until done
     IfFailRet(hr);
 
     hr = host->Stop();
@@ -321,7 +352,7 @@ int coreclr_create_delegate(
             const char* entryPointMethodName,
             void** delegate)
 {
-    ICLRRuntimeHost2* host = reinterpret_cast<ICLRRuntimeHost2*>(hostHandle);
+    ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
     ConstWStringHolder entryPointAssemblyNameW = StringToUnicode(entryPointAssemblyName);
     ConstWStringHolder entryPointTypeNameW = StringToUnicode(entryPointTypeName);
@@ -366,7 +397,7 @@ int coreclr_execute_assembly(
     }
     *exitCode = -1;
 
-    ICLRRuntimeHost2* host = reinterpret_cast<ICLRRuntimeHost2*>(hostHandle);
+    ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
     ConstWStringArrayHolder argvW;
     argvW.Set(StringArrayToUnicode(argc, argv), argc);

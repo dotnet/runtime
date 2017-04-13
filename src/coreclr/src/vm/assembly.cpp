@@ -1849,10 +1849,7 @@ HRESULT RunMain(MethodDesc *pFD ,
         else 
         {
             *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
-            if (pParam->stringArgs == NULL) 
-            {
-                SetLatchedExitCode(*pParam->piRetVal);
-            }
+            SetLatchedExitCode(*pParam->piRetVal);
         }
 
         GCPROTECT_END();
