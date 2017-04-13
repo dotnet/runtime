@@ -64,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        public AggregateDeclaration CreateAggregateDecl(AggregateSymbol agg, Declaration declOuter)
+        public AggregateDeclaration CreateAggregateDecl(AggregateSymbol agg, AggregateDeclaration declOuter)
         {
             Debug.Assert(agg != null);
             //Debug.Assert(declOuter == null || declOuter.Bag() == agg.Parent);

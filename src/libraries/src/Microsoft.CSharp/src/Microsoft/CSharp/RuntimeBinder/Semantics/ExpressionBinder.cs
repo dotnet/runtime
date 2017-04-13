@@ -2336,7 +2336,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        private Declaration ContextForMemberLookup()
+        private AggregateDeclaration ContextForMemberLookup()
         {
             return Context.ContextForMemberLookup;
         }
