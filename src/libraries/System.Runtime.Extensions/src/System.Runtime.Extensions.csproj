@@ -252,9 +252,6 @@
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: UAP -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="System\IO\BinaryWriter.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\StringNormalizationExtensions.cs" />
     <Compile Include="System\Globalization\Extensions.cs" />
