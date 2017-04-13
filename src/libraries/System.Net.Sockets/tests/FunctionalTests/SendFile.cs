@@ -13,17 +13,16 @@ namespace System.Net.Sockets.Tests
 {
     public class SendFileTest
     {
-        public static IEnumerable<object[]> SendFile_MemberData_Small() => SendFile_MemberData(1024);
-
-        public static IEnumerable<object[]> SendFile_MemberData_Large() => SendFile_MemberData(12345678);
-
-        public static IEnumerable<object[]> SendFile_MemberData(int bytesToSend)
+        public static IEnumerable<object[]> SendFile_MemberData()
         {
             foreach (IPAddress listenAt in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
             {
                 foreach (bool sendPreAndPostBuffers in new[] { true, false })
                 {
-                    yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
+                    foreach (int bytesToSend in new[] { 512, 1024, 12345678 })
+                    {
+                        yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
+                    }
                 }
             }
         }
@@ -98,8 +97,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(SendFile_MemberData_Small))]
-        [MemberData(nameof(SendFile_MemberData_Large))]
+        [MemberData(nameof(SendFile_MemberData))]
         public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
             const int ListenBacklog = 1;
@@ -169,14 +167,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(SendFile_MemberData_Large))]
-        [ActiveIssue(17188, TestPlatforms.OSX)] // recombine into SendFile_APM once fixed
-        public void SendFile_APM_Large(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend) =>
-            SendFile_APM(listenAt, sendPreAndPostBuffers, bytesToSend);
-
-        [OuterLoop] // TODO: Issue #11345
-        [Theory]
-        [MemberData(nameof(SendFile_MemberData_Small))]
+        [MemberData(nameof(SendFile_MemberData))]
         public void SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
             const int ListenBacklog = 1;
