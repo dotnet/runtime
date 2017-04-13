@@ -11213,6 +11213,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
+			if (klass->byval_arg.type == MONO_TYPE_VOID)
+				UNVERIFIED;
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
