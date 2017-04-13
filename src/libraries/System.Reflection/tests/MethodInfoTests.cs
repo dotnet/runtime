@@ -318,14 +318,14 @@ namespace System.Reflection.Tests
         [Fact]
         public void MakeGenericMethod_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("methodInstantiation", () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(null)); // TypeArguments is null
-            Assert.Throws<ArgumentNullException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(string), null)); // TypeArguments has null Type
+            Assert.Throws<ArgumentNullException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(null)); // TypeArguments is null
+            Assert.Throws<ArgumentNullException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(string), null)); // TypeArguments has null Type
             Assert.Throws<InvalidOperationException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.VoidMethodReturningInt)).MakeGenericMethod(typeof(int))); // Method is non generic
 
             // Number of typeArguments does not match
-            Assert.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod());
-            Assert.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(typeof(string), typeof(int)));
-            Assert.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(int)));
+            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod());
+            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(typeof(string), typeof(int)));
+            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(int)));
         }
 
         [Theory]

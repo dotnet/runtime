@@ -63,6 +63,7 @@ namespace System.Reflection.Tests
         public void Invoke_StaticConstructor_NullObject_NullParameters()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
+            Assert.Equal(1, constructors.Length);
             object obj = constructors[0].Invoke(null, new object[] { });
             Assert.Null(obj);
         }
@@ -71,6 +72,7 @@ namespace System.Reflection.Tests
         public void Invoke_StaticConstructor_ThrowsMemberAccessException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
+            Assert.Equal(1, constructors.Length);
             Assert.Throws<MemberAccessException>(() => constructors[0].Invoke(new object[0]));
         }
 
@@ -137,7 +139,7 @@ namespace System.Reflection.Tests
         public void Invoke_ParameterWrongType_ThrowsArgumentException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Throws<ArgumentException>(null, () => (ClassWith3Constructors)constructors[1].Invoke(new object[] { "hello" }));
+            Assert.Throws<ArgumentException>(() => (ClassWith3Constructors)constructors[1].Invoke(new object[] { "hello" }));
         }
 
         [Fact]
@@ -227,7 +229,7 @@ namespace System.Reflection.Tests
         public string Method1(DateTime dt) => "";
     }
 
-    public class ClassWithStaticConstructor
+    public static class ClassWithStaticConstructor
     {
         static ClassWithStaticConstructor() { }
     }

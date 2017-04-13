@@ -194,7 +194,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void Load_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("assemblyRef", () => Assembly.Load((AssemblyName)null)); // AssemblyRef is null
+            Assert.Throws<ArgumentNullException>(() => Assembly.Load((AssemblyName)null)); // AssemblyRef is null
             Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName("no such assembly"))); // No such assembly
         }
 
