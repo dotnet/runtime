@@ -83,7 +83,7 @@ __sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__SharedFxVers
 __rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
 
 if [[ $__rid == *"osx"* ]]; then
-    __packageRid="osx.10.10-x64"
+    __packageRid="osx-x64"
 elif [[ $__rid == *"rhel.7"* || $__rid == *"centos.7"* ]]; then
     __packageRid="rhel.7-x64"
 else
