@@ -1,2 +1,2 @@
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
+ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
 Total Issues: 0
