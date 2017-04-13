@@ -23,31 +23,25 @@ System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(Object), name = "Ty
 
 namespace System.Reflection.Tests
 {
-    public class AssemblyTests : IDisposable
+    public class AssemblyTests
     {
 
-        string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
-        string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly", "TestAssembly.dll");
-        string loadFromTestPath;
+        static string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
+        static string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly", "TestAssembly.dll");
+        static string loadFromTestPath;
 
-        public AssemblyTests()
+        static AssemblyTests()
         {
             // Move TestAssembly.dll to subfolder TestAssembly
-            if(!File.Exists(destTestAssemblyPath))
+            Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+            if (File.Exists(sourceTestAssemblyPath))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Delete(destTestAssemblyPath);
                 File.Move(sourceTestAssemblyPath, destTestAssemblyPath);
             }
             string currAssemblyPath = typeof(AssemblyTests).Assembly.Location;
             loadFromTestPath = Path.Combine(Path.GetDirectoryName(currAssemblyPath), "TestAssembly", Path.GetFileName(currAssemblyPath));
             File.Copy(currAssemblyPath, loadFromTestPath, true);
-        }
-
-        public void Dispose()
-        {
-            // Revert TestAssembly.dll back to its previous location
-            if(!File.Exists(sourceTestAssemblyPath))
-                File.Move(destTestAssemblyPath, sourceTestAssemblyPath);
         }
 
         public static IEnumerable<object[]> Equality_TestData()
