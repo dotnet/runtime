@@ -124,17 +124,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             get { return parent.AsNamespaceOrAggregateSymbol(); }
         }
 
-        private new AggregateDeclaration DeclFirst()
-        {
-            return (AggregateDeclaration)base.DeclFirst();
-        }
-
-        public AggregateDeclaration DeclOnly()
-        {
-            //Debug.Assert(DeclFirst() != null && DeclFirst().DeclNext() == null);
-            return DeclFirst();
-        }
-
         public bool InAlias(KAID aid)
         {
             Debug.Assert(_infile != null);
