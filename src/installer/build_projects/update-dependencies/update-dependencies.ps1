@@ -50,17 +50,10 @@ $env:PATH = "$env:DOTNET_INSTALL_DIR;$env:PATH"
 
 $appPath = "$PSScriptRoot"
 
-# Figure out the RID of the current platform, based on what stage 0 thinks.
-$HOST_RID=(dotnet --info | Select-String -Pattern "\s*RID:\s*(?<rid>.*)").Matches[0].Groups['rid'].Value
-
 # Restore the build scripts
 Write-Host "Restoring Build Script projects..."
 pushd "$PSScriptRoot\.."
-
-(Get-Content "dotnet-host-build\project.json.template").Replace("{RID}", $HOST_RID) | Set-Content "dotnet-host-build\project.json"
-(Get-Content "update-dependencies\project.json.template").Replace("{RID}", $HOST_RID) | Set-Content "update-dependencies\project.json"
-
-dotnet restore
+dotnet restore --infer-runtimes
 if($LASTEXITCODE -ne 0) { throw "Failed to restore" }
 popd
 
