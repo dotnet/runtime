@@ -34,6 +34,7 @@ check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(libunwind.h HAVE_LIBUNWIND_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
+check_include_files(sys/prctl.h HAVE_PRCTL_H)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   set(CMAKE_REQUIRED_FLAGS "-ldl")

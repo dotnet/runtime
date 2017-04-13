@@ -96,6 +96,12 @@ function(add_executable_clr)
 endfunction()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
+  if(CLR_CMAKE_PLATFORM_UBUNTU_LINUX)
+    if(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+      add_subdirectory(debug/createdump)
+    endif(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+  endif(CLR_CMAKE_PLATFORM_UBUNTU_LINUX)
+
   add_subdirectory(ToolBox/SOS/Strike)
 
   # Include the dummy c++ include files
