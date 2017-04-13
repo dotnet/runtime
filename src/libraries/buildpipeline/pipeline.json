@@ -221,7 +221,7 @@
       },
       "BuildParameters": {
         "PB_ConfigurationGroup": "Release",
-        "PB_PipelineBuildMSBuildArguments": "/p:EnableProfileGuidedOptimization=true"
+        "PB_PipelineBuildMSBuildArguments": "/p:EnableProfileGuidedOptimization=false"
       },
       "Definitions": [
         {
