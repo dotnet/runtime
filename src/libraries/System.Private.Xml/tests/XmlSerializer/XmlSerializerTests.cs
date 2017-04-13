@@ -3088,7 +3088,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         string defaultNamespace = "http://www.contoso.com";
         var value = PurchaseOrder.CreateInstance();
-        string baseline = 
+        string baseline =
 @"<?xml version=""1.0""?>
 <PurchaseOrder xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns=""http://www.contoso1.com"">
   <ShipTo Name=""John Doe"">
@@ -3097,7 +3097,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     <State>WA</State>
     <Zip>00000</Zip>
   </ShipTo>
-  <OrderDate>Monday, April 10, 2017</OrderDate>
+  <OrderDate>Monday, 10 April 2017</OrderDate>
   <Items>
     <OrderedItem>
       <ItemName>Widget S</ItemName>
