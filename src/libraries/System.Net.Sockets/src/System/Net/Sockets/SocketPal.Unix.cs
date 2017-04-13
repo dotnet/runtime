@@ -232,12 +232,6 @@ namespace System.Net.Sockets
         {
             long bytesSent; 
             errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
-
-            if (errno != Interop.Error.SUCCESS)
-            {
-                return -1;
-            }
-
             offset += bytesSent;
             count -= bytesSent;
             return bytesSent;
@@ -732,6 +726,7 @@ namespace System.Net.Sockets
                 try
                 {
                     sent = SendFile(socket, handle, ref offset, ref count, out errno);
+                    bytesSent += sent;
                 }
                 catch (ObjectDisposedException)
                 {
@@ -740,7 +735,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                if (sent == -1)
+                if (errno != Interop.Error.SUCCESS)
                 {
                     if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
                     {
@@ -751,8 +746,6 @@ namespace System.Net.Sockets
                     errorCode = SocketError.Success;
                     return false;
                 }
-
-                bytesSent += sent;
 
                 if (sent == 0 || count == 0)
                 {

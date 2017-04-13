@@ -2840,27 +2840,48 @@ extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t 
 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
+
 #elif HAVE_SENDFILE_6
-    off_t len = count;
-    ssize_t res;
-    while (CheckInterrupted(res = sendfile(infd, outfd, static_cast<off_t>(offset), &len, nullptr, 0)));
-    if (res != -1)
+    *sent = 0;
+    while (true) // in case we need to retry for an EINTR
     {
-        if (len == 0)
+        off_t len = count;
+        ssize_t res = sendfile(infd, outfd, static_cast<off_t>(offset), &len, nullptr, 0);
+        assert(len >= 0);
+
+        // If the call succeeded, store the number of bytes sent, and return.  We add
+        // rather than copy len because a previous call to sendfile could have sent bytes
+        // but been interrupted by EINTR, in which case we need to add to that.
+        if (res != -1)
         {
-            // This indicates EOF
-            *sent = count;
+            *sent += len;
+            return PAL_SUCCESS;
         }
-        else
+
+        // We got an error. If sendfile "fails" with EINTR or EAGAIN, it may have sent
+        // some data that needs to be counted.
+        if (errno == EAGAIN || errno == EINTR)
         {
-            *sent = len;
+            *sent += len;
+            offset += len;
+            count -= len;
+
+            // If we actually transferred everything in spite of the error, return success.
+            assert(count >= 0);
+            if (count == 0) return PAL_SUCCESS;
+
+            // For EINTR, loop around and go again.
+            if (errno == EINTR) continue;
         }
-        return PAL_SUCCESS;
+
+        // For everything other than EINTR, bail.
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    *sent = 0;
-    return SystemNative_ConvertErrorPlatformToPal(errno);
-#else
+#else    
+    // If we ever need to run on a platform that doesn't have sendfile,
+    // we can implement this with a simple read/send loop.  For now,
+    // we just mark it as not supported.
     (void)outfd;
     (void)infd;
     (void)offset;
