@@ -694,9 +694,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
             inst_RV_RV(ins, targetReg, op1loReg, TYP_INT, emitTypeSize(TYP_INT));
 
-            assert(simdNode->gtRsvdRegs != RBM_NONE);
-            assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-            regNumber tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+            regNumber tmpReg = simdNode->GetSingleTempReg();
 
             regNumber op1hiReg = genConsumeReg(op1hi);
             ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
@@ -863,9 +861,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     // Note that we cannot use targetReg before consumed all source operands. Therefore,
     // Need an internal register to stitch together all the values into a single vector
     // in an XMM reg.
-    assert(simdNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-    regNumber vectorReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+    regNumber vectorReg = simdNode->GetSingleTempReg();
 
     // Zero out vectorReg if we are constructing a vector whose size is not equal to targetType vector size.
     // For example in case of Vector4f we don't need to zero when using SSE2.
@@ -992,14 +988,9 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     {
         // We need a temporary register that is NOT the same as the target,
         // and we MAY need another.
-        assert(simdNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(simdNode->gtRsvdRegs) == 2);
+        regNumber tmpReg  = simdNode->ExtractTempReg();
+        regNumber tmpReg2 = simdNode->GetSingleTempReg();
 
-        regMaskTP tmpRegsMask = simdNode->gtRsvdRegs;
-        regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
-        tmpRegsMask &= ~tmpReg1Mask;
-        regNumber tmpReg  = genRegNumFromMask(tmpReg1Mask);
-        regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
         // The register allocator guarantees the following conditions:
         // - the only registers that may be the same among op1Reg, op2Reg, tmpReg
         //   and tmpReg2 are op1Reg and op2Reg.
@@ -1269,7 +1260,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             else
             {
                 // We need one additional SIMD register to store the result of the SIMD compare.
-                regNumber tmpReg1 = genRegNumFromMask(simdNode->gtRsvdRegs & RBM_ALLFLOAT);
+                regNumber tmpReg1 = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
 
                 // tmpReg1 = (op1Reg == op2Reg)
                 // Call this value of tmpReg1 as 'compResult' for further reference below.
@@ -1305,7 +1296,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 {
                     // If we are not materializing result into a register,
                     // we would have reserved an int type internal register.
-                    intReg = genRegNumFromMask(simdNode->gtRsvdRegs & RBM_ALLINT);
+                    intReg = simdNode->GetSingleTempReg(RBM_ALLINT);
                 }
                 else
                 {
@@ -1313,7 +1304,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                     intReg = targetReg;
 
                     // Must have not reserved any int type internal registers.
-                    assert(genCountBits(simdNode->gtRsvdRegs & RBM_ALLINT) == 0);
+                    assert(simdNode->AvailableTempRegCount(RBM_ALLINT) == 0);
                 }
 
                 inst_RV_RV(INS_pmovmskb, intReg, tmpReg1, simdType, emitActualTypeSize(simdType));
@@ -1430,16 +1421,12 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     {
         if ((compiler->getSIMDInstructionSet() == InstructionSet_SSE2) || (simdEvalType == TYP_SIMD32))
         {
-            assert(simdNode->gtRsvdRegs != RBM_NONE);
-            assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-
-            tmpReg1 = genRegNumFromMask(simdNode->gtRsvdRegs);
-            assert(tmpReg1 != REG_NA);
+            tmpReg1 = simdNode->GetSingleTempReg();
             assert(tmpReg1 != targetReg);
         }
         else
         {
-            assert(simdNode->gtRsvdRegs == RBM_NONE);
+            assert(simdNode->AvailableTempRegCount() == 0);
         }
     }
     else
@@ -1449,17 +1436,12 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
 
         if (iset == InstructionSet_SSE3_4)
         {
-            // Must have reserved 1 scratch register.
-            assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-            tmpReg1 = genRegNumFromMask(simdNode->gtRsvdRegs);
+            tmpReg1 = simdNode->GetSingleTempReg();
         }
         else
         {
-            // Must have reserved 2 scratch registers.
-            assert(genCountBits(simdNode->gtRsvdRegs) == 2);
-            regMaskTP tmpRegMask = genFindLowestBit(simdNode->gtRsvdRegs);
-            tmpReg1              = genRegNumFromMask(tmpRegMask);
-            tmpReg2              = genRegNumFromMask(simdNode->gtRsvdRegs & ~tmpRegMask);
+            tmpReg1 = simdNode->ExtractTempReg();
+            tmpReg2 = simdNode->GetSingleTempReg();
         }
     }
 
@@ -1803,10 +1785,9 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     }
 
     regNumber tmpReg = REG_NA;
-    if (simdNode->gtRsvdRegs != RBM_NONE)
+    if (simdNode->AvailableTempRegCount() != 0)
     {
-        assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-        tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+        tmpReg = simdNode->GetSingleTempReg();
     }
     else
     {
@@ -2011,9 +1992,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     if (compiler->getSIMDInstructionSet() == InstructionSet_SSE2)
     {
         // We need one additional int register as scratch
-        assert(simdNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-        regNumber tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+        regNumber tmpReg = simdNode->GetSingleTempReg();
         assert(genIsValidIntReg(tmpReg));
 
         // Move the value from xmm reg to an int reg
@@ -2103,9 +2082,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 #endif
 
     // Need an addtional Xmm register to extract upper 4 bytes from data.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genConsumeOperands(treeNode->AsOp());
 
@@ -2141,10 +2118,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
     regNumber operandReg = genConsumeReg(op1);
 
     // Need an addtional Xmm register to read upper 4 bytes, which is different from targetReg
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != targetReg);
 
     // Load upper 4 bytes in tmpReg
@@ -2188,9 +2162,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     regNumber operandReg = genConsumeReg(op1);
 
     // Need an addtional Xmm register to extract upper 4 bytes from data.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // store lower 8 bytes
     getEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);
@@ -2227,12 +2199,8 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
         offs = treeNode->gtLclFld.gtLclOffs;
     }
 
-    // Need an additional Xmm register that is different from
-    // targetReg to read upper 4 bytes.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    // Need an additional Xmm register that is different from targetReg to read upper 4 bytes.
+    regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != targetReg);
 
     // Read upper 4 bytes to tmpReg
@@ -2298,9 +2266,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     regNumber operandReg = genConsumeReg(op1);
 
     // Need an addtional Xmm register to extract upper 4 bytes from data.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genStoreSIMD12ToStack(operandReg, tmpReg);
 }

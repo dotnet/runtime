@@ -166,9 +166,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_FLOAT)
             {
                 // Get a temp integer register
-                regMaskTP tmpRegMask = tree->gtRsvdRegs;
-                regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-                assert(tmpReg != REG_NA);
+                regNumber tmpReg = tree->GetSingleTempReg();
 
                 float f = forceCastToFloat(constValue);
                 genSetRegToIcon(tmpReg, *((int*)(&f)));
@@ -181,15 +179,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 unsigned* cv = (unsigned*)&constValue;
 
                 // Get two temp integer registers
-                regMaskTP tmpRegsMask = tree->gtRsvdRegs;
-                regMaskTP tmpRegMask  = genFindHighestBit(tmpRegsMask); // set tmpRegMsk to a one-bit mask
-                regNumber tmpReg1     = genRegNumFromMask(tmpRegMask);
-                assert(tmpReg1 != REG_NA);
-
-                tmpRegsMask &= ~genRegMask(tmpReg1);                // remove the bit for 'tmpReg1'
-                tmpRegMask        = genFindHighestBit(tmpRegsMask); // set tmpRegMsk to a one-bit mask
-                regNumber tmpReg2 = genRegNumFromMask(tmpRegMask);
-                assert(tmpReg2 != REG_NA);
+                regNumber tmpReg1 = tree->ExtractTempReg();
+                regNumber tmpReg2 = tree->GetSingleTempReg();
 
                 genSetRegToIcon(tmpReg1, cv[0]);
                 genSetRegToIcon(tmpReg2, cv[1]);
@@ -1129,7 +1120,6 @@ void CodeGen::genLclHeap(GenTreePtr tree)
     // Also it used as temporary register in code generation
     // for storing allocation size
     regNumber   regCnt          = tree->gtRegNum;
-    regMaskTP   tmpRegsMask     = tree->gtRsvdRegs;
     regNumber   pspSymReg       = REG_NA;
     var_types   type            = genActualType(size->gtType);
     emitAttr    easz            = emitTypeSize(type);
@@ -1198,10 +1188,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         stackAdjustment += STACK_ALIGN;
 
         // Save a copy of PSPSym
-        assert(genCountBits(tmpRegsMask) >= 1);
-        regMaskTP pspSymRegMask = genFindLowestBit(tmpRegsMask);
-        tmpRegsMask &= ~pspSymRegMask;
-        pspSymReg = genRegNumFromMask(pspSymRegMask);
+        pspSymReg = tree->ExtractTempReg();
         getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
     }
 #endif
@@ -1266,12 +1253,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // Since we have to zero out the allocated memory AND ensure that RSP is always valid
         // by tickling the pages, we will just push 0's on the stack.
 
-        assert(tmpRegsMask != RBM_NONE);
-        assert(genCountBits(tmpRegsMask) >= 1);
-
-        regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-        tmpRegsMask &= ~regCntMask;
-        regNumber regTmp = genRegNumFromMask(regCntMask);
+        regNumber regTmp = tree->ExtractTempReg();
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, regTmp);
 
         // Loop:
@@ -1323,9 +1305,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //
 
         // Setup the regTmp
-        assert(tmpRegsMask != RBM_NONE);
-        assert(genCountBits(tmpRegsMask) == 1);
-        regNumber regTmp = genRegNumFromMask(tmpRegsMask);
+        regNumber regTmp = tree->ExtractTempReg();
 
         BasicBlock* loop = genCreateTempLabel();
         BasicBlock* done = genCreateTempLabel();

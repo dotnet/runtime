@@ -425,7 +425,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             if (tree->gtOverflow())
             {
                 // Need a register different from target reg to check for overflow.
-                info->internalIntCount = 2;
+                info->internalIntCount = 1;
             }
             __fallthrough;
 

@@ -617,7 +617,7 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     //   xor edx, edx
     //   div divisor->gtRegNum
     //   mov eax, temp
-    const regNumber tempReg = genRegNumFromMask(node->gtRsvdRegs);
+    const regNumber tempReg = node->GetSingleTempReg();
     inst_RV_RV(INS_mov, tempReg, REG_EAX, TYP_INT);
     inst_RV_RV(INS_mov, REG_EAX, REG_EDX, TYP_INT);
     instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
@@ -1924,9 +1924,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             inst_JMP(jmpEqual, skipLabel);
 
             // emit the call to the EE-helper that stops for GC (or other reasons)
-            assert(treeNode->gtRsvdRegs != RBM_NONE);
-            assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-            regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+            regNumber tmpReg = treeNode->GetSingleTempReg();
             assert(genIsValidIntReg(tmpReg));
 
             genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN, tmpReg);
@@ -2431,12 +2429,11 @@ void CodeGen::genLclHeap(GenTreePtr tree)
     GenTreePtr size = tree->gtOp.gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
-    regNumber   targetReg   = tree->gtRegNum;
-    regMaskTP   tmpRegsMask = tree->gtRsvdRegs;
-    regNumber   regCnt      = REG_NA;
-    var_types   type        = genActualType(size->gtType);
-    emitAttr    easz        = emitTypeSize(type);
-    BasicBlock* endLabel    = nullptr;
+    regNumber   targetReg = tree->gtRegNum;
+    regNumber   regCnt    = REG_NA;
+    var_types   type      = genActualType(size->gtType);
+    emitAttr    easz      = emitTypeSize(type);
+    BasicBlock* endLabel  = nullptr;
 
 #ifdef DEBUG
     // Verify ESP
@@ -2494,15 +2491,12 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(genCountBits(tmpRegsMask) == 0);
+            assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
         }
         else
         {
-            assert(genCountBits(tmpRegsMask) >= 1);
-            regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-            tmpRegsMask &= ~regCntMask;
-            regCnt = genRegNumFromMask(regCntMask);
+            regCnt = tree->ExtractTempReg();
             if (regCnt != targetReg)
             {
                 // Above, we put the size in targetReg. Now, copy it to our new temp register if necessary.
@@ -2594,15 +2588,12 @@ void CodeGen::genLclHeap(GenTreePtr tree)
             assert(regCnt == REG_NA);
             if (compiler->info.compInitMem)
             {
-                assert(genCountBits(tmpRegsMask) == 0);
+                assert(tree->AvailableTempRegCount() == 0);
                 regCnt = targetReg;
             }
             else
             {
-                assert(genCountBits(tmpRegsMask) >= 1);
-                regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-                tmpRegsMask &= ~regCntMask;
-                regCnt = genRegNumFromMask(regCntMask);
+                regCnt = tree->ExtractTempReg();
             }
         }
 
@@ -2717,9 +2708,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // This is a harmless trick to avoid the emitter trying to track the
         // decrement of the ESP - we do the subtraction in another reg instead
         // of adjusting ESP directly.
-        assert(tmpRegsMask != RBM_NONE);
-        assert(genCountBits(tmpRegsMask) == 1);
-        regNumber regTmp = genRegNumFromMask(tmpRegsMask);
+        regNumber regTmp = tree->GetSingleTempReg();
 
         inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
         inst_RV_IV(INS_sub, regTmp, compiler->eeGetPageSize(), EA_PTRSIZE);
@@ -2922,13 +2911,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     // Perform an unroll using SSE2 loads and stores.
     if (size >= XMM_REGSIZE_BYTES)
     {
-        regNumber tmpReg = genRegNumFromMask(initBlkNode->gtRsvdRegs);
-
-#ifdef DEBUG
-        assert(initBlkNode->gtRsvdRegs != RBM_NONE);
-        assert(genCountBits(initBlkNode->gtRsvdRegs) == 1);
+        regNumber tmpReg = initBlkNode->GetSingleTempReg();
         assert(genIsValidFloatReg(tmpReg));
-#endif // DEBUG
 
         if (initVal->gtIntCon.gtIconVal != 0)
         {
@@ -3122,8 +3106,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     if (size >= XMM_REGSIZE_BYTES)
     {
-        assert(cpBlkNode->gtRsvdRegs != RBM_NONE);
-        regNumber xmmReg = genRegNumFromMask(cpBlkNode->gtRsvdRegs & RBM_ALLFLOAT);
+        regNumber xmmReg = cpBlkNode->GetSingleTempReg(RBM_ALLFLOAT);
         assert(genIsValidFloatReg(xmmReg));
         size_t slots = size / XMM_REGSIZE_BYTES;
 
@@ -3144,7 +3127,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     if ((size & 0xf) != 0)
     {
         // Grab the integer temp register to emit the remaining loads and stores.
-        regNumber tmpReg = genRegNumFromMask(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
+        regNumber tmpReg = cpBlkNode->GetSingleTempReg(RBM_ALLINT);
 
         if ((size & 8) != 0)
         {
@@ -3390,22 +3373,22 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     // less than 16 bytes, we will just be using pushes
     if (size >= 8)
     {
-        xmmTmpReg  = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLFLOAT);
+        xmmTmpReg  = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
         longTmpReg = xmmTmpReg;
     }
     if ((size & 0x7) != 0)
     {
-        intTmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
+        intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
     }
 #else  // !_TARGET_X86_
     // On x64 we use an XMM register only for 16-byte chunks.
     if (size >= XMM_REGSIZE_BYTES)
     {
-        xmmTmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLFLOAT);
+        xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
     }
     if ((size & 0xf) != 0)
     {
-        intTmpReg  = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
+        intTmpReg  = putArgNode->GetSingleTempReg(RBM_ALLINT);
         longTmpReg = intTmpReg;
     }
 #endif // !_TARGET_X86_
@@ -3418,7 +3401,6 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 #ifdef _TARGET_X86_
         assert(!m_pushStkArg);
 #endif // _TARGET_X86_
-        assert(putArgNode->gtRsvdRegs != RBM_NONE);
         size_t slots = size / XMM_REGSIZE_BYTES;
 
         assert(putArgNode->gtGetOp1()->isContained());
@@ -3578,7 +3560,6 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
 #ifdef DEBUG
-    bool isRepMovspUsed = false;
 
     assert(dstAddr->isUsedFromReg());
 
@@ -3629,13 +3610,9 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     {
         if (slots >= CPOBJ_NONGC_SLOTS_LIMIT)
         {
-#ifdef DEBUG
             // If the destination of the CpObj is on the stack, make sure we allocated
             // RCX to emit the movsp (alias for movsd or movsq for 32 and 64 bits respectively).
             assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
-            regNumber tmpReg = REG_RCX;
-            isRepMovspUsed   = true;
-#endif // DEBUG
 
             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
             instGen(INS_r_movsp);
@@ -3685,13 +3662,10 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         }
                         else
                         {
-#ifdef DEBUG
                             // Otherwise, we can save code-size and improve CQ by emitting
                             // rep movsp (alias for movsd/movsq for x86/x64)
                             assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
-                            regNumber tmpReg = REG_RCX;
-                            isRepMovspUsed   = true;
-#endif // DEBUG
+
                             getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                             instGen(INS_r_movsp);
                         }
@@ -3767,7 +3741,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->gtOp.gtOp1->gtRegNum;
     regNumber baseReg = treeNode->gtOp.gtOp2->gtRegNum;
 
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     getEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
@@ -4057,8 +4031,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         offsetReg = genConsumeReg(offsetNode);
 
         // We will use a temp register for the offset*scale+effectiveIndex computation.
-        regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
-        tmpReg               = genRegNumFromMask(tmpRegMask);
+        tmpReg = arrOffset->GetSingleTempReg();
     }
     else
     {
@@ -6664,26 +6637,16 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         }
         else
         {
-            regNumber tmpReg = REG_NA;
-
-            if (needScratchReg)
-            {
-                // We need an additional temp register
-                // Make sure we have exactly one allocated.
-                assert(treeNode->gtRsvdRegs != RBM_NONE);
-                assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-                tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
-            }
-
             // When we are converting from unsigned or to unsigned, we
             // will only have to check for any bits set using 'typeMask'
             if (isUnsignedSrc || isUnsignedDst)
             {
                 if (needScratchReg)
                 {
+                    regNumber tmpReg = treeNode->GetSingleTempReg();
                     inst_RV_RV(INS_mov, tmpReg, sourceReg, TYP_LONG); // Move the 64-bit value to a writeable temp reg
                     inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, size, tmpReg, 32); // Shift right by 32 bits
-                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);            // Thow if result shift is non-zero
+                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);            // Throw if result shift is non-zero
                 }
                 else
                 {
@@ -7089,9 +7052,7 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
     regNumber  targetReg  = treeNode->gtRegNum;
 
     // Extract exponent into a register.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genConsumeReg(op1);
 
@@ -7397,10 +7358,7 @@ void CodeGen::genSSE2BitwiseOp(GenTreePtr treeNode)
     }
 
     // We need an additional register for bitmask.
-    // Make sure we have one allocated.
-    assert(treeNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(treeNode->gtRsvdRegs) == 1);
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // Move operand into targetReg only if the reg reserved for
     // internal purpose is not the same as targetReg.
@@ -7716,17 +7674,17 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     unsigned  prevFieldOffset = currentOffset;
     regNumber intTmpReg       = REG_NA;
     regNumber simdTmpReg      = REG_NA;
-    if (putArgStk->gtRsvdRegs != RBM_NONE)
+    if (putArgStk->AvailableTempRegCount() != 0)
     {
         regMaskTP rsvdRegs = putArgStk->gtRsvdRegs;
         if ((rsvdRegs & RBM_ALLINT) != 0)
         {
-            intTmpReg = genRegNumFromMask(rsvdRegs & RBM_ALLINT);
+            intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
             assert(genIsValidIntReg(intTmpReg));
         }
         if ((rsvdRegs & RBM_ALLFLOAT) != 0)
         {
-            simdTmpReg = genRegNumFromMask(rsvdRegs & RBM_ALLFLOAT);
+            simdTmpReg = putArgStk->GetSingleTempReg(RBM_ALLFLOAT);
             assert(genIsValidFloatReg(simdTmpReg));
         }
         assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
