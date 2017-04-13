@@ -41,12 +41,21 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             Assert.True(attribute.RequiresValidationContext);
         }
-        
+
         [Fact]
-        public static void Validate_Indexer_ThrowsTargetParameterCountException()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_Indexer_ThrowsTargetParameterCountException_Netfx()
         {
             CompareAttribute attribute = new CompareAttribute("Item");
-            Assert.Throws<TargetParameterCountException>(() => attribute.Validate("b", s_context));
+            Assert.Throws<ArgumentException>(() => attribute.Validate("b", s_context));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_Indexer_ThrowsArgumentException_Netcoreapp()
+        {
+            CompareAttribute attribute = new CompareAttribute("Item");
+            Assert.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
         }
 
         [Fact]
