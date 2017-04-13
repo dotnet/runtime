@@ -1,14 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <BuildConfigurations>
+    <PackageConfigurations>
       netstandard1.3;
       netstandard;
-      uap-Windows_NT;
       netcoreapp;
       net45-Windows_NT;      
       net46-Windows_NT;
       netfx-Windows_NT;      
+    </PackageConfigurations>  
+    <BuildConfigurations>
+      uap-Windows_NT;
+      $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
