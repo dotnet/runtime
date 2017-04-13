@@ -237,9 +237,11 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
 		mono_domain_lock (domain);
-		// FIXME: How can the lookup succeed ?
+		// FIXME: The lookup can fail if the method is JITted recursively though a type cctor
 		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, cfg->method_to_register))
 			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, cfg->seq_point_info);
+		else
+			mono_seq_point_info_free (cfg->seq_point_info);
 		mono_domain_unlock (domain);
 	}
 
