@@ -17603,7 +17603,7 @@ void Compiler::fgMarkImplicitByRefArgs()
     }
 #endif // DEBUG
 
-    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
 
