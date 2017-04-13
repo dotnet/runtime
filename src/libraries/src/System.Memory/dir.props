@@ -4,5 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AssemblyKey>Open</AssemblyKey>
+    <!-- DO NOT ship this as stable for .NET Core 2.0. -->
+    <BlockStable>true</BlockStable>
+    <IsNETCoreApp>false</IsNETCoreApp>
   </PropertyGroup>
 </Project>
