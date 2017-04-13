@@ -147,7 +147,10 @@ namespace System.Reflection.Tests
             EventInfo eventInfo1 = GetEventInfo(type1, name1);
             EventInfo eventInfo2 = GetEventInfo(type2, name2);
             Assert.Equal(expected, eventInfo1.Equals(eventInfo2));
-            Assert.Equal(expected, eventInfo1.GetHashCode().Equals(eventInfo2.GetHashCode()));
+            if (expected)
+            {
+                Assert.Equal(expected, eventInfo1.GetHashCode().Equals(eventInfo2.GetHashCode()));
+            }
         }
 
         [Theory]
