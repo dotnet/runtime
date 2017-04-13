@@ -7,6 +7,8 @@
     <PackageIndexFile>$(MSBuildThisFileDirectory)..\Microsoft.Private.PackageBaseline\packageIndex.json</PackageIndexFile>
   </PropertyGroup>
 
-  <!-- make RestorePackages run before HarvestStablePackage to ensure we'll restore the baseline before harvesting  -->
-  <Target Name="EnsureRestore" BeforeTargets="HarvestStablePackage" DependsOnTargets="RestorePackages" />
+  <Target Name="BlockStable" Condition="'$(BlockStable)' == 'true'" AfterTargets="CalculatePackageVersion">
+    <!-- DO NOT ship this packages as stable in .NET Core 2.0. -->
+    <Error Condition="!$(PackageVersion.Contains('-'))" Text="Package $(Id) should not be built stable" />
+  </Target>
 </Project>
