@@ -650,6 +650,12 @@ PAL_InitializeCoreCLR(const char *szExePath)
         return ERROR_DLL_INIT_FAILED;
     }
 
+    if (!PROCAbortInitialize())
+    {
+        printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
+        return ERROR_GEN_FAILURE;
+    }
+
     if (!InitializeFlushProcessWriteBuffers())
     {
         return ERROR_GEN_FAILURE;
