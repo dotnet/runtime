@@ -55,8 +55,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // N.B.: in incremental builds, it is quite possible for
         // isSource==TRUE and hasParseTree==FALSE. Be
         // sure you use the correct variable for what you are trying to do!
-        private bool _isSource;    // This class is defined in source, although the 
-        // source might not be being read during this compile.
 
         // Predefined
         private bool _isPredefined;    // A special predefined type.
@@ -109,7 +107,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void InitFromInfile(InputFile infile)
         {
             _infile = infile;
-            _isSource = infile.isSource;
         }
 
         public bool FindBaseAgg(AggregateSymbol agg)
@@ -351,11 +348,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetSkipUDOps(bool skipUDOps)
         {
             _isSkipUDOps = skipUDOps;
-        }
-
-        public bool IsSource()
-        {
-            return _isSource == true;
         }
 
         public TypeArray GetTypeVars()

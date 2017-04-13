@@ -135,10 +135,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (aggFound == null)
             {
                 // Didn't find the AggregateSymbol.
-                if (aggBad != null && (isRequired || aid == KAID.kaidGlobal && aggBad.IsSource()))
-                    errorContext.ErrorRef(ErrorCode.ERR_PredefinedTypeBadType, aggBad);
-                else if (isRequired)
-                    errorContext.Error(ErrorCode.ERR_PredefinedTypeNotFound, pszType);
+                if (isRequired)
+                {
+                    if (aggBad != null)
+                        errorContext.ErrorRef(ErrorCode.ERR_PredefinedTypeBadType, aggBad);
+                    else
+                        errorContext.Error(ErrorCode.ERR_PredefinedTypeNotFound, pszType);
+                }
                 return null;
             }
 

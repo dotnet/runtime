@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             this.ssetAssembly = new List<AidContainer>();
 
-            InputFile infileUnres = new InputFile {isSource = false};
+            InputFile infileUnres = new InputFile();
             infileUnres.SetAssemblyID(KAID.kaidUnresolved);
 
             ssetAssembly.Add(new AidContainer(infileUnres));

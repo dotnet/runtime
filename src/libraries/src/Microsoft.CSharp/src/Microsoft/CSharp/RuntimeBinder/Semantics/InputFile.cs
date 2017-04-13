@@ -25,7 +25,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private readonly HashSet<KAID> _bsetFilter;
         private KAID _aid;
 
-        public bool isSource;               // If true, source code, if false, metadata
         // and on the module of added .netmodules
 
         public InputFile()
