@@ -149,8 +149,6 @@ protected:
     regMaskTP genLiveMask(VARSET_VALARG_TP liveSet);
 #endif
 
-    void genGetRegPairFromMask(regMaskTP regPairMask, regNumber* pLoReg, regNumber* pHiReg);
-
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
 private:

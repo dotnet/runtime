@@ -17403,3 +17403,68 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs()
 
     return resultMask;
 }
+
+#ifndef LEGACY_BACKEND
+
+//------------------------------------------------------------------------
+// The following functions manage the gtRsvdRegs set of temporary registers
+// created by LSRA during code generation.
+
+//------------------------------------------------------------------------
+// AvailableTempRegCount: return the number of available temporary registers in the (optional) given set
+// (typically, RBM_ALLINT or RBM_ALLFLOAT).
+//
+// Arguments:
+//    mask - (optional) Check for available temporary registers only in this set.
+//
+// Return Value:
+//    Count of available temporary registers in given set.
+//
+unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
+{
+    return genCountBits(gtRsvdRegs & mask);
+}
+
+//------------------------------------------------------------------------
+// GetSingleTempReg: There is expected to be exactly one available temporary register
+// in the given mask in the gtRsvdRegs set. Get that register. No future calls to get
+// a temporary register are expected. Removes the register from the set, but only in
+// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
+//
+// Arguments:
+//    mask - (optional) Get an available temporary register only in this set.
+//
+// Return Value:
+//    Available temporary register in given mask.
+//
+regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+{
+    regMaskTP availableSet = gtRsvdRegs & mask;
+    assert(genCountBits(availableSet) == 1);
+    regNumber tempReg = genRegNumFromMask(availableSet);
+    INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
+    return tempReg;
+}
+
+//------------------------------------------------------------------------
+// ExtractTempReg: Find the lowest number temporary register from the gtRsvdRegs set
+// that is also in the optional given mask (typically, RBM_ALLINT or RBM_ALLFLOAT),
+// and return it. Remove this register from the temporary register set, so it won't
+// be returned again.
+//
+// Arguments:
+//    mask - (optional) Extract an available temporary register only in this set.
+//
+// Return Value:
+//    Available temporary register in given mask.
+//
+regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+{
+    regMaskTP availableSet = gtRsvdRegs & mask;
+    assert(genCountBits(availableSet) >= 1);
+    regMaskTP tempRegMask = genFindLowestBit(availableSet);
+    gtRsvdRegs &= ~tempRegMask;
+    return genRegNumFromMask(tempRegMask);
+}
+
+#endif // !LEGACY_BACKEND
