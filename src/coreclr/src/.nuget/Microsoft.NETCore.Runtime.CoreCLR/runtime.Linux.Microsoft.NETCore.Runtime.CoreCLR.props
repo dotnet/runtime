@@ -4,8 +4,7 @@
     <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportNiFiles>
     <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportNiFiles>
     <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportNiFiles>
-    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportEventTrace>
-    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportEventTrace>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
     <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
   </PropertyGroup>
   <ItemGroup>
