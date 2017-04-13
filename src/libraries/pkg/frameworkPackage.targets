@@ -28,7 +28,7 @@
   <ItemGroup Condition="'$(IncludeReferenceFiles)' == 'true'">
     <!-- Include refs -->
     <File Include="@(RefFile)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">$(RefFileTargetPath)</TargetPath>
+      <TargetPath Condition="'%(File.TargetPath)' == ''">$(RefFileTargetPath)%(File.SubFolder)</TargetPath>
     </File>
     <!-- force a missing file if ref build is absent -->
     <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(RefFile)' == ''" />
@@ -50,7 +50,7 @@
   <ItemGroup Condition="'$(IncludeLibFiles)' == 'true'">
     <!-- Include lib -->
     <File Include="@(LibFile)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">$(LibFileTargetPath)</TargetPath>
+      <TargetPath Condition="'%(File.TargetPath)' == ''">$(LibFileTargetPath)%(File.SubFolder)</TargetPath>
     </File>
     <!-- force a missing file if lib build is absent -->
     <File Include="$(LibBinDir)/MISSING_LIB_BUILD" Condition="'@(LibFile)' == ''" />

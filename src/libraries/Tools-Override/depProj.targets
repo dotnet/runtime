@@ -76,7 +76,7 @@ See the LICENSE file in the project root for more information.
       <!-- add items defined by NuGetDeployItem property to Content so that we get clean behavior -->
       <ContentWithTargetPath Include="@(NuGetDeploy)">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <TargetPath>%(FileName)%(Extension)</TargetPath>
+        <TargetPath>%(NuGetDeploy.SubFolder)%(FileName)%(Extension)</TargetPath>
       </ContentWithTargetPath>
     </ItemGroup>
 
