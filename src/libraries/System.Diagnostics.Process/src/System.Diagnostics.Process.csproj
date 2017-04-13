@@ -30,6 +30,7 @@
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />

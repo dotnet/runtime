@@ -107,17 +107,8 @@ namespace System.Diagnostics
             return NtProcessManager.GetModules(processId);
         }
 
-        /// <summary>Gets whether the named machine is remote or local.</summary>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>true if the machine is remote; false if it's local.</returns>
-        public static bool IsRemoteMachine(string machineName)
+        private static bool IsRemoteMachineCore(string machineName)
         {
-            if (machineName == null)
-                throw new ArgumentNullException(nameof(machineName));
-
-            if (machineName.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
-
             string baseName;
 
             if (machineName.StartsWith("\\", StringComparison.Ordinal))
@@ -126,8 +117,7 @@ namespace System.Diagnostics
                 baseName = machineName;
             if (baseName.Equals(".")) return false;
 
-            if (String.Compare(Interop.Kernel32.GetComputerName(), baseName, StringComparison.OrdinalIgnoreCase) == 0) return false;
-            return true;
+            return !string.Equals(Interop.Kernel32.GetComputerName(), baseName, StringComparison.OrdinalIgnoreCase);
         }
 
         public static IntPtr GetMainWindowHandle(int processId) 

@@ -204,5 +204,19 @@ namespace System.Diagnostics.Tests
             Assert.True(child.WaitForExit(WaitInMS));
             Assert.NotEqual(SuccessExitCode, child.ExitCode);
         }
+
+        [Fact]
+        public void WaitForInputIdle_NotDirected_ThrowsInvalidOperationException()
+        {
+            var process = new Process();
+            Assert.Throws<InvalidOperationException>(() => process.WaitForInputIdle());
+        }
+
+        [Fact]
+        public void WaitForExit_NotDirected_ThrowsInvalidOperationException()
+        {
+            var process = new Process();
+            Assert.Throws<InvalidOperationException>(() => process.WaitForExit());
+        }
     }
 }
