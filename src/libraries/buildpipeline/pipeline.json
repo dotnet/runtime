@@ -134,7 +134,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm"
           },
           "ReportingParameters": {
@@ -147,7 +147,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm",
             "PB_BuildArguments": "-portable",
             "PB_SyncArguments": "-p -portable -- /p:ArchGroup=arm"
@@ -162,7 +162,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1604_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
             "PB_Architecture": "arm"
           },
           "ReportingParameters": {
@@ -631,7 +631,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm"
           },
           "ReportingParameters": {
@@ -644,7 +644,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1604_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
             "PB_Architecture": "arm"
           },
           "ReportingParameters": {
