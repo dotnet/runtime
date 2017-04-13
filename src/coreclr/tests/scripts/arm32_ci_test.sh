@@ -97,7 +97,7 @@ if [ "$__abi" == "armel" ]; then
     mkdir -p ${__ROOTFS_DIR}
     tar -zxf mic-output/tizen.tar.gz -C ${__ROOTFS_DIR}
     apt-get update
-    apt-get -y -qq --force-yes install --reinstall qemu binfmt-support qemu-user-static
+    apt-get -y -qq --force-yes --reinstall install qemu binfmt-support qemu-user-static
     __qemuARM=$(which qemu-arm-static)
     cp $__qemuARM ${CORECLR_DIR}/cross/rootfs/armel/usr/bin/
     cp $__qemuARM ${__ROOTFS_DIR}/usr/bin/
@@ -111,6 +111,10 @@ mount -o bind /dev ${__ROOTFS_DIR}/dev
 mount -o bind /dev/pts ${__ROOTFS_DIR}/dev/pts
 mount -o bind /sys ${__ROOTFS_DIR}/sys
 mount -o bind ${CORECLR_DIR} ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}
+
+# Test environment emulation using docker and qemu has some problem to use lttng library.
+# We should remove libcoreclrtraceptprovider.so to avoid test hang.
+rm -f ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}/bin/Product/${__buildDirName}/libcoreclrtraceptprovider.so
 
 chroot ${__ROOTFS_DIR} /bin/bash -x <<EOF
     cd ${ARM_CHROOT_HOME_DIR}
