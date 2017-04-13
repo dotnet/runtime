@@ -22,6 +22,8 @@
 
 int GCHeapCount()
 {
+    if (g_gcDacGlobals->n_heaps == nullptr)
+        return 0;
     return *g_gcDacGlobals->n_heaps;
 }
 
@@ -206,14 +208,19 @@ void
 ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
+
+    if (g_gcDacGlobals->n_heaps == nullptr || g_gcDacGlobals->g_heaps == nullptr)
+        return;
+    
     g_gcDacGlobals->n_heaps.EnumMem();
-    DacEnumMemoryRegion(g_gcDacGlobals->g_heaps.GetAddr(),
-                    sizeof(TADDR) * *g_gcDacGlobals->n_heaps);
+
+    int heaps = *g_gcDacGlobals->n_heaps;
+    DacEnumMemoryRegion(g_gcDacGlobals->g_heaps.GetAddr(), sizeof(TADDR) * heaps);
 
     g_gcDacGlobals->gc_structures_invalid_cnt.EnumMem();
     g_gcDacGlobals->g_heaps.EnumMem();
     
-    for (int i=0; i < *g_gcDacGlobals->n_heaps; i++)
+    for (int i = 0; i < heaps; i++)
     {
         DPTR(dac_gc_heap) pHeap = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
 
@@ -249,6 +256,9 @@ DWORD DacGetNumHeaps()
 
 HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 {
+    if (g_gcDacGlobals->n_heaps == nullptr || g_gcDacGlobals->g_heaps == nullptr)
+        return S_OK;
+
     // Scrape basic heap details
     int heaps = *g_gcDacGlobals->n_heaps;
     pCount = heaps;
