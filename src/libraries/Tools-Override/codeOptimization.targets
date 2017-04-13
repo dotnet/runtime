@@ -13,7 +13,7 @@
   <!-- If IBC data hasn't been merged with the IL yet, preprocess it first -->
   <Target Name="PreProcessIBCData"
           BeforeTargets="OptimizeWithTrainingData"
-          DependsOnTargets="RestoreOptimizationDataPackage;ResolveOptionalTools"
+          DependsOnTargets="ResolveOptionalTools"
           Condition="'$(OS)'=='Windows_NT' and '$(EnableProfileGuidedOptimization)'=='true' and Exists('$(OptimizationDataDir)$(AssemblyName).dll')">
 
     <!-- Find IBCMerge as a resolved optional tool. -->
@@ -44,7 +44,7 @@
   <Target Name="OptimizeWithTrainingData"
           AfterTargets="AfterBuild"
           BeforeTargets="CopyFilesToOutputDirectory"
-          DependsOnTargets="RestoreOptimizationDataPackage;ResolveOptionalTools"
+          DependsOnTargets="ResolveOptionalTools"
           Condition="'$(OS)'=='Windows_NT' and '$(EnableProfileGuidedOptimization)'=='true' and Exists('$(OptimizationDataDir)$(AssemblyName).pgo')">
 
     <!-- Find IBCMerge as a resolved optional tool. -->
@@ -81,7 +81,8 @@
   </Target>
 
   <!-- We need the OptimizationData package in order to be able to optimize the assembly -->
-  <Target Name="RestoreOptimizationDataPackage" BeforeTargets="CoreCompile"
+  <Target Name="RestoreOptimizationDataPackage"
+          BeforeTargets="Sync"
           Condition="'$(EnableProfileGuidedOptimization)'=='true' and '$(RestoreDefaultOptimizationDataPackage)'=='true' and !Exists('$(OptimizationDataDir)project.csproj')">
     <!-- Dynamically create a project.json file used to restore the optimization data-->
     <PropertyGroup>
