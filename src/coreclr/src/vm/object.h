@@ -3012,8 +3012,8 @@ class SafeBuffer : SafeHandle
   public:
     static FCDECL1(UINT, SizeOfType, ReflectClassBaseObject* typeUNSAFE);
     static FCDECL1(UINT, AlignedSizeOfType, ReflectClassBaseObject* typeUNSAFE);
-    static FCDECL3(void, PtrToStructure, BYTE* ptr, FC_TypedByRef structure, UINT32 sizeofT);
-    static FCDECL3(void, StructureToPtr, FC_TypedByRef structure, BYTE* ptr, UINT32 sizeofT);
+    static FCDECL3_IVI(void, PtrToStructure, BYTE* ptr, FC_TypedByRef structure, UINT32 sizeofT);
+    static FCDECL3_VII(void, StructureToPtr, FC_TypedByRef structure, BYTE* ptr, UINT32 sizeofT);
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
