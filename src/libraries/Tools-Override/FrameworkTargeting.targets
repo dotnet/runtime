@@ -272,6 +272,13 @@
         <!-- intentionally empty: to be set by pkgproj -->
         <TargetPath></TargetPath>
       </_itemsToSave>
+
+      <!-- Include doc files. -->
+      <_docFiles Condition="'$(BinPlaceRef)' == 'true'" Include="$(XmlDocDir)/**/$(TargetName).xml" />
+      <_docFiles>
+        <SubFolder Condition="'%(RecursiveDir)' != ''">/$([System.String]::new('%(RecursiveDir)').TrimEnd('\').TrimEnd('/'))</SubFolder>
+      </_docFiles>
+      <_itemsToSave Include="@(_docFiles)"/>
       
       <!-- Include source files. -->
       <_itemsToSave Condition="'@(Compile)' != ''" Include="@(Compile->'%(FullPath)')">
