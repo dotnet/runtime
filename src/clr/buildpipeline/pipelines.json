@@ -261,7 +261,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "DockerTag": "ubuntu1404_cross_prereqs_v3",
+            "DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "Architecture": "arm",
             "Rid": "ubuntu.14.04"
           },
@@ -276,7 +276,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "DockerTag": "ubuntu1404_cross_prereqs_v3",
+            "DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "Architecture": "arm",
             "portableBuild": "-portable",
             "Rid": "ubuntu.14.04"
@@ -292,7 +292,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "DockerTag": "ubuntu1604_cross_prereqs_v2",
+            "DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
             "Architecture": "arm",
             "Rid": "ubuntu.16.04"
           },
