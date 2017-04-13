@@ -11416,6 +11416,20 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 }
             }
 
+            // If gtOp1 is a GT_FIELD, we need to pass down the mac if
+            // its parent is GT_ADDR, since the address of the field
+            // is part of an ongoing address computation. Otherwise
+            // op1 represents the value of the field and so any address
+            // calculations it does are in a new context.
+            if ((op1->gtOper == GT_FIELD) && (tree->gtOper != GT_ADDR))
+            {
+                subMac1 = nullptr;
+
+                // The impact of this field's value to any ongoing
+                // address computation is handled below when looking
+                // at op2.
+            }
+
             tree->gtOp.gtOp1 = op1 = fgMorphTree(op1, subMac1);
 
 #if LOCAL_ASSERTION_PROP
@@ -11496,7 +11510,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
             // (These are used to convey parent context about how addresses being calculated
             // will be used; see the specification comment for MorphAddrContext for full details.)
             // Assume it's an Ind context to start.
-            MorphAddrContext subIndMac2(MACK_Ind);
             switch (tree->gtOper)
             {
                 case GT_ADD:
@@ -11517,6 +11530,17 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 default:
                     break;
             }
+
+            // If gtOp2 is a GT_FIELD, we must be taking its value,
+            // so it should evaluate its address in a new context.
+            if (op2->gtOper == GT_FIELD)
+            {
+                // The impact of this field's value to any ongoing
+                // address computation is handled above when looking
+                // at op1.
+                mac = nullptr;
+            }
+
             tree->gtOp.gtOp2 = op2 = fgMorphTree(op2, mac);
 
             /* Propagate the side effect flags from op2 */
