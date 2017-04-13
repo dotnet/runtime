@@ -65,7 +65,7 @@ namespace System.Runtime.CompilerServices
                     throw System.Linq.Expressions.Error.TypeParameterIsNotDelegate(target);
                 }
 
-                MethodInfo invoke = target.GetMethod("Invoke");
+                MethodInfo invoke = target.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 ParameterInfo[] pis = invoke.GetParametersCached();
                 if (pis[0].ParameterType != typeof(CallSite))
                 {

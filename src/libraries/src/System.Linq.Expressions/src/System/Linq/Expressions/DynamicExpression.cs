@@ -22,7 +22,7 @@ namespace System.Linq.Expressions
     {
         internal DynamicExpression(Type delegateType, CallSiteBinder binder)
         {
-            Debug.Assert(delegateType.GetMethod("Invoke").GetReturnType() == typeof(object) || GetType() != typeof(DynamicExpression));
+            Debug.Assert(delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).GetReturnType() == typeof(object) || GetType() != typeof(DynamicExpression));
             DelegateType = delegateType;
             Binder = binder;
         }
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions
         internal TypedDynamicExpressionN(Type returnType, Type delegateType, CallSiteBinder binder, IReadOnlyList<Expression> arguments)
             : base(delegateType, binder, arguments)
         {
-            Debug.Assert(delegateType.GetMethod("Invoke").GetReturnType() == returnType);
+            Debug.Assert(delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).GetReturnType() == returnType);
             Type = returnType;
         }
 
@@ -1014,7 +1014,7 @@ namespace System.Linq.Expressions
 
         private static MethodInfo GetValidMethodForDynamic(Type delegateType)
         {
-            var method = delegateType.GetMethod("Invoke");
+            var method = delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var pi = method.GetParametersCached();
             if (pi.Length == 0 || pi[0].ParameterType != typeof(CallSite)) throw Error.FirstArgumentMustBeCallSite();
             return method;

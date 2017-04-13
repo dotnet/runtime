@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNoRefArgs(node.DelegateType.GetMethod("Invoke"));
+                RequireNoRefArgs(node.DelegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
             }
 
             return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0, -1]) : expr);
