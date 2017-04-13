@@ -4782,7 +4782,6 @@ handle_exception:
 				mono_mb_emit_byte (mb, CEE_POP);
 
 			mono_mb_emit_exception_full (mb, "System", "ApplicationException", exception_msg);
-			g_free (exception_msg);
 
 			break;
 		case MARSHAL_ACTION_PUSH:
