@@ -32,6 +32,9 @@
     <AssemblyMetadata Include="Serviceable">
       <Value>True</Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="PreferInbox">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <!--
