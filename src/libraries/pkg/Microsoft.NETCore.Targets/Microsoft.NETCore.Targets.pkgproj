@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <PackageVersion>2.0.0</PackageVersion>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- make this package installable and noop in a packages.config-based project -->
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>lib/netstandard1.0</TargetPath>
+    </File>
+
+    <File Include="runtime.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
