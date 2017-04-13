@@ -79,6 +79,7 @@
     <HostResolverFullVersion>$(HostResolverVersion)$(PreReleaseSuffix)</HostResolverFullVersion>
     <AppHostFullVersion>$(AppHostVersion)$(PreReleaseSuffix)</AppHostFullVersion>
     <HostFullVersion>$(HostVersion)$(PreReleaseSuffix)</HostFullVersion>
+    <UWPCoreCLRFullVersion>$(UWPCoreCLRVersion)$(PreReleaseSuffix)</UWPCoreCLRFullVersion>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
