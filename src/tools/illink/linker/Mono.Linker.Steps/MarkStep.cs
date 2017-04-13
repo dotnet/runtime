@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -42,6 +43,8 @@ namespace Mono.Linker.Steps {
 		protected LinkContext _context;
 		protected Queue _methods;
 		protected ArrayList _virtual_methods;
+		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerDisplayAttributes;
+		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerTypeProxyAttributes;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -51,6 +54,9 @@ namespace Mono.Linker.Steps {
 		{
 			_methods = new Queue ();
 			_virtual_methods = new ArrayList ();
+
+			_assemblyDebuggerDisplayAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
+			_assemblyDebuggerTypeProxyAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
 		}
 
 		public virtual void Process (LinkContext context)
@@ -453,7 +459,10 @@ namespace Mono.Linker.Steps {
 
 			ProcessModule (assembly);
 
+			MarkAssemblySpecialCustomAttributes (assembly);
+
 			MarkCustomAttributes (assembly);
+
 			MarkSecurityDeclarations (assembly);
 
 			foreach (ModuleDefinition module in assembly.Modules)
@@ -610,8 +619,61 @@ namespace Mono.Linker.Steps {
 		{
 		}
 
+		void MarkAssemblySpecialCustomAttributes (AssemblyDefinition assembly)
+		{
+			if (!assembly.HasCustomAttributes)
+				return;
+
+			foreach (CustomAttribute attribute in assembly.CustomAttributes) {
+				string attributeFullName = attribute.Constructor.DeclaringType.FullName;
+				switch (attributeFullName) {
+				case "System.Diagnostics.DebuggerDisplayAttribute":
+					StoreDebuggerTypeTarget (assembly, attribute, _assemblyDebuggerDisplayAttributes);
+					break;
+				case "System.Diagnostics.DebuggerTypeProxyAttribute":
+					StoreDebuggerTypeTarget (assembly, attribute, _assemblyDebuggerTypeProxyAttributes);
+					break;
+				}
+			}
+		}
+
+		void StoreDebuggerTypeTarget (AssemblyDefinition assembly, CustomAttribute attribute, Dictionary<TypeDefinition, CustomAttribute> dictionary)
+		{
+			if (_context.KeepMembersForDebuggerAttributes) {
+				TypeReference targetTypeReference = null;
+				TypeDefinition targetTypeDefinition = null;
+				foreach (var property in attribute.Properties) {
+					if (property.Name == "Target") {
+						targetTypeReference = (TypeReference) property.Argument.Value;
+						break;
+					}
+
+					if (property.Name == "TargetTypeName") {
+						targetTypeReference = assembly.MainModule.GetType ((string) property.Argument.Value);
+						break;
+					}
+				}
+
+				if (targetTypeReference != null) {
+					targetTypeDefinition = ResolveTypeDefinition (targetTypeReference);
+					if (targetTypeDefinition != null) {
+						dictionary[targetTypeDefinition] = attribute;
+					}
+				}
+			}
+		}
+
 		void MarkTypeSpecialCustomAttributes (TypeDefinition type)
 		{
+			CustomAttribute debuggerAttribute;
+			if (_assemblyDebuggerDisplayAttributes.TryGetValue (type, out debuggerAttribute)) {
+				MarkTypeWithDebuggerDisplayAttribute (type, debuggerAttribute);
+			}
+
+			if (_assemblyDebuggerTypeProxyAttributes.TryGetValue (type, out debuggerAttribute)) {
+				MarkTypeWithDebuggerTypeProxyAttribute (type, debuggerAttribute);
+			}
+
 			if (!type.HasCustomAttributes)
 				return;
 
@@ -718,13 +780,26 @@ namespace Mono.Linker.Steps {
 		void MarkTypeWithDebuggerTypeProxyAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
 			if (_context.KeepMembersForDebuggerAttributes) {
-				TypeReference proxyTypeReference = (TypeReference) attribute.ConstructorArguments [0].Value;
+				object constructorArgument = attribute.ConstructorArguments[0].Value;
+				TypeReference proxyTypeReference = constructorArgument as TypeReference;
+				if (proxyTypeReference == null) {
+					string proxyTypeReferenceString = constructorArgument as string;
+					if (proxyTypeReferenceString != null) {
+						proxyTypeReference = type.Module.GetType (proxyTypeReferenceString, runtimeName: true);
+					}
+				}
+
+				if (proxyTypeReference == null) {
+					return;
+				}
 
 				MarkType (proxyTypeReference);
 
 				TypeDefinition proxyType = ResolveTypeDefinition (proxyTypeReference);
-				MarkMethods (proxyType);
-				MarkFields (proxyType, includeStatic: true);
+				if (proxyType != null) {
+					MarkMethods (proxyType);
+					MarkFields (proxyType, includeStatic: true);
+				}
 			}
 		}
 
