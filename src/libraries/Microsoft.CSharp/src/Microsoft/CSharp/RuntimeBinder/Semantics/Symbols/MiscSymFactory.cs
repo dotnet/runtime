@@ -20,7 +20,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public InputFile CreateMDInfile(Name name)
         {
             InputFile sym = new InputFile();
-            sym.isSource = false;
             return sym;
         }
 
