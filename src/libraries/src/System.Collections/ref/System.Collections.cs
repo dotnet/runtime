@@ -107,8 +107,6 @@ namespace System.Collections.Generic
         void System.Collections.IDictionary.Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue(TKey key, out TValue value) { throw null; }
-        public TValue GetValueOrDefault(TKey key) { throw null; }
-        public TValue GetValueOrDefault(TKey key, TValue defaultValue) { throw null; }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {
