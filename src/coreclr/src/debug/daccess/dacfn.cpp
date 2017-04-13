@@ -1386,6 +1386,8 @@ bool DacTargetConsistencyAssertsEnabled()
 //
 void DacEnumCodeForStackwalk(TADDR taCallEnd)
 {
+    if (taCallEnd == 0)
+        return;
     //
     // x86 stack walkers often end up having to guess
     // about what's a return address on the stack.

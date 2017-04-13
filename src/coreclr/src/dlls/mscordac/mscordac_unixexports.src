@@ -24,6 +24,7 @@ PAL_get_stderr
 PAL_GetSymbolModuleBase
 PAL_GetTransportPipeName
 PAL_InitializeDLL
+PAL_TerminateEx
 PAL_IsDebuggerPresent
 PAL_ProbeMemory
 PAL_iswspace
@@ -119,6 +120,9 @@ IID_IClassFactory
 IID_ISequentialStream
 IID_IStream
 IID_IUnknown
+IID_ICLRDataTarget
+IID_ICorDebugDataTarget4
+IID_ICLRDataEnumMemoryRegionsCallback
 InitializeCriticalSection
 IsDBCSLeadByte
 LeaveCriticalSection
