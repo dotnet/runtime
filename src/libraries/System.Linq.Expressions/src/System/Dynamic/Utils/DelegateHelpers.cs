@@ -42,7 +42,7 @@ namespace System.Dynamic.Utils
         // return (TRet)ret;
         private static Delegate CreateObjectArrayDelegateRefEmit(Type delegateType, Func<object[], object> handler)
         {
-            MethodInfo delegateInvokeMethod = delegateType.GetMethod("Invoke");
+            MethodInfo delegateInvokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             Type returnType = delegateInvokeMethod.ReturnType;
             bool hasReturnValue = returnType != typeof(void);
