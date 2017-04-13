@@ -154,13 +154,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(local.Local.fUsedInAnonMeth);
             return GetExprFactory().CreateHoistedLocalInExpression(local);
         }
-        protected override Expr VisitTHISPOINTER(ExprThisPointer expr)
-        {
-            Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            Debug.Assert(expr.Local.isThis);
-            return GenerateConstant(expr);
-        }
         protected override Expr VisitFIELD(ExprField expr)
         {
             Debug.Assert(expr != null);

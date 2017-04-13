@@ -58,8 +58,7 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderException.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderExtensions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderInternalCompilerException.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingContextBase.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingContexts.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingContext.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingFlag.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Binding\Better.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Binding\ErrorReporting.cs" />
@@ -162,7 +161,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Return.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Statement.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Temporary.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\This.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeArguments.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOf.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnaryOperator.cs" />

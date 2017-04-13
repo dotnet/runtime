@@ -6,17 +6,11 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class ExprLocal : Expr
+    internal sealed class ExprLocal : Expr
     {
         public ExprLocal()
             : base(ExpressionKind.Local)
         {
-        }
-
-        protected ExprLocal(ExpressionKind kind)
-            : base(kind)
-        {
-            Debug.Assert(kind == ExpressionKind.ThisPointer);
         }
 
         public LocalVariableSymbol Local { get; set; }
