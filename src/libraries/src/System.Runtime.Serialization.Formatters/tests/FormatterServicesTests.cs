@@ -102,9 +102,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static IEnumerable<object[]> GetUninitializedObject_ByRefLikeType_TestData()
         {
-            yield return new object[] { typeof(ArgIterator) };
             yield return new object[] { typeof(RuntimeArgumentHandle) };
             yield return new object[] { typeof(TypedReference) };
+
+            // .NET Standard 2.0 doesn't have ArgIterator, but .NET Core 2.0 does
+            Type argIterator = typeof(object).Assembly.GetType("System.ArgIterator");
+            if (argIterator != null)
+            {
+                yield return new object[] { argIterator };
+            }
         }
 
         public static IEnumerable<object[]> GetUninitializedObject_ByRefLikeType_NetCore_TestData()
