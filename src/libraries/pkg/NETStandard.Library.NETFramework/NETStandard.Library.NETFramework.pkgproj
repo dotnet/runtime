@@ -27,6 +27,12 @@
     </File>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- this file is meant to have dangling references, it's purpose is to force conflicts with
+         any newer version of the original desktop contracts. -->
+    <ExcludeFromClosure Include="netfx.force.conflicts" />
+  </ItemGroup>
+
   <Import Project="$(SourceDir)\shims\netfxreference.props" />
 
   <!-- runs as initial target -->
