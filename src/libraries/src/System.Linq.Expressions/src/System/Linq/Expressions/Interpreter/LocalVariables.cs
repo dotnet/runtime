@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -39,12 +38,6 @@ namespace System.Linq.Expressions.Interpreter
         {
             Index = index;
             _flags = (closure ? InClosureFlag : 0);
-        }
-
-        internal Expression LoadFromArray(Expression frameData, Expression closure, Type parameterType)
-        {
-            Expression result = Expression.ArrayAccess(InClosure ? closure : frameData, Utils.Constant(Index));
-            return (IsBoxed && !InClosure) ? Expression.Convert(result, typeof(StrongBox<object>)) : result;
         }
 
         public override string ToString()
@@ -83,16 +76,6 @@ namespace System.Linq.Expressions.Interpreter
             }
             return Parameter.GetHashCode() ^ Index.GetHashCode();
         }
-
-        public static bool operator ==(LocalDefinition self, LocalDefinition other)
-        {
-            return self.Index == other.Index && self.Parameter == other.Parameter;
-        }
-
-        public static bool operator !=(LocalDefinition self, LocalDefinition other)
-        {
-            return self.Index != other.Index || self.Parameter != other.Parameter;
-        }
     }
 
     internal sealed class LocalVariables
@@ -101,10 +84,6 @@ namespace System.Linq.Expressions.Interpreter
         private Dictionary<ParameterExpression, LocalVariable> _closureVariables;
 
         private int _localCount, _maxLocalCount;
-
-        internal LocalVariables()
-        {
-        }
 
         public LocalDefinition DefineLocal(ParameterExpression variable, int start)
         {
@@ -173,22 +152,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public int LocalCount => _maxLocalCount;
 
-        public int GetOrDefineLocal(ParameterExpression var)
-        {
-            int index = GetLocalIndex(var);
-            if (index == -1)
-            {
-                return DefineLocal(var, 0).Index;
-            }
-            return index;
-        }
-
-        public int GetLocalIndex(ParameterExpression var)
-        {
-            VariableScope loc;
-            return _variables.TryGetValue(var, out loc) ? loc.Variable.Index : -1;
-        }
-
         public bool TryGetLocalOrClosure(ParameterExpression var, out LocalVariable local)
         {
             VariableScope scope;
@@ -204,28 +167,6 @@ namespace System.Linq.Expressions.Interpreter
 
             local = null;
             return false;
-        }
-
-        /// <summary>
-        /// Gets a copy of the local variables which are defined in the current scope.
-        /// </summary>
-        /// <returns></returns>
-        internal Dictionary<ParameterExpression, LocalVariable> CopyLocals()
-        {
-            var res = new Dictionary<ParameterExpression, LocalVariable>(_variables.Count);
-            foreach (KeyValuePair<ParameterExpression, VariableScope> keyValue in _variables)
-            {
-                res[keyValue.Key] = keyValue.Value.Variable;
-            }
-            return res;
-        }
-
-        /// <summary>
-        /// Checks to see if the given variable is defined within the current local scope.
-        /// </summary>
-        internal bool ContainsVariable(ParameterExpression variable)
-        {
-            return _variables.ContainsKey(variable);
         }
 
         /// <summary>
