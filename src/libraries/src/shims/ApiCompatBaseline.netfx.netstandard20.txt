@@ -47,28 +47,12 @@ MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(S
 Compat issues with assembly System.Diagnostics.Tracing:
 MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.IO:
-TypesMustExist : Type 'System.IO.BufferedStream' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.IO.Compression:
-TypesMustExist : Type 'System.IO.Compression.CompressionLevel' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.Compression.CompressionMode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.Compression.DeflateStream' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.Compression.GZipStream' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Linq:
 MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Linq.Expressions:
 MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Reflection:
-TypesMustExist : Type 'System.Reflection.BindingFlags' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.ICustomAttributeProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.InvalidFilterCriteriaException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.MemberFilter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.MemberTypes' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.ParameterModifier' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.TargetException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.TypeFilter' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Cryptography.Algorithms:
 TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
@@ -119,6 +103,4 @@ MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' 
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.RegularExpressions.RegexRunner' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.RegularExpressions.RegexRunnerFactory' does not exist in the implementation but it does exist in the contract.
-Total Issues: 109
+Total Issues: 94
