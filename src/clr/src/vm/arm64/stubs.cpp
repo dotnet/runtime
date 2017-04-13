@@ -15,6 +15,11 @@
 #include "virtualcallstub.h"
 #include "jitinterface.h"
 
+EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
+EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
+EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
+EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
+
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
 // InstructionFormat for B.cond
@@ -1078,10 +1083,18 @@ void JIT_TailCall()
     _ASSERTE(!"ARM64:NYI");
 }
 
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 void InitJITHelpers1()
 {
-    return;
+    if(IsSingleAppDomain())
+    {
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,       JIT_GetSharedNonGCStaticBase_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
+        SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
+    }
 }
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 EXTERN_C void __stdcall ProfileEnterNaked(UINT_PTR clientData)
 {

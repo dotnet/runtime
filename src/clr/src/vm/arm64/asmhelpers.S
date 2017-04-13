@@ -1212,3 +1212,60 @@ NESTED_END StubDispatchFixupStub, _TEXT
     fmov d0, x1
     LEAF_END
 #endif
+
+//
+// JIT Static access helpers when coreclr host specifies single appdomain flag 
+//
+
+// ------------------------------------------------------------------
+// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+
+    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+    // If class is not initialized, bail to C++ helper
+    add x2, x0, #DomainLocalModule__m_pDataBlob
+    ldrb w2, [x2, w1]
+    tst w2, #1
+    beq LOCAL_LABEL(CallHelper)
+
+    ret lr
+
+LOCAL_LABEL(CallHelper):
+    // Tail call JIT_GetSharedNonGCStaticBase_Helper
+    b C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
+    LEAF_END
+
+
+// ------------------------------------------------------------------
+// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+
+    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+    ret lr
+    LEAF_END
+
+
+// ------------------------------------------------------------------
+// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+
+    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+    // If class is not initialized, bail to C++ helper
+    add x2, x0, #DomainLocalModule__m_pDataBlob
+    ldrb w2, [x2, w1]
+    tst w2, #1
+    beq LOCAL_LABEL(CallHelper)
+
+    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ret lr
+
+LOCAL_LABEL(CallHelper):
+    // Tail call Jit_GetSharedGCStaticBase_Helper
+    b C_FUNC(JIT_GetSharedGCStaticBase_Helper)
+    LEAF_END
+
+
+// ------------------------------------------------------------------
+// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+
+    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
+    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ret lr
+    LEAF_END
