@@ -220,7 +220,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // CWD: 9999.0.0, 9999.0.0-global-dummy
             // User: 9999.0.0, 9999.0.0-dummy
             // Exe: 9999.0.0-dummy, 9999.0.0-global-dummy
-            // Expected: 9999.0.0-global-dummy from cwd
+            // Expected: 9999.0.0 from cwd
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -230,7 +230,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-global-dummy"));
+                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0"));
 
             // Remove dummy folders from user dir
             DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0", "9999.0.0-dummy");

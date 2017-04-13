@@ -572,27 +572,15 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
 
     pal::readdir(sdk_path, &versions);
     fx_ver_t max_ver(-1, -1, -1);
-    fx_ver_t max_pre(-1, -1, -1);
     for (const auto& version : versions)
     {
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
         fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, true))
+        if (fx_ver_t::parse(version, &ver, false))  // false -- implies both production and prerelease.
         {
             max_ver = std::max(ver, max_ver);
         }
-        if (fx_ver_t::parse(version, &ver, false))
-        {
-            max_pre = std::max(ver, max_pre);
-        }
-    }
-
-    // No production, use the max pre-release.
-    if (max_ver == fx_ver_t(-1, -1, -1))
-    {
-        trace::verbose(_X("No production version found, so using latest prerelease"));
-        max_ver = max_pre;
     }
 
     pal::string_t max_ver_str = max_ver.as_str();
