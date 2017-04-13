@@ -71,7 +71,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\COperators.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Declarations\AggregateDeclaration.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Declarations\Declaration.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExplicitConversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionKind.cs" />
