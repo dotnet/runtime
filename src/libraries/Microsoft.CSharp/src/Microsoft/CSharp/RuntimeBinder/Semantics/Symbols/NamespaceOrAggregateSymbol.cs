@@ -23,11 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // NamespaceOrAggregateSymbol
         // ----------------------------------------------------------------------------
 
-        public AggregateDeclaration DeclFirst()
-        {
-            return _declFirst;
-        }
-
         // Compare to ParentSymbol::AddToChildList
         public void AddDecl(AggregateDeclaration decl)
         {
