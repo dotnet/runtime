@@ -97,12 +97,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Members of aggs
-        public FieldSymbol CreateMemberVar(Name name, ParentSymbol parent, AggregateDeclaration declaration, int iIteratorLocal)
+        public FieldSymbol CreateMemberVar(Name name, ParentSymbol parent)
         {
             Debug.Assert(name != null);
 
             FieldSymbol sym = newBasicSym(SYMKIND.SK_FieldSymbol, name, parent).AsFieldSymbol();
-            sym.declaration = declaration;
 
             Debug.Assert(sym != null);
             return (sym);
@@ -132,10 +131,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (sym);
         }
 
-        public EventSymbol CreateEvent(Name name, ParentSymbol parent, AggregateDeclaration declaration)
+        public EventSymbol CreateEvent(Name name, ParentSymbol parent)
         {
             EventSymbol sym = newBasicSym(SYMKIND.SK_EventSymbol, name, parent).AsEventSymbol();
-            sym.declaration = declaration;
 
             Debug.Assert(sym != null);
             return (sym);
