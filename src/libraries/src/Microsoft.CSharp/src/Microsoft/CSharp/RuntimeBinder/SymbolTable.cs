@@ -1182,7 +1182,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return field;
             }
 
-            field = _symFactory.CreateMemberVar(GetName(fieldInfo.Name), aggregate, null, 0);
+            field = _symFactory.CreateMemberVar(GetName(fieldInfo.Name), aggregate);
             field.AssociatedFieldInfo = fieldInfo;
 
             field.isStatic = fieldInfo.IsStatic;
@@ -1273,7 +1273,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return ev;
             }
 
-            ev = _symFactory.CreateEvent(GetName(eventInfo.Name), aggregate, null);
+            ev = _symFactory.CreateEvent(GetName(eventInfo.Name), aggregate);
             ev.AssociatedEventInfo = eventInfo;
 
             // EventSymbol

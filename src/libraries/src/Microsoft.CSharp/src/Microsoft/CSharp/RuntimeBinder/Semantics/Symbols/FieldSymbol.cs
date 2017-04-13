@@ -33,8 +33,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // If fixedAgg is non-null, the ant of the fixed buffer length
 
-        public AggregateDeclaration declaration;           // containing declaration
-
         public void SetType(CType pType)
         {
             type = pType;
@@ -48,11 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public AggregateSymbol getClass()
         {
             return parent.AsAggregateSymbol();
-        }
-
-        public AggregateDeclaration containingDeclaration()
-        {
-            return declaration;
         }
 
         public EventSymbol getEvent(SymbolLoader symbolLoader)
