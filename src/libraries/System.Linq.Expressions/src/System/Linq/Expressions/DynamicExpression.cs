@@ -818,7 +818,7 @@ namespace System.Linq.Expressions
 
     #endregion
 
-    internal class ExpressionExtension
+    internal static class ExpressionExtension
     {
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.

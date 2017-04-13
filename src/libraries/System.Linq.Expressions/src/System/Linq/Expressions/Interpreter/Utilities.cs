@@ -180,12 +180,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         private KeyValuePair<TKey, TValue>[] _keysAndValues;
         private Dictionary<TKey, TValue> _dict;
-        private int _count;
         private const int ArraySize = 10;
-
-        public HybridReferenceDictionary()
-        {
-        }
 
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -210,13 +205,13 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        public bool Remove(TKey key)
+        public void Remove(TKey key)
         {
             Debug.Assert(key != null);
 
             if (_dict != null)
             {
-                return _dict.Remove(key);
+                _dict.Remove(key);
             }
             else if (_keysAndValues != null)
             {
@@ -225,13 +220,10 @@ namespace System.Linq.Expressions.Interpreter
                     if (_keysAndValues[i].Key == key)
                     {
                         _keysAndValues[i] = new KeyValuePair<TKey, TValue>();
-                        _count--;
-                        return true;
+                        return;
                     }
                 }
             }
-
-            return false;
         }
 
         public bool ContainsKey(TKey key)
@@ -242,11 +234,13 @@ namespace System.Linq.Expressions.Interpreter
             {
                 return _dict.ContainsKey(key);
             }
-            else if (_keysAndValues != null)
+
+            KeyValuePair<TKey, TValue>[] keysAndValues = _keysAndValues;
+            if (keysAndValues != null)
             {
-                for (int i = 0; i < _keysAndValues.Length; i++)
+                for (int i = 0; i < keysAndValues.Length; i++)
                 {
-                    if (_keysAndValues[i].Key == key)
+                    if (keysAndValues[i].Key == key)
                     {
                         return true;
                     }
@@ -254,18 +248,6 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             return false;
-        }
-
-        public int Count
-        {
-            get
-            {
-                if (_dict != null)
-                {
-                    return _dict.Count;
-                }
-                return _count;
-            }
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -341,7 +323,6 @@ namespace System.Linq.Expressions.Interpreter
 
                     if (index != -1)
                     {
-                        _count++;
                         _keysAndValues[index] = new KeyValuePair<TKey, TValue>(key, value);
                     }
                     else

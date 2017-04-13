@@ -821,19 +821,9 @@ namespace System.Linq.Expressions.Interpreter
             Emit(new DefaultValueInstruction(type));
         }
 
-        public void EmitNew(ConstructorInfo constructorInfo)
-        {
-            EmitNew(constructorInfo, constructorInfo.GetParametersCached());
-        }
-
         public void EmitNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters)
         {
             Emit(new NewInstruction(constructorInfo, parameters.Length));
-        }
-
-        public void EmitByRefNew(ConstructorInfo constructorInfo, ByRefUpdater[] updaters)
-        {
-            EmitByRefNew(constructorInfo, constructorInfo.GetParametersCached(), updaters);
         }
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters, ByRefUpdater[] updaters)
