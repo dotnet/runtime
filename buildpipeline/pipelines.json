@@ -494,10 +494,10 @@
           "Name": "Dotnet-CoreClr-Trusted-BuildTests",
           "Parameters": {
             "TargetsWindows": "true",
-            "Rid": "windows_nt-x64",
+            "Rid": "win-x64",
             "TargetQueues": "windows.10.amd64",
-            "TestContainerSuffix": "windows10",
-            "RuntimeIDArg": " "
+            "TestContainerSuffix": "windows",
+            "TargetsNonWindowsArg": " "
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -510,10 +510,10 @@
           "Name": "Dotnet-CoreClr-Trusted-BuildTests",
           "Parameters": {
             "TargetsWindows": "false",
-            "Rid": "osx.10.12-x64",
+            "Rid": "osx-x64",
             "TargetQueues": "osx.1012.amd64",
-            "TestContainerSuffix": "osx1012",
-            "RuntimeIDArg": "runtimeid osx.10.12-x64"
+            "TestContainerSuffix": "osx",
+            "TargetsNonWindowsArg": "TargetsNonWindows"
           },
           "ReportingParameters": {
             "OperatingSystem": "OSX",
@@ -529,7 +529,7 @@
             "Rid": "linux-x64",
             "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64",
             "TestContainerSuffix": "linux",
-            "RuntimeIDArg": "runtimeid linux-x64"
+            "TargetsNonWindowsArg": "TargetsNonWindows"
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
