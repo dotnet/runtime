@@ -312,6 +312,12 @@
       "values": [ true, false ],
       "defaultValue": true
     },
+    "TargetsWindows": {
+      "description": "Sets the property specifying if the tests we're building will target Windows",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "PublishTestNativeBins": {
       "description": "Publishes test native binaries to Azure on non-windows",
       "valueType": "property",
