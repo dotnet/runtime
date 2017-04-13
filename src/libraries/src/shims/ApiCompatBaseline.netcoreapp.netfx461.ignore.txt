@@ -71,6 +71,24 @@ MembersMustExist : Member 'System.Drawing.Color.ToKnownColor()' does not exist i
 TypesMustExist : Type 'System.Drawing.KnownColor' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.SystemColors' does not exist in the implementation but it does exist in the contract.
 
+// Crypto types and members are sealed in netstandard and netcoreapp because they are sealed in Xamarin. https://github.com/dotnet/corefx/issues/17820
+CannotSealType : Type 'System.Security.Cryptography.SHA1Managed' is sealed in the implementation but not sealed in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
+CannotSealType : Type 'System.Security.Cryptography.SHA256Managed' is sealed in the implementation but not sealed in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
+CannotSealType : Type 'System.Security.Cryptography.SHA384Managed' is sealed in the implementation but not sealed in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
+CannotSealType : Type 'System.Security.Cryptography.SHA512Managed' is sealed in the implementation but not sealed in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
+
 // Reflection.Emit future unclear and won't be implemented till netcoreapp20. See here: https://github.com/dotnet/corefx/issues/18072
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
