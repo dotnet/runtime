@@ -193,7 +193,7 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm",
             "TargetRid": "ubuntu.14.04-arm"
           },
@@ -205,7 +205,7 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_Architecture": "arm",
             "TargetRid": "linux-arm",
             "PB_PortableBuild": "-portable"
@@ -219,7 +219,7 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1604_cross_prereqs_v2",
+            "PB_DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
             "PB_Architecture": "arm",
             "TargetRid": "ubuntu.16.04-arm"
           },
