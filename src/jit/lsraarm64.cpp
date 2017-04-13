@@ -288,7 +288,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_MUL:
             if (tree->gtOverflow())
             {
-                // Need a register different from target reg to check for overflow.
+                // Need a register different from target reg to check for overflow;
+                // code generation requires the temp reg to live beyond the definition
+                // of the target reg. Since we have no way to tell LSRA that, we request
+                // two temp registers, and use one that is not the target reg.
+                // TODO-ARM64-CQ: Figure out a way to only reserve one.
                 info->internalIntCount = 2;
             }
             __fallthrough;
@@ -605,9 +609,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->srcCount = 2;
             info->dstCount = 1;
 
-            // We need one internal register when generating code for GT_ARR_INDEX, however the
-            // register allocator always may just give us the same one as it gives us for the 'dst'
-            // as a workaround we will just ask for two internal registers.
+            // We need one internal register when generating code for GT_ARR_INDEX. However, the
+            // register allocator may give us the same one it gives us for 'dst'.
+            // As a workaround we will just ask for two internal registers.
+            // TODO-ARM64-CQ: Figure out a way to only reserve one.
             //
             info->internalIntCount = 2;
 
