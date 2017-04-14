@@ -10,20 +10,67 @@ namespace System.Reflection.Internal
 {
     internal static class FileStreamReadLightUp
     {
-        // internal for testing
-        internal static bool readFileNotAvailable = Path.DirectorySeparatorChar != '\\'; // Available on Windows only
-        internal static bool safeFileHandleNotAvailable = false;
+        internal static Lazy<Type> FileStreamType = new Lazy<Type>(() =>
+        {
+            const string systemIOFileSystem = "System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken = b03f5f7f11d50a3a";
+            const string mscorlib = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
-        internal static bool IsFileStream(Stream stream) => stream is FileStream;
+            return LightUpHelper.GetType("System.IO.FileStream", systemIOFileSystem, mscorlib);
+        });
+
+        internal static Lazy<PropertyInfo> SafeFileHandle = new Lazy<PropertyInfo>(() =>
+        {
+            return FileStreamType.Value.GetTypeInfo().GetDeclaredProperty("SafeFileHandle");
+        });
+
+        // internal for testing
+        internal static bool readFileNotAvailable;
+        internal static bool safeFileHandleNotAvailable;
+
+        internal static bool IsFileStream(Stream stream)
+        {
+            if (FileStreamType.Value == null)
+            {
+                return false;
+            }
+
+            var type = stream.GetType();
+            return type == FileStreamType.Value || type.GetTypeInfo().IsSubclassOf(FileStreamType.Value);
+        }
 
         internal static SafeHandle GetSafeFileHandle(Stream stream)
         {
+            Debug.Assert(FileStreamType.IsValueCreated && FileStreamType.Value != null && IsFileStream(stream));
+
+            if (safeFileHandleNotAvailable)
+            {
+                return null;
+            }
+
+            PropertyInfo safeFileHandleProperty = SafeFileHandle.Value;
+            if (safeFileHandleProperty == null)
+            {
+                safeFileHandleNotAvailable = true;
+                return null;
+            }
+
             SafeHandle handle;
             try
             {
-                handle = ((FileStream)stream).SafeFileHandle;
+                handle = (SafeHandle)safeFileHandleProperty.GetValue(stream);
             }
-            catch
+            catch (MemberAccessException)
+            {
+                safeFileHandleNotAvailable = true;
+                return null;
+            }
+            catch (InvalidOperationException)
+            {
+                // thrown when accessing unapproved API in a Windows Store app
+                safeFileHandleNotAvailable = true;
+                return null;
+            }
+            catch (TargetInvocationException)
             {
                 // Some FileStream implementations (e.g. IsolatedStorage) restrict access to the underlying handle by throwing 
                 // Tolerate it and fall back to slow path.
