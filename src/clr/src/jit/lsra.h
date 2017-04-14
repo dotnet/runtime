@@ -694,6 +694,10 @@ private:
     void processBlockStartLocations(BasicBlock* current, bool allocationPass);
     void processBlockEndLocations(BasicBlock* current);
 
+#ifdef _TARGET_ARM_
+    bool isOverlappedRegRecord(Interval* assignedInterval, RegRecord* physRegRecord);
+#endif
+
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
     // insert refpositions representing prolog zero-inits which will be added later
