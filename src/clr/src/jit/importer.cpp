@@ -145,24 +145,6 @@ void Compiler::impPushOnStack(GenTreePtr tree, typeInfo ti)
     }
 }
 
-/******************************************************************************/
-// used in the inliner, where we can assume typesafe code. please don't use in the importer!!
-inline void Compiler::impPushOnStackNoType(GenTreePtr tree)
-{
-    assert(verCurrentState.esStackDepth < impStkSize);
-    INDEBUG(verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo = typeInfo());
-    verCurrentState.esStack[verCurrentState.esStackDepth++].val              = tree;
-
-    if ((tree->gtType == TYP_LONG) && (compLongUsed == false))
-    {
-        compLongUsed = true;
-    }
-    else if (((tree->gtType == TYP_FLOAT) || (tree->gtType == TYP_DOUBLE)) && (compFloatingPointUsed == false))
-    {
-        compFloatingPointUsed = true;
-    }
-}
-
 inline void Compiler::impPushNullObjRefOnStack()
 {
     impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TI_NULL));
@@ -320,20 +302,6 @@ StackEntry Compiler::impPopStack()
 #endif // DEBUG
 
     return verCurrentState.esStack[--verCurrentState.esStackDepth];
-}
-
-StackEntry Compiler::impPopStack(CORINFO_CLASS_HANDLE& structType)
-{
-    StackEntry ret = impPopStack();
-    structType     = verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo.GetClassHandle();
-    return (ret);
-}
-
-GenTreePtr Compiler::impPopStack(typeInfo& ti)
-{
-    StackEntry ret = impPopStack();
-    ti             = ret.seTypeInfo;
-    return (ret.val);
 }
 
 /*****************************************************************************
@@ -5093,8 +5061,9 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     impSpillSpecialSideEff();
 
     // Now get the expression to box from the stack.
-    CORINFO_CLASS_HANDLE operCls;
-    GenTreePtr           exprToBox = impPopStack(operCls).val;
+    StackEntry           se        = impPopStack();
+    CORINFO_CLASS_HANDLE operCls   = se.seTypeInfo.GetClassHandle();
+    GenTreePtr           exprToBox = se.val;
 
     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
     if (boxHelper == CORINFO_HELP_BOX)
@@ -10052,7 +10021,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Pop the value being assigned */
 
                 {
-                    StackEntry se = impPopStack(clsHnd);
+                    StackEntry se = impPopStack();
+                    clsHnd        = se.seTypeInfo.GetClassHandle();
                     op1           = se.val;
                     tiRetVal      = se.seTypeInfo;
                 }
@@ -11916,14 +11886,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_POP:
-                if (tiVerificationNeeded)
-                {
-                    impStackTop(0);
-                }
-
+            {
                 /* Pull the top value from the stack */
 
-                op1 = impPopStack(clsHnd).val;
+                StackEntry se = impPopStack();
+                clsHnd        = se.seTypeInfo.GetClassHandle();
+                op1           = se.val;
 
                 /* Get hold of the type of the value being duplicated */
 
@@ -11974,10 +11942,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* No side effects - just throw the <BEEP> thing away */
-                break;
+            }
+            break;
 
             case CEE_DUP:
-
+            {
                 if (tiVerificationNeeded)
                 {
                     // Dup could start the begining of delegate creation sequence, remember that
@@ -11988,7 +11957,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // If the expression to dup is simple, just clone it.
                 // Otherwise spill it to a temp, and reload the temp
                 // twice.
-                op1 = impPopStack(tiRetVal);
+                StackEntry se = impPopStack();
+                tiRetVal      = se.seTypeInfo;
+                op1           = se.val;
 
                 if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
                 {
@@ -12010,8 +11981,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
                 impPushOnStack(op1, tiRetVal);
                 impPushOnStack(op2, tiRetVal);
-
-                break;
+            }
+            break;
 
             case CEE_STIND_I1:
                 lclTyp = TYP_BYTE;
@@ -12928,8 +12899,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (opcode == CEE_LDFLD || opcode == CEE_LDFLDA)
                 {
-                    tiObj = &impStackTop().seTypeInfo;
-                    obj   = impPopStack(objType).val;
+                    tiObj         = &impStackTop().seTypeInfo;
+                    StackEntry se = impPopStack();
+                    objType       = se.seTypeInfo.GetClassHandle();
+                    obj           = se.val;
 
                     if (impIsThis(obj))
                     {
@@ -13311,8 +13284,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 typeInfo   tiVal;
 
                 /* Pull the value from the stack */
-                op2    = impPopStack(tiVal);
-                clsHnd = tiVal.GetClassHandle();
+                StackEntry se = impPopStack();
+                op2           = se.val;
+                tiVal         = se.seTypeInfo;
+                clsHnd        = tiVal.GetClassHandle();
 
                 if (opcode == CEE_STFLD)
                 {
@@ -14552,7 +14527,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
                     op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
 
-                    impPushOnStackNoType(op1);
+                    impPushOnStack(op1, typeInfo());
                     opcode = CEE_STIND_REF;
                     lclTyp = TYP_REF;
                     goto STIND_POST_VERIFY;
@@ -15050,7 +15025,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
 
     if (info.compRetType != TYP_VOID)
     {
-        StackEntry se = impPopStack(retClsHnd);
+        StackEntry se = impPopStack();
+        retClsHnd     = se.seTypeInfo.GetClassHandle();
         op2           = se.val;
 
         if (!compIsForInlining())
