@@ -118,32 +118,16 @@ namespace System.Reflection.Internal.Tests
         }
 
         [Fact]
-        public void FileStreamWin7()
-        {
-            try
-            {
-                FileStreamReadLightUp.readFileModernNotAvailable = true;
-                FileStream();
-            }
-            finally
-            {
-                FileStreamReadLightUp.readFileModernNotAvailable = false;
-            }
-        }
-
-        [Fact]
         public void FileStreamUnix()
         {
             try
             {
-                FileStreamReadLightUp.readFileModernNotAvailable = true;
-                FileStreamReadLightUp.readFileCompatNotAvailable = true;
+                FileStreamReadLightUp.readFileNotAvailable = true;
                 FileStream();
             }
             finally
             {
-                FileStreamReadLightUp.readFileModernNotAvailable = false;
-                FileStreamReadLightUp.readFileCompatNotAvailable = false;
+                FileStreamReadLightUp.readFileNotAvailable = false;
             }
         }
 
