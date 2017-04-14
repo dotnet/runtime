@@ -12,7 +12,7 @@
           "type": "platform",
           "version": "1.1.0"
         },
-        "xunit.performance.api": "1.0.0-alpha-build0049"
+        "xunit.performance.api": "1.0.0-beta-build0002"
       }
     }
   }
