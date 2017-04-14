@@ -741,7 +741,7 @@ BaseDomain::BaseDomain()
 
 #ifndef CROSSGEN_COMPILE
     // Note that m_handleStore is overridden by app domains
-    m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
+    m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 #else
     m_handleStore = NULL;
 #endif
@@ -4273,11 +4273,11 @@ void AppDomain::Init()
     // default domain cannot be unloaded.
     if (GetId().m_dwId == DefaultADID)
     {
-        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
+        m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
     }
     else
     {
-        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
+        m_handleStore = GCHandleUtilities::GetGCHandleManager()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
     }
 
 #endif // CROSSGEN_COMPILE
@@ -4580,7 +4580,7 @@ void AppDomain::Terminate()
 
     if (m_handleStore)
     {
-        GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleStore(m_handleStore);
+        GCHandleUtilities::GetGCHandleManager()->DestroyHandleStore(m_handleStore);
         m_handleStore = NULL;
     }
 
