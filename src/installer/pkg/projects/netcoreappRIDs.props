@@ -16,7 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <OfficialBuildRID Include="alpine.3.4.3-x64" />
     <OfficialBuildRid Include="debian.8-armel">
       <Platform>armel</Platform>
     </OfficialBuildRid>
