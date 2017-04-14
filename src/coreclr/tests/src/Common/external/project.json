@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "Microsoft.CodeAnalysis.Compilers": "1.1.1",
-    "xunit.performance.api": "1.0.0-alpha-build0049",
-    "xunit.performance.core": "1.0.0-alpha-build0049",
-    "xunit.performance.execution": "1.0.0-alpha-build0049",
-    "xunit.performance.metrics": "1.0.0-alpha-build0049",
+    "xunit.performance.api": "1.0.0-beta-build0002",
+    "xunit.performance.core": "1.0.0-beta-build0002",
+    "xunit.performance.execution": "1.0.0-beta-build0002",
+    "xunit.performance.metrics": "1.0.0-beta-build0002",
     "Microsoft.Diagnostics.Tracing.TraceEvent": "1.0.3-alpha-experimental",
     "Newtonsoft.Json": "9.0.1",
     "xunit": "2.2.0-beta2-build3300",
