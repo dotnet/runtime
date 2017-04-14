@@ -21,15 +21,12 @@ internal partial class Interop
 
         private static bool s_skipShellFolders;
 
-// Disabling the warning about availability.
-#pragma warning disable BCL0015
         [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true, EntryPoint = "SHGetKnownFolderPath")]
         private static extern int SHGetKnownFolderPath_Shell32(
             [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath);
-#pragma warning restore BCL0015
 
         internal static int SHGetKnownFolderPath(
             Guid rfid,
