@@ -358,9 +358,6 @@
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
   </data>
-  <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
-    <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
-  </data>
   <data name="PlatformNotSupported_AppDomains" xml:space="preserve">
     <value>Secondary AppDomains are not supported on this platform.</value>
   </data>
