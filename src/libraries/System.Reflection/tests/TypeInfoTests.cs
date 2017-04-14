@@ -425,10 +425,19 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
         }
 
-        [Theory]
-        [InlineData(typeof(IntEnum), new IntEnum[] { (IntEnum)1, (IntEnum)2, (IntEnum)10, (IntEnum)18, (IntEnum)45 })]
-        [InlineData(typeof(UIntEnum), new UIntEnum[] { (UIntEnum)1, (UIntEnum)10 })]
-        public static void GetEnumValues(Type enumType, Array expected)
+        [Fact]
+        public static void GetEnumValues_Int()
+        {
+            GetEnumValues(typeof(IntEnum), new IntEnum[] { (IntEnum)1, (IntEnum)2, (IntEnum)10, (IntEnum)18, (IntEnum)45 });
+        }
+
+        [Fact]
+        public static void GetEnumValues_UInt()
+        {
+            GetEnumValues(typeof(UIntEnum), new UIntEnum[] { (UIntEnum)1, (UIntEnum)10 });
+        }
+
+        private static void GetEnumValues(Type enumType, Array expected)
         {
             Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValues());
         }
@@ -1008,7 +1017,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(string), 1)]
         [InlineData(typeof(int), 2)]
         [InlineData(typeof(char*), 3)]
         [InlineData(typeof(int), 3)]
@@ -1017,6 +1025,16 @@ namespace System.Reflection.Tests
             Type arrayType = type.GetType().MakeArrayType(rank);
             Assert.True(arrayType.IsArray);
             Assert.Equal(rank, arrayType.GetArrayRank());
+        }
+
+        [Theory]
+        [InlineData(typeof(string))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim arrays of rank 1 not supported on UapAot: https://github.com/dotnet/corert/issues/3331")]
+        public void MakeArrayType_IntRank1(Type type)
+        {
+            Type arrayType = type.GetType().MakeArrayType(1);
+            Assert.True(arrayType.IsArray);
+            Assert.Equal(1, arrayType.GetArrayRank());
         }
 
         [Theory]
