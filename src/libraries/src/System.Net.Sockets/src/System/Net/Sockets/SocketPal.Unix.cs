@@ -575,13 +575,39 @@ namespace System.Net.Sockets
             {
                 Interop.Error errno;
                 int received;
+
                 if (buffers != null)
                 {
+                    // Receive into a set of buffers
                     Debug.Assert(buffer == null);
                     received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
+                else if (count == 0)
+                {
+                    // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
+                    // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
+                    // however, special-case a receive of 0 to always succeed immediately even if data isn't available.  As such, we treat 0
+                    // specially, checking whether any bytes are available rather than doing an actual receive.
+                    receivedFlags = SocketFlags.None;
+                    received = -1;
+
+                    int available = 0;
+                    errno = Interop.Sys.GetBytesAvailable(socket, &available);
+                    if (errno == Interop.Error.SUCCESS)
+                    {
+                        if (available > 0)
+                        {
+                            bytesReceived = 0;
+                            errorCode = SocketError.Success;
+                            return true;
+                        }
+
+                        errno = Interop.Error.EAGAIN; // simulate a receive with no data available
+                    }
+                }
                 else
                 {
+                    // Receive > 0 bytes into a single buffer
                     received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
