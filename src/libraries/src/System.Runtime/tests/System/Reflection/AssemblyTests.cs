@@ -201,16 +201,7 @@ namespace System.Reflection.Tests
             Assert.NotEmpty(assembly.GetModules());
             foreach (Module module in assembly.GetModules())
             {
-                if (PlatformDetection.IsFullFramework)
-                {
-                    Assert.Null(assembly.GetModule(module.Name));
-                    Assert.Equal(module, assembly.GetModule(module.ToString()));
-                }
-                else
-                {
-                    Assert.Equal(module, assembly.GetModule(module.Name));
-                    Assert.Equal(module, assembly.GetModule(module.ToString()));
-                }
+                Assert.Equal(module, assembly.GetModule(module.ToString()));
             }
         }
 
@@ -222,7 +213,7 @@ namespace System.Reflection.Tests
             foreach (Module module in assembly.GetLoadedModules())
             {
                 Assert.NotNull(module);
-                Assert.Equal(module, assembly.GetModule(module.Name));
+                Assert.Equal(module, assembly.GetModule(module.ToString()));
             }
         }
 
@@ -284,14 +275,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework supports SecurityRuleSet")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework supports SecurityRuleSet")]
         public static void Test_SecurityRuleSet_Netcore()
         {
             Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "SecurityRuleSet is ignored in .NET core")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "SecurityRuleSet is ignored in .NET Core")]
         public static void Test_SecurityRuleSet_Netfx()
         {
             Assert.Equal(SecurityRuleSet.Level2, typeof(AssemblyTests).Assembly.SecurityRuleSet);
@@ -300,26 +291,43 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_LoadFile()
         {
-            var assem = typeof(AssemblyTests).Assembly;
-            string path = "System.Runtime.Tests.dll";
-            string fullpath = Path.GetFullPath(path);
-            var loadfile1 = Assembly.LoadFile(fullpath);
-            Assert.Equal(assem.FullName, loadfile1.FullName);
-            string dir = Path.GetDirectoryName(fullpath);
-            fullpath = Path.Combine(dir, ".", path);
-            var loadfile2 = Assembly.LoadFile(fullpath);
-            Assert.Equal(loadfile1.FullName, loadfile2.FullName);
+            Assembly currentAssembly = typeof(AssemblyTests).Assembly;
+            const string RuntimeTestsDll = "System.Runtime.Tests.dll";
+            string fullRuntimeTestsPath = Path.GetFullPath(RuntimeTestsDll);
+
+            var loadedAssembly1 = Assembly.LoadFile(fullRuntimeTestsPath);
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal(currentAssembly, loadedAssembly1);
+            }
+            else
+            {
+                Assert.NotEqual(currentAssembly, loadedAssembly1);
+            }
+
+            string dir = Path.GetDirectoryName(fullRuntimeTestsPath);
+            fullRuntimeTestsPath = Path.Combine(dir, ".", RuntimeTestsDll);
+
+            Assembly loadedAssembly2 = Assembly.LoadFile(fullRuntimeTestsPath);
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.NotEqual(loadedAssembly1, loadedAssembly2);
+            }
+            else
+            {
+                Assert.Equal(loadedAssembly1, loadedAssembly2);
+            }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and throws a NullReferenceException")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework has a bug and throws a NullReferenceException")]
         public static void LoadFile_NullPath_Netcore_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET core fixed a bug where LoadFile(null) throws a NullReferenceException")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Core fixed a bug where LoadFile(null) throws a NullReferenceException")]
         public static void LoadFile_NullPath_Netfx_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => Assembly.LoadFile(null));
@@ -332,21 +340,21 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework supports Assembly.LoadFrom")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework supports Assembly.LoadFrom")]
         public static void Test_LoadFromUsingHashValue_Netcore()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The implementation of Assembly.LoadFrom is stubbed out in .NET core")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The implementation of Assembly.LoadFrom is stubbed out in .NET Core")]
         public static void Test_LoadFromUsingHashValue_Netfx()
         {
             Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework supports more than one module per assembly")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework supports more than one module per assembly")]
         public static void Test_LoadModule_Netcore()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
