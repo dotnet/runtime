@@ -16,7 +16,7 @@
 class COMCurrency 
 {
 public:
-    static FCDECL2   (void, DoToDecimal,  DECIMAL * result, CY c);
+    static FCDECL2_IV(void, DoToDecimal,  DECIMAL * result, CY c);
 };
 
 #include <poppack.h>
