@@ -5,7 +5,7 @@
   <PropertyGroup>
     <NuGetRuntimeIdentifier>none</NuGetRuntimeIdentifier>
     <OutputPath>$(XmlDocDir)</OutputPath>
-    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <EnableBinPlacing>false</EnableBinPlacing>
   </PropertyGroup>
 
   <ItemGroup>
