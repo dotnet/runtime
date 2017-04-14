@@ -47,7 +47,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Modules_GetMultipleTimes_ReturnsSameInstance()
         {
-            Assert.Same(_process.Modules, _process.Modules);
+            Process currentProcess = Process.GetCurrentProcess();
+            Assert.Same(currentProcess.Modules, currentProcess.Modules);
         }
 
         [Fact]
