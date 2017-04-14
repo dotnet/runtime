@@ -2,6 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+/*
+  Note on transaction support:
+  Eventually we will want to add support for NT's transactions to our
+  RegistryKey API's (possibly Whidbey M3?).  When we do this, here's
+  the list of API's we need to make transaction-aware:
+
+  RegCreateKeyEx
+  RegDeleteKey
+  RegDeleteValue
+  RegEnumKeyEx
+  RegEnumValue
+  RegOpenKeyEx
+  RegQueryInfoKey
+  RegQueryValueEx
+  RegSetValueEx
+
+  We can ignore RegConnectRegistry (remote registry access doesn't yet have
+  transaction support) and RegFlushKey.  RegCloseKey doesn't require any
+  additional work.  .
+ */
+
 /*
   Note on ACL support:
   The key thing to note about ACL's is you set them on a kernel object like a
@@ -30,28 +52,34 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
+using System.Text;
 
 namespace Microsoft.Win32
 {
     /**
      * Registry encapsulation. To get an instance of a RegistryKey use the
      * Registry class's static members then call OpenSubKey.
+     *
+     * @see Registry
+     * @security(checkDllCalls=off)
+     * @security(checkClassLinking=on)
      */
     internal sealed class RegistryKey : MarshalByRefObject, IDisposable
     {
-        // Use the public Registry.CurrentUser
-        internal static readonly RegistryKey CurrentUser =
-            GetBaseKey(new IntPtr(unchecked((int)0x80000001)), "HKEY_CURRENT_USER");
-
-        // Use the public Registry.LocalMachine
-        internal static readonly RegistryKey LocalMachine =
-            GetBaseKey(new IntPtr(unchecked((int)0x80000002)), "HKEY_LOCAL_MACHINE");
-
         // We could use const here, if C# supported ELEMENT_TYPE_I fully.
-        private static readonly IntPtr HKEY_CURRENT_USER = new IntPtr(unchecked((int)0x80000001));
-        private static readonly IntPtr HKEY_LOCAL_MACHINE = new IntPtr(unchecked((int)0x80000002));
+        internal static readonly IntPtr HKEY_CLASSES_ROOT = new IntPtr(unchecked((int)0x80000000));
+        internal static readonly IntPtr HKEY_CURRENT_USER = new IntPtr(unchecked((int)0x80000001));
+        internal static readonly IntPtr HKEY_LOCAL_MACHINE = new IntPtr(unchecked((int)0x80000002));
+        internal static readonly IntPtr HKEY_USERS = new IntPtr(unchecked((int)0x80000003));
+        internal static readonly IntPtr HKEY_PERFORMANCE_DATA = new IntPtr(unchecked((int)0x80000004));
+        internal static readonly IntPtr HKEY_CURRENT_CONFIG = new IntPtr(unchecked((int)0x80000005));
+
+        // Dirty indicates that we have munged data that should be potentially
+        // written to disk.
+        //
+        private const int STATE_DIRTY = 0x0001;
 
         // SystemKey indicates that this is a "SYSTEMKEY" and shouldn't be "opened"
         // or "closed".
@@ -62,6 +90,20 @@ namespace Microsoft.Win32
         //
         private const int STATE_WRITEACCESS = 0x0004;
 
+        // Indicates if this key is for HKEY_PERFORMANCE_DATA
+        private const int STATE_PERF_DATA = 0x0008;
+
+        // Names of keys.  This array must be in the same order as the HKEY values listed above.
+        //
+        private static readonly String[] hkeyNames = new String[] {
+                "HKEY_CLASSES_ROOT",
+                "HKEY_CURRENT_USER",
+                "HKEY_LOCAL_MACHINE",
+                "HKEY_USERS",
+                "HKEY_PERFORMANCE_DATA",
+                "HKEY_CURRENT_CONFIG",
+                };
+
         // MSDN defines the following limits for registry key names & values:
         // Key Name: 255 characters
         // Value name:  16,383 Unicode characters
@@ -71,7 +113,31 @@ namespace Microsoft.Win32
 
         private volatile SafeRegistryHandle hkey = null;
         private volatile int state = 0;
-        private volatile string keyName;
+        private volatile String keyName;
+        private volatile bool remoteKey = false;
+        private volatile RegistryKeyPermissionCheck checkMode;
+        private volatile RegistryView regView = RegistryView.Default;
+
+        /**
+         * RegistryInternalCheck values.  Useful only for CheckPermission
+         */
+        private enum RegistryInternalCheck
+        {
+            CheckSubKeyWritePermission = 0,
+            CheckSubKeyReadPermission = 1,
+            CheckSubKeyCreatePermission = 2,
+            CheckSubTreeReadPermission = 3,
+            CheckSubTreeWritePermission = 4,
+            CheckSubTreeReadWritePermission = 5,
+            CheckValueWritePermission = 6,
+            CheckValueCreatePermission = 7,
+            CheckValueReadPermission = 8,
+            CheckKeyReadPermission = 9,
+            CheckSubTreePermission = 10,
+            CheckOpenSubKeyWithWritablePermission = 11,
+            CheckOpenSubKeyPermission = 12
+        };
+
 
         /**
          * Creates a RegistryKey.
@@ -82,10 +148,12 @@ namespace Microsoft.Win32
          * The remoteKey flag when set to true indicates that we are dealing with registry entries
          * on a remote machine and requires the program making these calls to have full trust.
          */
-        private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey)
+        private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey, bool remoteKey, bool isPerfData, RegistryView view)
         {
             this.hkey = hkey;
             keyName = "";
+            this.remoteKey = remoteKey;
+            regView = view;
             if (systemkey)
             {
                 state |= STATE_SYSTEMKEY;
@@ -94,6 +162,17 @@ namespace Microsoft.Win32
             {
                 state |= STATE_WRITEACCESS;
             }
+            if (isPerfData)
+                state |= STATE_PERF_DATA;
+            ValidateKeyView(view);
+        }
+
+        /**
+         * Closes this key, flushes it to disk if the contents have been modified.
+         */
+        public void Close()
+        {
+            Dispose(true);
         }
 
         private void Dispose(bool disposing)
@@ -115,6 +194,21 @@ namespace Microsoft.Win32
                         hkey = null;
                     }
                 }
+                else if (disposing && IsPerfDataKey())
+                {
+                    // System keys should never be closed.  However, we want to call RegCloseKey
+                    // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
+                    // (i.e. when disposing is true) so that we release the PERFLIB cache and cause it
+                    // to be refreshed (by re-reading the registry) when accessed subsequently. 
+                    // This is the only way we can see the just installed perf counter.  
+                    // NOTE: since HKEY_PERFORMANCE_DATA is process wide, there is inherent race condition in closing
+                    // the key asynchronously. While Vista is smart enough to rebuild the PERFLIB resources
+                    // in this situation the down level OSes are not. We have a small window between  
+                    // the dispose below and usage elsewhere (other threads). This is By Design. 
+                    // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
+                    // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
+                    SafeRegistryHandle.RegCloseKey(RegistryKey.HKEY_PERFORMANCE_DATA);
+                }
             }
         }
 
@@ -123,13 +217,13 @@ namespace Microsoft.Win32
             Dispose(true);
         }
 
-        public void DeleteValue(string name, bool throwOnMissingValue)
+        public void DeleteValue(String name, bool throwOnMissingValue)
         {
             EnsureWriteable();
             int errorCode = Win32Native.RegDeleteValue(hkey, name);
 
             //
-            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE
+            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
             // This still means the name doesn't exist. We need to be consistent with previous OS.
             //
             if (errorCode == Win32Native.ERROR_FILE_NOT_FOUND || errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
@@ -138,44 +232,77 @@ namespace Microsoft.Win32
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyValueAbsent);
                 }
-
                 // Otherwise, just return giving no indication to the user.
                 // (For compatibility)
             }
-
             // We really should throw an exception here if errorCode was bad,
             // but we can't for compatibility reasons.
-            Debug.Assert(errorCode == 0, "RegDeleteValue failed.  Here's your error code: " + errorCode);
+            BCLDebug.Correctness(errorCode == 0, "RegDeleteValue failed.  Here's your error code: " + errorCode);
         }
 
-        private static RegistryKey GetBaseKey(IntPtr hKey, string keyName)
+        /**
+         * Retrieves a new RegistryKey that represents the requested key. Valid
+         * values are:
+         *
+         * HKEY_CLASSES_ROOT,
+         * HKEY_CURRENT_USER,
+         * HKEY_LOCAL_MACHINE,
+         * HKEY_USERS,
+         * HKEY_PERFORMANCE_DATA,
+         * HKEY_CURRENT_CONFIG,
+         * HKEY_DYN_DATA.
+         *
+         * @param hKey HKEY_* to open.
+         *
+         * @return the RegistryKey requested.
+         */
+        internal static RegistryKey GetBaseKey(IntPtr hKey)
         {
-            SafeRegistryHandle srh = new SafeRegistryHandle(hKey, ownsHandle: false);
+            return GetBaseKey(hKey, RegistryView.Default);
+        }
 
-            RegistryKey key = new RegistryKey(srh, true, true);
-            key.keyName = keyName;
+        internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view)
+        {
+            int index = ((int)hKey) & 0x0FFFFFFF;
+            BCLDebug.Assert(index >= 0 && index < hkeyNames.Length, "index is out of range!");
+            BCLDebug.Assert((((int)hKey) & 0xFFFFFFF0) == 0x80000000, "Invalid hkey value!");
+
+            bool isPerf = hKey == HKEY_PERFORMANCE_DATA;
+            // only mark the SafeHandle as ownsHandle if the key is HKEY_PERFORMANCE_DATA.
+            SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
+
+            RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
+            key.checkMode = RegistryKeyPermissionCheck.Default;
+            key.keyName = hkeyNames[index];
             return key;
         }
 
-        /// <summary>
-        /// Retrieves a subkey or null if the operation failed.
-        /// </summary>
-        /// <param name="writable">True to open writable, otherwise opens the key read-only.</param>
+        /**
+         * Retrieves a subkey. If readonly is <b>true</b>, then the subkey is opened with
+         * read-only access.
+         *
+         * @param name Name or path of subkey to open.
+         * @param readonly Set to <b>true</b> if you only need readonly access.
+         *
+         * @return the Subkey requested, or <b>null</b> if the operation failed.
+         */
         public RegistryKey OpenSubKey(string name, bool writable)
         {
             ValidateKeyName(name);
             EnsureNotDisposed();
+            name = FixupName(name); // Fixup multiple slashes to a single slash
 
             SafeRegistryHandle result = null;
             int ret = Win32Native.RegOpenKeyEx(hkey,
                 name,
                 0,
-                writable ? Win32Native.KEY_READ | Win32Native.KEY_WRITE : Win32Native.KEY_READ,
+                GetRegistryKeyAccess(writable) | (int)regView,
                 out result);
 
             if (ret == 0 && !result.IsInvalid)
             {
-                RegistryKey key = new RegistryKey(result, writable, false);
+                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
+                key.checkMode = GetSubKeyPermissonCheck(writable);
                 key.keyName = keyName + "\\" + name;
                 return key;
             }
@@ -189,6 +316,41 @@ namespace Microsoft.Win32
             }
 
             return null;
+        }
+
+        // This required no security checks. This is to get around the Deleting SubKeys which only require
+        // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
+        internal RegistryKey InternalOpenSubKey(String name, bool writable)
+        {
+            ValidateKeyName(name);
+            EnsureNotDisposed();
+
+            SafeRegistryHandle result = null;
+            int ret = Win32Native.RegOpenKeyEx(hkey,
+                name,
+                0,
+                GetRegistryKeyAccess(writable) | (int)regView,
+                out result);
+
+            if (ret == 0 && !result.IsInvalid)
+            {
+                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
+                key.keyName = keyName + "\\" + name;
+                return key;
+            }
+            return null;
+        }
+
+        /**
+         * Returns a subkey with read only permissions.
+         *
+         * @param name Name or path of subkey to open.
+         *
+         * @return the Subkey requested, or <b>null</b> if the operation failed.
+         */
+        public RegistryKey OpenSubKey(String name)
+        {
+            return OpenSubKey(name, false);
         }
 
         /// <summary>
@@ -319,6 +481,22 @@ namespace Microsoft.Win32
         }
 
         /**
+         * Retrieves the specified value. <b>null</b> is returned if the value
+         * doesn't exist.
+         *
+         * Note that <var>name</var> can be null or "", at which point the
+         * unnamed or default value of this Registry key is returned, if any.
+         *
+         * @param name Name of value to retrieve.
+         *
+         * @return the data associated with the value.
+         */
+        public Object GetValue(String name)
+        {
+            return InternalGetValue(name, null, false, true);
+        }
+
+        /**
          * Retrieves the specified value. <i>defaultValue</i> is returned if the value doesn't exist.
          *
          * Note that <var>name</var> can be null or "", at which point the
@@ -333,11 +511,30 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        public object GetValue(string name, object defaultValue = null, bool doNotExpand = false)
+        public Object GetValue(String name, Object defaultValue)
         {
-            EnsureNotDisposed();
+            return InternalGetValue(name, defaultValue, false, true);
+        }
 
-            object data = defaultValue;
+        public Object GetValue(String name, Object defaultValue, RegistryValueOptions options)
+        {
+            if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
+            }
+            bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
+            return InternalGetValue(name, defaultValue, doNotExpand, true);
+        }
+
+        internal Object InternalGetValue(String name, Object defaultValue, bool doNotExpand, bool checkSecurity)
+        {
+            if (checkSecurity)
+            {
+                // Name can be null!  It's the most common use of RegQueryValueEx
+                EnsureNotDisposed();
+            }
+
+            Object data = defaultValue;
             int type = 0;
             int datasize = 0;
 
@@ -345,19 +542,53 @@ namespace Microsoft.Win32
 
             if (ret != 0)
             {
-                // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
-                // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
-                // want to continue on through the function. 
-                if (ret != Win32Native.ERROR_MORE_DATA)
-                    return data;
+                if (IsPerfDataKey())
+                {
+                    int size = 65000;
+                    int sizeInput = size;
+
+                    int r;
+                    byte[] blob = new byte[size];
+                    while (Win32Native.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref sizeInput)))
+                    {
+                        if (size == Int32.MaxValue)
+                        {
+                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
+                            Win32Error(r, name);
+                        }
+                        else if (size > (Int32.MaxValue / 2))
+                        {
+                            // at this point in the loop "size * 2" would cause an overflow
+                            size = Int32.MaxValue;
+                        }
+                        else
+                        {
+                            size *= 2;
+                        }
+                        sizeInput = size;
+                        blob = new byte[size];
+                    }
+                    if (r != 0)
+                        Win32Error(r, name);
+                    return blob;
+                }
+                else
+                {
+                    // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
+                    // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
+                    // want to continue on through the function. 
+                    if (ret != Win32Native.ERROR_MORE_DATA)
+                        return data;
+                }
             }
 
             if (datasize < 0)
             {
                 // unexpected code path
-                Debug.Assert(false, "[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
+                BCLDebug.Assert(false, "[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
                 datasize = 0;
             }
+
 
             switch (type)
             {
@@ -378,7 +609,7 @@ namespace Microsoft.Win32
                             goto case Win32Native.REG_BINARY;
                         }
                         long blob = 0;
-                        Debug.Assert(datasize == 8, "datasize==8");
+                        BCLDebug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
                         ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
 
@@ -393,7 +624,7 @@ namespace Microsoft.Win32
                             goto case Win32Native.REG_QWORD;
                         }
                         int blob = 0;
-                        Debug.Assert(datasize == 4, "datasize==4");
+                        BCLDebug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
                         ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
 
@@ -420,13 +651,13 @@ namespace Microsoft.Win32
                         ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
-                            data = new string(blob, 0, blob.Length - 1);
+                            data = new String(blob, 0, blob.Length - 1);
                         }
                         else
                         {
                             // in the very unlikely case the data is missing null termination, 
                             // pass in the whole char[] to prevent truncating a character
-                            data = new string(blob);
+                            data = new String(blob);
                         }
                     }
                     break;
@@ -451,17 +682,17 @@ namespace Microsoft.Win32
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
-                            data = new string(blob, 0, blob.Length - 1);
+                            data = new String(blob, 0, blob.Length - 1);
                         }
                         else
                         {
                             // in the very unlikely case the data is missing null termination, 
                             // pass in the whole char[] to prevent truncating a character
-                            data = new string(blob);
+                            data = new String(blob);
                         }
 
                         if (!doNotExpand)
-                            data = Environment.ExpandEnvironmentVariables((string)data);
+                            data = Environment.ExpandEnvironmentVariables((String)data);
                     }
                     break;
                 case Win32Native.REG_MULTI_SZ:
@@ -502,7 +733,8 @@ namespace Microsoft.Win32
                             blob[blob.Length - 1] = (char)0;
                         }
 
-                        IList<string> strings = new List<string>();
+
+                        IList<String> strings = new List<String>();
                         int cur = 0;
                         int len = blob.Length;
 
@@ -516,28 +748,28 @@ namespace Microsoft.Win32
 
                             if (nextNull < len)
                             {
-                                Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
+                                BCLDebug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
                                 if (nextNull - cur > 0)
                                 {
-                                    strings.Add(new string(blob, cur, nextNull - cur));
+                                    strings.Add(new String(blob, cur, nextNull - cur));
                                 }
                                 else
                                 {
                                     // we found an empty string.  But if we're at the end of the data, 
                                     // it's just the extra null terminator. 
                                     if (nextNull != len - 1)
-                                        strings.Add(string.Empty);
+                                        strings.Add(String.Empty);
                                 }
                             }
                             else
                             {
-                                strings.Add(new string(blob, cur, len - cur));
+                                strings.Add(new String(blob, cur, len - cur));
                             }
                             cur = nextNull + 1;
                         }
 
-                        data = new string[strings.Count];
-                        strings.CopyTo((string[])data, 0);
+                        data = new String[strings.Count];
+                        strings.CopyTo((String[])data, 0);
                     }
                     break;
                 case Win32Native.REG_LINK:
@@ -560,10 +792,26 @@ namespace Microsoft.Win32
 
         private bool IsPerfDataKey()
         {
-            return false;
+            return (state & STATE_PERF_DATA) != 0;
         }
 
-        public unsafe void SetStringValue(string name, string value)
+        private void SetDirty()
+        {
+            state |= STATE_DIRTY;
+        }
+
+        /**
+         * Sets the specified value.
+         *
+         * @param name Name of value to store data in.
+         * @param value Data to store.
+         */
+        public void SetValue(String name, Object value)
+        {
+            SetValue(name, value, RegistryValueKind.Unknown);
+        }
+
+        public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -573,17 +821,167 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Arg_RegValStrLenBug);
             }
 
+            if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
+                throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
+
             EnsureWriteable();
 
-            int result = Win32Native.RegSetValueEx(hkey,
-                name,
-                0,
-                RegistryValueKind.String,
-                value,
-                checked(value.Length * 2 + 2));
+            if (valueKind == RegistryValueKind.Unknown)
+            {
+                // this is to maintain compatibility with the old way of autodetecting the type.
+                // SetValue(string, object) will come through this codepath.
+                valueKind = CalculateValueKind(value);
+            }
 
-            if (result != 0)
-                Win32Error(result, null);
+            int ret = 0;
+            try
+            {
+                switch (valueKind)
+                {
+                    case RegistryValueKind.ExpandString:
+                    case RegistryValueKind.String:
+                        {
+                            String data = value.ToString();
+                            ret = Win32Native.RegSetValueEx(hkey,
+                                name,
+                                0,
+                                valueKind,
+                                data,
+                                checked(data.Length * 2 + 2));
+                            break;
+                        }
+
+                    case RegistryValueKind.MultiString:
+                        {
+                            // Other thread might modify the input array after we calculate the buffer length.                            
+                            // Make a copy of the input array to be safe.
+                            string[] dataStrings = (string[])(((string[])value).Clone());
+                            int sizeInBytes = 0;
+
+                            // First determine the size of the array
+                            //
+                            for (int i = 0; i < dataStrings.Length; i++)
+                            {
+                                if (dataStrings[i] == null)
+                                {
+                                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetStrArrNull);
+                                }
+                                sizeInBytes = checked(sizeInBytes + (dataStrings[i].Length + 1) * 2);
+                            }
+                            sizeInBytes = checked(sizeInBytes + 2);
+
+                            byte[] basePtr = new byte[sizeInBytes];
+                            fixed (byte* b = basePtr)
+                            {
+                                IntPtr currentPtr = new IntPtr((void*)b);
+
+                                // Write out the strings...
+                                //
+                                for (int i = 0; i < dataStrings.Length; i++)
+                                {
+                                    // Assumes that the Strings are always null terminated.
+                                    String.InternalCopy(dataStrings[i], currentPtr, (checked(dataStrings[i].Length * 2)));
+                                    currentPtr = new IntPtr((long)currentPtr + (checked(dataStrings[i].Length * 2)));
+                                    *(char*)(currentPtr.ToPointer()) = '\0';
+                                    currentPtr = new IntPtr((long)currentPtr + 2);
+                                }
+
+                                *(char*)(currentPtr.ToPointer()) = '\0';
+                                currentPtr = new IntPtr((long)currentPtr + 2);
+
+                                ret = Win32Native.RegSetValueEx(hkey,
+                                    name,
+                                    0,
+                                    RegistryValueKind.MultiString,
+                                    basePtr,
+                                    sizeInBytes);
+                            }
+                            break;
+                        }
+
+                    case RegistryValueKind.None:
+                    case RegistryValueKind.Binary:
+                        byte[] dataBytes = (byte[])value;
+                        ret = Win32Native.RegSetValueEx(hkey,
+                            name,
+                            0,
+                            (valueKind == RegistryValueKind.None ? Win32Native.REG_NONE : RegistryValueKind.Binary),
+                            dataBytes,
+                            dataBytes.Length);
+                        break;
+
+                    case RegistryValueKind.DWord:
+                        {
+                            // We need to use Convert here because we could have a boxed type cannot be
+                            // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
+                            int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
+
+                            ret = Win32Native.RegSetValueEx(hkey,
+                                name,
+                                0,
+                                RegistryValueKind.DWord,
+                                ref data,
+                                4);
+                            break;
+                        }
+
+                    case RegistryValueKind.QWord:
+                        {
+                            long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
+
+                            ret = Win32Native.RegSetValueEx(hkey,
+                                name,
+                                0,
+                                RegistryValueKind.QWord,
+                                ref data,
+                                8);
+                            break;
+                        }
+                }
+            }
+            catch (OverflowException)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+            }
+            catch (InvalidOperationException)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+            }
+            catch (FormatException)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+            }
+            catch (InvalidCastException)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+            }
+
+            if (ret == 0)
+            {
+                SetDirty();
+            }
+            else
+                Win32Error(ret, null);
+        }
+
+        private RegistryValueKind CalculateValueKind(Object value)
+        {
+            // This logic matches what used to be in SetValue(string name, object value) in the v1.0 and v1.1 days.
+            // Even though we could add detection for an int64 in here, we want to maintain compatibility with the
+            // old behavior.
+            if (value is Int32)
+                return RegistryValueKind.DWord;
+            else if (value is Array)
+            {
+                if (value is byte[])
+                    return RegistryValueKind.Binary;
+                else if (value is String[])
+                    return RegistryValueKind.MultiString;
+                else
+                    throw new ArgumentException(SR.Format(SR.Arg_RegSetBadArrType, value.GetType().Name));
+            }
+            else
+                return RegistryValueKind.String;
         }
 
         /**
@@ -591,7 +989,7 @@ namespace Microsoft.Win32
          *
          * @return a string representing the key.
          */
-        public override string ToString()
+        public override String ToString()
         {
             EnsureNotDisposed();
             return keyName;
@@ -604,7 +1002,7 @@ namespace Microsoft.Win32
          * error, and depending on the error, insert a string into the message
          * gotten from the ResourceManager.
          */
-        internal void Win32Error(int errorCode, string str)
+        internal void Win32Error(int errorCode, String str)
         {
             switch (errorCode)
             {
@@ -613,12 +1011,103 @@ namespace Microsoft.Win32
                         throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str));
                     else
                         throw new UnauthorizedAccessException();
+
+                case Win32Native.ERROR_INVALID_HANDLE:
+                    /**
+                     * For normal RegistryKey instances we dispose the SafeRegHandle and throw IOException.
+                     * However, for HKEY_PERFORMANCE_DATA (on a local or remote machine) we avoid disposing the
+                     * SafeRegHandle and only throw the IOException.  This is to workaround reentrancy issues
+                     * in PerformanceCounter.NextValue() where the API could throw {NullReference, ObjectDisposed, ArgumentNull}Exception
+                     * on reentrant calls because of this error code path in RegistryKey
+                     *
+                     * Normally we'd make our caller synchronize access to a shared RegistryKey instead of doing something like this,
+                     * however we shipped PerformanceCounter.NextValue() un-synchronized in v2.0RTM and customers have taken a dependency on 
+                     * this behavior (being able to simultaneously query multiple remote-machine counters on multiple threads, instead of 
+                     * having serialized access).
+                     */
+                    if (!IsPerfDataKey())
+                    {
+                        hkey.SetHandleAsInvalid();
+                        hkey = null;
+                    }
+                    goto default;
+
                 case Win32Native.ERROR_FILE_NOT_FOUND:
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
                     throw new IOException(Win32Native.GetMessage(errorCode), errorCode);
             }
+        }
+
+        internal static String FixupName(String name)
+        {
+            BCLDebug.Assert(name != null, "[FixupName]name!=null");
+            if (name.IndexOf('\\') == -1)
+                return name;
+
+            StringBuilder sb = new StringBuilder(name);
+            FixupPath(sb);
+            int temp = sb.Length - 1;
+            if (temp >= 0 && sb[temp] == '\\') // Remove trailing slash
+                sb.Length = temp;
+            return sb.ToString();
+        }
+
+
+        private static void FixupPath(StringBuilder path)
+        {
+            Contract.Requires(path != null);
+            int length = path.Length;
+            bool fixup = false;
+            char markerChar = (char)0xFFFF;
+
+            int i = 1;
+            while (i < length - 1)
+            {
+                if (path[i] == '\\')
+                {
+                    i++;
+                    while (i < length)
+                    {
+                        if (path[i] == '\\')
+                        {
+                            path[i] = markerChar;
+                            i++;
+                            fixup = true;
+                        }
+                        else
+                            break;
+                    }
+                }
+                i++;
+            }
+
+            if (fixup)
+            {
+                i = 0;
+                int j = 0;
+                while (i < length)
+                {
+                    if (path[i] == markerChar)
+                    {
+                        i++;
+                        continue;
+                    }
+                    path[j] = path[i];
+                    i++;
+                    j++;
+                }
+                path.Length += j - i;
+            }
+        }
+
+        private bool ContainsRegistryValue(string name)
+        {
+            int type = 0;
+            int datasize = 0;
+            int retval = Win32Native.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
+            return retval == 0;
         }
 
         private void EnsureNotDisposed()
@@ -638,8 +1127,41 @@ namespace Microsoft.Win32
             }
         }
 
+        private static int GetRegistryKeyAccess(bool isWritable)
+        {
+            int winAccess;
+            if (!isWritable)
+            {
+                winAccess = Win32Native.KEY_READ;
+            }
+            else
+            {
+                winAccess = Win32Native.KEY_READ | Win32Native.KEY_WRITE;
+            }
+
+            return winAccess;
+        }
+
+        private RegistryKeyPermissionCheck GetSubKeyPermissonCheck(bool subkeyWritable)
+        {
+            if (checkMode == RegistryKeyPermissionCheck.Default)
+            {
+                return checkMode;
+            }
+
+            if (subkeyWritable)
+            {
+                return RegistryKeyPermissionCheck.ReadWriteSubTree;
+            }
+            else
+            {
+                return RegistryKeyPermissionCheck.ReadSubTree;
+            }
+        }
+
         static private void ValidateKeyName(string name)
         {
+            Contract.Ensures(name != null);
             if (name == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.name);
@@ -660,9 +1182,33 @@ namespace Microsoft.Win32
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyStrLenBug);
         }
 
+        static private void ValidateKeyView(RegistryView view)
+        {
+            if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidRegistryViewCheck, ExceptionArgument.view);
+            }
+        }
+
         // Win32 constants for error handling
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
+    }
+
+    [Flags]
+    internal enum RegistryValueOptions
+    {
+        None = 0,
+        DoNotExpandEnvironmentNames = 1
+    }
+
+    // the name for this API is meant to mimic FileMode, which has similar values
+
+    internal enum RegistryKeyPermissionCheck
+    {
+        Default = 0,
+        ReadSubTree = 1,
+        ReadWriteSubTree = 2
     }
 }
