@@ -2682,6 +2682,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework has an implementation and does not throw InvalidOperationException")]
     public static void XsdDataContractExporterTest()
     {
         XsdDataContractExporter exporter = new XsdDataContractExporter();
