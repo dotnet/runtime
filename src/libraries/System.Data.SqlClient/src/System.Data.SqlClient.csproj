@@ -122,7 +122,9 @@
     <Compile Include="System\Data\SqlClient\TdsRecordBufferSetter.cs" />
     <Compile Include="System\Data\SqlClient\TdsValueSetter.cs" />
     <Compile Include="System\Data\SqlTypes\SqlTypeWorkarounds.cs" />
-    <Compile Include="System\Data\SqlTypes\SQLResource.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\SQLResource.cs">
+      <Link>System\Data\SQLTypes\SQLResource.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>

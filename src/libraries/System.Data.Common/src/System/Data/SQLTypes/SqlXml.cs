@@ -198,7 +198,7 @@ namespace System.Data.SqlTypes
             XmlWriter ww = XmlWriter.Create(writerStream, writerSettings);
 
             if (reader.ReadState == ReadState.Closed)
-                throw new InvalidOperationException(SQLResource.s_closedXmlReaderMessage);
+                throw new InvalidOperationException(SQLResource.ClosedXmlReaderMessage);
 
             if (reader.ReadState == ReadState.Initial)
                 reader.Read();

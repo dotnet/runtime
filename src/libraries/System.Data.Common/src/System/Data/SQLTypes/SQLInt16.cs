@@ -69,12 +69,12 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : _value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : _value.ToString((IFormatProvider)null);
         }
 
         public static SqlInt16 Parse(string s)
         {
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlInt16.Null;
             else
                 return new SqlInt16(short.Parse(s, null));
@@ -103,7 +103,7 @@ namespace System.Data.SqlTypes
 
             int iResult = x._value + y._value;
             if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)iResult);
         }
@@ -115,7 +115,7 @@ namespace System.Data.SqlTypes
 
             int iResult = x._value - y._value;
             if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)iResult);
         }
@@ -128,7 +128,7 @@ namespace System.Data.SqlTypes
             int iResult = x._value * y._value;
             int iTemp = iResult & s_MASKI2;
             if (iTemp != 0 && iTemp != s_MASKI2)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)iResult);
         }
@@ -141,12 +141,12 @@ namespace System.Data.SqlTypes
             if (y._value != 0)
             {
                 if ((x._value == short.MinValue) && (y._value == -1))
-                    throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                    throw new OverflowException(SQLResource.ArithOverflowMessage);
 
                 return new SqlInt16((short)(x._value / y._value));
             }
             else
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
         }
 
         public static SqlInt16 operator %(SqlInt16 x, SqlInt16 y)
@@ -157,12 +157,12 @@ namespace System.Data.SqlTypes
             if (y._value != 0)
             {
                 if ((x._value == short.MinValue) && (y._value == -1))
-                    throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                    throw new OverflowException(SQLResource.ArithOverflowMessage);
 
                 return new SqlInt16((short)(x._value % y._value));
             }
             else
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
         }
 
         // Bitwise operators
@@ -207,7 +207,7 @@ namespace System.Data.SqlTypes
 
             int value = x.Value;
             if (value > short.MaxValue || value < short.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)value);
         }
@@ -220,7 +220,7 @@ namespace System.Data.SqlTypes
 
             long value = x.Value;
             if (value > short.MaxValue || value < short.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)value);
         }
@@ -233,7 +233,7 @@ namespace System.Data.SqlTypes
 
             float value = x.Value;
             if (value < short.MinValue || value > short.MaxValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)value);
         }
@@ -246,7 +246,7 @@ namespace System.Data.SqlTypes
 
             double value = x.Value;
             if (value < short.MinValue || value > short.MaxValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlInt16((short)value);
         }

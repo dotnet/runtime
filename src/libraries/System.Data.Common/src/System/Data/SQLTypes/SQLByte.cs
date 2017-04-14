@@ -70,12 +70,12 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.s_nullString : _value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : _value.ToString((IFormatProvider)null);
         }
 
         public static SqlByte Parse(string s)
         {
-            if (s == SQLResource.s_nullString)
+            if (s == SQLResource.NullString)
                 return SqlByte.Null;
             else
                 return new SqlByte(byte.Parse(s, null));
@@ -98,7 +98,7 @@ namespace System.Data.SqlTypes
 
             int iResult = x._value + y._value;
             if ((iResult & s_iBitNotByteMax) != 0)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlByte((byte)iResult);
         }
@@ -110,7 +110,7 @@ namespace System.Data.SqlTypes
 
             int iResult = x._value - y._value;
             if ((iResult & s_iBitNotByteMax) != 0)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlByte((byte)iResult);
         }
@@ -122,7 +122,7 @@ namespace System.Data.SqlTypes
 
             int iResult = x._value * y._value;
             if ((iResult & s_iBitNotByteMax) != 0)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
                 return new SqlByte((byte)iResult);
         }
@@ -137,7 +137,7 @@ namespace System.Data.SqlTypes
                 return new SqlByte((byte)(x._value / y._value));
             }
             else
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
         }
 
         public static SqlByte operator %(SqlByte x, SqlByte y)
@@ -150,7 +150,7 @@ namespace System.Data.SqlTypes
                 return new SqlByte((byte)(x._value % y._value));
             }
             else
-                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+                throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
         }
 
         // Bitwise operators
@@ -195,7 +195,7 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (x.Value > byte.MaxValue || x.Value < byte.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return x.IsNull ? Null : new SqlByte((byte)(x.Value));
         }
@@ -207,7 +207,7 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (x.Value > byte.MaxValue || x.Value < byte.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return x.IsNull ? Null : new SqlByte((byte)(x.Value));
         }
@@ -219,7 +219,7 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (x.Value > byte.MaxValue || x.Value < byte.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return x.IsNull ? Null : new SqlByte((byte)(x.Value));
         }
@@ -231,7 +231,7 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (x.Value > byte.MaxValue || x.Value < byte.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return x.IsNull ? Null : new SqlByte((byte)(x.Value));
         }
@@ -243,7 +243,7 @@ namespace System.Data.SqlTypes
                 return Null;
 
             if (x.Value > byte.MaxValue || x.Value < byte.MinValue)
-                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+                throw new OverflowException(SQLResource.ArithOverflowMessage);
 
             return x.IsNull ? Null : new SqlByte((byte)(x.Value));
         }
