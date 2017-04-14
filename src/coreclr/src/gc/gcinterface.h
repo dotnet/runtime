@@ -687,9 +687,11 @@ public:
     // background GC as the BGC threads also need to walk LOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
-    // Gets the event that suspended threads will use to wait for the
-    // end of a GC.
-    virtual CLREventStatic* GetWaitForGCEvent() = 0;
+    // Signals the WaitForGCEvent event, indicating that a GC has completed.
+    virtual void SetWaitForGCEvent() = 0;
+
+    // Resets the state of the WaitForGCEvent back to an unsignalled state.
+    virtual void ResetWaitForGCEvent() = 0;
 
     /*
     ===========================================================================
