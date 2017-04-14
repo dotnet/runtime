@@ -5074,7 +5074,7 @@ void Thread::SafeUpdateLastThrownObject(void)
     {
         EX_TRY
         {
-            IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
+            IGCHandleManager *pHandleTable = GCHandleUtilities::GetGCHandleManager();
 
             // Creating a duplicate handle here ensures that the AD of the last thrown object
             // matches the domain of the current throwable.
