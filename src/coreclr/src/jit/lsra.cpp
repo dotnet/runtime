@@ -5603,6 +5603,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             // the next ref, remember it.
             else if ((bestScore & UNASSIGNED) != 0 && intervalToUnassign != nullptr)
             {
+                // TODO-ARM: Should we handle TYE_DOUBLE case there ?
                 availablePhysRegInterval->previousInterval = intervalToUnassign;
             }
         }
@@ -6700,6 +6701,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
             if (assignedInterval != nullptr)
             {
                 assert(assignedInterval->isLocalVar || assignedInterval->isConstant);
+
                 if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
                 {
                     assignedInterval->isActive = false;
@@ -7067,11 +7069,24 @@ void LinearScan::allocateRegisters()
         // Otherwise, do nothing.
         if (refType == RefTypeFixedReg)
         {
-            RegRecord* regRecord = currentRefPosition->getReg();
-            if (regRecord->assignedInterval != nullptr && !regRecord->assignedInterval->isActive &&
-                regRecord->assignedInterval->isConstant)
+            RegRecord* regRecord        = currentRefPosition->getReg();
+            Interval*  assignedInterval = regRecord->assignedInterval;
+
+            if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
             {
                 regRecord->assignedInterval = nullptr;
+
+#ifdef _TARGET_ARM_
+                // Update overlapping floating point register for TYP_DOUBLE
+                if (assignedInterval->registerType == TYP_DOUBLE)
+                {
+                    regRecord        = getRegisterRecord(REG_NEXT(regRecord->regNum));
+                    assignedInterval = regRecord->assignedInterval;
+
+                    assert(assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant);
+                    regRecord->assignedInterval = nullptr;
+                }
+#endif
             }
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition->assignedReg()));
             continue;
@@ -7551,6 +7566,15 @@ void LinearScan::allocateRegisters()
             currentInterval->physReg               = assignedRegister;
             regsToFree &= ~assignedRegBit; // we'll set it again later if it's dead
 
+#ifdef _TARGET_ARM_
+            // Update overlapping floating point register for TYP_DOUBLE
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                assert(isFloatRegType(currentInterval->assignedReg->registerType));
+                regsToFree &= ~genRegMask(REG_NEXT(assignedRegister));
+            }
+#endif
+
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
             // node is being evaluated for side effects, or a call whose result
@@ -7564,11 +7588,29 @@ void LinearScan::allocateRegisters()
                     if (currentRefPosition->delayRegFree)
                     {
                         delayRegsToFree |= assignedRegBit;
+
+#ifdef _TARGET_ARM_
+                        // Update overlapping floating point register for TYP_DOUBLE
+                        if (currentInterval->registerType == TYP_DOUBLE)
+                        {
+                            assert(isFloatRegType(currentInterval->assignedReg->registerType));
+                            delayRegsToFree |= genRegMask(REG_NEXT(assignedRegister));
+                        }
+#endif
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
                     else
                     {
                         regsToFree |= assignedRegBit;
+
+#ifdef _TARGET_ARM_
+                        // Update overlapping floating point register for TYP_DOUBLE
+                        if (currentInterval->registerType == TYP_DOUBLE)
+                        {
+                            assert(isFloatRegType(currentInterval->assignedReg->registerType));
+                            regsToFree |= genRegMask(REG_NEXT(assignedRegister));
+                        }
+#endif
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                     }
                 }
