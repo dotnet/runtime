@@ -9,23 +9,23 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>8ee251d0e0c39d6681c04b37ca10efdfaa4ff9f8</CoreFxCurrentRef>
+    <CoreFxCurrentRef>cf7c0960a7478e132dd1ccbed523635038a1546a</CoreFxCurrentRef>
     <CoreClrCurrentRef>df2ed4296d832554e58cd6ab8f69ea16f3a13fd1</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>adb21e771c22d9d771cbd18f6df2798c66217a86</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>adb21e771c22d9d771cbd18f6df2798c66217a86</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>cf7c0960a7478e132dd1ccbed523635038a1546a</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>cf7c0960a7478e132dd1ccbed523635038a1546a</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
     <StandardCurrentRef>8ee251d0e0c39d6681c04b37ca10efdfaa4ff9f8</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview1-25213-06</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>preview1-25214-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>preview1-25214-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25213-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25213-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25213-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25214-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25214-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25214-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.0.0-preview1-25213-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
