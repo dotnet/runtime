@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.Net.Native.Compiler": "1.6.0",
+    "Microsoft.Net.Native.Compiler": "1.6.1",
     "Microsoft.Private.CoreFx.UAP": "4.4.0-preview1-25214-03",
     "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview1-25214-03",
     "Microsoft.NETCore.Platforms": "2.0.0-preview1-25214-03",

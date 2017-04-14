@@ -3,7 +3,7 @@
   <Import Project="dir.props" />
 
   <PropertyGroup>
-    <Version>5.3.0</Version>
+    <Version>5.4.0</Version>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -29,6 +29,10 @@
     <Dependency Include="@(NetCore50Dependency)">
       <TargetFramework>.NETCore50</TargetFramework>
     </Dependency>
+
+    <ProjectReference Include="..\Microsoft.Net.UWPCoreRuntimeSdk\Microsoft.Net.UWPCoreRuntimeSdk.pkgproj">
+      <TargetFramework>uap10.1</TargetFramework>
+    </ProjectReference>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
          even though they don't have ref-assets -->
