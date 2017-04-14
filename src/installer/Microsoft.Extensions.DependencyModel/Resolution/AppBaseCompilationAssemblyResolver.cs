@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                     if (isPublished)
                     {
                     throw new InvalidOperationException(
-                        $"Can not find assembly file {assemblyFile} at '{string.Join(",", directories)}'");
+                        $"Cannot find assembly file {assemblyFile} at '{string.Join(",", directories)}'");
                 }
                     return false;
             }
