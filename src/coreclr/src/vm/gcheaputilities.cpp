@@ -25,7 +25,7 @@ uint32_t* g_card_bundle_table = nullptr;
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
-IGCHandleTable* g_pGCHandleTable = nullptr;
+IGCHandleManager* g_pGCHandleManager = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
@@ -46,9 +46,9 @@ void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
     OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
     VALIDATEOBJECTREF(objRef);
 
-    IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
+    IGCHandleManager *pHandleManager = GCHandleUtilities::GetGCHandleManager();
 
-    DWORD context = (DWORD)pHandleTable->GetHandleContext(handle);
+    DWORD context = (DWORD)pHandleManager->GetHandleContext(handle);
 
     ADIndex appDomainIndex = ADIndex(context);
     AppDomain *domain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
