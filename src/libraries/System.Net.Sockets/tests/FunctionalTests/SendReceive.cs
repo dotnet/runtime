@@ -605,7 +605,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(13778, TestPlatforms.OSX)]
         [Fact]
         public async Task SendRecv_0ByteReceive_Success()
         {
@@ -635,7 +634,7 @@ namespace System.Net.Sockets.Tests
 
                         // The client should now wake up, getting 0 bytes with 1 byte available.
                         Assert.Equal(0, await receive);
-                        Assert.Equal(1, client.Available); // Due to #13778, this sometimes fails on macOS
+                        Assert.Equal(1, client.Available);
 
                         // Receive that byte
                         Assert.Equal(1, await ReceiveAsync(client, new ArraySegment<byte>(new byte[1])));
