@@ -1,9 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <BuildConfigurations>
-      netfx-Windows_NT;
+    <PackageConfigurations>
+      net46;
       netstandard1.3;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netfx-Windows_NT;
       netstandard;
     </BuildConfigurations>
   </PropertyGroup>

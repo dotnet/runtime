@@ -7,6 +7,8 @@
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework> 
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -51,8 +53,8 @@
       <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Text\CodePagesEncodingProvider.Unix.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' ">
+    <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\codepages.nlp">

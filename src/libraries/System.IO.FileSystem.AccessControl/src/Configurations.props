@@ -5,6 +5,7 @@
       netfx-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
+      netstandard;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

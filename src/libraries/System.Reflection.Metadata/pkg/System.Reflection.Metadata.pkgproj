@@ -13,6 +13,8 @@
       <TargetFramework>portable-net45+win8</TargetFramework>
       <Version>1.1.37</Version>
     </FilePackageDependency>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.1" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

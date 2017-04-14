@@ -6,7 +6,6 @@
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
-    <HarvestIncludePaths Include="ref/netstandard1.3" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
