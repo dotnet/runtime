@@ -9,6 +9,7 @@ namespace System.Reflection.Tests
     public class ManifestResourceInfoTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.GetManifestResourceInfo() not supported on UapAot")]
         public void FileName()
         {
             Assembly assembly = typeof(ManifestResourceInfoTests).GetTypeInfo().Assembly;
@@ -17,6 +18,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.GetManifestResourceInfo() not supported on UapAot")]
         public void ReferencedAssembly()
         {
             Assembly assembly = typeof(ManifestResourceInfoTests).GetTypeInfo().Assembly;
@@ -25,6 +27,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.GetManifestResourceInfo() not supported on UapAot")]
         public void ResourceLocation()
         {
             Assembly assembly = typeof(ManifestResourceInfoTests).GetTypeInfo().Assembly;
