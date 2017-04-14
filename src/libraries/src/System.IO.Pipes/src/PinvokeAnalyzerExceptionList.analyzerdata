@@ -1,3 +1,4 @@
+advapi32.dll!ImpersonateNamedPipeClient
 advapi32.dll!RevertToSelf
 kernel32.dll!ConnectNamedPipe
 kernel32.dll!CreateFileW
