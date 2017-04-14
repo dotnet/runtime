@@ -348,8 +348,20 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    // TODO(CoreCLR#1259) pipe to madvise?
-    return false;
+    int st;
+#if HAVE_MADV_FREE
+    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
+    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
+    // occurs.
+    st = madvise(address, size, MADV_FREE);
+    if (st != 0)
+#endif    
+    {
+        // In case the MADV_FREE is not supported, use MADV_DONTNEED
+        st = madvise(address, size, MADV_DONTNEED);
+    }
+
+    return (st == 0);
 }
 
 // Check if the OS supports write watching
