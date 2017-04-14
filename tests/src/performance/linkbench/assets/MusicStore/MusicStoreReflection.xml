@@ -1,0 +1,27 @@
+<linker>
+    <!--- Called by Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions:.cctor -->
+    <assembly fullname="System.Linq.Queryable">
+        <type fullname="System.Linq.Queryable" required="true" />
+    </assembly>
+
+    <assembly fullname="System.Linq.Expressions">
+        <!--- Called by System.Linq.Expressions.Expression:CreateLambda -->
+        <type fullname="System.Linq.Expressions.Expression`1" required="true" />
+        <!--- Called by [System.Linq.Expressions]System.Runtime.CompilerServices.CallSite<>.CreateCustomNoMatchDelegate and [System.Linq.Expressions]System.Runtime.CompilerServices.CallSite<>.CreateCustomUpdateDelegate-->
+        <type fullname="System.Runtime.CompilerServices.CallSiteOps" required="true" />
+        <!--- Called by [System.Linq.Expressions]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
+        <type fullname="System.Runtime.CompilerServices.CallSite" required="true" />
+        <!--- Called by [System.Linq.Expressions]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
+        <type fullname="System.Runtime.CompilerServices.CallSite`1" required="true" />
+        <!--- Called by [System.Linq.Expressions]System.Runtime.CompilerServices.CallSite`1.MakeUpdateDelegate -->
+        <type fullname="System.Dynamic.UpdateDelegates" required="true" />
+        <!--- Called by [System.Linq.Expressions]System.Dynamic.DynamicObject.MetaDynamic.BindBinaryOperation -->
+        <type fullname="System.Dynamic.DynamicObject" required="true" />
+    </assembly>
+
+    <assembly fullname="System.ComponentModel.TypeConverter">
+        <type fullname="System.ComponentModel.StringConverter" required="true" />
+        <type fullname="System.ComponentModel.BooleanConverter" required="true" />
+        <type fullname="System.ComponentModel.CollectionConverter" required="true" />
+    </assembly>
+</linker>
