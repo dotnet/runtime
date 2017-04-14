@@ -17,6 +17,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.1" />
+    <HarvestIncludePaths Include="ref/netstandard1.3" />
+    <HarvestIncludePaths Include="ref/netstandard1.4;lib/netstandard1.4" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

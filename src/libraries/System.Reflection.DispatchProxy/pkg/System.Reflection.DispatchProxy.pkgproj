@@ -9,6 +9,8 @@
       <Preserve>true</Preserve>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
+    <HarvestIncludePaths Include="runtimes/aot/lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

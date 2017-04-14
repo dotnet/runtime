@@ -9,10 +9,11 @@
     <ValidatePackageSuppression Include="SuppressNETStandardInference">
       <Value>.NETCoreApp,Version=v1.1;.NETCoreApp,Version=v2.0</Value>
     </ValidatePackageSuppression>
-
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

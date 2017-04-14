@@ -9,6 +9,8 @@
     <NotSupportedOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
