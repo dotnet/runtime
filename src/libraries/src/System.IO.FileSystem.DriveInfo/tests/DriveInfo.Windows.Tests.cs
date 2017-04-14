@@ -212,7 +212,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         [DllImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern bool GetVolumeInformation(string drive, StringBuilder volumeName, int volumeNameBufLen, out int volSerialNumber, out int maxFileNameLen, out int fileSystemFlags, StringBuilder fileSystemName, int fileSystemNameBufLen);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "GetDriveTypeW", CharSet = CharSet.Unicode)]
         internal static extern int GetDriveType(string drive);
 
         [DllImport("kernel32.dll", SetLastError = true)]
