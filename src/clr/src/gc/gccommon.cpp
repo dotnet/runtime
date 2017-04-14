@@ -15,7 +15,7 @@
 #include "gc.h"
 
 IGCHeapInternal* g_theGCHeap;
-IGCHandleTable* g_theGCHandleTable;
+IGCHandleManager* g_theGCHandleManager;
 
 #ifdef FEATURE_STANDALONE_GC
 IGCToCLR* g_theGCToCLR;
@@ -143,7 +143,7 @@ namespace SVR
     extern void PopulateDacVars(GcDacVars* dacVars);
 }
 
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTable** gcHandleTable, GcDacVars* gcDacVars)
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -151,10 +151,10 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTa
 
     assert(gcDacVars != nullptr);
     assert(gcHeap != nullptr);
-    assert(gcHandleTable != nullptr);
+    assert(gcHandleManager != nullptr);
 
-    IGCHandleTable* handleTable = CreateGCHandleTable();
-    if (handleTable == nullptr)
+    IGCHandleManager* handleManager = CreateGCHandleManager();
+    if (handleManager == nullptr)
     {
         return false;
     }
@@ -192,7 +192,7 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTa
     assert(clrToGC == nullptr);
 #endif
 
-    *gcHandleTable = handleTable;
+    *gcHandleManager = handleManager;
     *gcHeap = heap;
     return true;
 }
