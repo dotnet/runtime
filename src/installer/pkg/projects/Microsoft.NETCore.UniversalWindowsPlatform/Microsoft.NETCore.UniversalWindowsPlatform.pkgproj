@@ -30,9 +30,9 @@
       <TargetFramework>.NETCore50</TargetFramework>
     </Dependency>
 
-    <Dependency Include="Microsoft.NETCore.UniversalWindowsPlatform.CoreCLR">
+    <Dependency Include="Microsoft.Net.UWPCoreRuntimeSdk">
       <TargetFramework>uap10.1</TargetFramework>
-      <Version>$(UWPCoreCLRFullVersion)</Version>
+      <Version>$(UWPCoreRuntimeSdkFullVersion)</Version>
     </Dependency>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
