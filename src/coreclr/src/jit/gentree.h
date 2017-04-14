@@ -733,6 +733,13 @@ public:
     ValueNumPair gtVNPair;
 
     regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
+
+#ifndef LEGACY_BACKEND
+    unsigned AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
+    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
+    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
+#endif // !LEGACY_BACKEND
+
 #ifdef LEGACY_BACKEND
     regMaskSmall gtUsedRegs; // set of used (trashed) registers
 #endif                       // LEGACY_BACKEND

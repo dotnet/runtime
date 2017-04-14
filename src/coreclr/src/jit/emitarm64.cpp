@@ -10809,9 +10809,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regMaskTP tmpRegMask = indir->gtRsvdRegs;
-                regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-                noway_assert(tmpReg != REG_NA);
+                regNumber tmpReg = indir->GetSingleTempReg();
 
                 emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
@@ -10833,7 +10831,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                     // Then load/store dataReg from/to [tmpReg + offset]
                     emitIns_R_R_I(ins, ldstAttr, dataReg, tmpReg, offset);
-                    ;
                 }
                 else // large offset
                 {
@@ -10874,9 +10871,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regMaskTP tmpRegMask = indir->gtRsvdRegs;
-                regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-                noway_assert(tmpReg != REG_NA);
+                regNumber tmpReg = indir->GetSingleTempReg();
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -11047,9 +11042,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!src1->isContained());
         }
     }
-    bool      isMulOverflow = false;
-    bool      isUnsignedMul = false;
-    regNumber extraReg      = REG_NA;
+
+    bool isMulOverflow = false;
     if (dst->gtOverflowEx())
     {
         if (ins == INS_add)
@@ -11063,7 +11057,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         else if (ins == INS_mul)
         {
             isMulOverflow = true;
-            isUnsignedMul = ((dst->gtFlags & GTF_UNSIGNED) != 0);
             assert(intConst == nullptr); // overflow format doesn't support an int constant operand
         }
         else
@@ -11079,17 +11072,20 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            // Make sure that we have an internal register
-            assert(genCountBits(dst->gtRsvdRegs) == 2);
+            // This should be simply:
+            //    regNumber extraReg = dst->GetSingleTempReg();
+            //
+            // However, since LSRA might give us an internal temp register that is the same as the dst
+            // register, and the codegen here reuses the temp register after a definition of the target
+            // register, we requested two internal registers. If one is the target register, we simply
+            // use the other one. We can use ExtractTempReg() since it only asserts that there is at
+            // least one available temporary register (not that there is exactly one, for instance).
+            // Here, masking out tgtReg, there will be either 1 or 2.
 
-            // There will be two bits set in tmpRegsMask.
-            // Remove the bit for 'dst->gtRegNum' from 'tmpRegsMask'
-            regMaskTP tmpRegsMask = dst->gtRsvdRegs & ~genRegMask(dst->gtRegNum);
-            assert(tmpRegsMask != RBM_NONE);
-            regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask); // set tmpRegMsk to a one-bit mask
-            extraReg             = genRegNumFromMask(tmpRegMask); // set tmpReg from that mask
+            regNumber extraReg = dst->ExtractTempReg(~genRegMask(dst->gtRegNum));
+            assert(extraReg != dst->gtRegNum);
 
-            if (isUnsignedMul)
+            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
                 if (attr == EA_4BYTE)
                 {
@@ -11109,7 +11105,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
                 }
 
-                // zero-sign bit comparision to detect overflow.
+                // zero-sign bit comparison to detect overflow.
                 emitIns_R_I(INS_cmp, attr, extraReg, 0);
             }
             else
@@ -11137,7 +11133,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     bitShift = 63;
                 }
 
-                // Sign bit comparision to detect overflow.
+                // Sign bit comparison to detect overflow.
                 emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, bitShift, INS_OPTS_ASR);
             }
         }
