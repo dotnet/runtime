@@ -45,8 +45,8 @@
         "CommonTypes": [ ]
     },
     {
-        "Name": "Microsoft.NETCore.UniversalWindowsPlatform.CoreCLR",
-        "Description": "Provides a set of tools to run Universal Windows application on CoreCLR.",
+        "Name": "Microsoft.Net.UWPCoreRuntimeSdk",
+        "Description": "Provides the CoreCLR runtime and build tools to build and run Universal Windows applications using CoreCLR.",
         "CommonTypes": [ ]
     },
 ]

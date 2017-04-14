@@ -1,0 +1,14 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BuildDependsOn>
+      CheckCoreRuntimeCompatibility;
+      $(BuildDependsOn);
+    </BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="CheckCoreRuntimeCompatibility">
+    <Error
+      Text="The Microsoft.Net.UWPCoreRuntimeSdk package, included in Microsoft.NETCore.UniversalWindowsPlatform 5.4 and later, is only supported for TargetPlatformVersion's higher than '10.0.15063.0'. You can downgrade the version of the Microsoft.NETCore.UniversalWindowsPlatorm NuGet package to 5.3.* or earlier for earlier TargetPlatformVersion's."
+      Condition="'$(TargetPlatformVersion)' &lt;= '10.0.15063.0'" />
+  </Target>
+</Project>
