@@ -37,4 +37,19 @@ check_cxx_source_runs("
     }
     " HAVE_SCHED_GETCPU)
 
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+
+check_cxx_source_runs("
+    #include <stdlib.h>
+    #include <mach/mach_time.h>
+    int main()
+    {
+        int ret;
+        mach_timebase_info_data_t timebaseInfo;
+        ret = mach_timebase_info(&timebaseInfo);
+        mach_absolute_time();
+        exit(ret);
+    }
+    " HAVE_MACH_ABSOLUTE_TIME)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
