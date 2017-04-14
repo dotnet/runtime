@@ -636,7 +636,11 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(0, await receive);
                         Assert.Equal(1, client.Available);
 
-                        // Receive that byte
+                        // We should be able to do another 0-byte receive that completes immediateliy
+                        Assert.Equal(0, await ReceiveAsync(client, new ArraySegment<byte>(new byte[1], 0, 0)));
+                        Assert.Equal(1, client.Available);
+
+                        // Then receive the byte
                         Assert.Equal(1, await ReceiveAsync(client, new ArraySegment<byte>(new byte[1])));
                         Assert.Equal(0, client.Available);
                     }
