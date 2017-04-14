@@ -557,30 +557,6 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTreePtr tree)
     return regMask;
 }
 
-//------------------------------------------------------------------------
-// getRegistersFromMask: Given a register mask return the two registers
-//                       specified by the mask.
-//
-// Arguments:
-//    regPairMask:  a register mask that has exactly two bits set
-// Return values:
-//    pLoReg:       the address of where to write the first register
-//    pHiReg:       the address of where to write the second register
-//
-void CodeGenInterface::genGetRegPairFromMask(regMaskTP regPairMask, regNumber* pLoReg, regNumber* pHiReg)
-{
-    assert(genCountBits(regPairMask) == 2);
-
-    regMaskTP loMask = genFindLowestBit(regPairMask); // set loMask to a one-bit mask
-    regMaskTP hiMask = regPairMask - loMask;          // set hiMask to the other bit that was in tmpRegMask
-
-    regNumber loReg = genRegNumFromMask(loMask); // set loReg from loMask
-    regNumber hiReg = genRegNumFromMask(hiMask); // set hiReg from hiMask
-
-    *pLoReg = loReg;
-    *pHiReg = hiReg;
-}
-
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
 // Update regSet.rsMaskVars accordingly.

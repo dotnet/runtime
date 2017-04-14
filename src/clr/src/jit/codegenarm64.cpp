@@ -1441,9 +1441,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             else
             {
                 // Get a temp integer register to compute long address.
-                regMaskTP addrRegMask = tree->gtRsvdRegs;
-                regNumber addrReg     = genRegNumFromMask(addrRegMask);
-                noway_assert(addrReg != REG_NA);
+                regNumber addrReg = tree->GetSingleTempReg();
 
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
@@ -2854,7 +2852,6 @@ void CodeGen::genLclHeap(GenTreePtr tree)
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
     regNumber   targetReg       = tree->gtRegNum;
-    regMaskTP   tmpRegsMask     = tree->gtRsvdRegs;
     regNumber   regCnt          = REG_NA;
     regNumber   pspSymReg       = REG_NA;
     var_types   type            = genActualType(size->gtType);
@@ -2923,17 +2920,16 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // since we don't need any internal registers.
         if (!hasPspSym && compiler->info.compInitMem)
         {
-            assert(genCountBits(tmpRegsMask) == 0);
+            assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
         }
         else
         {
-            assert(genCountBits(tmpRegsMask) >= 1);
-            regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-            tmpRegsMask &= ~regCntMask;
-            regCnt = genRegNumFromMask(regCntMask);
+            regCnt = tree->ExtractTempReg();
             if (regCnt != targetReg)
+            {
                 inst_RV_RV(INS_mov, regCnt, targetReg, size->TypeGet());
+            }
         }
 
         // Align to STACK_ALIGN
@@ -2950,10 +2946,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         stackAdjustment += STACK_ALIGN;
 
         // Save a copy of PSPSym
-        assert(genCountBits(tmpRegsMask) >= 1);
-        regMaskTP pspSymRegMask = genFindLowestBit(tmpRegsMask);
-        tmpRegsMask &= ~pspSymRegMask;
-        pspSymReg = genRegNumFromMask(pspSymRegMask);
+        pspSymReg = tree->ExtractTempReg();
         getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
     }
 #endif
@@ -3021,15 +3014,12 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         assert(regCnt == REG_NA);
         if (!hasPspSym && compiler->info.compInitMem)
         {
-            assert(genCountBits(tmpRegsMask) == 0);
+            assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
         }
         else
         {
-            assert(genCountBits(tmpRegsMask) >= 1);
-            regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-            tmpRegsMask &= ~regCntMask;
-            regCnt = genRegNumFromMask(regCntMask);
+            regCnt = tree->ExtractTempReg();
         }
         genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
     }
@@ -3094,9 +3084,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //
 
         // Setup the regTmp
-        assert(tmpRegsMask != RBM_NONE);
-        assert(genCountBits(tmpRegsMask) == 1);
-        regNumber regTmp = genRegNumFromMask(tmpRegsMask);
+        regNumber regTmp = tree->GetSingleTempReg();
 
         BasicBlock* loop = genCreateTempLabel();
         BasicBlock* done = genCreateTempLabel();
@@ -3391,13 +3379,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     unsigned offset = 0;
 
     // Grab the integer temp register to emit the loads and stores.
-    regMaskTP tmpMask = genFindLowestBit(cpBlkNode->gtRsvdRegs & RBM_ALLINT);
-    regNumber tmpReg  = genRegNumFromMask(tmpMask);
+    regNumber tmpReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
 
     if (size >= 2 * REGSIZE_BYTES)
     {
-        regMaskTP tmp2Mask = cpBlkNode->gtRsvdRegs & RBM_ALLINT & ~tmpMask;
-        regNumber tmp2Reg  = genRegNumFromMask(tmp2Mask);
+        regNumber tmp2Reg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
 
         size_t slots = size / (2 * REGSIZE_BYTES);
 
@@ -3498,13 +3484,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = genRegNumFromMask(cpObjNode->gtRsvdRegs);
-
-#ifdef DEBUG
-    assert(cpObjNode->gtRsvdRegs != RBM_NONE);
-    assert(genCountBits(cpObjNode->gtRsvdRegs) == 1);
+    regNumber tmpReg = cpObjNode->GetSingleTempReg();
     assert(genIsValidIntReg(tmpReg));
-#endif // DEBUG
 
     unsigned slots = cpObjNode->gtSlots;
     emitter* emit  = getEmitter();
@@ -3571,7 +3552,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->gtOp.gtOp1->gtRegNum;
     regNumber baseReg = treeNode->gtOp.gtOp2->gtRegNum;
 
-    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, baseReg, baseReg, idxReg, INS_OPTS_LSL);
@@ -4022,9 +4003,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
         if (offset != 0)
         {
-            regMaskTP tmpRegMask = lea->gtRsvdRegs;
-            regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-            noway_assert(tmpReg != REG_NA);
+            regNumber tmpReg = lea->GetSingleTempReg();
 
             if (emitter::emitIns_valid_imm_for_add(offset, EA_8BYTE))
             {
@@ -4041,7 +4020,6 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
                 // Then compute target reg from [tmpReg + offset]
                 emit->emitIns_R_R_I(INS_add, size, lea->gtRegNum, tmpReg, offset);
-                ;
             }
             else // large offset
             {
@@ -4091,9 +4069,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
             // We require a tmpReg to hold the offset
-            regMaskTP tmpRegMask = lea->gtRsvdRegs;
-            regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
-            noway_assert(tmpReg != REG_NA);
+            regNumber tmpReg = lea->GetSingleTempReg();
 
             // First load tmpReg with the large offset constant
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -4484,9 +4460,8 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
     emitter* emit = getEmitter();
 
     // Extract exponent into a register.
-    regNumber intReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+    regNumber intReg = treeNode->GetSingleTempReg();
     regNumber fpReg  = genConsumeReg(op1);
-    assert(intReg != REG_NA);
 
     emit->emitIns_R_R(ins_Copy(targetType), emitTypeSize(treeNode), intReg, fpReg);
     emit->emitIns_R_R_I(INS_lsr, emitTypeSize(targetType), intReg, intReg, shiftAmount);
