@@ -153,17 +153,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(nameof(EI_Class.PublicEvent))]
-        [InlineData("ProtectedEvent")]
-        [InlineData("PrivateEvent")]
-        [InlineData(nameof(EI_Class.InternalEvent))]
-        public void GetType_FullName(string name)
-        {
-            EventInfo eventInfo = Helpers.GetEvent(typeof(EI_Class), name);
-            Assert.Equal("System.Reflection.RuntimeEventInfo", eventInfo.GetType().FullName);
-        }
-
-        [Theory]
         [InlineData("PublicEvent")]
         [InlineData("ProtectedEvent")]
         [InlineData("PrivateEvent")]
