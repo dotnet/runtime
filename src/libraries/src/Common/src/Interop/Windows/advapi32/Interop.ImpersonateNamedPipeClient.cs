@@ -10,10 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-#pragma warning disable BCL0015
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool ImpersonateNamedPipeClient(SafePipeHandle hNamedPipe);
-#pragma warning restore BCL0015
     }
 }
