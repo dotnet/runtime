@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="files\Microsoft.NETCore.UniversalWindowsPlatform.CoreCLR.props">
+    <File Include="files\Microsoft.Net.UWPCoreRuntimeSdk.props">
       <TargetPath>build</TargetPath>
     </File>
-    <File Include="files\Microsoft.NETCore.UniversalWindowsPlatform.CoreCLR.targets">
+    <File Include="files\Microsoft.Net.UWPCoreRuntimeSdk.targets">
       <TargetPath>build</TargetPath>
     </File>
   </ItemGroup>
