@@ -116,7 +116,6 @@ namespace Microsoft.DotNet.Cli.Build
             dotnetCli.Restore(
                 "--verbosity", "verbose",
                 "--disable-parallel",
-                "--infer-runtimes",
                 "--fallbacksource", _corehostPackageSource)
                 .WorkingDirectory(_sharedFrameworkSourceRoot)
                 .Execute()
