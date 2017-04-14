@@ -8,8 +8,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="DriveInfo.Unix.Tests.cs" />
-    <Compile Include="DriveInfo.Windows.Tests.cs" />
+    <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetsUnix)' == 'true'"/>
+    <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
