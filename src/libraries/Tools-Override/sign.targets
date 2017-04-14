@@ -22,6 +22,7 @@
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'MSFT'">$(ToolsDir)MSFT.snk</AssemblyOriginatorKeyFile>
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'ECMA'">$(ToolsDir)ECMA.snk</AssemblyOriginatorKeyFile>
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'Open'">$(ToolsDir)Open.snk</AssemblyOriginatorKeyFile>
+    <StrongNameSig Condition="'$(AssemblyKey)' == 'Open'">Open</StrongNameSig>
 
     <!-- Don't sign test assemblies with the Microsoft Key, as this affects APIs checking if the test assembly is an MS Key -->
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'Test'">$(ToolsDir)Test.snk</AssemblyOriginatorKeyFile>
@@ -29,14 +30,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
 
-    <!-- For full keys we should disable delay signing -->
-    <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Open'">true</FullPublicPrivateKey>
-    <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Test'">true</FullPublicPrivateKey>
-
-    <!-- clear strong name signature for any library we don't need to strong name sign in the lab -->
-    <StrongNameSig Condition="'$(FullPublicPrivateKey)' == 'true'"></StrongNameSig>
-
-    <DelaySign Condition="'$(FullPublicPrivateKey)' == 'true'">false</DelaySign>
+    <DelaySign Condition="'$(AssemblyKey)' == 'Test'">false</DelaySign>
 
     <!--
       Setting DelaySign to true when running build on unix because of Roslyn doesn't support full signing on non-windows.
@@ -57,6 +51,26 @@
 
   <!-- stub for signing.  for official builds this is replaced with the real one -->
   <Target Name="SignFiles" AfterTargets="AfterBuild" />
+
+  <Target Name="SignFilesLocally"
+          BeforeTargets="SignFiles"
+          Condition="'$(RunningOnUnix)' != 'true'">
+
+    <ItemGroup>
+      <FilesToSignLocally Include="@(FilesToSign)" Condition="'%(FilesToSign.StrongName)' == 'Open'">
+        <AssemblyKeyFile>$(ToolsDir)Open.snk</AssemblyKeyFile>
+      </FilesToSignLocally>
+      <!-- Clear out the strong name metadata for open keys -->
+      <FilesToSign Condition="'%(FilesToSign.StrongName)' == 'Open'">
+        <StrongName></StrongName>
+      </FilesToSign>
+    </ItemGroup>
+
+    <!-- Depends on sn being on the path thus will only work in some windows environments -->
+    <Exec Condition="'@(FilesToSignLocally)' != ''"
+          Command="sn -R %(FilesToSignLocally.Identity) %(FilesToSignLocally.AssemblyKeyFile)"
+          StandardOutputImportance="Low" />
+  </Target>
 
   <!-- writes a signing marker file containing the required signatures -->
   <Target Name="WriteSigningRequired"

@@ -37,8 +37,8 @@
 
   <Target Name="Build"
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
-          DependsOnTargets="GetFilesToSignItems">
-    <CallTarget Targets="SignFiles" />
+          DependsOnTargets="GetFilesToSignItems;SignFiles">
+
     <!-- now that the files have been signed delete the marker files -->
     <Delete Files="@(SignMarkerFile)" />
   </Target>
