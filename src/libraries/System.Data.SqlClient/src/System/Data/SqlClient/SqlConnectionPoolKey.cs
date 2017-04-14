@@ -26,7 +26,7 @@ namespace System.Data.SqlClient
             CalculateHashCode();
         }
 
-        internal override DbConnectionPoolKey Clone()
+        public override object Clone()
         {
             return new SqlConnectionPoolKey(this);
         }

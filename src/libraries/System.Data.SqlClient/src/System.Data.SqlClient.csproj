@@ -40,7 +40,9 @@
     <Compile Include="System\Data\Common\ActivityCorrelator.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
-    <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
+      <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
+    </Compile>
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
       <Link>System\Data\Common\FieldNameLookup.cs</Link>
@@ -48,8 +50,12 @@
     <Compile Include="$(CommonPath)\System\Data\Common\BasicFieldNameLookup.cs">
       <Link>System\Data\Common\BasicFieldNameLookup.cs</Link>
     </Compile>
-    <Compile Include="System\Data\Common\MultipartIdentifier.cs" />
-    <Compile Include="System\Data\Common\NameValuePair.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
+      <Link>System\Data\Common\MultipartIdentifier.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\NameValuePair.cs">
+      <Link>System\Data\Common\NameValuePair.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionInternal.cs" />
