@@ -16,7 +16,7 @@
 #include "string.h"
 
 
-FCIMPL2(void, COMCurrency::DoToDecimal, DECIMAL * result, CY c)
+FCIMPL2_IV(void, COMCurrency::DoToDecimal, DECIMAL * result, CY c)
 {
     FCALL_CONTRACT;
 
