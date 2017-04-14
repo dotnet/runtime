@@ -53,13 +53,15 @@ crossgen_everything()
 crossgen_single()
 {
     __file=$1
-    $__crossgen /Platform_Assemblies_Paths $__sharedFxDir:$__toolsDir /nologo /MissingDependenciesOK /ReadyToRun $__file > /dev/null
-    if [ $? -eq 0 ]; then
-      __outname="${__file/.dll/.ni.dll}"
-      __outname="${__outname/.exe/.ni.exe}"
-      echo "$__file -> $__outname"
-    else
-      echo "Unable to successfully compile $__file"
+    if [[ $__file != *.ni.dll && $__file != *.ni.exe ]]; then
+        $__crossgen /Platform_Assemblies_Paths $__sharedFxDir:$__toolsDir /nologo /MissingDependenciesOK /ReadyToRun $__file > /dev/null
+        if [ $? -eq 0 ]; then
+            __outname="${__file/.dll/.ni.dll}"
+            __outname="${__outname/.exe/.ni.exe}"
+            echo "$__file -> $__outname"
+        else
+            echo "Unable to successfully compile $__file"
+        fi
     fi
 }
 
@@ -81,7 +83,7 @@ __sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__SharedFxVers
 __rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
 
 if [[ $__rid == *"osx"* ]]; then
-    __packageRid="osx.10.10-x64"
+    __packageRid="osx-x64"
 elif [[ $__rid == *"rhel.7"* || $__rid == *"centos.7"* ]]; then
     __packageRid="rhel.7-x64"
 else
