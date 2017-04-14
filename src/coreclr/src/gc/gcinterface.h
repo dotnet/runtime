@@ -169,12 +169,12 @@ struct segment_info
 
 class Object;
 class IGCHeap;
-class IGCHandleTable;
+class IGCHandleManager;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup. Returns true if the initialization
 // was successful, false otherwise.
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTable** gcHandleTable, GcDacVars* gcDacVars);
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleTable, GcDacVars* gcDacVars);
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of
@@ -420,7 +420,7 @@ public:
     virtual ~IGCHandleStore() {};
 };
 
-class IGCHandleTable {
+class IGCHandleManager {
 public:
 
     virtual bool Initialize() = 0;

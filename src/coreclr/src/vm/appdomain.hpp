@@ -28,7 +28,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
-#include "gchandletableutilities.h"
+#include "gchandleutilities.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
