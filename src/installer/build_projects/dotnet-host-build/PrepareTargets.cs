@@ -385,7 +385,16 @@ namespace Microsoft.DotNet.Host.Build
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "dotnet-deb-tool"))
                 .Execute()
                 .EnsureSuccessful();
-            dotnet.Restore("--verbosity", "verbose", "--disable-parallel", "--infer-runtimes")
+
+            var independentToolsRoot = Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "independent");
+
+            foreach (string templateFile in Directory.GetFiles(independentToolsRoot, "project.json.template", SearchOption.AllDirectories))
+            {
+                string projectJsonFile = Path.Combine(Path.GetDirectoryName(templateFile), "project.json");
+                File.WriteAllText(projectJsonFile, File.ReadAllText(templateFile).Replace("{RID}", RuntimeEnvironment.GetRuntimeIdentifier()));
+            }
+
+            dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "independent"))
                 .Execute()
                 .EnsureSuccessful();
