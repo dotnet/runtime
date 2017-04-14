@@ -5,7 +5,7 @@
     <!-- Always restore the x64 assets. These are build-only assets, so they should match the environment of the build. -->
     <NugetRuntimeIdentifier>$(RuntimeOS)-x64</NugetRuntimeIdentifier>
     <OutputPath>$(ToolsDir)ilasm</OutputPath>
-    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <EnableBinPlacing>false</EnableBinPlacing>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
   <ItemGroup>

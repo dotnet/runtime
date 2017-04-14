@@ -5,7 +5,7 @@
     <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netcoreapp1.1</NuGetTargetMonikerShort>
     <OutputPath>$(ToolsDir)ILLink</OutputPath>
-    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <EnableBinPlacing>false</EnableBinPlacing>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
   <ItemGroup>
