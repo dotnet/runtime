@@ -35,7 +35,7 @@ private:
 
 extern GCHandleStore* g_gcGlobalHandleStore;
 
-class GCHandleTable : public IGCHandleTable
+class GCHandleManager : public IGCHandleManager
 {
 public:
     virtual bool Initialize();
