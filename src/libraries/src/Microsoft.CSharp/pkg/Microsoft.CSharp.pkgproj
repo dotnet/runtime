@@ -15,6 +15,8 @@
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.1" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="wpa81" />
@@ -34,6 +36,10 @@
     <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
     <HarvestIncludePaths Include="ref/netstandard1.0" />
     <HarvestIncludePaths Include="lib/netstandard1.3" />
+    <ValidatePackageSuppression Include="PermitMissingImplementation">
+      <!-- Supported inbox by all ns1.0-1.2 frameworks -->
+      <Value>.NETStandard,Version=v1.0;.NETStandard,Version=v1.1;.NETStandard,Version=v1.2</Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
