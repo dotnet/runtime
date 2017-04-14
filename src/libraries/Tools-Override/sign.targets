@@ -33,6 +33,9 @@
     <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Open'">true</FullPublicPrivateKey>
     <FullPublicPrivateKey Condition="'$(AssemblyKey)' == 'Test'">true</FullPublicPrivateKey>
 
+    <!-- clear strong name signature for any library we don't need to strong name sign in the lab -->
+    <StrongNameSig Condition="'$(FullPublicPrivateKey)' == 'true'"></StrongNameSig>
+
     <DelaySign Condition="'$(FullPublicPrivateKey)' == 'true'">false</DelaySign>
 
     <!--
@@ -42,8 +45,14 @@
     <DelaySign Condition="'$(RunningOnUnix)' == 'true'">true</DelaySign>
 
     <DefineConstants>$(DefineConstants);SIGNED</DefineConstants>
+
     <!-- applicable values for SignType are oss, test or real -->
     <SignType Condition="'$(SignType)' == ''">oss</SignType>
+
+    <ShouldWriteSigningRequired Condition="'$(IsTestProject)' == 'true'">false</ShouldWriteSigningRequired>
+    <ShouldWriteSigningRequired Condition="'$(SkipSigning)' == 'true'">false</ShouldWriteSigningRequired>
+    <ShouldWriteSigningRequired Condition="'$(SignType)' == 'oss'">false</ShouldWriteSigningRequired>
+    <ShouldWriteSigningRequired Condition="'$(ShouldWriteSigningRequired)'==''">true</ShouldWriteSigningRequired>
   </PropertyGroup>
 
   <!-- stub for signing.  for official builds this is replaced with the real one -->
@@ -52,7 +61,7 @@
   <!-- writes a signing marker file containing the required signatures -->
   <Target Name="WriteSigningRequired"
           AfterTargets="AfterBuild"
-          Condition="'$(SkipSigning)' != 'true' and '$(FullPublicPrivateKey)' != 'true' and '$(SignType)' != 'oss'"
+          Condition="'$(ShouldWriteSigningRequired)' == 'true'"
           Inputs="$(TargetPath)"
           Outputs="$(TargetPath).requires_signing">
     <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
