@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="csc">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>
