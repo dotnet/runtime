@@ -11,10 +11,6 @@
 class GCHandleStore : public IGCHandleStore
 {
 public:
-    GCHandleStore(HandleTableBucket *bucket) 
-        : _underlyingBucket(bucket)
-        { }
-
     virtual void Uproot();
 
     virtual bool ContainsHandle(OBJECTHANDLE handle);
@@ -29,8 +25,7 @@ public:
 
     virtual ~GCHandleStore();
 
-private:
-    HandleTableBucket* _underlyingBucket;
+    HandleTableBucket _underlyingBucket;
 };
 
 extern GCHandleStore* g_gcGlobalHandleStore;
