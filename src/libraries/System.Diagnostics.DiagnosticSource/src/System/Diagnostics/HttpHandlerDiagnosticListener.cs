@@ -8,6 +8,7 @@ using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
+using System.Text;
 
 // This HttpHandlerDiagnosticListener class is applicable only for .NET 4.6, and not for .NET core.
 
@@ -557,33 +558,69 @@ namespace System.Diagnostics
 
         private void RaiseRequestEvent(HttpWebRequest request)
         {
-            // If System.Net.Http.Request is on, raise the event
-            if (this.IsEnabled(RequestWriteName))
+            if (request.Headers.Get(RequestIdHeaderName) != null)
             {
-                long timestamp = Stopwatch.GetTimestamp();
-                this.Write(RequestWriteName,
-                    new
+                // this request was instrumented by previous RaiseRequestEvent
+                return;
+            }
+
+            if (this.IsEnabled(ActivityName, request))
+            {
+                var activity = new Activity(ActivityName);
+
+                // Only send start event to users who subscribed for it, but start activity anyway
+                if (this.IsEnabled(RequestStartName))
+                {
+                    long timestamp = Stopwatch.GetTimestamp();
+                    this.StartActivity(activity,
+                        new
+                        {
+                            Request = request,
+                            Timestamp = timestamp
+                        });
+                }
+                else
+                {
+                    activity.Start();
+                }
+
+                request.Headers.Add(RequestIdHeaderName, activity.Id);
+                //we expect baggage to be empty or contain a few items
+                using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                {
+                    if (e.MoveNext())
                     {
-                        Request = request,
-                        Timestamp = timestamp
+                        StringBuilder baggage = new StringBuilder();
+                        do
+                        {
+                            KeyValuePair<string, string> item = e.Current;
+                            baggage.Append(item.Key).Append('=').Append(item.Value).Append(',');
+                        }
+                        while (e.MoveNext());
+                        baggage.Remove(baggage.Length - 1, 1);
+                        request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
                     }
-                );
+                }
+
+                // There is no gurantee that Activity.Current will flow to the Response, so let's stop it here
+                activity.Stop();
             }
         }
 
         private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
         {
-            if (this.IsEnabled(ResponseWriteName))
+            // Response event could be received several times for the same request
+            if (request.Headers[RequestIdHeaderName] != null)
             {
+                // only send Stop if request was instrumented
                 long timestamp = Stopwatch.GetTimestamp();
-                this.Write(ResponseWriteName,
+                this.Write(RequestStopName,
                     new
                     {
                         Request = request,
                         Response = response,
                         Timestamp = timestamp
-                    }
-                );
+                    });
             }
         }
 
@@ -647,9 +684,12 @@ namespace System.Diagnostics
 
 #region private fields
         private const string DiagnosticListenerName = "System.Net.Http.Desktop";
-        private const string RequestWriteName = "System.Net.Http.Request";
-        private const string ResponseWriteName = "System.Net.Http.Response";
+        private const string ActivityName = "System.Net.Http.Desktop.HttpRequestOut";
+        private const string RequestStartName = "System.Net.Http.Desktop.HttpRequestOut.Start";
+        private const string RequestStopName = "System.Net.Http.Desktop.HttpRequestOut.Stop";
         private const string InitializationFailed = "System.Net.Http.InitializationFailed";
+        private const string RequestIdHeaderName = "Request-Id";
+        private const string CorrelationContextHeaderName = "Correlation-Context";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
         private bool initialized = false;
