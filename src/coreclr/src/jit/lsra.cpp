@@ -6503,6 +6503,39 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 }
 #endif // DEBUG
 
+#ifdef _TARGET_ARM_
+bool LinearScan::isOverlappedRegRecord(Interval* assignedInterval, RegRecord* physRegRecord)
+{
+    RegRecord* assignedReg = assignedInterval->assignedReg;
+
+    if (assignedReg == physRegRecord)
+    {
+        return true;
+    }
+    else if (assignedInterval->registerType == TYP_DOUBLE)
+    {
+        // Check whether physRegRecord is overlapped by assignedReg
+        RegRecord* altPhysRegRecord;
+        regNumber  regNum = physRegRecord->regNum;
+
+        if (genIsValidFloatReg(regNum))
+        {
+            // Should not be a valid double reg
+            assert(!genIsValidDoubleReg(regNum));
+
+            // Make regNum of overlapping double register
+            regNum = REG_PREV(regNum);
+            assert(genIsValidDoubleReg(regNum));
+
+            altPhysRegRecord = getRegisterRecord(regNum);
+            return assignedReg == altPhysRegRecord;
+        }
+    }
+
+    return false;
+}
+#endif
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock'
 //
@@ -6711,6 +6744,13 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                     }
                     inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
                 }
+#ifdef _TARGET_ARM_
+                // Consider overlapping floating point register for TYP_DOUBLE
+                else if (!assignedInterval->isConstant && isOverlappedRegRecord(assignedInterval, physRegRecord))
+                {
+                    assert(assignedInterval->assignedReg->regNum == REG_PREV(physRegRecord->regNum));
+                }
+#endif // _TARGET_ARM_
                 else
                 {
                     // This interval may still be active, but was in another register in an
