@@ -139,10 +139,9 @@ enum ThisInitState
 
 struct EntryState
 {
-    ThisInitState thisInitialized : 8; // used to track whether the this ptr is initialized (we could use
-                                       // fewer bits here)
-    unsigned    esStackDepth : 24;     // size of esStack
-    StackEntry* esStack;               // ptr to  stack
+    ThisInitState thisInitialized; // used to track whether the this ptr is initialized.
+    unsigned      esStackDepth;    // size of esStack
+    StackEntry*   esStack;         // ptr to  stack
 };
 
 // Enumeration of the kinds of memory whose state changes the compiler tracks
