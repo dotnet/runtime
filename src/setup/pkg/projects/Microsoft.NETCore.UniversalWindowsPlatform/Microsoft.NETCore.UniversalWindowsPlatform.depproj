@@ -15,9 +15,12 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools -->
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
+         Targets for an empty runtime.json to reduce conflicts from 1.x packages,
+         and toolset. -->
     <DependenciesToPackage Include="NETStandard.Library" />
     <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
     <DependenciesToPackage Include="Microsoft.Net.Native.Compiler" />
   </ItemGroup>
 

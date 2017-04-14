@@ -6,25 +6,8 @@
 
 PACKAGE=$1
 INSTALL_DESTINATION=$2
-LIBCRYPTO_NAME=libcrypto.1.0.0.dylib
-LIBSSL_NAME=libssl.1.0.0.dylib
-
-# Using this form to allow power users to export both of these
-if [ -z $OPENSSL_PATH ]; then OPENSSL_PATH=/usr/local/opt/openssl/lib; fi
-if [ -z $LINK_DEST ]; then LINK_DEST=/usr/local/lib; fi
 
 # A temporary fix for the permissions issue(s)
 chmod -R 755 $INSTALL_DESTINATION/shared
-
-if [ -e "$OPENSSL_PATH/$LIBSSL_NAME" ] && [ -e "$OPENSSL_PATH/$LIBCRYPTO_NAME" ]
-then
-   if [ ! -e "$LINK_DEST/$LIBSSL_NAME" ] && [ ! -e "$LINK_DEST/$LIBCRYPTO_NAME" ]
-   then
-       mkdir -p "$LINK_DEST"
-       ln -s "$OPENSSL_PATH/$LIBSSL_NAME" "$LINK_DEST"
-       ln -s "$OPENSSL_PATH/$LIBCRYPTO_NAME" "$LINK_DEST"
-   fi
-fi
-  
 
 exit 0
