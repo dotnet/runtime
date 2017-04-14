@@ -28,10 +28,6 @@
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
   </ItemGroup>
