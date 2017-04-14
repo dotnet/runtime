@@ -741,7 +741,7 @@ BaseDomain::BaseDomain()
 
 #ifndef CROSSGEN_COMPILE
     // Note that m_handleStore is overridden by app domains
-    m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
+    m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 #else
     m_handleStore = NULL;
 #endif
@@ -4273,11 +4273,11 @@ void AppDomain::Init()
     // default domain cannot be unloaded.
     if (GetId().m_dwId == DefaultADID)
     {
-        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore();
+        m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
     }
     else
     {
-        m_handleStore = GCHandleTableUtilities::GetGCHandleTable()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
+        m_handleStore = GCHandleUtilities::GetGCHandleManager()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
     }
 
 #endif // CROSSGEN_COMPILE
@@ -4578,9 +4578,9 @@ void AppDomain::Terminate()
 
     BaseDomain::Terminate();
 
-    if (m_handleStore) 
+    if (m_handleStore)
     {
-        GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleStore(m_handleStore);
+        GCHandleUtilities::GetGCHandleManager()->DestroyHandleStore(m_handleStore);
         m_handleStore = NULL;
     }
 
@@ -9197,8 +9197,8 @@ void AppDomain::ClearGCHandles()
     // Keep async pin handles alive by moving them to default domain
     HandleAsyncPinHandles();
 
-    // Remove our handle table as a source of GC roots
-    GCHandleTableUtilities::GetGCHandleTable()->UprootHandleStore(m_handleStore);
+    // Remove our handle store as a source of GC roots
+    m_handleStore->Uproot();
 }
 
 // When an AD is unloaded, we will release all objects in this AD.
@@ -9247,15 +9247,13 @@ void AppDomain::ClearGCRoots()
     // this point, so only need to synchronize the preemptive mode threads.
     ExecutionManager::Unload(GetLoaderAllocator());
 
-    IGCHandleTable* pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
         // Delete the thread local static store
         pThread->DeleteThreadStaticData(this);
 
         // <TODO>@TODO: A pre-allocated AppDomainUnloaded exception might be better.</TODO>
-        if (pHandleTable->ContainsHandle(m_handleStore, pThread->m_LastThrownObjectHandle))
+        if (m_handleStore->ContainsHandle(pThread->m_LastThrownObjectHandle))
         {
             // Never delete a handle to a preallocated exception object.
             if (!CLRException::IsPreallocatedExceptionHandle(pThread->m_LastThrownObjectHandle))
