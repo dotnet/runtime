@@ -87,7 +87,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignCoreHost $(MsbuildSigningArguments)",
@@ -153,7 +153,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignSharedFrameworkCrossgenedAssemblies $(MsbuildSigningArguments)",
@@ -180,7 +180,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignAssemblies $(MsbuildSigningArguments)",
@@ -226,7 +226,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignMsiAndCab $(MsbuildSigningArguments)",
@@ -291,7 +291,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignEngine $(MsbuildSigningArguments)",
@@ -337,7 +337,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "solution": "build_projects\\signing\\sign.proj",
         "platform": "",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments)",
