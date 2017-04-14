@@ -18,10 +18,14 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Common\System\Data\Common\AdapterUtil.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
-    <Compile Include="Common\System\Data\Common\DbConnectionPoolKey.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
+      <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
+    </Compile>
     <Compile Include="Common\System\Data\Common\DBConnectionString.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionStringCommon.cs" />
-    <Compile Include="Common\System\Data\Common\NameValuePair.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\NameValuePair.cs">
+      <Link>Common\System\Data\Common\NameValuePair.cs</Link>
+    </Compile>
     <Compile Include="Common\System\Data\Common\NameValuePermission.cs" />
     <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
     <Compile Include="Common\System\Data\DataStorage.cs" />
@@ -94,7 +98,9 @@
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="Common\System\HResults.cs" />
-    <Compile Include="Common\System\Data\Common\MultipartIdentifier.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
+      <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
+    </Compile>
     <Compile Include="Common\System\Data\Common\ReadOnlyCollection.cs" />
     <Compile Include="Common\System\Data\Common\UnsafeNativeMethods.cs" />
   </ItemGroup>

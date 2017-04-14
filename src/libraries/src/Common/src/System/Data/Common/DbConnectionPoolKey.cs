@@ -2,17 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
-using System.Diagnostics;
-
 namespace System.Data.Common
 {
     // DbConnectionPoolKey: Base class implementation of a key to connection pool groups
     //  Only connection string is used as a key
-    internal class DbConnectionPoolKey
+    internal class DbConnectionPoolKey : ICloneable
     {
         private string _connectionString;
 
@@ -26,7 +20,7 @@ namespace System.Data.Common
             _connectionString = key.ConnectionString;
         }
 
-        internal virtual DbConnectionPoolKey Clone()
+        public virtual object Clone()
         {
             return new DbConnectionPoolKey(this);
         }
@@ -46,8 +40,12 @@ namespace System.Data.Common
 
         public override bool Equals(object obj)
         {
+            if (obj == null || obj.GetType() != typeof(DbConnectionPoolKey))
+            {
+                return false;
+            }
+
             DbConnectionPoolKey key = obj as DbConnectionPoolKey;
-            Debug.Assert(obj.GetType() == typeof(DbConnectionPoolKey), "Derived classes should not be using DbConnectionPoolKey.Equals");
 
             return (key != null && _connectionString == key._connectionString);
         }
