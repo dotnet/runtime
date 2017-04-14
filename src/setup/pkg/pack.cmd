@@ -15,22 +15,24 @@ if /i "%1" == "-portable"             (set __PortableBuildArgs=true&shift&goto A
 
 :: Initialize the MSBuild Tools
 call "%__ProjectDir%\init-tools.cmd"
+if NOT [!ERRORLEVEL!]==[0] goto :Error
 
 :: Restore dependencies mainly to obtain runtime.json
 pushd "%__ProjectDir%\deps"
 "%__DotNet%" restore --configfile "%__ProjectDir%\..\NuGet.Config" --packages "%__ProjectDir%\packages"
+if NOT [!ERRORLEVEL!]==[0] goto :Error
 popd
 
 :: Clean up existing nupkgs
 if exist "%__ProjectDir%\bin" (rmdir /s /q "%__ProjectDir%\bin")
 
 "%__DotNet%" "%__MSBuild%" "%__ProjectDir%\tasks\core-setup.tasks.builds" /verbosity:minimal /flp:logfile=tools.log;v=diag
-if not ERRORLEVEL 0 goto :Error
+if NOT [!ERRORLEVEL!]==[0] goto :Error
 
 :: Package the assets using Tools
 "%__DotNet%" "%__MSBuild%" "%__ProjectDir%\packages.builds" /p:OSGroup=Windows_NT /verbosity:minimal /p:PortableBuild=%__PortableBuildArgs%
+if NOT [!ERRORLEVEL!]==[0] goto :Error
 
-if not ERRORLEVEL 0 goto :Error
 exit /b 0
 
 :Error
