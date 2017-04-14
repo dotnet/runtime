@@ -142,6 +142,9 @@ curl -sSL "$DOTNET_INSTALL_SCRIPT_URL" | bash /dev/stdin --version 1.0.0-preview
 # Put stage 0 on the PATH (for this shell only)
 PATH="$DOTNET_INSTALL_DIR:$PATH"
 
+# Figure out the RID of the current platform, based on what stage 0 thinks.
+RID=$(dotnet --info | grep 'RID:' | sed -e 's/[[:space:]]*RID:[[:space:]]*\(.*\)/\1/g')
+
 # Increases the file descriptors limit for this bash. It prevents an issue we were hitting during restore
 FILE_DESCRIPTOR_LIMIT=$( ulimit -n )
 if [ $FILE_DESCRIPTOR_LIMIT -lt 1024 ]
@@ -157,7 +160,10 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 echo "Restoring Build Script projects..."
 (
     cd "$DIR/.."
-    dotnet restore --infer-runtimes --disable-parallel
+    sed -e "s/{RID}/$RID/g" "dotnet-host-build/project.json.template" > "dotnet-host-build/project.json"
+    sed -e "s/{RID}/$RID/g" "update-dependencies/project.json.template" > "update-dependencies/project.json"
+
+    dotnet restore --disable-parallel
 )
 
 # Build the builder
