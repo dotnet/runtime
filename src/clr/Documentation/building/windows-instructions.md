@@ -15,7 +15,7 @@ Visual Studio must be installed. Supported versions:
 - [Visual Studio 2017](https://www.visualstudio.com/downloads/) (Community, Professional, Enterprise).  The community version is completely free.  
 
 For Visual Studio 2015:
-* To debug managed code, ensure you have installed at least [Visual Studio 2015 Update 3](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs).
+* Ensure you have installed at least [Visual Studio 2015 Update 3](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs).
 * Make sure that you install "VC++ Tools". By default, they will not be installed.
 * To build for Arm32, Make sure that you have the Windows SDK for Windows 10 installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
 
