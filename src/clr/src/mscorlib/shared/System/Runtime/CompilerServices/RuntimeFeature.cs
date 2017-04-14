@@ -12,7 +12,9 @@ namespace System.Runtime.CompilerServices
         public static bool IsSupported(string feature)
         {
             // No features are supported for now.
-            // These features should be added as public static readonly string fields in the same class.
+            // These features should be added as public const string fields in the same class.
+            // Example: public const string FeatureName = nameof(FeatureName);
+
             return false;
         }
     }
