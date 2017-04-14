@@ -51,7 +51,7 @@ namespace System
 
                 while (index < byteCount)
                 {
-                    uint blockSize = byteCount > uint.MaxValue ? uint.MaxValue : (uint)byteCount;
+                    uint blockSize = (byteCount - index) > uint.MaxValue ? uint.MaxValue : (uint)(byteCount - index);
                     Unsafe.CopyBlock(
                         ref Unsafe.Add(ref dstBytes, (IntPtr)index),
                         ref Unsafe.Add(ref srcBytes, (IntPtr)index),
