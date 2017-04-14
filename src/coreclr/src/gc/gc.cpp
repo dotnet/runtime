@@ -9266,12 +9266,10 @@ void gc_heap::delete_heap_segment (heap_segment* seg, BOOL consider_hoarding)
 
 void gc_heap::reset_heap_segment_pages (heap_segment* seg)
 {
-#ifndef FEATURE_PAL // No MEM_RESET support in PAL VirtualAlloc
     size_t page_start = align_on_page ((size_t)heap_segment_allocated (seg));
     size_t size = (size_t)heap_segment_committed (seg) - page_start;
     if (size != 0)
         GCToOSInterface::VirtualReset((void*)page_start, size, false /* unlock */);
-#endif //!FEATURE_PAL
 }
 
 void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
@@ -30809,7 +30807,6 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
 
 void reset_memory (uint8_t* o, size_t sizeo)
 {
-#ifndef FEATURE_PAL
     if (sizeo > 128 * 1024)
     {
         // We cannot reset the memory for the useful part of a free object.
@@ -30824,7 +30821,6 @@ void reset_memory (uint8_t* o, size_t sizeo)
             reset_mm_p = GCToOSInterface::VirtualReset((void*)page_start, size, true /* unlock */);
         }
     }
-#endif //!FEATURE_PAL
 }
 
 void gc_heap::reset_large_object (uint8_t* o)
