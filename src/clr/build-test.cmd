@@ -58,6 +58,7 @@ set __BuildAgainstPackagesArg=
 set __RuntimeId=
 set __ZipTests=
 set __TargetsWindows=1
+set __DoCrossgen=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -80,6 +81,7 @@ if /i "%1" == "updateinvalidpackages" (set __UpdateInvalidPackagesArg=1&set proc
 if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (set __ZipTests=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ziptests"              (set __ZipTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "crossgen"              (set __DoCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -295,9 +297,13 @@ REM Cleans up any lock folder used for synchronization from last run
 powershell "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
 
 set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
+set CORE_ROOT_STAGE=%__TestBinDir%\Tests\Core_Root_Stage
 if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
+if exist "%CORE_ROOT_STAGE%" rd /s /q "%CORE_ROOT_STAGE%"
 md "%CORE_ROOT%"
-xcopy /s "%__BinDir%" "%CORE_ROOT%"
+md "%CORE_ROOT_STAGE%"
+xcopy /s "%__BinDir%" "%CORE_ROOT_STAGE%"
+
 
 if defined __BuildAgainstPackagesArg ( 
   if "%__TargetsWindows%"=="0" (
@@ -307,8 +313,8 @@ if defined __BuildAgainstPackagesArg (
         exit /b 1
     )
 
-    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.so) do copy %%f %CORE_ROOT%
-    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.dylib) do copy %%f %CORE_ROOT%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.so) do copy %%f %CORE_ROOT_STAGE%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.dylib) do copy %%f %CORE_ROOT_STAGE%
   )
 )
 
@@ -360,6 +366,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
+xcopy /s /y "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
+
+set __CrossgenArg = ""
+if defined __DoCrossgen (
+  set __CrossgenArg="-Crossgen"
+  if "%__TargetsWindows%" == "1" (
+    call :PrecompileFX
+  ) else (
+    echo "%__MsgPrefix% Crossgen only supported on Windows, for now"
+  )
+)
+
+rd /s /q "%CORE_ROOT_STAGE%"
+
 if not defined __ZipTests goto SkipPrepForPublish
 
 set __BuildLogRootName=Helix_Prep
@@ -376,7 +396,7 @@ REM === Prep test binaries for Helix publishing
 REM ===
 REM =========================================================================================
 
-call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\helixprep.proj  -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %RuntimeIdArg% %TargetsWindowsArg% %__unprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\helixprep.proj  -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %RuntimeIdArg% %TargetsWindowsArg% %__CrossgenArg% %__unprocessedBuildArgs%
 
 echo %__MsgPrefix% Prepped test binaries for publishing
 
@@ -418,6 +438,7 @@ echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
 echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
 echo ziptests: zips CoreCLR tests & Core_Root for a Helix run
+echo crossgen: Precompiles the framework managed assemblies
 echo Exclude- Optional parameter - specify location of default exclusion file (defaults to tests\issues.targets if not specified)
 echo     Set to "" to disable default exclusion file.
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
@@ -465,4 +486,32 @@ set INCLUDE=^
 %__ToolsetDir%\sdpublic\sdk\inc\abi;^
 %__ToolsetDir%\sdpublic\sdk\inc\clientcore;^
 %__ToolsetDir%\diasdk\include
+exit /b 0
+
+:PrecompileFX
+for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%%F" %%~nF%%~xF
+exit /b 0
+
+REM Compile the managed assemblies in Core_ROOT before running the tests
+:PrecompileAssembly
+
+REM Skip mscorlib since it is already precompiled.
+if /I "%2" == "mscorlib.dll" exit /b 0
+if /I "%2" == "mscorlib.ni.dll" exit /b 0
+REM don't precompile anything from CoreCLR
+if /I exist %CORE_ROOT_STAGE%\%2 exit /b 0
+
+"%CORE_ROOT_STAGE%\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%1" >nul 2>nul
+set /a __exitCode = %errorlevel%
+if "%__exitCode%" == "-2146230517" (
+    echo %2 is not a managed assembly.
+    exit /b 0
+)
+
+if %__exitCode% neq 0 (
+    echo Unable to precompile %2
+    exit /b 0
+)
+    
+echo Successfully precompiled %2
 exit /b 0
