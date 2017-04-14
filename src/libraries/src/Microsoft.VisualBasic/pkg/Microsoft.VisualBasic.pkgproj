@@ -12,6 +12,14 @@
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="portable-net45+win8+wpa81" />
+    <HarvestIncludePaths Include="ref/MonoAndroid10" />
+    <HarvestIncludePaths Include="ref/MonoTouch10" />
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.1" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
+    <HarvestIncludePaths Include="ref/xamarinios10" />
+    <HarvestIncludePaths Include="ref/xamarintvos10" />
+    <HarvestIncludePaths Include="ref/xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

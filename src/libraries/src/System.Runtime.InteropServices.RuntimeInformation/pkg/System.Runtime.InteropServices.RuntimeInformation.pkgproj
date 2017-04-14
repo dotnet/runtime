@@ -6,6 +6,8 @@
       <SupportedFramework>net45;netcore45;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.csproj" />
+    <HarvestIncludePaths Include="runtimes/aot/lib/netcore50;runtimes/win/lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.1" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

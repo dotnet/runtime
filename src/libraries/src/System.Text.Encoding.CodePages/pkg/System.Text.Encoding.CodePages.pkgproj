@@ -6,6 +6,8 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
+    <HarvestIncludePaths Include="lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
