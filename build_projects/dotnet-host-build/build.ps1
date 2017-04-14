@@ -125,10 +125,17 @@ $env:PATH = "$env:DOTNET_INSTALL_DIR;$env:PATH"
 # Disable first run since we want to control all package sources
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
+# Figure out the RID of the current platform, based on what stage 0 thinks.
+$HOST_RID=(dotnet --info | Select-String -Pattern "\s*RID:\s*(?<rid>.*)").Matches[0].Groups['rid'].Value
+
 # Restore the build scripts
 Write-Host "Restoring Build Script projects..."
 pushd "$PSScriptRoot\.."
-dotnet restore --infer-runtimes
+
+(Get-Content "dotnet-host-build\project.json.template").Replace("{RID}", $HOST_RID) | Set-Content "dotnet-host-build\project.json"
+(Get-Content "update-dependencies\project.json.template").Replace("{RID}", $HOST_RID) | Set-Content "update-dependencies\project.json"
+
+dotnet restore
 if($LASTEXITCODE -ne 0) { throw "Failed to restore" }
 popd
 

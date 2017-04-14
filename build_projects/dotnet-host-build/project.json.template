@@ -29,5 +29,8 @@
         "portable-net45+win8"
       ]
     }
+  },
+  "runtimes": {
+    "{RID}": {}
   }
 }
