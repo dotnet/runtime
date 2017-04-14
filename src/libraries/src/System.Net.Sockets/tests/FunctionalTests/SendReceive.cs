@@ -703,9 +703,8 @@ namespace System.Net.Sockets.Tests
                     client.SendBufferSize = 0;
                     server.ReceiveBufferSize = 0;
 
-                    var sendBuffer = new byte[5000000];
+                    var sendBuffer = new byte[10000];
                     Task sendTask = SendAsync(client, new ArraySegment<byte>(sendBuffer));
-                    Assert.False(sendTask.IsCompleted);
 
                     int totalReceived = 0;
                     var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
