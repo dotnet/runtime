@@ -28,7 +28,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
-#include "gchandletableutilities.h"
+#include "gchandleutilities.h"
 #include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
@@ -1244,9 +1244,7 @@ public:
     OBJECTHANDLE CreateTypedHandle(OBJECTREF object, int type)
     {
         WRAPPER_NO_CONTRACT;
-
-        IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-        return pHandleTable->CreateHandleOfType(m_handleStore, OBJECTREFToObject(object), type);
+        return m_handleStore->CreateHandleOfType(OBJECTREFToObject(object), type);
     }
 
     OBJECTHANDLE CreateHandle(OBJECTREF object)
@@ -1345,8 +1343,7 @@ public:
         }
         CONTRACTL_END;
 
-        IGCHandleTable *pHandleTable = GCHandleTableUtilities::GetGCHandleTable();
-        return pHandleTable->CreateDependentHandle(m_handleStore, OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+        return m_handleStore->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
     }
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
@@ -1402,7 +1399,7 @@ protected:
 
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
-    void* m_handleStore;
+    IGCHandleStore* m_handleStore;
 
     // The large heap handle table.
     LargeHeapHandleTable        *m_pLargeHeapHandleTable;
