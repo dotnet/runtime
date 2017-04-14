@@ -51,7 +51,7 @@
     <XunitOptions Condition="'$(BuildingNETFxVertical)' == 'true' and '$(XUnitNoAppdomain)' == 'true'">$(XunitOptions) -noappdomain </XunitOptions>
     <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
-    <XunitOptions Condition="'$(Performance)'!='true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
+    <XunitOptions Condition="'$(Performance)'!='true' and '$(Outerloop)' != 'true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
     <XunitOptions Condition="'$(BuildingUAPAOTVertical)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
     <XunitOptions>$(XunitOptions) -notrait category=non$(_bc_TargetGroup)tests</XunitOptions>
@@ -278,9 +278,13 @@
     <ItemGroup Condition="'$(Performance)'!='true'">
       <!-- On Windows, call prevents the test command from making execution end prematurely -->
       <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="set COMPlus_GCStress=$(TestGCStressLevel)"/>
+      <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT' and '$(OuterLoop)' == 'true'" Include="set XUNIT_PERFORMANCE_MIN_ITERATION=1"/>
+      <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT' and '$(OuterLoop)' == 'true'" Include="set XUNIT_PERFORMANCE_MAX_ITERATION=1"/>
       <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT'" Include="call $(TestCommandLine)"/>
 
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="export COMPlus_GCStress=$(TestGCStressLevel)"/>
+      <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(OuterLoop)' == 'true'" Include="export XUNIT_PERFORMANCE_MIN_ITERATION=1"/>
+      <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(OuterLoop)' == 'true'" Include="export XUNIT_PERFORMANCE_MAX_ITERATION=1"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="chmod +x $(TestProgram)"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="$(TestCommandLine)"/>
     </ItemGroup>

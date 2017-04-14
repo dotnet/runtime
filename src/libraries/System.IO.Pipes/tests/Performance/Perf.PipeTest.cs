@@ -12,6 +12,7 @@ namespace System.IO.Pipes.Tests
     {
         [Benchmark]
         [InlineData(1000000)]
+        [ActiveIssue(18290, TestPlatforms.AnyUnix)]
         public async Task ReadWrite(int size)
         {
             Random rand = new Random(314);
