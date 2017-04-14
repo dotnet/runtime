@@ -4,6 +4,11 @@
 
 .assembly extern mscorlib{}
 .assembly ILGEN_MODULE{}
+
+// This test originally failed compilation during CSE due to value numbers that were discarded during remorphing.
+// The arguments to and return value from `ILGEN_METHOD` are not meaningful; it is enough that this function
+// compiles successfully.
+
 .class ILGEN_CLASS
 {
     .method static float32 ILGEN_METHOD(int16, char, char, native int)
