@@ -348,8 +348,6 @@ mono_marshal_init (void)
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
-		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
-		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 		register_icall (mono_gchandle_new, "mono_gchandle_new", "uint32 object bool", TRUE);

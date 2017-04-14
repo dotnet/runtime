@@ -2224,75 +2224,83 @@ ves_icall_MonoPropertyInfo_get_property_info (MonoReflectionPropertyHandle prope
 	 */
 }
 
-ICALL_EXPORT void
-ves_icall_MonoEventInfo_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
+static gboolean
+add_event_other_methods_to_array (MonoDomain *domain, MonoMethod *m, MonoArrayHandle dest, int i, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionType *rt;
-	MonoReflectionMethod *rm;
-	MonoDomain *domain = mono_object_domain (event); 
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MonoReflectionMethodHandle rm = mono_method_get_object_handle (domain, m, NULL, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (dest, i, rm);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+}
 
-	rt = mono_type_get_object_checked (domain, &event->klass->byval_arg, &error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+ICALL_EXPORT void
+ves_icall_MonoEventInfo_get_event_info (MonoReflectionMonoEventHandle ref_event, MonoEventInfo *info, MonoError *error)
+{
+	error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_event); 
 
-	MONO_STRUCT_SETREF (info, reflected_type, rt);
+	MonoClass *klass = MONO_HANDLE_GETVAL (ref_event, klass);
+	MonoEvent *event = MONO_HANDLE_GETVAL (ref_event, event);
 
-	rt = mono_type_get_object_checked (domain, &event->event->parent->byval_arg, &error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &klass->byval_arg, error);
+	return_if_nok (error);
+	MONO_STRUCT_SETREF (info, reflected_type, MONO_HANDLE_RAW (rt));
 
-	MONO_STRUCT_SETREF (info, declaring_type, rt);
+	rt = mono_type_get_object_handle (domain, &event->parent->byval_arg, error);
+	return_if_nok (error);
+	MONO_STRUCT_SETREF (info, declaring_type, MONO_HANDLE_RAW (rt));
 
-	MONO_STRUCT_SETREF (info, name, mono_string_new (domain, event->event->name));
-	info->attrs = event->event->attrs;
+	MonoStringHandle ev_name = mono_string_new_handle (domain, event->name, error);
+	return_if_nok (error);
+	MONO_STRUCT_SETREF (info, name, MONO_HANDLE_RAW (ev_name));
 
-	if (event->event->add) {
-		rm = mono_method_get_object_checked (domain, event->event->add, NULL, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+	info->attrs = event->attrs;
+
+	MonoReflectionMethodHandle rm;
+	if (event->add) {
+		rm = mono_method_get_object_handle (domain, event->add, NULL, error);
+		return_if_nok (error);
 	} else {
-		rm = NULL;
+		rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 	}
 
-	MONO_STRUCT_SETREF (info, add_method, rm);
+	MONO_STRUCT_SETREF (info, add_method, MONO_HANDLE_RAW (rm));
 
-	if (event->event->remove) {
-		rm = mono_method_get_object_checked (domain, event->event->remove, NULL, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+	if (event->remove) {
+		rm = mono_method_get_object_handle (domain, event->remove, NULL, error);
+		return_if_nok (error);
 	} else {
-		rm = NULL;
+		rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 	}
 
-	MONO_STRUCT_SETREF (info, remove_method, rm);
+	MONO_STRUCT_SETREF (info, remove_method, MONO_HANDLE_RAW (rm));
 
-	if (event->event->raise) {
-		rm = mono_method_get_object_checked (domain, event->event->raise, NULL, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+	if (event->raise) {
+		rm = mono_method_get_object_handle (domain, event->raise, NULL, error);
+		return_if_nok (error);
 	} else {
-		rm = NULL;
+		rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 	}
 
-	MONO_STRUCT_SETREF (info, raise_method, rm);
+	MONO_STRUCT_SETREF (info, raise_method, MONO_HANDLE_RAW (rm));
 
 #ifndef MONO_SMALL_CONFIG
-	if (event->event->other) {
+	if (event->other) {
 		int i, n = 0;
-		while (event->event->other [n])
+		while (event->other [n])
 			n++;
-		MonoArray *info_arr = mono_array_new_checked (domain, mono_defaults.method_info_class, n, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
-		MONO_STRUCT_SETREF (info, other_methods, info_arr);
+		MonoArrayHandle info_arr = mono_array_new_handle (domain, mono_defaults.method_info_class, n, error);
+		return_if_nok (error);
 
-		for (i = 0; i < n; i++) {
-			rm = mono_method_get_object_checked (domain, event->event->other [i], NULL, &error);
-			if (mono_error_set_pending_exception (&error))
+		MONO_STRUCT_SETREF (info, other_methods, MONO_HANDLE_RAW  (info_arr));
+
+		for (i = 0; i < n; i++)
+			if (!add_event_other_methods_to_array (domain, event->other [i], info_arr, i, error))
 				return;
-			mono_array_setref (info->other_methods, i, rm);
-		}
 	}		
 #endif
 }
@@ -7708,60 +7716,48 @@ property_info_get_default_value (MonoReflectionProperty *property)
 }
 
 ICALL_EXPORT MonoBoolean
-custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
+ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, MonoError *error)
 {
-	MonoError error;
-	MonoClass *attr_class = mono_class_from_mono_type (attr_type->type);
-	MonoCustomAttrInfo *cinfo;
-	gboolean found;
+	error_init (error);
+	MonoClass *attr_class = mono_class_from_mono_type (MONO_HANDLE_GETVAL (attr_type, type));
 
-	mono_class_init_checked (attr_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	mono_class_init_checked (attr_class, error);
+	return_val_if_nok (error, FALSE);
 
-	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, &error);
-	if (!is_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return FALSE;
-	}
+	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	return_val_if_nok (error, FALSE);
+
 	if (!cinfo)
 		return FALSE;
-	found = mono_custom_attrs_has_attr (cinfo, attr_class);
+	gboolean found = mono_custom_attrs_has_attr (cinfo, attr_class);
 	if (!cinfo->cached)
 		mono_custom_attrs_free (cinfo);
 	return found;
 }
 
-ICALL_EXPORT MonoArray*
-custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_MonoCustomAttrs_GetCustomAttributesInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, mono_bool pseudoattrs, MonoError *error)
 {
-	MonoClass *attr_class = attr_type ? mono_class_from_mono_type (attr_type->type) : NULL;
-	MonoArray *res;
-	MonoError error;
+	MonoClass *attr_class;
+	if (MONO_HANDLE_IS_NULL (attr_type))
+		attr_class = NULL;
+	else
+		attr_class = mono_class_from_mono_type (MONO_HANDLE_GETVAL (attr_type, type));
 
 	if (attr_class) {
-		mono_class_init_checked (attr_class, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		mono_class_init_checked (attr_class, error);
+		if (!is_ok (error))
+			return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 	}
 
-	res = mono_reflection_get_custom_attrs_by_type (obj, attr_class, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
-
-	return res;
+	return mono_reflection_get_custom_attrs_by_type_handle (obj, attr_class, error);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObject *obj)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObjectHandle obj, MonoError *error)
 {
-	MonoError error;
-	MonoArray *result;
-	result = mono_reflection_get_custom_attrs_data_checked (obj, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	error_init (error);
+	return mono_reflection_get_custom_attrs_data_checked (obj, error);
 }
 
 

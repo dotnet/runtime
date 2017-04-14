@@ -115,18 +115,18 @@ ICALL(KPAIR_5, "_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersi
 #endif /* !PLATFORM_RO_FS */
 
 ICALL_TYPE(APPDOM, "System.AppDomain", APPDOM_23)
-ICALL(APPDOM_23, "DoUnhandledException", ves_icall_System_AppDomain_DoUnhandledException)
+HANDLES(ICALL(APPDOM_23, "DoUnhandledException", ves_icall_System_AppDomain_DoUnhandledException))
 HANDLES(ICALL(APPDOM_1, "ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly))
 HANDLES(ICALL(APPDOM_2, "GetAssemblies", ves_icall_System_AppDomain_GetAssemblies))
 HANDLES(ICALL(APPDOM_3, "GetData", ves_icall_System_AppDomain_GetData))
-ICALL(APPDOM_4, "InternalGetContext", ves_icall_System_AppDomain_InternalGetContext)
-ICALL(APPDOM_5, "InternalGetDefaultContext", ves_icall_System_AppDomain_InternalGetDefaultContext)
+HANDLES(ICALL(APPDOM_4, "InternalGetContext", ves_icall_System_AppDomain_InternalGetContext))
+HANDLES(ICALL(APPDOM_5, "InternalGetDefaultContext", ves_icall_System_AppDomain_InternalGetDefaultContext))
 HANDLES(ICALL(APPDOM_6, "InternalGetProcessGuid", ves_icall_System_AppDomain_InternalGetProcessGuid))
 HANDLES(ICALL(APPDOM_7, "InternalIsFinalizingForUnload", ves_icall_System_AppDomain_InternalIsFinalizingForUnload))
 HANDLES(ICALL(APPDOM_8, "InternalPopDomainRef", ves_icall_System_AppDomain_InternalPopDomainRef))
 HANDLES(ICALL(APPDOM_9, "InternalPushDomainRef", ves_icall_System_AppDomain_InternalPushDomainRef))
 HANDLES(ICALL(APPDOM_10, "InternalPushDomainRefByID", ves_icall_System_AppDomain_InternalPushDomainRefByID))
-ICALL(APPDOM_11, "InternalSetContext", ves_icall_System_AppDomain_InternalSetContext)
+HANDLES(ICALL(APPDOM_11, "InternalSetContext", ves_icall_System_AppDomain_InternalSetContext))
 HANDLES(ICALL(APPDOM_12, "InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain))
 HANDLES(ICALL(APPDOM_13, "InternalSetDomainByID", ves_icall_System_AppDomain_InternalSetDomainByID))
 HANDLES(ICALL(APPDOM_14, "InternalUnload", ves_icall_System_AppDomain_InternalUnload))
@@ -437,9 +437,9 @@ ICALL(MATH_17, "Tan", ves_icall_System_Math_Tan)
 ICALL(MATH_18, "Tanh", ves_icall_System_Math_Tanh)
 
 ICALL_TYPE(MCATTR, "System.MonoCustomAttrs", MCATTR_1)
-ICALL(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal)
-ICALL(MCATTR_2, "GetCustomAttributesInternal", custom_attrs_get_by_type)
-ICALL(MCATTR_3, "IsDefinedInternal", custom_attrs_defined_internal)
+HANDLES(ICALL(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal))
+HANDLES(ICALL(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal))
+HANDLES(ICALL(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal))
 
 #ifndef DISABLE_SOCKETS
 ICALL_TYPE(NDNS, "System.Net.Dns", NDNS_1)
@@ -604,7 +604,7 @@ ICALL(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke)
 HANDLES(ICALL(MCMETH_3, "get_core_clr_security_level", ves_icall_MonoMethod_get_core_clr_security_level))
 
 ICALL_TYPE(MEVIN, "System.Reflection.MonoEventInfo", MEVIN_1)
-ICALL(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info)
+HANDLES(ICALL(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info))
 
 ICALL_TYPE(MFIELD, "System.Reflection.MonoField", MFIELD_1)
 ICALL(MFIELD_1, "GetFieldOffset", ves_icall_MonoField_GetFieldOffset)
@@ -741,8 +741,8 @@ ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Act
 ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation)
 
 ICALL_TYPE(CONTEXT, "System.Runtime.Remoting.Contexts.Context", CONTEXT_1)
-ICALL(CONTEXT_1, "RegisterContext", ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext)
-ICALL(CONTEXT_2, "ReleaseContext", ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext)
+HANDLES(ICALL(CONTEXT_1, "RegisterContext", ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext))
+HANDLES(ICALL(CONTEXT_2, "ReleaseContext", ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext))
 
 ICALL_TYPE(ARES, "System.Runtime.Remoting.Messaging.AsyncResult", ARES_1)
 ICALL(ARES_1, "Invoke", ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke)

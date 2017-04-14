@@ -111,6 +111,9 @@ static MonoDomain *
 mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_file, MonoError *error);
 
 
+static void
+mono_context_set_default_context (MonoDomain *domain);
+
 static char *
 get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error);
 
@@ -299,7 +302,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	/* contexts use GC handles, so they must be initialized after the GC */
 	mono_context_init_checked (domain, error);
 	return_if_nok (error);
-	mono_context_set (domain->default_context);
+	mono_context_set_default_context (domain);
 
 #ifndef DISABLE_SOCKETS
 	mono_network_init ();
@@ -315,6 +318,15 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	return;
 }
+
+static void
+mono_context_set_default_context (MonoDomain *domain)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_context_set_handle (MONO_HANDLE_NEW (MonoAppContext, domain->default_context));
+	HANDLE_FUNCTION_RETURN ();
+}
+
 
 static int
 mono_get_corlib_version (void)
@@ -385,7 +397,8 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
-	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
+	mono_threads_register_app_context (context, error);
+	mono_error_assert_ok (error);
 	domain->default_context = context;
 }
 
@@ -2234,9 +2247,11 @@ ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, Mono
 }
 
 void
-ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc)
+ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error)
 {
-	mono_unhandled_exception ((MonoObject*) exc);
+	error_init (error);
+	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), error);
+	mono_error_assert_ok (error);
 }
 
 gint32
@@ -2334,24 +2349,27 @@ ves_icall_System_AppDomain_InternalPopDomainRef (MonoError *error)
 	mono_thread_pop_appdomain_ref ();
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext ()
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetContext (MonoError *error)
 {
-	return mono_context_get ();
+	error_init (error);
+	return mono_context_get_handle ();
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetDefaultContext ()
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetDefaultContext (MonoError *error)
 {
-	return mono_domain_get ()->default_context;
+	error_init (error);
+	return MONO_HANDLE_NEW (MonoAppContext, mono_domain_get ()->default_context);
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalSetContext (MonoAppContextHandle mc, MonoError *error)
 {
-	MonoAppContext *old_context = mono_context_get ();
+	error_init (error);
+	MonoAppContextHandle old_context = mono_context_get_handle ();
 
-	mono_context_set (mc);
+	mono_context_set_handle (mc);
 
 	return old_context;
 }
