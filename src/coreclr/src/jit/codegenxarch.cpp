@@ -535,10 +535,6 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
-    if (treeNode->OperGet() == GT_MULHI)
-    {
-        assert(!(treeNode->gtFlags & GTF_UNSIGNED));
-    }
     assert(!treeNode->gtOverflowEx());
 
     regNumber targetReg  = treeNode->gtRegNum;
