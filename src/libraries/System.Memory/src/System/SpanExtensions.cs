@@ -293,7 +293,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this T[] array, Span<T> destination)
         {
-            array.AsSpan().CopyTo(destination);
+            new ReadOnlySpan<T>(array).CopyTo(destination);
         }
     }
 }
