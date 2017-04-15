@@ -31,6 +31,8 @@ If the containing PE/COFF file is deterministic the Guid field above and DateTim
 
 *Version Major=any, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the .pdb file that this PE/COFF file was built with is Portable PDB. The Major version specified in the entry indicates the version of the Portable PDB format. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
 
+> A matching PDB may be found whose format is different than the format of the PDB the PE/COFF file was built with. This may happen when the original PDB file is [converted](http://github.com/dotnet/symreader-converter) to the other format without updating the PE/COFF file. This scenario is fully supported. A tool looking for the associated PDB shall determine the actual format of the found PDB based on the signature at the start of the PDB file. The tool may use the version in CodeView entry as a hint to prefer the original format over the converted one if both are available.
+
 ### Deterministic Debug Directory Entry (type 16)
 
 The entry doesn't have any data associated with it. All fields of the entry, but Type shall be zero.
