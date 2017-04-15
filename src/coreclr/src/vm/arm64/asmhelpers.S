@@ -1192,9 +1192,9 @@ NESTED_END StubDispatchFixupStub, _TEXT
 // On exit:
 //   buffer pointed to by x1 on entry contains the float or double argument as appropriate
 //
-    LEAF_ENTRY getFPReturn
+LEAF_ENTRY getFPReturn, _TEXT
     str d0, [x1]
-    LEAF_END
+LEAF_END getFPReturn, _TEXT
 
 // ------------------------------------------------------------------
 // Function used by COM interop to set floating point return value (since it's not in the same
@@ -1208,9 +1208,9 @@ NESTED_END StubDispatchFixupStub, _TEXT
 //   s0          : float result if x0 == 4
 //   d0          : double result if x0 == 8
 //
-    LEAF_ENTRY setFPReturn
+LEAF_ENTRY setFPReturn, _TEXT
     fmov d0, x1
-    LEAF_END
+LEAF_END setFPReturn, _TEXT
 #endif
 
 //
@@ -1220,52 +1220,52 @@ NESTED_END StubDispatchFixupStub, _TEXT
 // ------------------------------------------------------------------
 // void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
+    ldrb w2, [x2, w1, UXTW]
     tst w2, #1
-    beq LOCAL_LABEL(CallHelper)
+    beq LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
 
     ret lr
 
-LOCAL_LABEL(CallHelper):
+LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
     // Tail call JIT_GetSharedNonGCStaticBase_Helper
     b C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-    LEAF_END
+LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
 
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ret lr
-    LEAF_END
+LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
+    ldrb w2, [x2, w1, UXTW]
     tst w2, #1
-    beq LOCAL_LABEL(CallHelper)
+    beq LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
 
     ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
     ret lr
 
-LOCAL_LABEL(CallHelper):
+LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
     // Tail call Jit_GetSharedGCStaticBase_Helper
     b C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-    LEAF_END
+LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
 
 // ------------------------------------------------------------------
 // void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
+LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
     ret lr
-    LEAF_END
+LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
