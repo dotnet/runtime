@@ -6921,18 +6921,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
-    {
-        // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CLT & 0xFF), CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_ARRAY_DATA)->GetMemberDef())
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_RAW_SZ_ARRAY_DATA)->GetMemberDef())
     {
         mdToken tokArrayPinningHelper = MscorlibBinder::GetField(FIELD__ARRAY_PINNING_HELPER__M_ARRAY_DATA)->GetMemberDef();
 
