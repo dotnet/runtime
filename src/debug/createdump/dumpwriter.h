@@ -24,6 +24,10 @@
 
 #define PH_HDR_CANARY 0xFFFF
 
+#ifndef NT_FILE
+#define NT_FILE		0x46494c45
+#endif
+
 class DumpWriter : IUnknown
 {
 private:

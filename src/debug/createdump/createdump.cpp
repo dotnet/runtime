@@ -56,7 +56,7 @@ exit:
 //
 int __cdecl main(const int argc, const char* argv[])
 {
-    const char* dumpPathTemplate = "/tmp/coredump.%lu";
+    const char* dumpPathTemplate = "/tmp/coredump.%d";
 
     char* diagnostics = getenv("COMPlus_CreateDumpDiagnostics");
     g_diagnostics = diagnostics != nullptr && strcmp(diagnostics, "1") == 0;
@@ -76,7 +76,6 @@ int __cdecl main(const int argc, const char* argv[])
     }
     pid = _atoi64(argv[1]);
 
-    //if (!CreateDump(argv[0], dumpPathTemplate, pid, MiniDumpWithPrivateReadWriteMemory)) 
     if (!CreateDump(argv[0], dumpPathTemplate, pid, MiniDumpNormal)) 
     {
         exitCode = -1;
