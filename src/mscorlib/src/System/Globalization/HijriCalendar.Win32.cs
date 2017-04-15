@@ -42,41 +42,54 @@ namespace System.Globalization
             int hijriAdvance = 0;
             Microsoft.Win32.RegistryKey key = null;
 
-            using (key = Registry.CurrentUser.OpenSubKey(InternationalRegKey, writable: false))
+            try
             {
-                if (key == null)
-                    return 0;
+                // Open in read-only mode.
+                // Use InternalOpenSubKey so that we avoid the security check.
+                key = RegistryKey.GetBaseKey(RegistryKey.HKEY_CURRENT_USER).OpenSubKey(InternationalRegKey, false);
+            }
+            //If this fails for any reason, we'll just return 0.
+            catch (ObjectDisposedException) { return 0; }
+            catch (ArgumentException) { return 0; }
 
-                Object value = key.GetValue(HijriAdvanceRegKeyEntry);
-                if (value == null)
+            if (key != null)
+            {
+                try
                 {
-                    return (0);
-                }
-                String str = value.ToString();
-                if (String.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    if (str.Length == HijriAdvanceRegKeyEntry.Length)
-                        hijriAdvance = -1;
-                    else
+                    Object value = key.InternalGetValue(HijriAdvanceRegKeyEntry, null, false, false);
+                    if (value == null)
                     {
-                        str = str.Substring(HijriAdvanceRegKeyEntry.Length);
-                        try
+                        return (0);
+                    }
+                    String str = value.ToString();
+                    if (String.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        if (str.Length == HijriAdvanceRegKeyEntry.Length)
+                            hijriAdvance = -1;
+                        else
                         {
-                            int advance = Int32.Parse(str.ToString(), CultureInfo.InvariantCulture);
-                            if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
+                            str = str.Substring(HijriAdvanceRegKeyEntry.Length);
+                            try
                             {
-                                hijriAdvance = advance;
+                                int advance = Int32.Parse(str.ToString(), CultureInfo.InvariantCulture);
+                                if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
+                                {
+                                    hijriAdvance = advance;
+                                }
                             }
+                            // If we got garbage from registry just ignore it.
+                            // hijriAdvance = 0 because of declaraction assignment up above.
+                            catch (ArgumentException) { }
+                            catch (FormatException) { }
+                            catch (OverflowException) { }
                         }
-                        // If we got garbage from registry just ignore it.
-                        // hijriAdvance = 0 because of declaraction assignment up above.
-                        catch (ArgumentException) { }
-                        catch (FormatException) { }
-                        catch (OverflowException) { }
                     }
                 }
+                finally
+                {
+                    key.Close();
+                }
             }
-
             return (hijriAdvance);
         }
     }
