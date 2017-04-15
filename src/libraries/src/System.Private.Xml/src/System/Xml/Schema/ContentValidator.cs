@@ -1287,9 +1287,12 @@ namespace System.Xml.Schema
             }
 
 #if DEBUG
-            StringBuilder bb = new StringBuilder();
-            _contentNode.Dump(bb, _symbols, _positions);
-            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "\t\t\tContent :   " + bb.ToString());
+            if (DiagnosticsSwitches.XmlSchemaContentModel.Enabled)
+            {
+                var bb = new StringBuilder();
+                _contentNode.Dump(bb, _symbols, _positions);
+                Debug.WriteLine("\t\t\tContent :   " + bb.ToString());
+            }
 #endif
 
             // Add end marker
@@ -1302,9 +1305,12 @@ namespace System.Xml.Schema
             _contentNode.ExpandTree(contentRoot, _symbols, _positions);
 
 #if DEBUG
-            bb = new StringBuilder();
-            contentRoot.LeftChild.Dump(bb, _symbols, _positions);
-            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "\t\t\tExpended:   " + bb.ToString());
+            if (DiagnosticsSwitches.XmlSchemaContentModel.Enabled)
+            {
+                var bb = new StringBuilder();
+                contentRoot.LeftChild.Dump(bb, _symbols, _positions);
+                Debug.WriteLine("\t\t\tExpended:   " + bb.ToString());
+            }
 #endif
 
             // calculate followpos
@@ -1319,8 +1325,11 @@ namespace System.Xml.Schema
             }
             contentRoot.ConstructPos(firstpos, lastpos, followpos);
 #if DEBUG
-            Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, "firstpos, lastpos, followpos");
-            SequenceNode.WritePos(firstpos, lastpos, followpos);
+            if (DiagnosticsSwitches.XmlSchemaContentModel.Enabled)
+            {
+                Debug.WriteLine("firstpos, lastpos, followpos");
+                SequenceNode.WritePos(firstpos, lastpos, followpos);
+            }
 #endif
             if (_minMaxNodesCount > 0)
             { //If the tree has any terminal range nodes
@@ -1355,9 +1364,12 @@ namespace System.Xml.Schema
                     transitionTable = BuildTransitionTable(firstpos, followpos, endMarker.Pos);
                 }
 #if DEBUG
-                bb = new StringBuilder();
-                Dump(bb, followpos, transitionTable);
-                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled, bb.ToString());
+                if (DiagnosticsSwitches.XmlSchemaContentModel.Enabled)
+                {
+                    var bb = new StringBuilder();
+                    Dump(bb, followpos, transitionTable);
+                    Debug.WriteLine(bb.ToString());
+                }
 #endif
                 if (transitionTable != null)
                 {

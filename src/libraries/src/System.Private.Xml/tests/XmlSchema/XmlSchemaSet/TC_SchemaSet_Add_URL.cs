@@ -377,8 +377,7 @@ namespace System.Xml.Tests
 
         [OuterLoop]
         [Theory]
-        [InlineData(5000, "5000s.xsd")]
-        [InlineData(10000, "10000s.xsd")]
+        [InlineData(1000, "1000s.xsd")]
         //[Variation(Desc = "Bug 298991 XMLSchemaSet.Compile cause StackOverflow - Sequence, 5000", Params = new object[] { 5000, "5000s.xsd" })]
         //[Variation(Desc = "Bug 298991 XMLSchemaSet.Compile cause StackOverflow - Sequence, 10000", Params = new object[] { 10000, "10000s.xsd" })]
         public void bug298991Sequence(int size, string xsdFileName)

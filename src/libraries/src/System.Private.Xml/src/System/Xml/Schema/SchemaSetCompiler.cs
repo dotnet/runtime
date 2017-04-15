@@ -2902,8 +2902,11 @@ namespace System.Xml.Schema
             {
                 ParticleContentValidator contentValidator = new ParticleContentValidator(complexType.ContentType, CompilationSettings.EnableUpaCheck);
 #if DEBUG
-                string name = complexType.Name != null ? complexType.Name : string.Empty;
-                Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceVerbose, "CompileComplexContent: " + name + DumpContentModel(particle));
+                if (DiagnosticsSwitches.XmlSchema.TraceVerbose)
+                {
+                    string name = complexType.Name != null ? complexType.Name : string.Empty;
+                    Debug.WriteLine("CompileComplexContent: " + name + DumpContentModel(particle));
+                }
 #endif
                 try
                 {
