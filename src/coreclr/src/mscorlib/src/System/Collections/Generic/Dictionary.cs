@@ -428,8 +428,7 @@ namespace System.Collections.Generic
 
             if (buckets == null) Initialize(0);
             int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
-            int targetBucket = hashCode % buckets.Length;
-
+            int targetBucket = hashCode % buckets.Length;            
 #if FEATURE_RANDOMIZED_STRING_HASHING
             int collisionCount = 0;
 #endif
@@ -452,7 +451,6 @@ namespace System.Collections.Generic
 
                     return false;
                 }
-
 #if FEATURE_RANDOMIZED_STRING_HASHING
                 collisionCount++;
 #endif
@@ -599,27 +597,33 @@ namespace System.Collections.Generic
                 int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
                 int bucket = hashCode % buckets.Length;
                 int last = -1;
-                for (int i = buckets[bucket]; i >= 0; last = i, i = entries[i].next)
+                int i = buckets[bucket];
+                while (i >= 0)
                 {
-                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    ref Entry entry = ref entries[i];
+
+                    if (entry.hashCode == hashCode && comparer.Equals(entry.key, key))
                     {
                         if (last < 0)
                         {
-                            buckets[bucket] = entries[i].next;
+                            buckets[bucket] = entry.next;
                         }
                         else
                         {
-                            entries[last].next = entries[i].next;
+                            entries[last].next = entry.next;
                         }
-                        entries[i].hashCode = -1;
-                        entries[i].next = freeList;
-                        entries[i].key = default(TKey);
-                        entries[i].value = default(TValue);
+                        entry.hashCode = -1;
+                        entry.next = freeList;
+                        entry.key = default(TKey);
+                        entry.value = default(TValue);
                         freeList = i;
                         freeCount++;
                         version++;
                         return true;
                     }
+
+                    last = i;
+                    i = entry.next;
                 }
             }
             return false;
@@ -640,30 +644,36 @@ namespace System.Collections.Generic
                 int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
                 int bucket = hashCode % buckets.Length;
                 int last = -1;
-                for (int i = buckets[bucket]; i >= 0; last = i, i = entries[i].next)
+                int i = buckets[bucket];
+                while (i >= 0)
                 {
-                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    ref Entry entry = ref entries[i];
+
+                    if (entry.hashCode == hashCode && comparer.Equals(entry.key, key))
                     {
                         if (last < 0)
                         {
-                            buckets[bucket] = entries[i].next;
+                            buckets[bucket] = entry.next;
                         }
                         else
                         {
-                            entries[last].next = entries[i].next;
+                            entries[last].next = entry.next;
                         }
 
-                        value = entries[i].value;
+                        value = entry.value;
 
-                        entries[i].hashCode = -1;
-                        entries[i].next = freeList;
-                        entries[i].key = default(TKey);
-                        entries[i].value = default(TValue);
+                        entry.hashCode = -1;
+                        entry.next = freeList;
+                        entry.key = default(TKey);
+                        entry.value = default(TValue);
                         freeList = i;
                         freeCount++;
                         version++;
                         return true;
                     }
+
+                    last = i;
+                    i = entry.next;
                 }
             }
             value = default(TValue);
@@ -955,13 +965,13 @@ namespace System.Collections.Generic
                 // dictionary.count+1 could be negative if dictionary.count is Int32.MaxValue
                 while ((uint)index < (uint)dictionary.count)
                 {
-                    if (dictionary.entries[index].hashCode >= 0)
+                    ref Entry entry = ref dictionary.entries[index++];
+
+                    if (entry.hashCode >= 0)
                     {
-                        current = new KeyValuePair<TKey, TValue>(dictionary.entries[index].key, dictionary.entries[index].value);
-                        index++;
+                        current = new KeyValuePair<TKey, TValue>(entry.key, entry.value);
                         return true;
                     }
-                    index++;
                 }
 
                 index = dictionary.count + 1;
@@ -1231,13 +1241,13 @@ namespace System.Collections.Generic
 
                     while ((uint)index < (uint)dictionary.count)
                     {
-                        if (dictionary.entries[index].hashCode >= 0)
+                        ref Entry entry = ref dictionary.entries[index++];
+
+                        if (entry.hashCode >= 0)
                         {
-                            currentKey = dictionary.entries[index].key;
-                            index++;
+                            currentKey = entry.key;
                             return true;
                         }
-                        index++;
                     }
 
                     index = dictionary.count + 1;
@@ -1459,13 +1469,13 @@ namespace System.Collections.Generic
 
                     while ((uint)index < (uint)dictionary.count)
                     {
-                        if (dictionary.entries[index].hashCode >= 0)
+                        ref Entry entry = ref dictionary.entries[index++];
+
+                        if (entry.hashCode >= 0)
                         {
-                            currentValue = dictionary.entries[index].value;
-                            index++;
+                            currentValue = entry.value;
                             return true;
                         }
-                        index++;
                     }
                     index = dictionary.count + 1;
                     currentValue = default(TValue);
