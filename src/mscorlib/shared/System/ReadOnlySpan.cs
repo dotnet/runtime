@@ -34,7 +34,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            _pointer = new ByReference<T>(ref JitHelpers.GetArrayData(array));
+            _pointer = new ByReference<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()));
             _length = array.Length;
         }
 
@@ -57,7 +57,7 @@ namespace System
             if ((uint)start > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), start));
             _length = array.Length - start;
         }
 
@@ -81,7 +81,7 @@ namespace System
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), start));
             _length = length;
         }
 
@@ -202,7 +202,7 @@ namespace System
             if ((uint)_length > (uint)destination.Length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, _length);
+            Span.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, _length);
             return true;
         }
 
@@ -301,7 +301,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref _pointer.Value, _length);
+            Span.CopyTo<T>(ref Unsafe.As<byte, T>(ref destination.GetRawSzArrayData()), ref _pointer.Value, _length);
             return destination;
         }
 
