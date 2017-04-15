@@ -43,6 +43,16 @@ namespace System.Diagnostics
         /// <returns>true if the file is a managed assembly; otherwise, false.</returns>
         private bool TryLoadManagedAssemblyMetadata()
         {
+            // First make sure it's a file we can actually read from.  Only regular files are relevant,
+            // and attempting to open and read from a file such as a named pipe file could cause us to
+            // hang (waiting for someone else to open and write to the file).
+            Interop.Sys.FileStatus fileStatus;
+            if (Interop.Sys.Stat(_fileName, out fileStatus) != 0 ||
+                (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFREG)
+            {
+                throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, _fileName), _fileName);
+            }
+
             try
             {
                 // Try to load the file using the managed metadata reader
