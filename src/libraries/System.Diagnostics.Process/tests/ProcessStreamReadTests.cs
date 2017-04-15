@@ -124,6 +124,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is 2 bugs in Desktop in this codepath, see: dotnet/corefx #18437 and #18436")]
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
@@ -150,9 +151,9 @@ namespace System.Diagnostics.Tests
                 {
                     if (!receivedOutput)
                     {
+                        receivedOutput = true;
                         Assert.Equal(e.Data, "a");
                     }
-                    receivedOutput = true;
                 }
                 catch (Exception ex)
                 {
