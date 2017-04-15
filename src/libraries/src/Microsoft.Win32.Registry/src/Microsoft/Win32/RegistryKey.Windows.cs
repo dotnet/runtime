@@ -924,14 +924,6 @@ namespace Microsoft.Win32
             }
         }
 
-        private bool ContainsRegistryValueCore(string name)
-        {
-            int type = 0;
-            int datasize = 0;
-            int retval = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
-            return retval == 0;
-        }
-
         /// <summary>
         /// After calling GetLastWin32Error(), it clears the last error field,
         /// so you must save the HResult and pass it to this method.  This method
@@ -986,15 +978,6 @@ namespace Microsoft.Win32
                 default:
                     throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
-        }
-
-        private static bool IsWritable(int rights)
-        {
-            return (rights & (Interop.Advapi32.RegistryOperations.KEY_SET_VALUE |
-                              Interop.Advapi32.RegistryOperations.KEY_CREATE_SUB_KEY |
-                              (int)RegistryRights.Delete |
-                              (int)RegistryRights.TakeOwnership |
-                              (int)RegistryRights.ChangePermissions)) != 0;
         }
 
         private static int GetRegistryKeyAccess(bool isWritable)
