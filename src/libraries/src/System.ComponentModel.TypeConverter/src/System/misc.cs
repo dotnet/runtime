@@ -12,43 +12,6 @@ using System.Diagnostics;
 
 namespace System
 {
-    [AttributeUsage(AttributeTargets.All)]
-    internal sealed class SRDescriptionAttribute : DescriptionAttribute
-    {
-        private bool _replaced;
-
-        public override string Description
-        {
-            get
-            {
-                if (!_replaced)
-                {
-                    _replaced = true;
-                    base.DescriptionValue = SR.GetResourceString(base.Description, "");
-                }
-                return base.Description;
-            }
-        }
-
-        public SRDescriptionAttribute(string description) : base(description)
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.All)]
-    internal sealed class SRCategoryAttribute : CategoryAttribute
-    {
-        public SRCategoryAttribute(string category) : base(category)
-        {
-        }
-
-        protected override string GetLocalizedString(string value)
-        {
-            return SR.GetResourceString(value, "");
-        }
-    }
-
-
     // from Misc/SecurityUtils.cs
     internal static class SecurityUtils
     {
