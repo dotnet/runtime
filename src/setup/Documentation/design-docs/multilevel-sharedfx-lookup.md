@@ -1,4 +1,4 @@
-# Multi-level SharedFX Lookup
+﻿# Multi-level SharedFX Lookup
 
 ## Introduction
 
@@ -41,7 +41,7 @@ There are two possibilities for a muxer: it can be a portable app or a .NET Core
 
 In the first case the app file path should have been specified as an argument to the dotnet.exe.
 
-In the second case the dotnet.dll from SDK must be invoked as a portable app. At first the running program searches for the global.json file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the sdk\CLI_version subfolder in the executable directory. If the version defined in the global.json file or the specified version folder cannot be found, then it must choose the most appropriate one. The most appropriate version is defined as the latest production version according to the Semantic Versioning system. If no production version is available, then the latest pre-release must be chosen.
+In the second case the dotnet.dll from SDK must be invoked as a portable app. At first the running program searches for the global.json file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the sdk\CLI_version subfolder in the executable directory. If the version defined in the global.json file or the specified version folder cannot be found, then it must choose the most appropriate one. The most appropriate version is defined as the latest version according to the Semantic Versioning system.
 
 ### Framework search and rolling forward
 
