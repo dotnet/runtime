@@ -555,21 +555,21 @@ namespace System.Diagnostics.Tracing
             {
 #if (!ES_BUILD_PCL && !ES_BUILD_PN && !FEATURE_PAL)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-                if (Marshal.SizeOf(typeof(IntPtr)) == 8)
-                    regKey = @"Software" + @"\Wow6432Node" + regKey;
+                if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+                    regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;
                 else
-                    regKey = @"Software" + regKey;
+                    regKey = @"HKEY_LOCAL_MACHINE\Software" + regKey;
 
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(regKey, writable: false))
-                {
-                    data = key.GetValue(valueName) as byte[];
-                }
-
+                // we need to assert this permission for partial trust scenarios
+#if !CORECLR
+                (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
+#endif
+                data = Microsoft.Win32.Registry.GetValue(regKey, valueName, null) as byte[];
                 if (data != null)
                 {
-                    // We only used the persisted data from the registry for updates.
+                    // We only used the persisted data from the registry for updates.   
                     command = ControllerCommand.Update;
                     return true;
                 }

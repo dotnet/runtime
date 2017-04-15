@@ -820,7 +820,7 @@ namespace System
                     }
                     else
                     {
-                        environmentKey.SetStringValue(variable, value);
+                        environmentKey.SetValue(variable, value);
                     }
                 }
             }
