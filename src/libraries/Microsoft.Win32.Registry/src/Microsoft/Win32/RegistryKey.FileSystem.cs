@@ -112,16 +112,6 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private bool ContainsRegistryValueCore(string name)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
-        }
-
-        private static bool IsWritable(int rights)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
-        }
-
         private static int GetRegistryKeyAccess(bool isWritable)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
