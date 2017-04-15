@@ -182,6 +182,15 @@ namespace System.SpanTests
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }
 
+        [Fact]
+        public static void CopyToCovariantArray()
+        {
+            string[] src = new string[] { "Hello" };
+            object[] dst = new object[] { "world" };
+
+            src.CopyTo<object>(dst);
+            Assert.Equal("Hello", dst[0]);
+        }
 
         // This test case tests the Span.CopyTo method for large buffers of size 4GB or more. In the fast path,
         // the CopyTo method performs copy in chunks of size 4GB (uint.MaxValue) with final iteration copying
