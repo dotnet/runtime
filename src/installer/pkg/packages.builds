@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-  	<ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
     <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
