@@ -346,7 +346,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if false // TODO: EventListener events are not enabled yet. GitHub issues #4865.
+#if netcoreapp
         [Fact]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
@@ -471,6 +471,6 @@ namespace BasicEventSourceTests
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-#endif // false
+#endif
     }
 }
