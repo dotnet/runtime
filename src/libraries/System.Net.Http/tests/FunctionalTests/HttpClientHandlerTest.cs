@@ -1653,7 +1653,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && method == "TRACE")
                     {
-                        // [ActiveIssue(9023, TestPlatforms.Windows)]
+                        // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE' 
+                        // verb and a request body. The usual response from a server is "400 Bad Request".
+                        // See here for more info: https://github.com/dotnet/corefx/issues/9023
                         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                     }
                     else
