@@ -876,7 +876,7 @@ namespace System
             }
         }
 
-        internal ref char GetFirstCharRef()
+        internal ref char GetRawStringData()
         {
             return ref m_firstChar;
         }

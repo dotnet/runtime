@@ -381,8 +381,6 @@
     <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
     <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ByReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Span.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />

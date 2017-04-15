@@ -216,14 +216,7 @@ namespace System.Runtime.CompilerServices
         private extern static bool IsAddressInStack(IntPtr ptr);
 #endif
 
-        static internal bool ByRefLessThan<T>(ref T refA, ref T refB)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            throw new InvalidOperationException();
-        }
-
-        static internal ref T GetArrayData<T>(T[] array)
+        static internal ref byte GetRawSzArrayData(this Array array)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementation for how this happens.
