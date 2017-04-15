@@ -36,9 +36,9 @@ namespace System.Net.NetworkInformation.Tests
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             Process p = Process.Start(psi);
-            Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
 
             string pingOutput = p.StandardOutput.ReadToEnd();
+            Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
 
             try
             {
