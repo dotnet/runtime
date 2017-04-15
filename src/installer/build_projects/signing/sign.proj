@@ -35,6 +35,9 @@
       <FilesToSign Include="$(OutDir)corehost/**/hostpolicy.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
+      <FilesToSign Include="$(OutDir)corehost/**/dotnet.exe">
+        <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
     </ItemGroup>
   </Target>
 
