@@ -805,8 +805,7 @@ DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST,       UnsafeEnumCast, NoSi
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST_LONG,  UnsafeEnumCastLong, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_CAST_TO_STACKPTR,UnsafeCastToStackPointer, NoSig)
 #endif // _DEBUG
-DEFINE_METHOD(JIT_HELPERS,          BYREF_LESSTHAN,         ByRefLessThan, NoSig)
-DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          GET_RAW_SZ_ARRAY_DATA,  GetRawSzArrayData, NoSig)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
