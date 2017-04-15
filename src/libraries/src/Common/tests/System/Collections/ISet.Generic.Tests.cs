@@ -54,7 +54,7 @@ namespace System.Collections.Tests
             }
         }
 
-        protected virtual int ISet_Large_Capacity => 4000;
+        protected virtual int ISet_Large_Capacity => 1000;
 
         #endregion
 
@@ -492,7 +492,7 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Set Function tests on a very large Set
+        #region Set Function tests on a large Set
 
         [Fact]
         [OuterLoop]
