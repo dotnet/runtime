@@ -237,7 +237,7 @@ private:
     // Per tree node member functions
     void LowerStoreInd(GenTree* node);
     GenTree* LowerAdd(GenTree* node);
-    void LowerUnsignedDivOrMod(GenTree* node);
+    GenTree* LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
 
