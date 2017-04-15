@@ -63,12 +63,16 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
+                DateTimeOffset before = DateTimeOffset.Now;
+
                 string file = "GetCreationTime_GetsTime";
                 isf.CreateTestFile(file);
 
-                // Filesystem timestamps vary in granularity, we can't make a positive assertion that
-                // the time will come before or after the current time.
-                Assert.Equal(default(DateTimeOffset).ToLocalTime(), isf.GetCreationTime(file));
+                DateTimeOffset after = DateTimeOffset.Now;
+
+                DateTimeOffset creationTime = isf.GetCreationTime(file);
+                Assert.InRange(creationTime, before.AddSeconds(-10), after.AddSeconds(10)); // +/- 10 for some wiggle room
+                Assert.Equal(creationTime, isf.GetCreationTime(file));
             }
         }
 
