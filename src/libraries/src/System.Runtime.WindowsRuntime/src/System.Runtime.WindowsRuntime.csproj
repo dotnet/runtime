@@ -49,7 +49,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="System.Private.Corelib" />
-    <ReferenceFromRuntime Include="System.Private.Threading" />
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
