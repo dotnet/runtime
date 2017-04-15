@@ -60,7 +60,8 @@ GenTreePtr Compiler::fgMorphCastIntoHelper(GenTreePtr tree, int helper, GenTreeP
 
 GenTreePtr Compiler::fgMorphIntoHelperCall(GenTreePtr tree, int helper, GenTreeArgList* args)
 {
-    tree->ChangeOper(GT_CALL);
+    // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
+    tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
 
     tree->gtFlags |= GTF_CALL;
     if (args)
