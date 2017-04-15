@@ -80,6 +80,8 @@ public:
         const hostpolicy_init_t& init,
         const arguments_t& args);
 
+    pal::string_t get_probe_directories();
+
     void setup_probe_config(
         const hostpolicy_init_t& init,
         const arguments_t& args);
