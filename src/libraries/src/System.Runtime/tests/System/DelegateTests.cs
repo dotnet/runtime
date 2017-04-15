@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Tests
@@ -14,6 +17,11 @@ namespace System.Tests
         public static DelegateTests.TestStruct TestFunc(this DelegateTests.TestClass testparam)
         {
             return testparam.structField;
+        }
+
+        public static void IncrementX(this DelegateTests.TestSerializableClass t)
+        {
+            t.x++;
         }
     }
 
@@ -30,6 +38,12 @@ namespace System.Tests
             public TestStruct structField;
         }
 
+        [Serializable]
+        public class TestSerializableClass
+        {
+            public int x = 1;
+        }
+
         private static void EmptyFunc() { }
 
         public delegate TestStruct StructReturningDelegate();
@@ -44,6 +58,22 @@ namespace System.Tests
             TestStruct returnedStruct = testDelegate();
             Assert.Same(foo.structField.o1, returnedStruct.o1);
             Assert.Same(foo.structField.o2, returnedStruct.o2);
+        }
+
+        [Fact]
+        public static void ClosedStaticDelegateSerialization()
+        {
+            var t = new TestSerializableClass();
+            Assert.Equal(1, t.x);
+            Action d = t.IncrementX;
+            d();
+            Assert.Equal(2, t.x);
+
+            d = BinaryFormatterHelpers.Clone(d);
+            t = (TestSerializableClass)d.Target;
+            Assert.Equal(2, t.x);
+            d();
+            Assert.Equal(3, t.x);
         }
 
         public class A { }
