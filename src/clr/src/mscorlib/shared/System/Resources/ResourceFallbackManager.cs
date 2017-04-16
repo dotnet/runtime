@@ -30,15 +30,6 @@ namespace System.Resources
         private CultureInfo m_neutralResourcesCulture;
         private bool m_useParents;
 
-        // This is a cache of the thread, process, user, and OS-preferred fallback cultures.
-        // However, each thread may have a different value, and these may change during the
-        // lifetime of the process.  So this cache must be verified each time we use it.
-        // Hence, we'll keep an array of strings for culture names & check it each time,
-        // but we'll really cache an array of CultureInfo's.  Using thread-local statics
-        // as well to avoid differences across threads.
-        [ThreadStatic]
-        private static CultureInfo[] cachedOsFallbackArray;
-
         internal ResourceFallbackManager(CultureInfo startingCulture, CultureInfo neutralResourcesCulture, bool useParents)
         {
             if (startingCulture != null)

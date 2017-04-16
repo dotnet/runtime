@@ -11,14 +11,12 @@
 ** 
 ===========================================================*/
 
+using System.Globalization;
+using System.IO;
+using System.Runtime.Serialization;
+
 namespace System
 {
-    using System;
-    using System.Runtime.Serialization;
-    using FileLoadException = System.IO.FileLoadException;
-    using SecurityException = System.Security.SecurityException;
-    using System.Globalization;
-
     [Serializable]
     public class BadImageFormatException : SystemException
     {
@@ -56,6 +54,21 @@ namespace System
             _fileName = fileName;
         }
 
+        protected BadImageFormatException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _fileName = info.GetString("BadImageFormat_FileName");
+            _fusionLog = info.GetString("BadImageFormat_FusionLog");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
+            info.AddValue("BadImageFormat_FusionLog", _fusionLog, typeof(String));
+        }
+
         public override String Message
         {
             get
@@ -70,7 +83,7 @@ namespace System
             if (_message == null)
             {
                 if ((_fileName == null) &&
-                    (HResult == System.__HResults.COR_E_EXCEPTION))
+                    (HResult == __HResults.COR_E_EXCEPTION))
                     _message = SR.Arg_BadImageFormatException;
 
                 else
@@ -85,7 +98,7 @@ namespace System
 
         public override String ToString()
         {
-            String s = GetType().FullName + ": " + Message;
+            String s = GetType().ToString() + ": " + Message;
 
             if (_fileName != null && _fileName.Length != 0)
                 s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
@@ -95,68 +108,22 @@ namespace System
 
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;
-            try
+
+            if (_fusionLog != null)
             {
-                if (FusionLog != null)
-                {
-                    if (s == null)
-                        s = " ";
-                    s += Environment.NewLine;
-                    s += Environment.NewLine;
-                    s += FusionLog;
-                }
+                if (s == null)
+                    s = " ";
+                s += Environment.NewLine;
+                s += Environment.NewLine;
+                s += _fusionLog;
             }
-            catch (SecurityException)
-            {
-            }
+
             return s;
-        }
-
-        protected BadImageFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            // Base class constructor will check info != null.
-
-            _fileName = info.GetString("BadImageFormat_FileName");
-            try
-            {
-                _fusionLog = info.GetString("BadImageFormat_FusionLog");
-            }
-            catch
-            {
-                _fusionLog = null;
-            }
-        }
-
-        private BadImageFormatException(String fileName, String fusionLog, int hResult)
-            : base(null)
-        {
-            HResult = hResult;
-            _fileName = fileName;
-            _fusionLog = fusionLog;
-            SetMessageField();
         }
 
         public String FusionLog
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-#pragma warning restore CS0618 // Type or member is obsolete
             get { return _fusionLog; }
-        }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // Serialize data for our base classes.  base will verify info != null.
-            base.GetObjectData(info, context);
-
-            // Serialize data for this class
-            info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
-            try
-            {
-                info.AddValue("BadImageFormat_FusionLog", FusionLog, typeof(String));
-            }
-            catch (SecurityException)
-            {
-            }
         }
     }
 }
