@@ -16,10 +16,13 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentOutOfRangeException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventArgs.cs" />
@@ -27,6 +30,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\AsyncCallback.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeTargets.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\BadImageFormatException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs"/>
@@ -253,7 +257,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingManifestResourceException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingSatelliteAssemblyException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\NeutralResourcesLanguageAttribute.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceFallbackManager.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceSet.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceTypeCode.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\RuntimeResourceSet.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\SatelliteContractVersionAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\UltimateResourceFallbackLocation.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs"/>
@@ -275,8 +282,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FormattableStringFactory.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IAsyncStateMachine.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IndexerNameAttribute.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\INotifyCompletion.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsConst.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsVolatile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs"/>
@@ -355,9 +362,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF32Encoding.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AbandonedMutexException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ApartmentState.cs"/>
