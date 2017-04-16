@@ -13,36 +13,33 @@
 ** 
 ===========================================================*/
 
+using System;
+using System.Collections;
+using System.IO;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
+using System.Diagnostics.Contracts;
+using System.Collections.Generic;
+
 namespace System.Resources
 {
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Reflection;
-    using System.Runtime.Serialization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
-
     // A ResourceSet stores all the resources defined in one particular CultureInfo.
     // 
     // The method used to load resources is straightforward - this class
     // enumerates over an IResourceReader, loading every name and value, and 
     // stores them in a hash table.  Custom IResourceReaders can be used.
-    // 
+    //
     [Serializable]
     public class ResourceSet : IDisposable, IEnumerable
     {
-        [NonSerialized] protected IResourceReader Reader;
-        internal Hashtable Table;
+        [NonSerialized]
+        protected IResourceReader Reader;
 
-        private Hashtable _caseInsensitiveTable;  // For case-insensitive lookups.
-
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        [OptionalField]
-        private Assembly _assembly;  // For LooselyLinkedResourceReferences
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
+        private Dictionary<object, object> _table;
+        private Dictionary<object, object> _caseInsensitiveTable;  // For case-insensitive lookups.
 
         protected ResourceSet()
         {
@@ -68,16 +65,6 @@ namespace System.Resources
             ReadResources();
         }
 
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        public ResourceSet(String fileName, Assembly assembly)
-        {
-            Reader = new ResourceReader(fileName);
-            CommonInit();
-            _assembly = assembly;
-            ReadResources();
-        }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
-
         // Creates a ResourceSet using the system default ResourceReader
         // implementation.  Use this constructor to read from an open stream 
         // of data.
@@ -89,16 +76,6 @@ namespace System.Resources
             ReadResources();
         }
 
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        public ResourceSet(Stream stream, Assembly assembly)
-        {
-            Reader = new ResourceReader(stream);
-            CommonInit();
-            _assembly = assembly;
-            ReadResources();
-        }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
-
         public ResourceSet(IResourceReader reader)
         {
             if (reader == null)
@@ -109,22 +86,9 @@ namespace System.Resources
             ReadResources();
         }
 
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        public ResourceSet(IResourceReader reader, Assembly assembly)
-        {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-            Contract.EndContractBlock();
-            Reader = reader;
-            CommonInit();
-            _assembly = assembly;
-            ReadResources();
-        }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
-
         private void CommonInit()
         {
-            Table = new Hashtable();
+            _table = new Dictionary<object, object>();
         }
 
         // Closes and releases any resources used by this ResourceSet, if any.
@@ -148,22 +112,13 @@ namespace System.Resources
             }
             Reader = null;
             _caseInsensitiveTable = null;
-            Table = null;
+            _table = null;
         }
 
         public void Dispose()
         {
             Dispose(true);
         }
-
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        // Optional - used for resolving assembly manifest resource references.
-        // This can safely be null.
-        public Assembly Assembly {
-            get { return _assembly; }
-            /*protected*/ set { _assembly = value; }
-        }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
 
         // Returns the preferred IResourceReader class for this kind of ResourceSet.
         // Subclasses of ResourceSet using their own Readers &; should override
@@ -178,7 +133,8 @@ namespace System.Resources
         // GetDefaultReader and GetDefaultWriter.
         public virtual Type GetDefaultWriter()
         {
-            return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken, throwOnError: true);
+            Assembly resourceWriterAssembly = Assembly.Load("System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
+            return resourceWriterAssembly.GetType("System.Resources.ResourceWriter", true);
         }
 
         public virtual IDictionaryEnumerator GetEnumerator()
@@ -193,7 +149,7 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
+            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
             return copyOfTable.GetEnumerator();
@@ -271,13 +227,7 @@ namespace System.Resources
             while (en.MoveNext())
             {
                 Object value = en.Value;
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                if (Assembly != null && value is LooselyLinkedResourceReference) {
-                    LooselyLinkedResourceReference assRef = (LooselyLinkedResourceReference) value;
-                    value = assRef.Resolve(Assembly);
-                }
-#endif //LOOSELYLINKEDRESOURCEREFERENCE
-                Table.Add(en.Key, value);
+                _table.Add(en.Key, value);
             }
             // While technically possible to close the Reader here, don't close it
             // to help with some WinRes lifetime issues.
@@ -286,10 +236,10 @@ namespace System.Resources
         private Object GetObjectInternal(String name)
         {
             if (name == null)
-                throw new ArgumentNullException(nameof(name));
+                throw new ArgumentNullException("name");
             Contract.EndContractBlock();
 
-            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
+            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
@@ -299,19 +249,15 @@ namespace System.Resources
 
         private Object GetCaseInsensitiveObjectInternal(String name)
         {
-            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
+            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            Hashtable caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
+            Dictionary<object, object> caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
             if (caseTable == null)
             {
-                caseTable = new Hashtable(StringComparer.OrdinalIgnoreCase);
-#if _DEBUG
-                //Console.WriteLine("ResourceSet::GetObject loading up case-insensitive data");
-                BCLDebug.Perf(false, "Using case-insensitive lookups is bad perf-wise.  Consider capitalizing " + name + " correctly in your source");
-#endif
+                caseTable = new Dictionary<object, object>(CaseInsensitiveStringObjectComparer.Instance);
 
                 IDictionaryEnumerator en = copyOfTable.GetEnumerator();
                 while (en.MoveNext())
@@ -322,6 +268,26 @@ namespace System.Resources
             }
 
             return caseTable[name];
+        }
+
+        /// <summary>
+        /// Adapter for StringComparer.OrdinalIgnoreCase to allow it to be used with Dictionary
+        /// </summary>
+        private class CaseInsensitiveStringObjectComparer : IEqualityComparer<object>
+        {
+            public static CaseInsensitiveStringObjectComparer Instance { get; } = new CaseInsensitiveStringObjectComparer();
+
+            private CaseInsensitiveStringObjectComparer() { }
+
+            public new bool Equals(object x, object y)
+            {
+                return ((IEqualityComparer)StringComparer.OrdinalIgnoreCase).Equals(x, y);
+            }
+
+            public int GetHashCode(object obj)
+            {
+                return ((IEqualityComparer)StringComparer.OrdinalIgnoreCase).GetHashCode(obj);
+            }
         }
     }
 }
