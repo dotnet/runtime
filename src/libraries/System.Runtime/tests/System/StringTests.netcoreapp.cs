@@ -152,12 +152,14 @@ namespace System.Tests
             yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.OrdinalIgnoreCase, "def" };
-            //TODO: yield return new object[] { "abc", "ABC", "def", StringComparison.OrdinalIgnoreCase, "def" };
+            // [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
+           	//yield return new object[] { "abc", "ABC", "def", StringComparison.OrdinalIgnoreCase, "def" };
             yield return new object[] { "abc", "abc", "", StringComparison.OrdinalIgnoreCase, "" };
             yield return new object[] { "abc", "b", "LONG", StringComparison.OrdinalIgnoreCase, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.OrdinalIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.OrdinalIgnoreCase, "ac" };
-            //TODO: yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
+            // [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
+            //yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
 
             yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCulture, "def" };
             yield return new object[] { "abc", "ABC", "def", StringComparison.InvariantCulture, "abc" };
@@ -261,7 +263,8 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("oldValue", () => "abc".Replace(null, "def", true, CultureInfo.CurrentCulture));
         }
 
-        //TODO: [Fact]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
         public void Replace_StringComparsion_EmptyOldValue_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", StringComparison.CurrentCulture));
