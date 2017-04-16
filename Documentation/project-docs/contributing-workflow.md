@@ -62,7 +62,7 @@ the PR.
 PR - CI Process
 ===============
 
-The [dotnet continuous integration](http://dotnet-ci.cloudapp.net/) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean.
+The [dotnet continuous integration](http://ci.dot.net/) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean.
 
 If the CI build fails for any reason, the PR issue will be updated with a link that can be used to determine the cause of the failure.
 
