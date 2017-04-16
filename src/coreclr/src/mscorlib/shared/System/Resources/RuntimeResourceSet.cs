@@ -13,18 +13,18 @@
 ** 
 ===========================================================*/
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Resources
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     // A RuntimeResourceSet stores all the resources defined in one 
     // particular CultureInfo, with some loading optimizations.
     //
@@ -189,31 +189,18 @@ namespace System.Resources
 
         internal RuntimeResourceSet(String fileName) : base(false)
         {
-            BCLDebug.Log("RESMGRFILEFORMAT", "RuntimeResourceSet .ctor(String)");
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _defaultReader = new ResourceReader(stream, _resCache);
             Reader = _defaultReader;
         }
 
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-        internal RuntimeResourceSet(Stream stream, Assembly assembly) : base(false)
-        {
-            BCLDebug.Log("RESMGRFILEFORMAT", "RuntimeResourceSet .ctor(Stream)");
-            _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
-            _defaultReader = new ResourceReader(stream, _resCache);
-            Reader = _defaultReader;
-            Assembly = assembly;
-        }
-#else
         internal RuntimeResourceSet(Stream stream) : base(false)
         {
-            BCLDebug.Log("RESMGRFILEFORMAT", "RuntimeResourceSet .ctor(Stream)");
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             _defaultReader = new ResourceReader(stream, _resCache);
             Reader = _defaultReader;
         }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
 
         protected override void Dispose(bool disposing)
         {
@@ -305,8 +292,6 @@ namespace System.Resources
 
                 if (_defaultReader != null)
                 {
-                    BCLDebug.Log("RESMGRFILEFORMAT", "Going down fast path in RuntimeResourceSet::GetObject");
-
                     // Find the offset within the data section
                     int dataPos = -1;
                     if (_resCache.TryGetValue(key, out resLocation))
@@ -348,13 +333,6 @@ namespace System.Resources
 
                     if (value != null || !ignoreCase)
                     {
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                        if (Assembly != null && (value is LooselyLinkedResourceReference)) {
-                            LooselyLinkedResourceReference assRef = (LooselyLinkedResourceReference) value;
-                            value = assRef.Resolve(Assembly);
-                        }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
-
                         return value;  // may be null
                     }
                 }  // if (_defaultReader != null)
@@ -369,9 +347,6 @@ namespace System.Resources
                     {
                         _caseInsensitiveTable = new Dictionary<String, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
                     }
-#if _DEBUG
-                    BCLDebug.Perf(!ignoreCase, "Using case-insensitive lookups is bad perf-wise.  Consider capitalizing " + key + " correctly in your source");
-#endif
 
                     if (_defaultReader == null)
                     {
@@ -450,12 +425,6 @@ namespace System.Resources
                     copyOfCache[key] = resLocation;
                 }
             }
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-            if (Assembly != null && value is LooselyLinkedResourceReference) {
-                LooselyLinkedResourceReference assRef = (LooselyLinkedResourceReference) value;
-                value = assRef.Resolve(Assembly);
-            }
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
             return value;
         }
     }
