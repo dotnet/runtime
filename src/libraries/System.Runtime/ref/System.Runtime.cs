@@ -2080,6 +2080,8 @@ namespace System
         public string Remove(int startIndex, int count) { throw null; }
         public string Replace(char oldChar, char newChar) { throw null; }
         public string Replace(string oldValue, string newValue) { throw null; }
+        public string Replace(string oldValue, string newValue, System.StringComparison comparisonType) { throw null; }
+        public string Replace(string oldValue, string newValue, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(string separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }

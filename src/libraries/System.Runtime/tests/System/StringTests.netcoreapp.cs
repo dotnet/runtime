@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static partial class StringTests
+    public partial class StringTests
     {
         [Theory]
         [InlineData("Hello", 'o', true)]
@@ -122,6 +123,160 @@ namespace System.Tests
         public static void Join_Char_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException(int startIndex, int count)
         {
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, startIndex, count));
+        }
+
+        public static IEnumerable<object[]> Replace_StringComparison_TestData()
+        {
+            yield return new object[] { "abc", "abc", "def", StringComparison.CurrentCulture, "def" };
+            yield return new object[] { "abc", "ABC", "def", StringComparison.CurrentCulture, "abc" };
+            yield return new object[] { "abc", "abc", "", StringComparison.CurrentCulture, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.CurrentCulture, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.CurrentCulture, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.CurrentCulture, "ac" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCulture, "def" };
+
+            yield return new object[] { "abc", "abc", "def", StringComparison.CurrentCultureIgnoreCase, "def" };
+            yield return new object[] { "abc", "ABC", "def", StringComparison.CurrentCultureIgnoreCase, "def" };
+            yield return new object[] { "abc", "abc", "", StringComparison.CurrentCultureIgnoreCase, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.CurrentCultureIgnoreCase, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.CurrentCultureIgnoreCase, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.CurrentCultureIgnoreCase, "ac" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCultureIgnoreCase, "def" };
+
+            yield return new object[] { "abc", "abc", "def", StringComparison.Ordinal, "def" };
+            yield return new object[] { "abc", "ABC", "def", StringComparison.Ordinal, "abc" };
+            yield return new object[] { "abc", "abc", "", StringComparison.Ordinal, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.Ordinal, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.Ordinal, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.Ordinal, "ac" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
+
+            yield return new object[] { "abc", "abc", "def", StringComparison.OrdinalIgnoreCase, "def" };
+            // [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
+           	//yield return new object[] { "abc", "ABC", "def", StringComparison.OrdinalIgnoreCase, "def" };
+            yield return new object[] { "abc", "abc", "", StringComparison.OrdinalIgnoreCase, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.OrdinalIgnoreCase, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.OrdinalIgnoreCase, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.OrdinalIgnoreCase, "ac" };
+            // [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
+            //yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
+
+            yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCulture, "def" };
+            yield return new object[] { "abc", "ABC", "def", StringComparison.InvariantCulture, "abc" };
+            yield return new object[] { "abc", "abc", "", StringComparison.InvariantCulture, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.InvariantCulture, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.InvariantCulture, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.InvariantCulture, "ac" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCulture, "def" };
+
+            yield return new object[] { "abc", "abc", "def", StringComparison.InvariantCultureIgnoreCase, "def" };
+            yield return new object[] { "abc", "ABC", "def", StringComparison.InvariantCultureIgnoreCase, "def" };
+            yield return new object[] { "abc", "abc", "", StringComparison.InvariantCultureIgnoreCase, "" };
+            yield return new object[] { "abc", "b", "LONG", StringComparison.InvariantCultureIgnoreCase, "aLONGc" };
+            yield return new object[] { "abc", "b", "d", StringComparison.InvariantCultureIgnoreCase, "adc" };
+            yield return new object[] { "abc", "b", null, StringComparison.InvariantCultureIgnoreCase, "ac" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
+
+            string turkishSource = "\u0069\u0130";
+
+            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.Ordinal, "a\u0130" };
+            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.OrdinalIgnoreCase, "a\u0130" };
+            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.Ordinal, "\u0069a" };
+            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.OrdinalIgnoreCase, "\u0069a" };
+
+            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCulture, "a\u0130" };
+            yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCultureIgnoreCase, "a\u0130" };
+            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
+            yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Replace_StringComparison_TestData))]
+        public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
+        {
+            Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
+        }
+
+        [Fact]
+        public void Replace_StringComparison_TurkishI()
+        {
+            string source = "\u0069\u0130";
+            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            {
+                Assert.True("\u0069".Equals("\u0130", StringComparison.CurrentCultureIgnoreCase));
+            
+                Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCulture));
+                Assert.Equal("aa", source.Replace("\u0069", "a", StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
+                Assert.Equal("aa", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
+            });
+
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            {
+                Assert.False("\u0069".Equals("\u0130", StringComparison.CurrentCultureIgnoreCase));
+
+                Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCulture));
+                Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
+                Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
+            });
+        }
+
+        public static IEnumerable<object[]> Replace_StringComparisonCulture_TestData()
+        {
+            yield return new object[] { "abc", "abc", "def", false, null, "def" };
+            yield return new object[] { "abc", "ABC", "def", false, null, "abc" };
+            yield return new object[] { "abc", "abc", "def", false, CultureInfo.InvariantCulture, "def" };
+            yield return new object[] { "abc", "ABC", "def", false, CultureInfo.InvariantCulture, "abc" };
+
+            yield return new object[] { "abc", "abc", "def", true, null, "def" };
+            yield return new object[] { "abc", "ABC", "def", true, null, "def" };
+            yield return new object[] { "abc", "abc", "def", true, CultureInfo.InvariantCulture, "def" };
+            yield return new object[] { "abc", "ABC", "def", true, CultureInfo.InvariantCulture, "def" };
+
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, null, "def" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, null, "def" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
+            yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
+
+            yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
+            yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+            yield return new object[] { "\u0069\u0130", "\u0069", "a", false, CultureInfo.InvariantCulture, "a\u0130" };
+            yield return new object[] { "\u0069\u0130", "\u0069", "a", true, CultureInfo.InvariantCulture, "a\u0130" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
+        public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
+        {
+            Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, culture));
+            if (culture == null)
+            {
+                Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, CultureInfo.CurrentCulture));
+            }
+        }
+
+        [Fact]
+        public void Replace_StringComparsion_NullOldValue_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentNullException>("oldValue", () => "abc".Replace(null, "def", StringComparison.CurrentCulture));
+            Assert.Throws<ArgumentNullException>("oldValue", () => "abc".Replace(null, "def", true, CultureInfo.CurrentCulture));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/coreclr/pull/11001")]
+        public void Replace_StringComparsion_EmptyOldValue_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", StringComparison.CurrentCulture));
+            Assert.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", true, CultureInfo.CurrentCulture));
+        }
+
+        [Theory]
+        [InlineData(StringComparison.CurrentCulture - 1)]
+        [InlineData(StringComparison.OrdinalIgnoreCase + 1)]
+        public void Replace_NoSuchStringComparison_ThrowsArgumentException(StringComparison comparisonType)
+        {
+            Assert.Throws<ArgumentException>("comparisonType", () => "abc".Replace("abc", "def", comparisonType));
         }
     }
 }
