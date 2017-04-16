@@ -713,6 +713,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [ActiveIssue(18431)]
         public void TestElementWithCollection2()
         {
             Run<DefaultMachineConfig2>("TestElementWithCollection2", (config, label) =>
