@@ -12,47 +12,12 @@ internal partial class Interop
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188.aspx
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true, EntryPoint = "SHGetKnownFolderPath")]
-        private static extern int SHGetKnownFolderPath_ShellFolders(
+        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
+        internal static extern int SHGetKnownFolderPath(
             [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath);
-
-        private static bool s_skipShellFolders;
-
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true, EntryPoint = "SHGetKnownFolderPath")]
-        private static extern int SHGetKnownFolderPath_Shell32(
-            [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
-            uint dwFlags,
-            IntPtr hToken,
-            out string ppszPath);
-
-        internal static int SHGetKnownFolderPath(
-            Guid rfid,
-            uint dwFlags,
-            IntPtr hToken,
-            out string ppszPath)
-        {
-            // The ShellFolders API set isn't available on Win7, while the direct Shell32 isn't available
-            // on some mincore versions of Windows. We'll attempt the newer API set version and fall back
-            // to the older "Shell32" if needed.
-            if (!s_skipShellFolders)
-            {
-                try
-                {
-                    return SHGetKnownFolderPath_ShellFolders(rfid, dwFlags, hToken, out ppszPath);
-                }
-                catch (TypeLoadException)
-                {
-                    // TypeLoad contains DllNotFound and EntryPointNotFound.
-                    // Skip the API set attempt next time through.
-                    s_skipShellFolders = true;
-                }
-            }
-
-            return SHGetKnownFolderPath_Shell32(rfid, dwFlags, hToken, out ppszPath);
-        }
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/dd378457.aspx
         internal static class KnownFolders
