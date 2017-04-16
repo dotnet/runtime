@@ -376,27 +376,66 @@ namespace System.Reflection.Tests
 #pragma warning restore 618
 
         [Fact]
-        public void Test_LoadFrom()
+        public void LoadFrom_SamePath_ReturnsEqualAssemblies()
         {
-            var assem = Assembly.LoadFrom(destTestAssemblyPath);
-            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
-            var assem1 = Assembly.LoadFrom(destTestAssemblyPath);
-            Assert.Equal(assem, assem1);
-
-            assem = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
-            Assert.Equal(assem, typeof(AssemblyTests).Assembly);
-
-            // Test that loading assembly of same identity as TPA returns TPA assembly even if paths differ
-            assem1 = Assembly.LoadFrom(loadFromTestPath);
-            Assert.Equal(assem, assem1);
-        }        
+            Assembly assembly1 = Assembly.LoadFrom(destTestAssemblyPath);
+            Assembly assembly2 = Assembly.LoadFrom(destTestAssemblyPath);
+            Assert.Equal(assembly1, assembly2);
+        }
 
         [Fact]
-        public void Test_UnsafeLoadFrom()
+        public void LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies()
         {
-            var assem = Assembly.UnsafeLoadFrom(destTestAssemblyPath);
+            Assembly assembly1 = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
+            Assert.Equal(assembly1, typeof(AssemblyTests).Assembly);
+
+            Assembly assembly2 = Assembly.LoadFrom(loadFromTestPath);
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.NotEqual(assembly1, assembly2);
+            }
+            else
+            {
+                Assert.Equal(assembly1, assembly2);
+            }
+        }
+
+        [Fact]
+        public void LoadFrom_NullAssemblyFile_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
             Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
-        }        
+        }
+
+        [Fact]
+        public void LoadFrom_EmptyAssemblyFile_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(null, (() => Assembly.LoadFrom("")));
+            Assert.Throws<ArgumentException>(null, (() => Assembly.UnsafeLoadFrom("")));
+        }
+
+        [Fact]
+        public void LoadFrom_NoSuchFile_ThrowsFileNotFoundException()
+        {
+            Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom("NoSuchPath"));
+            Assert.Throws<FileNotFoundException>(() => Assembly.UnsafeLoadFrom("NoSuchPath"));
+        }
+
+        [Fact]
+        public void UnsafeLoadFrom_SamePath_ReturnsEqualAssemblies()
+        {
+            Assembly assembly1 = Assembly.UnsafeLoadFrom(destTestAssemblyPath);
+            Assembly assembly2 = Assembly.UnsafeLoadFrom(destTestAssemblyPath);
+            Assert.Equal(assembly1, assembly2);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The implementation of LoadFrom(string, byte[], AssemblyHashAlgorithm is not supported in .NET Core.")]
+        public void LoadFrom_WithHashValue_NetCoreCore_ThrowsNotSupportedException()
+        {
+            Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(destTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
+        }
 
         [Fact]
         public void GetFile()
