@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Globalization;
+
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
@@ -2080,6 +2082,8 @@ namespace System
         public string Remove(int startIndex, int count) { throw null; }
         public string Replace(char oldChar, char newChar) { throw null; }
         public string Replace(string oldValue, string newValue) { throw null; }
+        public string Replace(string oldValue, string newValue, StringComparison comparisonType) { throw null; }
+        public string Replace(string oldValue, string newValue, bool ignoreCase, CultureInfo culture) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(string separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
