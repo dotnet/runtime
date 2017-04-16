@@ -72,5 +72,70 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.GetValueOrDefault("key"));
             Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.GetValueOrDefault("key", "value"));
         }
+
+        [Fact]
+        public void TryAdd_NullIDictionary_ThrowsArgumentNullException()
+        {
+            IDictionary<string, string> dictionary = null;
+            Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.TryAdd("key", "value"));
+        }
+
+        [Fact]
+        public void TryAdd_NullKeyIDictionary_ThrowsArgumentNullException()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
+            Assert.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(null, "value"));
+        }
+
+        [Fact]
+        public void TryAdd_KeyDoesntExistInIDictionary_ReturnsTrue()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
+            Assert.True(dictionary.TryAdd("key", "value"));
+            Assert.Equal("value", dictionary["key"]);
+        }
+
+        [Fact]
+        public void TryAdd_KeyExistsInIDictionary_ReturnsFalse()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
+            Assert.False(dictionary.TryAdd("key", "value2"));
+            Assert.Equal("value", dictionary["key"]);
+        }
+
+        [Fact]
+        public void Remove_NullIDictionary_ThrowsArgumentNullException()
+        {
+            IDictionary<string, string> dictionary = null;
+            string value = null;
+            Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.Remove("key", out value));
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public void Remove_NullKeyIDictionary_ThrowsArgumentNullException()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
+            string value = null;
+            Assert.Throws<ArgumentNullException>("key", () => dictionary.Remove(null, out value));
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public void Remove_KeyExistsInIDictionary_ReturnsTrue()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>() { ["key"] = "value" };
+            Assert.True(dictionary.Remove("key", out var value));
+            Assert.Equal("value", value);
+            Assert.Throws<KeyNotFoundException>(() => dictionary["key"]);
+        }
+
+        [Fact]
+        public void Remove_KeyDoesntExistInIDictionary_ReturnsFalse()
+        {
+            IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
+            Assert.False(dictionary.Remove("key", out var value));
+            Assert.Equal(default(string), value);
+        }
     }
 }
