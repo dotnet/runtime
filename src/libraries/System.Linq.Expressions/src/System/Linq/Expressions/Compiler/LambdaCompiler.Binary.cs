@@ -266,8 +266,6 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
                     // Guaranteed to fit within result type: no conversion
                     return;
-                default:
-                    throw ContractUtils.Unreachable;
             }
 
             EmitConvertArithmeticResult(op, leftType);
@@ -378,10 +376,6 @@ namespace System.Linq.Expressions.Compiler
                         EmitLiftedRelational(op, leftType);
                     }
                     break;
-                case ExpressionType.AndAlso:
-                case ExpressionType.OrElse:
-                default:
-                    throw ContractUtils.Unreachable;
             }
         }
 

@@ -165,9 +165,6 @@ namespace System.Linq.Expressions.Compiler
                 case ExpressionType.Try:
                     EmitTryExpression(node);
                     break;
-
-                default:
-                    throw ContractUtils.Unreachable;
             }
 
             if (emitStart)
