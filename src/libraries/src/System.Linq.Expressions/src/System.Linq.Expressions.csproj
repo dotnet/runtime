@@ -65,9 +65,6 @@
     </Compile>
     <Compile Include="System\Dynamic\Utils\CacheDict.cs" />
     <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
     <Compile Include="System\Dynamic\Utils\ExpressionUtils.cs" />
     <Compile Include="System\Dynamic\Utils\ExpressionVisitorUtils.cs" />
     <Compile Include="System\Dynamic\Utils\ListArgumentProvider.cs" />
