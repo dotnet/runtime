@@ -12,9 +12,9 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.All, Inherited = false)]
-    public sealed class ReadOnlyAttribute : Attribute
+    public sealed class IsReadOnlyAttribute : Attribute
     {
-        public ReadOnlyAttribute()
+        public IsReadOnlyAttribute()
         {
         }
     }
