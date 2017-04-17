@@ -38,87 +38,24 @@ namespace System.Net
             Debug.Assert(bytes != null);
             Debug.Assert(bytesLength >= IPAddressParserStatics.IPv4AddressBytes);
 
-            return unchecked((uint)Interop.Sys.IPv4StringToAddress(ipString, bytes, bytesLength, out port));
-        }
-
-        private static bool IsHexString(string input, int startIndex)
-        {
-            // "0[xX][A-Fa-f0-9]+"
-            if (startIndex >= input.Length - 3 ||
-                input[startIndex] != '0' ||
-                (input[startIndex + 1] != 'x' && input[startIndex + 1] != 'X'))
+            port = 0;
+            long address;
+            int end = ipString.Length;
+            fixed (char* ipStringPtr = ipString)
             {
-                return false;
+                address = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
             }
 
-            for (int i = startIndex + 2; i < input.Length; i++)
+            if (address == IPv4AddressHelper.Invalid || end != ipString.Length)
             {
-                char c = input[i];
-                if ((c < 'A' || c > 'F') && (c < 'a' || c > 'f') && (c < '0' || c > '9'))
-                {
-                    return false;
-                }
+                return (uint)SocketError.InvalidArgument;
             }
 
-            return true;
-        }
-
-        // Splits an IPv6 address of the form '[.*]:.*' into its host and port parts and removes
-        // surrounding square brackets, if any.
-        private static bool TryPreprocessIPv6Address(string input, out string host, out string port)
-        {
-            Debug.Assert(input != null);
-
-            if (input == "")
-            {
-                host = null;
-                port = null;
-                return false;
-            }
-
-            bool hasLeadingBracket = input[0] == '[';
-            int trailingBracketIndex = -1;
-            int portSeparatorIndex = -1;
-            for (int i = input.Length - 1; i >= 0; i--)
-            {
-                if (input[i] == ']')
-                {
-                    trailingBracketIndex = i;
-                    break;
-                }
-
-                if (input[i] == ':')
-                {
-                    if (i >= 1 && input[i - 1] == ']')
-                    {
-                        trailingBracketIndex = i - 1;
-                        portSeparatorIndex = i;
-                    }
-                    break;
-                }
-            }
-
-            bool hasTrailingBracket = trailingBracketIndex != -1;
-            if (hasLeadingBracket != hasTrailingBracket)
-            {
-                host = null;
-                port = null;
-                return false;
-            }
-
-            if (!hasLeadingBracket)
-            {
-                host = input;
-                port = null;
-            }
-            else
-            {
-                host = input.Substring(1, trailingBracketIndex - 1);
-                port = portSeparatorIndex != -1 && !IsHexString(input, portSeparatorIndex + 1) ?
-                    input.Substring(portSeparatorIndex + 1) :
-                    null;
-            }
-            return true;
+            bytes[0] = (byte)((0xFF000000 & address) >> 24);
+            bytes[1] = (byte)((0x00FF0000 & address) >> 16);
+            bytes[2] = (byte)((0x0000FF00 & address) >> 8);
+            bytes[3] = (byte)((0x000000FF & address) >> 0);
+            return (uint)SocketError.Success;
         }
 
         public static unsafe uint Ipv6StringToAddress(string ipString, byte* bytes, int bytesLength, out uint scope)
@@ -127,28 +64,64 @@ namespace System.Net
             Debug.Assert(bytes != null);
             Debug.Assert(bytesLength >= IPAddressParserStatics.IPv6AddressBytes);
 
-            string host, port;
-            if (!TryPreprocessIPv6Address(ipString, out host, out port))
+            scope = 0;
+
+            int offset = 0;
+            if (ipString[0] != '[')
             {
-                scope = 0;
-                return unchecked((uint)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME);
+                ipString = ipString + ']'; //for Uri parser to find the terminator.
+            }
+            else
+            {
+                offset = 1;
             }
 
-            return unchecked((uint)Interop.Sys.IPv6StringToAddress(host, port, bytes, bytesLength, out scope));
+            int end = ipString.Length;
+            fixed (char* name = ipString)
+            {
+                if (IPv6AddressHelper.IsValidStrict(name, offset, ref end) || (end != ipString.Length))
+                {
+                    ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressBytes / 2];
+                    string scopeId = null;
+                    IPv6AddressHelper.Parse(ipString, numbers, 0, ref scopeId);
+
+                    long result = 0;
+                    if (!string.IsNullOrEmpty(scopeId))
+                    {
+                        if (scopeId.Length < 2)
+                        {
+                            return (uint)SocketError.InvalidArgument;
+                        }
+
+                        for (int i = 1; i < scopeId.Length; i++)
+                        {
+                            char c = scopeId[i];
+                            if (c < '0' || c > '9')
+                            {
+                                return (uint)SocketError.InvalidArgument;
+                            }
+                            result = (result * 10) + (c - '0');
+                            if (result > uint.MaxValue)
+                            {
+                                return (uint)SocketError.InvalidArgument;
+                            }
+                        }
+
+                        scope = (uint)result;
+                    }
+
+                    for (int i = 0; i < IPAddressParserStatics.IPv6AddressBytes / 2; i++)
+                    {
+                        bytes[i * 2 + 1] = (byte)(numbers[i] & 0xFF);
+                        bytes[i * 2] = (byte)((numbers[i] & 0xFF00) >> 8);
+                    }
+                    return (uint)SocketError.Success;
+                }
+            }
+
+            return (uint)SocketError.InvalidArgument;
         }
 
-        public static SocketError GetSocketErrorForErrorCode(uint status)
-        {
-            switch (unchecked((int)status))
-            {
-                case 0:
-                    return SocketError.Success;
-                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_BADFLAGS:
-                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME:
-                    return SocketError.InvalidArgument;
-                default:
-                    return (SocketError)status;
-            }
-        }
+        public static SocketError GetSocketErrorForErrorCode(uint status) => (SocketError)status;
     }
 }
