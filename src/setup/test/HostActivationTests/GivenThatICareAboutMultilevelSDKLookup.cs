@@ -239,7 +239,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         }
 
         [Fact]
-        public void SdkLookup_Must_Pick_The_Latest_Semantical_Version()
+        public void SdkLookup_Must_Pick_The_Highest_Semantical_Version()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -263,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.1");
@@ -282,7 +282,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-dummy");
@@ -301,7 +301,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0-dummy");
@@ -320,7 +320,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0");
@@ -339,7 +339,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
 
         }
 
