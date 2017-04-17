@@ -543,7 +543,7 @@ namespace System.Net
             return Task.Factory.FromAsync(
                 (callback, state) => ((HttpListenerRequest)state).BeginGetClientCertificate(callback, state),
                 iar => ((HttpListenerRequest)iar.AsyncState).EndGetClientCertificate(iar),
-                null);
+                this);
         }
 
         public TransportContext TransportContext

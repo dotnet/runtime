@@ -96,17 +96,37 @@ namespace System.Net.Tests
             return socket;
         }
 
-        public byte[] GetContent(string requestType, string text, bool headerOnly)
+        public byte[] GetContent(string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
         {
             Uri listeningUri = new Uri(ListeningUrl);
+            string rawUrl = listeningUri.PathAndQuery;
+            if (query != null)
+            {
+                rawUrl += query;
+            }
 
-            string content = $"{requestType} {listeningUri.PathAndQuery} HTTP/1.1\r\nHost: {listeningUri.Host}\r\nContent-Length: {text.Length}\r\n\r\n";
-            if (!headerOnly)
+            string content = $"{requestType} {rawUrl} HTTP/1.1\r\nHost: {listeningUri.Host}\r\n";
+            if (text != null)
+            {
+                content += $"Content-Length: {text.Length}\r\n";
+            }
+            foreach (string header in headers ?? Enumerable.Empty<string>())
+            {
+                content += header + "\r\n";
+            }
+            content += "\r\n";
+
+            if (!headerOnly && text != null)
             {
                 content += text;
             }
 
             return Encoding.UTF8.GetBytes(content);
+        }
+
+        public byte[] GetContent(string requestType, string text, bool headerOnly)
+        {
+            return GetContent(requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
         }
     }
 
