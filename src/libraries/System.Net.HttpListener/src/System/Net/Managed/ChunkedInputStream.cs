@@ -76,7 +76,7 @@ namespace System.Net
             return EndRead(ares);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback cback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
@@ -88,8 +88,8 @@ namespace System.Net
             if (offset < 0 || offset > len)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.offset_out_of_range);
 
-            if (count < 0 || offset > len - count)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.offset_out_of_range);
+            if (size < 0 || offset > len - size)
+                throw new ArgumentOutOfRangeException(nameof(size), SR.offset_out_of_range);
 
             HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
             ares._callback = cback;
@@ -99,10 +99,10 @@ namespace System.Net
                 ares.Complete();
                 return ares;
             }
-            int nread = _decoder.Read(buffer, offset, count);
+            int nread = _decoder.Read(buffer, offset, size);
             offset += nread;
-            count -= nread;
-            if (count == 0)
+            size -= nread;
+            if (size == 0)
             {
                 // got all we wanted, no need to bother the decoder yet
                 ares._count = nread;
@@ -119,7 +119,7 @@ namespace System.Net
             ares._buffer = new byte[8192];
             ares._offset = 0;
             ares._count = 8192;
-            ReadBufferState rb = new ReadBufferState(buffer, offset, count, ares);
+            ReadBufferState rb = new ReadBufferState(buffer, offset, size, ares);
             rb.InitialCount += nread;
             base.BeginRead(ares._buffer, ares._offset, ares._count, OnRead, rb);
             return ares;
@@ -158,6 +158,8 @@ namespace System.Net
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
+            if (asyncResult == null)
+                throw new ArgumentNullException(nameof(asyncResult));
 
             HttpStreamAsyncResult ares = asyncResult as HttpStreamAsyncResult;
             if (asyncResult == null)

@@ -31,6 +31,8 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -79,6 +81,11 @@ namespace System.Net
         public override void Flush()
         {
         }
+        
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
 
 
         // Returns 0 if we can keep reading from the base stream,
@@ -123,13 +130,25 @@ namespace System.Net
             return size;
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int size)
         {
             if (_disposed)
                 throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
 
             // Call FillFromBuffer to check for buffer boundaries even when remaining_body is 0
-            int nread = FillFromBuffer(buffer, offset, count);
+            int nread = FillFromBuffer(buffer, offset, size);
             if (nread == -1)
             { // No more bytes available (Content-Length)
                 return 0;
@@ -139,24 +158,36 @@ namespace System.Net
                 return nread;
             }
 
-            nread = _stream.Read(buffer, offset, count);
+            nread = _stream.Read(buffer, offset, size);
             if (nread > 0 && _remainingBody > 0)
                 _remainingBody -= nread;
             return nread;
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback cback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
 
-            int nread = FillFromBuffer(buffer, offset, count);
+            int nread = FillFromBuffer(buffer, offset, size);
             if (nread > 0 || nread == -1)
             {
                 HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
                 ares._buffer = buffer;
                 ares._offset = offset;
-                ares._count = count;
+                ares._count = size;
                 ares._callback = cback;
                 ares._state = state;
                 ares._synchRead = Math.Max(0, nread);
@@ -166,12 +197,12 @@ namespace System.Net
 
             // Avoid reading past the end of the request to allow
             // for HTTP pipelining
-            if (_remainingBody >= 0 && count > _remainingBody)
+            if (_remainingBody >= 0 && size > _remainingBody)
             {
-                count = (int)Math.Min(int.MaxValue, _remainingBody);
+                size = (int)Math.Min(int.MaxValue, _remainingBody);
             }
 
-            return _stream.BeginRead(buffer, offset, count, cback, state);
+            return _stream.BeginRead(buffer, offset, size, cback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
@@ -211,18 +242,18 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotSupportedException(SR.net_readonlystream);
+            throw new InvalidOperationException(SR.net_readonlystream);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count,
                             AsyncCallback cback, object state)
         {
-            throw new NotSupportedException(SR.net_readonlystream);
+            throw new InvalidOperationException(SR.net_readonlystream);
         }
 
         public override void EndWrite(IAsyncResult async_result)
         {
-            throw new NotSupportedException(SR.net_readonlystream);
+            throw new InvalidOperationException(SR.net_readonlystream);
         }
     }
 }
