@@ -13,11 +13,15 @@
     <Compile Include="AuthenticationTests.cs" />
     <Compile Include="GetContextHelper.cs" />
     <Compile Include="HttpListenerRequestTests.cs" />
+    <Compile Include="HttpListenerTests.cs" />
     <Compile Include="HttpRequestStreamTests.cs" />
     <Compile Include="HttpResponseStreamTests.cs" />
     <Compile Include="SimpleHttpTests.cs" />
     <Compile Include="HttpListenerFactory.cs" />
     <Compile Include="WebSocketTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
