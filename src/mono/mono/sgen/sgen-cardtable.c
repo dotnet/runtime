@@ -132,6 +132,36 @@ sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 	sgen_card_table_mark_address ((mword)ptr);	
 }
 
+static void
+sgen_card_table_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
+{
+	GCObject **dest = (GCObject **)_dest;
+	GCObject **src = (GCObject **)_src;
+
+	size_t nursery_bits = DEFAULT_NURSERY_BITS;
+	char *start = sgen_nursery_start;
+	G_GNUC_UNUSED char *end = sgen_nursery_end;
+
+	/*
+	 * It's cardtable theory time!
+	 * Our cardtable scanning code supports marking any card that an object/valuetype belongs to.
+	 * This function is supposed to be used to copy a range that fully belongs to a single type.
+	 * It must not be used, for example, to copy 2 adjacent VTs in an array.
+	*/
+	volatile guint8 *card_address = (volatile guint8 *)sgen_card_table_get_card_address ((mword)dest);
+	while (size) {
+		GCObject *value = *src;
+		*dest = value;
+		if (SGEN_PTR_IN_NURSERY (value, nursery_bits, start, end) || concurrent_collection_in_progress) {
+			*card_address = 1;
+			sgen_dummy_use (value);
+		}
+		++src;
+		++dest;
+		size -= SIZEOF_VOID_P;
+	}
+}
+
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 guint8 *sgen_shadow_cardtable;
@@ -576,6 +606,7 @@ sgen_card_table_init (SgenRememberedSet *remset)
 
 	remset->find_address = sgen_card_table_find_address;
 	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
+	remset->wbarrier_range_copy = sgen_card_table_wbarrier_range_copy;
 
 	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }

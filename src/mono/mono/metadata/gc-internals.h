@@ -193,7 +193,10 @@ MonoMethod* mono_gc_get_specific_write_barrier (gboolean is_concurrent);
 MonoMethod* mono_gc_get_write_barrier (void);
 
 /* Fast valuetype copy */
-void mono_gc_wbarrier_value_copy_bitmap (gpointer dest, gpointer src, int size, unsigned bitmap);
+/* WARNING: [dest, dest + size] must be within the bounds of a single type, otherwise the GC will lose remset entries */
+void mono_gc_wbarrier_range_copy (gpointer dest, gpointer src, int size);
+void* mono_gc_get_range_copy_func (void);
+
 
 /* helper for the managed alloc support */
 MonoString *

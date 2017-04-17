@@ -3053,23 +3053,10 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 	if (align < SIZEOF_VOID_P)
 		return FALSE;
 
-	/*This value cannot be bigger than 32 due to the way we calculate the required wb bitmap.*/
-	if (size > 32 * SIZEOF_VOID_P)
+	if (size > 5 * SIZEOF_VOID_P)
 		return FALSE;
 
 	create_write_barrier_bitmap (cfg, klass, &need_wb, 0);
-
-	/* We don't unroll more than 5 stores to avoid code bloat. */
-	if (size > 5 * SIZEOF_VOID_P) {
-		/*This is harmless and simplify mono_gc_wbarrier_value_copy_bitmap */
-		size += (SIZEOF_VOID_P - 1);
-		size &= ~(SIZEOF_VOID_P - 1);
-
-		EMIT_NEW_ICONST (cfg, iargs [2], size);
-		EMIT_NEW_ICONST (cfg, iargs [3], need_wb);
-		mono_emit_jit_icall (cfg, mono_gc_wbarrier_value_copy_bitmap, iargs);
-		return TRUE;
-	}
 
 	destreg = iargs [0]->dreg;
 	srcreg = iargs [1]->dreg;
@@ -3164,6 +3151,8 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	else
 		n = mono_class_value_size (klass, &align);
 
+	if (!align)
+		align = SIZEOF_VOID_P;
 	/* if native is true there should be no references in the struct */
 	if (cfg->gen_write_barriers && (klass->has_references || size_ins) && !native) {
 		/* Avoid barriers when storing to the stack */
@@ -3179,19 +3168,27 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 			/* It's ok to intrinsify under gsharing since shared code types are layout stable. */
 			if (!size_ins && (cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, iargs, n, align)) {
 				return;
-			} else if (context_used) {
-				iargs [2] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
-			}  else {
-				iargs [2] = emit_runtime_constant (cfg, MONO_PATCH_INFO_CLASS, klass);
-				if (!cfg->compile_aot)
-					mono_class_compute_gc_descriptor (klass);
-			}
+			} else if (size_ins || align < SIZEOF_VOID_P) {
+				if (context_used) {
+					iargs [2] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+				}  else {
+					iargs [2] = emit_runtime_constant (cfg, MONO_PATCH_INFO_CLASS, klass);
+					if (!cfg->compile_aot)
+						mono_class_compute_gc_descriptor (klass);
+				}
+				if (size_ins)
+					mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
+				else
+					mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+			} else {
+				/* We don't unroll more than 5 stores to avoid code bloat. */
+				/*This is harmless and simplify mono_gc_get_range_copy_func */
+				n += (SIZEOF_VOID_P - 1);
+				n &= ~(SIZEOF_VOID_P - 1);
 
-			if (size_ins)
-				mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
-			else
-				mono_emit_jit_icall (cfg, mono_value_copy, iargs);
-			return;
+				EMIT_NEW_ICONST (cfg, iargs [2], n);
+				mono_emit_jit_icall (cfg, mono_gc_get_range_copy_func (), iargs);
+			}
 		}
 	}
 
