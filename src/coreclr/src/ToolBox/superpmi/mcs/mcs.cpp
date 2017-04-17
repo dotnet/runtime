@@ -35,12 +35,12 @@ int __cdecl main(int argc, char* argv[])
     Logger::Initialize();
 
     CommandLine::Options o;
-    if(!CommandLine::Parse(argc, argv, &o))
+    if (!CommandLine::Parse(argc, argv, &o))
     {
         return -1;
     }
 
-    //execute the chosen command.
+    // execute the chosen command.
     int exitCode = 0;
     if (o.actionASMDump)
     {

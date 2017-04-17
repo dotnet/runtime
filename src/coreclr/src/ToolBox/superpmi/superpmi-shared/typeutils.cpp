@@ -13,78 +13,78 @@
 
 // Returns a string representation of the given CorInfoType. The naming scheme is based on JITtype2varType
 // in src/jit/ee_il_dll.hpp.
-const char *TypeUtils::GetCorInfoTypeName(CorInfoType type)
+const char* TypeUtils::GetCorInfoTypeName(CorInfoType type)
 {
     switch (type)
     {
-    case CORINFO_TYPE_VOID:
-        return "void";
+        case CORINFO_TYPE_VOID:
+            return "void";
 
-    case CORINFO_TYPE_BOOL:
-        return "bool";
+        case CORINFO_TYPE_BOOL:
+            return "bool";
 
-    case CORINFO_TYPE_CHAR:
-        return "char";
+        case CORINFO_TYPE_CHAR:
+            return "char";
 
-    case CORINFO_TYPE_BYTE:
-        return "byte";
+        case CORINFO_TYPE_BYTE:
+            return "byte";
 
-    case CORINFO_TYPE_UBYTE:
-        return "ubyte";
+        case CORINFO_TYPE_UBYTE:
+            return "ubyte";
 
-    case CORINFO_TYPE_SHORT:
-        return "short";
+        case CORINFO_TYPE_SHORT:
+            return "short";
 
-    case CORINFO_TYPE_USHORT:
-        return "ushort";
+        case CORINFO_TYPE_USHORT:
+            return "ushort";
 
-    case CORINFO_TYPE_INT:
-        return "int";
+        case CORINFO_TYPE_INT:
+            return "int";
 
-    case CORINFO_TYPE_UINT:
-        return "uint";
+        case CORINFO_TYPE_UINT:
+            return "uint";
 
-    case CORINFO_TYPE_LONG:
-        return "long";
+        case CORINFO_TYPE_LONG:
+            return "long";
 
-    case CORINFO_TYPE_ULONG:
-        return "ulong";
+        case CORINFO_TYPE_ULONG:
+            return "ulong";
 
-    case CORINFO_TYPE_FLOAT:
-        return "float";
+        case CORINFO_TYPE_FLOAT:
+            return "float";
 
-    case CORINFO_TYPE_DOUBLE:
-        return "double";
+        case CORINFO_TYPE_DOUBLE:
+            return "double";
 
-    case CORINFO_TYPE_BYREF:
-        return "byref";
+        case CORINFO_TYPE_BYREF:
+            return "byref";
 
-    case CORINFO_TYPE_VALUECLASS:
-    case CORINFO_TYPE_REFANY:
-        return "struct";
+        case CORINFO_TYPE_VALUECLASS:
+        case CORINFO_TYPE_REFANY:
+            return "struct";
 
-    case CORINFO_TYPE_STRING:
-    case CORINFO_TYPE_CLASS:
-    case CORINFO_TYPE_VAR:
-        return "ref";
+        case CORINFO_TYPE_STRING:
+        case CORINFO_TYPE_CLASS:
+        case CORINFO_TYPE_VAR:
+            return "ref";
 
-    case CORINFO_TYPE_NATIVEINT:
-    case CORINFO_TYPE_NATIVEUINT:
-        // Emulates the JIT's concept of TYP_I_IMPL
+        case CORINFO_TYPE_NATIVEINT:
+        case CORINFO_TYPE_NATIVEUINT:
+// Emulates the JIT's concept of TYP_I_IMPL
 #if defined(_TARGET_AMD64_) // TODO: should be _TARGET_64BIT_
-        return "long";
+            return "long";
 #else
-        return "int";
+            return "int";
 #endif
 
-    case CORINFO_TYPE_PTR:
-        // The JIT just treats this as a TYP_I_IMPL because this isn't a GC root,
-        // but we don't care about GC-ness: we care about pointer-sized.
-        return "ptr";
+        case CORINFO_TYPE_PTR:
+            // The JIT just treats this as a TYP_I_IMPL because this isn't a GC root,
+            // but we don't care about GC-ness: we care about pointer-sized.
+            return "ptr";
 
-    default:
-        LogException(EXCEPTIONCODE_TYPEUTILS, "Unknown type passed into GetCorInfoTypeName (0x%x)", type);
-        return "UNKNOWN";
+        default:
+            LogException(EXCEPTIONCODE_TYPEUTILS, "Unknown type passed into GetCorInfoTypeName (0x%x)", type);
+            return "UNKNOWN";
     }
 }
 
@@ -95,8 +95,8 @@ bool TypeUtils::IsFloatingPoint(CorInfoType type)
 
 bool TypeUtils::IsPointer(CorInfoType type)
 {
-    return (type == CORINFO_TYPE_STRING || type == CORINFO_TYPE_PTR ||
-            type == CORINFO_TYPE_BYREF || type == CORINFO_TYPE_CLASS);
+    return (type == CORINFO_TYPE_STRING || type == CORINFO_TYPE_PTR || type == CORINFO_TYPE_BYREF ||
+            type == CORINFO_TYPE_CLASS);
 }
 
 bool TypeUtils::IsValueClass(CorInfoType type)
@@ -106,11 +106,11 @@ bool TypeUtils::IsValueClass(CorInfoType type)
 
 // Determines if a value class, represented by the given class handle, is required to be passed
 // by reference (i.e. it cannot be stuffed as-is into a register or stack slot).
-bool TypeUtils::ValueClassRequiresByref(MethodContext *mc, CORINFO_CLASS_HANDLE clsHnd)
+bool TypeUtils::ValueClassRequiresByref(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 {
 #if defined(_TARGET_AMD64_)
     size_t size = mc->repGetClassSize(clsHnd);
-    return ((size > sizeof(void *)) || ((size & (size - 1)) != 0));
+    return ((size > sizeof(void*)) || ((size & (size - 1)) != 0));
 #else
     LogException(EXCEPTIONCODE_TYPEUTILS, "unsupported architecture", "");
     return false;
@@ -129,7 +129,7 @@ size_t TypeUtils::SizeOfCorInfoType(CorInfoType type)
         case CORINFO_TYPE_BOOL:
             return sizeof(BYTE);
 
-        case CORINFO_TYPE_CHAR:  // 2 bytes for Unicode
+        case CORINFO_TYPE_CHAR: // 2 bytes for Unicode
         case CORINFO_TYPE_SHORT:
         case CORINFO_TYPE_USHORT:
             return sizeof(WORD);
@@ -150,14 +150,14 @@ size_t TypeUtils::SizeOfCorInfoType(CorInfoType type)
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-            return sizeof(void *);
+            return sizeof(void*);
 
         // This should be obtained via repGetClassSize
         case CORINFO_TYPE_VALUECLASS:
         case CORINFO_TYPE_REFANY:
             LogException(EXCEPTIONCODE_TYPEUTILS,
                          "SizeOfCorInfoType does not support value types; use repGetClassSize instead (type: 0x%x)",
-                           type);
+                         type);
             return 0;
 
         case CORINFO_TYPE_UNDEF:

@@ -13,23 +13,23 @@
 class MCList
 {
 public:
-    static bool processArgAsMCL(char *input, int *count, int **list);
+    static bool processArgAsMCL(char* input, int* count, int** list);
 
     MCList()
     {
-        //Initialize the static file handle
+        // Initialize the static file handle
         hMCLFile = INVALID_HANDLE_VALUE;
     }
 
-    //Methods to create an MCL file
-    void InitializeMCL(char *filename);
+    // Methods to create an MCL file
+    void InitializeMCL(char* filename);
     void AddMethodToMCL(int methodIndex);
     void CloseMCL();
 
 private:
-    static bool getLineData(const char *nameOfInput, /* OUT */ int *pIndexCount, /* OUT */ int **pIndexes);
+    static bool getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes);
 
-    //File handle for MCL file
+    // File handle for MCL file
     HANDLE hMCLFile;
 };
 #endif

@@ -17,7 +17,7 @@ private:
     //***************************************************************************
     // IUnknown methods
     //***************************************************************************
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void **pInterface);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void** pInterface);
     ULONG STDMETHODCALLTYPE AddRef();
     ULONG STDMETHODCALLTYPE Release();
 
@@ -25,13 +25,13 @@ private:
     // IExecutionEngine methods for TLS
     //***************************************************************************
     // Associate a callback for cleanup with a TLS slot
-    VOID  STDMETHODCALLTYPE TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback);
+    VOID STDMETHODCALLTYPE TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback);
     // Get the TLS block for fast Get/Set operations
     LPVOID* STDMETHODCALLTYPE TLS_GetDataBlock();
     // Get the value at a slot
     LPVOID STDMETHODCALLTYPE TLS_GetValue(DWORD slot);
     // Get the value at a slot, return FALSE if TLS info block doesn't exist
-    BOOL STDMETHODCALLTYPE TLS_CheckValue(DWORD slot, LPVOID *pValue);
+    BOOL STDMETHODCALLTYPE TLS_CheckValue(DWORD slot, LPVOID* pValue);
     // Set the value at a slot
     VOID STDMETHODCALLTYPE TLS_SetValue(DWORD slot, LPVOID pData);
     // Free TLS memory block and make callback
@@ -54,17 +54,20 @@ private:
     SEMAPHORE_COOKIE STDMETHODCALLTYPE ClrCreateSemaphore(DWORD dwInitial, DWORD dwMax);
     void STDMETHODCALLTYPE ClrCloseSemaphore(SEMAPHORE_COOKIE semaphore);
     DWORD STDMETHODCALLTYPE ClrWaitForSemaphore(SEMAPHORE_COOKIE semaphore, DWORD dwMilliseconds, BOOL bAlertable);
-    BOOL STDMETHODCALLTYPE ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG *lpPreviousCount);
-    MUTEX_COOKIE STDMETHODCALLTYPE ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCTSTR lpName);
+    BOOL STDMETHODCALLTYPE ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG* lpPreviousCount);
+    MUTEX_COOKIE STDMETHODCALLTYPE ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes,
+                                                  BOOL                  bInitialOwner,
+                                                  LPCTSTR               lpName);
     void STDMETHODCALLTYPE ClrCloseMutex(MUTEX_COOKIE mutex);
     BOOL STDMETHODCALLTYPE ClrReleaseMutex(MUTEX_COOKIE mutex);
     DWORD STDMETHODCALLTYPE ClrWaitForMutex(MUTEX_COOKIE mutex, DWORD dwMilliseconds, BOOL bAlertable);
     DWORD STDMETHODCALLTYPE ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
     BOOL STDMETHODCALLTYPE ClrAllocationDisallowed();
-    void STDMETHODCALLTYPE GetLastThrownObjectExceptionFromThread(void **ppvException);
+    void STDMETHODCALLTYPE GetLastThrownObjectExceptionFromThread(void** ppvException);
 
 public:
-    IExecutionEngine *original_IEE; //Our extra value that holds a pointer to the original IEE we'll pass calls along to
+    IExecutionEngine* original_IEE; // Our extra value that holds a pointer to the original IEE we'll pass calls along
+                                    // to
 };
 
 #endif

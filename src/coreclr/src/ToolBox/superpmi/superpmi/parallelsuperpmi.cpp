@@ -10,20 +10,20 @@
 #include "commandline.h"
 #include "errorhandling.h"
 
-#define MAX_LOG_LINE_SIZE 0x1000 //4 KB
+#define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
 bool closeRequested = false; // global variable to communicate CTRL+C between threads.
 
-bool StartProcess(char *commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE *hProcess)
+bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE* hProcess)
 {
     LogDebug("StartProcess commandLine=%s", commandLine);
 
-    STARTUPINFO si;
+    STARTUPINFO         si;
     PROCESS_INFORMATION pi;
 
     ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
+    si.cb         = sizeof(si);
+    si.dwFlags    = STARTF_USESTDHANDLES;
     si.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
     si.hStdOutput = hStdOutput;
     si.hStdError  = hStdError;
@@ -31,16 +31,16 @@ bool StartProcess(char *commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     ZeroMemory(&pi, sizeof(pi));
 
     // Start the child process.
-    if (!CreateProcess(NULL,    // No module name (use command line)
-        commandLine,            // Command line
-        NULL,                   // Process handle not inheritable
-        NULL,                   // Thread handle not inheritable
-        TRUE,                   // Set handle inheritance to TRUE (required to use STARTF_USESTDHANDLES)
-        0,                      // No creation flags
-        NULL,                   // Use parent's environment block
-        NULL,                   // Use parent's starting directory 
-        &si,                    // Pointer to STARTUPINFO structure
-        &pi))                   // Pointer to PROCESS_INFORMATION structure
+    if (!CreateProcess(NULL,        // No module name (use command line)
+                       commandLine, // Command line
+                       NULL,        // Process handle not inheritable
+                       NULL,        // Thread handle not inheritable
+                       TRUE,        // Set handle inheritance to TRUE (required to use STARTF_USESTDHANDLES)
+                       0,           // No creation flags
+                       NULL,        // Use parent's environment block
+                       NULL,        // Use parent's starting directory
+                       &si,         // Pointer to STARTUPINFO structure
+                       &pi))        // Pointer to PROCESS_INFORMATION structure
     {
         LogError("CreateProcess failed (%d). CommandLine: %s", GetLastError(), commandLine);
         *hProcess = INVALID_HANDLE_VALUE;
@@ -51,13 +51,14 @@ bool StartProcess(char *commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     return true;
 }
 
-void ReadMCLToArray(char *mclFilename, int **arr, int *count)
+void ReadMCLToArray(char* mclFilename, int** arr, int* count)
 {
-    *count = 0;
-    *arr = nullptr;
+    *count     = 0;
+    *arr       = nullptr;
     char* buff = nullptr;
 
-    HANDLE hFile = CreateFileA(mclFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hFile = CreateFileA(mclFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -99,14 +100,14 @@ void ReadMCLToArray(char *mclFilename, int **arr, int *count)
         return;
 
     *arr = new int[*count];
-    for (int j = 0, arrIndex = 0; j < sz; )
+    for (int j = 0, arrIndex = 0; j < sz;)
     {
-        //seek the first number on the line
+        // seek the first number on the line
         while (!isdigit((unsigned char)buff[j]))
             j++;
-        //read in the number
+        // read in the number
         (*arr)[arrIndex++] = atoi(&buff[j]);
-        //seek to the start of next line
+        // seek to the start of next line
         while ((j < sz) && (buff[j] != 0x0a))
             j++;
         j++;
@@ -120,9 +121,10 @@ Cleanup:
         CloseHandle(hFile);
 }
 
-bool WriteArrayToMCL(char *mclFilename, int *arr, int count)
+bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
 {
-    HANDLE hMCLFile = CreateFileA(mclFilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hMCLFile =
+        CreateFileA(mclFilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     bool result = true;
 
     if (hMCLFile == INVALID_HANDLE_VALUE)
@@ -134,8 +136,8 @@ bool WriteArrayToMCL(char *mclFilename, int *arr, int count)
 
     for (int i = 0; i < count; i++)
     {
-        char strMethodIndex[12];
-        DWORD charCount = 0;
+        char  strMethodIndex[12];
+        DWORD charCount    = 0;
         DWORD bytesWritten = 0;
 
         charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", arr[i]);
@@ -155,11 +157,11 @@ Cleanup:
     return result;
 }
 
-void ProcessChildStdErr(char *stderrFilename)
+void ProcessChildStdErr(char* stderrFilename)
 {
     char buff[MAX_LOG_LINE_SIZE];
 
-    FILE *fp = fopen(stderrFilename, "r");
+    FILE* fp = fopen(stderrFilename, "r");
 
     if (fp == NULL)
     {
@@ -169,17 +171,17 @@ void ProcessChildStdErr(char *stderrFilename)
 
     while (fgets(buff, MAX_LOG_LINE_SIZE, fp) != NULL)
     {
-        //get rid of the '\n' at the end of line
+        // get rid of the '\n' at the end of line
         size_t buffLen = strlen(buff);
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
         if (strncmp(buff, "ERROR: ", 7) == 0)
-            LogError("%s", &buff[7]); //log as Error and remove the "ERROR: " in front
+            LogError("%s", &buff[7]); // log as Error and remove the "ERROR: " in front
         else if (strncmp(buff, "WARNING: ", 9) == 0)
-            LogWarning("%s", &buff[9]); //log as Warning and remove the "WARNING: " in front
+            LogWarning("%s", &buff[9]); // log as Warning and remove the "WARNING: " in front
         else if (strlen(buff) > 0)
-            LogWarning("%s", buff); //unknown output, log it as a warning
+            LogWarning("%s", buff); // unknown output, log it as a warning
     }
 
 Cleanup:
@@ -187,11 +189,17 @@ Cleanup:
         fclose(fp);
 }
 
-void ProcessChildStdOut(const CommandLine::Options& o, char *stdoutFilename, int *loaded, int *jitted, int *failed, int *diffs, bool *usageError)
+void ProcessChildStdOut(const CommandLine::Options& o,
+                        char*                       stdoutFilename,
+                        int*                        loaded,
+                        int*                        jitted,
+                        int*                        failed,
+                        int*                        diffs,
+                        bool*                       usageError)
 {
     char buff[MAX_LOG_LINE_SIZE];
 
-    FILE *fp = fopen(stdoutFilename, "r");
+    FILE* fp = fopen(stdoutFilename, "r");
 
     if (fp == NULL)
     {
@@ -201,25 +209,25 @@ void ProcessChildStdOut(const CommandLine::Options& o, char *stdoutFilename, int
 
     while (fgets(buff, MAX_LOG_LINE_SIZE, fp) != NULL)
     {
-        //get rid of the '\n' at the end of line
+        // get rid of the '\n' at the end of line
         size_t buffLen = strlen(buff);
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
         if (strncmp(buff, "MISSING: ", 9) == 0)
-            LogMissing("%s", &buff[9]); //log as Missing and remove the "MISSING: " in front
+            LogMissing("%s", &buff[9]); // log as Missing and remove the "MISSING: " in front
         else if (strncmp(buff, "ISSUE: ", 7) == 0)
         {
             if (strncmp(&buff[7], "<ASM_DIFF> ", 11) == 0)
-                LogIssue(ISSUE_ASM_DIFF, "%s", &buff[18]); //log as Issue and remove the "ISSUE: <ASM_DIFF>" in front
+                LogIssue(ISSUE_ASM_DIFF, "%s", &buff[18]); // log as Issue and remove the "ISSUE: <ASM_DIFF>" in front
             else if (strncmp(&buff[7], "<ASSERT> ", 9) == 0)
-                LogIssue(ISSUE_ASSERT, "%s", &buff[16]); //log as Issue and remove the "ISSUE: <ASSERT>" in front
+                LogIssue(ISSUE_ASSERT, "%s", &buff[16]); // log as Issue and remove the "ISSUE: <ASSERT>" in front
         }
         else if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
         {
-            *usageError = true; //Signals that we had a SuperPMI command line usage error
+            *usageError = true; // Signals that we had a SuperPMI command line usage error
 
-            //Read the entire stdout file and printf it
+            // Read the entire stdout file and printf it
             printf("%s", buff);
             while (fgets(buff, MAX_LOG_LINE_SIZE, fp) != NULL)
             {
@@ -272,61 +280,74 @@ Cleanup:
 #ifndef FEATURE_PAL // TODO-Porting: handle Ctrl-C signals gracefully on Unix
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
-    //Since the child SuperPMI.exe processes share the same console
-    //We don't need to kill them individually as they also receive the Ctrl-C
+    // Since the child SuperPMI.exe processes share the same console
+     //We don't need to kill them individually as they also receive the Ctrl-C
 
-    closeRequested = true; //set a flag to indicate we need to quit
+    closeRequested = true; // set a flag to indicate we need to quit
     return TRUE;
 }
 #endif // !FEATURE_PAL
 
-int __cdecl compareInt(const void *arg1, const void *arg2)
+int __cdecl compareInt(const void* arg1, const void* arg2)
 {
-    return (*(const int *)arg1) - (*(const int *)arg2);
+    return (*(const int*)arg1) - (*(const int*)arg2);
 }
 
 // 'arrWorkerMCLPath' is an array of strings of size 'workerCount'.
-void MergeWorkerMCLs(char *mclFilename, char **arrWorkerMCLPath, int workerCount)
+void MergeWorkerMCLs(char* mclFilename, char** arrWorkerMCLPath, int workerCount)
 {
-    int **MCL = new int*[workerCount], *MCLCount = new int[workerCount], totalCount = 0;
+    int **MCL = new int *[workerCount], *MCLCount = new int[workerCount], totalCount = 0;
 
     for (int i = 0; i < workerCount; i++)
     {
-        //Read the next partial MCL file
+        // Read the next partial MCL file
         ReadMCLToArray(arrWorkerMCLPath[i], &MCL[i], &MCLCount[i]);
 
         totalCount += MCLCount[i];
     }
 
-    int *mergedMCL = new int[totalCount];
-    int index = 0;
+    int* mergedMCL = new int[totalCount];
+    int  index     = 0;
 
     for (int i = 0; i < workerCount; i++)
     {
-        for (int j = 0; j < MCLCount[i]; j++)
+        for (int j             = 0; j < MCLCount[i]; j++)
             mergedMCL[index++] = MCL[i][j];
     }
 
     qsort(mergedMCL, totalCount, sizeof(int), compareInt);
 
-    //Write the merged MCL array back to disk
+    // Write the merged MCL array back to disk
     if (!WriteArrayToMCL(mclFilename, mergedMCL, totalCount))
         LogError("Unable to write to MCL file %s.", mclFilename);
 }
 
 // From the arguments that we parsed, construct the arguments to pass to the child processes.
-#define MAX_CMDLINE_SIZE 0x1000 //4 KB
+#define MAX_CMDLINE_SIZE 0x1000 // 4 KB
 char* ConstructChildProcessArgs(const CommandLine::Options& o)
 {
-    int bytesWritten = 0;
-    char* spmiArgs = new char[MAX_CMDLINE_SIZE];
-    *spmiArgs = '\0';
+    int   bytesWritten = 0;
+    char* spmiArgs     = new char[MAX_CMDLINE_SIZE];
+    *spmiArgs          = '\0';
 
-    // We don't pass through /parallel, /skipCleanup, /verbosity, /failingMCList, or /diffMCList. Everything else we need to reconstruct and pass through.
+// We don't pass through /parallel, /skipCleanup, /verbosity, /failingMCList, or /diffMCList. Everything else we need to
+// reconstruct and pass through.
 
-#define ADDSTRING(s)          if (s != nullptr) { bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s", s); }
-#define ADDARG_BOOL(b,arg)    if (b)            { bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s", arg); }
-#define ADDARG_STRING(s,arg)  if (s != nullptr) { bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s); }
+#define ADDSTRING(s)                                                                                                   \
+    if (s != nullptr)                                                                                                  \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s", s);                 \
+    }
+#define ADDARG_BOOL(b, arg)                                                                                            \
+    if (b)                                                                                                             \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s", arg);               \
+    }
+#define ADDARG_STRING(s, arg)                                                                                          \
+    if (s != nullptr)                                                                                                  \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s);         \
+    }
 
     ADDARG_BOOL(o.breakOnError, "-boe");
     ADDARG_BOOL(o.breakOnAssert, "-boa");
@@ -352,12 +373,12 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 
 int doParallelSuperPMI(CommandLine::Options& o)
 {
-    HRESULT hr = E_FAIL;
+    HRESULT     hr = E_FAIL;
     SimpleTimer st;
     st.Start();
 
 #ifndef FEATURE_PAL // TODO-Porting: handle Ctrl-C signals gracefully on Unix
-    //Register a ConsoleCtrlHandler
+    // Register a ConsoleCtrlHandler
     if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
     {
         LogError("Failed to set control handler.");
@@ -374,14 +395,14 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
     if (o.workerCount <= 0)
     {
-        //Use the default value which is the number of processors on the machine.
+        // Use the default value which is the number of processors on the machine.
         SYSTEM_INFO sysinfo;
         GetSystemInfo(&sysinfo);
 
         o.workerCount = sysinfo.dwNumberOfProcessors;
 
-        //If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
-        //we still can't spawn more than the max supported by WaitForMultipleObjects()
+        // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
+         //we still can't spawn more than the max supported by WaitForMultipleObjects()
         if (o.workerCount > MAXIMUM_WAIT_OBJECTS)
             o.workerCount = MAXIMUM_WAIT_OBJECTS;
     }
@@ -404,9 +425,9 @@ int doParallelSuperPMI(CommandLine::Options& o)
         LogVerbose(" diffMCLFilename=%s", o.diffMCLFilename);
     LogVerbose(" workerCount=%d, skipCleanup=%d.", o.workerCount, o.skipCleanup);
 
-    HANDLE *hProcesses = new HANDLE[o.workerCount];
-    HANDLE *hStdOutput = new HANDLE[o.workerCount];
-    HANDLE *hStdError  = new HANDLE[o.workerCount];
+    HANDLE* hProcesses = new HANDLE[o.workerCount];
+    HANDLE* hStdOutput = new HANDLE[o.workerCount];
+    HANDLE* hStdError  = new HANDLE[o.workerCount];
 
     char** arrFailingMCListPath = new char*[o.workerCount];
     char** arrDiffMCListPath    = new char*[o.workerCount];
@@ -417,7 +438,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
     unsigned int randNumber = 0;
 #ifdef FEATURE_PAL
     PAL_Random(/* bStrong */ FALSE, &randNumber, sizeof(randNumber));
-#else // !FEATURE_PAL
+#else  // !FEATURE_PAL
     rand_s(&randNumber);
 #endif // !FEATURE_PAL
 
@@ -447,7 +468,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
         arrStdErrorPath[i]  = new char[MAX_PATH];
 
         sprintf_s(arrStdOutputPath[i], MAX_PATH, "%sParallelSuperPMI-stdout-%u-%d.txt", tempPath, randNumber, i);
-        sprintf_s(arrStdErrorPath[i],  MAX_PATH, "%sParallelSuperPMI-stderr-%u-%d.txt", tempPath, randNumber, i);
+        sprintf_s(arrStdErrorPath[i], MAX_PATH, "%sParallelSuperPMI-stderr-%u-%d.txt", tempPath, randNumber, i);
     }
 
     char cmdLine[MAX_CMDLINE_SIZE];
@@ -460,23 +481,26 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
         if (o.mclFilename != nullptr)
         {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failingMCList %s", arrFailingMCListPath[i]);
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failingMCList %s",
+                                      arrFailingMCListPath[i]);
         }
 
         if (o.diffMCLFilename != nullptr)
         {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMCList %s", arrDiffMCListPath[i]);
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMCList %s",
+                                      arrDiffMCListPath[i]);
         }
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
         SECURITY_ATTRIBUTES sa;
-        sa.nLength = sizeof(sa);
+        sa.nLength              = sizeof(sa);
         sa.lpSecurityDescriptor = NULL;
-        sa.bInheritHandle = TRUE;       // Let newly created stdout/stderr handles be inherited.
+        sa.bInheritHandle       = TRUE; // Let newly created stdout/stderr handles be inherited.
 
         LogDebug("stdout %i=%s", i, arrStdOutputPath[i]);
-        hStdOutput[i] = CreateFileA(arrStdOutputPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        hStdOutput[i] = CreateFileA(arrStdOutputPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+                                    FILE_ATTRIBUTE_NORMAL, NULL);
         if (hStdOutput[i] == INVALID_HANDLE_VALUE)
         {
             LogError("Unable to open '%s'. GetLastError()=%u", arrStdOutputPath[i], GetLastError());
@@ -484,14 +508,15 @@ int doParallelSuperPMI(CommandLine::Options& o)
         }
 
         LogDebug("stderr %i=%s", i, arrStdErrorPath[i]);
-        hStdError[i] = CreateFileA(arrStdErrorPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        hStdError[i] = CreateFileA(arrStdErrorPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+                                   FILE_ATTRIBUTE_NORMAL, NULL);
         if (hStdError[i] == INVALID_HANDLE_VALUE)
         {
             LogError("Unable to open '%s'. GetLastError()=%u", arrStdErrorPath[i], GetLastError());
             return -1;
         }
 
-        //Create a SuperPMI worker process and redirect its output to file
+        // Create a SuperPMI worker process and redirect its output to file
         if (!StartProcess(cmdLine, hStdOutput[i], hStdError[i], &hProcesses[i]))
         {
             return -1;
@@ -516,19 +541,19 @@ int doParallelSuperPMI(CommandLine::Options& o)
         for (int i = 0; i < o.workerCount; i++)
         {
             DWORD exitCodeTmp;
-            BOOL ok = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
+            BOOL  ok = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
             if (ok && (exitCodeTmp > exitCode))
             {
                 exitCode = exitCodeTmp;
             }
         }
 
-        bool usageError = false; //variable to flag if we hit a usage error in SuperPMI
+        bool usageError = false; // variable to flag if we hit a usage error in SuperPMI
 
         int loaded = 0, jitted = 0, failed = 0, diffs = 0;
 
-        //Read the stderr files and log them as errors
-        //Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
+        // Read the stderr files and log them as errors
+         //Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
         for (int i = 0; i < o.workerCount; i++)
         {
             ProcessChildStdErr(arrStdErrorPath[i]);
@@ -539,13 +564,13 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
         if (o.mclFilename != nullptr && !usageError)
         {
-            //Concat the resulting .mcl files
+            // Concat the resulting .mcl files
             MergeWorkerMCLs(o.mclFilename, arrFailingMCListPath, o.workerCount);
         }
 
         if (o.diffMCLFilename != nullptr && !usageError)
         {
-            //Concat the resulting diff .mcl files
+            // Concat the resulting diff .mcl files
             MergeWorkerMCLs(o.diffMCLFilename, arrDiffMCListPath, o.workerCount);
         }
 

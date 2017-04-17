@@ -9,7 +9,7 @@
 #ifndef _RuntimeDetails
 #define _RuntimeDetails
 
-//Our little collection of enough of the CLR data to get the JIT up and working...
+// Our little collection of enough of the CLR data to get the JIT up and working...
 #define FEATURE_CLRSQM
 
 #if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_) && !defined(_TARGET_ARM64_) && !defined(_TARGET_ARM_)
@@ -20,13 +20,13 @@
 #endif
 #endif // _TARGET_* not previously defined
 
-#define __EXCEPTION_RECORD_CLR //trick out clrntexception.h to not include another exception record....
+#define __EXCEPTION_RECORD_CLR // trick out clrntexception.h to not include another exception record....
 
 #include <mscoree.h>
 #include <corjit.h>
 #include <utilcode.h>
 
-///Turn back on direct access to a few OS level things...
+/// Turn back on direct access to a few OS level things...
 #undef HeapCreate
 #undef HeapAlloc
 #undef HeapFree
@@ -35,9 +35,9 @@
 #undef TlsGetValue
 #undef TlsSetValue
 
-//Jit Exports
-typedef ICorJitCompiler* (__stdcall *PgetJit)();
-typedef void (__stdcall *PjitStartup)(ICorJitHost* host);
-typedef void (__stdcall *PsxsJitStartup)(CoreClrCallbacks const & cccallbacks);
+// Jit Exports
+typedef ICorJitCompiler*(__stdcall* PgetJit)();
+typedef void(__stdcall* PjitStartup)(ICorJitHost* host);
+typedef void(__stdcall* PsxsJitStartup)(CoreClrCallbacks const& cccallbacks);
 
 #endif

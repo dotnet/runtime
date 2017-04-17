@@ -9,15 +9,15 @@
 class MethodCallSummarizer
 {
 public:
-    MethodCallSummarizer(WCHAR *name);
-    void AddCall(const char *name);
+    MethodCallSummarizer(WCHAR* name);
+    void AddCall(const char* name);
     void SaveTextFile();
 
 private:
-    char **names;
-    unsigned int *counts;
-    int numNames;
-    WCHAR *dataFileName;
+    char**        names;
+    unsigned int* counts;
+    int           numNames;
+    WCHAR*        dataFileName;
 };
 
 #endif

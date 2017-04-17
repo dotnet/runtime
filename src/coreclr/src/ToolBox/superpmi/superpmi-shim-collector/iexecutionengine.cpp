@@ -14,7 +14,7 @@
 //***************************************************************************
 // IUnknown methods
 //***************************************************************************
-HRESULT STDMETHODCALLTYPE interceptor_IEE::QueryInterface(REFIID id, void **pInterface)
+HRESULT STDMETHODCALLTYPE interceptor_IEE::QueryInterface(REFIID id, void** pInterface)
 {
     return original_IEE->QueryInterface(id, pInterface);
 }
@@ -31,7 +31,7 @@ ULONG STDMETHODCALLTYPE interceptor_IEE::Release()
 // IExecutionEngine methods for TLS
 //***************************************************************************
 // Associate a callback for cleanup with a TLS slot
-VOID  STDMETHODCALLTYPE interceptor_IEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
+VOID STDMETHODCALLTYPE interceptor_IEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
 {
     original_IEE->TLS_AssociateCallback(slot, callback);
 }
@@ -46,7 +46,7 @@ LPVOID STDMETHODCALLTYPE interceptor_IEE::TLS_GetValue(DWORD slot)
     return original_IEE->TLS_GetValue(slot);
 }
 // Get the value at a slot, return FALSE if TLS info block doesn't exist
-BOOL STDMETHODCALLTYPE interceptor_IEE::TLS_CheckValue(DWORD slot, LPVOID *pValue)
+BOOL STDMETHODCALLTYPE interceptor_IEE::TLS_CheckValue(DWORD slot, LPVOID* pValue)
 {
     return original_IEE->TLS_CheckValue(slot, pValue);
 }
@@ -116,15 +116,21 @@ void STDMETHODCALLTYPE interceptor_IEE::ClrCloseSemaphore(SEMAPHORE_COOKIE semap
 {
     original_IEE->ClrCloseSemaphore(semaphore);
 }
-DWORD STDMETHODCALLTYPE interceptor_IEE::ClrWaitForSemaphore(SEMAPHORE_COOKIE semaphore, DWORD dwMilliseconds, BOOL bAlertable)
+DWORD STDMETHODCALLTYPE interceptor_IEE::ClrWaitForSemaphore(SEMAPHORE_COOKIE semaphore,
+                                                             DWORD            dwMilliseconds,
+                                                             BOOL             bAlertable)
 {
     return original_IEE->ClrWaitForSemaphore(semaphore, dwMilliseconds, bAlertable);
 }
-BOOL STDMETHODCALLTYPE interceptor_IEE::ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG *lpPreviousCount)
+BOOL STDMETHODCALLTYPE interceptor_IEE::ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore,
+                                                            LONG             lReleaseCount,
+                                                            LONG*            lpPreviousCount)
 {
     return original_IEE->ClrReleaseSemaphore(semaphore, lReleaseCount, lpPreviousCount);
 }
-MUTEX_COOKIE STDMETHODCALLTYPE interceptor_IEE::ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCTSTR lpName)
+MUTEX_COOKIE STDMETHODCALLTYPE interceptor_IEE::ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes,
+                                                               BOOL                  bInitialOwner,
+                                                               LPCTSTR               lpName)
 {
     return original_IEE->ClrCreateMutex(lpMutexAttributes, bInitialOwner, lpName);
 }
@@ -148,7 +154,7 @@ BOOL STDMETHODCALLTYPE interceptor_IEE::ClrAllocationDisallowed()
 {
     return original_IEE->ClrAllocationDisallowed();
 }
-void STDMETHODCALLTYPE interceptor_IEE::GetLastThrownObjectExceptionFromThread(void **ppvException)
+void STDMETHODCALLTYPE interceptor_IEE::GetLastThrownObjectExceptionFromThread(void** ppvException)
 {
     original_IEE->GetLastThrownObjectExceptionFromThread(ppvException);
 }

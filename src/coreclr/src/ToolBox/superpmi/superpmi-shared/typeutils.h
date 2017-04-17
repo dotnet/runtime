@@ -14,11 +14,11 @@
 class TypeUtils
 {
 public:
-    static const char *GetCorInfoTypeName(CorInfoType type);
+    static const char* GetCorInfoTypeName(CorInfoType type);
     static bool IsFloatingPoint(CorInfoType type);
     static bool IsPointer(CorInfoType type);
     static bool IsValueClass(CorInfoType type);
-    static bool ValueClassRequiresByref(MethodContext *mc, CORINFO_CLASS_HANDLE clsHnd);
+    static bool ValueClassRequiresByref(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
     static size_t SizeOfCorInfoType(CorInfoType type);
 };
 

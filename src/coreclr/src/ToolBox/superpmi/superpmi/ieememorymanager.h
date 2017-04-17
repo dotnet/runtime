@@ -73,18 +73,17 @@ interface IEEMemoryManager : IUnknown
 };  // interface IEEMemoryManager
 
 */
-extern HANDLE virtHeap;
-extern IEEMemoryManager *pIEEMM;
-extern HANDLE processHeap;
+extern HANDLE            virtHeap;
+extern IEEMemoryManager* pIEEMM;
+extern HANDLE            processHeap;
 class MyIEEMM : public IEEMemoryManager
 {
 private:
-
     //***************************************************************************
     // IUnknown methods
     //***************************************************************************
 
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void **pInterface);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void** pInterface);
     ULONG STDMETHODCALLTYPE AddRef();
     ULONG STDMETHODCALLTYPE Release();
 
@@ -94,7 +93,10 @@ private:
     LPVOID STDMETHODCALLTYPE ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
     BOOL STDMETHODCALLTYPE ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
     SIZE_T STDMETHODCALLTYPE ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
-    BOOL STDMETHODCALLTYPE ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+    BOOL STDMETHODCALLTYPE ClrVirtualProtect(LPVOID lpAddress,
+                                             SIZE_T dwSize,
+                                             DWORD  flNewProtect,
+                                             PDWORD lpflOldProtect);
     HANDLE STDMETHODCALLTYPE ClrGetProcessHeap();
     HANDLE STDMETHODCALLTYPE ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);
     BOOL STDMETHODCALLTYPE ClrHeapDestroy(HANDLE hHeap);
@@ -104,10 +106,10 @@ private:
     HANDLE STDMETHODCALLTYPE ClrGetProcessExecutableHeap();
 
 public:
-    //Added extras... todo add padding to detect corruption?
-    JitInstance *jitInstance;
+    // Added extras... todo add padding to detect corruption?
+    JitInstance* jitInstance;
 };
 
-IEEMemoryManager *InitIEEMemoryManager(JitInstance *jitInstance);
+IEEMemoryManager* InitIEEMemoryManager(JitInstance* jitInstance);
 
 #endif

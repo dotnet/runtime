@@ -10,7 +10,7 @@
 #include "methodcontextiterator.h"
 #include "errorhandling.h"
 
-int verbStat::DoWork(const char *nameOfInput, const char *nameOfOutput, int indexCount, const int *indexes)
+int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int indexCount, const int* indexes)
 {
     LogVerbose("Stat'ing from '%s' and writing output into '%s'", nameOfInput, nameOfOutput);
 
@@ -20,17 +20,18 @@ int verbStat::DoWork(const char *nameOfInput, const char *nameOfOutput, int inde
 
     int savedCount = 0;
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if(hFileOut == INVALID_HANDLE_VALUE)
+    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFileOut == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
         return -1;
     }
 
-    #define bufflen 50000
+#define bufflen 50000
     DWORD bytesWritten;
-    char buff[bufflen];
-    int offset = 0;
+    char  buff[bufflen];
+    int   offset = 0;
     ZeroMemory(&buff[0], bufflen);
     offset += sprintf_s(buff, bufflen, "Title,MC#,");
     offset += MethodContext::dumpStatTitleToBuffer(&buff[offset], bufflen - offset);
@@ -46,7 +47,7 @@ int verbStat::DoWork(const char *nameOfInput, const char *nameOfOutput, int inde
         ZeroMemory(&buff[0], bufflen);
         if ((mc->cr->ProcessName != nullptr) && (mc->cr->ProcessName->GetCount() > 0))
         {
-            const char *procname = mc->cr->repProcessName();
+            const char* procname = mc->cr->repProcessName();
             strcpy_s(&buff[offset], bufflen, procname);
             offset += (int)strlen(procname);
         }

@@ -12,7 +12,7 @@
 
 extern bool breakOnDebugBreakorAV;
 
-extern void DebugBreakorAV(int val); //Global(ish) error handler
+extern void DebugBreakorAV(int val); // Global(ish) error handler
 
 extern char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* defaultValue = nullptr);
 

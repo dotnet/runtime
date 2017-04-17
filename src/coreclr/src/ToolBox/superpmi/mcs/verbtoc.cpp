@@ -13,17 +13,15 @@
 class TOCElementNode
 {
 public:
-    TOCElementNode *Next;
-    TOCElement tocElement;
+    TOCElementNode* Next;
+    TOCElement      tocElement;
 
-    TOCElementNode(int number, __int64 offset)
-        : Next(nullptr)
-        , tocElement(number, offset)
+    TOCElementNode(int number, __int64 offset) : Next(nullptr), tocElement(number, offset)
     {
     }
 };
 
-int verbTOC::DoWork(const char *nameOfInput)
+int verbTOC::DoWork(const char* nameOfInput)
 {
     LogVerbose("Indexing from '%s' into '%s.mct'", nameOfInput, nameOfInput);
 
@@ -33,14 +31,14 @@ int verbTOC::DoWork(const char *nameOfInput)
 
     int savedCount = 0;
 
-    TOCElementNode *head = nullptr;
-    TOCElementNode *curElem = nullptr;
+    TOCElementNode* head    = nullptr;
+    TOCElementNode* curElem = nullptr;
 
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
 
-        TOCElementNode *nxt = new TOCElementNode(mci.MethodContextNumber(), mci.CurrentPos());
+        TOCElementNode* nxt = new TOCElementNode(mci.MethodContextNumber(), mci.CurrentPos());
         mc->dumpMethodMD5HashToBuffer(nxt->tocElement.Hash, MD5_HASH_BUFFER_SIZE);
 
         if (curElem != nullptr)
@@ -55,11 +53,12 @@ int verbTOC::DoWork(const char *nameOfInput)
         savedCount++;
     }
 
-    size_t maxLen = strlen(nameOfInput) + 5;
-    char *nameOfOutput = (char*)_alloca(maxLen);
+    size_t maxLen       = strlen(nameOfInput) + 5;
+    char*  nameOfOutput = (char*)_alloca(maxLen);
     strcpy_s(nameOfOutput, maxLen, nameOfInput);
     strcat_s(nameOfOutput, maxLen, ".mct");
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hFileOut =
+        CreateFileA(nameOfOutput, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFileOut == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
@@ -69,7 +68,7 @@ int verbTOC::DoWork(const char *nameOfInput)
     DWORD written;
     // Write out the signature "INDX" and then the element count
     LARGE_INTEGER token;
-    token.u.LowPart = *(const int*)"INDX"; // cuz Type Safety is for languages that have good IO facilities
+    token.u.LowPart  = *(const int*)"INDX"; // cuz Type Safety is for languages that have good IO facilities
     token.u.HighPart = savedCount;
     if (!WriteFile(hFileOut, &token, sizeof(token), &written, nullptr) || written != sizeof(token))
     {
@@ -83,12 +82,14 @@ int verbTOC::DoWork(const char *nameOfInput)
     {
         if (!WriteFile(hFileOut, &curElem->tocElement, chunkSize, &written, nullptr) || written != chunkSize)
         {
-            LogError("Failed to write index element '%d'. GetLastError()=%u", curElem->tocElement.Number, GetLastError());
+            LogError("Failed to write index element '%d'. GetLastError()=%u", curElem->tocElement.Number,
+                     GetLastError());
             return -1;
         }
     }
     // Now write out a final "INDX" to flag the end of the file...
-    if (!WriteFile(hFileOut, &token.u.LowPart, sizeof(token.u.LowPart), &written, nullptr) || (written != sizeof(token.u.LowPart)))
+    if (!WriteFile(hFileOut, &token.u.LowPart, sizeof(token.u.LowPart), &written, nullptr) ||
+        (written != sizeof(token.u.LowPart)))
     {
         LogError("Failed to write index terminal. GetLastError()=%u", GetLastError());
     }

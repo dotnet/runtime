@@ -19,16 +19,16 @@ void DumpMapHeader()
     printf("full signature\n");
 }
 
-void DumpMap(int index, MethodContext *mc)
+void DumpMap(int index, MethodContext* mc)
 {
     CORINFO_METHOD_INFO cmi;
-    unsigned int flags = 0;
+    unsigned int        flags = 0;
 
     mc->repCompileMethod(&cmi, &flags);
 
-    const char *moduleName = nullptr;
-    const char *methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
-    const char *className = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
+    const char* moduleName = nullptr;
+    const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
+    const char* className  = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
 
     printf("%d,", index);
     // printf("\"%s\",", mc->cr->repProcessName());
@@ -43,7 +43,7 @@ void DumpMap(int index, MethodContext *mc)
     printf(")\"\n");
 }
 
-int verbDumpMap::DoWork(const char *nameOfInput)
+int verbDumpMap::DoWork(const char* nameOfInput)
 {
     MethodContextIterator mci;
     if (!mci.Initialize(nameOfInput))

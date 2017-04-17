@@ -17,10 +17,10 @@
 // static
 char* verbMerge::MergePathStrings(const char* dir, const char* file)
 {
-    size_t dirlen = strlen(dir);
+    size_t dirlen  = strlen(dir);
     size_t filelen = strlen(file);
-    size_t newlen = dirlen + 1 /* slash */ + filelen + 1 /* null */;
-    char* newpath = new char[newlen];
+    size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
+    char*  newpath = new char[newlen];
     strcpy(newpath, dir);
     strcat(newpath, DIRECTORY_SEPARATOR_STR_A);
     strcat(newpath, file);
@@ -39,7 +39,8 @@ int verbMerge::AppendFile(HANDLE hFileOut, const char* fileName, unsigned char* 
 
     LogInfo("Appending file '%s'", fileName);
 
-    HANDLE hFileIn = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hFileIn = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFileIn == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open input file '%s'. GetLastError()=%u", fileName, GetLastError());
@@ -57,7 +58,7 @@ int verbMerge::AppendFile(HANDLE hFileOut, const char* fileName, unsigned char* 
     for (LONGLONG offset = 0; offset < fileSize.QuadPart; offset += bufferSize)
     {
         DWORD bytesRead = -1;
-        BOOL res = ReadFile(hFileIn, buffer, (DWORD)bufferSize, &bytesRead, nullptr);
+        BOOL  res       = ReadFile(hFileIn, buffer, (DWORD)bufferSize, &bytesRead, nullptr);
         if (!res)
         {
             LogError("Failed to read '%s' from offset %lld. GetLastError()=%u", fileName, offset, GetLastError());
@@ -65,7 +66,7 @@ int verbMerge::AppendFile(HANDLE hFileOut, const char* fileName, unsigned char* 
             goto CLEAN_UP;
         }
         DWORD bytesWritten = -1;
-        BOOL res2 = WriteFile(hFileOut, buffer, bytesRead, &bytesWritten, nullptr);
+        BOOL  res2         = WriteFile(hFileOut, buffer, bytesRead, &bytesWritten, nullptr);
         if (!res2)
         {
             LogError("Failed to write output file at offset %lld. GetLastError()=%u", offset, GetLastError());
@@ -98,11 +99,11 @@ bool verbMerge::DirectoryFilterDirectories(WIN32_FIND_DATAA* findData)
 {
     if ((findData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
     {
-        // It's a directory. See if we want to exclude it because of other reasons, such as:
-        // 1. reparse points: avoid the possibility of loops
-        // 2. system directories
-        // 3. hidden directories
-        // 4. "." or ".."
+// It's a directory. See if we want to exclude it because of other reasons, such as:
+// 1. reparse points: avoid the possibility of loops
+// 2. system directories
+// 3. hidden directories
+// 4. "." or ".."
 
 #ifndef FEATURE_PAL // FILE_ATTRIBUTE_REPARSE_POINT is not defined in the PAL
         if ((findData->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0)
@@ -154,52 +155,52 @@ int __cdecl verbMerge::WIN32_FIND_DATAA_qsort_helper(const void* p1, const void*
 // If success, fileArray and elemCount are set.
 //
 // static
-int verbMerge::FilterDirectory(const char* searchPattern, DirectoryFilterFunction_t filter, /* out */ WIN32_FIND_DATAA** ppFileArray, int* pElemCount)
+int verbMerge::FilterDirectory(const char*                  searchPattern,
+                               DirectoryFilterFunction_t    filter,
+                               /* out */ WIN32_FIND_DATAA** ppFileArray,
+                               int*                         pElemCount)
 {
     // First, build up a list, then create an array and sort it after we know how many elements there are.
     struct findDataList
     {
-        findDataList(WIN32_FIND_DATAA* newFindData, findDataList* newNext)
-            : findData(*newFindData)
-            , next(newNext)
+        findDataList(WIN32_FIND_DATAA* newFindData, findDataList* newNext) : findData(*newFindData), next(newNext)
         {
         }
 
         static void DeleteList(findDataList* root)
         {
-            for (findDataList* loop = root; loop != nullptr; )
+            for (findDataList* loop = root; loop != nullptr;)
             {
-                 findDataList* tmp = loop;
-                 loop = loop->next;
-                 delete tmp;
+                findDataList* tmp = loop;
+                loop              = loop->next;
+                delete tmp;
             }
         }
 
         WIN32_FIND_DATAA findData;
-        findDataList* next;
+        findDataList*    next;
     };
 
     WIN32_FIND_DATAA* retArray = nullptr;
-    findDataList* first = nullptr;
+    findDataList*     first    = nullptr;
 
-    int result = 0; // default to zero == success
+    int result    = 0; // default to zero == success
     int elemCount = 0;
 
     // NOTE: this function only works on Windows 7 and later.
     WIN32_FIND_DATAA findData;
-    HANDLE hSearch;
+    HANDLE           hSearch;
 #ifdef FEATURE_PAL
     // PAL doesn't have FindFirstFileEx(). So just use FindFirstFile(). The only reason we use
     // the Ex version is potentially better performance (don't populate short name; use large fetch),
     // not functionality.
     hSearch = FindFirstFileA(searchPattern, &findData);
-#else // !FEATURE_PAL
+#else  // !FEATURE_PAL
     hSearch = FindFirstFileExA(searchPattern,
                                FindExInfoBasic, // We don't care about the short names
                                &findData,
                                FindExSearchNameMatch, // standard name matching
-                               NULL,
-                               FIND_FIRST_EX_LARGE_FETCH);
+                               NULL, FIND_FIRST_EX_LARGE_FETCH);
 #endif // !FEATURE_PAL
 
     if (hSearch == INVALID_HANDLE_VALUE)
@@ -246,7 +247,7 @@ int verbMerge::FilterDirectory(const char* searchPattern, DirectoryFilterFunctio
     int i;
 
     retArray = new WIN32_FIND_DATAA[elemCount];
-    i = 0;
+    i        = 0;
     for (findDataList* tmp = first; tmp != nullptr; tmp = tmp->next)
     {
         retArray[i++] = tmp->findData;
@@ -266,23 +267,29 @@ CLEAN_UP:
     }
 
     *ppFileArray = retArray;
-    *pElemCount = elemCount;
+    *pElemCount  = elemCount;
     return result;
 }
 
 // Append all files in the given directory matching the file pattern.
 //
 // static
-int verbMerge::AppendAllInDir(HANDLE hFileOut, const char* dir, const char* file, unsigned char* buffer, size_t bufferSize, bool recursive, /* out */ LONGLONG* size)
+int verbMerge::AppendAllInDir(HANDLE              hFileOut,
+                              const char*         dir,
+                              const char*         file,
+                              unsigned char*      buffer,
+                              size_t              bufferSize,
+                              bool                recursive,
+                              /* out */ LONGLONG* size)
 {
-    int result = 0; // default to zero == success
+    int      result    = 0; // default to zero == success
     LONGLONG totalSize = 0;
 
     char* searchPattern = MergePathStrings(dir, file);
 
     WIN32_FIND_DATAA* fileArray = nullptr;
-    int elemCount = 0;
-    result = FilterDirectory(searchPattern, DirectoryFilterFile, &fileArray, &elemCount);
+    int               elemCount = 0;
+    result                      = FilterDirectory(searchPattern, DirectoryFilterFile, &fileArray, &elemCount);
     if (result != 0)
     {
         goto CLEAN_UP;
@@ -290,8 +297,8 @@ int verbMerge::AppendAllInDir(HANDLE hFileOut, const char* dir, const char* file
 
     for (int i = 0; i < elemCount; i++)
     {
-        const WIN32_FIND_DATAA& findData = fileArray[i];
-        char* fileFullPath = MergePathStrings(dir, findData.cFileName);
+        const WIN32_FIND_DATAA& findData     = fileArray[i];
+        char*                   fileFullPath = MergePathStrings(dir, findData.cFileName);
 
         // Is it zero length? If so, skip it.
         if ((findData.nFileSizeLow == 0) && (findData.nFileSizeHigh == 0))
@@ -320,9 +327,9 @@ int verbMerge::AppendAllInDir(HANDLE hFileOut, const char* dir, const char* file
         delete[] fileArray;
 
         searchPattern = MergePathStrings(dir, "*");
-        fileArray = nullptr;
-        elemCount = 0;
-        result = FilterDirectory(searchPattern, DirectoryFilterDirectories, &fileArray, &elemCount);
+        fileArray     = nullptr;
+        elemCount     = 0;
+        result        = FilterDirectory(searchPattern, DirectoryFilterDirectories, &fileArray, &elemCount);
         if (result != 0)
         {
             goto CLEAN_UP;
@@ -334,7 +341,7 @@ int verbMerge::AppendAllInDir(HANDLE hFileOut, const char* dir, const char* file
             const WIN32_FIND_DATAA& findData = fileArray[i];
 
             char* fileFullPath = MergePathStrings(dir, findData.cFileName);
-            result = AppendAllInDir(hFileOut, fileFullPath, file, buffer, bufferSize, recursive, &dirSize);
+            result             = AppendAllInDir(hFileOut, fileFullPath, file, buffer, bufferSize, recursive, &dirSize);
             delete[] fileFullPath;
             if (result != 0)
             {
@@ -363,20 +370,22 @@ CLEAN_UP:
 //      1. *.mc -- simple pattern. Assumes current directory.
 //      2. foo\bar\*.mc -- simple pattern with relative directory.
 //      3. c:\foo\bar\baz\*.mc -- simple pattern with full path.
-// If no pattern is given, then the last component of the path is expected to be a directory name, and the pattern is assumed to be "*" (that is, all files).
+// If no pattern is given, then the last component of the path is expected to be a directory name, and the pattern is
+// assumed to be "*" (that is, all files).
 //
-// If "recursive" is true, then the pattern is searched for in the specified directory (or implicit current directory) and
-// all sub-directories, recursively.
+// If "recursive" is true, then the pattern is searched for in the specified directory (or implicit current directory)
+// and all sub-directories, recursively.
 //
 // static
 int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive)
 {
-    int result = 0; // default to zero == success
+    int         result = 0; // default to zero == success
     SimpleTimer st1;
 
     LogInfo("Merging files matching '%s' into '%s'", pattern, nameOfOutputFile);
 
-    HANDLE hFileOut = CreateFileA(nameOfOutputFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hFileOut = CreateFileA(nameOfOutputFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFileOut == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open output file '%s'. GetLastError()=%u", nameOfOutputFile, GetLastError());
@@ -385,16 +394,16 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
 
     // Create a buffer we can use for all the copies.
     unsigned char* buffer = new unsigned char[BUFFER_SIZE];
-    char* dir = nullptr;
-    const char* file = nullptr;
+    char*          dir    = nullptr;
+    const char*    file   = nullptr;
 
-    dir = _strdup(pattern);
+    dir             = _strdup(pattern);
     char* lastSlash = strrchr(dir, DIRECTORY_SEPARATOR_CHAR_A);
     if (lastSlash == NULL)
     {
         // The user may have passed a relative path without a slash, or the current directory.
-        // If there is a wildcard, we use it as the file pattern. If there isn't, we assume it's a relative directory name
-        // and use it as a directory, with "*" as the file pattern.
+        // If there is a wildcard, we use it as the file pattern. If there isn't, we assume it's a relative directory
+        // name and use it as a directory, with "*" as the file pattern.
         const char* wildcard = strchr(dir, '*');
         if (wildcard == NULL)
         {
@@ -403,7 +412,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         else
         {
             file = dir;
-            dir = _strdup(".");
+            dir  = _strdup(".");
         }
     }
     else
@@ -413,7 +422,8 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         {
             file = "*";
 
-            // Minor canonicalization: if there is a trailing last slash, strip it (probably should do this in a loop...)
+            // Minor canonicalization: if there is a trailing last slash, strip it (probably should do this in a
+            // loop...)
             if (*(lastSlash + 1) == '\0')
             {
                 *lastSlash = '\0';
@@ -423,12 +433,12 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         {
             // ok, we found a wildcard after the last slash, so assume there is a pattern. Strip it at the last slash.
             *lastSlash = '\0';
-            file = lastSlash + 1;
+            file       = lastSlash + 1;
         }
     }
 
     LONGLONG totalSize = 0;
-    LONGLONG dirSize = 0;
+    LONGLONG dirSize   = 0;
 
     st1.Start();
 
@@ -441,9 +451,9 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
 
     st1.Stop();
 
-    LogInfo("Read/Wrote %lld MB @ %4.2f MB/s.",
-            totalSize/(1000*1000),
-            (((double)totalSize)/(1000*1000))/st1.GetSeconds()); //yes yes.. http://en.wikipedia.org/wiki/Megabyte_per_second#Megabyte_per_second
+    LogInfo("Read/Wrote %lld MB @ %4.2f MB/s.", totalSize / (1000 * 1000),
+            (((double)totalSize) / (1000 * 1000)) /
+                st1.GetSeconds()); // yes yes.. http://en.wikipedia.org/wiki/Megabyte_per_second#Megabyte_per_second
 
 CLEAN_UP:
 

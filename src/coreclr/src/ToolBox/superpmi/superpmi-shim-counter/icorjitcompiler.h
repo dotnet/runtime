@@ -17,10 +17,10 @@ class interceptor_ICJC : public ICorJitCompiler
 
 public:
     // Added to help us track the original icjc and be able to easily indirect to it.
-    ICorJitCompiler *original_ICorJitCompiler;
-    MethodCallSummarizer *mcs;
+    ICorJitCompiler*      original_ICorJitCompiler;
+    MethodCallSummarizer* mcs;
 };
 
-extern interceptor_IEEMM *current_IEEMM; //we want this to live beyond the scope of a single compileMethodCall
+extern interceptor_IEEMM* current_IEEMM; // we want this to live beyond the scope of a single compileMethodCall
 
 #endif

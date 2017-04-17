@@ -9,15 +9,15 @@
 
 LPVOID TLS_Slots[MAX_PREDEFINED_TLS_SLOT];
 class MyIEE;
-IExecutionEngine *pIEE = nullptr;
+IExecutionEngine* pIEE = nullptr;
 
 //***************************************************************************
 // IUnknown methods
 //***************************************************************************
 
-HRESULT STDMETHODCALLTYPE MyIEE::QueryInterface(REFIID id, void **pInterface)
+HRESULT STDMETHODCALLTYPE MyIEE::QueryInterface(REFIID id, void** pInterface)
 {
-    //TODO-Cleanup: check the rid
+    // TODO-Cleanup: check the rid
     *pInterface = InitIEEMemoryManager(nullptr);
     return 0;
 }
@@ -39,18 +39,18 @@ ULONG STDMETHODCALLTYPE MyIEE::Release()
 DWORD TlsIndex = 42;
 
 // Associate a callback for cleanup with a TLS slot
-VOID  STDMETHODCALLTYPE MyIEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
+VOID STDMETHODCALLTYPE MyIEE::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
 {
-    //TODO-Cleanup: figure an appropriate realish value for this
+    // TODO-Cleanup: figure an appropriate realish value for this
 }
 
 // Get the TLS block for fast Get/Set operations
 LPVOID* STDMETHODCALLTYPE MyIEE::TLS_GetDataBlock()
 {
-    //We were previously allocating a TlsIndex with
-    //the master slot index set to a nullptr
-    //so in the new version we just return nullptr
-    //and it seems to be working for now
+    // We were previously allocating a TlsIndex with
+     //the master slot index set to a nullptr
+     //so in the new version we just return nullptr
+     //and it seems to be working for now
     return nullptr;
 }
 
@@ -69,10 +69,10 @@ LPVOID STDMETHODCALLTYPE MyIEE::TLS_GetValue(DWORD slot)
 }
 
 // Get the value at a slot, return FALSE if TLS info block doesn't exist
-BOOL STDMETHODCALLTYPE MyIEE::TLS_CheckValue(DWORD slot, LPVOID * pValue)
+BOOL STDMETHODCALLTYPE MyIEE::TLS_CheckValue(DWORD slot, LPVOID* pValue)
 {
     DebugBreakorAV(144);
-    //TODO-Cleanup: does anything beyond contracts care?  This seems like a pretty thin mock.
+    // TODO-Cleanup: does anything beyond contracts care?  This seems like a pretty thin mock.
     return true;
 }
 // Set the value at a slot
@@ -83,9 +83,9 @@ VOID STDMETHODCALLTYPE MyIEE::TLS_SetValue(DWORD slot, LPVOID pData)
         DebugBreakorAV(143);
         return;
     }
-    void *thing = TlsGetValue(TlsIndex);//TODO-Cleanup: this seems odd.. explain?
+    void* thing = TlsGetValue(TlsIndex); // TODO-Cleanup: this seems odd.. explain?
 
-    //TODO-Cleanup: does anything beyond contracts care?  This seems like a pretty thin mock.
+    // TODO-Cleanup: does anything beyond contracts care?  This seems like a pretty thin mock.
     TLS_Slots[slot] = pData;
 }
 // Free TLS memory block and make callback
@@ -161,14 +161,14 @@ DWORD STDMETHODCALLTYPE MyIEE::ClrWaitForSemaphore(SEMAPHORE_COOKIE semaphore, D
     DebugBreakorAV(156);
     return 0;
 }
-BOOL STDMETHODCALLTYPE MyIEE::ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG *lpPreviousCount)
+BOOL STDMETHODCALLTYPE MyIEE::ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG* lpPreviousCount)
 {
     DebugBreakorAV(157);
     return 0;
 }
 MUTEX_COOKIE STDMETHODCALLTYPE MyIEE::ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    BOOL bInitialOwner,
-    LPCTSTR lpName)
+                                                     BOOL                  bInitialOwner,
+                                                     LPCTSTR               lpName)
 {
     DebugBreakorAV(158);
     return 0;
@@ -182,9 +182,7 @@ BOOL STDMETHODCALLTYPE MyIEE::ClrReleaseMutex(MUTEX_COOKIE mutex)
     DebugBreakorAV(160);
     return 0;
 }
-DWORD STDMETHODCALLTYPE MyIEE::ClrWaitForMutex(MUTEX_COOKIE mutex,
-    DWORD dwMilliseconds,
-    BOOL bAlertable)
+DWORD STDMETHODCALLTYPE MyIEE::ClrWaitForMutex(MUTEX_COOKIE mutex, DWORD dwMilliseconds, BOOL bAlertable)
 {
     DebugBreakorAV(161);
     return 0;
@@ -200,14 +198,14 @@ BOOL STDMETHODCALLTYPE MyIEE::ClrAllocationDisallowed()
     DebugBreakorAV(163);
     return 0;
 }
-void STDMETHODCALLTYPE MyIEE::GetLastThrownObjectExceptionFromThread(void **ppvException)
+void STDMETHODCALLTYPE MyIEE::GetLastThrownObjectExceptionFromThread(void** ppvException)
 {
     DebugBreakorAV(164);
 }
 
-MyIEE *InitIExecutionEngine()
+MyIEE* InitIExecutionEngine()
 {
-    MyIEE *iee = new MyIEE();
-    pIEE = iee;
+    MyIEE* iee = new MyIEE();
+    pIEE       = iee;
     return iee;
 }

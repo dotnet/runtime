@@ -13,7 +13,7 @@
 
 #define BUFFER_SIZE 0xFFFFFF
 
-int verbASMDump::DoWork(const char *nameOfInput, const char *nameOfOutput, int indexCount, const int *indexes)
+int verbASMDump::DoWork(const char* nameOfInput, const char* nameOfOutput, int indexCount, const int* indexes)
 {
     LogVerbose("Loading from '%s' and writing ASM output into '%s-MC#.asm'", nameOfInput, nameOfOutput);
 
@@ -30,7 +30,8 @@ int verbASMDump::DoWork(const char *nameOfInput, const char *nameOfOutput, int i
         char buff[500];
         sprintf_s(buff, 500, "%s-%d.asm", nameOfOutput, mci.MethodContextNumber());
 
-        HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
         if (hFileOut == INVALID_HANDLE_VALUE)
         {
             LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
@@ -40,8 +41,8 @@ int verbASMDump::DoWork(const char *nameOfInput, const char *nameOfOutput, int i
         if (mc->cr->IsEmpty())
         {
             const size_t bufflen = 4096;
-            DWORD bytesWritten;
-            char buff[bufflen];
+            DWORD        bytesWritten;
+            char         buff[bufflen];
             ZeroMemory(buff, bufflen * sizeof(char));
             int buff_offset = sprintf_s(buff, bufflen, ";;Method context has no compile result");
             WriteFile(hFileOut, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
