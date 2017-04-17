@@ -2404,7 +2404,7 @@ BOOL MethodDesc::IsFCallOrIntrinsic()
     if (IsFCall() || IsArray())
         return TRUE;
 
-    // Intrinsic methods on ByReference<T> or Span<T>
+    // Intrinsic methods on ByReference<T>, Span<T>, or ReadOnlySpan<T>
     MethodTable * pMT = GetMethodTable();
     if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
         return TRUE;
