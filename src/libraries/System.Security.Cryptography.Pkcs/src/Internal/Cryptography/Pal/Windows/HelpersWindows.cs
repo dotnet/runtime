@@ -341,13 +341,16 @@ namespace Internal.Cryptography.Pal.Windows
         {
             string oidValue = pCryptAttribute->pszObjId.ToStringAnsi();
             Oid oid = new Oid(oidValue);
+            AsnEncodedDataCollection attributeCollection = new AsnEncodedDataCollection();
 
             for (int i = 0; i < pCryptAttribute->cValue; i++)
             {
                 byte[] encodedAttribute = pCryptAttribute->rgValue[i].ToByteArray();
                 AsnEncodedData attributeObject = Helpers.CreateBestPkcs9AttributeObjectAvailable(oid, encodedAttribute);
-                collection.Add(attributeObject);
+                attributeCollection.Add(attributeObject);
             }
+
+            collection.Add(new CryptographicAttributeObject(oid, attributeCollection));
         }
     }
 }
