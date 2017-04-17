@@ -29,17 +29,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(int))]
-        [InlineData(typeof(List<>))]
-        [InlineData(typeof(ModuleTest))]
-        public void FullyQualifiedName(TypeInfo typeInfo)
-        {
-            Module module = typeInfo.Module;
-            Assert.Contains(typeInfo.Assembly.GetName().Name, module.FullyQualifiedName, StringComparison.CurrentCultureIgnoreCase);
-            Assert.Contains(typeInfo.Assembly.GetName().Name, module.Name, StringComparison.CurrentCultureIgnoreCase);
-        }
-
-        [Theory]
         [InlineData(typeof(Attr), 77, "AttrSimple")]
         [InlineData(typeof(Int32Attr), 77, "Int32AttrSimple")]
         [InlineData(typeof(Int64Attr), (long)77, "Int64AttrSimple")]
