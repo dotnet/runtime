@@ -32,6 +32,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -151,6 +152,11 @@ namespace System.Net
         {
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
         private static byte[] s_crlf = new byte[] { 13, 10 };
         private static byte[] GetChunkSizeBytes(int size, bool final)
         {
@@ -183,11 +189,23 @@ namespace System.Net
             catch { }
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int size)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
-            if (count == 0)
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+            if (size == 0)
                 return;
 
             byte[] bytes = null;
@@ -199,13 +217,13 @@ namespace System.Net
                 ms.Position = ms.Length;
                 if (chunked)
                 {
-                    bytes = GetChunkSizeBytes(count, false);
+                    bytes = GetChunkSizeBytes(size, false);
                     ms.Write(bytes, 0, bytes.Length);
                 }
 
-                int new_count = Math.Min(count, 16384 - (int)ms.Position + (int)start);
+                int new_count = Math.Min(size, 16384 - (int)ms.Position + (int)start);
                 ms.Write(buffer, offset, new_count);
-                count -= new_count;
+                size -= new_count;
                 offset += new_count;
                 InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
                 ms.SetLength(0);
@@ -213,20 +231,32 @@ namespace System.Net
             }
             else if (chunked)
             {
-                bytes = GetChunkSizeBytes(count, false);
+                bytes = GetChunkSizeBytes(size, false);
                 InternalWrite(bytes, 0, bytes.Length);
             }
 
-            if (count > 0)
-                InternalWrite(buffer, offset, count);
+            if (size > 0)
+                InternalWrite(buffer, offset, size);
             if (chunked)
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback cback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
 
             byte[] bytes = null;
             MemoryStream ms = GetHeaders(false);
@@ -237,33 +267,37 @@ namespace System.Net
                 ms.Position = ms.Length;
                 if (chunked)
                 {
-                    bytes = GetChunkSizeBytes(count, false);
+                    bytes = GetChunkSizeBytes(size, false);
                     ms.Write(bytes, 0, bytes.Length);
                 }
-                ms.Write(buffer, offset, count);
+                ms.Write(buffer, offset, size);
                 buffer = ms.GetBuffer();
                 offset = (int)start;
-                count = (int)(ms.Position - start);
+                size = (int)(ms.Position - start);
             }
             else if (chunked)
             {
-                bytes = GetChunkSizeBytes(count, false);
+                bytes = GetChunkSizeBytes(size, false);
                 InternalWrite(bytes, 0, bytes.Length);
             }
 
-            return _stream.BeginWrite(buffer, offset, count, cback, state);
+            return _stream.BeginWrite(buffer, offset, size, cback, state);
         }
 
-        public override void EndWrite(IAsyncResult ares)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             if (_ignore_errors)
             {
                 try
                 {
-                    _stream.EndWrite(ares);
+                    _stream.EndWrite(asyncResult);
                     if (_response.SendChunked)
                         _stream.Write(s_crlf, 0, 2);
                 }
@@ -271,7 +305,7 @@ namespace System.Net
             }
             else
             {
-                _stream.EndWrite(ares);
+                _stream.EndWrite(asyncResult);
                 if (_response.SendChunked)
                     _stream.Write(s_crlf, 0, 2);
             }
@@ -279,18 +313,18 @@ namespace System.Net
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            throw new NotSupportedException(SR.net_writeonlystream);
+            throw new InvalidOperationException(SR.net_writeonlystream);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count,
                             AsyncCallback cback, object state)
         {
-            throw new NotSupportedException(SR.net_writeonlystream);
+            throw new InvalidOperationException(SR.net_writeonlystream);
         }
 
         public override int EndRead(IAsyncResult ares)
         {
-            throw new NotSupportedException(SR.net_writeonlystream);
+            throw new InvalidOperationException(SR.net_writeonlystream);
         }
 
         public override long Seek(long offset, SeekOrigin origin)

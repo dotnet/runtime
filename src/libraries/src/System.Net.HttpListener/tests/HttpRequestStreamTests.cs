@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -287,7 +285,7 @@ namespace System.Net.Tests
         [Fact]
         public async Task CanSeek_Get_ReturnsFalse()
         {
-            HttpListenerRequest response = await _helper.GetRequest();
+            HttpListenerRequest response = await _helper.GetRequest(chunked: true);
             using (Stream inputStream = response.InputStream)
             {
                 Assert.False(inputStream.CanSeek);
@@ -305,7 +303,7 @@ namespace System.Net.Tests
         [Fact]
         public async Task CanRead_Get_ReturnsTrue()
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked: true);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.True(inputStream.CanRead);
@@ -313,10 +311,9 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // NotSupportedException thrown instead of InvalidOperationException
         public async Task CanWrite_Get_ReturnsFalse()
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked: true);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.False(inputStream.CanWrite);
@@ -331,10 +328,12 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        public async Task Read_NullBuffer_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Read_NullBuffer_ThrowsArgumentNullException(bool chunked)
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.Throws<ArgumentNullException>("buffer", () => inputStream.Read(null, 0, 0));
@@ -343,12 +342,13 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [InlineData(-1)]
-        [InlineData(3)]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Managed implementation throws different exception
-        public async Task Read_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
+        [InlineData(-1, true)]
+        [InlineData(3, true)]
+        [InlineData(-1, false)]
+        [InlineData(3, false)]
+        public async Task Read_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset, bool chunked)
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => inputStream.Read(new byte[2], offset, 0));
@@ -357,13 +357,15 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [InlineData(0, 3)]
-        [InlineData(1, 2)]
-        [InlineData(2, 1)]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // Managed implementation throws different exception
-        public async Task Read_InvalidOffsetSize_ThrowsArgumentOutOfRangeException(int offset, int size)
+        [InlineData(0, 3, true)]
+        [InlineData(1, 2, true)]
+        [InlineData(2, 1, true)]
+        [InlineData(0, 3, false)]
+        [InlineData(1, 2, false)]
+        [InlineData(2, 1, false)]
+        public async Task Read_InvalidOffsetSize_ThrowsArgumentOutOfRangeException(int offset, int size, bool chunked)
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("size", () => inputStream.Read(new byte[2], offset, size));
@@ -371,24 +373,26 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
-        public async Task EndRead_NullAsyncResult_ThrowsArgumentNullException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EndRead_NullAsyncResult_ThrowsArgumentNullException(bool chunked)
         {
-            HttpListenerRequest request = await _helper.GetRequest();
-
+            HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
                 Assert.Throws<ArgumentNullException>("asyncResult", () => inputStream.EndRead(null));
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
-        public async Task EndRead_InvalidAsyncResult_ThrowsArgumentException()
+        public async Task EndRead_InvalidAsyncResult_ThrowsArgumentException(bool chunked)
         {
-            HttpListenerRequest request1 = await _helper.GetRequest();
-            HttpListenerRequest request2 = await _helper.GetRequest();
+            HttpListenerRequest request1 = await _helper.GetRequest(chunked);
+            HttpListenerRequest request2 = await _helper.GetRequest(chunked);
 
             using (Stream inputStream1 = request1.InputStream)
             using (Stream inputStream2 = request2.InputStream)
@@ -400,11 +404,13 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
-        public async Task EndRead_CalledTwice_ThrowsInvalidOperationException()
+        public async Task EndRead_CalledTwice_ThrowsInvalidOperationException(bool chunked)
         {
-            HttpListenerRequest request = await _helper.GetRequest();
+            HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
                 IAsyncResult beginReadResult = inputStream.BeginRead(new byte[0], 0, 0, null, null);
@@ -432,7 +438,8 @@ namespace System.Net.Tests
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
+                client.Shutdown(SocketShutdown.Both);
+                Helpers.WaitForSocketShutdown(client);
 
                 // Reading from a closed connection should fail.
                 byte[] buffer = new byte[expected.Length];
@@ -462,7 +469,8 @@ namespace System.Net.Tests
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Disconnect(false);
+                client.Shutdown(SocketShutdown.Both);
+                Helpers.WaitForSocketShutdown(client);
 
                 // Reading from a closed connection should fail.
                 byte[] buffer = new byte[expected.Length];
