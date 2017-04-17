@@ -1640,6 +1640,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     if (os != 'Tizen') {
                         buildCommands += "chmod a+x ./bin/CoreFxBinDir/corerun"
                     }
+                    // Test environment emulation using docker and qemu has some problem to use lttng library.
+                    // We should remove libcoreclrtraceptprovider.so to avoid test hang.
+                    if (os == 'Ubuntu') {
+                        buildCommands += "rm -f -v ./bin/CoreFxBinDir/libcoreclrtraceptprovider.so"
+                    }
 
                     // Call the ARM CI script to cross build and test using docker
                     buildCommands += """./tests/scripts/arm32_ci_script.sh \\
