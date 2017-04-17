@@ -100,24 +100,24 @@ extern "C" DLL_EXPORT LPWSTR MarshalPointer_Out(/*[out]*/ LPWSTR *s)
     return ReturnString();
 }
 
-typedef LPTSTR (__stdcall * Test_Del_MarshalStrB_InOut)(/*[in,out]*/ LPTSTR s);
-extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCTSTR  s)
+typedef LPWSTR (__stdcall * Test_Del_MarshalStrB_InOut)(/*[in,out]*/ LPWSTR s);
+extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCWSTR  s)
 {
-    LPTSTR ret = d((LPTSTR)s);
-    LPTSTR expectedret =(LPTSTR)W("Native");
-    LPTSTR expectedstr = (LPTSTR)W("m");
+    LPWSTR ret = d((LPWSTR)s);
+    LPWSTR expectedret =(LPWSTR)W("Native");
+    LPWSTR expectedstr = (LPWSTR)W("m");
 
-	size_t lenret = _tcslen(ret);
-	size_t lenexpectedret = _tcslen(expectedret);
-    if((lenret != lenexpectedret)||(_tcsncmp(ret,expectedret,lenret)!=0))
+	size_t lenret = wcslen(ret);
+	size_t lenexpectedret = wcslen(expectedret);
+    if((lenret != lenexpectedret)||(wcsncmp(ret,expectedret,lenret)!=0))
     {
         printf("Error in ReverseP_MarshalStrB_InOut, Returned value didn't match\n");
         return FALSE;
     }
 
-	size_t lenstr = _tcslen(s);
-	size_t lenexpectedstr = _tcslen(expectedstr);
-    if((lenstr != lenexpectedstr)||(_tcsncmp(s,expectedstr,lenstr)!=0))
+	size_t lenstr = wcslen(s);
+	size_t lenexpectedstr = wcslen(expectedstr);
+    if((lenstr != lenexpectedstr)||(wcsncmp(s,expectedstr,lenstr)!=0))
     {
         printf("Error in ReverseP_MarshalStrB_InOut, Changed value didn't reflect on native side.\n");
         return FALSE;
@@ -126,25 +126,25 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_InOut(Test_Del_Marshal
     return TRUE;
 }
 
-typedef LPTSTR (__cdecl * Test_Del_MarshalStrB_Out)(/*[out]*/ LPTSTR * s);
+typedef LPWSTR (__cdecl * Test_Del_MarshalStrB_Out)(/*[out]*/ LPWSTR * s);
 extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_Out(Test_Del_MarshalStrB_Out d)
 {
-    LPTSTR s;
-    LPTSTR ret = d((LPTSTR*)&s);
-    LPTSTR expectedret = (LPTSTR)W("Native");
-    LPTSTR expectedstr = (LPTSTR)W("Managed");
+    LPWSTR s;
+    LPWSTR ret = d((LPWSTR*)&s);
+    LPWSTR expectedret = (LPWSTR)W("Native");
+    LPWSTR expectedstr = (LPWSTR)W("Managed");
 
-    size_t lenret = _tcslen(ret);
-	size_t lenexpectedret = _tcslen(expectedret);
-    if((lenret != lenexpectedret)||(_tcsncmp(ret,expectedret,lenret)!=0))
+    size_t lenret = wcslen(ret);
+	size_t lenexpectedret = wcslen(expectedret);
+    if((lenret != lenexpectedret)||(wcsncmp(ret,expectedret,lenret)!=0))
     {
         printf("Error in ReverseP_MarshalStrB_Out, Returned value didn't match\n");
         return FALSE;
     }
 
-	size_t lenstr = _tcslen(s);
-	size_t lenexpectedstr = _tcslen(expectedstr);
-    if((lenstr != lenexpectedstr)||(_tcsncmp(s,expectedstr,lenstr)!=0))
+	size_t lenstr = wcslen(s);
+	size_t lenexpectedstr = wcslen(expectedstr);
+    if((lenstr != lenexpectedstr)||(wcsncmp(s,expectedstr,lenstr)!=0))
     {
         printf("Error in ReverseP_MarshalStrB_Out, Changed value didn't reflect on native side.\n");
         return FALSE;

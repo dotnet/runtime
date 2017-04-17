@@ -194,7 +194,9 @@ int wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource)
 
 }
 
-int wmemcmp(LPWSTR str1, LPWSTR str2,size_t len)
+#define wcsncmp wmemcmp
+
+int wmemcmp(LPCWSTR str1, LPCWSTR str2,size_t len)
 {
 	// < 0 str1 less than str2
 	// 0  str1 identical to str2
