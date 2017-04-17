@@ -1422,7 +1422,20 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             // we only have to check for any bits set in 'typeMask'
 
             noway_assert(castInfo.typeMask != 0);
+#if defined(_TARGET_ARM_)
+            if (arm_Valid_Imm_For_Instr(INS_tst, castInfo.typeMask, INS_FLAGS_DONT_CARE))
+            {
+                emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
+            }
+            else
+            {
+                noway_assert(tmpReg != REG_NA);
+                instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMask);
+                emit->emitIns_R_R(INS_tst, cmpSize, sourceReg, tmpReg);
+            }
+#elif defined(_TARGET_ARM64_)
             emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
+#endif // _TARGET_ARM*
             emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
             genJumpToThrowHlpBlk(jmpNotEqual, SCK_OVERFLOW);
         }
