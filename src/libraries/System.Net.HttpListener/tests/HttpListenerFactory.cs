@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
@@ -14,6 +16,7 @@ namespace System.Net.Tests
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
         private const string Hostname = "localhost";
+        private readonly string _path;
         private readonly int _port;
 
         internal HttpListenerFactory()
@@ -23,10 +26,11 @@ namespace System.Net.Tests
             // can't steal it.
 
             Guid processGuid = Guid.NewGuid();
+            _path = processGuid.ToString("N");
 
             for (int port = 1024; port <= IPEndPoint.MaxPort; port++)
             {
-                string prefix = $"http://{Hostname}:{port}/{processGuid:N}/";
+                string prefix = $"http://{Hostname}:{port}/{_path}/";
 
                 var listener = new HttpListener();
                 try
@@ -84,6 +88,8 @@ namespace System.Net.Tests
                 return _processPrefix;
             }
         }
+
+        public string Path => _path;
 
         public HttpListener GetListener() => _processPrefixListener;
 
