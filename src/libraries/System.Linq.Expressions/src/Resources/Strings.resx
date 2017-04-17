@@ -427,9 +427,6 @@
   <data name="NonLocalJumpWithValue" xml:space="preserve">
     <value>Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values.</value>
   </data>
-  <data name="ExtensionNotReduced" xml:space="preserve">
-    <value>Extension should have been reduced.</value>
-  </data>
   <data name="CannotCompileConstant" xml:space="preserve">
     <value>CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value.</value>
   </data>

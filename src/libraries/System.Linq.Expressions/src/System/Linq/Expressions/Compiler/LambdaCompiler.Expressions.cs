@@ -921,12 +921,6 @@ namespace System.Linq.Expressions.Compiler
             return;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
-        private static void EmitExtensionExpression(Expression expr)
-        {
-            throw Error.ExtensionNotReduced();
-        }
-
         #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)

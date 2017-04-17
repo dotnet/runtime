@@ -1076,13 +1076,7 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.NonLocalJumpWithValue(p0));
         }
-        /// <summary>
-        /// InvalidOperationException with message like "Extension should have been reduced."
-        /// </summary>
-        internal static Exception ExtensionNotReduced()
-        {
-            return new InvalidOperationException(Strings.ExtensionNotReduced);
-        }
+
 #if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// InvalidOperationException with message like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."
