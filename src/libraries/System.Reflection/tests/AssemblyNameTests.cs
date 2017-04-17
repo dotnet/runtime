@@ -31,10 +31,6 @@ namespace System.Reflection.Tests
             yield return new object[] { "name with spaces", "name with spaces" };
             yield return new object[] { "\uD800\uDC00", "\uD800\uDC00" };
             yield return new object[] { "привет", "привет" };
-
-            // Invalid Unicode
-            yield return new object[] { "\uD800", "\uFFFD" };
-            yield return new object[] { "\uDC00", "\uFFFD" };
         }
 
         [Fact]
