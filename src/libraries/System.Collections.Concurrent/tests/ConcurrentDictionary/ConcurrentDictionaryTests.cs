@@ -546,6 +546,72 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework hasn't received the fix for https://github.com/dotnet/corefx/issues/18432 yet.")]
+        public static void TestNullComparer()
+        {
+            AssertDefaultComparerBehavior(new ConcurrentDictionary<EqualityApiSpy, int>((IEqualityComparer<EqualityApiSpy>)null));
+
+            AssertDefaultComparerBehavior(new ConcurrentDictionary<EqualityApiSpy, int>(new[] { new KeyValuePair<EqualityApiSpy, int>(new EqualityApiSpy(), 1) }, null));
+
+            AssertDefaultComparerBehavior(new ConcurrentDictionary<EqualityApiSpy, int>(1, new[] { new KeyValuePair<EqualityApiSpy, int>(new EqualityApiSpy(), 1) }, null));
+
+            AssertDefaultComparerBehavior(new ConcurrentDictionary<EqualityApiSpy, int>(1, 1, null));
+
+            void AssertDefaultComparerBehavior(ConcurrentDictionary<EqualityApiSpy, int> dictionary)
+            {
+                var spyKey = new EqualityApiSpy();
+
+                Assert.True(dictionary.TryAdd(spyKey, 1));
+                Assert.False(dictionary.TryAdd(spyKey, 1));
+
+                Assert.False(spyKey.ObjectApiUsed);
+                Assert.True(spyKey.IEquatableApiUsed);
+            }
+        }
+
+        private sealed class EqualityApiSpy : IEquatable<EqualityApiSpy>
+        {
+            public bool ObjectApiUsed { get; private set; }
+            public bool IEquatableApiUsed { get; private set; }
+
+
+            public override bool Equals(object obj)
+            {
+                ObjectApiUsed = true;
+                return ReferenceEquals(this, obj);
+            }
+
+            public override int GetHashCode() => base.GetHashCode();
+
+            public bool Equals(EqualityApiSpy other)
+            {
+                IEquatableApiUsed = true;
+                return ReferenceEquals(this, other);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Framework hasn't received the fix for https://github.com/dotnet/corefx/issues/18432 yet.")]
+        public static void TestNullComparer_netfx()
+        {
+            Assert.Throws<ArgumentNullException>(
+               () => new ConcurrentDictionary<int, int>((IEqualityComparer<int>)null));
+            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null IEqualityComparer is passed");
+
+            Assert.Throws<ArgumentNullException>(
+               () => new ConcurrentDictionary<int, int>(new[] { new KeyValuePair<int, int>(1, 1) }, null));
+            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when non null collection and null IEqualityComparer passed");
+
+            Assert.Throws<ArgumentNullException>(
+               () => new ConcurrentDictionary<int, int>(1, new[] { new KeyValuePair<int, int>(1, 1) }, null));
+            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
+
+            Assert.Throws<ArgumentNullException>(
+               () => new ConcurrentDictionary<int, int>(1, 1, null));
+            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
+        }
+
+        [Fact]
         public static void TestConstructor_Negative()
         {
             Assert.Throws<ArgumentNullException>(
@@ -553,16 +619,8 @@ namespace System.Collections.Concurrent.Tests
             // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null collection is passed");
 
             Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>((IEqualityComparer<int>)null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null IEqualityComparer is passed");
-
-            Assert.Throws<ArgumentNullException>(
                () => new ConcurrentDictionary<int, int>((ICollection<KeyValuePair<int, int>>)null, EqualityComparer<int>.Default));
             // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null collection and non null IEqualityComparer passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(new[] { new KeyValuePair<int, int>(1, 1) }, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when non null collection and null IEqualityComparer passed");
 
             Assert.Throws<ArgumentNullException>(
                () => new ConcurrentDictionary<string, int>(new[] { new KeyValuePair<string, int>(null, 1) }));
@@ -574,14 +632,6 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentNullException>(
                () => new ConcurrentDictionary<int, int>(1, null, EqualityComparer<int>.Default));
             // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null collection is passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(1, new[] { new KeyValuePair<int, int>(1, 1) }, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(1, 1, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
 
             Assert.Throws<ArgumentOutOfRangeException>(
                () => new ConcurrentDictionary<int, int>(0, 10));
