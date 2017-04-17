@@ -414,19 +414,13 @@ struct MethodTableWriteableData
     };
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
-private:
     /*
      * m_hExposedClassObject is LoaderAllocator slot index to 
-     * a RuntimeType instance for this class.  But
-     * do NOT use it for Arrays or remoted objects!  All arrays of objects 
-     * share the same MethodTable/EEClass.
-     * @GENERICS: this used to live in EEClass but now lives here because it is per-instantiation data
-	 * only set in code:MethodTable.GetManagedClassObject
+     * a RuntimeType instance for this class. 
      */
     LOADERHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
-public:
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
     // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if 
     // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a 

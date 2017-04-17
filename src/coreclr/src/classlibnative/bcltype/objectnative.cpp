@@ -198,12 +198,6 @@ NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
     TypeHandle typeHandle = objRef->GetTypeHandle();
     OBJECTREF refType = NULL;
 
-    // Arrays go down this slow path, at least don't do the full HelperMethodFrame setup
-    // if we are fetching the cached entry.  
-    refType = typeHandle.GetManagedClassObjectFast();
-    if (refType != NULL)
-        return OBJECTREFToObject(refType);
-
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refType);
 
         refType = typeHandle.GetManagedClassObject();

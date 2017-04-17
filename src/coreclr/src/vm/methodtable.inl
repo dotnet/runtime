@@ -1770,10 +1770,6 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
         return NULL;
     }
 
-    // Only code:MethodTable::GetManagedClassObject sets m_pExposedClassObject and it insures that 
-    // remoted objects and arrays don't get in.  
-    _ASSERTE(!IsArray() && !IsTransparentProxy());
-
     COMPILER_ASSUME(retVal != NULL);
     return retVal;
 }
