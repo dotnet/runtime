@@ -62,5 +62,16 @@ namespace System.Security
         public object PermitOnlySetInstance { get; set; }
         public string RefusedSet { get; set; }
         public string Url { get; set; }
+        public SecurityZone Zone { get; set; }
+    }
+
+    public enum SecurityZone
+    {
+        MyComputer   = 0,
+        Intranet     = 1,
+        Trusted      = 2,
+        Internet     = 3,
+        Untrusted    = 4,
+        NoZone       = -1
     }
 }
