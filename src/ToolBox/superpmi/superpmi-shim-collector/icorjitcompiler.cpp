@@ -10,21 +10,20 @@
 #include "jithost.h"
 #include "superpmi-shim-collector.h"
 
-#define fatMC //this is nice to have on so ildump works...
-interceptor_IEEMM *current_IEEMM = nullptr; //we want this to live beyond the scope of a single compileMethodCall
+#define fatMC                               // this is nice to have on so ildump works...
+interceptor_IEEMM* current_IEEMM = nullptr; // we want this to live beyond the scope of a single compileMethodCall
 
-CorJitResult __stdcall interceptor_ICJC::compileMethod (
-        ICorJitInfo                 *comp,               /* IN */
-        struct CORINFO_METHOD_INFO  *info,               /* IN */
-        unsigned /* code:CorJitFlag */   flags,          /* IN */
-        BYTE                        **nativeEntry,       /* OUT */
-        ULONG                       *nativeSizeOfCode    /* OUT */
-        )
+CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
+                                                       struct CORINFO_METHOD_INFO* info,     /* IN */
+                                                       unsigned /* code:CorJitFlag */ flags, /* IN */
+                                                       BYTE** nativeEntry,                   /* OUT */
+                                                       ULONG* nativeSizeOfCode               /* OUT */
+                                                       )
 {
     interceptor_ICJI our_ICorJitInfo;
     our_ICorJitInfo.original_ICorJitInfo = comp;
 
-    if(current_IEEMM == nullptr)
+    if (current_IEEMM == nullptr)
         current_IEEMM = new interceptor_IEEMM();
 
     auto* mc = new MethodContext();
@@ -38,8 +37,8 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod (
 
     our_ICorJitInfo.mc->recCompileMethod(info, flags);
 
-//force some extra data into our tables..
-    //data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
+    // force some extra data into our tables..
+     //data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
     our_ICorJitInfo.getBuiltinClass(CLASSID_SYSTEM_OBJECT);
     our_ICorJitInfo.getBuiltinClass(CLASSID_TYPED_BYREF);
     our_ICorJitInfo.getBuiltinClass(CLASSID_TYPE_HANDLE);
@@ -50,7 +49,7 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod (
     our_ICorJitInfo.getBuiltinClass(CLASSID_RUNTIME_TYPE);
 
 #ifdef fatMC
-    //to build up a fat mc
+    // to build up a fat mc
     CORINFO_CLASS_HANDLE ourClass = our_ICorJitInfo.getMethodClass(info->ftn);
     our_ICorJitInfo.getClassAttribs(ourClass);
     our_ICorJitInfo.getClassName(ourClass);
@@ -64,19 +63,20 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod (
         our_ICorJitInfo.mc->recGlobalContext(*g_globalContext);
     }
 
-    //Record a simple view of the environment
+    // Record a simple view of the environment
     our_ICorJitInfo.mc->recEnvironment();
 
-    CorJitResult temp = original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
+    CorJitResult temp =
+        original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
 
-    if(temp == CORJIT_OK)
+    if (temp == CORJIT_OK)
     {
-      //capture the results of compilation
-      our_ICorJitInfo.mc->cr->recCompileMethod(nativeEntry, nativeSizeOfCode, temp);
+        // capture the results of compilation
+        our_ICorJitInfo.mc->cr->recCompileMethod(nativeEntry, nativeSizeOfCode, temp);
 
-      our_ICorJitInfo.mc->cr->recAllocMemCapture();
-      our_ICorJitInfo.mc->cr->recAllocGCInfoCapture();
-      our_ICorJitInfo.mc->saveToFile(hFile);
+        our_ICorJitInfo.mc->cr->recAllocMemCapture();
+        our_ICorJitInfo.mc->cr->recAllocGCInfoCapture();
+        our_ICorJitInfo.mc->saveToFile(hFile);
     }
 
     delete mc;

@@ -14,13 +14,14 @@
 // value must be freed with jitInstance.freeLongLivedArray(value).
 wchar_t* GetCOMPlusVariable(const wchar_t* key, JitInstance& jitInstance)
 {
-    static const wchar_t Prefix[] = W("COMPlus_");
-    static const size_t PrefixLen = (sizeof(Prefix) / sizeof(Prefix[0])) - 1;
+    static const wchar_t Prefix[]  = W("COMPlus_");
+    static const size_t  PrefixLen = (sizeof(Prefix) / sizeof(Prefix[0])) - 1;
 
     // Prepend "COMPlus_" to the provided key
-    size_t keyLen = wcslen(key);
-    size_t keyBufferLen = keyLen + PrefixLen + 1;
-    wchar_t* keyBuffer = reinterpret_cast<wchar_t*>(jitInstance.allocateArray(static_cast<ULONG>(sizeof(wchar_t) * keyBufferLen)));
+    size_t   keyLen       = wcslen(key);
+    size_t   keyBufferLen = keyLen + PrefixLen + 1;
+    wchar_t* keyBuffer =
+        reinterpret_cast<wchar_t*>(jitInstance.allocateArray(static_cast<ULONG>(sizeof(wchar_t) * keyBufferLen)));
     wcscpy_s(keyBuffer, keyBufferLen, Prefix);
     wcscpy_s(&keyBuffer[PrefixLen], keyLen + 1, key);
 
@@ -33,8 +34,8 @@ wchar_t* GetCOMPlusVariable(const wchar_t* key, JitInstance& jitInstance)
     }
 
     // Note this value must live as long as the jit instance does.
-    wchar_t* value = reinterpret_cast<wchar_t*>(jitInstance.allocateLongLivedArray(sizeof(wchar_t) * valueLen));
-    DWORD newValueLen = GetEnvironmentVariableW(keyBuffer, value, valueLen);
+    wchar_t* value       = reinterpret_cast<wchar_t*>(jitInstance.allocateLongLivedArray(sizeof(wchar_t) * valueLen));
+    DWORD    newValueLen = GetEnvironmentVariableW(keyBuffer, value, valueLen);
 
     jitInstance.freeArray(keyBuffer);
     if (valueLen < newValueLen)
@@ -86,7 +87,7 @@ int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 
     // Parse the value as a hex integer.
     wchar_t* endPtr;
-    result = static_cast<int>(wcstoul(complus, &endPtr, 16));
+    result         = static_cast<int>(wcstoul(complus, &endPtr, 16));
     bool succeeded = (errno != ERANGE) && (endPtr != complus);
     jitInstance.freeLongLivedArray(complus);
 
@@ -96,13 +97,13 @@ int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 {
     jitInstance.mc->cr->AddCall("getStringConfigValue");
-    const wchar_t *result = jitInstance.mc->repGetStringConfigValue(key);
+    const wchar_t* result = jitInstance.mc->repGetStringConfigValue(key);
 
     if (result != nullptr)
     {
         // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
-        size_t resultLenInChars = wcslen(result) + 1;
-        wchar_t *dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
+        size_t   resultLenInChars = wcslen(result) + 1;
+        wchar_t* dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
         wcscpy_s(dupResult, resultLenInChars, result);
 
         return dupResult;

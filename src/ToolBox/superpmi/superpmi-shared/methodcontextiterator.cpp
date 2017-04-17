@@ -7,10 +7,10 @@
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
 
-
 bool MethodContextIterator::Initialize(const char* fileName)
 {
-    m_hFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    m_hFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open file '%s'. GetLastError()=%u", fileName, GetLastError());
@@ -18,7 +18,7 @@ bool MethodContextIterator::Initialize(const char* fileName)
     }
 
     LARGE_INTEGER DataTemp;
-    if (GetFileSizeEx(m_hFile, &DataTemp)==0)
+    if (GetFileSizeEx(m_hFile, &DataTemp) == 0)
     {
         LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
         CloseHandle(m_hFile);
@@ -53,8 +53,8 @@ bool MethodContextIterator::Destroy()
 
     if (m_index < m_indexCount)
     {
-        LogWarning("Didn't use all of index count input: %d < %d (i.e., didn't see MC #%d)",
-                m_index, m_indexCount, m_indexes[m_index]);
+        LogWarning("Didn't use all of index count input: %d < %d (i.e., didn't see MC #%d)", m_index, m_indexCount,
+                   m_indexes[m_index]);
     }
 
     delete m_timer;
@@ -95,7 +95,8 @@ bool MethodContextIterator::MoveNext()
             if (m_methodContextNumber % 500 == 0)
             {
                 m_timer->Stop();
-                LogVerbose("Loaded %d at %d per second", m_methodContextNumber, (int)((double)500 / m_timer->GetSeconds()));
+                LogVerbose("Loaded %d at %d per second", m_methodContextNumber,
+                           (int)((double)500 / m_timer->GetSeconds()));
                 m_timer->Start();
             }
         }

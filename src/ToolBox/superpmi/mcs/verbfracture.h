@@ -12,6 +12,7 @@
 class verbFracture
 {
 public:
-    static int DoWork(const char *nameOfInput1, const char *nameOfOutput, int indexCount, const int *indexes, bool stripCR);
+    static int DoWork(
+        const char* nameOfInput1, const char* nameOfOutput, int indexCount, const int* indexes, bool stripCR);
 };
 #endif

@@ -10,11 +10,11 @@
 
 IExecutionEngine* STDMETHODCALLTYPE IEE_t();
 HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer, DWORD* pdwlength);
-LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap (DWORD dwFlags, SIZE_T dwBytes);
-BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap (DWORD dwFlags, LPVOID lpMem);
+LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
+BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
 void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName);
 
 // Added to allow us to persist a copy of the original callbacks
-extern CoreClrCallbacks *original_CoreClrCallbacks;
+extern CoreClrCallbacks* original_CoreClrCallbacks;
 
 #endif

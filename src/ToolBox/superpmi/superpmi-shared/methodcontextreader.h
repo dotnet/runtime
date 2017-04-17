@@ -17,16 +17,29 @@ struct MethodContextBuffer
 {
 private:
     static const int Completed = 0x1234abcd;
+
 public:
-    unsigned char *buff;
-    DWORD size;
+    unsigned char* buff;
+    DWORD          size;
 
-    MethodContextBuffer() : buff(nullptr), size(Completed) {}
-    MethodContextBuffer(DWORD error) : buff(nullptr), size(error) {}
-    MethodContextBuffer(unsigned char *b, DWORD e) : buff(b), size(e) {}
+    MethodContextBuffer() : buff(nullptr), size(Completed)
+    {
+    }
+    MethodContextBuffer(DWORD error) : buff(nullptr), size(error)
+    {
+    }
+    MethodContextBuffer(unsigned char* b, DWORD e) : buff(b), size(e)
+    {
+    }
 
-    bool allDone() { return size == Completed && buff == nullptr; }
-    bool Error() { return size != 0 && size != Completed && buff == nullptr; }
+    bool allDone()
+    {
+        return size == Completed && buff == nullptr;
+    }
+    bool Error()
+    {
+        return size != 0 && size != Completed && buff == nullptr;
+    }
 };
 
 // The pack(4) directive is so that each entry is 12 bytes, intead of 16
@@ -35,7 +48,6 @@ public:
 class MethodContextReader
 {
 private:
-
     // The MC/MCH file
     HANDLE fileHandle;
 
@@ -47,23 +59,23 @@ private:
 
     // The synchronization mutex
     HANDLE mutex;
-    bool AcquireLock();
-    void ReleaseLock();
+    bool   AcquireLock();
+    void   ReleaseLock();
 
     TOCFile tocFile;
 
     // Method ranges to process
     // If you have an index file, these things get processed
     // much faster, now
-    const int *Indexes;
-    int IndexCount;
-    int curIndexPos;
+    const int* Indexes;
+    int        IndexCount;
+    int        curIndexPos;
 
     // Method hash to process
     // If you have an index file, these things get processed
     // much faster, now
-    char *Hash;
-    int curTOCIndex;
+    char* Hash;
+    int   curTOCIndex;
 
     // Offset/increment if running in parallel mode
     // If you have an index file, these things get processed
@@ -76,7 +88,7 @@ private:
     __int64 GetOffset(unsigned int methodNumber);
 
     // Just a helper...
-    static HANDLE OpenFile(const char *inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
+    static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
 
     MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
     MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);
@@ -89,7 +101,9 @@ private:
 
     // Looks for a file named foo.origSuffix.newSuffix or foo.newSuffix
     // but only if foo.origSuffix exists
-    static std::string CheckForPairedFile(const std::string &fileName, const std::string &origSuffix, const std::string &newSuffix);
+    static std::string CheckForPairedFile(const std::string& fileName,
+                                          const std::string& origSuffix,
+                                          const std::string& newSuffix);
 
     // are we're at the end of the file...
     bool atEof();
@@ -101,18 +115,22 @@ private:
     bool hasIndex();
 
 public:
-
-    MethodContextReader(const char *inputFileName, const int *indexes = nullptr, int indexCount = -1, char *hash = nullptr, int offset = -1, int increment = -1);
+    MethodContextReader(const char* inputFileName,
+                        const int*  indexes    = nullptr,
+                        int         indexCount = -1,
+                        char*       hash       = nullptr,
+                        int         offset     = -1,
+                        int         increment  = -1);
     ~MethodContextReader();
 
     // Read a method context buffer from the ContextCollection
     // (either a hive [single] or an index)
     MethodContextBuffer GetNextMethodContext();
     // No C++ exceptions, so the constructor has to always succeed...
-    bool isValid();
+    bool   isValid();
     double PercentComplete();
 
-    //Returns the index of the last MethodContext read by GetNextMethodContext
+    // Returns the index of the last MethodContext read by GetNextMethodContext
     inline int GetMethodContextIndex()
     {
         return curMCIndex;

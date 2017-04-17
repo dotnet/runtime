@@ -12,6 +12,6 @@
 class verbInteg
 {
 public:
-    static int DoWork(const char *nameofInput);
+    static int DoWork(const char* nameofInput);
 };
 #endif

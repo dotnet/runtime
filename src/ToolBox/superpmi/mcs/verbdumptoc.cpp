@@ -9,7 +9,7 @@
 #include "tocfile.h"
 #include "runtimedetails.h"
 
-int verbDumpToc::DoWork(const char *nameOfInput)
+int verbDumpToc::DoWork(const char* nameOfInput)
 {
     TOCFile tf;
 

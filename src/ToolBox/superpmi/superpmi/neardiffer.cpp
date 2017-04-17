@@ -23,25 +23,28 @@
 // The file/linenumber information is from this helper itself, 
 // since we are only linking with the CoreDisTools library.
 //
-static void LogFromCoreDisToolsHelper(LogLevel level, const char *msg, va_list argList)
+static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list argList)
 {
     Logger::LogVprintf(__func__, __FILE__, __LINE__, level, argList, msg);
 }
 
-#define LOGGER(L) \
-static void Log##L(const char *msg, ...) \
-{\
-    va_list argList; \
-    va_start(argList, msg); \
-    LogFromCoreDisToolsHelper (LOGLEVEL_##L, msg, argList); \
-    va_end(argList); \
+#define LOGGER(L)                                                                                                      \
+    \
+static void Log##L(const char* msg, ...)                                                                               \
+    \
+{                                                                                                               \
+        va_list argList;                                                                                               \
+        va_start(argList, msg);                                                                                        \
+        LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
+        va_end(argList);                                                                                               \
+    \
 }
 
 LOGGER(VERBOSE)
 LOGGER(ERROR)
 LOGGER(WARNING)
 
-const PrintControl CorPrinter= { LogERROR, LogWARNING, LogVERBOSE, LogVERBOSE };
+const PrintControl CorPrinter = {LogERROR, LogWARNING, LogVERBOSE, LogVERBOSE};
 
 #endif // USE_COREDISTOOLS
 
@@ -64,7 +67,7 @@ void NearDiffer::InitAsmDiff()
 NearDiffer::~NearDiffer()
 {
 #ifdef USE_COREDISTOOLS
-    if (corAsmDiff != nullptr) 
+    if (corAsmDiff != nullptr)
     {
         FinishDiff(corAsmDiff);
     }
@@ -94,7 +97,7 @@ NearDiffer::~NearDiffer()
 
 DIS* NearDiffer::GetMsVcDis()
 {
-    DIS *disasm;
+    DIS* disasm;
 
 #ifdef _TARGET_AMD64_
     if ((TargetArchitecture != nullptr) && (0 == _stricmp(TargetArchitecture, "arm64")))
@@ -126,43 +129,44 @@ DIS* NearDiffer::GetMsVcDis()
 //    blocksize    - The size of the code block to disassemble.
 //    originalAddr - The original base address of the code block.
 //
-void NearDiffer::DumpCodeBlock(unsigned char *block, ULONG blocksize, void *originalAddr)
+void NearDiffer::DumpCodeBlock(unsigned char* block, ULONG blocksize, void* originalAddr)
 {
-#ifdef USE_MSVCDIS 
-    DIS *disasm = GetMsVcDis();
-    size_t offset = 0;
+#ifdef USE_MSVCDIS
+    DIS*        disasm = GetMsVcDis();
+    size_t      offset = 0;
     std::string codeBlock;
 
     while (offset < blocksize)
     {
         DIS::INSTRUCTION instr;
-        DIS::OPERAND ops[3];
+        DIS::OPERAND     ops[3];
 
-        size_t instrSize = disasm->CbDisassemble((DIS::ADDR)originalAddr + offset, (void *)(block + offset), 15);
-        if(instrSize==0)
+        size_t instrSize = disasm->CbDisassemble((DIS::ADDR)originalAddr + offset, (void*)(block + offset), 15);
+        if (instrSize == 0)
         {
             LogWarning("Zero sized instruction");
             break;
         }
         disasm->FDecode(&instr, ops, 3);
 
-        wchar_t instrMnemonicWide[64];  // I never know how much to allocate...
+        wchar_t instrMnemonicWide[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonicWide, 64);
-        char instrMnemonic[128];
+        char   instrMnemonic[128];
         size_t count;
         wcstombs_s(&count, instrMnemonic, 128, instrMnemonicWide, 64);
 
         const size_t minInstrBytes = 7;
-        size_t instrBytes = max(instrSize, minInstrBytes);
-        size_t buffSize = sizeof("%p %s\n") + 10 + count + 3 * instrBytes + 1;
-        char *buff = new char[buffSize];
-        int written = 0;
-        written += sprintf_s(buff, buffSize, "%p ", (void*)((size_t)originalAddr+offset));
+        size_t       instrBytes    = max(instrSize, minInstrBytes);
+        size_t       buffSize      = sizeof("%p %s\n") + 10 + count + 3 * instrBytes + 1;
+        char*        buff          = new char[buffSize];
+        int          written       = 0;
+        written += sprintf_s(buff, buffSize, "%p ", (void*)((size_t)originalAddr + offset));
         for (size_t i = 0; i < instrBytes; i++)
         {
             if (i < instrSize)
             {
-                written += sprintf_s(buff + written, buffSize - written, "%02X ", *(const uint8_t*)(block + offset + i));
+                written +=
+                    sprintf_s(buff + written, buffSize - written, "%02X ", *(const uint8_t*)(block + offset + i));
             }
             else
             {
@@ -176,7 +180,7 @@ void NearDiffer::DumpCodeBlock(unsigned char *block, ULONG blocksize, void *orig
     }
     LogVerbose("Code dump:\n%s", codeBlock.c_str());
     delete disasm;
-#else // !USE_MSVCDIS
+#else  // !USE_MSVCDIS
     LogVerbose("No disassembler");
 #endif // !USE_MSVCDIS
 }
@@ -187,7 +191,7 @@ void NearDiffer::DumpCodeBlock(unsigned char *block, ULONG blocksize, void *orig
 struct DiffData
 {
     // Common Data
-    CompileResult *cr;
+    CompileResult* cr;
 
     // Details of the first block
     size_t blocksize1;
@@ -213,11 +217,8 @@ struct DiffData
 // Determine whether two syntactically different constants are 
 // semantically equivalent, using certain heuristics.
 //
-bool NearDiffer::compareOffsets(const void *payload,
-                                size_t blockOffset,
-                                size_t instrLen,
-                                uint64_t offset1,
-                                uint64_t offset2) 
+bool NearDiffer::compareOffsets(
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
 {
     // The trivial case
     if (offset1 == offset2)
@@ -225,91 +226,94 @@ bool NearDiffer::compareOffsets(const void *payload,
         return true;
     }
 
-    const DiffData *data = (const DiffData *)payload;
-    size_t ip1 = data->originalBlock1 + blockOffset;
-    size_t ip2 = data->originalBlock2 + blockOffset;
-    size_t ipRelOffset1 = ip1 + instrLen + (size_t)offset1;
-    size_t ipRelOffset2 = ip2 + instrLen + (size_t)offset2;
+    const DiffData* data         = (const DiffData*)payload;
+    size_t          ip1          = data->originalBlock1 + blockOffset;
+    size_t          ip2          = data->originalBlock2 + blockOffset;
+    size_t          ipRelOffset1 = ip1 + instrLen + (size_t)offset1;
+    size_t          ipRelOffset2 = ip2 + instrLen + (size_t)offset2;
 
     // Case where we have a call into flat address -- the most common case.
     size_t gOffset1 = ipRelOffset1;
     size_t gOffset2 = ipRelOffset2;
-    if ((DWORD)gOffset1 == (DWORD)gOffset2) //make sure the lower 32bits match (best we can do in the current replay form)
+    if ((DWORD)gOffset1 ==
+        (DWORD)gOffset2) // make sure the lower 32bits match (best we can do in the current replay form)
         return true;
 
-    //Case where we have an offset into the read only section (e.g. loading a float value)
+    // Case where we have an offset into the read only section (e.g. loading a float value)
     size_t roOffset1a = (size_t)offset1 - data->originalDataBlock1;
     size_t roOffset2a = (size_t)offset2 - data->originalDataBlock2;
-    if ((roOffset1a == roOffset2a) && (roOffset1a < data->datablockSize1)) //Confirm its an offset that fits inside our RoRegion
+    if ((roOffset1a == roOffset2a) &&
+        (roOffset1a < data->datablockSize1)) // Confirm its an offset that fits inside our RoRegion
         return true;
 
     // This case is written to catch IP-relative offsets to the RO data-section 
     // For example:
-    // 
+    //
     size_t roOffset1b = ipRelOffset1 - data->originalDataBlock1;
     size_t roOffset2b = ipRelOffset2 - data->originalDataBlock2;
-    if ((roOffset1b == roOffset2b) && (roOffset1b < data->datablockSize1)) //Confirm its an offset that fits inside our RoRegion
+    if ((roOffset1b == roOffset2b) &&
+        (roOffset1b < data->datablockSize1)) // Confirm its an offset that fits inside our RoRegion
         return true;
 
-    //Case where we push an address to our own code section.
+    // Case where we push an address to our own code section.
     size_t gOffset1a = (size_t)offset1 - data->originalBlock1;
     size_t gOffset2a = (size_t)offset2 - data->originalBlock2;
-    if ((gOffset1a == gOffset2a) && (gOffset1a < data->blocksize1)) //Confirm its in our code region
+    if ((gOffset1a == gOffset2a) && (gOffset1a < data->blocksize1)) // Confirm its in our code region
         return true;
 
-    //Case where we push an address in the other codeblock.
+    // Case where we push an address in the other codeblock.
     size_t gOffset1b = (size_t)offset1 - data->otherCodeBlock1;
     size_t gOffset2b = (size_t)offset2 - data->otherCodeBlock2;
-    if ((gOffset1b == gOffset2b) && (gOffset1b < data->otherCodeBlockSize1)) //Confirm it's in the other code region
+    if ((gOffset1b == gOffset2b) && (gOffset1b < data->otherCodeBlockSize1)) // Confirm it's in the other code region
         return true;
 
-    //Case where we have an offset into the hot codeblock from the cold code block (why?)
+    // Case where we have an offset into the hot codeblock from the cold code block (why?)
     size_t ocOffset1 = ipRelOffset1 - data->otherCodeBlock1;
     size_t ocOffset2 = ipRelOffset2 - data->otherCodeBlock2;
-    if (ocOffset1 == ocOffset2) //Would be nice to check to see if it fits in the other code block
+    if (ocOffset1 == ocOffset2) // Would be nice to check to see if it fits in the other code block
         return true;
 
-    //VSD calling case.
+    // VSD calling case.
     size_t Offset1 = (ipRelOffset1 - 8);
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-        //LogVerbose("Found VSD callsite, did softer compare than ideal");
+         //LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
 
-    //x86 VSD calling cases.
+    // x86 VSD calling cases.
     size_t Offset1b = (size_t)offset1 - 4;
     size_t Offset2b = (size_t)offset2;
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-        //LogVerbose("Found VSD callsite, did softer compare than ideal");
+         //LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
     if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != (DWORD)-1)
     {
         // This logging is too noisy, so disable it.
-        //LogVerbose("Found VSD callsite, did softer compare than ideal");
+         //LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
 
-    //Case might be a field address that we handed out to handle inlined values being loaded into
-    //a register as an immediate value (and where the address is encoded as an indirect immediate load)
+    // Case might be a field address that we handed out to handle inlined values being loaded into
+     //a register as an immediate value (and where the address is encoded as an indirect immediate load)
     size_t realTargetAddr = (size_t)data->cr->searchAddressMap((void*)gOffset2);
     if (realTargetAddr == gOffset1)
         return true;
 
-    //Case might be a field address that we handed out to handle inlined values being loaded into
-    //a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
+    // Case might be a field address that we handed out to handle inlined values being loaded into
+     //a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
     realTargetAddr = (size_t)data->cr->searchAddressMap((void*)offset2);
     if (realTargetAddr == offset1)
         return true;
-    if (realTargetAddr == 0x424242)//this offset matches what we got back from a getTailCallCopyArgsThunk
+    if (realTargetAddr == 0x424242) // this offset matches what we got back from a getTailCallCopyArgsThunk
         return true;
 
     realTargetAddr = (size_t)data->cr->searchAddressMap((void*)(gOffset2));
-    if (realTargetAddr != -1) //we know this was passed out as a bbloc
+    if (realTargetAddr != -1) // we know this was passed out as a bbloc
         return true;
 
     return false;
@@ -366,72 +370,56 @@ bool NearDiffer::compareOffsets(const void *payload,
 //    True if the code sections are syntactically identical; false otherwise.
 //
 
-bool NearDiffer::compareCodeSection(
-    MethodContext *mc,
-    CompileResult *cr1,
-    CompileResult *cr2,
-    unsigned char *block1,
-    ULONG blocksize1,
-    unsigned char *datablock1,
-    ULONG datablockSize1,
-    void *originalBlock1,
-    void *originalDataBlock1,
-    void *otherCodeBlock1,
-    ULONG otherCodeBlockSize1,
-    unsigned char *block2,
-    ULONG blocksize2,
-    unsigned char *datablock2,
-    ULONG datablockSize2,
-    void *originalBlock2,
-    void *originalDataBlock2,
-    void *otherCodeBlock2,
-    ULONG otherCodeBlockSize2)
+bool NearDiffer::compareCodeSection(MethodContext* mc,
+                                    CompileResult* cr1,
+                                    CompileResult* cr2,
+                                    unsigned char* block1,
+                                    ULONG          blocksize1,
+                                    unsigned char* datablock1,
+                                    ULONG          datablockSize1,
+                                    void*          originalBlock1,
+                                    void*          originalDataBlock1,
+                                    void*          otherCodeBlock1,
+                                    ULONG          otherCodeBlockSize1,
+                                    unsigned char* block2,
+                                    ULONG          blocksize2,
+                                    unsigned char* datablock2,
+                                    ULONG          datablockSize2,
+                                    void*          originalBlock2,
+                                    void*          originalDataBlock2,
+                                    void*          otherCodeBlock2,
+                                    ULONG          otherCodeBlockSize2)
 {
-    DiffData data =
-    {
-        cr2,
+    DiffData data = {cr2,
 
-        // Details of the first block
-        (size_t)blocksize1,
-        (size_t)datablock1,
-        (size_t)datablockSize1,
-        (size_t)originalBlock1,
-        (size_t)originalDataBlock1,
-        (size_t)otherCodeBlock1,
-        (size_t)otherCodeBlockSize1,
+                     // Details of the first block
+                     (size_t)blocksize1, (size_t)datablock1, (size_t)datablockSize1, (size_t)originalBlock1,
+                     (size_t)originalDataBlock1, (size_t)otherCodeBlock1, (size_t)otherCodeBlockSize1,
 
-        // Details of the second block
-        (size_t)blocksize2,
-        (size_t)datablock2,
-        (size_t)datablockSize2,
-        (size_t)originalBlock2,
-        (size_t)originalDataBlock2,
-        (size_t)otherCodeBlock2,
-        (size_t)otherCodeBlockSize2
-    };
+                     // Details of the second block
+                     (size_t)blocksize2, (size_t)datablock2, (size_t)datablockSize2, (size_t)originalBlock2,
+                     (size_t)originalDataBlock2, (size_t)otherCodeBlock2, (size_t)otherCodeBlockSize2};
 
 #ifdef USE_COREDISTOOLS
-    if (UseCoreDisTools) 
+    if (UseCoreDisTools)
     {
-        bool areSame = NearDiffCodeBlocks(corAsmDiff, &data,
-            (const uint8_t *)originalBlock1, block1, blocksize1,
-            (const uint8_t *)originalBlock2, block2, blocksize2);
+        bool areSame = NearDiffCodeBlocks(corAsmDiff, &data, (const uint8_t*)originalBlock1, block1, blocksize1,
+                                          (const uint8_t*)originalBlock2, block2, blocksize2);
 
-        if (!areSame) 
+        if (!areSame)
         {
-            DumpDiffBlocks(corAsmDiff, (const uint8_t *) originalBlock1, 
-                block1, blocksize1, (const uint8_t *) originalBlock2, 
-                block2, blocksize2);
+            DumpDiffBlocks(corAsmDiff, (const uint8_t*)originalBlock1, block1, blocksize1,
+                           (const uint8_t*)originalBlock2, block2, blocksize2);
         }
 
         return areSame;
     }
 #endif // USE_COREDISTOOLS
 
-#ifdef USE_MSVCDIS 
+#ifdef USE_MSVCDIS
     bool haveSeenRet = false;
-    DIS *disasm_1 = GetMsVcDis();
-    DIS *disasm_2 = GetMsVcDis();
+    DIS* disasm_1    = GetMsVcDis();
+    DIS* disasm_2    = GetMsVcDis();
 
     size_t offset = 0;
 
@@ -445,9 +433,9 @@ bool NearDiffer::compareCodeSection(
     {
         DIS::INSTRUCTION instr_1;
         DIS::INSTRUCTION instr_2;
-        const int MaxOperandCount = 5;
-        DIS::OPERAND ops_1[MaxOperandCount];
-        DIS::OPERAND ops_2[MaxOperandCount];
+        const int        MaxOperandCount = 5;
+        DIS::OPERAND     ops_1[MaxOperandCount];
+        DIS::OPERAND     ops_2[MaxOperandCount];
 
         // Zero out the locals, just in case.
         memset(&instr_1, 0, sizeof(instr_1));
@@ -455,8 +443,8 @@ bool NearDiffer::compareCodeSection(
         memset(&ops_1, 0, sizeof(ops_1));
         memset(&ops_2, 0, sizeof(ops_2));
 
-        size_t instrSize_1 = disasm_1->CbDisassemble((DIS::ADDR)originalBlock1 + offset, (void *)(block1 + offset), 15);
-        size_t instrSize_2 = disasm_2->CbDisassemble((DIS::ADDR)originalBlock2 + offset, (void *)(block2 + offset), 15);
+        size_t instrSize_1 = disasm_1->CbDisassemble((DIS::ADDR)originalBlock1 + offset, (void*)(block1 + offset), 15);
+        size_t instrSize_2 = disasm_2->CbDisassemble((DIS::ADDR)originalBlock2 + offset, (void*)(block2 + offset), 15);
 
         if (instrSize_1 != instrSize_2)
         {
@@ -468,7 +456,7 @@ bool NearDiffer::compareCodeSection(
             if (haveSeenRet)
             {
                 // This logging is pretty noisy, so disable it.
-                //LogVerbose("instruction size of zero after seeing a ret (soft issue?).");
+                 //LogVerbose("instruction size of zero after seeing a ret (soft issue?).");
                 break;
             }
             LogWarning("instruction size of zero.");
@@ -487,9 +475,9 @@ bool NearDiffer::compareCodeSection(
             FDecodeError = true;
         }
 
-        wchar_t instrMnemonic_1[64];  // I never know how much to allocate...
+        wchar_t instrMnemonic_1[64]; // I never know how much to allocate...
         disasm_1->CchFormatInstr(instrMnemonic_1, 64);
-        wchar_t instrMnemonic_2[64];  // I never know how much to allocate...
+        wchar_t instrMnemonic_2[64]; // I never know how much to allocate...
         disasm_2->CchFormatInstr(instrMnemonic_2, 64);
         if (wcscmp(instrMnemonic_1, L"ret") == 0)
             haveSeenRet = true;
@@ -576,11 +564,11 @@ bool NearDiffer::compareCodeSection(
                 // 0F 2E 05 67 00 9A FD ucomiss xmm0, dword ptr[FFFFFFFFFD9A006Eh]
                 //
 
-                if (compareOffsets(&data, offset, 0, ops_1[i].dwl, ops_2[i].dwl)) 
+                if (compareOffsets(&data, offset, 0, ops_1[i].dwl, ops_2[i].dwl))
                 {
                     continue;
                 }
-                else 
+                else
                 {
                     size_t gOffset1 = (size_t)originalBlock1 + offset + (size_t)ops_1[i].dwl;
                     size_t gOffset2 = (size_t)originalBlock2 + offset + (size_t)ops_2[i].dwl;
@@ -610,16 +598,16 @@ bool NearDiffer::compareCodeSection(
 DumpDetails:
     LogVerbose("block1 %p", block1);
     LogVerbose("block2 %p", block2);
-    LogVerbose("originalBlock1 [%p,%p)", originalBlock1, (const uint8_t *)originalBlock1 + blocksize1);
-    LogVerbose("originalBlock2 [%p,%p)", originalBlock2, (const uint8_t *)originalBlock2 + blocksize2);
+    LogVerbose("originalBlock1 [%p,%p)", originalBlock1, (const uint8_t*)originalBlock1 + blocksize1);
+    LogVerbose("originalBlock2 [%p,%p)", originalBlock2, (const uint8_t*)originalBlock2 + blocksize2);
     LogVerbose("blocksize1 %08X", blocksize1);
     LogVerbose("blocksize2 %08X", blocksize2);
-    LogVerbose("dataBlock1 [%p,%p)", originalDataBlock1, (const uint8_t *)originalDataBlock1 + datablockSize1);
-    LogVerbose("dataBlock2 [%p,%p)", originalDataBlock2, (const uint8_t *)originalDataBlock2 + datablockSize2);
+    LogVerbose("dataBlock1 [%p,%p)", originalDataBlock1, (const uint8_t*)originalDataBlock1 + datablockSize1);
+    LogVerbose("dataBlock2 [%p,%p)", originalDataBlock2, (const uint8_t*)originalDataBlock2 + datablockSize2);
     LogVerbose("datablockSize1 %08X", datablockSize1);
     LogVerbose("datablockSize2 %08X", datablockSize2);
-    LogVerbose("otherCodeBlock1 [%p,%p)", otherCodeBlock1, (const uint8_t *)otherCodeBlock1 + otherCodeBlockSize1);
-    LogVerbose("otherCodeBlock2 [%p,%p)", otherCodeBlock2, (const uint8_t *)otherCodeBlock2 + otherCodeBlockSize2);
+    LogVerbose("otherCodeBlock1 [%p,%p)", otherCodeBlock1, (const uint8_t*)otherCodeBlock1 + otherCodeBlockSize1);
+    LogVerbose("otherCodeBlock2 [%p,%p)", otherCodeBlock2, (const uint8_t*)otherCodeBlock2 + otherCodeBlockSize2);
     LogVerbose("otherCodeBlockSize1 %08X", otherCodeBlockSize1);
     LogVerbose("otherCodeBlockSize2 %08X", otherCodeBlockSize2);
 
@@ -643,7 +631,7 @@ DumpDetails:
     if (disasm_2 != nullptr)
         delete disasm_2;
     return false;
-#else // !USE_MSVCDIS
+#else  // !USE_MSVCDIS
     return false; // No disassembler; assume there are differences
 #endif // !USE_MSVCDIS
 }
@@ -665,21 +653,28 @@ DumpDetails:
 // Return Value:
 //    True if the read-only data sections are identical; false otherwise.
 //
-bool NearDiffer::compareReadOnlyDataBlock(MethodContext *mc, CompileResult *cr1, CompileResult *cr2,
-        unsigned char *block1, ULONG blocksize1, void *originalDataBlock1,
-        unsigned char *block2, ULONG blocksize2, void *originalDataBlock2)
+bool NearDiffer::compareReadOnlyDataBlock(MethodContext* mc,
+                                          CompileResult* cr1,
+                                          CompileResult* cr2,
+                                          unsigned char* block1,
+                                          ULONG          blocksize1,
+                                          void*          originalDataBlock1,
+                                          unsigned char* block2,
+                                          ULONG          blocksize2,
+                                          void*          originalDataBlock2)
 {
-    //no rodata
-    if(blocksize1==0 && blocksize2==0)
+    // no rodata
+    if (blocksize1 == 0 && blocksize2 == 0)
         return true;
 
-    if(blocksize1!=blocksize2)
+    if (blocksize1 != blocksize2)
     {
         LogVerbose("compareReadOnlyDataBlock found non-matching sizes %u %u", blocksize1, blocksize2);
         return false;
     }
 
-    //TODO-Cleanup: The values on the datablock seem to wobble. Need further investigation to evaluate a good near comparison for these
+    // TODO-Cleanup: The values on the datablock seem to wobble. Need further investigation to evaluate a good near
+    // comparison for these
     return true;
 }
 
@@ -694,7 +689,7 @@ bool NearDiffer::compareReadOnlyDataBlock(MethodContext *mc, CompileResult *cr1,
 // Return Value:
 //    True if the EH info blocks are identical; false otherwise.
 //
-bool NearDiffer::compareEHInfo(MethodContext *mc, CompileResult *cr1, CompileResult *cr2)
+bool NearDiffer::compareEHInfo(MethodContext* mc, CompileResult* cr1, CompileResult* cr2)
 {
     ULONG cEHSize_1;
     ULONG ehFlags_1;
@@ -712,40 +707,41 @@ bool NearDiffer::compareEHInfo(MethodContext *mc, CompileResult *cr1, CompileRes
     ULONG handlerLength_2;
     ULONG classToken_2;
 
-
     cEHSize_1 = cr1->repSetEHcount();
     cEHSize_2 = cr2->repSetEHcount();
 
-    //no exception
-    if(cEHSize_1==0 && cEHSize_2==0)
+    // no exception
+    if (cEHSize_1 == 0 && cEHSize_2 == 0)
         return true;
 
-    if(cEHSize_1!=cEHSize_2)
+    if (cEHSize_1 != cEHSize_2)
     {
         LogVerbose("compareEHInfo found non-matching sizes %u %u", cEHSize_1, cEHSize_2);
         return false;
     }
 
-    for(unsigned int i=0;i<cEHSize_1;i++)
+    for (unsigned int i = 0; i < cEHSize_1; i++)
     {
         cr1->repSetEHinfo(i, &ehFlags_1, &tryOffset_1, &tryLength_1, &handlerOffset_1, &handlerLength_1, &classToken_1);
         cr2->repSetEHinfo(i, &ehFlags_2, &tryOffset_2, &tryLength_2, &handlerOffset_2, &handlerLength_2, &classToken_2);
-        if(ehFlags_1!=ehFlags_2)
+        if (ehFlags_1 != ehFlags_2)
         {
             LogVerbose("EH flags don't match %u != %u", ehFlags_1, ehFlags_2);
             return false;
         }
-        if((tryOffset_1!=tryOffset_2) || (tryLength_1!=tryLength_2))
+        if ((tryOffset_1 != tryOffset_2) || (tryLength_1 != tryLength_2))
         {
-            LogVerbose("EH try information don't match, offset: %u %u, length: %u %u", tryOffset_1, tryOffset_2, tryLength_1, tryLength_2);
+            LogVerbose("EH try information don't match, offset: %u %u, length: %u %u", tryOffset_1, tryOffset_2,
+                       tryLength_1, tryLength_2);
             return false;
         }
-        if((handlerOffset_1!=handlerOffset_2) || (handlerLength_1!=handlerLength_2))
+        if ((handlerOffset_1 != handlerOffset_2) || (handlerLength_1 != handlerLength_2))
         {
-            LogVerbose("EH handler information don't match, offset: %u %u, length: %u %u", handlerOffset_1, handlerOffset_2, handlerLength_1, handlerLength_2);
+            LogVerbose("EH handler information don't match, offset: %u %u, length: %u %u", handlerOffset_1,
+                       handlerOffset_2, handlerLength_1, handlerLength_2);
             return false;
         }
-        if(classToken_1!=classToken_2)
+        if (classToken_1 != classToken_2)
         {
             LogVerbose("EH class tokens don't match %u!=%u", classToken_1, classToken_2);
             return false;
@@ -766,11 +762,11 @@ bool NearDiffer::compareEHInfo(MethodContext *mc, CompileResult *cr1, CompileRes
 // Return Value:
 //    True if the GC info blocks are identical; false otherwise.
 //
-bool NearDiffer::compareGCInfo(MethodContext *mc, CompileResult *cr1, CompileResult *cr2)
+bool NearDiffer::compareGCInfo(MethodContext* mc, CompileResult* cr1, CompileResult* cr2)
 {
-    void *gcInfo1;
+    void*  gcInfo1;
     size_t gcInfo1Size;
-    void *gcInfo2;
+    void*  gcInfo2;
     size_t gcInfo2Size;
 
     cr1->repAllocGCInfo(&gcInfo1Size, &gcInfo1);
@@ -802,62 +798,62 @@ bool NearDiffer::compareGCInfo(MethodContext *mc, CompileResult *cr1, CompileRes
 // Return Value:
 //    True if the native var info is identical; false otherwise.
 //
-bool NearDiffer::compareVars(MethodContext *mc, CompileResult *cr1, CompileResult *cr2)
+bool NearDiffer::compareVars(MethodContext* mc, CompileResult* cr1, CompileResult* cr2)
 {
-    CORINFO_METHOD_HANDLE ftn_1;
-    ULONG32 cVars_1;
-    ICorDebugInfo::NativeVarInfo *vars_1;
+    CORINFO_METHOD_HANDLE         ftn_1;
+    ULONG32                       cVars_1;
+    ICorDebugInfo::NativeVarInfo* vars_1;
 
-    CORINFO_METHOD_HANDLE ftn_2;
-    ULONG32 cVars_2;
-    ICorDebugInfo::NativeVarInfo *vars_2;
+    CORINFO_METHOD_HANDLE         ftn_2;
+    ULONG32                       cVars_2;
+    ICorDebugInfo::NativeVarInfo* vars_2;
 
     CORINFO_METHOD_INFO info;
-    unsigned flags = 0;
+    unsigned            flags = 0;
     mc->repCompileMethod(&info, &flags);
 
     bool set1 = cr1->repSetVars(&ftn_1, &cVars_1, &vars_1);
     bool set2 = cr2->repSetVars(&ftn_2, &cVars_2, &vars_2);
-        if((set1==false)&&(set2==false))
+    if ((set1 == false) && (set2 == false))
         return true; // we don't have boundaries for either of these.
-    if(((set1==true)&&(set2==false))||((set1==false)&&(set2==true)))
+    if (((set1 == true) && (set2 == false)) || ((set1 == false) && (set2 == true)))
     {
         LogVerbose("missing matching vars sets");
         return false;
     }
 
-    //no vars
-    if(cVars_1==0 && cVars_2==0)
+    // no vars
+    if (cVars_1 == 0 && cVars_2 == 0)
     {
         return true;
     }
 
-    if(ftn_1!=ftn_2)
+    if (ftn_1 != ftn_2)
     {
-        //We would like to find out this situation
+        // We would like to find out this situation
         __debugbreak();
         LogVerbose("compareVars found non-matching CORINFO_METHOD_HANDLE %p %p", ftn_1, ftn_2);
         return false;
     }
-    if(ftn_1!=info.ftn)
+    if (ftn_1 != info.ftn)
     {
         LogVerbose("compareVars found issues with the CORINFO_METHOD_HANDLE %p %p", ftn_1, info.ftn);
         return false;
     }
 
-    if(cVars_1!=cVars_2)
+    if (cVars_1 != cVars_2)
     {
         LogVerbose("compareVars found non-matching var count %u %u", cVars_1, cVars_2);
         return false;
     }
 
-    //TODO-Cleanup: The values on the NativeVarInfo array seem to wobble. Need further investigation to evaluate a good near comparison for these
-    //for(unsigned int i=0;i<cVars_1;i++)
+    // TODO-Cleanup: The values on the NativeVarInfo array seem to wobble. Need further investigation to evaluate a good
+    // near comparison for these for(unsigned int i=0;i<cVars_1;i++)
     //{
     //    if(vars_1[i].startOffset!=vars_2[i].startOffset)
     //    {
-    //        LogVerbose("compareVars found non-matching startOffsets %u %u for var: %u", vars_1[i].startOffset, vars_2[i].startOffset, i);
-    //        return false;
+    //        LogVerbose("compareVars found non-matching startOffsets %u %u for var: %u", vars_1[i].startOffset,
+    //        vars_2[i].startOffset, i); return false;
     //    }
     //}
 
@@ -875,65 +871,67 @@ bool NearDiffer::compareVars(MethodContext *mc, CompileResult *cr1, CompileResul
 // Return Value:
 //    True if the native offset mappings are identical; false otherwise.
 //
-bool NearDiffer::compareBoundaries(MethodContext *mc, CompileResult *cr1, CompileResult *cr2)
+bool NearDiffer::compareBoundaries(MethodContext* mc, CompileResult* cr1, CompileResult* cr2)
 {
-    CORINFO_METHOD_HANDLE ftn_1;
-    ULONG32 cMap_1;
-    ICorDebugInfo::OffsetMapping *map_1;
+    CORINFO_METHOD_HANDLE         ftn_1;
+    ULONG32                       cMap_1;
+    ICorDebugInfo::OffsetMapping* map_1;
 
-    CORINFO_METHOD_HANDLE ftn_2;
-    ULONG32 cMap_2;
-    ICorDebugInfo::OffsetMapping *map_2;
+    CORINFO_METHOD_HANDLE         ftn_2;
+    ULONG32                       cMap_2;
+    ICorDebugInfo::OffsetMapping* map_2;
 
     CORINFO_METHOD_INFO info;
-    unsigned flags = 0;
+    unsigned            flags = 0;
     mc->repCompileMethod(&info, &flags);
 
     bool set1 = cr1->repSetBoundaries(&ftn_1, &cMap_1, &map_1);
     bool set2 = cr2->repSetBoundaries(&ftn_2, &cMap_2, &map_2);
-    if((set1==false)&&(set2==false))
+    if ((set1 == false) && (set2 == false))
         return true; // we don't have boundaries for either of these.
-    if(((set1==true)&&(set2==false))||((set1==false)&&(set2==true)))
+    if (((set1 == true) && (set2 == false)) || ((set1 == false) && (set2 == true)))
     {
         LogVerbose("missing matching boundary sets");
         return false;
     }
 
-    if(ftn_1!=ftn_2)
+    if (ftn_1 != ftn_2)
     {
         LogVerbose("compareBoundaries found non-matching CORINFO_METHOD_HANDLE %p %p", ftn_1, ftn_2);
         return false;
     }
 
-    //no maps
-    if(cMap_1==0 && cMap_2==0)
+    // no maps
+    if (cMap_1 == 0 && cMap_2 == 0)
         return true;
 
-    if(cMap_1!=cMap_2)
+    if (cMap_1 != cMap_2)
     {
         LogVerbose("compareBoundaries found non-matching var count %u %u", cMap_1, cMap_2);
         return false;
     }
 
-    for(unsigned int i=0;i<cMap_1;i++)
+    for (unsigned int i = 0; i < cMap_1; i++)
     {
-        if(map_1[i].ilOffset!=map_2[i].ilOffset)
+        if (map_1[i].ilOffset != map_2[i].ilOffset)
         {
-            LogVerbose("compareBoundaries found non-matching ilOffset %u %u for map: %u", map_1[i].ilOffset, map_2[i].ilOffset, i);
+            LogVerbose("compareBoundaries found non-matching ilOffset %u %u for map: %u", map_1[i].ilOffset,
+                       map_2[i].ilOffset, i);
             return false;
         }
-        if(map_1[i].nativeOffset!=map_2[i].nativeOffset)
+        if (map_1[i].nativeOffset != map_2[i].nativeOffset)
         {
-            LogVerbose("compareBoundaries found non-matching nativeOffset %u %u for map: %u", map_1[i].nativeOffset, map_2[i].nativeOffset, i);
+            LogVerbose("compareBoundaries found non-matching nativeOffset %u %u for map: %u", map_1[i].nativeOffset,
+                       map_2[i].nativeOffset, i);
             return false;
         }
-        if(map_1[i].source!=map_2[i].source)
+        if (map_1[i].source != map_2[i].source)
         {
-            LogVerbose("compareBoundaries found non-matching source %u %u for map: %u", (unsigned int)map_1[i].source, (unsigned int)map_2[i].source, i);
+            LogVerbose("compareBoundaries found non-matching source %u %u for map: %u", (unsigned int)map_1[i].source,
+                       (unsigned int)map_2[i].source, i);
             return false;
         }
     }
-
 
     return true;
 }
@@ -953,45 +951,45 @@ bool NearDiffer::compareBoundaries(MethodContext *mc, CompileResult *cr1, Compil
 // Return Value:
 //    True if the compile results are identical; false otherwise.
 //
-bool NearDiffer::compare(MethodContext *mc, CompileResult *cr1, CompileResult *cr2)
+bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* cr2)
 {
-    ULONG hotCodeSize_1;
-    ULONG coldCodeSize_1;
-    ULONG roDataSize_1;
-    ULONG xcptnsCount_1;
+    ULONG              hotCodeSize_1;
+    ULONG              coldCodeSize_1;
+    ULONG              roDataSize_1;
+    ULONG              xcptnsCount_1;
     CorJitAllocMemFlag flag_1;
-    unsigned char *hotCodeBlock_1;
-    unsigned char *coldCodeBlock_1;
-    unsigned char *roDataBlock_1;
-    void *orig_hotCodeBlock_1;
-    void *orig_coldCodeBlock_1;
-    void *orig_roDataBlock_1;
+    unsigned char*     hotCodeBlock_1;
+    unsigned char*     coldCodeBlock_1;
+    unsigned char*     roDataBlock_1;
+    void*              orig_hotCodeBlock_1;
+    void*              orig_coldCodeBlock_1;
+    void*              orig_roDataBlock_1;
 
-    ULONG hotCodeSize_2;
-    ULONG coldCodeSize_2;
-    ULONG roDataSize_2;
-    ULONG xcptnsCount_2;
+    ULONG              hotCodeSize_2;
+    ULONG              coldCodeSize_2;
+    ULONG              roDataSize_2;
+    ULONG              xcptnsCount_2;
     CorJitAllocMemFlag flag_2;
-    unsigned char *hotCodeBlock_2;
-    unsigned char *coldCodeBlock_2;
-    unsigned char *roDataBlock_2;
-    void *orig_hotCodeBlock_2;
-    void *orig_coldCodeBlock_2;
-    void *orig_roDataBlock_2;
+    unsigned char*     hotCodeBlock_2;
+    unsigned char*     coldCodeBlock_2;
+    unsigned char*     roDataBlock_2;
+    void*              orig_hotCodeBlock_2;
+    void*              orig_coldCodeBlock_2;
+    void*              orig_roDataBlock_2;
 
-    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1, &xcptnsCount_1, &flag_1,
-        &hotCodeBlock_1, &coldCodeBlock_1, &roDataBlock_1, &orig_hotCodeBlock_1, &orig_coldCodeBlock_1, &orig_roDataBlock_1);
-    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &flag_2,
-        &hotCodeBlock_2, &coldCodeBlock_2, &roDataBlock_2, &orig_hotCodeBlock_2, &orig_coldCodeBlock_2, &orig_roDataBlock_2);
+    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1, &xcptnsCount_1, &flag_1, &hotCodeBlock_1,
+                     &coldCodeBlock_1, &roDataBlock_1, &orig_hotCodeBlock_1, &orig_coldCodeBlock_1,
+                     &orig_roDataBlock_1);
+    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &flag_2, &hotCodeBlock_2,
+                     &coldCodeBlock_2, &roDataBlock_2, &orig_hotCodeBlock_2, &orig_coldCodeBlock_2,
+                     &orig_roDataBlock_2);
 
-    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p",
-        hotCodeSize_1, coldCodeSize_1, roDataSize_1, xcptnsCount_1, flag_1,
-        hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
-        orig_hotCodeBlock_1, orig_coldCodeBlock_1, orig_roDataBlock_1);
-    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d flag2 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p",
-        hotCodeSize_2, coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2,
-        hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
-        orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
+    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
+             coldCodeSize_1, roDataSize_1, xcptnsCount_1, flag_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
+             orig_hotCodeBlock_1, orig_coldCodeBlock_1, orig_roDataBlock_1);
+    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d flag2 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_2,
+             coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
+             orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
 
     cr1->applyRelocs(hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
     cr2->applyRelocs(hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
@@ -1000,22 +998,23 @@ bool NearDiffer::compare(MethodContext *mc, CompileResult *cr1, CompileResult *c
     cr1->applyRelocs(roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
     cr2->applyRelocs(roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
 
-    if(!compareCodeSection(mc, cr1, cr2,
-        hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1, orig_hotCodeBlock_1, orig_roDataBlock_1, orig_coldCodeBlock_1, coldCodeSize_1,
-        hotCodeBlock_2, hotCodeSize_2, roDataBlock_2, roDataSize_2, orig_hotCodeBlock_2, orig_roDataBlock_2, orig_coldCodeBlock_2, coldCodeSize_2))
+    if (!compareCodeSection(mc, cr1, cr2, hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1,
+                            orig_hotCodeBlock_1, orig_roDataBlock_1, orig_coldCodeBlock_1, coldCodeSize_1,
+                            hotCodeBlock_2, hotCodeSize_2, roDataBlock_2, roDataSize_2, orig_hotCodeBlock_2,
+                            orig_roDataBlock_2, orig_coldCodeBlock_2, coldCodeSize_2))
         return false;
 
-    if(!compareCodeSection(mc, cr1, cr2,
-        coldCodeBlock_1, coldCodeSize_1, roDataBlock_1, roDataSize_1, orig_coldCodeBlock_1, orig_roDataBlock_1, orig_hotCodeBlock_1, hotCodeSize_1,
-        coldCodeBlock_2, coldCodeSize_2, roDataBlock_2, roDataSize_2, orig_coldCodeBlock_2, orig_roDataBlock_2, orig_hotCodeBlock_2, hotCodeSize_2))
+    if (!compareCodeSection(mc, cr1, cr2, coldCodeBlock_1, coldCodeSize_1, roDataBlock_1, roDataSize_1,
+                            orig_coldCodeBlock_1, orig_roDataBlock_1, orig_hotCodeBlock_1, hotCodeSize_1,
+                            coldCodeBlock_2, coldCodeSize_2, roDataBlock_2, roDataSize_2, orig_coldCodeBlock_2,
+                            orig_roDataBlock_2, orig_hotCodeBlock_2, hotCodeSize_2))
         return false;
 
-    if(!compareReadOnlyDataBlock(mc, cr1, cr2,
-        roDataBlock_1, roDataSize_1, orig_roDataBlock_1,
-        roDataBlock_2, roDataSize_2, orig_roDataBlock_2))
+    if (!compareReadOnlyDataBlock(mc, cr1, cr2, roDataBlock_1, roDataSize_1, orig_roDataBlock_1, roDataBlock_2,
+                                  roDataSize_2, orig_roDataBlock_2))
         return false;
 
-    if(!compareEHInfo(mc, cr1, cr2))
+    if (!compareEHInfo(mc, cr1, cr2))
         return false;
 
     if (!compareGCInfo(mc, cr1, cr2))
@@ -1024,7 +1023,7 @@ bool NearDiffer::compare(MethodContext *mc, CompileResult *cr1, CompileResult *c
     if (!compareVars(mc, cr1, cr2))
         return false;
 
-    if(!compareBoundaries(mc, cr1, cr2))
+    if (!compareBoundaries(mc, cr1, cr2))
         return false;
 
     return true;

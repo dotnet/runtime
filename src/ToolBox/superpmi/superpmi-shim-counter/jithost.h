@@ -16,7 +16,7 @@ public:
 #include "icorjithostimpl.h"
 
 private:
-    ICorJitHost* wrappedHost;
+    ICorJitHost*          wrappedHost;
     MethodCallSummarizer* mcs;
 };
 

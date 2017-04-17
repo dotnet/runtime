@@ -12,8 +12,6 @@
 class verbASMDump
 {
 public:
-    static int DoWork(const char *nameOfInput1, const char *nameOfOutput, int indexCount, const int *indexes);
+    static int DoWork(const char* nameOfInput1, const char* nameOfOutput, int indexCount, const int* indexes);
 };
 #endif
-
-

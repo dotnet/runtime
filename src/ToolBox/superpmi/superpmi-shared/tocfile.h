@@ -16,16 +16,14 @@ class TOCElement
 {
 public:
     __int64 Offset;
-    int Number;
-    char Hash[MD5_HASH_BUFFER_SIZE];
+    int     Number;
+    char    Hash[MD5_HASH_BUFFER_SIZE];
 
     TOCElement()
     {
     }
 
-    TOCElement(int number, __int64 offset)
-        : Offset(offset)
-        , Number(number)
+    TOCElement(int number, __int64 offset) : Offset(offset), Number(number)
     {
     }
 };
@@ -33,15 +31,11 @@ public:
 class TOCFile
 {
 private:
-
     TOCElement* m_tocArray;
     size_t      m_tocCount;
 
 public:
-
-    TOCFile()
-        : m_tocArray(nullptr)
-        , m_tocCount(0)
+    TOCFile() : m_tocArray(nullptr), m_tocCount(0)
     {
     }
 
@@ -57,7 +51,7 @@ public:
         m_tocCount = 0;
     }
 
-    void LoadToc(const char *inputFileName, bool validate = true);
+    void LoadToc(const char* inputFileName, bool validate = true);
 
     size_t GetTocCount()
     {

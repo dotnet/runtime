@@ -10,7 +10,7 @@
 #include "methodcontextiterator.h"
 #include "errorhandling.h"
 
-int verbDump::DoWork(const char *nameOfInput, int indexCount, const int *indexes)
+int verbDump::DoWork(const char* nameOfInput, int indexCount, const int* indexes)
 {
     LogVerbose("Dumping '%s' to console", nameOfInput);
 

@@ -14,10 +14,9 @@
 #include "logging.h"
 
 // String representations of the JIT helper functions
-const char *kHelperName[CORINFO_HELP_COUNT] =
-{
+const char* kHelperName[CORINFO_HELP_COUNT] = {
 #define JITHELPER(code, pfnHelper, sig) #code,
-#define DYNAMICJITHELPER(code, pfnHelper,sig) #code,
+#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
 #include "jithelpers.h"
 };
 
@@ -53,26 +52,24 @@ const char *kHelperName[CORINFO_HELP_COUNT] =
 //      if it is able to understand that call (i.e. if it does not return CallType_Unknown). You, the caller,
 //      are responsible for freeing the memory (with delete[]).
 //
-CallType CallUtils::GetRecordedCallSiteInfo(MethodContext *mc,
-                                            CompileResult *cr,
-                                            unsigned int callInstrOffset,
-                                            /*out*/ CORINFO_SIG_INFO *outSigInfo,
-                                            /*out*/ char **outCallTargetSymbol)
+CallType CallUtils::GetRecordedCallSiteInfo(MethodContext*            mc,
+                                            CompileResult*            cr,
+                                            unsigned int              callInstrOffset,
+                                            /*out*/ CORINFO_SIG_INFO* outSigInfo,
+                                            /*out*/ char**            outCallTargetSymbol)
 {
     AssertCodeMsg(mc != nullptr, EXCEPTIONCODE_CALLUTILS,
-                  "Null method context passed into GetCallTargetInfo for call at offset %x.",
-                  callInstrOffset);
+                  "Null method context passed into GetCallTargetInfo for call at offset %x.", callInstrOffset);
     AssertCodeMsg(cr != nullptr, EXCEPTIONCODE_CALLUTILS,
-                  "Null compile result passed into GetCallTargetInfo for call at offset %x.",
-                  callInstrOffset);
+                  "Null compile result passed into GetCallTargetInfo for call at offset %x.", callInstrOffset);
 
     CallType targetType = CallType_Unknown;
 
     CORINFO_SIG_INFO callSig;
-    bool recordedCallSig = cr->fndRecordCallSiteSigInfo(callInstrOffset, &callSig);
+    bool             recordedCallSig = cr->fndRecordCallSiteSigInfo(callInstrOffset, &callSig);
 
-    CORINFO_METHOD_HANDLE methodHandle = nullptr;
-    bool recordedMethodHandle = cr->fndRecordCallSiteMethodHandle(callInstrOffset, &methodHandle);
+    CORINFO_METHOD_HANDLE methodHandle         = nullptr;
+    bool                  recordedMethodHandle = cr->fndRecordCallSiteMethodHandle(callInstrOffset, &methodHandle);
 
     if (recordedCallSig)
     {
@@ -80,7 +77,7 @@ CallType CallUtils::GetRecordedCallSiteInfo(MethodContext *mc,
             *outSigInfo = callSig;
 
         if (outCallTargetSymbol != nullptr)
-            *outCallTargetSymbol = (char *)GetMethodFullName(mc, methodHandle, callSig);
+            *outCallTargetSymbol = (char*)GetMethodFullName(mc, methodHandle, callSig);
 
         targetType = CallType_UserFunction;
     }
@@ -88,10 +85,9 @@ CallType CallUtils::GetRecordedCallSiteInfo(MethodContext *mc,
     {
         CorInfoHelpFunc helperNum = CallUtils::GetHelperNum(methodHandle);
         AssertCodeMsg(helperNum != CORINFO_HELP_UNDEF, EXCEPTIONCODE_CALLUTILS,
-                      "Unknown call at offset %x with method handle %016llX.",
-                      callInstrOffset, methodHandle);
+                      "Unknown call at offset %x with method handle %016llX.", callInstrOffset, methodHandle);
 
-        size_t length = strlen(kHelperName[helperNum]) + 1;
+        size_t length        = strlen(kHelperName[helperNum]) + 1;
         *outCallTargetSymbol = new char[length];
         strcpy_s(*outCallTargetSymbol, length, kHelperName[helperNum]);
 
@@ -134,38 +130,39 @@ CallType CallUtils::GetRecordedCallSiteInfo(MethodContext *mc,
 //      are responsible for freeing the memory (with delete[]).
 //
 
-CallType CallUtils::GetDirectCallSiteInfo(MethodContext *mc,
-                                          void *callTarget,
-                                          /*out*/ CORINFO_SIG_INFO *outSigInfo,
-                                          /*out*/ char **outCallTargetSymbol)
+CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
+                                          void*                     callTarget,
+                                          /*out*/ CORINFO_SIG_INFO* outSigInfo,
+                                          /*out*/ char**            outCallTargetSymbol)
 {
     AssertCodeMsg(mc != nullptr, EXCEPTIONCODE_CALLUTILS,
-        "Null method context passed into GetCallTargetInfo for call to target %016llX.", callTarget);
+                  "Null method context passed into GetCallTargetInfo for call to target %016llX.", callTarget);
 
-    CallType targetType = CallType_Unknown;
-    MethodContext::DLD functionEntryPoint;
+    CallType              targetType = CallType_Unknown;
+    MethodContext::DLD    functionEntryPoint;
     CORINFO_METHOD_HANDLE methodHandle;
 
     // Try to first obtain a method handle associated with this call target
     functionEntryPoint.A = (DWORDLONG)callTarget;
-    functionEntryPoint.B = 0;  // TODO-Cleanup: we should be more conscious of this...
+    functionEntryPoint.B = 0; // TODO-Cleanup: we should be more conscious of this...
 
     if (mc->fndGetFunctionEntryPoint(functionEntryPoint, &methodHandle))
     {
         // Now try to obtain the call info associated with this method handle
 
-        struct Param {
-            MethodContext*          mc;
-            CORINFO_SIG_INFO*       outSigInfo;
-            char**                  outCallTargetSymbol;
-            CallType*               pTargetType;
-            CORINFO_METHOD_HANDLE*  pMethodHandle;
+        struct Param
+        {
+            MethodContext*         mc;
+            CORINFO_SIG_INFO*      outSigInfo;
+            char**                 outCallTargetSymbol;
+            CallType*              pTargetType;
+            CORINFO_METHOD_HANDLE* pMethodHandle;
         } param;
-        param.mc = mc;
-        param.outSigInfo = outSigInfo;
+        param.mc                  = mc;
+        param.outSigInfo          = outSigInfo;
         param.outCallTargetSymbol = outCallTargetSymbol;
-        param.pTargetType = &targetType;
-        param.pMethodHandle = &methodHandle;
+        param.pTargetType         = &targetType;
+        param.pMethodHandle       = &methodHandle;
 
         PAL_TRY(Param*, pParam, &param)
         {
@@ -177,14 +174,15 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext *mc,
                 *pParam->outSigInfo = callInfo.sig;
 
             if (pParam->outCallTargetSymbol != nullptr)
-                *pParam->outCallTargetSymbol = (char *)GetMethodFullName(pParam->mc, *pParam->pMethodHandle, callInfo.sig);
+                *pParam->outCallTargetSymbol =
+                    (char*)GetMethodFullName(pParam->mc, *pParam->pMethodHandle, callInfo.sig);
 
             *pParam->pTargetType = CallType_UserFunction;
         }
         PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
         {
-            LogWarning("Didn't find call info for method handle %016llX (call target: %016llX)",
-                       methodHandle, callTarget);
+            LogWarning("Didn't find call info for method handle %016llX (call target: %016llX)", methodHandle,
+                       callTarget);
         }
         PAL_ENDTRY
     }
@@ -197,7 +195,7 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext *mc,
         {
             if (outCallTargetSymbol != nullptr)
             {
-                size_t length = strlen(kHelperName[helperNum]) + 1;
+                size_t length        = strlen(kHelperName[helperNum]) + 1;
                 *outCallTargetSymbol = new char[length];
                 strcpy_s(*outCallTargetSymbol, length, kHelperName[helperNum]);
             }
@@ -206,8 +204,7 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext *mc,
         }
         else
         {
-            LogWarning("Call to target %016llX has no method handle and is not a helper call.",
-                       callTarget);
+            LogWarning("Call to target %016llX has no method handle and is not a helper call.", callTarget);
         }
     }
 
@@ -220,10 +217,9 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext *mc,
 //-------------------------------------------------------------------------------------------------
 
 // Stolen from Compiler::impMethodInfo_hasRetBuffArg (in the importer)
-bool CallUtils::HasRetBuffArg(MethodContext *mc, CORINFO_SIG_INFO args)
+bool CallUtils::HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args)
 {
-    if (args.retType != CORINFO_TYPE_VALUECLASS &&
-        args.retType != CORINFO_TYPE_REFANY)
+    if (args.retType != CORINFO_TYPE_VALUECLASS && args.retType != CORINFO_TYPE_REFANY)
     {
         return false;
     }
@@ -233,16 +229,14 @@ bool CallUtils::HasRetBuffArg(MethodContext *mc, CORINFO_SIG_INFO args)
     //   i) TYP_STRUCT argument that can fit into a single register and
     //  ii) Power of two sized TYP_STRUCT on AMD64.
     unsigned size = mc->repGetClassSize(args.retTypeClass);
-    return (size > sizeof(void*)) || ((size & (size-1)) != 0);
+    return (size > sizeof(void*)) || ((size & (size - 1)) != 0);
 #else
     return true;
 #endif
 }
 
 // Originally from src/jit/ee_il_dll.cpp
-const char *CallUtils::GetMethodName(MethodContext *mc,
-                                     CORINFO_METHOD_HANDLE method,
-                                     const char **classNamePtr)
+const char* CallUtils::GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {
     if (GetHelperNum(method))
     {
@@ -257,16 +251,14 @@ const char *CallUtils::GetMethodName(MethodContext *mc,
     {
         if (classNamePtr != nullptr)
             *classNamePtr = "NATIVE";
-        method = GetMethodHandleForNative(method);
+        method            = GetMethodHandleForNative(method);
     }
 
-    return(mc->repGetMethodName(method, classNamePtr));
+    return (mc->repGetMethodName(method, classNamePtr));
 }
 
 // Originally from src/jit/eeinterface.cpp
-const char *CallUtils::GetMethodFullName(MethodContext *mc,
-                                         CORINFO_METHOD_HANDLE hnd,
-                                         CORINFO_SIG_INFO sig)
+const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDLE hnd, CORINFO_SIG_INFO sig)
 {
     const char* returnType = NULL;
 
@@ -277,7 +269,7 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
         return methodName;
     }
 
-    size_t length = 0;
+    size_t   length = 0;
     unsigned i;
 
     /* Generating the full signature is a two-pass process. First we have to walk
@@ -290,7 +282,7 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
     /* initialize length with length of className and '.' */
 
     if (className != nullptr)
-        length = strlen(className)+1;
+        length = strlen(className) + 1;
     else
     {
         // Tweaked to avoid using CRT assertions
@@ -307,8 +299,8 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
     {
         // Tweaked to use EE types instead of JIT-specific types
         CORINFO_CLASS_HANDLE typeHandle;
-        DWORD exception;
-        CorInfoType type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
+        DWORD                exception;
+        CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
 
         length += strlen(TypeUtils::GetCorInfoTypeName(type));
         argList = mc->repGetArgNext(argList);
@@ -326,7 +318,8 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
         length += strlen(returnType) + 1; // don't forget the delimiter ':'
     }
 
-    // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first element of the arg type list
+    // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first element of
+    // the arg type list
     if (sig.hasThis() && !sig.hasExplicitThis())
     {
         // Tweaked to avoid using CRT assertions
@@ -338,7 +331,7 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
 
     length += 2;
 
-    char *retName = new char[length];  // Tweaked to use "new" instead of compGetMem
+    char* retName = new char[length]; // Tweaked to use "new" instead of compGetMem
 
     /* Now generate the full signature string in the allocated buffer */
 
@@ -363,8 +356,8 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
     {
         // Tweaked to use EE types instead of JIT-specific types
         CORINFO_CLASS_HANDLE typeHandle;
-        DWORD exception;
-        CorInfoType type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
+        DWORD                exception;
+        CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
         strcat_s(retName, length, TypeUtils::GetCorInfoTypeName(type));
 
         argList = mc->repGetArgNext(argList);
@@ -380,25 +373,26 @@ const char *CallUtils::GetMethodFullName(MethodContext *mc,
         strcat_s(retName, length, returnType);
     }
 
-    // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first element of the arg type list
+    // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first element of
+    // the arg type list
     if (sig.hasThis() && !sig.hasExplicitThis())
     {
         strcat_s(retName, length, ":this");
     }
 
     // Tweaked to avoid using CRT assertions
-    Assert(strlen(retName) == (length-1));
+    Assert(strlen(retName) == (length - 1));
 
-    return(retName);
+    return (retName);
 }
 
 // Originally from jit/compiler.hpp
 inline CorInfoHelpFunc CallUtils::GetHelperNum(CORINFO_METHOD_HANDLE method)
 {
     // Helpers are marked by the fact that they are odd numbers
-    if (!(((size_t) method) & 1))
-        return(CORINFO_HELP_UNDEF);
-    return((CorInfoHelpFunc) (((size_t) method) >> 2));
+    if (!(((size_t)method) & 1))
+        return (CORINFO_HELP_UNDEF);
+    return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
 // Originally from jit/compiler.hpp
@@ -411,6 +405,6 @@ inline bool CallUtils::IsNativeMethod(CORINFO_METHOD_HANDLE method)
 inline CORINFO_METHOD_HANDLE CallUtils::GetMethodHandleForNative(CORINFO_METHOD_HANDLE method)
 {
     // Tweaked to avoid using CRT assertions
-    Assert((((size_t) method) & 0x3) == 0x2);
-    return (CORINFO_METHOD_HANDLE)(((size_t)method)& ~0x3);
+    Assert((((size_t)method) & 0x3) == 0x2);
+    return (CORINFO_METHOD_HANDLE)(((size_t)method) & ~0x3);
 }

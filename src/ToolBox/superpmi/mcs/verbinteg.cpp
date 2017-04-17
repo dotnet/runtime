@@ -9,7 +9,7 @@
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
 
-int verbInteg::DoWork(const char *nameOfInput)
+int verbInteg::DoWork(const char* nameOfInput)
 {
     LogVerbose("Checking the integrity of '%s'", nameOfInput);
 
@@ -27,8 +27,8 @@ int verbInteg::DoWork(const char *nameOfInput)
     }
 
     st2.Stop();
-    LogInfo("Checked the integrity of %d methodContexts at %d per second",
-        mci.MethodContextNumber(), (int)((double)mci.MethodContextNumber() / st2.GetSeconds()));
+    LogInfo("Checked the integrity of %d methodContexts at %d per second", mci.MethodContextNumber(),
+            (int)((double)mci.MethodContextNumber() / st2.GetSeconds()));
 
     if (!mci.Destroy())
         return -1;
