@@ -68,11 +68,9 @@ namespace Microsoft.DotNet.Host.Build
 
             Directory.CreateDirectory(sharedHostRoot);
 
-            string sharedFrameworkPublishPath = GetSharedFrameworkPublishPath(c);
-
-            foreach (var file in Directory.GetFiles(sharedFrameworkPublishPath, "*", SearchOption.TopDirectoryOnly))
+            foreach (var file in Directory.GetFiles(Dirs.SharedFrameworkPublish, "*", SearchOption.TopDirectoryOnly))
             {
-                var destFile = file.Replace(sharedFrameworkPublishPath, sharedHostRoot);
+                var destFile = file.Replace(Dirs.SharedFrameworkPublish, sharedHostRoot);
                 File.Copy(file, destFile, true);
                 c.Warn(destFile);
             }
@@ -101,7 +99,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Directory.CreateDirectory(hostFxrRoot);
 
-            string srcHostDir = Path.Combine(GetSharedFrameworkPublishPath(c), "host");
+            string srcHostDir = Path.Combine(Dirs.SharedFrameworkPublish, "host");
             string destHostDir = Path.Combine(hostFxrRoot, "host");
 
             FS.CopyRecursive(srcHostDir, destHostDir);
@@ -121,8 +119,7 @@ namespace Microsoft.DotNet.Host.Build
             }
 
             Directory.CreateDirectory(sharedFxRoot);
-
-            Utils.CopyDirectoryRecursively(Path.Combine(GetSharedFrameworkPublishPath(c), "shared"), sharedFxRoot, true);
+            Utils.CopyDirectoryRecursively(Path.Combine(Dirs.SharedFrameworkPublish, "shared"), sharedFxRoot, true);
             FixPermissions(sharedFxRoot);
 
             c.BuildContext["SharedFrameworkPublishRoot"] = sharedFxRoot;
@@ -268,26 +265,6 @@ namespace Microsoft.DotNet.Host.Build
                 // Now make things that should be executable, executable.
                 FS.FixModeFlags(directory);
             }
-        }
-
-        private static string GetSharedFrameworkPublishPath(BuildTargetContext c)
-        {
-            string sharedFrameworkPublishPath = string.Empty;
-            
-            string preBuiltPortableStagingPath=c.BuildContext.Get<string>("PortableBuildStagingLocation");
-
-            // If we are not generating distro specific installers for portable build, then we won't have access to staging location and thus, will use default binary location where SharedFX was published
-            if(preBuiltPortableStagingPath == null)
-            {
-                sharedFrameworkPublishPath = Dirs.SharedFrameworkPublish;
-            }
-            else 
-            {
-                Console.WriteLine($"Installers will package binaries from path set by PORTABLE_BUILD_STAGING_LOCATION environment variable :{preBuiltPortableStagingPath}");
-                sharedFrameworkPublishPath = preBuiltPortableStagingPath;
-            }
-            
-            return sharedFrameworkPublishPath;
         }
     }
 }
