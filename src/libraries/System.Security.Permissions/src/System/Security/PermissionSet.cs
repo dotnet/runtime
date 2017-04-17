@@ -27,7 +27,7 @@ namespace System.Security
         public virtual void CopyTo(Array array, int index) { }
         public void Demand() { }
         [Obsolete]
-        public void Deny() { throw new NotSupportedException(); }
+        public void Deny() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
         public override bool Equals(object o) => base.Equals(o);
         public virtual void FromXml(SecurityElement et) { }
         public IEnumerator GetEnumerator() { return GetEnumeratorImpl(); }

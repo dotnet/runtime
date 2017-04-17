@@ -9,12 +9,14 @@ namespace System.Security
     public sealed partial class SecurityContext : System.IDisposable
     {
         internal SecurityContext() { }
-        public static SecurityContext Capture() { throw new NotSupportedException(); }
-        public SecurityContext CreateCopy() { throw new NotSupportedException(); }
-        public void Dispose() { throw new NotSupportedException(); }
-        public static bool IsFlowSuppressed() { throw new NotSupportedException(); }
-        public static bool IsWindowsIdentityFlowSuppressed() { throw new NotSupportedException(); }
-        public static void RestoreFlow() { throw new NotSupportedException(); }
-        public static void Run(SecurityContext securityContext, ContextCallback callback, object state) { throw new NotSupportedException(); }
+        public static SecurityContext Capture() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public SecurityContext CreateCopy() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public void Dispose() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static bool IsFlowSuppressed() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static bool IsWindowsIdentityFlowSuppressed() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static void RestoreFlow() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static void Run(SecurityContext securityContext, ContextCallback callback, object state) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static AsyncFlowControl SuppressFlow() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
+        public static AsyncFlowControl SuppressFlowWindowsIdentity() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
     }
 }
