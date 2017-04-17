@@ -104,6 +104,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
+                    Debug.Assert(mc.Type == typeof(bool));
                     switch (b.NodeType)
                     {
                         case ExpressionType.Equal:
@@ -112,10 +113,6 @@ namespace System.Linq.Expressions.Compiler
                         case ExpressionType.LessThanOrEqual:
                         case ExpressionType.GreaterThan:
                         case ExpressionType.GreaterThanOrEqual:
-                            if (mc.Type != typeof(bool))
-                            {
-                                throw Error.ArgumentMustBeBoolean(nameof(b));
-                            }
                             resultType = typeof(bool);
                             break;
                         default:
