@@ -149,7 +149,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class ConvertHelper
+    internal static class ConvertHelper
     {
         public static int ToInt32NoNull(object val)
         {

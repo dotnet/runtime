@@ -40,8 +40,6 @@ namespace System.Linq.Expressions.Interpreter
         // that need to be updated after we emit the label.
         private List<int> _forwardBranchFixups;
 
-        public BranchLabel() { }
-
         internal int LabelIndex { get; set; } = UnknownIndex;
         internal bool HasRuntimeLabel => LabelIndex != UnknownIndex;
         internal int TargetIndex => _targetIndex;

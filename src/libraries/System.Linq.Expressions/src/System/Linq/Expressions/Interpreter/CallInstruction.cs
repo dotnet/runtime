@@ -16,8 +16,6 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Construction
 
-        internal CallInstruction() { }
-
         public override string InstructionName => "Call";
 
 #if FEATURE_DLG_INVOKE
