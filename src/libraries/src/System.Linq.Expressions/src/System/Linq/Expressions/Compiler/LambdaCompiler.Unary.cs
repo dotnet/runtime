@@ -260,12 +260,6 @@ namespace System.Linq.Expressions.Compiler
         {
             switch (type.GetTypeCode())
             {
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                    _ilg.Emit(OpCodes.Ldc_I4_1);
-                    break;
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     _ilg.Emit(OpCodes.Ldc_I4_1);
@@ -278,9 +272,8 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(OpCodes.Ldc_R8, 1.0d);
                     break;
                 default:
-                    // we only have to worry about arithmetic types, see
-                    // TypeUtils.IsArithmetic
-                    throw ContractUtils.Unreachable;
+                    _ilg.Emit(OpCodes.Ldc_I4_1);
+                    break;
             }
         }
 
