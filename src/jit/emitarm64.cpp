@@ -11072,17 +11072,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            // This should be simply:
-            //    regNumber extraReg = dst->GetSingleTempReg();
-            //
-            // However, since LSRA might give us an internal temp register that is the same as the dst
-            // register, and the codegen here reuses the temp register after a definition of the target
-            // register, we requested two internal registers. If one is the target register, we simply
-            // use the other one. We can use ExtractTempReg() since it only asserts that there is at
-            // least one available temporary register (not that there is exactly one, for instance).
-            // Here, masking out tgtReg, there will be either 1 or 2.
-
-            regNumber extraReg = dst->ExtractTempReg(~genRegMask(dst->gtRegNum));
+            regNumber extraReg = dst->GetSingleTempReg();
             assert(extraReg != dst->gtRegNum);
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)

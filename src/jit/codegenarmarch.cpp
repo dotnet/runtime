@@ -707,18 +707,8 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     noway_assert(tgtReg != REG_NA);
 
     // We will use a temp register to load the lower bound and dimension size values.
-    //
-    // This should be simply:
-    //    regNumber tmpReg = arrIndex->GetSingleTempReg();
-    //
-    // However, since LSRA might give us an internal temp register that is the same as the dst
-    // register, and the codegen here reuses the temp register after a definition of the target
-    // register, we requested two internal registers. If one is the target register, we simply
-    // use the other one. We can use ExtractTempReg() since it only asserts that there is at
-    // least one available temporary register (not that there is exactly one, for instance).
-    // Here, masking out tgtReg, there will be either 1 or 2.
 
-    regNumber tmpReg = arrIndex->ExtractTempReg(~genRegMask(tgtReg));
+    regNumber tmpReg = arrIndex->GetSingleTempReg();
     assert(tgtReg != tmpReg);
 
     unsigned  dim      = arrIndex->gtCurrDim;
