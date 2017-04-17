@@ -239,7 +239,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         }
 
         [Fact]
-        public void SdkLookup_Must_Pick_The_Highest_Semantical_Version()
+        public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
