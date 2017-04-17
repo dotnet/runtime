@@ -1107,13 +1107,6 @@ namespace System.Linq.Expressions
         {
             return new InvalidOperationException(Strings.InvalidLvalue(p0));
         }
-        /// <summary>
-        /// InvalidOperationException with message like "unknown lift type: '{0}'."
-        /// </summary>
-        internal static Exception UnknownLiftType(object p0)
-        {
-            return new InvalidOperationException(Strings.UnknownLiftType(p0));
-        }
 
         /// <summary>
         /// InvalidOperationException with message like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"

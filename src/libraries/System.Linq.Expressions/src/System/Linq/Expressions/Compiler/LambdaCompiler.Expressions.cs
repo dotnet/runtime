@@ -1179,17 +1179,12 @@ namespace System.Linq.Expressions.Compiler
                         }
                         else
                         {
-                            switch (nodeType)
-                            {
-                                case ExpressionType.LessThan:
-                                case ExpressionType.LessThanOrEqual:
-                                case ExpressionType.GreaterThan:
-                                case ExpressionType.GreaterThanOrEqual:
-                                    _ilg.Emit(OpCodes.Ldc_I4_0);
-                                    break;
-                                default:
-                                    throw Error.UnknownLiftType(nodeType);
-                            }
+                            Debug.Assert(nodeType == ExpressionType.LessThan
+                                || nodeType == ExpressionType.LessThanOrEqual
+                                || nodeType == ExpressionType.GreaterThan
+                                || nodeType == ExpressionType.GreaterThanOrEqual);
+
+                            _ilg.Emit(OpCodes.Ldc_I4_0);
                         }
                         _ilg.MarkLabel(exit);
                         FreeLocal(anyNull);
