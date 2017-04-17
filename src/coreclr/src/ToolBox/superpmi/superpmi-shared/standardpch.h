@@ -23,7 +23,7 @@
 #endif // INTERNAL_BUILD
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4996) // The compiler encountered a deprecated declaration.
+#pragma warning(disable : 4996) // The compiler encountered a deprecated declaration.
 
 // On Windows, we build against PAL macros that convert to Windows SEH. But we don't want all the
 // Contract stuff that normally gets pulled it. Defining JIT_BUILD prevents this, just as it does
@@ -32,7 +32,8 @@
 
 // Defining this prevents:
 //   error C2338 : / RTCc rejects conformant code, so it isn't supported by the C++ Standard Library.
-//   Either remove this compiler option, or define _ALLOW_RTCc_IN_STL to acknowledge that you have received this warning.
+//   Either remove this compiler option, or define _ALLOW_RTCc_IN_STL to acknowledge that you have received this
+//   warning.
 #ifndef _ALLOW_RTCc_IN_STL
 #define _ALLOW_RTCc_IN_STL
 #endif
@@ -90,9 +91,9 @@
 
 #ifndef W
 #ifdef PLATFORM_UNIX
-#define W(str)  u##str
+#define W(str) u##str
 #else // PLATFORM_UNIX
-#define W(str)  L##str
+#define W(str) L##str
 #endif // PLATFORM_UNIX
 #endif // !W
 

@@ -6,38 +6,38 @@
 #include "standardpch.h"
 #include "asmdumper.h"
 
-void ASMDumper::DumpToFile(HANDLE hFile, MethodContext *mc, CompileResult *cr)
+void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 {
     CORINFO_METHOD_INFO info;
-    unsigned flags = 0;
+    unsigned            flags = 0;
     mc->repCompileMethod(&info, &flags);
 
-    #define bufflen 4096
+#define bufflen 4096
     DWORD bytesWritten;
-    char buff[bufflen];
+    char  buff[bufflen];
 
     int buff_offset = 0;
     ZeroMemory(buff, bufflen * sizeof(char));
-    buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, ";;Generated from SuperPMI on original input '%s'",
-        cr->repProcessName());
-    buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, "\r\n Method Name \"%s\"",
-        mc->repGetMethodName(info.ftn,nullptr));
+    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset,
+                             ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
+    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n Method Name \"%s\"",
+                             mc->repGetMethodName(info.ftn, nullptr));
     WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
 
-    ULONG hotCodeSize;
-    ULONG coldCodeSize;
-    ULONG roDataSize;
-    ULONG xcptnsCount;
+    ULONG              hotCodeSize;
+    ULONG              coldCodeSize;
+    ULONG              roDataSize;
+    ULONG              xcptnsCount;
     CorJitAllocMemFlag flag;
-    unsigned char *hotCodeBlock;
-    unsigned char *coldCodeBlock;
-    unsigned char *roDataBlock;
-    void *orig_hotCodeBlock;
-    void *orig_coldCodeBlock;
-    void *orig_roDataBlock;
+    unsigned char*     hotCodeBlock;
+    unsigned char*     coldCodeBlock;
+    unsigned char*     roDataBlock;
+    void*              orig_hotCodeBlock;
+    void*              orig_coldCodeBlock;
+    void*              orig_roDataBlock;
 
-    cr->repAllocMem(&hotCodeSize, &coldCodeSize, &roDataSize, &xcptnsCount, &flag,
-        &hotCodeBlock, &coldCodeBlock, &roDataBlock, &orig_hotCodeBlock, &orig_coldCodeBlock, &orig_roDataBlock);
+    cr->repAllocMem(&hotCodeSize, &coldCodeSize, &roDataSize, &xcptnsCount, &flag, &hotCodeBlock, &coldCodeBlock,
+                    &roDataBlock, &orig_hotCodeBlock, &orig_coldCodeBlock, &orig_roDataBlock);
     cr->applyRelocs(hotCodeBlock, hotCodeSize, orig_hotCodeBlock);
     cr->applyRelocs(coldCodeBlock, coldCodeSize, orig_coldCodeBlock);
     cr->applyRelocs(roDataBlock, roDataSize, orig_roDataBlock);
@@ -45,9 +45,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext *mc, CompileResult *cr)
 #ifdef USE_MSVCDIS
 
 #ifdef _TARGET_AMD64_
-    DIS *disasm = DIS::PdisNew(DIS::distX8664);
+    DIS* disasm = DIS::PdisNew(DIS::distX8664);
 #elif _TARGET_X86_
-    DIS *disasm = DIS::PdisNew(DIS::distX86);
+    DIS* disasm = DIS::PdisNew(DIS::distX86);
 #endif
     size_t offset = 0;
     while (offset < hotCodeSize)
@@ -56,22 +56,24 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext *mc, CompileResult *cr)
         ZeroMemory(buff, bufflen * sizeof(char));
 
         DIS::INSTRUCTION instr;
-        DIS::OPERAND ops[3];
+        DIS::OPERAND     ops[3];
 
-        size_t instrSize = disasm->CbDisassemble(0, (void *)(hotCodeBlock + offset), 15);
-        if(instrSize==0)
+        size_t instrSize = disasm->CbDisassemble(0, (void*)(hotCodeBlock + offset), 15);
+        if (instrSize == 0)
         {
             LogWarning("Zero sized instruction");
             break;
         }
         disasm->FDecode(&instr, ops, 3);
 
-        wchar_t instrMnemonic[64];  // I never know how much to allocate...
+        wchar_t instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
-        buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, "\r\n%p %S", (void*)((size_t)orig_hotCodeBlock+offset), instrMnemonic);
-        buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, "   ; ");
-        for(unsigned int i=0;i<instrSize;i++)
-            buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, "%02x ", *((BYTE*)(hotCodeBlock + offset + i) ));
+        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %S",
+                                 (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonic);
+        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "   ; ");
+        for (unsigned int i = 0; i < instrSize; i++)
+            buff_offset +=
+                sprintf_s(&buff[buff_offset], bufflen - buff_offset, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
         WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
         offset += instrSize;
     }
@@ -82,7 +84,7 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext *mc, CompileResult *cr)
 
     buff_offset = 0;
     ZeroMemory(buff, bufflen * sizeof(char));
-    buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, ";; No disassembler available");
+    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, ";; No disassembler available");
     WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
 
 #endif // !USE_MSVCDIS

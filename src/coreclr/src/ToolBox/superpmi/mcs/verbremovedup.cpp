@@ -10,32 +10,32 @@
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
 
-//We use a hash to limit the number of comparisons we need to do.
-//The first level key to our hash map is ILCodeSize and the second
-//level map key is just an index and the value is an existing MC Hash.
+// We use a hash to limit the number of comparisons we need to do.
+ //The first level key to our hash map is ILCodeSize and the second
+ //level map key is just an index and the value is an existing MC Hash.
 
-LightWeightMap<int, DenseLightWeightMap<char *> *> *inFile = nullptr;
+LightWeightMap<int, DenseLightWeightMap<char*>*>* inFile = nullptr;
 
-bool unique(MethodContext *mc)
+bool unique(MethodContext* mc)
 {
     if (inFile == nullptr)
-        inFile = new LightWeightMap<int, DenseLightWeightMap<char *> *>();
+        inFile = new LightWeightMap<int, DenseLightWeightMap<char*>*>();
 
     CORINFO_METHOD_INFO newInfo;
-    unsigned newFlags = 0;
+    unsigned            newFlags = 0;
     mc->repCompileMethod(&newInfo, &newFlags);
 
-    char *md5Buff = new char[MD5_HASH_BUFFER_SIZE];
+    char* md5Buff = new char[MD5_HASH_BUFFER_SIZE];
     mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE);
 
     if (inFile->GetIndex(newInfo.ILCodeSize) == -1)
-        inFile->Add(newInfo.ILCodeSize, new DenseLightWeightMap<char *>());
+        inFile->Add(newInfo.ILCodeSize, new DenseLightWeightMap<char*>());
 
-    DenseLightWeightMap<char *> *ourRank = inFile->Get(newInfo.ILCodeSize);
+    DenseLightWeightMap<char*>* ourRank = inFile->Get(newInfo.ILCodeSize);
 
     for (int i = 0; i < (int)ourRank->GetCount(); i++)
     {
-        char *md5Buff2 = ourRank->Get(i);
+        char* md5Buff2 = ourRank->Get(i);
 
         if (strncmp(md5Buff, md5Buff2, MD5_HASH_BUFFER_SIZE) == 0)
         {
@@ -48,25 +48,25 @@ bool unique(MethodContext *mc)
     return true;
 }
 
-LightWeightMap<int, DenseLightWeightMap<MethodContext *> *> *inFileLegacy = nullptr;
+LightWeightMap<int, DenseLightWeightMap<MethodContext*>*>* inFileLegacy = nullptr;
 
-bool uniqueLegacy(MethodContext *mc)
+bool uniqueLegacy(MethodContext* mc)
 {
     if (inFileLegacy == nullptr)
-        inFileLegacy = new LightWeightMap<int, DenseLightWeightMap<MethodContext *> *>();
+        inFileLegacy = new LightWeightMap<int, DenseLightWeightMap<MethodContext*>*>();
 
     CORINFO_METHOD_INFO newInfo;
-    unsigned newFlags = 0;
+    unsigned            newFlags = 0;
     mc->repCompileMethod(&newInfo, &newFlags);
 
     if (inFileLegacy->GetIndex(newInfo.ILCodeSize) == -1)
-        inFileLegacy->Add(newInfo.ILCodeSize, new DenseLightWeightMap<MethodContext *>());
+        inFileLegacy->Add(newInfo.ILCodeSize, new DenseLightWeightMap<MethodContext*>());
 
-    DenseLightWeightMap<MethodContext *> *ourRank = inFileLegacy->Get(newInfo.ILCodeSize);
+    DenseLightWeightMap<MethodContext*>* ourRank = inFileLegacy->Get(newInfo.ILCodeSize);
 
     for (int i = 0; i < (int)ourRank->GetCount(); i++)
     {
-        MethodContext *scratch = ourRank->Get(i);
+        MethodContext* scratch = ourRank->Get(i);
         if (mc->Equal(scratch))
         {
             return false;
@@ -78,7 +78,7 @@ bool uniqueLegacy(MethodContext *mc)
     return true;
 }
 
-int verbRemoveDup::DoWork(const char *nameOfInput, const char *nameOfOutput, bool stripCR, bool legacyCompare)
+int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, bool stripCR, bool legacyCompare)
 {
     LogVerbose("Removing duplicates from '%s', writing to '%s'", nameOfInput, nameOfOutput);
 
@@ -88,7 +88,8 @@ int verbRemoveDup::DoWork(const char *nameOfInput, const char *nameOfOutput, boo
 
     int savedCount = 0;
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFileOut == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open output '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
@@ -110,7 +111,8 @@ int verbRemoveDup::DoWork(const char *nameOfInput, const char *nameOfOutput, boo
                 mc->saveToFile(hFileOut);
                 savedCount++;
 
-                // In this case, for the legacy comparer, it has placed the 'mc' in the 'inFileLegacy' table, so we can't delete it.
+                // In this case, for the legacy comparer, it has placed the 'mc' in the 'inFileLegacy' table, so we
+                // can't delete it.
             }
             else
             {

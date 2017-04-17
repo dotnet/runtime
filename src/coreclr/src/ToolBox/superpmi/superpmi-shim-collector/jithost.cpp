@@ -47,7 +47,7 @@ int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 {
     mc->cr->AddCall("getStringConfigValue");
-    const wchar_t *result = wrappedHost->getStringConfigValue(key);
+    const wchar_t* result = wrappedHost->getStringConfigValue(key);
 
     // Don't store null returns, which is the default
     if (result != nullptr)

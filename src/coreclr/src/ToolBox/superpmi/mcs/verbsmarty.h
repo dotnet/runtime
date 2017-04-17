@@ -14,7 +14,7 @@ class verbSmarty
 public:
     verbSmarty(HANDLE hFile);
     void DumpTestInfo(int testID);
-    static int DoWork(const char *nameOfInput, const char *nameofOutput, int indexCount, const int *indexes);
+    static int DoWork(const char* nameOfInput, const char* nameofOutput, int indexCount, const int* indexes);
 
 private:
     HANDLE m_hFile;

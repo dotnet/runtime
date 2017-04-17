@@ -16,9 +16,10 @@
 #include "runtimedetails.h"
 
 // Just a helper...
-HANDLE MethodContextReader::OpenFile(const char *inputFile, DWORD flags)
+HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 {
-    HANDLE fileHandle = CreateFileA(inputFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | flags, NULL);
+    HANDLE fileHandle =
+        CreateFileA(inputFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | flags, NULL);
     if (fileHandle == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open file '%s'. GetLastError()=%u", inputFile, GetLastError());
@@ -26,7 +27,7 @@ HANDLE MethodContextReader::OpenFile(const char *inputFile, DWORD flags)
     return fileHandle;
 }
 
-static std::string to_lower(const std::string &input)
+static std::string to_lower(const std::string& input)
 {
     std::string res = input;
     std::transform(input.cbegin(), input.cend(), res.begin(), tolower);
@@ -37,15 +38,16 @@ static std::string to_lower(const std::string &input)
 // but only if foo.origSuffix exists.
 //
 // Note: filename extensions must be lower-case, even on case-sensitive file systems!
-std::string MethodContextReader::CheckForPairedFile(const std::string &fileName, const std::string &origSuffix, const std::string &newSuffix)
+std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
+                                                    const std::string& origSuffix,
+                                                    const std::string& newSuffix)
 {
     std::string tmp = to_lower(origSuffix);
 
     // First, check to see if foo.origSuffix exists
     size_t suffix_offset = fileName.find_last_of('.');
-    if ((SSIZE_T)suffix_offset <= 0
-        || (tmp != to_lower(fileName.substr(suffix_offset)))
-        || (GetFileAttributesA(fileName.c_str()) == INVALID_FILE_ATTRIBUTES))
+    if ((SSIZE_T)suffix_offset <= 0 || (tmp != to_lower(fileName.substr(suffix_offset))) ||
+        (GetFileAttributesA(fileName.c_str()) == INVALID_FILE_ATTRIBUTES))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
@@ -66,8 +68,8 @@ std::string MethodContextReader::CheckForPairedFile(const std::string &fileName,
     return std::string();
 }
 
-
-MethodContextReader::MethodContextReader(const char *inputFileName, const int *indexes, int indexCount, char *hash, int offset, int increment)
+MethodContextReader::MethodContextReader(
+    const char* inputFileName, const int* indexes, int indexCount, char* hash, int offset, int increment)
     : fileHandle(INVALID_HANDLE_VALUE)
     , fileSize(0)
     , curMCIndex(0)
@@ -108,10 +110,12 @@ MethodContextReader::MethodContextReader(const char *inputFileName, const int *i
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fileHandle = OpenFile(mchFile.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL : FILE_FLAG_SEQUENTIAL_SCAN);
+    this->fileHandle =
+        OpenFile(mchFile.c_str(),
+                 (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL : FILE_FLAG_SEQUENTIAL_SCAN);
     if (this->fileHandle != INVALID_HANDLE_VALUE)
     {
-        GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER)&this->fileSize);
+        GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
     }
 }
 
@@ -139,14 +143,15 @@ void MethodContextReader::ReleaseLock()
 bool MethodContextReader::atEof()
 {
     __int64 pos = 0;
-    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
+    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
+                     FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
     return pos == this->fileSize;
 }
 
 MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
-    DWORD bytesRead;
-    char buff[512];
+    DWORD        bytesRead;
+    char         buff[512];
     unsigned int totalLen = 0;
     if (atEof())
     {
@@ -159,19 +164,20 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     {
         __int64 pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
-        AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE, "SetFilePointerEx failed (Error %X)", GetLastError());
+        AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
+                  "SetFilePointerEx failed (Error %X)", GetLastError());
 
-        //Increment curMCIndex as we advanced the file pointer by another MC
+        // Increment curMCIndex as we advanced the file pointer by another MC
         ++curMCIndex;
 
         return MethodContextBuffer(0);
     }
     else
     {
-        unsigned char *buff2 = new unsigned char[totalLen + 2]; //total + End Canary
+        unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
         Assert(ReadFile(this->fileHandle, buff2, totalLen + 2, &bytesRead, NULL) == TRUE);
 
-        //Increment curMCIndex as we read another MC
+        // Increment curMCIndex as we read another MC
         ++curMCIndex;
 
         return MethodContextBuffer(buff2, totalLen);
@@ -186,13 +192,14 @@ MethodContextBuffer MethodContextReader::ReadMethodContext(bool acquireLock, boo
         return MethodContextBuffer(-1);
     }
 
-    struct Param {
+    struct Param
+    {
         MethodContextReader* pThis;
-        MethodContextBuffer ret;
-        bool justSkip;
+        MethodContextBuffer  ret;
+        bool                 justSkip;
     } param;
-    param.pThis = this;
-    param.ret = MethodContextBuffer(-2);
+    param.pThis    = this;
+    param.ret      = MethodContextBuffer(-2);
     param.justSkip = justSkip;
 
     PAL_TRY(Param*, pParam, &param)
@@ -214,8 +221,8 @@ MethodContextBuffer MethodContextReader::GetNextMethodContext()
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
-        MethodContextReader*    pThis;
-        MethodContextBuffer     mcb;
+        MethodContextReader* pThis;
+        MethodContextBuffer  mcb;
     } param;
     param.pThis = this;
 
@@ -235,34 +242,34 @@ MethodContextBuffer MethodContextReader::GetNextMethodContext()
 
 MethodContextBuffer MethodContextReader::GetNextMethodContextHelper()
 {
-    //If we have an offset/increment combo
+    // If we have an offset/increment combo
     if (this->Offset > 0 && this->Increment > 0)
         return GetNextMethodContextFromOffsetIncrement();
 
-    //If we have an index
+    // If we have an index
     if (this->hasIndex())
     {
         if (this->curIndexPos < this->IndexCount)
         {
-            //If we are not done with all of them
+            // If we are not done with all of them
             return GetNextMethodContextFromIndexes();
         }
-        else //We are done with all of them, return
+        else // We are done with all of them, return
             return MethodContextBuffer();
     }
 
-    //If we have a hash
+    // If we have a hash
     if (this->Hash != nullptr)
         return GetNextMethodContextFromHash();
 
-    //If we don't have any of these options return all MCs one by one
+    // If we don't have any of these options return all MCs one by one
     return this->ReadMethodContext(true);
 }
 
 // Read a method context buffer from the ContextCollection using Indexes
 MethodContextBuffer MethodContextReader::GetNextMethodContextFromIndexes()
 {
-    //Assert if we don't have an Index or we are done with all the indexes
+    // Assert if we don't have an Index or we are done with all the indexes
     Assert(this->hasIndex() && this->curIndexPos < this->IndexCount);
 
     if (this->hasTOC())
@@ -291,29 +298,29 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromIndexes()
 // Read a method context buffer from the ContextCollection using Hash
 MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 {
-    //Assert if we don't have a valid hash
+    // Assert if we don't have a valid hash
     Assert(this->Hash != nullptr);
 
     if (this->hasTOC())
     {
-        //We have a TOC so lets go through the TOCElements
-        //one-by-one till we find a matching hash
+        // We have a TOC so lets go through the TOCElements
+         //one-by-one till we find a matching hash
         for (; curTOCIndex < (int)this->tocFile.GetTocCount(); curTOCIndex++)
         {
             if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MD5_HASH_BUFFER_SIZE) == 0)
             {
-                //We found a match, return this specific method
+                // We found a match, return this specific method
                 return this->GetSpecificMethodContext(this->tocFile.GetElementPtr(curTOCIndex++)->Number);
             }
         }
 
-        //No more matches in the TOC for our hash value
+        // No more matches in the TOC for our hash value
         return MethodContextBuffer();
     }
     else
     {
         // Keep reading all MCs until we hit a match
-        //or we reach the end or hit an error
+         //or we reach the end or hit an error
         while (true)
         {
             // Read a method context
@@ -324,12 +331,12 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 
             char mcHash[MD5_HASH_BUFFER_SIZE];
 
-            //Create a temporary copy of mcb.buff plus ending 2-byte canary
-            //this will get freed up by MethodContext constructor
-            unsigned char *buff = new unsigned char[mcb.size + 2];
+            // Create a temporary copy of mcb.buff plus ending 2-byte canary
+             //this will get freed up by MethodContext constructor
+            unsigned char* buff = new unsigned char[mcb.size + 2];
             memcpy(buff, mcb.buff, mcb.size + 2);
 
-            MethodContext *mc;
+            MethodContext* mc;
 
             if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
                 return MethodContextBuffer(-1);
@@ -339,13 +346,13 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 
             if (_strnicmp(this->Hash, mcHash, MD5_HASH_BUFFER_SIZE) == 0)
             {
-                //We found a match, return this specific method
+                // We found a match, return this specific method
                 return mcb;
             }
         }
     }
 
-    //We should never get here under normal conditions
+    // We should never get here under normal conditions
     AssertMsg(true, "Unexpected condition hit while reading input file.");
     return MethodContextBuffer(-1);
 }
@@ -353,17 +360,17 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 // Read a method context buffer from the ContextCollection using offset/increment
 MethodContextBuffer MethodContextReader::GetNextMethodContextFromOffsetIncrement()
 {
-    //Assert if we don't have a valid increment/offset combo
+    // Assert if we don't have a valid increment/offset combo
     Assert(this->Offset > 0 && this->Increment > 0);
 
     int methodNumber = this->curMCIndex > 0 ? this->curMCIndex + this->Increment : this->Offset;
 
     if (this->hasTOC())
     {
-        //Check if we are within the TOC
+        // Check if we are within the TOC
         if ((int)this->tocFile.GetTocCount() >= methodNumber)
         {
-            //We have a TOC so we can request a specific method context
+            // We have a TOC so we can request a specific method context
             return this->GetSpecificMethodContext(methodNumber);
         }
         else
@@ -374,7 +381,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromOffsetIncrement
         // Keep skipping MCs until we get to the one we need to return
         while (this->curMCIndex + 1 < methodNumber)
         {
-            //skip over a method
+            // skip over a method
             MethodContextBuffer mcb = this->ReadMethodContext(true, true);
             if (mcb.allDone() || mcb.Error())
                 return mcb;
@@ -421,10 +428,10 @@ __int64 MethodContextReader::GetOffset(unsigned int methodNumber)
     if (!this->hasTOC())
         return -2;
     size_t high = this->tocFile.GetTocCount() - 1;
-    size_t low = 0;
+    size_t low  = 0;
     while (low <= high)
     {
-        size_t pos = (high + low) / 2;
+        size_t       pos = (high + low) / 2;
         unsigned int num = this->tocFile.GetElementPtr(pos)->Number;
         if (num == methodNumber)
             return this->tocFile.GetElementPtr(pos)->Offset;
@@ -454,8 +461,8 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
 
-        //The curMCIndex value updated by ReadMethodContext() is incorrect
-        //since we are repositioning the file pointer we need to update it
+        // The curMCIndex value updated by ReadMethodContext() is incorrect
+         //since we are repositioning the file pointer we need to update it
         curMCIndex = methodNumber;
 
         return mcb;

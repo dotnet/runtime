@@ -14,8 +14,8 @@ public:
     CycleTimer();
     ~CycleTimer();
 
-    void Start();
-    void Stop();
+    void             Start();
+    void             Stop();
     unsigned __int64 GetCycles();
     unsigned __int64 QueryOverhead();
 

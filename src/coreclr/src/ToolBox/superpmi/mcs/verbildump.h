@@ -14,11 +14,11 @@
 class verbILDump
 {
 public:
-    static int DoWork(const char *nameOfInput1, int indexCount, const int *indexes);
+    static int DoWork(const char* nameOfInput1, int indexCount, const int* indexes);
 };
 
-void DumpPrimToConsoleBare(MethodContext *mc, CorInfoType prim, DWORDLONG classHandle);
-void DumpSigToConsoleBare(MethodContext *mc, CORINFO_SIG_INFO *pSig);
-char * DumpAttributeToConsoleBare(DWORD attribute);
+void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classHandle);
+void DumpSigToConsoleBare(MethodContext* mc, CORINFO_SIG_INFO* pSig);
+char* DumpAttributeToConsoleBare(DWORD attribute);
 
 #endif

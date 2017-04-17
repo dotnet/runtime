@@ -14,18 +14,18 @@
 class JitInstance
 {
 private:
-    char *PathToOriginalJit;
-    char *PathToTempJit;
-    HANDLE ourHeap;
-    HMODULE hLib;
-    PgetJit pngetJit;
-    PjitStartup pnjitStartup;
+    char*          PathToOriginalJit;
+    char*          PathToTempJit;
+    HANDLE         ourHeap;
+    HMODULE        hLib;
+    PgetJit        pngetJit;
+    PjitStartup    pnjitStartup;
     PsxsJitStartup pnsxsJitStartup;
-    ICorJitHost *jitHost;
-    ICorJitInfo *icji;
-    SimpleTimer stj;
+    ICorJitHost*   jitHost;
+    ICorJitInfo*   icji;
+    SimpleTimer    stj;
 
-    JitInstance() {};
+    JitInstance(){};
     void timeResult(CORINFO_METHOD_INFO info, unsigned flags);
 
 public:
@@ -35,18 +35,18 @@ public:
         RESULT_SUCCESS,
         RESULT_MISSING
     };
-    CycleTimer lt;
-    MethodContext *mc;
-    ULONGLONG times[2];
-    ICorJitCompiler *pJitInstance;
+    CycleTimer       lt;
+    MethodContext*   mc;
+    ULONGLONG        times[2];
+    ICorJitCompiler* pJitInstance;
 
     // Allocate and initialize the jit provided
-    static JitInstance *InitJit(char *nameOfJit, bool breakOnAssert, SimpleTimer *st1, MethodContext* firstContext);
+    static JitInstance* InitJit(char* nameOfJit, bool breakOnAssert, SimpleTimer* st1, MethodContext* firstContext);
 
-    HRESULT StartUp(char *PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
+    HRESULT StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
     bool reLoad(MethodContext* firstContext);
 
-    Result CompileMethod(MethodContext *MethodToCompile, int mcIndex, bool collectThroughput);
+    Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
     void* allocateArray(ULONG size);
     void* allocateLongLivedArray(ULONG size);

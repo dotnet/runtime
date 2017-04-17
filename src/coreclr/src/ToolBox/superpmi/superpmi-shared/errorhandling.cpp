@@ -14,32 +14,31 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode)
 }
 
 // Allocating memory here seems moderately dangerous: we'll probably leak like a sieve...
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, va_list args, const char *message)
+void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, va_list args, const char* message)
 {
-    char *buffer = new char[8192];
-    ULONG_PTR *ptr = new ULONG_PTR();
-    *ptr = (ULONG_PTR)buffer;
+    char*      buffer = new char[8192];
+    ULONG_PTR* ptr    = new ULONG_PTR();
+    *ptr              = (ULONG_PTR)buffer;
     _vsnprintf_s(buffer, 8192, 8191, message, args);
 
     RaiseException(exceptionCode, 0, 1, ptr);
 }
 
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char *msg, ...)
+void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char* msg, ...)
 {
     va_list ap;
     va_start(ap, msg);
     ThrowException(exceptionCode, ap, msg);
 }
 
-SpmiException::SpmiException(PEXCEPTION_POINTERS exp)
-    : exCode(exp->ExceptionRecord->ExceptionCode)
+SpmiException::SpmiException(PEXCEPTION_POINTERS exp) : exCode(exp->ExceptionRecord->ExceptionCode)
 {
-    exMessage = (exp->ExceptionRecord->NumberParameters != 1) ? nullptr : (char *) exp->ExceptionRecord->ExceptionInformation[0];
+    exMessage =
+        (exp->ExceptionRecord->NumberParameters != 1) ? nullptr : (char*)exp->ExceptionRecord->ExceptionInformation[0];
 }
 
 SpmiException::SpmiException(DWORD exceptionCode, char* exceptionMessage)
-    : exCode(exceptionCode)
-    , exMessage(exceptionMessage)
+    : exCode(exceptionCode), exMessage(exceptionMessage)
 {
 }
 
@@ -51,7 +50,7 @@ SpmiException::~SpmiException()
 }
 #endif
 
-char *SpmiException::GetExceptionMessage()
+char* SpmiException::GetExceptionMessage()
 {
     return exMessage;
 }
@@ -76,27 +75,30 @@ DWORD SpmiException::GetCode()
 {
     return exCode;
 }
- 
+
 // This filter function executes the handler only for EXCEPTIONCODE_MC, otherwise it continues the handler search.
 LONG FilterSuperPMIExceptions_CatchMC(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    return (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTIONCODE_MC) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
+    return (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTIONCODE_MC) ? EXCEPTION_EXECUTE_HANDLER
+                                                                                    : EXCEPTION_CONTINUE_SEARCH;
 }
 
 // This filter function captures the exception pointers and continues searching.
 LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam = (FilterSuperPMIExceptionsParam_CaptureException *)lpvParam;
-    pSPMIEParam->exceptionPointers = *pExceptionPointers;   // Capture the exception pointers for use later
-    pSPMIEParam->exceptionCode = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
+    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam =
+        (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
+    pSPMIEParam->exceptionPointers = *pExceptionPointers; // Capture the exception pointers for use later
+    pSPMIEParam->exceptionCode     = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
 LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam = (FilterSuperPMIExceptionsParam_CaptureException *)lpvParam;
-    pSPMIEParam->exceptionPointers = *pExceptionPointers;   // Capture the exception pointers for use later
-    pSPMIEParam->exceptionCode = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
+    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam =
+        (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
+    pSPMIEParam->exceptionPointers = *pExceptionPointers; // Capture the exception pointers for use later
+    pSPMIEParam->exceptionCode     = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -104,23 +106,24 @@ bool IsSuperPMIException(unsigned code)
 {
     switch (code)
     {
-    case EXCEPTIONCODE_MC:
-    case EXCEPTIONCODE_LWM:
-    case EXCEPTIONCODE_CALLUTILS:
-    case EXCEPTIONCODE_TYPEUTILS:
-    case EXCEPTIONCODE_ASSERT:
-        return true;
-    default:
-        if ((EXCEPTIONCODE_DebugBreakorAV <= code) && (code < EXCEPTIONCODE_DebugBreakorAV_MAX))
-        {
+        case EXCEPTIONCODE_MC:
+        case EXCEPTIONCODE_LWM:
+        case EXCEPTIONCODE_CALLUTILS:
+        case EXCEPTIONCODE_TYPEUTILS:
+        case EXCEPTIONCODE_ASSERT:
             return true;
-        }
-        return false;
+        default:
+            if ((EXCEPTIONCODE_DebugBreakorAV <= code) && (code < EXCEPTIONCODE_DebugBreakorAV_MAX))
+            {
+                return true;
+            }
+            return false;
     }
 }
- 
-// This filter function executes the handler only for non-SuperPMI generated exceptions, otherwise it continues the handler search.
-// This allows for SuperPMI-thrown exceptions to pass through the JIT and be caught by the outer SuperPMI handler.
+
+// This filter function executes the handler only for non-SuperPMI generated exceptions, otherwise it continues the
+// handler search. This allows for SuperPMI-thrown exceptions to pass through the JIT and be caught by the outer
+// SuperPMI handler.
 LONG FilterSuperPMIExceptions_CatchNonSuperPMIException(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
     return !IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode);
@@ -130,12 +133,13 @@ bool RunWithErrorTrap(void (*function)(void*), void* param)
 {
     bool success = true;
 
-    struct TrapParam {
+    struct TrapParam
+    {
         void (*function)(void*);
-        void *param;
+        void* param;
     } trapParam;
     trapParam.function = function;
-    trapParam.param = param;
+    trapParam.param    = param;
 
     PAL_TRY(TrapParam*, pTrapParam, &trapParam)
     {

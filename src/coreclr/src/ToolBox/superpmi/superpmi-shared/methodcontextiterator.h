@@ -10,7 +10,6 @@
 class MethodContextIterator
 {
 public:
-
     MethodContextIterator(bool progressReport = false)
         : m_hFile(INVALID_HANDLE_VALUE)
         , m_fileSize(0)
@@ -67,7 +66,7 @@ public:
     MethodContext* CurrentTakeOwnership()
     {
         MethodContext* ret = m_mc;
-        m_mc = nullptr;
+        m_mc               = nullptr;
         return ret;
     }
 
@@ -83,22 +82,21 @@ public:
     }
 
 private:
-
-    HANDLE          m_hFile;
-    int64_t         m_fileSize;
-    int             m_methodContextNumber;
-    MethodContext*  m_mc;
-    LARGE_INTEGER   m_pos;
+    HANDLE         m_hFile;
+    int64_t        m_fileSize;
+    int            m_methodContextNumber;
+    MethodContext* m_mc;
+    LARGE_INTEGER  m_pos;
 
     // If m_indexCount==-1, use all method contexts. Otherwise, m_indexCount is the number of elements in the
     // m_indexes array, which contains a sorted set of method context indexes to return. In this case, m_index
     // is the index of the current element in m_indexes.
-    const int       m_indexCount;
-    int             m_index;
-    const int*      m_indexes;      
+    const int  m_indexCount;
+    int        m_index;
+    const int* m_indexes;
 
     // Should we log a progress report as we are loading the method contexts?
     // The timer is only used when m_progressReport==true.
-    bool            m_progressReport;
-    SimpleTimer*    m_timer;
+    bool         m_progressReport;
+    SimpleTimer* m_timer;
 };

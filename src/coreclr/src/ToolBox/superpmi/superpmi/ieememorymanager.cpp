@@ -7,14 +7,14 @@
 #include "spmiutil.h"
 #include "ieememorymanager.h"
 
-IEEMemoryManager *pIEEMM = nullptr;
-HANDLE processHeap = INVALID_HANDLE_VALUE;
+IEEMemoryManager* pIEEMM      = nullptr;
+HANDLE            processHeap = INVALID_HANDLE_VALUE;
 
 //***************************************************************************
 // IUnknown methods
 //***************************************************************************
 
-HRESULT STDMETHODCALLTYPE MyIEEMM::QueryInterface(REFIID id, void **pInterface)
+HRESULT STDMETHODCALLTYPE MyIEEMM::QueryInterface(REFIID id, void** pInterface)
 {
     DebugBreakorAV(133);
     return 0;
@@ -35,11 +35,14 @@ HANDLE virtHeap = INVALID_HANDLE_VALUE;
 //***************************************************************************
 // IEEMemoryManager methods for locking
 //***************************************************************************
-LPVOID STDMETHODCALLTYPE MyIEEMM::ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
+LPVOID STDMETHODCALLTYPE MyIEEMM::ClrVirtualAlloc(LPVOID lpAddress,
+                                                  SIZE_T dwSize,
+                                                  DWORD  flAllocationType,
+                                                  DWORD  flProtect)
 {
-    if(virtHeap == INVALID_HANDLE_VALUE)
+    if (virtHeap == INVALID_HANDLE_VALUE)
         virtHeap = HeapCreate(0, 0xFFFF, 0);
-    if(virtHeap != INVALID_HANDLE_VALUE)
+    if (virtHeap != INVALID_HANDLE_VALUE)
         return HeapAlloc(virtHeap, HEAP_ZERO_MEMORY, dwSize);
     return nullptr;
 }
@@ -47,12 +50,17 @@ BOOL STDMETHODCALLTYPE MyIEEMM::ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, 
 {
     return HeapFree(virtHeap, 0, lpAddress);
 }
-SIZE_T STDMETHODCALLTYPE MyIEEMM::ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
+SIZE_T STDMETHODCALLTYPE MyIEEMM::ClrVirtualQuery(LPCVOID                   lpAddress,
+                                                  PMEMORY_BASIC_INFORMATION lpBuffer,
+                                                  SIZE_T                    dwLength)
 {
     DebugBreakorAV(136);
     return 0;
 }
-BOOL STDMETHODCALLTYPE MyIEEMM::ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
+BOOL STDMETHODCALLTYPE MyIEEMM::ClrVirtualProtect(LPVOID lpAddress,
+                                                  SIZE_T dwSize,
+                                                  DWORD  flNewProtect,
+                                                  PDWORD lpflOldProtect)
 {
     DebugBreakorAV(137);
     return 0;
@@ -74,7 +82,7 @@ BOOL STDMETHODCALLTYPE MyIEEMM::ClrHeapDestroy(HANDLE hHeap)
 }
 LPVOID STDMETHODCALLTYPE MyIEEMM::ClrHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 {
-    return HeapAlloc(hHeap,dwFlags,dwBytes);
+    return HeapAlloc(hHeap, dwFlags, dwBytes);
 }
 BOOL STDMETHODCALLTYPE MyIEEMM::ClrHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 {
@@ -98,13 +106,13 @@ HANDLE STDMETHODCALLTYPE MyIEEMM::ClrGetProcessExecutableHeap()
     return processHeap;
 }
 
-IEEMemoryManager *InitIEEMemoryManager(JitInstance *jitInstance)
+IEEMemoryManager* InitIEEMemoryManager(JitInstance* jitInstance)
 {
-    if(pIEEMM==nullptr)
+    if (pIEEMM == nullptr)
     {
-      MyIEEMM *ieemm = new MyIEEMM();
-      ieemm->jitInstance = jitInstance;
-      pIEEMM = ieemm;
+        MyIEEMM* ieemm     = new MyIEEMM();
+        ieemm->jitInstance = jitInstance;
+        pIEEMM             = ieemm;
     }
     return pIEEMM;
 }

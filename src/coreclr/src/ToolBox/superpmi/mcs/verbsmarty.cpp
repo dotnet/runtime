@@ -20,7 +20,7 @@
 //
 verbSmarty::verbSmarty(HANDLE hFile)
 {
-    m_hFile=hFile;
+    m_hFile = hFile;
 }
 
 //
@@ -31,21 +31,21 @@ verbSmarty::verbSmarty(HANDLE hFile)
 //
 void verbSmarty::DumpTestInfo(int testID)
 {
-    #define bufflen 4096
+#define bufflen 4096
     DWORD bytesWritten;
 
     char buff[bufflen];
-    int buff_offset = 0;
+    int  buff_offset = 0;
     ZeroMemory(buff, bufflen * sizeof(char));
 
-    buff_offset+=sprintf_s(&buff[buff_offset], bufflen-buff_offset, "%i\r\n", testID);
+    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "%i\r\n", testID);
     WriteFile(m_hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
 }
 
-
-int verbSmarty::DoWork(const char *nameOfInput, const char *nameOfOutput, int indexCount, const int *indexes)
+int verbSmarty::DoWork(const char* nameOfInput, const char* nameOfOutput, int indexCount, const int* indexes)
 {
-    LogVerbose("Reading from '%s' reading Smarty ID for the Mc Indexes and writing into '%s'", nameOfInput, nameOfOutput);
+    LogVerbose("Reading from '%s' reading Smarty ID for the Mc Indexes and writing into '%s'", nameOfInput,
+               nameOfOutput);
 
     MethodContextIterator mci(indexCount, indexes);
     if (!mci.Initialize(nameOfInput))
@@ -53,16 +53,17 @@ int verbSmarty::DoWork(const char *nameOfInput, const char *nameOfOutput, int in
 
     int savedCount = 0;
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if(hFileOut == INVALID_HANDLE_VALUE)
+    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFileOut == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
         return -1;
     }
 
-    verbSmarty *verbList = new verbSmarty(hFileOut);
+    verbSmarty* verbList = new verbSmarty(hFileOut);
 
-    //TODO-Cleanup: look to use toc for this
+    // TODO-Cleanup: look to use toc for this
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
@@ -70,7 +71,7 @@ int verbSmarty::DoWork(const char *nameOfInput, const char *nameOfOutput, int in
         int testID = mc->repGetTestID();
         if (testID != -1)
         {
-            //write to the file
+            // write to the file
             verbList->DumpTestInfo(testID);
         }
         else

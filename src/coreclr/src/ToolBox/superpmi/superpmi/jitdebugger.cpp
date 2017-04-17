@@ -25,17 +25,13 @@
 
 #ifndef FEATURE_JIT_DEBUGGING
 
-int DbgBreakCheck(
-    const char* szFile,
-    int         iLine,
-    const char* szExpr)
+int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
     LogError("SuperPMI: Assert Failure (PID %d, Thread %d/%x)\n"
              "%s\n"
              "\n"
              "%s, Line: %d\n",
-        GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId(),
-        szExpr, szFile, iLine);
+             GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId(), szExpr, szFile, iLine);
 
     return 1;
 }
@@ -90,18 +86,14 @@ BOOL RunningInWow64()
 // Exceptions
 //   None
 //------------------------------------------------------------------------------
-BOOL GetRegistryLongValue(HKEY    hKeyParent,
-                          LPCWSTR szKey,
-                          LPCWSTR szName,
-                          long    *pValue,
-                          BOOL    fReadNonVirtualizedKey)
+BOOL GetRegistryLongValue(HKEY hKeyParent, LPCWSTR szKey, LPCWSTR szName, long* pValue, BOOL fReadNonVirtualizedKey)
 {
-    DWORD       ret;                    // Return value from registry operation.
-    HKEY        hkey;                   // Registry key.
-    long        iValue;                 // The value to read.
-    DWORD       iType;                  // Type of value to get.
-    DWORD       iSize;                  // Size of buffer.
-    REGSAM      samDesired = KEY_READ;  // Desired access rights to the key
+    DWORD  ret;                   // Return value from registry operation.
+    HKEY   hkey;                  // Registry key.
+    long   iValue;                // The value to read.
+    DWORD  iType;                 // Type of value to get.
+    DWORD  iSize;                 // Size of buffer.
+    REGSAM samDesired = KEY_READ; // Desired access rights to the key
 
     if (fReadNonVirtualizedKey)
     {
@@ -118,10 +110,10 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
     {
         iType = REG_DWORD;
         iSize = sizeof(long);
-        ret = RegQueryValueExW(hkey, szName, NULL, &iType, reinterpret_cast<BYTE*>(&iValue), &iSize);
+        ret   = RegQueryValueExW(hkey, szName, NULL, &iType, reinterpret_cast<BYTE*>(&iValue), &iSize);
 
         if (ret == ERROR_SUCCESS && iType == REG_DWORD && iSize == sizeof(long))
-        {   // We successfully read a DWORD value.
+        { // We successfully read a DWORD value.
             *pValue = iValue;
             return TRUE;
         }
@@ -144,7 +136,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD *pcchBuffer)
+HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -165,10 +157,10 @@ HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __ino
     }
 
     // Pick off the part after the path.
-    WCHAR* appName =  wcsrchr(appPath, L'\\');
+    WCHAR* appName = wcsrchr(appPath, L'\\');
 
     // If no backslash, use the whole name; if there is a backslash, skip it.
-    appName = appName ? appName+1 : appPath;
+    appName = appName ? appName + 1 : appPath;
 
     if (*pcchBuffer < wcslen(appName))
     {
@@ -179,7 +171,6 @@ HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __ino
     wcscpy_s(pBuffer, *pcchBuffer, appName);
     return S_OK;
 }
-
 
 //----------------------------------------------------------------------------
 //
@@ -232,12 +223,10 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
     return FALSE;
 } // IsCurrentModuleFileNameInAutoExclusionList
 
-
-
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
-void GetDebuggerSettingInfo(LPWSTR wszDebuggerString, DWORD cchDebuggerString, BOOL *pfAuto)
+void GetDebuggerSettingInfo(LPWSTR wszDebuggerString, DWORD cchDebuggerString, BOOL* pfAuto)
 {
     HRESULT hr = GetDebuggerSettingInfoWorker(wszDebuggerString, &cchDebuggerString, pfAuto);
 
@@ -265,7 +254,10 @@ void GetDebuggerSettingInfo(LPWSTR wszDebuggerString, DWORD cchDebuggerString, B
 //     * wszDebuggerString can be NULL.   When wszDebuggerString is NULL, pcchDebuggerString should
 //     * point to a DWORD of zero.   pcchDebuggerString cannot be NULL, and the DWORD pointed by
 //     * pcchDebuggerString will store the used or required string buffer size in characters.
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto)
+HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString)
+                                         LPWSTR wszDebuggerString,
+                                     DWORD*     pcchDebuggerString,
+                                     BOOL*      pfAuto)
 {
     if ((pcchDebuggerString == NULL) || ((wszDebuggerString == NULL) && (*pcchDebuggerString != 0)))
     {
@@ -289,7 +281,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
     DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKey);
 
     if (ret != ERROR_SUCCESS)
-    {   // Wow, there's not even an AeDebug hive, so no native debugger, no auto.
+    { // Wow, there's not even an AeDebug hive, so no native debugger, no auto.
         return S_OK;
     }
 
@@ -315,7 +307,8 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
         return S_OK;
     }
 
-    ret = RegQueryValueExW(hKey, kUnmanagedDebuggerValue, NULL, NULL, reinterpret_cast< LPBYTE >(wszDebuggerString), &valueSize);
+    ret = RegQueryValueExW(hKey, kUnmanagedDebuggerValue, NULL, NULL, reinterpret_cast<LPBYTE>(wszDebuggerString),
+                           &valueSize);
     if (ret != ERROR_SUCCESS)
     {
         *wszDebuggerString = L'\0';
@@ -330,16 +323,14 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
         // Get the appname to look up in DebugApplications key.
         WCHAR wzAppName[MAX_PATH];
         DWORD cchAppName = NumItems(wzAppName);
-        long iValue;
+        long  iValue;
 
         // Check DebugApplications setting
         if ((SUCCEEDED(GetCurrentModuleFileName(wzAppName, &cchAppName))) &&
-            (
-                GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
-                GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsKey, wzAppName, &iValue, TRUE) ||
-                GetRegistryLongValue(HKEY_CURRENT_USER,  kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
-                GetRegistryLongValue(HKEY_CURRENT_USER,  kDebugApplicationsKey, wzAppName, &iValue, TRUE)
-            ) &&
+            (GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
+             GetRegistryLongValue(HKEY_LOCAL_MACHINE, kDebugApplicationsKey, wzAppName, &iValue, TRUE) ||
+             GetRegistryLongValue(HKEY_CURRENT_USER, kDebugApplicationsPoliciesKey, wzAppName, &iValue, TRUE) ||
+             GetRegistryLongValue(HKEY_CURRENT_USER, kDebugApplicationsKey, wzAppName, &iValue, TRUE)) &&
             (iValue == 1))
         {
             fAuto = TRUE;
@@ -352,7 +343,8 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
             {
                 WCHAR wzAutoKey[MAX_PATH];
                 valueSize = NumItems(wzAutoKey) * sizeof(WCHAR);
-                RegQueryValueExW(hKey, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
+                RegQueryValueExW(hKey, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast<LPBYTE>(wzAutoKey),
+                                 &valueSize);
 
                 // The OS's behavior is to consider Auto to be FALSE unless the first character is set
                 // to 1. They don't take into consideration the following characters. Also if the value 
@@ -379,14 +371,15 @@ BOOL LaunchJITDebugger()
     GetDebuggerSettingInfo(debugger, NumItems(debugger), NULL);
 
     SECURITY_ATTRIBUTES sa;
-    sa.nLength = sizeof(sa);
+    sa.nLength              = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
-    sa.bInheritHandle = TRUE;
+    sa.bInheritHandle       = TRUE;
 
     // We can leave this event as it is since it is inherited by a child process.
     // We will block one scheduler, but the process is asking a user if they want to attach debugger.
     HANDLE eventHandle = WszCreateEvent(&sa, TRUE, FALSE, NULL);
-    if (eventHandle == NULL) {
+    if (eventHandle == NULL)
+    {
         return FALSE;
     }
 
@@ -395,7 +388,7 @@ BOOL LaunchJITDebugger()
 
     STARTUPINFOW StartupInfo;
     memset(&StartupInfo, 0, sizeof(StartupInfo));
-    StartupInfo.cb = sizeof(StartupInfo);
+    StartupInfo.cb        = sizeof(StartupInfo);
     StartupInfo.lpDesktop = L"Winsta0\\Default";
 
     PROCESS_INFORMATION ProcessInformation;
@@ -410,47 +403,44 @@ BOOL LaunchJITDebugger()
     return fSuccess;
 }
 
-
 // See if we should invoke the just-in-time debugger on an assert.
-int DbgBreakCheck(
-    const char* szFile,
-    int         iLine,
-    const char* szExpr)
+int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 {
     char dialogText[1000];
     char dialogTitle[1000];
 
-    sprintf_s(dialogText, sizeof(dialogText), "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n",
-        szExpr, szFile, iLine);
+    sprintf_s(dialogText, sizeof(dialogText),
+              "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n", szExpr, szFile,
+              iLine);
     sprintf_s(dialogTitle, sizeof(dialogTitle), "SuperPMI: Assert Failure (PID %d, Thread %d/%x)        ",
-        GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
+              GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
 
     // Tell user there was an error.
     int ret = MessageBoxA(NULL, dialogText, dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION | MB_TOPMOST);
 
-    switch(ret)
+    switch (ret)
     {
-    case IDABORT:
-        TerminateProcess(GetCurrentProcess(), 1);
-        break;
+        case IDABORT:
+            TerminateProcess(GetCurrentProcess(), 1);
+            break;
 
-    // Tell caller to break at the correct loction.
-    case IDRETRY:
+        // Tell caller to break at the correct loction.
+        case IDRETRY:
 
-        if (IsDebuggerPresent())
-        {
-            SetErrorMode(0);
-        }
-        else
-        {
-            LaunchJITDebugger();
-        }
+            if (IsDebuggerPresent())
+            {
+                SetErrorMode(0);
+            }
+            else
+            {
+                LaunchJITDebugger();
+            }
 
-        return 1;
+            return 1;
 
-    case IDIGNORE:
-        // nothing to do
-        break;
+        case IDIGNORE:
+            // nothing to do
+            break;
     }
 
     return 0;
