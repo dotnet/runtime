@@ -178,25 +178,28 @@ if command -v "clang-3.5" > /dev/null 2>&1; then
 elif command -v "clang-3.6" > /dev/null 2>&1; then
     export CC="$(command -v clang-3.6)"
     export CXX="$(command -v clang++-3.6)"
+elif command -v "clang-3.9" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.9)"
+    export CXX="$(command -v clang++-3.9)"
 elif command -v clang > /dev/null 2>&1; then
     export CC="$(command -v clang)"
     export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
-    echo "Install clang-3.5 or clang3.6"
+    echo "Install clang-3.5 or clang3.6 or clang3.9"
     exit 1
 fi
 
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    # clang-3.6 is default compiler for cross compilation
-    if command -v "clang-3.6" > /dev/null 2>&1; then
-        export CC="$(command -v clang-3.6)"
-        export CXX="$(command -v clang++-3.6)"
+    # clang-3.9 is default compiler for cross compilation
+    if command -v "clang-3.9" > /dev/null 2>&1; then
+        export CC="$(command -v clang-3.9)"
+        export CXX="$(command -v clang++-3.9)"
     else
-        echo "Unable to find Clang 3.6 Compiler"
-        echo "Install clang-3.6 for cross compilation"
+        echo "Unable to find Clang 3.9 Compiler"
+        echo "Install clang-3.9 for cross compilation"
         exit 1
     fi
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
