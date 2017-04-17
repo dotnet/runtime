@@ -436,9 +436,6 @@
   <data name="InvalidLvalue" xml:space="preserve">
     <value>Invalid lvalue for assignment: {0}.</value>
   </data>
-  <data name="UnknownLiftType" xml:space="preserve">
-    <value>unknown lift type: '{0}'.</value>
-  </data>
   <data name="UndefinedVariable" xml:space="preserve">
     <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>
   </data>
