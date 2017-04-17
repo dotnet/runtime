@@ -12,9 +12,10 @@
 #include "logging.h"
 
 // Tries to load a Table of Contents
-void TOCFile::LoadToc(const char *inputFileName, bool validate)
+void TOCFile::LoadToc(const char* inputFileName, bool validate)
 {
-    HANDLE hIndex = CreateFileA(inputFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hIndex = CreateFileA(inputFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hIndex == INVALID_HANDLE_VALUE)
     {
         LogError("Failed to open file '%s'. GetLastError()=%u", inputFileName, GetLastError());
@@ -23,9 +24,8 @@ void TOCFile::LoadToc(const char *inputFileName, bool validate)
 
     // Now read the index file
     LARGE_INTEGER val; // I'm abusing LARGE_INTEGER here...
-    DWORD read;
-    if (!ReadFile(hIndex, &val, sizeof(val), &read, nullptr) ||
-        (val.u.LowPart != *(DWORD *)("INDX")))
+    DWORD         read;
+    if (!ReadFile(hIndex, &val, sizeof(val), &read, nullptr) || (val.u.LowPart != *(DWORD*)("INDX")))
     {
         CloseHandle(hIndex);
         LogWarning("The index file %s is invalid: it seems to be missing the starting sentinel/length", inputFileName);
@@ -46,8 +46,7 @@ void TOCFile::LoadToc(const char *inputFileName, bool validate)
     }
 
     // Get the last 4 byte token (more abuse of LARGE_INTEGER)
-    if (!ReadFile(hIndex, &val.u.HighPart, sizeof(DWORD), &read, nullptr) ||
-        (read != sizeof(DWORD)) ||
+    if (!ReadFile(hIndex, &val.u.HighPart, sizeof(DWORD), &read, nullptr) || (read != sizeof(DWORD)) ||
         (val.u.LowPart != val.u.HighPart))
     {
         CloseHandle(hIndex);

@@ -17,10 +17,10 @@
 // that occur while logging will print a message to the console. Fatal errors trigger a debugbreak.
 //
 
-bool Logger::s_initialized = false;
-UINT32 Logger::s_logLevel = LOGMASK_DEFAULT;
-HANDLE Logger::s_logFile = INVALID_HANDLE_VALUE;
-char *Logger::s_logFilePath = nullptr;
+bool             Logger::s_initialized = false;
+UINT32           Logger::s_logLevel    = LOGMASK_DEFAULT;
+HANDLE           Logger::s_logFile     = INVALID_HANDLE_VALUE;
+char*            Logger::s_logFilePath = nullptr;
 CRITICAL_SECTION Logger::s_critSec;
 
 //
@@ -54,17 +54,12 @@ void Logger::Shutdown()
 // Opens a log file at the given path and enables file-based logging, if the given path is valid.
 //
 /* static */
-void Logger::OpenLogFile(char *logFilePath)
+void Logger::OpenLogFile(char* logFilePath)
 {
     if (s_logFile == INVALID_HANDLE_VALUE && logFilePath != nullptr)
     {
-        s_logFile = CreateFileA(logFilePath,
-                                GENERIC_WRITE,
-                                FILE_SHARE_READ | FILE_SHARE_DELETE,
-                                NULL,
-                                CREATE_ALWAYS,
-                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                                NULL);
+        s_logFile = CreateFileA(logFilePath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_ALWAYS,
+                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
         if (s_logFile != INVALID_HANDLE_VALUE)
         {
@@ -73,7 +68,8 @@ void Logger::OpenLogFile(char *logFilePath)
         }
         else
         {
-            fprintf(stderr, "WARNING: [Logger::OpenLogFile] Failed to open log file '%s'. GetLastError()=%u\n", logFilePath, GetLastError());
+            fprintf(stderr, "WARNING: [Logger::OpenLogFile] Failed to open log file '%s'. GetLastError()=%u\n",
+                    logFilePath, GetLastError());
         }
     }
 }
@@ -92,7 +88,8 @@ void Logger::CloseLogFile()
             // We can call this before closing the handle because DeleteFile just marks the file
             // for deletion, i.e. it does not actually get deleted until its last handle is closed.
             if (!DeleteFileA(s_logFilePath))
-                fprintf(stderr, "WARNING: [Logger::CloseLogFile] DeleteFile failed. GetLastError()=%u\n", GetLastError());
+                fprintf(stderr, "WARNING: [Logger::CloseLogFile] DeleteFile failed. GetLastError()=%u\n",
+                        GetLastError());
         }
 
         if (!CloseHandle(s_logFile))
@@ -118,13 +115,13 @@ void Logger::CloseLogFile()
 // to avoid looking up all the log levels and enabling them all by specifying all the individual characters.
 //
 /* static */
-UINT32 Logger::ParseLogLevelString(const char *specifierStr)
+UINT32 Logger::ParseLogLevelString(const char* specifierStr)
 {
     UINT32 logLevelMask = LOGMASK_NONE;
 
-    if (strchr(specifierStr, 'q') == nullptr)  // "Quiet" overrides all other specifiers
+    if (strchr(specifierStr, 'q') == nullptr) // "Quiet" overrides all other specifiers
     {
-        if (strchr(specifierStr, 'a') != nullptr)  // "All" overrides the other specifiers
+        if (strchr(specifierStr, 'a') != nullptr) // "All" overrides the other specifiers
         {
             logLevelMask |= LOGMASK_ALL;
         }
@@ -157,8 +154,7 @@ UINT32 Logger::ParseLogLevelString(const char *specifierStr)
 }
 
 /* static */
-void Logger::LogPrintf(const char *function, const char *file, int line,
-                       LogLevel level, const char *msg, ...)
+void Logger::LogPrintf(const char* function, const char* file, int line, LogLevel level, const char* msg, ...)
 {
     va_list argList;
     va_start(argList, msg);
@@ -170,8 +166,8 @@ void Logger::LogPrintf(const char *function, const char *file, int line,
 // main logging function that all other logging functions eventually funnel into.
 //
 /* static */
-void Logger::LogVprintf(const char *function, const char *file, int line,
-                        LogLevel level, va_list argList, const char *msg)
+void Logger::LogVprintf(
+    const char* function, const char* file, int line, LogLevel level, va_list argList, const char* msg)
 {
     if (!s_initialized)
     {
@@ -182,42 +178,42 @@ void Logger::LogVprintf(const char *function, const char *file, int line,
     // Capture this first to make the timestamp more accurately reflect the actual time of logging
     time_t timestamp = time(nullptr);
 
-    int fullMsgLen = _vscprintf(msg, argList) + 1;  // This doesn't count the null terminator
-    char *fullMsg = new char[fullMsgLen];
+    int   fullMsgLen = _vscprintf(msg, argList) + 1; // This doesn't count the null terminator
+    char* fullMsg    = new char[fullMsgLen];
 
     _vsnprintf_s(fullMsg, fullMsgLen, fullMsgLen, msg, argList);
     va_end(argList);
 
-    const char *logLevelStr = "INVALID_LOGLEVEL";
+    const char* logLevelStr = "INVALID_LOGLEVEL";
     switch (level)
     {
-    case LOGLEVEL_ERROR:
-        logLevelStr = "ERROR";
-        break;
+        case LOGLEVEL_ERROR:
+            logLevelStr = "ERROR";
+            break;
 
-    case LOGLEVEL_WARNING:
-        logLevelStr = "WARNING";
-        break;
+        case LOGLEVEL_WARNING:
+            logLevelStr = "WARNING";
+            break;
 
-    case LOGLEVEL_MISSING:
-        logLevelStr = "MISSING";
-        break;
+        case LOGLEVEL_MISSING:
+            logLevelStr = "MISSING";
+            break;
 
-    case LOGLEVEL_ISSUE:
-        logLevelStr = "ISSUE";
-        break;
+        case LOGLEVEL_ISSUE:
+            logLevelStr = "ISSUE";
+            break;
 
-    case LOGLEVEL_INFO:
-        logLevelStr = "INFO";
-        break;
+        case LOGLEVEL_INFO:
+            logLevelStr = "INFO";
+            break;
 
-    case LOGLEVEL_VERBOSE:
-        logLevelStr = "VERBOSE";
-        break;
+        case LOGLEVEL_VERBOSE:
+            logLevelStr = "VERBOSE";
+            break;
 
-    case LOGLEVEL_DEBUG:
-        logLevelStr = "DEBUG";
-        break;
+        case LOGLEVEL_DEBUG:
+            logLevelStr = "DEBUG";
+            break;
     }
 
     // NOTE: This implementation doesn't guarantee that log messages will be written in chronological
@@ -230,7 +226,7 @@ void Logger::LogVprintf(const char *function, const char *file, int line,
     if (level & GetLogLevel())
     {
         // Sends error messages to stderr instead out stdout
-        FILE *dest = (level <= LOGLEVEL_WARNING) ? stderr : stdout;
+        FILE* dest = (level <= LOGLEVEL_WARNING) ? stderr : stdout;
 
         if (level < LOGLEVEL_INFO)
             fprintf(dest, "%s: ", logLevelStr);
@@ -240,7 +236,7 @@ void Logger::LogVprintf(const char *function, const char *file, int line,
         if (s_logFile != INVALID_HANDLE_VALUE)
         {
 #ifndef FEATURE_PAL // TODO: no localtime_s() or strftime() in PAL
-            tm timeInfo;
+            tm      timeInfo;
             errno_t err = localtime_s(&timeInfo, &timestamp);
             if (err != 0)
             {
@@ -249,34 +245,35 @@ void Logger::LogVprintf(const char *function, const char *file, int line,
             }
 
             size_t timeStrBuffSize = 20 * sizeof(char);
-            char *timeStr = (char *)malloc(timeStrBuffSize);  // Use malloc so we can realloc if necessary
+            char*  timeStr         = (char*)malloc(timeStrBuffSize); // Use malloc so we can realloc if necessary
 
             // This particular format string should always generate strings of the same size, but
             // for the sake of robustness, we shouldn't rely on that assumption.
             while (strftime(timeStr, timeStrBuffSize, "%Y-%m-%d %H:%M:%S", &timeInfo) == 0)
             {
                 timeStrBuffSize *= 2;
-                timeStr = (char *)realloc(timeStr, timeStrBuffSize);
+                timeStr = (char*)realloc(timeStr, timeStrBuffSize);
             }
-#else // FEATURE_PAL
-            const char *timeStr = "";
+#else  // FEATURE_PAL
+            const char* timeStr = "";
 #endif // FEATURE_PAL
 
             const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
-            size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) +
-                                      strlen(file) + 10 + strlen(logLevelStr) + strlen(fullMsg);
+            size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + 10 +
+                                      strlen(logLevelStr) + strlen(fullMsg);
 
-            char *logEntry = new char[logEntryBuffSize];
-            sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr,
-                      timeStr, function, file, line, logLevelStr, fullMsg);
+            char* logEntry = new char[logEntryBuffSize];
+            sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
 
             DWORD bytesWritten;
 
             if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryBuffSize - 1, &bytesWritten, nullptr))
-                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n", GetLastError());
+                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
+                        GetLastError());
 
             if (!FlushFileBuffers(s_logFile))
-                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n", GetLastError());
+                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n",
+                        GetLastError());
 
             delete[] logEntry;
 
@@ -298,8 +295,8 @@ CleanUp:
 // Special helper for logging exceptions. This logs the exception message given as a debug message.
 //
 /* static */
-void Logger::LogExceptionMessage(const char *function, const char *file, int line,
-                                 DWORD exceptionCode, const char *msg, ...)
+void Logger::LogExceptionMessage(
+    const char* function, const char* file, int line, DWORD exceptionCode, const char* msg, ...)
 {
     std::string fullMsg = "Exception thrown: ";
     fullMsg += msg;
@@ -313,24 +310,24 @@ void Logger::LogExceptionMessage(const char *function, const char *file, int lin
 // Logger for JIT issues. Identifies the issue type and logs the given message normally.
 //
 /* static */
-void IssueLogger::LogIssueHelper(const char *function, const char *file, int line,
-                                 IssueType issue, const char *msg, ...)
+void IssueLogger::LogIssueHelper(
+    const char* function, const char* file, int line, IssueType issue, const char* msg, ...)
 {
     std::string fullMsg;
 
     switch (issue)
     {
-    case ISSUE_ASSERT:
-        fullMsg += "<ASSERT>";
-        break;
+        case ISSUE_ASSERT:
+            fullMsg += "<ASSERT>";
+            break;
 
-    case ISSUE_ASM_DIFF:
-        fullMsg += "<ASM_DIFF>";
-        break;
+        case ISSUE_ASM_DIFF:
+            fullMsg += "<ASM_DIFF>";
+            break;
 
-    default:
-        fullMsg += "<UNKNOWN_ISSUE_TYPE>";
-        break;
+        default:
+            fullMsg += "<UNKNOWN_ISSUE_TYPE>";
+            break;
     }
 
     fullMsg += " ";

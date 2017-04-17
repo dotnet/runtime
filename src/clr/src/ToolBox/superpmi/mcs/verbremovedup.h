@@ -12,6 +12,6 @@
 class verbRemoveDup
 {
 public:
-    static int DoWork(const char *nameOfInput1, const char *nameOfOutput, bool stripCR, bool legacyCompare);
+    static int DoWork(const char* nameOfInput1, const char* nameOfOutput, bool stripCR, bool legacyCompare);
 };
 #endif

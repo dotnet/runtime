@@ -10,7 +10,7 @@
 //***************************************************************************
 // IUnknown methods
 //***************************************************************************
-HRESULT STDMETHODCALLTYPE interceptor_IEEMM::QueryInterface(REFIID id, void **pInterface)
+HRESULT STDMETHODCALLTYPE interceptor_IEEMM::QueryInterface(REFIID id, void** pInterface)
 {
     return original_IEEMM->QueryInterface(id, pInterface);
 }
@@ -26,7 +26,10 @@ ULONG STDMETHODCALLTYPE interceptor_IEEMM::Release()
 //***************************************************************************
 // IEEMemoryManager methods for locking
 //***************************************************************************
-LPVOID STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
+LPVOID STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualAlloc(LPVOID lpAddress,
+                                                            SIZE_T dwSize,
+                                                            DWORD  flAllocationType,
+                                                            DWORD  flProtect)
 {
     return original_IEEMM->ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 }
@@ -34,11 +37,16 @@ BOOL STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualFree(LPVOID lpAddress, SIZE_
 {
     return original_IEEMM->ClrVirtualFree(lpAddress, dwSize, dwFreeType);
 }
-SIZE_T STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
+SIZE_T STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualQuery(LPCVOID                   lpAddress,
+                                                            PMEMORY_BASIC_INFORMATION lpBuffer,
+                                                            SIZE_T                    dwLength)
 {
     return original_IEEMM->ClrVirtualQuery(lpAddress, lpBuffer, dwLength);
 }
-BOOL STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
+BOOL STDMETHODCALLTYPE interceptor_IEEMM::ClrVirtualProtect(LPVOID lpAddress,
+                                                            SIZE_T dwSize,
+                                                            DWORD  flNewProtect,
+                                                            PDWORD lpflOldProtect)
 {
     return original_IEEMM->ClrVirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }

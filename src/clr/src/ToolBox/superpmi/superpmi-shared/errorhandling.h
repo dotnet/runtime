@@ -14,32 +14,36 @@
 // EXCEPTIONCODE_DebugBreakorAV is just the base exception number; calls to DebugBreakorAV() 
 // pass a unique number to add to this. EXCEPTIONCODE_DebugBreakorAV_MAX is the maximum number
 // of this exception range.
-#define EXCEPTIONCODE_DebugBreakorAV     0xe0421000
+#define EXCEPTIONCODE_DebugBreakorAV 0xe0421000
 #define EXCEPTIONCODE_DebugBreakorAV_MAX 0xe0422000
 
-#define EXCEPTIONCODE_MC             0xe0422000
-#define EXCEPTIONCODE_LWM            0xe0423000
-#define EXCEPTIONCODE_CALLUTILS      0xe0426000
-#define EXCEPTIONCODE_TYPEUTILS      0xe0427000
-#define EXCEPTIONCODE_ASSERT         0xe0440000
+#define EXCEPTIONCODE_MC 0xe0422000
+#define EXCEPTIONCODE_LWM 0xe0423000
+#define EXCEPTIONCODE_CALLUTILS 0xe0426000
+#define EXCEPTIONCODE_TYPEUTILS 0xe0427000
+#define EXCEPTIONCODE_ASSERT 0xe0440000
 
 // RaiseException wrappers
 void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode);
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char *message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char* message, ...);
 
 // Assert stuff
-#define AssertCodeMsg(expr, exCode, msg, ...) \
-    do { \
-        if (!(expr)) LogException(exCode, "SuperPMI assertion '%s' failed (" #msg ")", #expr, ##__VA_ARGS__); \
+#define AssertCodeMsg(expr, exCode, msg, ...)                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (!(expr))                                                                                                   \
+            LogException(exCode, "SuperPMI assertion '%s' failed (" #msg ")", #expr, ##__VA_ARGS__);                   \
     } while (0)
 
-#define AssertCode(expr, exCode) \
-    do { \
-        if (!(expr)) LogException(exCode, "SuperPMI assertion '%s' failed", #expr); \
+#define AssertCode(expr, exCode)                                                                                       \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (!(expr))                                                                                                   \
+            LogException(exCode, "SuperPMI assertion '%s' failed", #expr);                                             \
     } while (0)
 
 #define AssertMsg(expr, msg, ...) AssertCodeMsg(expr, EXCEPTIONCODE_ASSERT, msg, ##__VA_ARGS__)
-#define Assert(expr)              AssertCode(expr, EXCEPTIONCODE_ASSERT)
+#define Assert(expr) AssertCode(expr, EXCEPTIONCODE_ASSERT)
 
 class SpmiException
 {
@@ -54,7 +58,7 @@ public:
     ~SpmiException();
 #endif
 
-    char *GetExceptionMessage();
+    char* GetExceptionMessage();
     DWORD GetCode();
 
     void ShowAndDeleteMessage();
@@ -72,15 +76,15 @@ struct FilterSuperPMIExceptionsParam_CaptureException
     EXCEPTION_POINTERS exceptionPointers;
     DWORD              exceptionCode;
 
-    FilterSuperPMIExceptionsParam_CaptureException()
-        : exceptionCode(0)
+    FilterSuperPMIExceptionsParam_CaptureException() : exceptionCode(0)
     {
         exceptionPointers.ExceptionRecord = nullptr;
-        exceptionPointers.ContextRecord = nullptr;
+        exceptionPointers.ContextRecord   = nullptr;
     }
 };
 
-extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
+extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers,
+                                                                 LPVOID              lpvParam);
 extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
 extern bool RunWithErrorTrap(void (*function)(void*), void* param);

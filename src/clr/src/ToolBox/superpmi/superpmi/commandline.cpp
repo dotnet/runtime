@@ -16,7 +16,7 @@
 
 // NOTE: this is parsed by parallelsuperpmi.cpp::ProcessChildStdOut() to determine if an incorrect
 // argument usage error has occurred.
-const char* const g_SuperPMIUsageFirstLine      = "SuperPMI is a JIT compiler testing tool.";
+const char* const g_SuperPMIUsageFirstLine = "SuperPMI is a JIT compiler testing tool.";
 
 void CommandLine::DumpHelp(const char* program)
 {
@@ -135,23 +135,24 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-//Assumption: All inputs are initialized to default or real value.  we'll just set the stuff we see on the command line.
-//Assumption: Single byte names are passed in.. mb stuff doesnt cause an obvious problem... but it might have issues...
-//Assumption: Values larger than 2^31 aren't expressible from the commandline.... (atoi) Unless you pass in negatives.. :-|
+// Assumption: All inputs are initialized to default or real value.  we'll just set the stuff we see on the command
+// line. Assumption: Single byte names are passed in.. mb stuff doesnt cause an obvious problem... but it might have
+// issues... Assumption: Values larger than 2^31 aren't expressible from the commandline.... (atoi) Unless you pass in
+// negatives.. :-|
 bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 {
-    size_t argLen = 0;
-    size_t tempLen = 0;
-    bool foundJit = false;
-    bool foundFile = false;
+    size_t argLen    = 0;
+    size_t tempLen   = 0;
+    bool   foundJit  = false;
+    bool   foundFile = false;
 
-    if (argc == 1) //Print help when no args are passed
+    if (argc == 1) // Print help when no args are passed
     {
         DumpHelp(argv[0]);
         return false;
     }
 
-    for (int i = 1; i<argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         bool isASwitch = (argv[i][0] == '-');
 #ifndef FEATURE_PAL
@@ -161,21 +162,20 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         }
 #endif // !FEATURE_PAL
 
-        //Process a switch
+        // Process a switch
         if (isASwitch)
         {
             argLen = strlen(argv[i]);
 
-            if (argLen >1)
-                argLen--; //adjust for leading switch
+            if (argLen > 1)
+                argLen--; // adjust for leading switch
             else
             {
                 DumpHelp(argv[0]);
                 return false;
             }
 
-            if ((_strnicmp(&argv[i][1], "help", argLen) == 0) ||
-                (_strnicmp(&argv[i][1], "HELP", argLen) == 0) ||
+            if ((_strnicmp(&argv[i][1], "help", argLen) == 0) || (_strnicmp(&argv[i][1], "HELP", argLen) == 0) ||
                 (_strnicmp(&argv[i][1], "?", argLen) == 0))
             {
                 DumpHelp(argv[0]);
@@ -219,12 +219,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     DumpHelp(argv[0]);
                     return false;
                 }
-                char *tempStr = new char[tempLen + 1];
+                char* tempStr = new char[tempLen + 1];
                 strcpy_s(tempStr, tempLen + 1, argv[i]);
                 if (!foundJit)
                 {
                     o->nameOfJit = tempStr;
-                    foundJit = true;
+                    foundJit     = true;
                 }
                 else
                 {
@@ -246,7 +246,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     DumpHelp(argv[0]);
                     return false;
                 }
-                char *tempStr = new char[tempLen + 1];
+                char* tempStr = new char[tempLen + 1];
                 strcpy_s(tempStr, tempLen + 1, argv[i]);
                 o->reproName = tempStr;
             }
@@ -354,7 +354,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 o->compileList = argv[i]; // Save this in case we need it for -parallel.
             }
 #ifdef USE_COREDISTOOLS
-            else if ((_strnicmp(&argv[i][1], "coredistools", argLen) == 0)) {
+            else if ((_strnicmp(&argv[i][1], "coredistools", argLen) == 0))
+            {
                 o->useCoreDisTools = true;
             }
 #endif // USE_COREDISTOOLS
@@ -394,13 +395,14 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 if (i + 1 < argc)
                 {
                     // If so, does it look like a worker count?
-                    bool isWorkerCount = true;
-                    size_t nextlen = strlen(argv[i + 1]);
+                    bool   isWorkerCount = true;
+                    size_t nextlen       = strlen(argv[i + 1]);
                     for (size_t j = 0; j < nextlen; j++)
                     {
                         if (!isdigit(argv[i + 1][j]))
                         {
-                            isWorkerCount = false; // Doesn't look like a worker count; bail out and let someone else handle it.
+                            isWorkerCount =
+                                false; // Doesn't look like a worker count; bail out and let someone else handle it.
                             break;
                         }
                     }
@@ -417,7 +419,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                         }
                         if (o->workerCount > MAXIMUM_WAIT_OBJECTS)
                         {
-                            LogError("Invalid workers count specified, workers count cannot be more than %d.", MAXIMUM_WAIT_OBJECTS);
+                            LogError("Invalid workers count specified, workers count cannot be more than %d.",
+                                     MAXIMUM_WAIT_OBJECTS);
                             DumpHelp(argv[0]);
                             return false;
                         }
@@ -455,7 +458,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 if (o->offset < 1 || o->increment < 1)
                 {
-                    LogError("Incorrect offset/increment specified for -stride. Offset and increment both must be > 0.");
+                    LogError(
+                        "Incorrect offset/increment specified for -stride. Offset and increment both must be > 0.");
                     DumpHelp(argv[0]);
                     return false;
                 }
@@ -479,11 +483,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 return false;
             }
         }
-        //Process an input filename
-        //String comparisons on file extensions must be case-insensitive since we run on Windows
+        // Process an input filename
+         //String comparisons on file extensions must be case-insensitive since we run on Windows
         else
         {
-            char *lastdot = strrchr(argv[i], '.');
+            char* lastdot = strrchr(argv[i], '.');
             if (lastdot == nullptr)
             {
                 DumpHelp(argv[0]);

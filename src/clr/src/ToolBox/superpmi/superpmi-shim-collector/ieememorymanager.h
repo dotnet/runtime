@@ -11,14 +11,15 @@
 class interceptor_IEEMM : public IEEMemoryManager
 {
 public:
-    interceptor_IEEMM()
-        : original_IEEMM(nullptr)
-    { }
+    interceptor_IEEMM() : original_IEEMM(nullptr)
+    {
+    }
+
 private:
     //***************************************************************************
     // IUnknown methods
     //***************************************************************************
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void **pInterface);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void** pInterface);
     ULONG STDMETHODCALLTYPE AddRef();
     ULONG STDMETHODCALLTYPE Release();
 
@@ -28,7 +29,10 @@ private:
     LPVOID STDMETHODCALLTYPE ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
     BOOL STDMETHODCALLTYPE ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
     SIZE_T STDMETHODCALLTYPE ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
-    BOOL STDMETHODCALLTYPE ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+    BOOL STDMETHODCALLTYPE ClrVirtualProtect(LPVOID lpAddress,
+                                             SIZE_T dwSize,
+                                             DWORD  flNewProtect,
+                                             PDWORD lpflOldProtect);
     HANDLE STDMETHODCALLTYPE ClrGetProcessHeap();
     HANDLE STDMETHODCALLTYPE ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);
     BOOL STDMETHODCALLTYPE ClrHeapDestroy(HANDLE hHeap);
@@ -38,6 +42,6 @@ private:
     HANDLE STDMETHODCALLTYPE ClrGetProcessExecutableHeap();
 
 public:
-    IEEMemoryManager *original_IEEMM;
+    IEEMemoryManager* original_IEEMM;
 };
 #endif

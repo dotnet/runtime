@@ -16,14 +16,14 @@ class MethodStatsEmitter
 {
 
 private:
-    char *statsTypes;
+    char*  statsTypes;
     HANDLE hStatsFile;
 
 public:
-    MethodStatsEmitter(char *nameOfInput);
+    MethodStatsEmitter(char* nameOfInput);
     ~MethodStatsEmitter();
 
-    void Emit(int methodNumber, MethodContext *mc, ULONGLONG firstTime, ULONGLONG secondTime);
-    void SetStatsTypes(char *types);
+    void Emit(int methodNumber, MethodContext* mc, ULONGLONG firstTime, ULONGLONG secondTime);
+    void SetStatsTypes(char* types);
 };
 #endif

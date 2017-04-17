@@ -12,7 +12,13 @@
 class verbStrip
 {
 public:
-    static int DoWork(const char *nameOfInput1, const char *nameOfOutput, int indexCount, const int *indexes, bool strip, bool stripCR);
-    static int DoWorkTheOldWay(const char *nameOfInput, const char *nameOfOutput, int indexCount, const int *indexes, bool stripCR);
+    static int DoWork(const char* nameOfInput1,
+                      const char* nameOfOutput,
+                      int         indexCount,
+                      const int*  indexes,
+                      bool        strip,
+                      bool        stripCR);
+    static int DoWorkTheOldWay(
+        const char* nameOfInput, const char* nameOfOutput, int indexCount, const int* indexes, bool stripCR);
 };
 #endif

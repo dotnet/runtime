@@ -134,25 +134,26 @@ void CommandLine::DumpHelp(const char* program)
     printf("Note: Inputs are case insensitive.\n");
 }
 
-//Assumption: All inputs are initialized to default or real value.  we'll just set the stuff in what we see on the command line.
-//Assumption: Single byte names are passed in.. mb stuff doesnt cause an obvious problem... but it might have issues...
-//Assumption: Values larger than 2^31 aren't expressible from the commandline.... (atoi) Unless you pass in negatives.. :-|
+// Assumption: All inputs are initialized to default or real value.  we'll just set the stuff in what we see on the
+// command line. Assumption: Single byte names are passed in.. mb stuff doesnt cause an obvious problem... but it might
+// have issues... Assumption: Values larger than 2^31 aren't expressible from the commandline.... (atoi) Unless you pass
+// in negatives.. :-|
 bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 {
-    size_t argLen = 0;
+    size_t argLen  = 0;
     size_t tempLen = 0;
 
-    bool foundVerb = false;
+    bool foundVerb  = false;
     bool foundFile1 = false;
     bool foundFile2 = false;
 
-    if (argc == 1) //Print help when no args are passed
+    if (argc == 1) // Print help when no args are passed
     {
         DumpHelp(argv[0]);
         return false;
     }
 
-    for (int i = 1; i<argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         bool isASwitch = (argv[i][0] == '-');
 #ifndef FEATURE_PAL
@@ -162,98 +163,97 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         }
 #endif // !FEATURE_PAL
 
-        //Process a switch
+        // Process a switch
         if (isASwitch)
         {
             argLen = strlen(argv[i]);
 
-            if (argLen >1)
-                argLen--; //adjust for leading switch
+            if (argLen > 1)
+                argLen--; // adjust for leading switch
             else
             {
                 DumpHelp(argv[0]);
                 return false;
             }
 
-            if ((_strnicmp(&argv[i][1], "help", argLen) == 0) ||
-                (_strnicmp(&argv[i][1], "?", argLen) == 0))
+            if ((_strnicmp(&argv[i][1], "help", argLen) == 0) || (_strnicmp(&argv[i][1], "?", argLen) == 0))
             {
                 DumpHelp(argv[0]);
                 return false;
             }
             else if ((_strnicmp(&argv[i][1], "ASMDump", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen          = strlen(argv[i]);
+                foundVerb        = true;
                 o->actionASMDump = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "concat", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen         = strlen(argv[i]);
+                foundVerb       = true;
                 o->actionConcat = true;
             }
             else if ((_strnicmp(&argv[i][1], "copy", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen       = strlen(argv[i]);
+                foundVerb     = true;
                 o->actionCopy = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "dump", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen       = strlen(argv[i]);
+                foundVerb     = true;
                 o->actionDump = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "fracture", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen           = strlen(argv[i]);
+                foundVerb         = true;
                 o->actionFracture = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "dumpmap", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen          = strlen(argv[i]);
+                foundVerb        = true;
                 o->actionDumpMap = true;
             }
             else if ((_strnicmp(&argv[i][1], "dumptoc", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen          = strlen(argv[i]);
+                foundVerb        = true;
                 o->actionDumpToc = true;
             }
             else if ((_strnicmp(&argv[i][1], "ildump", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen         = strlen(argv[i]);
+                foundVerb       = true;
                 o->actionILDump = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "merge", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen        = strlen(argv[i]);
+                foundVerb      = true;
                 o->actionMerge = true;
             }
             else if ((_strnicmp(&argv[i][1], "recursive", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
+                tempLen      = strlen(argv[i]);
                 o->recursive = true;
             }
             else if ((_strnicmp(&argv[i][1], "toc", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen      = strlen(argv[i]);
+                foundVerb    = true;
                 o->actionTOC = true;
             }
             else if ((_strnicmp(&argv[i][1], "input", argLen) == 0))
@@ -294,8 +294,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             }
             else if ((_strnicmp(&argv[i][1], "integ", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen        = strlen(argv[i]);
+                foundVerb      = true;
                 o->actionInteg = true;
             }
             else if ((_strnicmp(&argv[i][1], "mcl", argLen) == 0))
@@ -316,24 +316,24 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             }
             else if ((_strnicmp(&argv[i][1], "removeDup", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen            = strlen(argv[i]);
+                foundVerb          = true;
                 o->actionRemoveDup = true;
             }
             else if ((_strnicmp(&argv[i][1], "stat", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen       = strlen(argv[i]);
+                foundVerb     = true;
                 o->actionStat = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "strip", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
-                foundVerb = true;
+                tempLen        = strlen(argv[i]);
+                foundVerb      = true;
                 o->actionStrip = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "thin", argLen) == 0))
@@ -346,10 +346,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             }
             else if ((_strnicmp(&argv[i][1], "smarty", argLen) == 0))
             {
-                tempLen = strlen(argv[i]);
+                tempLen         = strlen(argv[i]);
                 o->actionSmarty = true;
-                foundVerb = true;
-                if (i + 1 < argc) //Peek to see if we have an mcl file or an integer next
+                foundVerb       = true;
+                if (i + 1 < argc) // Peek to see if we have an mcl file or an integer next
                     goto processMCL;
             }
             else if ((_strnicmp(&argv[i][1], "verbosity", argLen) == 0))
@@ -378,12 +378,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 DumpHelp(argv[0]);
                 return false;
             }
-
         }
-        //Process an input filename
+        // Process an input filename
         else
         {
-            char *lastdot = strrchr(argv[i], '.');
+            char* lastdot = strrchr(argv[i], '.');
             if (lastdot != nullptr)
             {
                 if (_stricmp(lastdot, ".mcl") == 0)

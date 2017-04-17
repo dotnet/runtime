@@ -13,36 +13,39 @@
 
 CompileResult::CompileResult()
 {
-    #define LWM(map,key,value) map = nullptr;
-    #include "crlwmlist.h"
+#define LWM(map, key, value) map = nullptr;
+#include "crlwmlist.h"
 
-    //Not persisted to disk.  though should it be?
+    // Not persisted to disk.  though should it be?
     CallTargetTypes = new LightWeightMap<DWORDLONG, DWORD>();
 
-    allocMemDets.hotCodeSize = 0;
-    allocMemDets.coldCodeSize = 0;
-    allocMemDets.roDataSize = 0;
-    allocMemDets.xcptnsCount = 0;
-    allocMemDets.flag = (CorJitAllocMemFlag)0;
-    allocMemDets.hotCodeBlock = 0;
+    allocMemDets.hotCodeSize   = 0;
+    allocMemDets.coldCodeSize  = 0;
+    allocMemDets.roDataSize    = 0;
+    allocMemDets.xcptnsCount   = 0;
+    allocMemDets.flag          = (CorJitAllocMemFlag)0;
+    allocMemDets.hotCodeBlock  = 0;
     allocMemDets.coldCodeBlock = 0;
-    allocMemDets.roDataBlock = 0;
+    allocMemDets.roDataBlock   = 0;
 
     allocGCInfoDets.retval = 0;
-    allocGCInfoDets.size = 0;
+    allocGCInfoDets.size   = 0;
 
     codeHeap = nullptr;
 }
 
 CompileResult::~CompileResult()
 {
-    #define LWM(map,key,value) if (map != nullptr) delete map;
-    #include "crlwmlist.h"
+#define LWM(map, key, value)                                                                                           \
+    if (map != nullptr)                                                                                                \
+        delete map;
+#include "crlwmlist.h"
 
-    if (CallTargetTypes != nullptr) delete CallTargetTypes;
+    if (CallTargetTypes != nullptr)
+        delete CallTargetTypes;
 
 #ifndef FEATURE_PAL // PAL doesn't have HeapDestroy()
-    if(codeHeap != nullptr)
+    if (codeHeap != nullptr)
         ::HeapDestroy(codeHeap);
 #endif // !FEATURE_PAL
 }
@@ -53,17 +56,19 @@ bool CompileResult::IsEmpty()
 {
     bool isEmpty = true;
 
-    #define LWM(map,key,value) if (map != nullptr) isEmpty = false;
-    #include "crlwmlist.h"
+#define LWM(map, key, value)                                                                                           \
+    if (map != nullptr)                                                                                                \
+        isEmpty = false;
+#include "crlwmlist.h"
 
     return isEmpty;
 }
 
 HANDLE CompileResult::getCodeHeap()
 {
-    if(codeHeap == nullptr)
-        codeHeap = ::HeapCreate(0,0,0);
-    if(codeHeap == nullptr)
+    if (codeHeap == nullptr)
+        codeHeap = ::HeapCreate(0, 0, 0);
+    if (codeHeap == nullptr)
     {
         LogError("CompileResult::codeHeap() failed to acquire a heap.");
         __debugbreak();
@@ -71,41 +76,41 @@ HANDLE CompileResult::getCodeHeap()
     return codeHeap;
 }
 
-void CompileResult::recAssert(const char *assertText)
+void CompileResult::recAssert(const char* assertText)
 {
-    if(AssertLog == nullptr)
+    if (AssertLog == nullptr)
         AssertLog = new DenseLightWeightMap<DWORD>();
 
-    AssertLog->Append(AssertLog->AddBuffer((const unsigned char*)assertText, (DWORD)strlen(assertText)+1));
+    AssertLog->Append(AssertLog->AddBuffer((const unsigned char*)assertText, (DWORD)strlen(assertText) + 1));
 }
 void CompileResult::dmpAssertLog(DWORD key, DWORD value)
 {
-    const char *assert = (const char *)AssertLog->GetBuffer(value);
+    const char* assert = (const char*)AssertLog->GetBuffer(value);
     printf("AssertLog key %u, value '%s'", key, assert);
     AssertLog->Unlock();
 }
-const char *CompileResult::repAssert()
+const char* CompileResult::repAssert()
 {
-    if((AssertLog==nullptr)||(AssertLog->GetCount()==0))
+    if ((AssertLog == nullptr) || (AssertLog->GetCount() == 0))
         return nullptr;
-    return (const char *)AssertLog->GetBuffer(AssertLog->Get((DWORD)0));
+    return (const char*)AssertLog->GetBuffer(AssertLog->Get((DWORD)0));
 }
 
-void CompileResult::AddCall(const char *name)
+void CompileResult::AddCall(const char* name)
 {
-    if(CallLog == nullptr)
+    if (CallLog == nullptr)
         CallLog = new DenseLightWeightMap<DWORD>();
-    //if(name[0] != '+')
-        //CallLog->Append(CallLog->AddBuffer((const unsigned char *)name, (DWORD)strlen(name)+1));
+    // if(name[0] != '+')
+     //CallLog->Append(CallLog->AddBuffer((const unsigned char *)name, (DWORD)strlen(name)+1));
 }
 unsigned int CompileResult::CallLog_GetCount()
 {
     return CallLog->GetCount();
 }
 
-bool CompileResult::CallLog_Contains(const char *str)
+bool CompileResult::CallLog_Contains(const char* str)
 {
-    return (CallLog->Contains((unsigned char *)str, (unsigned int)strlen(str))>0);
+    return (CallLog->Contains((unsigned char*)str, (unsigned int)strlen(str)) > 0);
 }
 void CompileResult::dmpCallLog(DWORD key, DWORD value)
 {
@@ -118,132 +123,132 @@ void CompileResult::dumpToConsole()
 {
     printf("***************************************** CompileResult\n");
 
-    #define LWM(map,key,value) dumpLWM(this,map)
-    #define DENSELWM(map,value) dumpLWMDense(this,map)
-    #include "crlwmlist.h"
+#define LWM(map, key, value) dumpLWM(this, map)
+#define DENSELWM(map, value) dumpLWMDense(this, map)
+#include "crlwmlist.h"
 
     printf("-----------------------------------------\n");
 }
 
-//Note - EE allocates these blocks (and the exception blocks) in a single linear region.
-//Note - EE assures that RoBlock is 8 byte aligned
-void CompileResult::recAllocMem(ULONG hotCodeSize, ULONG coldCodeSize, ULONG roDataSize, ULONG xcptnsCount, CorJitAllocMemFlag flag,
-        void **hotCodeBlock, void **coldCodeBlock, void **roDataBlock)
+// Note - EE allocates these blocks (and the exception blocks) in a single linear region.
+ //Note - EE assures that RoBlock is 8 byte aligned
+void CompileResult::recAllocMem(ULONG              hotCodeSize,
+                                ULONG              coldCodeSize,
+                                ULONG              roDataSize,
+                                ULONG              xcptnsCount,
+                                CorJitAllocMemFlag flag,
+                                void**             hotCodeBlock,
+                                void**             coldCodeBlock,
+                                void**             roDataBlock)
 {
-    //Grab the values, so we can scrape the real answers in the capture method
-    allocMemDets.hotCodeSize = hotCodeSize;
-    allocMemDets.coldCodeSize = coldCodeSize;
-    allocMemDets.roDataSize = roDataSize;
-    allocMemDets.xcptnsCount = xcptnsCount;
-    allocMemDets.flag = flag;
-    allocMemDets.hotCodeBlock = *hotCodeBlock;
+    // Grab the values, so we can scrape the real answers in the capture method
+    allocMemDets.hotCodeSize   = hotCodeSize;
+    allocMemDets.coldCodeSize  = coldCodeSize;
+    allocMemDets.roDataSize    = roDataSize;
+    allocMemDets.xcptnsCount   = xcptnsCount;
+    allocMemDets.flag          = flag;
+    allocMemDets.hotCodeBlock  = *hotCodeBlock;
     allocMemDets.coldCodeBlock = *coldCodeBlock;
-    allocMemDets.roDataBlock = *roDataBlock;
+    allocMemDets.roDataBlock   = *roDataBlock;
 }
 void CompileResult::recAllocMemCapture()
 {
-    if(AllocMem == nullptr)
+    if (AllocMem == nullptr)
         AllocMem = new LightWeightMap<DWORD, Agnostic_AllocMemDetails>();
 
     Agnostic_AllocMemDetails value;
 
-    value.hotCodeSize = (DWORD)allocMemDets.hotCodeSize;
+    value.hotCodeSize  = (DWORD)allocMemDets.hotCodeSize;
     value.coldCodeSize = (DWORD)allocMemDets.coldCodeSize;
-    value.roDataSize = (DWORD)allocMemDets.roDataSize;
-    value.xcptnsCount = (DWORD)allocMemDets.xcptnsCount;
-    value.flag = (DWORD)allocMemDets.flag;
-    value.hotCodeBlock_offset = (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.hotCodeBlock, allocMemDets.hotCodeSize);
-    value.coldCodeBlock_offset = (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.coldCodeBlock, allocMemDets.coldCodeSize);
-    value.roDataBlock_offset = (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.roDataBlock, allocMemDets.roDataSize);
-    value.hotCodeBlock = (DWORDLONG)allocMemDets.hotCodeBlock;
+    value.roDataSize   = (DWORD)allocMemDets.roDataSize;
+    value.xcptnsCount  = (DWORD)allocMemDets.xcptnsCount;
+    value.flag         = (DWORD)allocMemDets.flag;
+    value.hotCodeBlock_offset =
+        (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.hotCodeBlock, allocMemDets.hotCodeSize);
+    value.coldCodeBlock_offset =
+        (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.coldCodeBlock, allocMemDets.coldCodeSize);
+    value.roDataBlock_offset =
+        (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.roDataBlock, allocMemDets.roDataSize);
+    value.hotCodeBlock  = (DWORDLONG)allocMemDets.hotCodeBlock;
     value.coldCodeBlock = (DWORDLONG)allocMemDets.coldCodeBlock;
-    value.roDataBlock = (DWORDLONG)allocMemDets.roDataBlock;
+    value.roDataBlock   = (DWORDLONG)allocMemDets.roDataBlock;
 
     AllocMem->Add(0, value);
 }
 void CompileResult::dmpAllocMem(DWORD key, const Agnostic_AllocMemDetails& value)
 {
-    printf("AllocMem key 0, value hotCodeSize-%u coldCodeSize-%u roDataSize-%u xcptnsCount-%u flag-%08X hotCodeBlock_offset-%u coldCodeBlock_offset-%u roDataBlock_offset-%u hotCodeBlock-%016llX coldCodeBlock-%016llX roDataBlock-%016llX",
-        value.hotCodeSize,
-        value.coldCodeSize,
-        value.roDataSize,
-        value.xcptnsCount,
-        value.flag,
-        value.hotCodeBlock_offset,
-        value.coldCodeBlock_offset,
-        value.roDataBlock_offset,
-        value.hotCodeBlock,
-        value.coldCodeBlock,
-        value.roDataBlock);
+    printf("AllocMem key 0, value hotCodeSize-%u coldCodeSize-%u roDataSize-%u xcptnsCount-%u flag-%08X "
+           "hotCodeBlock_offset-%u coldCodeBlock_offset-%u roDataBlock_offset-%u hotCodeBlock-%016llX "
+           "coldCodeBlock-%016llX roDataBlock-%016llX",
+           value.hotCodeSize, value.coldCodeSize, value.roDataSize, value.xcptnsCount, value.flag,
+           value.hotCodeBlock_offset, value.coldCodeBlock_offset, value.roDataBlock_offset, value.hotCodeBlock,
+           value.coldCodeBlock, value.roDataBlock);
 }
 
 // We can't allocate memory in the same place is was during recording, so we pass back code/data block pointers
 // that point into the AllocMem LightWeightMap, but also return what the original addresses were during recording.
-void CompileResult::repAllocMem(
-    ULONG *hotCodeSize,
-    ULONG *coldCodeSize,
-    ULONG *roDataSize,
-    ULONG *xcptnsCount,
-    CorJitAllocMemFlag *flag,
-    unsigned char **hotCodeBlock,
-    unsigned char **coldCodeBlock,
-    unsigned char **roDataBlock,
-    void **orig_hotCodeBlock,
-    void **orig_coldCodeBlock,
-    void **orig_roDataBlock)
+void CompileResult::repAllocMem(ULONG*              hotCodeSize,
+                                ULONG*              coldCodeSize,
+                                ULONG*              roDataSize,
+                                ULONG*              xcptnsCount,
+                                CorJitAllocMemFlag* flag,
+                                unsigned char**     hotCodeBlock,
+                                unsigned char**     coldCodeBlock,
+                                unsigned char**     roDataBlock,
+                                void**              orig_hotCodeBlock,
+                                void**              orig_coldCodeBlock,
+                                void**              orig_roDataBlock)
 {
     Agnostic_AllocMemDetails value;
 
     value = AllocMem->Get(0);
 
-    *hotCodeSize = (ULONG)value.hotCodeSize;
+    *hotCodeSize  = (ULONG)value.hotCodeSize;
     *coldCodeSize = (ULONG)value.coldCodeSize;
-    *roDataSize = (ULONG)value.roDataSize;
-    *xcptnsCount = (ULONG)value.xcptnsCount;
-    *flag = (CorJitAllocMemFlag)value.flag;
+    *roDataSize   = (ULONG)value.roDataSize;
+    *xcptnsCount  = (ULONG)value.xcptnsCount;
+    *flag         = (CorJitAllocMemFlag)value.flag;
 
-    if(*hotCodeSize>0)
+    if (*hotCodeSize > 0)
         *hotCodeBlock = AllocMem->GetBuffer(value.hotCodeBlock_offset);
     else
         *hotCodeBlock = nullptr;
 
-    if(*coldCodeSize>0)
+    if (*coldCodeSize > 0)
         *coldCodeBlock = AllocMem->GetBuffer(value.coldCodeBlock_offset);
     else
         *coldCodeBlock = nullptr;
 
-    if(*roDataSize>0)
+    if (*roDataSize > 0)
         *roDataBlock = AllocMem->GetBuffer(value.roDataBlock_offset);
     else
         *roDataBlock = nullptr;
 
-    *orig_hotCodeBlock = (void *)value.hotCodeBlock;
-    *orig_coldCodeBlock = (void *)value.coldCodeBlock;
-    *orig_roDataBlock = (void *)value.roDataBlock;
+    *orig_hotCodeBlock  = (void*)value.hotCodeBlock;
+    *orig_coldCodeBlock = (void*)value.coldCodeBlock;
+    *orig_roDataBlock   = (void*)value.roDataBlock;
 }
 
-//Note - Ownership of pMap is transfered with this call. In replay icorjitinfo we should free it.
-void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap)
+// Note - Ownership of pMap is transfered with this call. In replay icorjitinfo we should free it.
+void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping* pMap)
 {
-    if(SetBoundaries == nullptr)
+    if (SetBoundaries == nullptr)
         SetBoundaries = new LightWeightMap<DWORD, Agnostic_SetBoundaries>();
 
     Agnostic_SetBoundaries value;
 
-    value.ftn = (DWORDLONG)ftn;
+    value.ftn  = (DWORDLONG)ftn;
     value.cMap = (DWORD)cMap;
-    value.pMap_offset = (DWORD)SetBoundaries->AddBuffer((const unsigned char*)pMap, sizeof(ICorDebugInfo::OffsetMapping)*cMap);
+    value.pMap_offset =
+        (DWORD)SetBoundaries->AddBuffer((const unsigned char*)pMap, sizeof(ICorDebugInfo::OffsetMapping) * cMap);
 
     SetBoundaries->Add(0, value);
 }
 void CompileResult::dmpSetBoundaries(DWORD key, const Agnostic_SetBoundaries& value)
 {
-    ICorDebugInfo::OffsetMapping *om = (ICorDebugInfo::OffsetMapping *)SetBoundaries->GetBuffer(value.pMap_offset);
-    printf("SetBoundaries key 0, value ftn-%016llX cMap-%u %u{",
-        value.ftn,
-        value.cMap,
-        value.pMap_offset);
-    for(unsigned int i=0;i<value.cMap;i++)
+    ICorDebugInfo::OffsetMapping* om = (ICorDebugInfo::OffsetMapping*)SetBoundaries->GetBuffer(value.pMap_offset);
+    printf("SetBoundaries key 0, value ftn-%016llX cMap-%u %u{", value.ftn, value.cMap, value.pMap_offset);
+    for (unsigned int i = 0; i < value.cMap; i++)
     {
         if (i != 0)
             printf(", ");
@@ -252,11 +257,11 @@ void CompileResult::dmpSetBoundaries(DWORD key, const Agnostic_SetBoundaries& va
     printf("}");
     SetBoundaries->Unlock();
 }
-bool CompileResult::repSetBoundaries(CORINFO_METHOD_HANDLE *ftn, ULONG32 *cMap, ICorDebugInfo::OffsetMapping **pMap)
+bool CompileResult::repSetBoundaries(CORINFO_METHOD_HANDLE* ftn, ULONG32* cMap, ICorDebugInfo::OffsetMapping** pMap)
 {
-    if((SetBoundaries == nullptr)||(SetBoundaries->GetCount()==0))
+    if ((SetBoundaries == nullptr) || (SetBoundaries->GetCount() == 0))
     {
-        *ftn = (CORINFO_METHOD_HANDLE)-1;
+        *ftn  = (CORINFO_METHOD_HANDLE)-1;
         *cMap = -1;
         *pMap = nullptr;
         return false;
@@ -265,34 +270,32 @@ bool CompileResult::repSetBoundaries(CORINFO_METHOD_HANDLE *ftn, ULONG32 *cMap, 
 
     value = SetBoundaries->Get(0);
 
-    *ftn = (CORINFO_METHOD_HANDLE)value.ftn;
+    *ftn  = (CORINFO_METHOD_HANDLE)value.ftn;
     *cMap = (ULONG32)value.cMap;
-    *pMap = (ICorDebugInfo::OffsetMapping *)SetBoundaries->GetBuffer(value.pMap_offset);
+    *pMap = (ICorDebugInfo::OffsetMapping*)SetBoundaries->GetBuffer(value.pMap_offset);
     return true;
 }
 
-//Note - Ownership of vars is transfered with this call. In replay icorjitinfo we should free it.
-void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+// Note - Ownership of vars is transfered with this call. In replay icorjitinfo we should free it.
+void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
-    if(SetVars == nullptr)
+    if (SetVars == nullptr)
         SetVars = new LightWeightMap<DWORD, Agnostic_SetVars>();
 
     Agnostic_SetVars value;
 
-    value.ftn = (DWORDLONG)ftn;
-    value.cVars = (DWORD)cVars;
-    value.vars_offset = (DWORD)SetVars->AddBuffer((const unsigned char*)vars, sizeof(ICorDebugInfo::NativeVarInfo)*cVars); //not deep enough.. vlt memory is pointer sized.
+    value.ftn         = (DWORDLONG)ftn;
+    value.cVars       = (DWORD)cVars;
+    value.vars_offset = (DWORD)SetVars->AddBuffer((const unsigned char*)vars,
+                                                  sizeof(ICorDebugInfo::NativeVarInfo) *
+                                                      cVars); // not deep enough.. vlt memory is pointer sized.
 
     SetVars->Add(0, value);
 }
 void CompileResult::dmpSetVars(DWORD key, const Agnostic_SetVars& value)
 {
-    ICorDebugInfo::NativeVarInfo *om = (ICorDebugInfo::NativeVarInfo *)SetVars->GetBuffer(value.vars_offset);
-    printf("SetVars key %u, value ftn-%016llX cVars-%u %u{",
-        key,
-        value.ftn,
-        value.cVars,
-        value.vars_offset);
+    ICorDebugInfo::NativeVarInfo* om = (ICorDebugInfo::NativeVarInfo*)SetVars->GetBuffer(value.vars_offset);
+    printf("SetVars key %u, value ftn-%016llX cVars-%u %u{", key, value.ftn, value.cVars, value.vars_offset);
     for (unsigned int i = 0; i < value.cVars; i++)
     {
         if (i != 0)
@@ -302,13 +305,13 @@ void CompileResult::dmpSetVars(DWORD key, const Agnostic_SetVars& value)
     printf("}");
     SetVars->Unlock();
 }
-bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE *ftn, ULONG32 *cVars, ICorDebugInfo::NativeVarInfo **vars)
+bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorDebugInfo::NativeVarInfo** vars)
 {
-    if((SetVars == nullptr)||(SetVars->GetCount()==0))
+    if ((SetVars == nullptr) || (SetVars->GetCount() == 0))
     {
-        *ftn = (CORINFO_METHOD_HANDLE)-1;
+        *ftn   = (CORINFO_METHOD_HANDLE)-1;
         *cVars = -1;
-        *vars = nullptr;
+        *vars  = nullptr;
         return false;
     }
 
@@ -316,96 +319,97 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE *ftn, ULONG32 *cVars, ICorD
 
     value = SetVars->Get(0);
 
-    *ftn = (CORINFO_METHOD_HANDLE)value.ftn;
+    *ftn   = (CORINFO_METHOD_HANDLE)value.ftn;
     *cVars = (ULONG32)value.cVars;
-    *vars = (ICorDebugInfo::NativeVarInfo*)SetVars->GetBuffer(value.vars_offset);
+    *vars  = (ICorDebugInfo::NativeVarInfo*)SetVars->GetBuffer(value.vars_offset);
 
     return true;
 }
 
 void CompileResult::recAllocGCInfo(size_t size, void* retval)
 {
-    allocGCInfoDets.size = size;
+    allocGCInfoDets.size   = size;
     allocGCInfoDets.retval = retval;
 }
 void CompileResult::recAllocGCInfoCapture()
 {
-    if(AllocGCInfo == nullptr)
+    if (AllocGCInfo == nullptr)
         AllocGCInfo = new LightWeightMap<DWORD, Agnostic_AllocGCInfo>();
 
     Agnostic_AllocGCInfo value;
 
     value.size = allocGCInfoDets.size;
-    value.retval_offset = (DWORD)AllocGCInfo->AddBuffer((const unsigned char *)allocGCInfoDets.retval, (DWORD)allocGCInfoDets.size);
+    value.retval_offset =
+        (DWORD)AllocGCInfo->AddBuffer((const unsigned char*)allocGCInfoDets.retval, (DWORD)allocGCInfoDets.size);
 
     AllocGCInfo->Add(0, value);
 }
 void CompileResult::dmpAllocGCInfo(DWORD key, const Agnostic_AllocGCInfo& value)
 {
-    const unsigned char *buff = AllocGCInfo->GetBuffer(value.retval_offset);
+    const unsigned char* buff = AllocGCInfo->GetBuffer(value.retval_offset);
     printf("AllocGCInfo key 0, ");
     printf("sz-%llu %p{ ", value.size, buff);
-    for(unsigned int i=0; i<value.size; i++)
-        printf("%02X ", *(buff+i));
+    for (unsigned int i = 0; i < value.size; i++)
+        printf("%02X ", *(buff + i));
     printf("}");
     AllocGCInfo->Unlock();
 }
-void CompileResult::repAllocGCInfo(size_t *size, void **retval)
+void CompileResult::repAllocGCInfo(size_t* size, void** retval)
 {
     Agnostic_AllocGCInfo value;
 
     value = AllocGCInfo->Get(0);
 
     *size = (size_t)value.size;
-    if(*size>0)
-        *retval = (void *)AllocGCInfo->GetBuffer(value.retval_offset);
+    if (*size > 0)
+        *retval = (void*)AllocGCInfo->GetBuffer(value.retval_offset);
 }
 
-void CompileResult::recCompileMethod(BYTE **nativeEntry, ULONG *nativeSizeOfCode, CorJitResult result)
+void CompileResult::recCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult result)
 {
-    if(CompileMethod == nullptr)
+    if (CompileMethod == nullptr)
         CompileMethod = new LightWeightMap<DWORD, Agnostic_CompileMethodResults>();
 
     Agnostic_CompileMethodResults value;
-    value.nativeEntry = (DWORDLONG)*nativeEntry;
+    value.nativeEntry      = (DWORDLONG)*nativeEntry;
     value.nativeSizeOfCode = (DWORD)*nativeSizeOfCode;
-    value.CorJitResult = (DWORD)result;
+    value.CorJitResult     = (DWORD)result;
 
     CompileMethod->Add(0, value);
 }
 void CompileResult::dmpCompileMethod(DWORD key, const Agnostic_CompileMethodResults& value)
 {
-    printf("CompileMethod key %u, value nativeEntry-%016llX nativeSizeOfCode-%u CorJitResult-%u",
-        key, value.nativeEntry, value.nativeSizeOfCode, value.CorJitResult);
+    printf("CompileMethod key %u, value nativeEntry-%016llX nativeSizeOfCode-%u CorJitResult-%u", key,
+           value.nativeEntry, value.nativeSizeOfCode, value.CorJitResult);
 }
-void CompileResult::repCompileMethod(BYTE **nativeEntry, ULONG *nativeSizeOfCode, CorJitResult *result)
+void CompileResult::repCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult* result)
 {
     Agnostic_CompileMethodResults value;
-    value = CompileMethod->Get(0);
-    *nativeEntry = (BYTE *)value.nativeEntry;
+    value             = CompileMethod->Get(0);
+    *nativeEntry      = (BYTE*)value.nativeEntry;
     *nativeSizeOfCode = (ULONG)value.nativeSizeOfCode;
-    *result = (CorJitResult)value.CorJitResult;
+    *result           = (CorJitResult)value.CorJitResult;
 }
 
 void CompileResult::recMessageLog(const char* fmt, ...)
 {
     // TODO-Cleanup: ???
     return;
-    if(MessageLog == nullptr)
+    if (MessageLog == nullptr)
         MessageLog = new DenseLightWeightMap<DWORD>();
 
     va_list args;
 
     // retrieve the variable arguments
-    va_start( args, fmt );
+    va_start(args, fmt);
 
-    size_t len = _vscprintf(fmt, args) + 1; //space for the terminator
+    size_t len = _vscprintf(fmt, args) + 1; // space for the terminator
 
-    unsigned char *messageLogBuffer = new unsigned char[len];
+    unsigned char* messageLogBuffer = new unsigned char[len];
     vsprintf_s((char*)messageLogBuffer, len, fmt, args);
-    messageLogBuffer[len-1] = 0;
+    messageLogBuffer[len - 1] = 0;
     MessageLog->Append(MessageLog->AddBuffer(messageLogBuffer, (DWORD)len));
-    delete []messageLogBuffer;
+    delete[] messageLogBuffer;
 }
 void CompileResult::dmpMessageLog(DWORD key, DWORD value)
 {
@@ -414,56 +418,55 @@ void CompileResult::dmpMessageLog(DWORD key, DWORD value)
 
 void CompileResult::recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
 {
-    if(ClassMustBeLoadedBeforeCodeIsRun == nullptr)
+    if (ClassMustBeLoadedBeforeCodeIsRun == nullptr)
         ClassMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
 
     ClassMustBeLoadedBeforeCodeIsRun->Append((DWORDLONG)cls);
 }
 void CompileResult::dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
 {
-    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016llX",
-        key, value);
+    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016llX", key, value);
 }
 
-void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd,
-                                                 CorInfoInline inlineResult, const char * reason)
+void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
+                                              CORINFO_METHOD_HANDLE inlineeHnd,
+                                              CorInfoInline         inlineResult,
+                                              const char*           reason)
 {
-    if(ReportInliningDecision == nullptr)
+    if (ReportInliningDecision == nullptr)
         ReportInliningDecision = new DenseLightWeightMap<Agnostic_ReportInliningDecision>();
 
     Agnostic_ReportInliningDecision value;
 
-    value.inlinerHnd = (DWORDLONG)inlinerHnd;
-    value.inlineeHnd = (DWORDLONG)inlineeHnd;
+    value.inlinerHnd   = (DWORDLONG)inlinerHnd;
+    value.inlineeHnd   = (DWORDLONG)inlineeHnd;
     value.inlineResult = (DWORD)inlineResult;
-    if(reason!=nullptr)
-      value.reason_offset = (DWORD)ReportInliningDecision->AddBuffer((unsigned char*)reason, (DWORD)strlen(reason)+1);
+    if (reason != nullptr)
+        value.reason_offset =
+            (DWORD)ReportInliningDecision->AddBuffer((unsigned char*)reason, (DWORD)strlen(reason) + 1);
     else
-      value.reason_offset = -1;
+        value.reason_offset = -1;
 
     ReportInliningDecision->Append(value);
 }
 void CompileResult::dmpReportInliningDecision(DWORD key, const Agnostic_ReportInliningDecision& value)
 {
-    const char *reason = (const char*)ReportInliningDecision->GetBuffer(value.reason_offset);
-    printf("ReportInliningDecision key %u, value inliner-%016llX inlinee-%016llX res-%u reason-'%s'",
-        key,
-        value.inlinerHnd,
-        value.inlineeHnd,
-        value.inlineResult,
-        reason);
+    const char* reason = (const char*)ReportInliningDecision->GetBuffer(value.reason_offset);
+    printf("ReportInliningDecision key %u, value inliner-%016llX inlinee-%016llX res-%u reason-'%s'", key,
+           value.inlinerHnd, value.inlineeHnd, value.inlineResult, reason);
     ReportInliningDecision->Unlock();
 }
-CorInfoInline CompileResult::repReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd)
+CorInfoInline CompileResult::repReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
+                                                       CORINFO_METHOD_HANDLE inlineeHnd)
 {
     CorInfoInline result = INLINE_FAIL;
-    if(ReportInliningDecision!=nullptr)
+    if (ReportInliningDecision != nullptr)
     {
-        Agnostic_ReportInliningDecision *items = ReportInliningDecision->GetRawItems();
-        unsigned int cnt = ReportInliningDecision->GetCount();
-        for(unsigned int i=0;i<cnt;i++)
+        Agnostic_ReportInliningDecision* items = ReportInliningDecision->GetRawItems();
+        unsigned int                     cnt   = ReportInliningDecision->GetCount();
+        for (unsigned int i = 0; i < cnt; i++)
         {
-            if((items[i].inlinerHnd == (DWORDLONG)inlinerHnd)&&(items[i].inlineeHnd == (DWORDLONG)inlineeHnd)&&
+            if ((items[i].inlinerHnd == (DWORDLONG)inlinerHnd) && (items[i].inlineeHnd == (DWORDLONG)inlineeHnd) &&
                 (items[i].inlineResult == INLINE_PASS))
                 result = INLINE_PASS;
         }
@@ -473,7 +476,7 @@ CorInfoInline CompileResult::repReportInliningDecision(CORINFO_METHOD_HANDLE inl
 
 void CompileResult::recSetEHcount(unsigned cEH)
 {
-    if(SetEHcount == nullptr)
+    if (SetEHcount == nullptr)
         SetEHcount = new LightWeightMap<DWORD, DWORD>();
 
     SetEHcount->Add((DWORD)0, (DWORD)cEH);
@@ -484,42 +487,37 @@ void CompileResult::dmpSetEHcount(DWORD key, DWORD value)
 }
 ULONG CompileResult::repSetEHcount()
 {
-    if(SetEHcount==nullptr)
+    if (SetEHcount == nullptr)
         SetEHcount = new LightWeightMap<DWORD, DWORD>();
 
     ULONG ehCount;
-    int index = SetEHcount->GetIndex(0);
-    if(index < 0)
+    int   index = SetEHcount->GetIndex(0);
+    if (index < 0)
         ehCount = 0;
     else
         ehCount = (ULONG)SetEHcount->Get(index);
     return ehCount;
 }
 
-void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE *clause)
+void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
 {
-    if(SetEHinfo == nullptr)
+    if (SetEHinfo == nullptr)
         SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE2>();
 
     Agnostic_CORINFO_EH_CLAUSE2 value;
-    value.Flags = (DWORD)clause->Flags;
-    value.TryOffset = (DWORD)clause->TryOffset;
-    value.TryLength = (DWORD)clause->TryLength;
+    value.Flags         = (DWORD)clause->Flags;
+    value.TryOffset     = (DWORD)clause->TryOffset;
+    value.TryLength     = (DWORD)clause->TryLength;
     value.HandlerOffset = (DWORD)clause->HandlerOffset;
     value.HandlerLength = (DWORD)clause->HandlerLength;
-    value.ClassToken = (DWORD)clause->ClassToken;
+    value.ClassToken    = (DWORD)clause->ClassToken;
 
     SetEHinfo->Add((DWORD)EHnumber, value);
 }
 void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value)
 {
-    printf("SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u",
-        key,
-        value.Flags,
-        value.TryOffset,
-        value.TryLength,
-        value.HandlerOffset,
-        value.HandlerLength);
+    printf("SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u", key, value.Flags, value.TryOffset, value.TryLength,
+           value.HandlerOffset, value.HandlerLength);
     if ((CORINFO_EH_CLAUSE_FLAGS)value.Flags == CORINFO_EH_CLAUSE_FILTER)
     {
         printf(" fo-%u", value.ClassToken); // FilterOffset
@@ -530,22 +528,28 @@ void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& v
     }
     // else, no need to print for finally/fault handlers
 }
-void CompileResult::repSetEHinfo(unsigned EHnumber, ULONG *flags, ULONG *tryOffset, ULONG *tryLength, ULONG *handlerOffset, ULONG *handlerLength, ULONG *classToken)
+void CompileResult::repSetEHinfo(unsigned EHnumber,
+                                 ULONG*   flags,
+                                 ULONG*   tryOffset,
+                                 ULONG*   tryLength,
+                                 ULONG*   handlerOffset,
+                                 ULONG*   handlerLength,
+                                 ULONG*   classToken)
 {
     Agnostic_CORINFO_EH_CLAUSE2 value;
     value = SetEHinfo->Get(EHnumber);
 
-    *flags=(ULONG)value.Flags;
-    *tryOffset=(ULONG)value.TryOffset;
-    *tryLength=(ULONG)value.TryLength;
-    *handlerOffset=(ULONG)value.HandlerOffset;
-    *handlerLength=(ULONG)value.HandlerLength;
-    *classToken=(ULONG)value.ClassToken;
+    *flags         = (ULONG)value.Flags;
+    *tryOffset     = (ULONG)value.TryOffset;
+    *tryLength     = (ULONG)value.TryLength;
+    *handlerOffset = (ULONG)value.HandlerOffset;
+    *handlerLength = (ULONG)value.HandlerLength;
+    *classToken    = (ULONG)value.ClassToken;
 }
 
 void CompileResult::recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs)
 {
-    if(SetMethodAttribs == nullptr)
+    if (SetMethodAttribs == nullptr)
         SetMethodAttribs = new LightWeightMap<DWORDLONG, DWORD>();
 
     SetMethodAttribs->Add((DWORDLONG)ftn, (DWORD)attribs);
@@ -554,9 +558,9 @@ void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 {
     printf("SetMethodAttribs key ftn-%016llX, value attr-%08X", key, value);
 }
-CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs (CORINFO_METHOD_HANDLE ftn)
+CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    if((SetMethodAttribs==nullptr)||(SetMethodAttribs->GetIndex((DWORDLONG)ftn)==-1))
+    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex((DWORDLONG)ftn) == -1))
         return (CorInfoMethodRuntimeFlags)0;
     CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get((DWORDLONG)ftn);
     return result;
@@ -564,7 +568,7 @@ CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs (CORINFO_METHOD_HAN
 
 void CompileResult::recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {
-    if(MethodMustBeLoadedBeforeCodeIsRun == nullptr)
+    if (MethodMustBeLoadedBeforeCodeIsRun == nullptr)
         MethodMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
 
     MethodMustBeLoadedBeforeCodeIsRun->Append((DWORDLONG)method);
@@ -574,20 +578,24 @@ void CompileResult::dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG va
     printf("MethodMustBeLoadedBeforeCodeIsRun key %u, value ftn-%016llX", key, value);
 }
 
-void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, CORINFO_METHOD_HANDLE calleeHnd, bool fIsTailPrefix,
-    CorInfoTailCall tailCallResult, const char * reason)
+void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
+                                              CORINFO_METHOD_HANDLE calleeHnd,
+                                              bool                  fIsTailPrefix,
+                                              CorInfoTailCall       tailCallResult,
+                                              const char*           reason)
 {
-    if(ReportTailCallDecision == nullptr)
+    if (ReportTailCallDecision == nullptr)
         ReportTailCallDecision = new DenseLightWeightMap<Agnostic_ReportTailCallDecision>();
 
     Agnostic_ReportTailCallDecision value;
 
-    value.callerHnd = (DWORDLONG)callerHnd;
-    value.calleeHnd = (DWORDLONG)calleeHnd;
-    value.fIsTailPrefix = (DWORD)fIsTailPrefix;
+    value.callerHnd      = (DWORDLONG)callerHnd;
+    value.calleeHnd      = (DWORDLONG)calleeHnd;
+    value.fIsTailPrefix  = (DWORD)fIsTailPrefix;
     value.tailCallResult = (DWORD)tailCallResult;
-    if(reason!=nullptr) //protect strlen
-        value.reason_index = (DWORD)ReportTailCallDecision->AddBuffer((unsigned char*)reason, (DWORD)strlen(reason)+1);
+    if (reason != nullptr) // protect strlen
+        value.reason_index =
+            (DWORD)ReportTailCallDecision->AddBuffer((unsigned char*)reason, (DWORD)strlen(reason) + 1);
     else
         value.reason_index = (DWORD)-1;
 
@@ -595,15 +603,15 @@ void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd, C
 }
 void CompileResult::dmpReportTailCallDecision(DWORD key, const Agnostic_ReportTailCallDecision& value)
 {
-    const char *reason = (const char*)ReportTailCallDecision->GetBuffer(value.reason_index);
-    printf("ReportTailCallDecision key-%u, value cr-%016llX ce-%016llX tail-%u call-%u -%s",
-        key, value.callerHnd, value.calleeHnd, value.tailCallResult, value.tailCallResult, reason);
+    const char* reason = (const char*)ReportTailCallDecision->GetBuffer(value.reason_index);
+    printf("ReportTailCallDecision key-%u, value cr-%016llX ce-%016llX tail-%u call-%u -%s", key, value.callerHnd,
+           value.calleeHnd, value.tailCallResult, value.tailCallResult, reason);
     ReportTailCallDecision->Unlock();
 }
 
 void CompileResult::recReportFatalError(CorJitResult result)
 {
-    if(ReportFatalError == nullptr)
+    if (ReportFatalError == nullptr)
         ReportFatalError = new DenseLightWeightMap<DWORD>();
 
     ReportFatalError->Append((DWORD)result);
@@ -613,7 +621,7 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void *location, void *target, WORD fRelocType, WORD slotNum,  INT32 addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
 {
     repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
 }
@@ -622,43 +630,47 @@ const char* relocationTypeToString(WORD fRelocType)
 {
     switch (fRelocType)
     {
-    // From winnt.h
-    case IMAGE_REL_BASED_ABSOLUTE       : return "absolute";
-    case IMAGE_REL_BASED_HIGH           : return "high";
-    case IMAGE_REL_BASED_LOW            : return "low";
-    case IMAGE_REL_BASED_HIGHLOW        : return "highlow";
-    case IMAGE_REL_BASED_HIGHADJ        : return "highadj";
-    case IMAGE_REL_BASED_DIR64          : return "dir64";
+        // From winnt.h
+        case IMAGE_REL_BASED_ABSOLUTE:
+            return "absolute";
+        case IMAGE_REL_BASED_HIGH:
+            return "high";
+        case IMAGE_REL_BASED_LOW:
+            return "low";
+        case IMAGE_REL_BASED_HIGHLOW:
+            return "highlow";
+        case IMAGE_REL_BASED_HIGHADJ:
+            return "highadj";
+        case IMAGE_REL_BASED_DIR64:
+            return "dir64";
 
-    // From corinfo.h
-    case IMAGE_REL_BASED_REL32          : return "rel32";
-    case IMAGE_REL_BASED_THUMB_BRANCH24 : return "thumb_branch24";
-    default                             : return "UNKNOWN";
+        // From corinfo.h
+        case IMAGE_REL_BASED_REL32:
+            return "rel32";
+        case IMAGE_REL_BASED_THUMB_BRANCH24:
+            return "thumb_branch24";
+        default:
+            return "UNKNOWN";
     }
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
-    printf("RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) slotNum-%u addlDelta-%d",
-        key,
-        value.location,
-        value.target,
-        value.fRelocType,
-        relocationTypeToString((WORD)value.fRelocType),
-        value.slotNum,
-        (INT32)value.addlDelta);
+    printf("RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) slotNum-%u addlDelta-%d", key,
+           value.location, value.target, value.fRelocType, relocationTypeToString((WORD)value.fRelocType),
+           value.slotNum, (INT32)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void *location, void *target, WORD fRelocType, WORD slotNum,  INT32 addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
 {
-    if(RecordRelocation == nullptr)
+    if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
 
     Agnostic_RecordRelocation value;
 
-    value.location = (DWORDLONG)location;
-    value.target = (DWORDLONG)target;
+    value.location   = (DWORDLONG)location;
+    value.target     = (DWORDLONG)target;
     value.fRelocType = (DWORD)fRelocType;
-    value.slotNum = (DWORD)slotNum;
-    value.addlDelta = (DWORD)addlDelta;
+    value.slotNum    = (DWORD)slotNum;
+    value.addlDelta  = (DWORD)addlDelta;
 
     RecordRelocation->Append(value);
 }
@@ -681,25 +693,22 @@ void CompileResult::repRecordRelocation(void *location, void *target, WORD fRelo
 // current section (using originalAddr), assuming we needed a jump stub. We'll let multiple calls to potentially
 // different functions use the same address because even if they used different ones, and diffs were generated,
 // no textual diffs would appear because most of the textual call names are "hackishMethodName".
-void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *originalAddr)
+void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* originalAddr)
 {
-    if(RecordRelocation == nullptr)
+    if (RecordRelocation == nullptr)
         return;
-    if(blocksize1 == 0)
+    if (blocksize1 == 0)
         return;
 
     size_t section_begin = (size_t)block1;
     size_t section_end   = (size_t)block1 + (size_t)blocksize1; // address is exclusive
 
-    LogDebug("applyRelocs block [%p,%p) block size %u, orig addr %p",
-        block1,
-        block1 + blocksize1,
-        blocksize1,
-        originalAddr);
+    LogDebug("applyRelocs block [%p,%p) block size %u, orig addr %p", block1, block1 + blocksize1, blocksize1,
+             originalAddr);
 
-    for(unsigned int i=0;i<RecordRelocation->GetCount();i++)
+    for (unsigned int i = 0; i < RecordRelocation->GetCount(); i++)
     {
-        Agnostic_RecordRelocation tmp  = RecordRelocation->GetRawItems()[i];
+        Agnostic_RecordRelocation tmp = RecordRelocation->GetRawItems()[i];
 
         if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
         {
@@ -710,15 +719,16 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
 
         switch (tmp.fRelocType)
         {
-        #if defined(_TARGET_X86_)
-        case IMAGE_REL_BASED_HIGHLOW:
+#if defined(_TARGET_X86_)
+            case IMAGE_REL_BASED_HIGHLOW:
             {
                 DWORDLONG fixupLocation = tmp.location;
 
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ( (section_begin <= address) && (address < section_end) ) //A reloc for our section?
+                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address, (DWORD)tmp.target);
+                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
+                             (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
                 if (tmp.addlDelta != 0)
@@ -727,131 +737,131 @@ void CompileResult::applyRelocs(unsigned char *block1, ULONG blocksize1, void *o
                     __debugbreak();
             }
             break;
-        #endif // _TARGET_X86_
+#endif // _TARGET_X86_
 
-        #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
-        case IMAGE_REL_BASED_REL32:
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+            case IMAGE_REL_BASED_REL32:
             {
-                DWORDLONG target = tmp.target + tmp.addlDelta;
+                DWORDLONG target        = tmp.target + tmp.addlDelta;
                 DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
-                DWORDLONG baseAddr = fixupLocation + sizeof(INT32);
-                INT64 delta = (INT64)((BYTE *)target - baseAddr);
+                DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
+                INT64     delta         = (INT64)((BYTE*)target - baseAddr);
 
-        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                 if (delta != (INT64)(int)delta)
                 {
                     // This isn't going to fit in a signed 32-bit address. Use something that will fit,
                     // since we assume that original compilation fit fine. This is only an issue for
                     // 32-bit offsets on 64-bit targets.
-                    target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                    INT64 newdelta = (INT64)((BYTE *)target - baseAddr);
+                    target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                    INT64 newdelta = (INT64)((BYTE*)target - baseAddr);
 
-                    LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target, delta, newdelta);
+                    LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
+                             delta, newdelta);
 
                     delta = newdelta;
                 }
-        #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
                 if (delta != (INT64)(int)delta)
                 {
-        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
                     LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
-        #else
+#else
                     LogError("REL32 relocation overflows field! delta=0x%08X", delta);
-        #endif
+#endif
                 }
 
                 // Write 32-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ( (section_begin <= address) && (address < section_end) ) //A reloc for our section?
+                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address, delta);
+                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
+                             delta);
                     *(DWORD*)address = (DWORD)delta;
                 }
             }
             break;
-        #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 
-        #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-        case IMAGE_REL_BASED_DIR64:
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+            case IMAGE_REL_BASED_DIR64:
             {
                 DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
 
                 // Write 64-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ( (section_begin <= address) && (address < section_end) ) //A reloc for our section?
+                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address, *(DWORDLONG*)address, tmp.target);
+                    LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
+                             *(DWORDLONG*)address, tmp.target);
                     *(DWORDLONG*)address = tmp.target;
                 }
             }
             break;
-        #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
-        #ifdef _TARGET_ARM64_
-        case IMAGE_REL_ARM64_BRANCH26:   // 26 bit offset << 2 & sign ext, for B and BL
-        case IMAGE_REL_ARM64_PAGEBASE_REL21:
-        case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-            LogError("Unimplemented reloc type %u", tmp.fRelocType);
-            break;
-        #endif // _TARGET_ARM64_          
+#ifdef _TARGET_ARM64_
+            case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
+            case IMAGE_REL_ARM64_PAGEBASE_REL21:
+            case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                LogError("Unimplemented reloc type %u", tmp.fRelocType);
+                break;
+#endif // _TARGET_ARM64_
 
-        default:
-            LogError("Unknown reloc type %u", tmp.fRelocType);
-            break;
+            default:
+                LogError("Unknown reloc type %u", tmp.fRelocType);
+                break;
         }
     }
 }
 
 void CompileResult::recProcessName(const char* name)
 {
-    if(ProcessName == nullptr)
+    if (ProcessName == nullptr)
         ProcessName = new DenseLightWeightMap<DWORD>();
 
     DWORD index = (DWORD)-1;
-    if(name != nullptr)
-        index = (DWORD)ProcessName->AddBuffer((unsigned char*)name, (DWORD)strlen(name)+1);
+    if (name != nullptr)
+        index = (DWORD)ProcessName->AddBuffer((unsigned char*)name, (DWORD)strlen(name) + 1);
 
     ProcessName->Append(index);
 }
 void CompileResult::dmpProcessName(DWORD key, DWORD value)
 {
-    const char *procName = (const char *)ProcessName->GetBuffer(value);
+    const char* procName = (const char*)ProcessName->GetBuffer(value);
     printf("ProcessName key %u, value '%s'", key, procName);
     ProcessName->Unlock();
 }
-const char *CompileResult::repProcessName()
+const char* CompileResult::repProcessName()
 {
-    if(ProcessName == nullptr)
+    if (ProcessName == nullptr)
         return "hackishProcessName";
 
-    if(ProcessName->GetCount()>0)
+    if (ProcessName->GetCount() > 0)
     {
         return (const char*)ProcessName->GetBuffer(ProcessName->Get((DWORD)0));
     }
     return nullptr;
 }
 
-void CompileResult::recAddressMap(void *originalAddress, void *replayAddress, unsigned int size)
+void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, unsigned int size)
 {
-    if(AddressMap == nullptr)
+    if (AddressMap == nullptr)
         AddressMap = new LightWeightMap<DWORDLONG, Agnostic_AddressMap>();
 
     Agnostic_AddressMap value;
 
     value.Address = (DWORDLONG)originalAddress;
-    value.size = (DWORD)size;
+    value.size    = (DWORD)size;
 
     AddressMap->Add((DWORDLONG)replayAddress, value);
 }
 void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
 {
-    printf("AddressMap key %016llX, value addr-%016llX, size-%u",
-        key,
-        value.Address,
-        value.size);
+    printf("AddressMap key %016llX, value addr-%016llX, size-%u", key, value.Address, value.size);
 }
-void* CompileResult::repAddressMap(void *replayAddress)
+void* CompileResult::repAddressMap(void* replayAddress)
 {
     if (AddressMap == nullptr)
         return nullptr;
@@ -859,28 +869,28 @@ void* CompileResult::repAddressMap(void *replayAddress)
     value = AddressMap->Get((DWORDLONG)replayAddress);
     return (void*)value.Address;
 }
-void *CompileResult::searchAddressMap(void *newAddress)
+void* CompileResult::searchAddressMap(void* newAddress)
 {
-    if(AddressMap==nullptr)
+    if (AddressMap == nullptr)
         return (void*)-1;
-    for(unsigned int i=0;i<AddressMap->GetCount();i++)
+    for (unsigned int i = 0; i < AddressMap->GetCount(); i++)
     {
-        DWORDLONG replayAddress = AddressMap->GetRawKeys()[i];
-        Agnostic_AddressMap value = AddressMap->Get(replayAddress);
-        if((replayAddress<=(DWORDLONG)newAddress)&&((DWORDLONG)newAddress<(replayAddress+value.size)))
-                return (void *)(value.Address+((DWORDLONG)newAddress-replayAddress));
+        DWORDLONG           replayAddress = AddressMap->GetRawKeys()[i];
+        Agnostic_AddressMap value         = AddressMap->Get(replayAddress);
+        if ((replayAddress <= (DWORDLONG)newAddress) && ((DWORDLONG)newAddress < (replayAddress + value.size)))
+            return (void*)(value.Address + ((DWORDLONG)newAddress - replayAddress));
     }
     return (void*)-1;
 }
 
 void CompileResult::recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
 {
-    if(ReserveUnwindInfo == nullptr)
+    if (ReserveUnwindInfo == nullptr)
         ReserveUnwindInfo = new DenseLightWeightMap<Agnostic_ReserveUnwindInfo>();
 
     Agnostic_ReserveUnwindInfo value;
 
-    value.isFunclet = (DWORD)isFunclet;
+    value.isFunclet  = (DWORD)isFunclet;
     value.isColdCode = (DWORD)isColdCode;
     value.unwindSize = (DWORD)unwindSize;
 
@@ -888,102 +898,90 @@ void CompileResult::recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG 
 }
 void CompileResult::dmpReserveUnwindInfo(DWORD key, const Agnostic_ReserveUnwindInfo& value)
 {
-    printf("ReserveUnwindInfo key %u, value isFun-%u isCold-%u usz-%u",
-        key, value.isFunclet, value.isColdCode, value.unwindSize);
+    printf("ReserveUnwindInfo key %u, value isFun-%u isCold-%u usz-%u", key, value.isFunclet, value.isColdCode,
+           value.unwindSize);
 }
 
-void CompileResult::recAllocUnwindInfo(BYTE *pHotCode, BYTE *pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE *pUnwindBlock,
-    CorJitFuncKind funcKind)
+void CompileResult::recAllocUnwindInfo(BYTE*          pHotCode,
+                                       BYTE*          pColdCode,
+                                       ULONG          startOffset,
+                                       ULONG          endOffset,
+                                       ULONG          unwindSize,
+                                       BYTE*          pUnwindBlock,
+                                       CorJitFuncKind funcKind)
 {
-    if(AllocUnwindInfo == nullptr)
+    if (AllocUnwindInfo == nullptr)
         AllocUnwindInfo = new DenseLightWeightMap<Agnostic_AllocUnwindInfo>();
 
     Agnostic_AllocUnwindInfo value;
-    value.pHotCode = (DWORDLONG)pHotCode;
-    value.pColdCode = (DWORDLONG)pColdCode;
-    value.startOffset = (DWORD)startOffset;
-    value.endOffset = (DWORD)endOffset;
-    value.unwindSize = (DWORD)unwindSize;
+    value.pHotCode           = (DWORDLONG)pHotCode;
+    value.pColdCode          = (DWORDLONG)pColdCode;
+    value.startOffset        = (DWORD)startOffset;
+    value.endOffset          = (DWORD)endOffset;
+    value.unwindSize         = (DWORD)unwindSize;
     value.pUnwindBlock_index = AllocUnwindInfo->AddBuffer((unsigned char*)pUnwindBlock, unwindSize);
-    value.funcKind = funcKind;
+    value.funcKind           = funcKind;
 
     AllocUnwindInfo->Append(value);
 }
 void CompileResult::dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo& value)
 {
-    printf("AllocUnwindInfo key %u, value pHot-%016llX pCold-%016llX startOff-%u endOff-%u unwindSz-%u blki-%u funcKind-%u",
-        key,
-        value.pHotCode,
-        value.pColdCode,
-        value.startOffset,
-        value.endOffset,
-        value.unwindSize,
-        value.pUnwindBlock_index,
-        value.funcKind);
+    printf("AllocUnwindInfo key %u, value pHot-%016llX pCold-%016llX startOff-%u endOff-%u unwindSz-%u blki-%u "
+           "funcKind-%u",
+           key, value.pHotCode, value.pColdCode, value.startOffset, value.endOffset, value.unwindSize,
+           value.pUnwindBlock_index, value.funcKind);
 }
 
-void CompileResult::recAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer **profileBuffer, HRESULT result)
+void CompileResult::recAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer** profileBuffer, HRESULT result)
 {
-    if(AllocBBProfileBuffer == nullptr)
-        AllocBBProfileBuffer=new LightWeightMap<DWORD, Agnostic_AllocBBProfileBuffer>();
+    if (AllocBBProfileBuffer == nullptr)
+        AllocBBProfileBuffer = new LightWeightMap<DWORD, Agnostic_AllocBBProfileBuffer>();
 
     Agnostic_AllocBBProfileBuffer value;
 
-    value.count = (DWORD)count;
+    value.count  = (DWORD)count;
     value.result = (DWORD)result;
-    value.profileBuffer_index = AllocBBProfileBuffer->AddBuffer((unsigned char*)*profileBuffer, count * sizeof(ICorJitInfo::ProfileBuffer));
+    value.profileBuffer_index =
+        AllocBBProfileBuffer->AddBuffer((unsigned char*)*profileBuffer, count * sizeof(ICorJitInfo::ProfileBuffer));
 
     AllocBBProfileBuffer->Add((DWORD)0, value);
 }
 void CompileResult::dmpAllocBBProfileBuffer(DWORD key, const Agnostic_AllocBBProfileBuffer& value)
 {
-    printf("AllocBBProfileBuffer key %u, value cnt-%u ind-%u res-%08X",
-        key,
-        value.count,
-        value.profileBuffer_index,
-        value.result);
+    printf("AllocBBProfileBuffer key %u, value cnt-%u ind-%u res-%08X", key, value.count, value.profileBuffer_index,
+           value.result);
 }
-HRESULT CompileResult::repAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer **profileBuffer)
+HRESULT CompileResult::repAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer** profileBuffer)
 {
     Agnostic_AllocBBProfileBuffer value;
     value = AllocBBProfileBuffer->Get((DWORD)0);
 
-    if(count != value.count)
+    if (count != value.count)
         __debugbreak();
 
     HRESULT result = (HRESULT)value.result;
-    *profileBuffer = (ICorJitInfo::ProfileBuffer *)AllocBBProfileBuffer->GetBuffer(value.profileBuffer_index);
-    recAddressMap((void*)0x4242, (void*)*profileBuffer,  count *(sizeof(ICorJitInfo::ProfileBuffer)));
+    *profileBuffer = (ICorJitInfo::ProfileBuffer*)AllocBBProfileBuffer->GetBuffer(value.profileBuffer_index);
+    recAddressMap((void*)0x4242, (void*)*profileBuffer, count * (sizeof(ICorJitInfo::ProfileBuffer)));
     return result;
 }
 
-void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORINFO_METHOD_HANDLE methodHandle)
+void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
     repRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
 void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& value)
 {
-    printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
-        key,
-        value.callSig.callConv,
-        value.callSig.retTypeClass,
-        value.callSig.retTypeSigClass,
-        value.callSig.retType,
-        value.callSig.flags,
-        value.callSig.numArgs,
-        value.callSig.sigInst_classInstCount,
-        value.callSig.sigInst_classInst_Index,
-        value.callSig.sigInst_methInstCount,
-        value.callSig.sigInst_methInst_Index,
-        value.callSig.cbSig,
-        value.callSig.pSig,
-        value.callSig.scope,
-        value.callSig.token,
-        value.methodHandle);
+    printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u "
+           "sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
+           key, value.callSig.callConv, value.callSig.retTypeClass, value.callSig.retTypeSigClass,
+           value.callSig.retType, value.callSig.flags, value.callSig.numArgs, value.callSig.sigInst_classInstCount,
+           value.callSig.sigInst_classInst_Index, value.callSig.sigInst_methInstCount,
+           value.callSig.sigInst_methInst_Index, value.callSig.cbSig, value.callSig.pSig, value.callSig.scope,
+           value.callSig.token, value.methodHandle);
 }
 
-void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORINFO_METHOD_HANDLE methodHandle)
+void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
     if (RecordCallSite == nullptr)
         RecordCallSite = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
@@ -993,39 +991,43 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callS
 
     if (callSig != nullptr)
     {
-        value.callSig.callConv = (DWORD)callSig->callConv;
-        value.callSig.retTypeClass = (DWORDLONG)callSig->retTypeClass;
-        value.callSig.retTypeSigClass = (DWORDLONG)callSig->retTypeSigClass;
-        value.callSig.retType = (DWORD)callSig->retType;
-        value.callSig.flags = (DWORD)callSig->flags;
-        value.callSig.numArgs = (DWORD)callSig->numArgs;
+        value.callSig.callConv               = (DWORD)callSig->callConv;
+        value.callSig.retTypeClass           = (DWORDLONG)callSig->retTypeClass;
+        value.callSig.retTypeSigClass        = (DWORDLONG)callSig->retTypeSigClass;
+        value.callSig.retType                = (DWORD)callSig->retType;
+        value.callSig.flags                  = (DWORD)callSig->flags;
+        value.callSig.numArgs                = (DWORD)callSig->numArgs;
         value.callSig.sigInst_classInstCount = (DWORD)callSig->sigInst.classInstCount;
-        value.callSig.sigInst_classInst_Index = RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.classInst, callSig->sigInst.classInstCount*8); // porting issue
+        value.callSig.sigInst_classInst_Index =
+            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.classInst,
+                                      callSig->sigInst.classInstCount * 8); // porting issue
         value.callSig.sigInst_methInstCount = (DWORD)callSig->sigInst.methInstCount;
-        value.callSig.sigInst_methInst_Index = RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.methInst, callSig->sigInst.methInstCount*8); // porting issue
-        value.callSig.args = (DWORDLONG)callSig->args;
+        value.callSig.sigInst_methInst_Index =
+            RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.methInst,
+                                      callSig->sigInst.methInstCount * 8); // porting issue
+        value.callSig.args  = (DWORDLONG)callSig->args;
         value.callSig.cbSig = (DWORD)callSig->cbSig;
-        value.callSig.pSig = (DWORD)RecordCallSite->AddBuffer((unsigned char *)callSig->pSig, callSig->cbSig);
+        value.callSig.pSig  = (DWORD)RecordCallSite->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
         value.callSig.scope = (DWORDLONG)callSig->scope;
         value.callSig.token = (DWORD)callSig->token;
     }
     else
     {
-        value.callSig.callConv = (DWORD)-1;
-        value.callSig.retTypeClass = (DWORDLONG)-1;
-        value.callSig.retTypeSigClass = (DWORDLONG)-1;
-        value.callSig.retType = (DWORD)-1;
-        value.callSig.flags = (DWORD)-1;
-        value.callSig.numArgs = (DWORD)-1;
-        value.callSig.sigInst_classInstCount = (DWORD)-1;
+        value.callSig.callConv                = (DWORD)-1;
+        value.callSig.retTypeClass            = (DWORDLONG)-1;
+        value.callSig.retTypeSigClass         = (DWORDLONG)-1;
+        value.callSig.retType                 = (DWORD)-1;
+        value.callSig.flags                   = (DWORD)-1;
+        value.callSig.numArgs                 = (DWORD)-1;
+        value.callSig.sigInst_classInstCount  = (DWORD)-1;
         value.callSig.sigInst_classInst_Index = (DWORD)-1;
-        value.callSig.sigInst_methInstCount = (DWORD)-1;
-        value.callSig.sigInst_methInst_Index = (DWORD)-1;
-        value.callSig.args = (DWORDLONG)-1;
-        value.callSig.cbSig = (DWORD)-1;
-        value.callSig.pSig = (DWORD)-1;
-        value.callSig.scope = (DWORDLONG)-1;
-        value.callSig.token = (DWORD)-1;
+        value.callSig.sigInst_methInstCount   = (DWORD)-1;
+        value.callSig.sigInst_methInst_Index  = (DWORD)-1;
+        value.callSig.args                    = (DWORDLONG)-1;
+        value.callSig.cbSig                   = (DWORD)-1;
+        value.callSig.pSig                    = (DWORD)-1;
+        value.callSig.scope                   = (DWORDLONG)-1;
+        value.callSig.token                   = (DWORD)-1;
     }
 
     value.methodHandle = (DWORDLONG)methodHandle;
@@ -1033,7 +1035,7 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callS
     RecordCallSite->Add(instrOffset, value);
 }
 
-bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO *pCallSig)
+bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig)
 {
     if (RecordCallSite == nullptr)
         return false;
@@ -1046,26 +1048,27 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == -1)
         return false;
 
-    pCallSig->callConv = (CorInfoCallConv)value.callSig.callConv;
-    pCallSig->retTypeClass = (CORINFO_CLASS_HANDLE)value.callSig.retTypeClass;
-    pCallSig->retTypeSigClass = (CORINFO_CLASS_HANDLE)value.callSig.retTypeSigClass;
-    pCallSig->retType = (CorInfoType)value.callSig.retType;
-    pCallSig->flags = (unsigned)value.callSig.flags;
-    pCallSig->numArgs = (unsigned)value.callSig.numArgs;
+    pCallSig->callConv               = (CorInfoCallConv)value.callSig.callConv;
+    pCallSig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.callSig.retTypeClass;
+    pCallSig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.callSig.retTypeSigClass;
+    pCallSig->retType                = (CorInfoType)value.callSig.retType;
+    pCallSig->flags                  = (unsigned)value.callSig.flags;
+    pCallSig->numArgs                = (unsigned)value.callSig.numArgs;
     pCallSig->sigInst.classInstCount = (unsigned)value.callSig.sigInst_classInstCount;
-    pCallSig->sigInst.classInst = (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_classInst_Index);
+    pCallSig->sigInst.classInst =
+        (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_classInst_Index);
     pCallSig->sigInst.methInstCount = (unsigned)value.callSig.sigInst_methInstCount;
     pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_methInst_Index);
-    pCallSig->args = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
-    pCallSig->cbSig = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig);
-    pCallSig->scope = (CORINFO_MODULE_HANDLE)value.callSig.scope;
-    pCallSig->token = (mdToken)value.callSig.token;
+    pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
+    pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
+    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig);
+    pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
+    pCallSig->token            = (mdToken)value.callSig.token;
 
     return true;
 }
 
-bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE *pMethodHandle)
+bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle)
 {
     if (RecordCallSite == nullptr)
         return false;
@@ -1074,7 +1077,7 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
         return false;
 
     Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
-    *pMethodHandle = (CORINFO_METHOD_HANDLE)value.methodHandle;
+    *pMethodHandle                = (CORINFO_METHOD_HANDLE)value.methodHandle;
 
     return true;
 }

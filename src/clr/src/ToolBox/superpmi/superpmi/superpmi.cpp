@@ -52,37 +52,35 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 
 // This function uses PAL_TRY, so it can't be in the a function that requires object unwinding. Extracting it out here
 // avoids compiler error.
-//      
-void InvokeNearDiffer(
-    NearDiffer*             nearDiffer,
-    CommandLine::Options*   o,
-    MethodContext**         mc,
-    CompileResult**         crl,
-    int*                    matchCount,
-    MethodContextReader**   reader,
-    MCList*                 failingMCL,
-    MCList*                 diffMCL
-    )
+//
+void InvokeNearDiffer(NearDiffer*           nearDiffer,
+                      CommandLine::Options* o,
+                      MethodContext**       mc,
+                      CompileResult**       crl,
+                      int*                  matchCount,
+                      MethodContextReader** reader,
+                      MCList*               failingMCL,
+                      MCList*               diffMCL)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
-        NearDiffer*             nearDiffer;
-        CommandLine::Options*   o;
-        MethodContext**         mc;
-        CompileResult**         crl;
-        int*                    matchCount;
-        MethodContextReader**   reader;
-        MCList*                 failingMCL;
-        MCList*                 diffMCL;
+        NearDiffer*           nearDiffer;
+        CommandLine::Options* o;
+        MethodContext**       mc;
+        CompileResult**       crl;
+        int*                  matchCount;
+        MethodContextReader** reader;
+        MCList*               failingMCL;
+        MCList*               diffMCL;
     } param;
     param.nearDiffer = nearDiffer;
-    param.o = o;
-    param.mc = mc;
-    param.crl = crl;
+    param.o          = o;
+    param.mc         = mc;
+    param.crl        = crl;
     param.matchCount = matchCount;
-    param.reader = reader;
+    param.reader     = reader;
     param.failingMCL = failingMCL;
-    param.diffMCL = diffMCL;
+    param.diffMCL    = diffMCL;
 
     PAL_TRY(Param*, pParam, &param)
     {
@@ -92,12 +90,12 @@ void InvokeNearDiffer(
         }
         else
         {
-            LogIssue(ISSUE_ASM_DIFF,
-                "main method %d of size %d differs", (*pParam->reader)->GetMethodContextIndex(), (*pParam->mc)->methodSize);
+            LogIssue(ISSUE_ASM_DIFF, "main method %d of size %d differs", (*pParam->reader)->GetMethodContextIndex(),
+                     (*pParam->mc)->methodSize);
 
-            //This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
-            //We will add this MC to the diffMCList if one is requested
-            //Otherwise this will end up in failingMCList
+            // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
+             //We will add this MC to the diffMCList if one is requested
+             //Otherwise this will end up in failingMCList
             if ((*pParam->o).diffMCLFilename != nullptr)
                 (*pParam->diffMCL).AddMethodToMCL((*pParam->reader)->GetMethodContextIndex());
             else if ((*pParam->o).mclFilename != nullptr)
@@ -109,7 +107,7 @@ void InvokeNearDiffer(
         SpmiException e(&param.exceptionPointers);
 
         LogError("main method %d of size %d failed to load and compile correctly. EnvCnt=%d",
-            (*reader)->GetMethodContextIndex(), (*mc)->methodSize, (*mc)->repEnvironmentGetCount());
+                 (*reader)->GetMethodContextIndex(), (*mc)->methodSize, (*mc)->repEnvironmentGetCount());
         e.ShowAndDeleteMessage();
         if ((*o).mclFilename != nullptr)
             (*failingMCL).AddMethodToMCL((*reader)->GetMethodContextIndex());
@@ -141,13 +139,13 @@ int __cdecl main(int argc, char* argv[])
     SimpleTimer st4;
     st2.Start();
     JitInstance::Result res, res2;
-    HRESULT hr = E_FAIL;
-    MethodContext *mc = nullptr;
-    JitInstance *jit = nullptr, *jit2 = nullptr;
-    MethodStatsEmitter *methodStatsEmitter = nullptr;
+    HRESULT             hr  = E_FAIL;
+    MethodContext*      mc  = nullptr;
+    JitInstance *       jit = nullptr, *jit2 = nullptr;
+    MethodStatsEmitter* methodStatsEmitter = nullptr;
 
 #ifdef SuperPMI_ChewMemory
-    //Chew up the base 2gb of memory on x86... helpful in finding any places where classhandles etc are de-ref'd
+    // Chew up the base 2gb of memory on x86... helpful in finding any places where classhandles etc are de-ref'd
     SYSTEM_INFO sSysInfo;
     GetSystemInfo(&sSysInfo);
 
@@ -159,7 +157,7 @@ int __cdecl main(int argc, char* argv[])
     } while ((size_t)lpvAddr < SuperPMI_ChewMemory);
 #endif
 
-    bool collectThroughput = false;
+    bool   collectThroughput = false;
     MCList failingMCL, diffMCL;
 
     CommandLine::Options o;
@@ -175,7 +173,9 @@ int __cdecl main(int argc, char* argv[])
 
     SetSuperPmiTargetArchitecture(o.targetArchitecture);
 
-    if (o.methodStatsTypes != NULL && (strchr(o.methodStatsTypes, '*') != NULL || strchr(o.methodStatsTypes, 't') != NULL || strchr(o.methodStatsTypes, 'T') != NULL))
+    if (o.methodStatsTypes != NULL &&
+        (strchr(o.methodStatsTypes, '*') != NULL || strchr(o.methodStatsTypes, 't') != NULL ||
+         strchr(o.methodStatsTypes, 'T') != NULL))
     {
         collectThroughput = true;
     }
@@ -222,7 +222,8 @@ int __cdecl main(int argc, char* argv[])
 
     // The method context reader handles skipping any unrequested method contexts
     // Used in conjunction with an MCI file, it does a lot less work...
-    MethodContextReader *reader = new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
+    MethodContextReader* reader =
+        new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
     if (!reader->isValid())
     {
         return -1;
@@ -230,13 +231,13 @@ int __cdecl main(int argc, char* argv[])
 
     int loadedCount = 0;
     int jittedCount = 0;
-    int matchCount = 0;
-    int failCount = 0;
-    int index = 0;
+    int matchCount  = 0;
+    int failCount   = 0;
+    int index       = 0;
 
     st1.Start();
     NearDiffer nearDiffer(o.targetArchitecture, o.useCoreDisTools);
-    
+
     if (o.applyDiff)
     {
         nearDiffer.InitAsmDiff();
@@ -260,21 +261,14 @@ int __cdecl main(int argc, char* argv[])
             if (o.applyDiff)
             {
                 LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Matching %d  FailedCompile %d at %d per second",
-                    reader->PercentComplete(),
-                    loadedCount,
-                    jittedCount,
-                    matchCount,
-                    failCount,
-                    (int)((double)500 / st1.GetSeconds()));
+                           reader->PercentComplete(), loadedCount, jittedCount, matchCount, failCount,
+                           (int)((double)500 / st1.GetSeconds()));
             }
             else
             {
                 LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  FailedCompile %d at %d per second",
-                    reader->PercentComplete(),
-                    loadedCount,
-                    jittedCount,
-                    failCount,
-                    (int)((double)500 / st1.GetSeconds()));
+                           reader->PercentComplete(), loadedCount, jittedCount, failCount,
+                           (int)((double)500 / st1.GetSeconds()));
             }
             st1.Start();
         }
@@ -311,9 +305,9 @@ int __cdecl main(int argc, char* argv[])
         // Here is my guess based on reading the code so far
         // crl initially contains the CompileResult from the MCH file
         // However if we have a second jit it has the CompileResult from Jit1
-        CompileResult *crl = mc->cr;
+        CompileResult* crl = mc->cr;
 
-        mc->cr = new CompileResult();
+        mc->cr         = new CompileResult();
         mc->originalCR = crl;
 
         jittedCount++;
@@ -332,13 +326,14 @@ int __cdecl main(int argc, char* argv[])
             // Lets get the results for the 2nd JIT
             // We will save the first JIT's CR to save space for the 2nd JIT CR
             // Note that the recorded CR is still stored in MC->originalCR
-            crl = mc->cr;
+            crl    = mc->cr;
             mc->cr = new CompileResult();
 
             st4.Start();
             res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
             st4.Stop();
-            LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(), st4.GetMilliseconds(), res2);
+            LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
+                     st4.GetMilliseconds(), res2);
 
             if ((res2 == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
             {
@@ -348,14 +343,13 @@ int __cdecl main(int argc, char* argv[])
             if (res2 == JitInstance::RESULT_ERROR)
             {
                 LogError("JIT2 main method %d of size %d failed to load and compile correctly. EnvCnt=%d",
-                    reader->GetMethodContextIndex(), mc->methodSize, mc->repEnvironmentGetCount());
+                         reader->GetMethodContextIndex(), mc->methodSize, mc->repEnvironmentGetCount());
             }
 
             // Methods that don't compile due to missing JIT-EE information
             // should still be added to the failing MC list.
             // However, we will not add this MC# if JIT1 also failed, Else there will be duplicate logging
-            if ((res == JitInstance::RESULT_SUCCESS) &&
-                (res2 != JitInstance::RESULT_SUCCESS) &&
+            if ((res == JitInstance::RESULT_SUCCESS) && (res2 != JitInstance::RESULT_SUCCESS) &&
                 (o.mclFilename != nullptr))
             {
                 failingMCL.AddMethodToMCL(reader->GetMethodContextIndex());
@@ -368,7 +362,7 @@ int __cdecl main(int argc, char* argv[])
             {
                 if (o.nameOfJit2 != nullptr && res2 == JitInstance::RESULT_SUCCESS)
                 {
-                    //TODO-Bug?: bug in getting the lowest cycle time??
+                    // TODO-Bug?: bug in getting the lowest cycle time??
                     ULONGLONG dif1, dif2, dif3, dif4;
                     dif1 = (jit->times[0] - jit2->times[0]) * (jit->times[0] - jit2->times[0]);
                     dif2 = (jit->times[0] - jit2->times[1]) * (jit->times[0] - jit2->times[1]);
@@ -381,12 +375,12 @@ int __cdecl main(int argc, char* argv[])
                         {
                             if (dif1 < dif3)
                             {
-                                crl->clockCyclesToCompile = jit->times[0];
+                                crl->clockCyclesToCompile    = jit->times[0];
                                 mc->cr->clockCyclesToCompile = jit2->times[0];
                             }
                             else
                             {
-                                crl->clockCyclesToCompile = jit->times[1];
+                                crl->clockCyclesToCompile    = jit->times[1];
                                 mc->cr->clockCyclesToCompile = jit2->times[0];
                             }
                         }
@@ -394,12 +388,12 @@ int __cdecl main(int argc, char* argv[])
                         {
                             if (dif1 < dif4)
                             {
-                                crl->clockCyclesToCompile = jit->times[0];
+                                crl->clockCyclesToCompile    = jit->times[0];
                                 mc->cr->clockCyclesToCompile = jit2->times[0];
                             }
                             else
                             {
-                                crl->clockCyclesToCompile = jit->times[1];
+                                crl->clockCyclesToCompile    = jit->times[1];
                                 mc->cr->clockCyclesToCompile = jit2->times[1];
                             }
                         }
@@ -410,12 +404,12 @@ int __cdecl main(int argc, char* argv[])
                         {
                             if (dif2 < dif3)
                             {
-                                crl->clockCyclesToCompile = jit->times[0];
+                                crl->clockCyclesToCompile    = jit->times[0];
                                 mc->cr->clockCyclesToCompile = jit2->times[1];
                             }
                             else
                             {
-                                crl->clockCyclesToCompile = jit->times[1];
+                                crl->clockCyclesToCompile    = jit->times[1];
                                 mc->cr->clockCyclesToCompile = jit2->times[0];
                             }
                         }
@@ -423,12 +417,12 @@ int __cdecl main(int argc, char* argv[])
                         {
                             if (dif2 < dif4)
                             {
-                                crl->clockCyclesToCompile = jit->times[0];
+                                crl->clockCyclesToCompile    = jit->times[0];
                                 mc->cr->clockCyclesToCompile = jit2->times[1];
                             }
                             else
                             {
-                                crl->clockCyclesToCompile = jit->times[1];
+                                crl->clockCyclesToCompile    = jit->times[1];
                                 mc->cr->clockCyclesToCompile = jit2->times[1];
                             }
                         }
@@ -436,7 +430,8 @@ int __cdecl main(int argc, char* argv[])
 
                     if (methodStatsEmitter != nullptr)
                     {
-                        methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, crl->clockCyclesToCompile, mc->cr->clockCyclesToCompile);
+                        methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, crl->clockCyclesToCompile,
+                                                 mc->cr->clockCyclesToCompile);
                     }
                 }
                 else
@@ -454,7 +449,7 @@ int __cdecl main(int argc, char* argv[])
 
             if (!collectThroughput && methodStatsEmitter != nullptr)
             {
-                //We have a separate call to Emit for collectThroughput
+                // We have a separate call to Emit for collectThroughput
                 methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, -1, -1);
             }
 
@@ -466,7 +461,8 @@ int __cdecl main(int argc, char* argv[])
                 // We need to check both CompileResults to ensure we have a valid CR
                 if (crl->AllocMem == nullptr || mc->cr->AllocMem == nullptr)
                 {
-                    LogError("method %d is missing a compileResult, cannot do diffing", reader->GetMethodContextIndex());
+                    LogError("method %d is missing a compileResult, cannot do diffing",
+                             reader->GetMethodContextIndex());
 
                     // If we are here this means that either we have 2 Jits and the second Jit failed to compile
                     // Or we have single Jit and the MethodContext doesn't have an originalCR
@@ -489,12 +485,14 @@ int __cdecl main(int argc, char* argv[])
             // to, for instance, failures caused by missing JIT-EE details).
             if (res == JitInstance::RESULT_ERROR)
             {
-                LogError("main method %d of size %d failed to load and compile correctly. EnvCnt=%d", reader->GetMethodContextIndex(), mc->methodSize, mc->repEnvironmentGetCount());
+                LogError("main method %d of size %d failed to load and compile correctly. EnvCnt=%d",
+                         reader->GetMethodContextIndex(), mc->methodSize, mc->repEnvironmentGetCount());
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
                 {
                     char buff[500];
                     sprintf_s(buff, 500, "%s-%d.mc", o.reproName, reader->GetMethodContextIndex());
-                    HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+                    HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
                     if (hFileOut == INVALID_HANDLE_VALUE)
                     {
                         LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
@@ -527,7 +525,8 @@ int __cdecl main(int argc, char* argv[])
     // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
     if (o.applyDiff)
     {
-        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failCount, jittedCount - failCount - matchCount);
+        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failCount,
+                jittedCount - failCount - matchCount);
 
         if (matchCount != jittedCount)
         {

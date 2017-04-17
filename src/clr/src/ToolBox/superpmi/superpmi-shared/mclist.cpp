@@ -11,14 +11,14 @@
 #include "mclist.h"
 #include "logging.h"
 
-bool MCList::processArgAsMCL(char *input, int *count, int **list)
+bool MCList::processArgAsMCL(char* input, int* count, int** list)
 {
     // If it contains only '0-9', '-', ',' try to see it as a range list, else try to load as a file
     bool isRangeList = true;
 
     size_t len = strlen(input);
 
-    for (unsigned int i=0; (i < len) && isRangeList; i++)
+    for (unsigned int i = 0; (i < len) && isRangeList; i++)
     {
         if ((input[i] != '-') && (input[i] != ',') && (!isdigit((unsigned char)input[i])))
             isRangeList = false;
@@ -26,36 +26,36 @@ bool MCList::processArgAsMCL(char *input, int *count, int **list)
 
     if (isRangeList)
     {
-        //Count items
-        *count = 0;
+        // Count items
+        *count              = 0;
         unsigned rangeStart = 0;
-        bool inRange = false;
-        unsigned scratch = 0;
-        bool foundDigit = false;
+        bool     inRange    = false;
+        unsigned scratch    = 0;
+        bool     foundDigit = false;
 
-        char *tail = input+len;
+        char* tail = input + len;
 
-        for(char* head = input; head <= tail; head++)
+        for (char* head = input; head <= tail; head++)
         {
-            scratch = 0;
+            scratch    = 0;
             foundDigit = false;
-            while((head<=tail)&&(isdigit((unsigned char)*head)))
+            while ((head <= tail) && (isdigit((unsigned char)*head)))
             {
-                scratch = (scratch*10)+((*head)-'0');
+                scratch    = (scratch * 10) + ((*head) - '0');
                 foundDigit = true;
                 head++;
             }
-            if(foundDigit)
+            if (foundDigit)
             {
-                if(inRange)
+                if (inRange)
                 {
                     inRange = false;
-                    if(rangeStart>=scratch)
+                    if (rangeStart >= scratch)
                     {
                         LogError("Invalid range in '%s'", input);
                         return false;
                     }
-                    (*count) += scratch-rangeStart;
+                    (*count) += scratch - rangeStart;
                 }
                 else
                 {
@@ -63,7 +63,7 @@ bool MCList::processArgAsMCL(char *input, int *count, int **list)
                     (*count)++;
                 }
             }
-            if(*head == '-')
+            if (*head == '-')
                 inRange = true;
         }
 
@@ -73,42 +73,42 @@ bool MCList::processArgAsMCL(char *input, int *count, int **list)
             return false;
         }
 
-        inRange = false;
+        inRange    = false;
         rangeStart = 0;
 
-        int *ll = new int[*count];
-        *list = ll;
+        int* ll   = new int[*count];
+        *list     = ll;
         int index = 0;
         ll[index] = 0;
 
-        for(char* head = input; head <= tail; head++)
+        for (char* head = input; head <= tail; head++)
         {
-            scratch = 0;
+            scratch    = 0;
             foundDigit = false;
-            while((head<=tail)&&(isdigit((unsigned char)*head)))
+            while ((head <= tail) && (isdigit((unsigned char)*head)))
             {
-                scratch = (scratch*10)+((*head)-'0');
+                scratch    = (scratch * 10) + ((*head) - '0');
                 foundDigit = true;
                 head++;
             }
-            if(foundDigit)
+            if (foundDigit)
             {
-                if(inRange)
+                if (inRange)
                 {
                     inRange = false;
-                    for(unsigned int i=rangeStart+1;i<=scratch;i++)
-                        ll[index++] = i;
+                    for (unsigned int i = rangeStart + 1; i <= scratch; i++)
+                        ll[index++]     = i;
                 }
                 else
                 {
-                    rangeStart = scratch;
+                    rangeStart  = scratch;
                     ll[index++] = scratch;
                 }
             }
-            if(*head == '-')
+            if (*head == '-')
                 inRange = true;
         }
-        if(inRange)
+        if (inRange)
         {
             LogError("Found invalid external range in '%s'", input);
             return false;
@@ -117,10 +117,10 @@ bool MCList::processArgAsMCL(char *input, int *count, int **list)
     }
     else
     {
-        char *lastdot = strrchr(input,'.');
-        if(lastdot != nullptr && _stricmp(lastdot, ".mcl")==0)
+        char* lastdot = strrchr(input, '.');
+        if (lastdot != nullptr && _stricmp(lastdot, ".mcl") == 0)
         {
-            //Read MCLFile
+            // Read MCLFile
             if (!getLineData(input, count, list))
                 return false;
             if (*count >= 0)
@@ -129,8 +129,8 @@ bool MCList::processArgAsMCL(char *input, int *count, int **list)
         return false;
     }
 
-checkMCL: //check that mcl list is increasing only
-    int *ll = (*list);
+checkMCL: // check that mcl list is increasing only
+    int* ll = (*list);
     if (ll[0] == 0)
     {
         LogError("MCL list needs to start from 1!");
@@ -138,7 +138,7 @@ checkMCL: //check that mcl list is increasing only
     }
     for (int i = 1; i < *count; i++)
     {
-        if (ll[i-1] >= ll[i])
+        if (ll[i - 1] >= ll[i])
         {
             LogError("MCL list must be increasing.. found %d -> %d", ll[i - 1], ll[i]);
             return false;
@@ -148,12 +148,13 @@ checkMCL: //check that mcl list is increasing only
 }
 
 // Returns true on success, false on failure.
-// On success, sets *pIndexCount to the number of indices read, and *pIndexes to a new array with all the indices read. The caller must
-// free the memory with delete[].
+// On success, sets *pIndexCount to the number of indices read, and *pIndexes to a new array with all the indices read.
+// The caller must free the memory with delete[].
 /* static */
-bool MCList::getLineData(const char *nameOfInput, /* OUT */ int *pIndexCount, /* OUT */ int **pIndexes)
+bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes)
 {
-    HANDLE hFile = CreateFileA(nameOfInput, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    HANDLE hFile = CreateFileA(nameOfInput, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         LogError("Unable to open '%s'. GetLastError()=%u", nameOfInput, GetLastError());
@@ -172,7 +173,7 @@ bool MCList::getLineData(const char *nameOfInput, /* OUT */ int *pIndexCount, /*
         return false;
     }
 
-    int sz = DataTemp.u.LowPart;
+    int   sz   = DataTemp.u.LowPart;
     char* buff = new char[sz];
     DWORD bytesRead;
     if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
@@ -198,17 +199,17 @@ bool MCList::getLineData(const char *nameOfInput, /* OUT */ int *pIndexCount, /*
         }
     }
 
-    int* indexes = new int[lineCount];
-    int indexCount = 0;
-    int i = 0;
+    int* indexes    = new int[lineCount];
+    int  indexCount = 0;
+    int  i          = 0;
     while (i < sz)
     {
-        //seek the first number on the line. This will skip empty lines and lines with no digits.
+        // seek the first number on the line. This will skip empty lines and lines with no digits.
         while (!isdigit((unsigned char)buff[i]))
             i++;
-        //read in the number
+        // read in the number
         indexes[indexCount++] = atoi(&buff[i]);
-        //seek to the start of next line
+        // seek to the start of next line
         while ((i < sz) && (buff[i] != '\n'))
             i++;
         i++;
@@ -216,11 +217,11 @@ bool MCList::getLineData(const char *nameOfInput, /* OUT */ int *pIndexCount, /*
     delete[] buff;
 
     *pIndexCount = indexCount;
-    *pIndexes = indexes;
+    *pIndexes    = indexes;
     return true;
 }
 
-void MCList::InitializeMCL(char *filename)
+void MCList::InitializeMCL(char* filename)
 {
     hMCLFile = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hMCLFile == INVALID_HANDLE_VALUE)
@@ -233,8 +234,8 @@ void MCList::AddMethodToMCL(int methodIndex)
 {
     if (hMCLFile != INVALID_HANDLE_VALUE)
     {
-        char strMethodIndex[12];
-        DWORD charCount = 0;
+        char  strMethodIndex[12];
+        DWORD charCount    = 0;
         DWORD bytesWritten = 0;
 
         charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", methodIndex);

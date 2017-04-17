@@ -12,8 +12,8 @@ public:
     SimpleTimer();
     ~SimpleTimer();
 
-    void Start();
-    void Stop();
+    void   Start();
+    void   Stop();
     double GetMilliseconds();
     double GetSeconds();
 

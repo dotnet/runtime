@@ -12,6 +12,6 @@
 class verbConcat
 {
 public:
-    static int DoWork(const char *nameOfFile1, const char *nameOfFile2);
+    static int DoWork(const char* nameOfFile1, const char* nameOfFile2);
 };
 #endif

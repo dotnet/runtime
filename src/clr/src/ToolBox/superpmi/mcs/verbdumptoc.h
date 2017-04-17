@@ -12,6 +12,6 @@
 class verbDumpToc
 {
 public:
-    static int DoWork(const char *nameOfInput1);
+    static int DoWork(const char* nameOfInput1);
 };
 #endif

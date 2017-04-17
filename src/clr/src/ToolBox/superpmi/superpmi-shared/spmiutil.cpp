@@ -21,7 +21,7 @@ void DebugBreakorAV(int val)
             __debugbreak();
         if (breakOnDebugBreakorAV)
             __debugbreak();
-    } 
+    }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;
     // assert((EXCEPTIONCODE_DebugBreakorAV <= exception_code) && (exception_code < EXCEPTIONCODE_DebugBreakorAV_MAX))
@@ -37,13 +37,13 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
     if (dwRetVal != 0)
     {
         retString = new char[dwRetVal];
-        dwRetVal = ::GetEnvironmentVariableA(envVarName, retString, dwRetVal);
+        dwRetVal  = ::GetEnvironmentVariableA(envVarName, retString, dwRetVal);
     }
     else
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal = (DWORD)strlen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)strlen(defaultValue) + 1; // add one for null terminator
             retString = new char[dwRetVal];
             memcpy_s(retString, dwRetVal, defaultValue, dwRetVal);
         }
@@ -61,13 +61,13 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     if (dwRetVal != 0)
     {
         retString = new WCHAR[dwRetVal];
-        dwRetVal = ::GetEnvironmentVariableW(envVarName, retString, dwRetVal);
+        dwRetVal  = ::GetEnvironmentVariableW(envVarName, retString, dwRetVal);
     }
     else
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal = (DWORD)wcslen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)wcslen(defaultValue) + 1; // add one for null terminator
             retString = new WCHAR[dwRetVal];
             memcpy_s(retString, dwRetVal * sizeof(WCHAR), defaultValue, dwRetVal * sizeof(WCHAR));
         }
@@ -80,7 +80,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
 // For some reason, the PAL doesn't have GetCommandLineA(). So write it.
 LPSTR GetCommandLineA()
 {
-    LPSTR pCmdLine = nullptr;
+    LPSTR  pCmdLine  = nullptr;
     LPWSTR pwCmdLine = GetCommandLineW();
 
     if (pwCmdLine != nullptr)

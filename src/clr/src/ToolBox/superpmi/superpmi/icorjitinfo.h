@@ -9,7 +9,7 @@
 #include "runtimedetails.h"
 #include "ieememorymanager.h"
 
-extern ICorJitInfo *pICJI;
+extern ICorJitInfo* pICJI;
 
 class MyICJI : public ICorJitInfo
 {
@@ -17,10 +17,9 @@ class MyICJI : public ICorJitInfo
 #include "icorjitinfoimpl.h"
 
 public:
-
-    //Added extras... todo add padding to detect corruption?
-    JitInstance *jitInstance;
+    // Added extras... todo add padding to detect corruption?
+    JitInstance* jitInstance;
 };
 
-ICorJitInfo* InitICorJitInfo(JitInstance *jitInstance);
+ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance);
 #endif

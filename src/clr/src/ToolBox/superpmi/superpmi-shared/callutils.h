@@ -20,25 +20,21 @@ enum CallType
 class CallUtils
 {
 public:
-    static CallType GetRecordedCallSiteInfo(MethodContext *mc,
-                                            CompileResult *cr,
-                                            unsigned int callInstrOffset,
-                                            /*out*/ CORINFO_SIG_INFO *outSigInfo,
-                                            /*out*/ char **outCallTargetSymbol);
-    static CallType GetDirectCallSiteInfo(MethodContext *mc,
-                                          void *callTarget,
-                                          /*out*/ CORINFO_SIG_INFO *outSigInfo,
-                                          /*out*/ char **outCallTargetSymbol);
-    static bool HasRetBuffArg(MethodContext *mc, CORINFO_SIG_INFO args);
+    static CallType GetRecordedCallSiteInfo(MethodContext*            mc,
+                                            CompileResult*            cr,
+                                            unsigned int              callInstrOffset,
+                                            /*out*/ CORINFO_SIG_INFO* outSigInfo,
+                                            /*out*/ char**            outCallTargetSymbol);
+    static CallType GetDirectCallSiteInfo(MethodContext*            mc,
+                                          void*                     callTarget,
+                                          /*out*/ CORINFO_SIG_INFO* outSigInfo,
+                                          /*out*/ char**            outCallTargetSymbol);
+    static bool HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args);
     static CorInfoHelpFunc GetHelperNum(CORINFO_METHOD_HANDLE method);
     static bool IsNativeMethod(CORINFO_METHOD_HANDLE method);
     static CORINFO_METHOD_HANDLE GetMethodHandleForNative(CORINFO_METHOD_HANDLE method);
-    static const char *GetMethodName(MethodContext *mc,
-                                     CORINFO_METHOD_HANDLE method,
-                                     const char **classNamePtr);
-    static const char *GetMethodFullName(MethodContext *mc,
-                                         CORINFO_METHOD_HANDLE hnd,
-                                         CORINFO_SIG_INFO sig);
+    static const char* GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr);
+    static const char* GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDLE hnd, CORINFO_SIG_INFO sig);
 };
 
 #endif
