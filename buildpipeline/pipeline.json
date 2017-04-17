@@ -18,17 +18,6 @@
         {
           "Name": "Core-Setup-Linux",
           "Parameters": {
-            "PB_DockerOS": "centos.7"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "CentOS 7.1",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
             "PB_DockerOS": "debian.8",
             "REPO_ID": "579f8fb0fedca9aeeb399132",
             "REPO_USER": "dotnet",
