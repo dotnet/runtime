@@ -164,6 +164,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\IPAddressPal.Unix.cs" />
+    <Compile Include="System\Net\IPv4AddressHelper.cs" />
+    <Compile Include="System\Net\IPv6AddressHelper.cs" />
     <Compile Include="System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
