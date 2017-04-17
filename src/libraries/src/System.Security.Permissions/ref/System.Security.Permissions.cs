@@ -209,6 +209,8 @@ namespace System.Security
         public static bool IsWindowsIdentityFlowSuppressed() { throw null; }
         public static void RestoreFlow() { }
         public static void Run(System.Security.SecurityContext securityContext, System.Threading.ContextCallback callback, object state) { }
+        public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
+        public static System.Threading.AsyncFlowControl SuppressFlowWindowsIdentity() { throw null; }        
     }
     public enum SecurityContextSource
     {
