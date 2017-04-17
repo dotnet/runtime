@@ -105,20 +105,14 @@ namespace System.Linq.Expressions.Compiler
                 else
                 {
                     Debug.Assert(mc.Type == typeof(bool));
-                    switch (b.NodeType)
-                    {
-                        case ExpressionType.Equal:
-                        case ExpressionType.NotEqual:
-                        case ExpressionType.LessThan:
-                        case ExpressionType.LessThanOrEqual:
-                        case ExpressionType.GreaterThan:
-                        case ExpressionType.GreaterThanOrEqual:
-                            resultType = typeof(bool);
-                            break;
-                        default:
-                            resultType = mc.Type.GetNullableType();
-                            break;
-                    }
+                    Debug.Assert(b.NodeType == ExpressionType.Equal
+                        || b.NodeType == ExpressionType.NotEqual
+                        || b.NodeType == ExpressionType.LessThan
+                        || b.NodeType == ExpressionType.LessThanOrEqual
+                        || b.NodeType == ExpressionType.GreaterThan
+                        || b.NodeType == ExpressionType.GreaterThanOrEqual);
+
+                    resultType = typeof(bool);
                 }
                 var variables = new ParameterExpression[] { p1, p2 };
                 var arguments = new Expression[] { b.Left, b.Right };
