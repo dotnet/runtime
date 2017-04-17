@@ -21,12 +21,11 @@ namespace System.Reflection.Tests
             Assert.Equal(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new Dictionary<int, int>().GetType()));
             Assert.Equal(GetMembers(typeof(int)), GetMembers(typeof(int)));
             Assert.Equal(GetMembers(typeof(Dictionary<,>)), GetMembers(typeof(Dictionary<,>)));
-            Assert.NotEqual(GetMembers(new Dictionary<int, string>().GetType()), GetMembers(new HashSet<int>().GetType()));
         }
 
         private IEnumerable<int> GetMembers(Type type)
         {
-            return type.GetTypeInfo().GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Select(m => m.MetadataToken);
+            return type.GetTypeInfo().GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Select(m => m.HasMetadataToken() ? m.MetadataToken : 0);
         }
 
 #pragma warning disable 0067, 0169

@@ -60,6 +60,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Invoking static constructors are not supported on UapAot.")]
         public void Invoke_StaticConstructor_NullObject_NullParameters()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
