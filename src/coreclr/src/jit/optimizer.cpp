@@ -7638,6 +7638,15 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
     {
         return false;
     }
+
+    // For span we may see gtArrLen is a local var or local field.
+    // We won't try and extract those.
+    const genTreeOps arrayOp = arrBndsChk->gtArrLen->gtOper;
+
+    if ((arrayOp == GT_LCL_VAR) || (arrayOp == GT_LCL_FLD))
+    {
+        return false;
+    }
     if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;

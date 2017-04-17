@@ -653,7 +653,9 @@ DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
 DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
+DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, NoSig)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
+DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, NoSig)
 
 // Keep this in sync with System.Globalization.NumberFormatInfo
 DEFINE_CLASS_U(Globalization,       NumberFormatInfo,   NumberFormatInfo)
