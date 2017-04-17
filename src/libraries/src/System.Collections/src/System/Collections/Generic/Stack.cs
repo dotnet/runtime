@@ -126,8 +126,10 @@ namespace System.Collections.Generic
             Debug.Assert(array != _array);
             int srcIndex = 0;
             int dstIndex = arrayIndex + _size;
-            for (int i = 0; i < _size; i++)
+            while(srcIndex < _size)
+            {
                 array[--dstIndex] = _array[srcIndex++];
+            }
         }
 
         void ICollection.CopyTo(Array array, int arrayIndex)
