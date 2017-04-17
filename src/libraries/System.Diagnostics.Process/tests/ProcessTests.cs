@@ -262,15 +262,11 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMainModuleOnNonOSX()
         {
-            string fileName = "dotnet";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                fileName = "dotnet.exe";
-
             Process p = Process.GetCurrentProcess();
             Assert.True(p.Modules.Count > 0);
-            Assert.Equal(fileName, p.MainModule.ModuleName);
-            Assert.EndsWith(fileName, p.MainModule.FileName);
-            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", fileName), p.MainModule.ToString());
+            Assert.Equal(HostRunnerName, p.MainModule.ModuleName);
+            Assert.EndsWith(HostRunnerName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", HostRunnerName), p.MainModule.ToString());
         }
 
         [Fact]
