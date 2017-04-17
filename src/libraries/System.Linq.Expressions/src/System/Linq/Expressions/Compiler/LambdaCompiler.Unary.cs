@@ -252,8 +252,6 @@ namespace System.Linq.Expressions.Compiler
                         EmitConstantOne(resultType);
                         _ilg.Emit(OpCodes.Sub);
                         break;
-                    default:
-                        throw Error.UnhandledUnary(op, nameof(op));
                 }
 
                 EmitConvertArithmeticResult(op, resultType);
