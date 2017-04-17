@@ -70,19 +70,21 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, e);
         }
 
-        internal static string IPv4AddressToString(byte[] numbers)
+        internal static unsafe string IPv4AddressToString(uint address)
         {
-            StringBuilder sb = new StringBuilder(INET_ADDRSTRLEN);
-            uint errorCode = IPAddressPal.Ipv4AddressToString(numbers, sb);
+            const int MaxLength = 15;
+            char* addressString = stackalloc char[MaxLength];
+            int offset = MaxLength;
 
-            if (errorCode == IPAddressPal.SuccessErrorCode)
-            {
-                return sb.ToString();
-            }
-            else
-            {
-                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
-            }
+            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
+            addressString[--offset] = '.';
+            FormatIPv4AddressNumber((int)((address >> 16) & 0xFF), addressString, ref offset);
+            addressString[--offset] = '.';
+            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
+            addressString[--offset] = '.';
+            FormatIPv4AddressNumber((int)(address & 0xFF), addressString, ref offset);
+
+            return new string(addressString, offset, MaxLength - offset);
         }
 
         internal static string IPv6AddressToString(byte[] numbers, uint scopeId)
@@ -98,6 +100,18 @@ namespace System.Net
             {
                 throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
             }
+        }
+
+        private static unsafe void FormatIPv4AddressNumber(int number, char* addressString, ref int offset)
+        {
+            int i = offset;
+            do
+            {
+                int rem;
+                number = Math.DivRem(number, 10, out rem);
+                addressString[--i] = (char)('0' + rem);
+            } while (number != 0);
+            offset = i;
         }
     }
 }
