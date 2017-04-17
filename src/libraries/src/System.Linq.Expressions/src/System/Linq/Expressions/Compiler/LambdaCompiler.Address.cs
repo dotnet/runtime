@@ -72,20 +72,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 EmitExpression(node.Left);
                 EmitExpression(node.Right);
-                Type rightType = node.Right.Type;
-                if (rightType.IsNullableType())
-                {
-                    LocalBuilder loc = GetLocal(rightType);
-                    _ilg.Emit(OpCodes.Stloc, loc);
-                    _ilg.Emit(OpCodes.Ldloca, loc);
-                    _ilg.EmitGetValue(rightType);
-                    FreeLocal(loc);
-                }
-                Type indexType = rightType.GetNonNullableType();
-                if (indexType != typeof(int))
-                {
-                    _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true, locals: this);
-                }
+                Debug.Assert(node.Right.Type == typeof(int));
                 _ilg.Emit(OpCodes.Ldelema, node.Type);
             }
             else
