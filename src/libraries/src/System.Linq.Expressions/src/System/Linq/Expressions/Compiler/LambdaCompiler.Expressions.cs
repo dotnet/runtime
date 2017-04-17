@@ -957,8 +957,6 @@ namespace System.Linq.Expressions.Compiler
                 case MemberBindingType.MemberBinding:
                     EmitMemberMemberBinding((MemberMemberBinding)binding);
                     break;
-                default:
-                    throw Error.UnknownBindingType();
             }
         }
 

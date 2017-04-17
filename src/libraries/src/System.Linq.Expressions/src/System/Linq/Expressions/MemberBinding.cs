@@ -60,5 +60,7 @@ namespace System.Linq.Expressions
         {
             return ExpressionStringBuilder.MemberBindingToString(this);
         }
+
+        internal virtual void ValidateAsDefinedHere(int index) => throw Error.UnknownBindingType(index);
     }
 }

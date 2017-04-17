@@ -50,6 +50,10 @@ namespace System.Linq.Expressions
 
             return Expression.MemberBind(Member, bindings);
         }
+
+        internal override void ValidateAsDefinedHere(int index)
+        {
+        }
     }
 
     public partial class Expression
@@ -149,6 +153,7 @@ namespace System.Linq.Expressions
             {
                 MemberBinding b = bindings[i];
                 ContractUtils.RequiresNotNull(b, nameof(bindings));
+                b.ValidateAsDefinedHere(i);
                 if (!b.Member.DeclaringType.IsAssignableFrom(type))
                 {
                     throw Error.NotAMemberOfType(b.Member.Name, type, nameof(bindings), i);
