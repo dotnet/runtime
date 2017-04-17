@@ -114,10 +114,10 @@ namespace System.Linq.Expressions.Compiler
 
                     resultType = typeof(bool);
                 }
-                var variables = new ParameterExpression[] { p1, p2 };
-                var arguments = new Expression[] { b.Left, b.Right };
-                ValidateLift(variables, arguments);
-                EmitLift(b.NodeType, resultType, mc, variables, arguments);
+
+                Debug.Assert(TypeUtils.AreReferenceAssignable(p1.Type, b.Left.Type.GetNonNullableType()));
+                Debug.Assert(TypeUtils.AreReferenceAssignable(p2.Type, b.Right.Type.GetNonNullableType()));
+                EmitLift(b.NodeType, resultType, mc, new[] {p1, p2}, new[] {b.Left, b.Right});
             }
             else
             {

@@ -1117,24 +1117,6 @@ namespace System.Linq.Expressions.Compiler
 
         #region Expression helpers
 
-        internal static void ValidateLift(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> arguments)
-        {
-            Debug.Assert(variables != null);
-            Debug.Assert(arguments != null);
-
-            if (variables.Count != arguments.Count)
-            {
-                throw Error.IncorrectNumberOfIndexes();
-            }
-            for (int i = 0, n = variables.Count; i < n; i++)
-            {
-                if (!TypeUtils.AreReferenceAssignable(variables[i].Type, arguments[i].Type.GetNonNullableType()))
-                {
-                    throw Error.ArgumentTypesMustMatch();
-                }
-            }
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList)
         {
