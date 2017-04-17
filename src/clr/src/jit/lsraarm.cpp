@@ -131,7 +131,7 @@ void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
     //
     //  Size?                   Init Memory?    # temp regs
     //   0                          -               0
-    //   const and <=4 ptr words    -             hasPspSym ? 1 : 0
+    //   const and <=4 str instr    -             hasPspSym ? 1 : 0
     //   const and <PageSize        No            hasPspSym ? 1 : 0
     //   >4 ptr words               Yes           hasPspSym ? 2 : 1
     //   Non-const                  Yes           hasPspSym ? 2 : 1
@@ -173,16 +173,12 @@ void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
                 }
                 else
                 {
-                    // target (regCnt) + tmp + [psp]
-                    info->internalIntCount       = 1;
-                    info->isInternalRegDelayFree = true;
+                    info->internalIntCount = 1;
                 }
             }
             else
             {
-                // target (regCnt) + tmp + [psp]
-                info->internalIntCount       = 1;
-                info->isInternalRegDelayFree = true;
+                info->internalIntCount = 1;
             }
 
             if (hasPspSym)
@@ -194,7 +190,13 @@ void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
     else
     {
         // target (regCnt) + tmp + [psp]
-        info->internalIntCount       = hasPspSym ? 2 : 1;
+        info->internalIntCount = hasPspSym ? 2 : 1;
+    }
+
+    // If we are needed in temporary registers we should be sure that
+    // it's different from target (regCnt)
+    if (info->internalIntCount > 0)
+    {
         info->isInternalRegDelayFree = true;
     }
 }
