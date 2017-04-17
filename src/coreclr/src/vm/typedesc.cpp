@@ -837,6 +837,12 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
             pLoaderAllocator->ClearHandle(hExposedClassObject);
         }
 
+        if (OwnsTemplateMethodTable())
+        {
+            // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
+            EnsureWritablePages(m_TemplateMT.GetValue()->GetWriteableDataForWrite())->m_hExposedClassObject = m_hExposedClassObject;
+        }
+
         // Log the TypeVarTypeDesc access
         g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
 
