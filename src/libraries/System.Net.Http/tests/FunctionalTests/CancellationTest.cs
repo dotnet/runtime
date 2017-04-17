@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
 
                     triggerResponseWrite.SetResult(true);
-                    Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), $"Elapsed time {stopwatch.Elapsed} should be short");
+                    Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 30), $"Elapsed time {stopwatch.Elapsed} should be less than 30 seconds, was {stopwatch.Elapsed.TotalSeconds}");
                 });
             }
         }
@@ -136,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
 
                         triggerResponseWrite.SetResult(true);
                         _output.WriteLine("ReadAsync() completed at: {0}", stopwatch.Elapsed.ToString());
-                        Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), $"Elapsed time {stopwatch.Elapsed} should be short");
+                        Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 30), $"Elapsed time {stopwatch.Elapsed} should be less than 30 seconds, was {stopwatch.Elapsed.TotalSeconds}");
                     }
                 });
             }
