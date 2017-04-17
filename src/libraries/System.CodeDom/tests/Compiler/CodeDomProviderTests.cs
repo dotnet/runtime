@@ -16,7 +16,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void GetAllCompilerInfo_ReturnsMinimumOfCSharpAndVB()
         {
-            Type[] compilerInfos = CodeDomProvider.GetAllCompilerInfo().Select(provider => provider.CodeDomProviderType).ToArray();
+            Type[] compilerInfos = CodeDomProvider.GetAllCompilerInfo().Where(provider => provider.IsCodeDomProviderTypeValid).Select(provider => provider.CodeDomProviderType).ToArray();
             Assert.True(compilerInfos.Length >= 2);
             Assert.Contains(typeof(CSharpCodeProvider), compilerInfos);
             Assert.Contains(typeof(VBCodeProvider), compilerInfos);
