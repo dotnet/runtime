@@ -12,6 +12,7 @@
     <OutputPath Condition="'$(TargetGroup)' != 'net46'">$(CoreFxToolsDir)</OutputPath>
     <OutputPath Condition="'$(TargetGroup)' == 'net46'">$(CoreFxDesktopToolsDir)</OutputPath>
     <ProjectJson>$(MSBuildThisFileDirectory)PackageReferences.msbuild</ProjectJson>
+    <SkipSigning>true</SkipSigning>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'net46_Debug'" />
