@@ -612,6 +612,7 @@ namespace MonoTests.System.Configuration
             });
         }
 
+        [ActiveIssue(18431)]
         [Fact]
         public void ModifyListElement()
         {
@@ -632,6 +633,7 @@ namespace MonoTests.System.Configuration
             });
         }
 
+        [ActiveIssue(18431)]
         [Fact]
         public void ModifyListElement2()
         {
