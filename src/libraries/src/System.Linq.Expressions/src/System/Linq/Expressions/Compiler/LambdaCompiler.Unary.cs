@@ -32,10 +32,8 @@ namespace System.Linq.Expressions.Compiler
                 _scope.EmitGet(_scope.NearestHoistedLocals.SelfVariable);
                 _ilg.Emit(OpCodes.Call, RuntimeOps_Quote);
 
-                if (quote.Type != typeof(Expression))
-                {
-                    _ilg.Emit(OpCodes.Castclass, quote.Type);
-                }
+                Debug.Assert(typeof(LambdaExpression).IsAssignableFrom(quote.Type));
+                _ilg.Emit(OpCodes.Castclass, quote.Type);
             }
         }
 
