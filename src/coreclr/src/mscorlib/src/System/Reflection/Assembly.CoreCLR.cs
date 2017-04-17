@@ -101,14 +101,20 @@ namespace System.Reflection
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
             Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
+            
+            AssemblyName modifiedAssemblyRef = null;
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
-                throw new NotSupportedException(SR.NotSupported_AssemblyLoadCodeBase);
+                modifiedAssemblyRef = (AssemblyName)assemblyRef.Clone();
+                modifiedAssemblyRef.CodeBase = null;
             }
-
+            else
+            {
+                modifiedAssemblyRef = assemblyRef;
+            }
+            
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
+            return RuntimeAssembly.InternalLoadAssemblyName(modifiedAssemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
         }
 
         // Locate an assembly by its name. The name can be strong or
@@ -119,13 +125,19 @@ namespace System.Reflection
             Contract.Ensures(Contract.Result<Assembly>() != null);
             Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
 
+            AssemblyName modifiedAssemblyRef = null;
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
-                throw new NotSupportedException(SR.NotSupported_AssemblyLoadCodeBase);
+                modifiedAssemblyRef = (AssemblyName)assemblyRef.Clone();
+                modifiedAssemblyRef.CodeBase = null;
+            }
+            else
+            {
+                modifiedAssemblyRef = assemblyRef;
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, ptrLoadContextBinder);
+            return RuntimeAssembly.InternalLoadAssemblyName(modifiedAssemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, ptrLoadContextBinder);
         }
 
         // Loads the assembly with a COFF based IMAGE containing
