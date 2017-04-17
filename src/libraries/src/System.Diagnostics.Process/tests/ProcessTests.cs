@@ -665,11 +665,13 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        public void TestInvalidPriorityClass()
+        [Theory]
+        [InlineData((ProcessPriorityClass)0)]
+        [InlineData(ProcessPriorityClass.Normal | ProcessPriorityClass.Idle)]
+        public void TestInvalidPriorityClass(ProcessPriorityClass priorityClass)
         {
-            Process p = new Process();
-            Assert.Throws<ArgumentException>(() => { p.PriorityClass = ProcessPriorityClass.Normal | ProcessPriorityClass.Idle; });
+            var process = new Process();
+            Assert.Throws<InvalidEnumArgumentException>(() => process.PriorityClass = priorityClass);
         }
 
         [Fact]
