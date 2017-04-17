@@ -114,7 +114,8 @@ mount -o bind ${CORECLR_DIR} ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}
 
 # Test environment emulation using docker and qemu has some problem to use lttng library.
 # We should remove libcoreclrtraceptprovider.so to avoid test hang.
-rm -f ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}/bin/Product/${__buildDirName}/libcoreclrtraceptprovider.so
+rm -f -v ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}/bin/Product/${__buildDirName}/libcoreclrtraceptprovider.so
+rm -f -v ${__ROOTFS_DIR}${ARM_CHROOT_HOME_DIR}/bin/CoreFxBinDir/libcoreclrtraceptprovider.so
 
 chroot ${__ROOTFS_DIR} /bin/bash -x <<EOF
     cd ${ARM_CHROOT_HOME_DIR}
