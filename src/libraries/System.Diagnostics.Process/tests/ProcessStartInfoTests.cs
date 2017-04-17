@@ -32,22 +32,21 @@ namespace System.Diagnostics.Tests
 
             IDictionary<string, string> environment = psi.Environment;
 
-            Assert.NotEqual(environment.Count, 0);
+            Assert.NotEqual(0, environment.Count);
 
-            int CountItems = environment.Count;
+            int countItems = environment.Count;
 
             environment.Add("NewKey", "NewValue");
             environment.Add("NewKey2", "NewValue2");
 
-            Assert.Equal(CountItems + 2, environment.Count);
+            Assert.Equal(countItems + 2, environment.Count);
             environment.Remove("NewKey");
-            Assert.Equal(CountItems + 1, environment.Count);
+            Assert.Equal(countItems + 1, environment.Count);
 
-            // Exception thrown with invalid key
             // The full .NET framework represents Environment with StringDictionary. On .NET Core we use
             // use Dictionary<string, string>, because we need to have case sensitive behaviour on Unix.
             // The full .NET Framework uses CaseSensitiveStringDictionary, but we can't have an
-            // equivilent as we don't have access to the internal state of StringDictionary in .NET Core.
+            // equivalent as we don't have access to the internal state of StringDictionary in .NET Core.
             if (PlatformDetection.IsFullFramework)
             {
                 environment.Add("NewKey2", "NewValue2");
@@ -139,7 +138,6 @@ namespace System.Diagnostics.Tests
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() => environment.Add(null, "NewValue2"));
 
-            // Invalid Key to add
             // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
             // StringDictionary. These collections have different behaviour for Add where
             // the key already exists.
@@ -187,11 +185,10 @@ namespace System.Diagnostics.Tests
             //CopyTo
             KeyValuePair<string, string>[] kvpa = new KeyValuePair<string, string>[10];
             environment.CopyTo(kvpa, 0);
-            Assert.Equal("NewKey", kvpa[0].Key);
 
-            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
-            // StringDictionary. These collections order the output of CopyTo differently.
-            Assert.Equal(PlatformDetection.IsFullFramework ? "NewKey2" : "NewKey3", kvpa[2].Key);
+            KeyValuePair<string, string>[] kvpaOrdered = kvpa.OrderByDescending(k => k.Value).ToArray();
+            Assert.Equal("NewKey4", kvpaOrdered[0].Key);
+            Assert.Equal("NewKey2", kvpaOrdered[2].Key);
 
             environment.CopyTo(kvpa, 6);
             Assert.Equal("NewKey", kvpa[6].Key);
@@ -504,10 +501,9 @@ namespace System.Diagnostics.Tests
 
             psi.EnvironmentVariables.Add("NewKey", "NewValue");
             psi.EnvironmentVariables.Add("NewKey2", "NewValue2");
-
             string environmentResultKey = "";
             string environmentResultValue = "";
-            foreach(var entry in psi.Environment)
+            foreach (var entry in psi.Environment)
             {
                 environmentResultKey += entry.Key;
                 environmentResultValue += entry.Value;
@@ -542,10 +538,9 @@ namespace System.Diagnostics.Tests
             KeyValuePair<string, string>[] kvpa = new KeyValuePair<string, string>[5];
             psi.Environment.CopyTo(kvpa, 0);
 
-            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
-            // StringDictionary. These collections order the output of CopyTo differently.
-            Assert.Equal(PlatformDetection.IsFullFramework ? "NewKey2" : "NewKey3", kvpa[2].Key);
-            Assert.Equal(PlatformDetection.IsFullFramework ? "NewValue2" : "NewValue3", kvpa[2].Value);
+            KeyValuePair<string, string>[] kvpaOrdered = kvpa.OrderByDescending(k => k.Key).ToArray();
+            Assert.Equal("NewKey", kvpaOrdered[2].Key);
+            Assert.Equal("NewValue", kvpaOrdered[2].Value);
 
             psi.EnvironmentVariables.Remove("NewKey3");
             Assert.False(psi.Environment.Contains(new KeyValuePair<string,string>("NewKey3", "NewValue3")));            
