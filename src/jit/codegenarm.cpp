@@ -1004,8 +1004,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_NULLCHECK:
         {
             assert(!treeNode->gtOp.gtOp1->isContained());
-            regNumber reg = genConsumeReg(treeNode->gtOp.gtOp1);
-            emit->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+            regNumber addrReg = genConsumeReg(treeNode->gtOp.gtOp1);
+            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, targetReg, addrReg, 0);
         }
         break;
 
