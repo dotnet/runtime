@@ -103,19 +103,6 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "alpine_prereqs",
-            "Rid": "alpine.3.4.3"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Alpine 3.4.3",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
             "DockerTag": "rhel7_prereqs_2",
             "portableBuild": "-portable",
             "Rid": "linux"
