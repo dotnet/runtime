@@ -694,11 +694,6 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static string NonLocalJumpWithValue(object p0) => SR.Format(SR.NonLocalJumpWithValue, p0);
 
-        /// <summary>
-        /// A string like "Extension should have been reduced."
-        /// </summary>
-        internal static string ExtensionNotReduced => SR.ExtensionNotReduced;
-
 #if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// A string like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."

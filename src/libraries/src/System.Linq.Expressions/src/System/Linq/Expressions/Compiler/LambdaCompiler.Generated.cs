@@ -144,9 +144,6 @@ namespace System.Linq.Expressions.Compiler
                 case ExpressionType.Default:
                     EmitDefaultExpression(node);
                     break;
-                case ExpressionType.Extension:
-                    EmitExtensionExpression(node);
-                    break;
                 case ExpressionType.Goto:
                     EmitGotoExpression(node, flags);
                     break;
