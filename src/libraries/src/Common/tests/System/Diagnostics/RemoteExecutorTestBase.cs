@@ -14,7 +14,7 @@ namespace System.Diagnostics
     public abstract class RemoteExecutorTestBase : FileCleanupTestBase
     {
         /// <summary>The name of the test console app.</summary>
-        protected static readonly string TestConsoleApp = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "RemoteExecutorConsoleApp.exe" : "RemoteExecutorConsoleApp";
+        protected static readonly string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
         /// <summary>The name, without an extension, of the host used to host the test console app.</summary>
         private static readonly string HostRunnerExecutableName = IsFullFramework ? "xunit.console" : "dotnet";
         /// <summary>The name, with an extension, of the host host used to host the test console app.</summary>
