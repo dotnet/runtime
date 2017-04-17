@@ -329,7 +329,7 @@ namespace System.Runtime.Serialization
             {
                 ClassDataContract cloned = cdc.Clone();
                 cloned.UpdateNamespaceAndMembers(type, ns, memberNames);
-                return cloned;                
+                return cloned;
             }
         }
 
@@ -1044,7 +1044,7 @@ namespace System.Runtime.Serialization
 
                         // Previously System.SerializableAttribute was not available in NetCore, so we had
                         // a list of known [Serializable] types for type in the framework. Although now SerializableAttribute
-                        // is available in NetCore, some framework types still do not have [Serializable] 
+                        // is available in NetCore, some framework types still do not have [Serializable]
                         // yet, e.g. ReadOnlyDictionary<TKey, TValue>. So, we still need to maintain the known serializable
                         // type list.
                         if (IsKnownSerializableType(type))
@@ -1172,7 +1172,7 @@ namespace System.Runtime.Serialization
             /// <SecurityNote>
             /// RequiresReview - marked SRR because callers may need to depend on isNonAttributedType for a security decision
             ///            isNonAttributedType must be calculated correctly
-            ///            SetIsNonAttributedType should not be called before GetStableNameAndSetHasDataContract since it 
+            ///            SetIsNonAttributedType should not be called before GetStableNameAndSetHasDataContract since it
             ///            is dependent on the correct calculation of hasDataContract
             /// Safe - does not let caller influence isNonAttributedType calculation; no harm in leaking value
             /// </SecurityNote>

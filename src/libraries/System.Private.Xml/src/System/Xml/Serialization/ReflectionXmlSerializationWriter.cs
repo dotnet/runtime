@@ -470,7 +470,7 @@ namespace System.Xml.Serialization
 
         private void WriteQualifiedNameElement(string name, string ns, object defaultValue, XmlQualifiedName o, bool nullable, bool isSoap, PrimitiveMapping mapping)
         {
-            bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue) && mapping.TypeDesc.HasDefaultSupport;
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc.HasDefaultSupport;
             if (hasDefault && IsDefaultValue(mapping, o, defaultValue, nullable))
                 return;
 
@@ -886,7 +886,7 @@ namespace System.Xml.Serialization
         private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc)
         {
             // check to see if we can write values of the attribute sequentially
-            // currently we have only one data type (XmlQualifiedName) that we can not write "inline", 
+            // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
             // because we need to output xmlns:qx="..." for each of the qnames
             return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);
         }
@@ -944,7 +944,7 @@ namespace System.Xml.Serialization
         private void WritePrimitive(WritePrimitiveMethodRequirement method, string name, string ns, object defaultValue, object o, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc;
-            bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue) && mapping.TypeDesc.HasDefaultSupport;
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc.HasDefaultSupport;
             if (hasDefault)
             {
                 if (mapping is EnumMapping)
