@@ -2864,9 +2864,6 @@
   <data name="NotSupported_AppX" xml:space="preserve">
     <value>{0} is not supported in AppX.</value>
   </data>
-  <data name="NotSupported_AssemblyLoadCodeBase" xml:space="preserve">
-    <value>Assembly.Load with a Codebase is not supported.</value>
-  </data>
   <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
     <value>Assembly.LoadFrom with hashValue is not supported.</value>
   </data>
