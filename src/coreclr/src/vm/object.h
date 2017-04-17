@@ -634,10 +634,10 @@ class Object
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        // lose GC marking bit and the pinning bit
+        // lose GC marking bit and the reserved bit
         // A method table pointer should always be aligned.  During GC we set the least 
-        // significant bit for marked objects and we set the second to least significant
-        // bit for pinned objects.  So if we want the actual MT pointer during a GC
+        // significant bit for marked objects, and the second to least significant
+        // bit is reserved.  So if we want the actual MT pointer during a GC
         // we must zero out the lowest 2 bits.
         return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)3));
     }
