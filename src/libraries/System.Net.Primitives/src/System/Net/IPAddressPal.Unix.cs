@@ -10,17 +10,7 @@ namespace System.Net
 {
     internal static class IPAddressPal
     {
-        public const uint SuccessErrorCode = 0;
-
-        public static unsafe uint Ipv4AddressToString(byte[] address, StringBuilder buffer)
-        {
-            Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParserStatics.IPv4AddressBytes);
-            Debug.Assert(buffer != null);
-            Debug.Assert(buffer.Capacity >= IPAddressParser.INET_ADDRSTRLEN);
-
-            return Interop.Sys.IPAddressToString(address, false, buffer);
-        }
+        public const uint SuccessErrorCode = (uint)SocketError.Success;
 
         public static unsafe uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
         {
@@ -55,7 +45,7 @@ namespace System.Net
             bytes[1] = (byte)((0x00FF0000 & address) >> 16);
             bytes[2] = (byte)((0x0000FF00 & address) >> 8);
             bytes[3] = (byte)((0x000000FF & address) >> 0);
-            return (uint)SocketError.Success;
+            return SuccessErrorCode;
         }
 
         public static unsafe uint Ipv6StringToAddress(string ipString, byte* bytes, int bytesLength, out uint scope)
@@ -115,7 +105,7 @@ namespace System.Net
                         bytes[i * 2 + 1] = (byte)(numbers[i] & 0xFF);
                         bytes[i * 2] = (byte)((numbers[i] & 0xFF00) >> 8);
                     }
-                    return (uint)SocketError.Success;
+                    return SuccessErrorCode;
                 }
             }
 

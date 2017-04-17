@@ -347,7 +347,7 @@ namespace System.Net
             if (_toString == null)
             {
                 _toString = IsIPv4 ?
-                    IPAddressParser.IPv4AddressToString(GetAddressBytes()) :
+                    IPAddressParser.IPv4AddressToString(PrivateAddress) :
                     IPAddressParser.IPv6AddressToString(GetAddressBytes(), PrivateScopeId);
             }
 

@@ -12,17 +12,6 @@ namespace System.Net
     {
         public const uint SuccessErrorCode = Interop.StatusOptions.STATUS_SUCCESS;
 
-        public static uint Ipv4AddressToString(byte[] address, StringBuilder buffer)
-        {
-            Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParserStatics.IPv4AddressBytes);
-            Debug.Assert(buffer != null);
-            Debug.Assert(buffer.Capacity >= IPAddressParser.INET_ADDRSTRLEN);
-
-            uint length = (uint)buffer.Capacity;
-            return Interop.NtDll.RtlIpv4AddressToStringExW(address, 0, buffer, ref length);
-        }
-
         public static uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
         {
             Debug.Assert(address != null);
