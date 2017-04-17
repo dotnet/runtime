@@ -1378,7 +1378,8 @@ void LinearScan::setBlockSequence()
             assert(!"Switch with single successor");
         }
 
-        for (unsigned succIndex = 0; succIndex < block->NumSucc(compiler); succIndex++)
+        const unsigned numSuccs = block->NumSucc(compiler);
+        for (unsigned succIndex = 0; succIndex < numSuccs; succIndex++)
         {
             BasicBlock* succ = block->GetSucc(succIndex, compiler);
             if (checkForCriticalOutEdge && succ->GetUniquePred(compiler) == nullptr)
