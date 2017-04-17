@@ -52,6 +52,8 @@
     <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
     <XunitOptions Condition="'$(Performance)'!='true' and '$(Outerloop)' != 'true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
+    <!-- Don't run performance tests in parallel, even in "functional" outerloop runs. -->
+    <XunitOptions Condition="'$(Performance)'!='true' and '$(Outerloop)' == 'true' and '$(IncludePerformanceTests)' == 'true'">$(XunitOptions) -parallel none</XunitOptions>
     <XunitOptions Condition="'$(BuildingUAPAOTVertical)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
     <XunitOptions>$(XunitOptions) -notrait category=non$(_bc_TargetGroup)tests</XunitOptions>
