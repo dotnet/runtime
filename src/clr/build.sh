@@ -732,7 +732,7 @@ while :; do
 
         cmakeargs)
             if [ -n "$2" ]; then
-                __cmakeargs="$2"
+                __cmakeargs="$__cmakeargs $2"
                 shift
             else
                 echo "ERROR: 'cmakeargs' requires a non-empty option argument"
