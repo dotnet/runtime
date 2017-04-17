@@ -22,6 +22,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         private string _exeSelectedMessage;
         private string _sdkDir;
 
+        private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
+
         public GivenThatICareAboutMultilevelSDKLookup()
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
@@ -191,7 +193,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0"));
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
 
             // Add some dummy versions
             AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0");
@@ -211,7 +213,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0"));
+                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
             
             // Add a prerelease dummy version in the cwd
             AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0-global-dummy");
@@ -230,10 +232,115 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-global-dummy"));
+                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-global-dummy", _dotnetSdkDllMessageTerminator));
 
             // Remove dummy folders from user dir
             DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0", "9999.0.0-dummy");
+        }
+
+        [Fact]
+        public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+
+            // Add a dummy version in the exe dir
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0");
+
+            // Specified CLI version: none
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.0.0
+            // Expected: 9999.0.0 from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
+
+            // Add a dummy version in the exe dir
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.1");
+
+            // Specified CLI version: none
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.0.0, 9999.0.1
+            // Expected: 9999.0.1 from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
+
+            // Add a dummy version in the exe dir
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-dummy");
+
+            // Specified CLI version: none
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy
+            // Expected: 9999.0.1 from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
+
+            // Add a dummy version in the exe dir
+            AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0-dummy");
+
+            // Specified CLI version: none
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy, 10000.0.0-dummy
+            // Expected: 10000.0.0-dummy from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
+
+            // Add a dummy version in the exe dir
+            AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0");
+
+            // Specified CLI version: none
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy, 10000.0.0-dummy, 10000.0.0
+            // Expected: 10000.0.0 from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
+
         }
 
         // This method adds a list of new sdk version folders in the specified
