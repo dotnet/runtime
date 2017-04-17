@@ -5603,8 +5603,21 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             // the next ref, remember it.
             else if ((bestScore & UNASSIGNED) != 0 && intervalToUnassign != nullptr)
             {
-                // TODO-ARM: Should we handle TYE_DOUBLE case there ?
                 availablePhysRegInterval->previousInterval = intervalToUnassign;
+#ifdef _TARGET_ARM_
+                // TODO-ARM-Throughput: For ARM,  we don't have to keep a same previous interval in two RegRecords,
+                // if we can use a interval from one RegRecord. But I'm not sure yet.
+                // Please take a look at unassignPhysReg().
+
+                // Update overlapping floating point register for TYP_DOUBLE
+                if (intervalToUnassign->registerType == TYP_DOUBLE)
+                {
+                    assert(isFloatRegType(availablePhysRegInterval->registerType));
+                    regNumber  nextRegNum        = REG_NEXT(availablePhysRegInterval->regNum);
+                    RegRecord* nextRegRec        = getRegisterRecord(nextRegNum);
+                    nextRegRec->previousInterval = intervalToUnassign;
+                }
+#endif
             }
         }
         else
@@ -6374,6 +6387,24 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     {
         regRec->assignedInterval = regRec->previousInterval;
         regRec->previousInterval = nullptr;
+#ifdef _TARGET_ARM_
+        // Update overlapping floating point register for TYP_DOUBLE
+        if (regRec->assignedInterval->registerType == TYP_DOUBLE)
+        {
+            assert(isFloatRegType(regRec->registerType));
+
+            regNumber  nextRegNum = REG_NEXT(regRec->regNum);
+            RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+
+            nextRegRec->assignedInterval = nextRegRec->previousInterval;
+            nextRegRec->previousInterval = nullptr;
+
+            // TODO-ARM-Throughput: For ARM, we can reuse regRec->previousInterval,
+            // if following assertion is always true.
+            // Please take a look at tryAllocateFreeReg().
+            assert(nextRegRec->assignedInterval == regRec->assignedInterval);
+        }
+#endif
 #ifdef DEBUG
         if (spill)
         {
@@ -6504,6 +6535,16 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 #endif // DEBUG
 
 #ifdef _TARGET_ARM_
+//-------------------------------------------------------------------------------
+// isOverlappedRegRecord : Is interval assigned to overlapped register?
+//
+// Arguments:
+//    assignedInterval - an interval assigned to some register
+//    physRegRecord - a register which be tested
+//
+// Return Value:
+//    True if an interval is assigned to a register which overlaps physRegRecord
+//
 bool LinearScan::isOverlappedRegRecord(Interval* assignedInterval, RegRecord* physRegRecord)
 {
     RegRecord* assignedReg = assignedInterval->assignedReg;
@@ -6878,7 +6919,20 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
             // we wouldn't unnecessarily link separate live ranges to the same register.
             if (nextRefPosition == nullptr || RefTypeIsDef(nextRefPosition->refType))
             {
+#ifdef _TARGET_ARM_
+                if (assignedInterval->registerType == TYP_DOUBLE && !genIsValidDoubleReg(physRegRecord->regNum))
+                {
+                    // Don't call unassignPhysReg() again, because two FP registers of a double reister are already
+                    // unassigned together when this function is called with valid double register number.
+                    assert(assignedInterval->assignedReg != physRegRecord);
+                }
+                else
+                {
+                    unassignPhysReg(physRegRecord, nullptr);
+                }
+#else
                 unassignPhysReg(physRegRecord, nullptr);
+#endif
             }
         }
     }
@@ -7990,6 +8044,18 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         interval->isActive              = true;
         physRegRecord->assignedInterval = interval;
         interval->assignedReg           = physRegRecord;
+#ifdef _TARGET_ARM_
+        // Update overlapping floating point register for TYP_DOUBLE
+        if (interval->registerType == TYP_DOUBLE)
+        {
+            assert(isFloatRegType(physRegRecord->registerType));
+
+            regNumber  nextRegNum        = REG_NEXT(physRegRecord->regNum);
+            RegRecord* nextPhysRegRecord = getRegisterRecord(nextRegNum);
+
+            nextPhysRegRecord->assignedInterval = interval;
+        }
+#endif
     }
 }
 
