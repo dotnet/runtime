@@ -792,35 +792,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static bool s_shouldGetDBNullType = true;
-
         private static Type s_typeOfDBNull;
         internal static Type TypeOfDBNull
         {
-            get
+           get
             {
-                if (s_typeOfDBNull == null && s_shouldGetDBNullType)
-                {
-                    s_typeOfDBNull = Type.GetType("System.DBNull, System.Data.Common, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", false);
-                    s_shouldGetDBNullType = false;
-                }
+                if (s_typeOfDBNull == null)
+                    s_typeOfDBNull = typeof(DBNull);
                 return s_typeOfDBNull;
-            }
-        }
-
-        private static object s_valueOfDBNull;
-        internal static object ValueOfDBNull
-        {
-            get
-            {
-                if (s_valueOfDBNull == null && TypeOfDBNull != null)
-                {
-                    var fieldInfo = TypeOfDBNull.GetField("Value");
-                    if (fieldInfo != null)
-                        s_valueOfDBNull = fieldInfo.GetValue(null);
-                }
-
-                return s_valueOfDBNull;
             }
         }
 
@@ -907,11 +886,6 @@ namespace System.Runtime.Serialization
         {
             Debug.Assert(s_deserializeFunc != null);
             return Globals.s_deserializeFunc(json);
-        }
-
-        internal static bool IsDBNullValue(object o)
-        {
-            return o != null && ValueOfDBNull != null && ValueOfDBNull.Equals(o);
         }
 
         public const bool DefaultIsRequired = false;
@@ -1036,7 +1010,7 @@ namespace System.Runtime.Serialization
   <xs:element name='char' nillable='true' type='tns:char' />
   <xs:simpleType name='char'>
     <xs:restriction base='xs:int'/>
-  </xs:simpleType>  
+  </xs:simpleType>
   <xs:element name='duration' nillable='true' type='tns:duration' />
   <xs:simpleType name='duration'>
     <xs:restriction base='xs:duration'>

@@ -92,7 +92,7 @@ namespace System.Xml.Serialization
 
         private void WriteQualifiedNameElement(string name, string ns, object defaultValue, SourceInfo source, bool nullable, TypeMapping mapping)
         {
-            bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue);
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value;
             if (hasDefault)
             {
                 throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
@@ -195,7 +195,7 @@ namespace System.Xml.Serialization
         private void WritePrimitive(string method, string name, string ns, object defaultValue, SourceInfo source, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc;
-            bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue) && mapping.TypeDesc.HasDefaultSupport;
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc.HasDefaultSupport;
             if (hasDefault)
             {
                 if (mapping is EnumMapping)
@@ -377,7 +377,7 @@ namespace System.Xml.Serialization
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationWriter_TopLevelElement);
 
-            // in the top-level method add check for the parameters length, 
+            // in the top-level method add check for the parameters length,
             // because visual basic does not have a concept of an <out> parameter it uses <ByRef> instead
             // so sometime we think that we have more parameters then supplied
             LocalBuilder pLengthLoc = ilg.DeclareLocal(typeof(int), "pLength");
@@ -1143,7 +1143,7 @@ namespace System.Xml.Serialization
         private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc)
         {
             // check to see if we can write values of the attribute sequentially
-            // currently we have only one data type (XmlQualifiedName) that we can not write "inline", 
+            // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
             // because we need to output xmlns:qx="..." for each of the qnames
 
             return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);
@@ -2387,9 +2387,9 @@ namespace System.Xml.Serialization
         internal void ILGenForCreateInstance(CodeGenerator ilg, Type type, Type cast, bool nonPublic)
         {
             // Special case DBNull
-            if (type == Globals.TypeOfDBNull)
+            if (type == typeof(DBNull))
             {
-                FieldInfo DBNull_Value = Globals.TypeOfDBNull.GetField("Value", CodeGenerator.StaticBindingFlags);
+                FieldInfo DBNull_Value = type.GetField("Value", CodeGenerator.StaticBindingFlags);
                 ilg.LoadMember(DBNull_Value);
                 return;
             }
