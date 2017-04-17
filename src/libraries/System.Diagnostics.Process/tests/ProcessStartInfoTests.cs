@@ -43,8 +43,19 @@ namespace System.Diagnostics.Tests
             environment.Remove("NewKey");
             Assert.Equal(CountItems + 1, environment.Count);
 
-            //Exception not thrown with invalid key
-            Assert.Throws<ArgumentException>(() => { environment.Add("NewKey2", "NewValue2"); });
+            // Exception thrown with invalid key
+            // The full .NET framework represents Environment with StringDictionary. On .NET Core we use
+            // use Dictionary<string, string>, because we need to have case sensitive behaviour on Unix.
+            // The full .NET Framework uses CaseSensitiveStringDictionary, but we can't have an
+            // equivilent as we don't have access to the internal state of StringDictionary in .NET Core.
+            if (PlatformDetection.IsFullFramework)
+            {
+                environment.Add("NewKey2", "NewValue2");
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(null, () => environment.Add("NewKey2", "NewValue2"));
+            }
 
             //Clear
             environment.Clear();
@@ -128,8 +139,18 @@ namespace System.Diagnostics.Tests
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() => environment.Add(null, "NewValue2"));
 
-            //Invalid Key to add
-            Assert.Throws<ArgumentException>(() => environment.Add("NewKey2", "NewValue2"));
+            // Invalid Key to add
+            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
+            // StringDictionary. These collections have different behaviour for Add where
+            // the key already exists.
+            if (PlatformDetection.IsFullFramework)
+            {
+                environment.Add("NewKey2", "NewValue2");
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(null, () => environment.Add("NewKey2", "NewValue2"));
+            }
 
             //Remove Item
             environment.Remove("NewKey98");
@@ -167,7 +188,10 @@ namespace System.Diagnostics.Tests
             KeyValuePair<string, string>[] kvpa = new KeyValuePair<string, string>[10];
             environment.CopyTo(kvpa, 0);
             Assert.Equal("NewKey", kvpa[0].Key);
-            Assert.Equal("NewKey3", kvpa[2].Key);
+
+            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
+            // StringDictionary. These collections order the output of CopyTo differently.
+            Assert.Equal(PlatformDetection.IsFullFramework ? "NewKey2" : "NewKey3", kvpa[2].Key);
 
             environment.CopyTo(kvpa, 6);
             Assert.Equal("NewKey", kvpa[6].Key);
@@ -463,7 +487,17 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => { psi.EnvironmentVariables.Add("NewKey2", "NewValue2"); });
             psi.EnvironmentVariables.Add("NewKey3", "NewValue3");
 
-            Assert.Throws<ArgumentException>(() => { psi.Environment.Add("NewKey3", "NewValue3"); });
+            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
+            // StringDictionary. These collections have different behaviour for Add where
+            // the key already exists.
+            if (PlatformDetection.IsFullFramework)
+            {
+                psi.Environment.Add("NewKey3", "NewValue3");
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => psi.Environment.Add("NewKey3", "NewValue3"));
+            }
 
             psi.EnvironmentVariables.Clear();
             Assert.Equal(0, psi.Environment.Count);
@@ -484,10 +518,21 @@ namespace System.Diagnostics.Tests
 
             string envVarResultKey = "";
             string envVarResultValue = "";
-            foreach(KeyValuePair<string, string> entry in psi.EnvironmentVariables)
+
+            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
+            // StringDictionary. These collections return different types from GetEnumerator.
+            foreach (var entry in psi.EnvironmentVariables)
             {
-                envVarResultKey += entry.Key;
-                envVarResultValue += entry.Value;
+                if (PlatformDetection.IsFullFramework)
+                {
+                    envVarResultKey += ((DictionaryEntry)entry).Key;
+                    envVarResultValue += ((DictionaryEntry)entry).Value;
+                }
+                else
+                {
+                    envVarResultKey += ((KeyValuePair<string, string>)entry).Key;
+                    envVarResultValue += ((KeyValuePair<string, string>)entry).Value;
+                }
             }
 
             Assert.Equal(environmentResultKey, envVarResultKey);
@@ -496,8 +541,11 @@ namespace System.Diagnostics.Tests
             psi.EnvironmentVariables.Add("NewKey3", "NewValue3");
             KeyValuePair<string, string>[] kvpa = new KeyValuePair<string, string>[5];
             psi.Environment.CopyTo(kvpa, 0);
-            Assert.Equal("NewKey3", kvpa[2].Key);
-            Assert.Equal("NewValue3", kvpa[2].Value);
+
+            // .NET Core uses a Dictionary<string, string>, but the full .NET Framework uses
+            // StringDictionary. These collections order the output of CopyTo differently.
+            Assert.Equal(PlatformDetection.IsFullFramework ? "NewKey2" : "NewKey3", kvpa[2].Key);
+            Assert.Equal(PlatformDetection.IsFullFramework ? "NewValue2" : "NewValue3", kvpa[2].Value);
 
             psi.EnvironmentVariables.Remove("NewKey3");
             Assert.False(psi.Environment.Contains(new KeyValuePair<string,string>("NewKey3", "NewValue3")));            
