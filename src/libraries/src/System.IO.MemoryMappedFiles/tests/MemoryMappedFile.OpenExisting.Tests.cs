@@ -16,7 +16,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_Name()
         {
             // null isn't valid when trying to OpenExistinga map
-            Assert.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.OpenExisting(null));
+            AssertExtensions.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.OpenExisting(null));
 
             // Empty is never a valid map name
             Assert.Throws<ArgumentException>(() => MemoryMappedFile.OpenExisting(string.Empty));
@@ -56,7 +56,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_Inheritability(HandleInheritability inheritability)
         {
             // Out of range values
-            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), MemoryMappedFileRights.Read, inheritability));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), MemoryMappedFileRights.Read, inheritability));
         }
 
         /// <summary>
@@ -66,8 +66,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_Rights()
         {
             // Out of range values
-            Assert.Throws<ArgumentOutOfRangeException>("desiredAccessRights", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), (MemoryMappedFileRights)0x800000));
-            Assert.Throws<ArgumentOutOfRangeException>("desiredAccessRights", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), (MemoryMappedFileRights)0x800000, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("desiredAccessRights", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), (MemoryMappedFileRights)0x800000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("desiredAccessRights", () => MemoryMappedFile.OpenExisting(CreateUniqueMapName(), (MemoryMappedFileRights)0x800000, HandleInheritability.None));
         }
 
         /// <summary>

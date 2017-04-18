@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -63,13 +63,13 @@ namespace System.Dynamic.Tests
         [Fact]
         public void MergeNull()
         {
-            Assert.Throws<ArgumentNullException>("restrictions", () => BindingRestrictions.Empty.Merge(null));
+            AssertExtensions.Throws<ArgumentNullException>("restrictions", () => BindingRestrictions.Empty.Merge(null));
         }
 
         [Fact]
         public void ExpressionRestrictionFromNull()
         {
-            Assert.Throws<ArgumentNullException>("expression", () => BindingRestrictions.GetExpressionRestriction(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => BindingRestrictions.GetExpressionRestriction(null));
         }
 
         [Fact]

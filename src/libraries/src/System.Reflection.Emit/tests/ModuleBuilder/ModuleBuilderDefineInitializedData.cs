@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineInitializedData_EmptyName_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>("name", () => module.DefineInitializedData("", new byte[] { 1, 0, 1 }, FieldAttributes.Private));
+            AssertExtensions.Throws<ArgumentException>("name", () => module.DefineInitializedData("", new byte[] { 1, 0, 1 }, FieldAttributes.Private));
         }
 
         [Theory]
@@ -42,14 +42,14 @@ namespace System.Reflection.Emit.Tests
         public void DefineInitializedData_NullName_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("name", () => module.DefineInitializedData(null, new byte[] { 1, 0, 1 }, FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineInitializedData(null, new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
 
         [Fact]
         public void DefineInitializedData_NullData_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("data", () => module.DefineInitializedData("MyField", null, FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => module.DefineInitializedData("MyField", null, FieldAttributes.Public));
         }
 
         [Fact]

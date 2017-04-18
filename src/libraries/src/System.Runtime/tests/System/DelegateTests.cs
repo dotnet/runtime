@@ -131,7 +131,7 @@ namespace System.Tests
         public static void DynamicInvoke_MissingTypeForNonDefaultParameter_ThrowsArgumentException()
         {
             Delegate d = new IntIntDelegate(IntIntMethod);
-            Assert.Throws<ArgumentException>("parameters", () => d.DynamicInvoke(7, Type.Missing));
+            AssertExtensions.Throws<ArgumentException>("parameters", () => d.DynamicInvoke(7, Type.Missing));
         }
 
         [Theory]

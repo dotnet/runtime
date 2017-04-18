@@ -39,8 +39,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrencyDecimalDigits_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("CurrencyDecimalDigits", () => new NumberFormatInfo().CurrencyDecimalDigits = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("CurrencyDecimalDigits", () => new NumberFormatInfo().CurrencyDecimalDigits = 100);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyDecimalDigits", () => new NumberFormatInfo().CurrencyDecimalDigits = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyDecimalDigits", () => new NumberFormatInfo().CurrencyDecimalDigits = 100);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyDecimalDigits = 2);
         }
     }

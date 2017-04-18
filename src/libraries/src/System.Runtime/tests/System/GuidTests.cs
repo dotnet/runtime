@@ -38,7 +38,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_NullByteArray_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("b", () => new Guid((byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("b", () => new Guid((byte[])null));
         }
 
         [Theory]
@@ -82,7 +82,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Int_Short_Short_ByteArray_NullByteArray_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Guid(0, 0, 0, null));
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Guid(0, 0, 0, null));
         }
 
         [Fact]

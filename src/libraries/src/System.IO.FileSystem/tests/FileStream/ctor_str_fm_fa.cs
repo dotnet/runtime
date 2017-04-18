@@ -24,7 +24,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidAccessThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(GetTestFilePath(), FileMode.Create, ~FileAccess.Read));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(GetTestFilePath(), FileMode.Create, ~FileAccess.Read));
         }
 
         [Fact]

@@ -33,10 +33,10 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetEraName_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
 
             const int EnUSMaxEra = 1;
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => new CultureInfo("en-US").DateTimeFormat.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => new CultureInfo("en-US").DateTimeFormat.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
         }
     }
 }

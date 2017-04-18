@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -12,8 +13,8 @@ namespace System.Dynamic.Runtime.Tests
         [Fact]
         public void NullNames()
         {
-            Assert.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(string[])));
-            Assert.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(IEnumerable<string>)));
+            AssertExtensions.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(string[])));
+            AssertExtensions.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(IEnumerable<string>)));
         }
 
         [Fact]
@@ -25,7 +26,7 @@ namespace System.Dynamic.Runtime.Tests
         [Fact]
         public void NullName()
         {
-            Assert.Throws<ArgumentNullException>("argNames[1]", () => new CallInfo(3, "a", null, "c"));
+            AssertExtensions.Throws<ArgumentNullException>("argNames[1]", () => new CallInfo(3, "a", null, "c"));
         }
 
         [Fact]

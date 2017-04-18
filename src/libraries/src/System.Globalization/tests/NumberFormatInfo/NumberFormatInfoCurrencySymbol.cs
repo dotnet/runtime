@@ -31,7 +31,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrencySymbol_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("CurrencySymbol", () => new NumberFormatInfo().CurrencySymbol = null);
+            AssertExtensions.Throws<ArgumentNullException>("CurrencySymbol", () => new NumberFormatInfo().CurrencySymbol = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencySymbol = "");
         }
     }

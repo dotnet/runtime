@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Tests
         {
             Func<Expression, Expression, Expression> withAssignment = (Func<Expression, Expression, Expression>)assign.CreateDelegate(typeof(Func<Expression, Expression, Expression>));
 
-            Assert.Throws<ArgumentException>("left", () => withAssignment(Expression.Default(type), Expression.Default(type)));
+            AssertExtensions.Throws<ArgumentException>("left", () => withAssignment(Expression.Default(type), Expression.Default(type)));
         }
 
         [Theory]
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Tests
 
             Type unreadableType = typeof(Unreadable<>).MakeGenericType(type);
             Expression property = Expression.Property(null, unreadableType.GetProperty("WriteOnly"));
-            Assert.Throws<ArgumentException>("left", () => withAssignment(property, Expression.Default(type)));
+            AssertExtensions.Throws<ArgumentException>("left", () => withAssignment(property, Expression.Default(type)));
         }
 
         [Theory]
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions.Tests
             Type unreadableType = typeof(Unreadable<>).MakeGenericType(type);
             Expression property = Expression.Property(null, unreadableType.GetProperty("WriteOnly"));
             Expression variable = Expression.Variable(type);
-            Assert.Throws<ArgumentException>("right", () => withAssignment(variable, property));
+            AssertExtensions.Throws<ArgumentException>("right", () => withAssignment(variable, property));
         }
 
         [Theory]

@@ -114,8 +114,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void ElementAt_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAt(0));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAtOrDefault(0));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAt(0));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).ElementAtOrDefault(0));
         }
     }
 }

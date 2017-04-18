@@ -36,8 +36,8 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0)); // Major < 0
-            Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1)); // Minor < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0)); // Major < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1)); // Minor < 0
         }
 
         [Theory]
@@ -52,9 +52,9 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Int_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0)); // Major < 0
-            Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0)); // Minor < 0
-            Assert.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1)); // Build < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0)); // Major < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0)); // Minor < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1)); // Build < 0
         }
 
         [Theory]
@@ -76,10 +76,10 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Int_Int_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0, 0)); // Major < 0
-            Assert.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0, 0)); // Minor < 0
-            Assert.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1, 0)); // Build < 0
-            Assert.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1)); // Revision < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0, 0)); // Major < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0, 0)); // Minor < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1, 0)); // Build < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1)); // Revision < 0
         }
 
         public static IEnumerable<object[]> CompareTo_TestData()
@@ -146,10 +146,10 @@ namespace System.Tests
 
             Version nullVersion = null;
             Version testVersion = new Version(1, 2);
-            Assert.Throws<ArgumentNullException>("v1", () => testVersion >= nullVersion); // V2 is null
-            Assert.Throws<ArgumentNullException>("v1", () => testVersion > nullVersion); // V2 is null
-            Assert.Throws<ArgumentNullException>("v1", () => nullVersion < testVersion); // V1 is null
-            Assert.Throws<ArgumentNullException>("v1", () => nullVersion <= testVersion); // V1 is null
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => testVersion >= nullVersion); // V2 is null
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => testVersion > nullVersion); // V2 is null
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion < testVersion); // V1 is null
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion <= testVersion); // V1 is null
         }
 
         private static IEnumerable<object[]> Equals_TestData()
@@ -274,8 +274,8 @@ namespace System.Tests
             int maxFieldCount = expected.Length - 1;
             Assert.Equal(expected[maxFieldCount], version.ToString());
 
-            Assert.Throws<ArgumentException>("fieldCount", () => version.ToString(-1)); // Index < 0
-            Assert.Throws<ArgumentException>("fieldCount", () => version.ToString(maxFieldCount + 1)); // Index > version.fieldCount
+            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(-1)); // Index < 0
+            AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.ToString(maxFieldCount + 1)); // Index > version.fieldCount
         }
 
         private static void VerifyVersion(Version version, int major, int minor, int build, int revision)

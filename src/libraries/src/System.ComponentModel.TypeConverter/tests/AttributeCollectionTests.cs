@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void VerifyThrowsIfMultipleAttributesArePassedButOneNull()
         {
-            Assert.Throws<ArgumentNullException>("attributes", () => new AttributeCollection(new TestAttribute1(), null));
+            AssertExtensions.Throws<ArgumentNullException>("attributes", () => new AttributeCollection(new TestAttribute1(), null));
         }
 
         [InlineData(20)]

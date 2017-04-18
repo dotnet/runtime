@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -90,25 +90,25 @@ namespace System.Text.RegularExpressions.Tests
         public void Split_Invalid()
         {
             // Input is null
-            Assert.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern"));
-            Assert.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern", RegexOptions.None));
-            Assert.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
-            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null));
-            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null, 0));
-            Assert.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern"));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern", RegexOptions.None));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => Regex.Split(null, "pattern", RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("input", () => new Regex("pattern").Split(null, 0, 0));
 
             // Pattern is null
-            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null));
-            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null, RegexOptions.None));
-            Assert.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null, RegexOptions.None));
+            AssertExtensions.Throws<ArgumentNullException>("pattern", () => Regex.Split("input", null, RegexOptions.None, TimeSpan.FromMilliseconds(1)));
 
             // Count is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Split("input", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Split("input", -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Split("input", -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => new Regex("pattern").Split("input", -1, 0));
 
             // Start is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Split("input", 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Split("input", 0, 6));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Split("input", 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Split("input", 0, 6));
         }
     }
 }

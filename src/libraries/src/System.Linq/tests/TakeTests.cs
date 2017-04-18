@@ -179,7 +179,7 @@ namespace System.Linq.Tests
         public void ThrowsOnNullSource()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Take(5));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(5));
         }
 
         [Fact]
@@ -247,8 +247,8 @@ namespace System.Linq.Tests
             var taken = source.Take(3);
             Assert.Equal(1, taken.ElementAt(0));
             Assert.Equal(3, taken.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(3));
         }
 
         [Fact]
@@ -258,8 +258,8 @@ namespace System.Linq.Tests
             var taken = source.Take(3);
             Assert.Equal(1, taken.ElementAt(0));
             Assert.Equal(3, taken.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken.ElementAt(3));
         }
 
         [Fact]

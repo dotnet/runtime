@@ -120,7 +120,7 @@ namespace System.Linq.Tests
         public void ToArray_ThrowArgumentNullExceptionWhenSourceIsNull()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.ToArray());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.ToArray());
         }
 
         // Generally the optimal approach. Anything that breaks this should be confirmed as not harming performance.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
@@ -55,10 +56,10 @@ namespace System.Net.Tests
         public void InvalidArguments_Throws()
         {
             WebRequest request = WebRequest.Create("file://anything");
-            Assert.Throws<ArgumentException>("value", () => request.ContentLength = -1);
-            Assert.Throws<ArgumentException>("value", () => request.Method = null);
-            Assert.Throws<ArgumentException>("value", () => request.Method = "");
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => request.Timeout = -2);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.ContentLength = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = null);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = "");
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.Timeout = -2);
         }
 
         [Fact]

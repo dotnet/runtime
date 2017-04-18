@@ -90,8 +90,8 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             MethodBuilder method = module.DefineGlobalMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
             ILGenerator ilGenerator = method.GetILGenerator();
-            Assert.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null));
-            Assert.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null, false));
+            AssertExtensions.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null));
+            AssertExtensions.Throws<ArgumentNullException>("localType", () => ilGenerator.DeclareLocal(null, false));
         }
 
         [Fact]

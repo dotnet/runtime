@@ -17,13 +17,13 @@ namespace System.IO.Tests
 
             using (FileStream fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => fs.Lock(-1, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => fs.Lock(-1, -1));
-                Assert.Throws<ArgumentOutOfRangeException>("length", () => fs.Lock(0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => fs.Lock(-1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => fs.Lock(-1, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => fs.Lock(0, -1));
 
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => fs.Unlock(-1, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => fs.Unlock(-1, -1));
-                Assert.Throws<ArgumentOutOfRangeException>("length", () => fs.Unlock(0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => fs.Unlock(-1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => fs.Unlock(-1, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => fs.Unlock(0, -1));
             }
         }
 

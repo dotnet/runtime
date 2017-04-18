@@ -343,26 +343,26 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Aggregate_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate((i, j) => i));
-            Assert.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate((i, j) => i));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i));
-            Assert.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(0, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(0, null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(0, null, i => i));
-            Assert.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(0, (i, j) => i, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => UnorderedSources.Default(1).Aggregate(0, null, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(0, (i, j) => i, null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("updateAccumulatorFunc", () => UnorderedSources.Default(1).Aggregate(0, null, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("combineAccumulatorsFunc", () => UnorderedSources.Default(1).Aggregate(0, (i, j) => i, null, i => i));
-            Assert.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(0, (i, j) => i, (i, j) => i, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(0, (i, j) => i, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("updateAccumulatorFunc", () => UnorderedSources.Default(1).Aggregate(0, null, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("combineAccumulatorsFunc", () => UnorderedSources.Default(1).Aggregate(0, (i, j) => i, null, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(0, (i, j) => i, (i, j) => i, null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(() => 0, (i, j) => i, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("seedFactory", () => UnorderedSources.Default(1).Aggregate<int, int, int>(null, (i, j) => i, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("updateAccumulatorFunc", () => UnorderedSources.Default(1).Aggregate(() => 0, null, (i, j) => i, i => i));
-            Assert.Throws<ArgumentNullException>("combineAccumulatorsFunc", () => UnorderedSources.Default(1).Aggregate(() => 0, (i, j) => i, null, i => i));
-            Assert.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(() => 0, (i, j) => i, (i, j) => i, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Aggregate(() => 0, (i, j) => i, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("seedFactory", () => UnorderedSources.Default(1).Aggregate<int, int, int>(null, (i, j) => i, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("updateAccumulatorFunc", () => UnorderedSources.Default(1).Aggregate(() => 0, null, (i, j) => i, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("combineAccumulatorsFunc", () => UnorderedSources.Default(1).Aggregate(() => 0, (i, j) => i, null, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => UnorderedSources.Default(1).Aggregate<int, int, int>(() => 0, (i, j) => i, (i, j) => i, null));
         }
     }
 }

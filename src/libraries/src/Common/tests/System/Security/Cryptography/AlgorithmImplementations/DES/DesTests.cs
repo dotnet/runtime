@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Test.Cryptography;
 using Xunit;
 
@@ -43,7 +44,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             {
                 Assert.Throws<ArgumentException>(() => des.Key = KnownShortKey);
                 Assert.Throws<CryptographicException>(() => des.Key = KnownSemiWeakKey);
-                Assert.Throws<ArgumentNullException>("value", () => des.Key = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", () => des.Key = null);
 
                 des.Key = KnownGoodKey;
                 Assert.Equal(KnownGoodKey, des.Key);
@@ -81,13 +82,13 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         {
             using (DES des = DESFactory.Create())
             {
-                Assert.Throws<ArgumentException>("rgbKey", () => des.CreateDecryptor(KnownShortKey, des.IV));
-                Assert.Throws<ArgumentNullException>("rgbKey", () => des.CreateDecryptor(null, des.IV));
+                AssertExtensions.Throws<ArgumentException>("rgbKey", () => des.CreateDecryptor(KnownShortKey, des.IV));
+                AssertExtensions.Throws<ArgumentNullException>("rgbKey", () => des.CreateDecryptor(null, des.IV));
                 Assert.Throws<CryptographicException>(() => des.CreateDecryptor(KnownWeakKey, des.IV));
                 Assert.Throws<CryptographicException>(() => des.CreateDecryptor(KnownSemiWeakKey, des.IV));
 
-                Assert.Throws<ArgumentException>("rgbKey", () => des.CreateEncryptor(KnownShortKey, des.IV));
-                Assert.Throws<ArgumentNullException>("rgbKey", () => des.CreateEncryptor(null, des.IV));
+                AssertExtensions.Throws<ArgumentException>("rgbKey", () => des.CreateEncryptor(KnownShortKey, des.IV));
+                AssertExtensions.Throws<ArgumentNullException>("rgbKey", () => des.CreateEncryptor(null, des.IV));
                 Assert.Throws<CryptographicException>(() => des.CreateEncryptor(KnownWeakKey, des.IV));
                 Assert.Throws<CryptographicException>(() => des.CreateEncryptor(KnownSemiWeakKey, des.IV));
             }

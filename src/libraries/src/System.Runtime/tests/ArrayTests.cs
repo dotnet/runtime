@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -52,8 +52,8 @@ namespace System.Tests
         [Fact]
         public static void ForEach_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("array", () => { Array.ForEach<short>(null, new Action<short>(i => i++)); });  // Array is null
-            Assert.Throws<ArgumentNullException>("action", () => { Array.ForEach<string>(new string[] { }, null); }); // Action is null
+            AssertExtensions.Throws<ArgumentNullException>("array", () => { Array.ForEach<short>(null, new Action<short>(i => i++)); });  // Array is null
+            AssertExtensions.Throws<ArgumentNullException>("action", () => { Array.ForEach<string>(new string[] { }, null); }); // Action is null
             Assert.Throws<InvalidOperationException>(() => {
                 Array.ForEach<string>(new string[] { "a" }, i => { throw new InvalidOperationException(); }); // Action throws
             });
@@ -134,25 +134,25 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_Type_Int_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0)); // Element type is null
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0)); // Element type is null
 
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0)); // Element type is not supported (void)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0)); // Element type is not supported (generic)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0)); // Element type is not supported (ref)
 
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1)); // Length < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1)); // Length < 0
         }
 
         [Fact]
         public static void CreateInstance_Type_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1)); // Element type is null
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1)); // Element type is null
 
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0, 1)); // Element type is not supported (void)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0, 1)); // Element type is not supported (generic)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0, 1)); // Element type is not supported (ref)
 
-            Assert.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1)); // Length < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1)); // Length < 0
         }
 
         [Fact]
@@ -167,13 +167,13 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_Type_Int_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1, 2)); // Element type is null
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1, 2)); // Element type is null
 
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(void), 0, 1, 2)); // Element type is not supported (void)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(List<>), 0, 1, 2)); // Element type is not supported (generic)
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(typeof(int).MakeByRefType(), 0, 1, 2)); // Element type is not supported (ref)
 
-            Assert.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 1, -1)); // Length < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 1, -1)); // Length < 0
         }
 
         [Fact]
@@ -237,8 +237,8 @@ namespace System.Tests
         [Fact]
         public static void ConvertAll_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("array", () => { Array.ConvertAll<short, short>(null, i => i); });  // Array is null
-            Assert.Throws<ArgumentNullException>("converter", () => { Array.ConvertAll<string, string>(new string[] { }, null); }); // Converter is null
+            AssertExtensions.Throws<ArgumentNullException>("array", () => { Array.ConvertAll<short, short>(null, i => i); });  // Array is null
+            AssertExtensions.Throws<ArgumentNullException>("converter", () => { Array.ConvertAll<string, string>(new string[] { }, null); }); // Converter is null
             Assert.Throws<InvalidOperationException>(() => {
                 Array.ConvertAll<string, string>(new string[] { "x" }, i => { throw new InvalidOperationException(); }); // Converter throws
             });

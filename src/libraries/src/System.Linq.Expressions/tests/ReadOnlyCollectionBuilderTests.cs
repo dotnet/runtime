@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,7 +28,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData(-1)]
         public void ReadOnlyCollectionBuilder_Ctor_Capacity_ArgumentChecking(int capacity)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new ReadOnlyCollectionBuilder<int>(capacity));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new ReadOnlyCollectionBuilder<int>(capacity));
         }
 
         [Theory]
@@ -46,7 +47,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ReadOnlyCollectionBuilder_Ctor_Collection_ArgumentChecking()
         {
-            Assert.Throws<ArgumentNullException>("collection", () => new ReadOnlyCollectionBuilder<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("collection", () => new ReadOnlyCollectionBuilder<int>(null));
         }
 
         [Theory]
@@ -105,8 +106,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(1, rocb.Capacity);
             Assert.Equal(1, rocb.Count);
 
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => { rocb.Capacity = 0; });
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => { rocb.Capacity = -1; });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => { rocb.Capacity = 0; });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => { rocb.Capacity = -1; });
 
             rocb.Capacity = 1;
 
@@ -246,7 +247,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(0, rocb.Count);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => rocb.Insert(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.Insert(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.Insert(1, 1));
 
             rocb.Insert(0, 1);
 
@@ -277,10 +278,10 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(0, rocb.Count);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => rocb.Insert(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.Insert(1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.Insert(1, 1));
 
-            Assert.Throws<ArgumentException>("value", () => rocb.Insert(1, "bar"));
-            Assert.Throws<ArgumentException>("value", () => rocb.Insert(1, null));
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb.Insert(1, "bar"));
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb.Insert(1, null));
 
             rocb.Insert(0, 1);
 
@@ -310,28 +311,28 @@ namespace System.Linq.Expressions.Tests
 
             Assert.True(new[] { 1, 2, 3, 4 }.SequenceEqual(rocb));
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(4));
 
             rocb.RemoveAt(0);
 
             Assert.True(new[] { 2, 3, 4 }.SequenceEqual(rocb));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(3));
 
             rocb.RemoveAt(1);
 
             Assert.True(new[] { 2, 4 }.SequenceEqual(rocb));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(2));
 
             rocb.RemoveAt(1);
 
             Assert.True(new[] { 2 }.SequenceEqual(rocb));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(1));
 
             rocb.RemoveAt(0);
 
             Assert.Equal(0, rocb.Count);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.RemoveAt(0));
         }
 
         [Fact]
@@ -399,7 +400,7 @@ namespace System.Linq.Expressions.Tests
 
             // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
 
             Assert.Equal(1, rocb[0]);
             Assert.Equal(2, rocb[1]);
@@ -414,7 +415,7 @@ namespace System.Linq.Expressions.Tests
 
             // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4]);
 
             Assert.Equal(1, rocb[0]);
             Assert.Equal(2, rocb[1]);
@@ -429,7 +430,7 @@ namespace System.Linq.Expressions.Tests
 
             // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1] = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
 
             rocb[0] = -1;
             Assert.Equal(-1, rocb[0]);
@@ -451,10 +452,10 @@ namespace System.Linq.Expressions.Tests
 
             // CONSIDER: Throw ArgumentOutOfRangeException instead, see https://github.com/dotnet/corefx/issues/14059
             Assert.Throws<IndexOutOfRangeException>(() => rocb[-1] = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb[4] = -1);
 
-            Assert.Throws<ArgumentException>("value", () => rocb[0] = "bar");
-            Assert.Throws<ArgumentException>("value", () => rocb[0] = null);
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb[0] = "bar");
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb[0] = null);
 
             rocb[0] = -1;
             Assert.Equal(-1, rocb[0]);
@@ -599,8 +600,8 @@ namespace System.Linq.Expressions.Tests
         {
             var rocb = new ReadOnlyCollectionBuilder<int>(new[] { 1, 2, 3 });
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => rocb.Reverse(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => rocb.Reverse(1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => rocb.Reverse(-1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rocb.Reverse(1, -1));
 
             // CONSIDER: Throw ArgumentException just like List<T> does, see https://github.com/dotnet/corefx/issues/14059
             // Assert.Throws<ArgumentException>(() => rocb.Reverse(3, 1));

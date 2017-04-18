@@ -38,8 +38,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void NumberDecimalDigits_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = 100);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("NumberDecimalDigits", () => new NumberFormatInfo().NumberDecimalDigits = 100);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberDecimalDigits = 1);
         }
     }

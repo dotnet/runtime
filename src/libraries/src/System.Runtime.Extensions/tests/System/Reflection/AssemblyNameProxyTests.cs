@@ -17,7 +17,7 @@ namespace System.Reflection.Tests
         public static void GetAssemblyName_AssemblyNameProxy()
         {
             AssemblyNameProxy anp = new AssemblyNameProxy();
-            Assert.Throws<ArgumentNullException>("assemblyFile", () => anp.GetAssemblyName(null));
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => anp.GetAssemblyName(null));
             Assert.Throws<ArgumentException>(() => anp.GetAssemblyName(string.Empty));
             Assert.Throws<FileNotFoundException>(() => anp.GetAssemblyName(Guid.NewGuid().ToString("N")));
 

@@ -50,9 +50,9 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
 
-            Assert.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null));
-            Assert.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null, true));
-            Assert.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null, true));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => helper.AddArgument(null, null, null));
         }
 
         [Fact]

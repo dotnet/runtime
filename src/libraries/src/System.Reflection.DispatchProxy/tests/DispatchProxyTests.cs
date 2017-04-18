@@ -101,25 +101,25 @@ namespace DispatchProxyTests
         [Fact]
         public static void Create_Using_Concrete_Proxy_Type_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("T", () => DispatchProxy.Create<TestType_ConcreteClass, TestDispatchProxy>());
+            AssertExtensions.Throws<ArgumentException>("T", () => DispatchProxy.Create<TestType_ConcreteClass, TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_Sealed_BaseType_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Sealed_TestDispatchProxy>());
+            AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Sealed_TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_Abstract_BaseType_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Abstract_TestDispatchProxy>());
+            AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Abstract_TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
+            AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
         }
 
         [Fact]

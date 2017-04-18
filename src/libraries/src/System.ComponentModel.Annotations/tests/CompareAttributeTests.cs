@@ -28,7 +28,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Fact]
         public static void Constructor_NullOtherProperty_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("otherProperty", () => new CompareAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("otherProperty", () => new CompareAttribute(null));
         }
 
         [Theory]

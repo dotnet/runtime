@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -103,7 +104,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             MethodInfo method = typeof(DefineMethodOverrideClass).GetMethod("M");
-            Assert.Throws<ArgumentNullException>("methodInfoBody", () => type.DefineMethodOverride(null, method));
+            AssertExtensions.Throws<ArgumentNullException>("methodInfoBody", () => type.DefineMethodOverride(null, method));
         }
 
         [Fact]
@@ -111,7 +112,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             MethodInfo method = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            Assert.Throws<ArgumentNullException>("methodInfoDeclaration", () => type.DefineMethodOverride(method, null));
+            AssertExtensions.Throws<ArgumentNullException>("methodInfoDeclaration", () => type.DefineMethodOverride(method, null));
         }
 
         [Fact]

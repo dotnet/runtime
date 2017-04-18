@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -121,8 +121,8 @@ namespace System.CodeDom.Tests
         {
             using (var collection = new TempFileCollection())
             {
-                Assert.Throws<ArgumentException>("fileExtension", () => collection.AddExtension(fileExtension));
-                Assert.Throws<ArgumentException>("fileExtension", () => collection.AddExtension(fileExtension, keepFile: false));
+                AssertExtensions.Throws<ArgumentException>("fileExtension", () => collection.AddExtension(fileExtension));
+                AssertExtensions.Throws<ArgumentException>("fileExtension", () => collection.AddExtension(fileExtension, keepFile: false));
             }
         }
 
@@ -204,7 +204,7 @@ namespace System.CodeDom.Tests
         {
             using (var collection = new TempFileCollection())
             {
-                Assert.Throws<ArgumentException>("fileName", () => collection.AddFile(fileName, keepFile: false));
+                AssertExtensions.Throws<ArgumentException>("fileName", () => collection.AddFile(fileName, keepFile: false));
             }
         }
 
@@ -215,10 +215,10 @@ namespace System.CodeDom.Tests
             {
                 const string FileName = "FileName";
                 collection.AddFile(FileName, keepFile: false);
-                Assert.Throws<ArgumentException>("fileName", () => collection.AddFile(FileName, keepFile: false));
+                AssertExtensions.Throws<ArgumentException>("fileName", () => collection.AddFile(FileName, keepFile: false));
 
                 // Case insensitive
-                Assert.Throws<ArgumentException>("fileName", () => collection.AddFile(FileName.ToLowerInvariant(), keepFile: false));
+                AssertExtensions.Throws<ArgumentException>("fileName", () => collection.AddFile(FileName.ToLowerInvariant(), keepFile: false));
             }
         }
 

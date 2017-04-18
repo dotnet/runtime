@@ -531,25 +531,25 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ThrowsOnLeftNull()
         {
-            Assert.Throws<ArgumentNullException>("left", () => Expression.Subtract(null, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.Subtract(null, Expression.Constant("")));
         }
 
         [Fact]
         public static void ThrowsOnRightNull()
         {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.Subtract(Expression.Constant(""), null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.Subtract(Expression.Constant(""), null));
         }
 
         [Fact]
         public static void CheckedThrowsOnLeftNull()
         {
-            Assert.Throws<ArgumentNullException>("left", () => Expression.SubtractChecked(null, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.SubtractChecked(null, Expression.Constant("")));
         }
 
         [Fact]
         public static void CheckedThrowsOnRightNull()
         {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.SubtractChecked(Expression.Constant(""), null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.SubtractChecked(Expression.Constant(""), null));
         }
 
         private static class Unreadable<T>
@@ -564,28 +564,28 @@ namespace System.Linq.Expressions.Tests
         public static void ThrowsOnLeftUnreadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("left", () => Expression.Subtract(value, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.Subtract(value, Expression.Constant(1)));
         }
 
         [Fact]
         public static void ThrowsOnRightUnreadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("right", () => Expression.Subtract(Expression.Constant(1), value));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.Subtract(Expression.Constant(1), value));
         }
 
         [Fact]
         public static void CheckedThrowsOnLeftUnreadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("left", () => Expression.SubtractChecked(value, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.SubtractChecked(value, Expression.Constant(1)));
         }
 
         [Fact]
         public static void CheckedThrowsOnRightUnreadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("right", () => Expression.SubtractChecked(Expression.Constant(1), value));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.SubtractChecked(Expression.Constant(1), value));
         }
 
         [Fact]

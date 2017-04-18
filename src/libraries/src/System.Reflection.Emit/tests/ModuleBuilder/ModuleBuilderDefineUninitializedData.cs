@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineUnitializedData_EmptyName_ThrowsArgumentException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>("name", () => module.DefineUninitializedData("", 1, attributes));
+            AssertExtensions.Throws<ArgumentException>("name", () => module.DefineUninitializedData("", 1, attributes));
         }
 
         [Theory]
@@ -72,7 +72,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineUnitializedData_NullName_ThrowsArgumentNullException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, attributes));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, attributes));
         }
 
         [Theory]

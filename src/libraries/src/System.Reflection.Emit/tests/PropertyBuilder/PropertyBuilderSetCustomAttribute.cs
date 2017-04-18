@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
 
-            Assert.Throws<ArgumentNullException>("customBuilder", () => property.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => property.SetCustomAttribute(null));
         }
 
         [Fact]
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
 
-            Assert.Throws<ArgumentNullException>("con", () => property.SetCustomAttribute(null, new byte[6]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => property.SetCustomAttribute(null, new byte[6]));
         }
 
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -157,7 +157,7 @@ namespace System.Dynamic.Tests
             // but the only way to change this without making other calls incorrect and without
             // a breaking change to names would be to catch and rethrow, which is more expensive
             // than it's worth.
-            Assert.Throws<ArgumentNullException>("expression", () => nop.GetMetaObject(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => nop.GetMetaObject(null));
         }
     }
 }

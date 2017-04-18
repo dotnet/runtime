@@ -15,8 +15,8 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(long.MinValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(long.MinValue));
             }
         }
 
@@ -29,7 +29,7 @@ namespace System.IO.Tests
                 fs.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => fs.SetLength(0));
                 // parameter checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
             }
         }
 
@@ -49,7 +49,7 @@ namespace System.IO.Tests
                 // no change should still throw
                 Assert.Throws<NotSupportedException>(() => fs.SetLength(fs.Length));
                 // parameter checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.SetLength(-1));
                 // disposed check happens first
                 fs.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => fs.SetLength(0));

@@ -262,12 +262,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void New_NullConstructor_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New((ConstructorInfo)null));
-            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0]));
-            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentNullException>("constructor", () => Expression.New((ConstructorInfo)null));
+            AssertExtensions.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0]));
+            AssertExtensions.Throws<ArgumentNullException>("constructor", () => Expression.New(null, (IEnumerable<Expression>)new Expression[0]));
 
-            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], new MemberInfo[0]));
-            Assert.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentNullException>("constructor", () => Expression.New(null, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         [Fact]
@@ -275,12 +275,12 @@ namespace System.Linq.Expressions.Tests
         {
             ConstructorInfo cctor = typeof(StaticCtor).GetTypeInfo().DeclaredConstructors.Single(c => c.IsStatic);
 
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0]));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(cctor));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(cctor, (IEnumerable<Expression>)new Expression[0]));
 
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], new MemberInfo[0]));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(cctor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         [Theory]
@@ -298,12 +298,12 @@ namespace System.Linq.Expressions.Tests
         {
             ConstructorInfo constructor = typeof(GenericClass<>).GetConstructor(new Type[0]);
 
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0]));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(constructor));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(constructor, (IEnumerable<Expression>)new Expression[0]));
 
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], new MemberInfo[0]));
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(constructor, new Expression[0], (IEnumerable<MemberInfo>)new MemberInfo[0]));
         }
 
         public static IEnumerable<object[]> ConstructorAndArguments_DifferentLengths_TestData()
@@ -334,11 +334,11 @@ namespace System.Linq.Expressions.Tests
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] expressions = new Expression[] { Expression.Property(null, typeof(Unreachable<string>), nameof(Unreachable<string>.WriteOnly)) };
 
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
 
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, new MemberInfo[1]));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[1]));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, new MemberInfo[1]));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[1]));
         }
 
         [Fact]
@@ -347,12 +347,12 @@ namespace System.Linq.Expressions.Tests
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] expressions = new Expression[] { Expression.Constant(5) };
 
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
 
             MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetProperty(nameof(ClassWithCtors.IntProperty)) };
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, members));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, members));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, members));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, expressions, members));
         }
 
         public static IEnumerable<object[]> ArgumentsAndMembers_DifferentLengths_TestData()
@@ -377,8 +377,8 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { typeof(Unreachable<string>).GetProperty(nameof(Unreachable<string>.WriteOnly)) };
 
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Theory]
@@ -391,8 +391,8 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetMember(memberName).First() };
 
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]
@@ -402,8 +402,8 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetProperty(nameof(ClassWithCtors.WriteOnlyProperty)) };
 
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]
@@ -413,8 +413,8 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetMethod(nameof(ClassWithCtors.InstanceMethod)) };
 
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]
@@ -424,8 +424,8 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { constructor };
 
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]
@@ -435,14 +435,14 @@ namespace System.Linq.Expressions.Tests
             Expression[] arguments = new Expression[] { Expression.Constant("hello") };
             MemberInfo[] members = new MemberInfo[] { typeof(ClassWithCtors).GetField(nameof(ClassWithCtors._field)) };
 
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]
         public static void Type_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.New((Type)null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.New((Type)null));
         }
 
         [Fact]
@@ -485,7 +485,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(Type_InvalidType_TestData))]
         public static void Type_InvalidType_ThrowsArgumentException(Type type)
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.New(type));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.New(type));
         }
 
         public static IEnumerable<object[]> OpenGenericConstructors()
@@ -507,10 +507,10 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(OpenGenericConstructors))]
         public static void OpenGenericConstructorsInvalid(ConstructorInfo ctor, Expression[] arguments)
         {
-            Assert.Throws<ArgumentException>("constructor", () => Expression.New(ctor, arguments));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(ctor, arguments));
             if (arguments.Length == 0)
             {
-                Assert.Throws<ArgumentException>("constructor", () => Expression.New(ctor));
+                AssertExtensions.Throws<ArgumentException>("constructor", () => Expression.New(ctor));
             }
         }
 

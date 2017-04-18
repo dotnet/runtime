@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -21,7 +22,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void GetSerializableMembers_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => FormatterServices.GetSerializableMembers(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => FormatterServices.GetSerializableMembers(null));
         }
 
         [Fact]
@@ -33,8 +34,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void GetUninitializedObject_NullType_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => FormatterServices.GetUninitializedObject(null));
-            Assert.Throws<ArgumentNullException>("type", () => FormatterServices.GetSafeUninitializedObject(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => FormatterServices.GetUninitializedObject(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => FormatterServices.GetSafeUninitializedObject(null));
         }
 
         [Fact]
@@ -275,27 +276,27 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void PopulateObjectMembers_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => FormatterServices.PopulateObjectMembers(null, new MemberInfo[0], new object[0]));
-            Assert.Throws<ArgumentNullException>("members", () => FormatterServices.PopulateObjectMembers(new object(), null, new object[0]));
-            Assert.Throws<ArgumentNullException>("data", () => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[0], null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => FormatterServices.PopulateObjectMembers(null, new MemberInfo[0], new object[0]));
+            AssertExtensions.Throws<ArgumentNullException>("members", () => FormatterServices.PopulateObjectMembers(new object(), null, new object[0]));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[0], null));
             Assert.Throws<ArgumentException>(() => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[1], new object[2]));
-            Assert.Throws<ArgumentNullException>("members", () => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[1], new object[1]));
+            AssertExtensions.Throws<ArgumentNullException>("members", () => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[1], new object[1]));
             Assert.Throws<SerializationException>(() => FormatterServices.PopulateObjectMembers(new object(), new MemberInfo[] { typeof(object).GetMethod("GetHashCode") }, new object[] { new object() }));
         }
 
         [Fact]
         public void GetObjectData_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => FormatterServices.GetObjectData(null, new MemberInfo[0]));
-            Assert.Throws<ArgumentNullException>("members", () => FormatterServices.GetObjectData(new object(), null));
-            Assert.Throws<ArgumentNullException>("members", () => FormatterServices.GetObjectData(new object(), new MemberInfo[1]));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => FormatterServices.GetObjectData(null, new MemberInfo[0]));
+            AssertExtensions.Throws<ArgumentNullException>("members", () => FormatterServices.GetObjectData(new object(), null));
+            AssertExtensions.Throws<ArgumentNullException>("members", () => FormatterServices.GetObjectData(new object(), new MemberInfo[1]));
             Assert.Throws<SerializationException>(() => FormatterServices.GetObjectData(new object(), new MethodInfo[] { typeof(object).GetMethod("GetHashCode") }));
         }
 
         [Fact]
         public void GetSurrogateForCyclicalReference_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("innerSurrogate", () => FormatterServices.GetSurrogateForCyclicalReference(null));
+            AssertExtensions.Throws<ArgumentNullException>("innerSurrogate", () => FormatterServices.GetSurrogateForCyclicalReference(null));
         }
 
         [Fact]
@@ -310,7 +311,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void GetTypeFromAssembly_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
+            AssertExtensions.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
             Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
         }
     }

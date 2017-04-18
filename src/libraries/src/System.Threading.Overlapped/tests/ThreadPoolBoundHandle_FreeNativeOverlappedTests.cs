@@ -13,7 +13,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            Assert.Throws<ArgumentNullException>("overlapped", () =>
+            AssertExtensions.Throws<ArgumentNullException>("overlapped", () =>
             {
                 handle.FreeNativeOverlapped((NativeOverlapped*)null);
             });

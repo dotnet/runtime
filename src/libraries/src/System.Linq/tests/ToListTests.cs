@@ -88,7 +88,7 @@ namespace System.Linq.Tests
         public void ToList_ThrowArgumentNullExceptionWhenSourceIsNull()
         {
             int[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.ToList());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.ToList());
         }
 
         // Generally the optimal approach. Anything that breaks this should be confirmed as not harming performance.

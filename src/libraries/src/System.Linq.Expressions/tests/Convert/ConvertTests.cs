@@ -16689,26 +16689,26 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void OpenGenericnType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>)));
         }
 
         [Fact]
         public static void TypeContainingGenericParameters()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>).MakeGenericType(typeof(List<>))));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>.Enumerator)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
         [Fact]
         public static void ByRefType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(object).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(object).MakeByRefType()));
         }
 
         [Fact]
         public static void PointerType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(int*)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(int*)));
         }
 
         public static IEnumerable<object[]> Conversions()
@@ -16790,7 +16790,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
             MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.DoNothing));
-            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
         }
 
         [Fact]
@@ -16798,7 +16798,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
             MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.Create));
-            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
         }
 
         [Fact]

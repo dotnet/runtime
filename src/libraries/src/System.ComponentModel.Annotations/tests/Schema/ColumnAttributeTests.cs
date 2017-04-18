@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Schema.Tests
@@ -49,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         public static void Order_Set_NegativeValue_ThrowsArgumentOutOfRangeException()
         {
             ColumnAttribute attribute = new ColumnAttribute();
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => attribute.Order = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => attribute.Order = -1);
         }
 
         [Theory]

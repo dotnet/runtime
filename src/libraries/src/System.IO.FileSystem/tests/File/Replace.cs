@@ -27,8 +27,8 @@ namespace System.IO.Tests
         [Fact]
         public void NullFileName()
         {
-            Assert.Throws<ArgumentNullException>("sourceFileName", () => File.Replace(null, "", ""));
-            Assert.Throws<ArgumentNullException>("destinationFileName", () => File.Replace("", null, ""));
+            AssertExtensions.Throws<ArgumentNullException>("sourceFileName", () => File.Replace(null, "", ""));
+            AssertExtensions.Throws<ArgumentNullException>("destinationFileName", () => File.Replace("", null, ""));
         }
 
         [Fact]

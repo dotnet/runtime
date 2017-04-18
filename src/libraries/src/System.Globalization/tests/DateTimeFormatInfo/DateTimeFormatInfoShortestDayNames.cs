@@ -26,9 +26,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void ShortestDayNames_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortestDayNames = null); // Value is null
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortestDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" }); // Value has null
-            Assert.Throws<ArgumentException>("value", () => new DateTimeFormatInfo().ShortestDayNames = new string[] { "su" }); // Value.Length is not 7
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortestDayNames = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortestDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" }); // Value has null
+            AssertExtensions.Throws<ArgumentException>("value", () => new DateTimeFormatInfo().ShortestDayNames = new string[] { "su" }); // Value.Length is not 7
 
             // DateTimeFormatInfo.InvariantInfo is read only
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortestDayNames = new string[] { "1", "2", "3", "4", "5", "6", "7" });

@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
         public void SetCustomAttribute_ConstructorInfo_ByteArray_NullConstructor_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("con", () => module.SetCustomAttribute(null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => module.SetCustomAttribute(null, new byte[0]));
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
             ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
-            Assert.Throws<ArgumentNullException>("binaryAttribute", () => module.SetCustomAttribute(constructor, null));
+            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => module.SetCustomAttribute(constructor, null));
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace System.Reflection.Emit.Tests
         public void SetCustomAttribute_CustomAttributeBuilder_NullBuilder_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("customBuilder", () => module.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => module.SetCustomAttribute(null));
         }
     }
 }

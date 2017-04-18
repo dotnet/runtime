@@ -78,7 +78,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void IEnumerableConstructorTest_Negative()
         {
-            Assert.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>((IEnumerable<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>((IEnumerable<string>)null));
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void ListConstructorTest_Negative()
         {
-            Assert.Throws<ArgumentNullException>("list", () => new ObservableCollection<string>((List<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("list", () => new ObservableCollection<string>((List<string>)null));
         }
 
         [Fact]

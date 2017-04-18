@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Tests
         public void ExceptionMustBeReadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<Exception>), "WriteOnly");
-            Assert.Throws<ArgumentException>("value", () => Expression.Throw(value));
+            AssertExtensions.Throws<ArgumentException>("value", () => Expression.Throw(value));
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace System.Linq.Expressions.Tests
             Type listType = typeof(List<>);
             Assert.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), listType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(listType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listType));
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Tests
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
             Assert.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), listListListType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(listListListType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listListListType));
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions.Tests
             Type pointer = typeof(int).MakeByRefType();
             Assert.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), pointer));
-            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(pointer));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(pointer));
         }
 
         [Fact]
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Tests
             Type byRefType = typeof(int).MakeByRefType();
             Assert.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), byRefType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(byRefType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(byRefType));
         }
 
         [Theory]
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CannotThrowValueType()
         {
-            Assert.Throws<ArgumentException>("value", () => Expression.Throw(Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("value", () => Expression.Throw(Expression.Constant(1)));
         }
 
         [Fact]
@@ -404,47 +404,47 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void FaultMustNotBeWithCatch()
         {
-            Assert.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, Expression.Constant(2), new[] { Expression.Catch(typeof(object), Expression.Constant(3)) }));
+            AssertExtensions.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, Expression.Constant(2), new[] { Expression.Catch(typeof(object), Expression.Constant(3)) }));
         }
 
         [Fact]
         public void FaultMustNotBeWithFinally()
         {
-            Assert.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), null));
+            AssertExtensions.Throws<ArgumentException>("fault", () => Expression.MakeTry(typeof(int), Expression.Constant(1), Expression.Constant(2), Expression.Constant(3), null));
         }
 
         [Fact]
         public void TryMustNotHaveNullBody()
         {
-            Assert.Throws<ArgumentNullException>("body", () => Expression.TryCatch(null, Expression.Catch(typeof(object), Expression.Constant(1))));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.TryCatchFinally(null, Expression.Constant(1), Expression.Catch(typeof(object), Expression.Constant(1))));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.TryFault(null, Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.TryFinally(null, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.TryCatch(null, Expression.Catch(typeof(object), Expression.Constant(1))));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.TryCatchFinally(null, Expression.Constant(1), Expression.Catch(typeof(object), Expression.Constant(1))));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.TryFault(null, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.TryFinally(null, Expression.Constant(1)));
         }
 
         [Fact]
         public void TryMustHaveReadableBody()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("body", () => Expression.TryCatch(value, Expression.Catch(typeof(object), Expression.Constant(1))));
-            Assert.Throws<ArgumentException>("body", () => Expression.TryCatchFinally(value, Expression.Constant(1), Expression.Catch(typeof(object), Expression.Constant(1))));
-            Assert.Throws<ArgumentException>("body", () => Expression.TryFault(value, Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("body", () => Expression.TryFinally(value, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.TryCatch(value, Expression.Catch(typeof(object), Expression.Constant(1))));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.TryCatchFinally(value, Expression.Constant(1), Expression.Catch(typeof(object), Expression.Constant(1))));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.TryFault(value, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.TryFinally(value, Expression.Constant(1)));
         }
 
         [Fact]
         public void FaultMustBeReadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("fault", () => Expression.TryFault(Expression.Constant(1), value));
+            AssertExtensions.Throws<ArgumentException>("fault", () => Expression.TryFault(Expression.Constant(1), value));
         }
 
         [Fact]
         public void FinallyMustBeReadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("finally", () => Expression.TryFinally(Expression.Constant(1), value));
-            Assert.Throws<ArgumentException>("finally", () => Expression.TryCatchFinally(Expression.Constant(1), value, Expression.Catch(typeof(object), Expression.Constant(1))));
+            AssertExtensions.Throws<ArgumentException>("finally", () => Expression.TryFinally(Expression.Constant(1), value));
+            AssertExtensions.Throws<ArgumentException>("finally", () => Expression.TryCatchFinally(Expression.Constant(1), value, Expression.Catch(typeof(object), Expression.Constant(1))));
         }
 
         [Theory]
@@ -743,56 +743,56 @@ namespace System.Linq.Expressions.Tests
         public void ByRefExceptionType()
         {
             ParameterExpression variable = Expression.Parameter(typeof(Exception).MakeByRefType());
-            Assert.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty()));
-            Assert.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty(), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty()));
+            AssertExtensions.Throws<ArgumentException>("variable", () => Expression.Catch(variable, Expression.Empty(), Expression.Constant(true)));
         }
 
         [Fact]
         public void NullTypeOnCatch()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Catch(default(Type), Expression.Empty()));
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Catch(default(Type), Expression.Empty(), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Catch(default(Type), Expression.Empty()));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Catch(default(Type), Expression.Empty(), Expression.Constant(true)));
         }
 
         [Fact]
         public void NullExceptionVariableOnCatch()
         {
-            Assert.Throws<ArgumentNullException>("variable", () => Expression.Catch(default(ParameterExpression), Expression.Empty()));
-            Assert.Throws<ArgumentNullException>("variable", () => Expression.Catch(default(ParameterExpression), Expression.Empty(), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("variable", () => Expression.Catch(default(ParameterExpression), Expression.Empty()));
+            AssertExtensions.Throws<ArgumentNullException>("variable", () => Expression.Catch(default(ParameterExpression), Expression.Empty(), Expression.Constant(true)));
         }
 
         [Fact]
         public void CatchBodyMustBeNotBeNull()
         {
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Catch(typeof(Exception), null));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Catch(typeof(Exception), null, Expression.Constant(true)));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), null));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), null, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Catch(typeof(Exception), null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Catch(typeof(Exception), null, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), null, Expression.Constant(true)));
         }
 
         [Fact]
         public void CatchBodyMustBeReadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("body", () => Expression.Catch(typeof(Exception), value));
-            Assert.Throws<ArgumentException>("body", () => Expression.Catch(typeof(Exception), value, Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), value));
-            Assert.Throws<ArgumentException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), value, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Catch(typeof(Exception), value));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Catch(typeof(Exception), value, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), value));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Catch(Expression.Parameter(typeof(Exception)), value, Expression.Constant(true)));
         }
 
         [Fact]
         public void FilterMustBeReadable()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<bool>), "WriteOnly");
-            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(typeof(Exception), Expression.Empty(), value));
-            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), value));
+            AssertExtensions.Throws<ArgumentException>("filter", () => Expression.Catch(typeof(Exception), Expression.Empty(), value));
+            AssertExtensions.Throws<ArgumentException>("filter", () => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), value));
         }
 
         [Fact]
         public void FilterMustBeBoolean()
         {
-            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(typeof(Exception), Expression.Empty(), Expression.Constant(42)));
-            Assert.Throws<ArgumentException>("filter", () => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), Expression.Constant(42)));
+            AssertExtensions.Throws<ArgumentException>("filter", () => Expression.Catch(typeof(Exception), Expression.Empty(), Expression.Constant(42)));
+            AssertExtensions.Throws<ArgumentException>("filter", () => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), Expression.Constant(42)));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -1434,36 +1434,36 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void OpenGenericExceptionType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>), Expression.Constant(0), Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>), null, Expression.Constant(0), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>), Expression.Constant(0), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>), null, Expression.Constant(0), null));
         }
 
         [Fact]
         public void ExceptionTypeContainingGenericParameters()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>.Enumerator), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>.Enumerator), Expression.Constant(0), Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>.Enumerator), null, Expression.Constant(0), null));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(0), Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>).MakeGenericType(typeof(List<>)), null, Expression.Constant(0), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>.Enumerator), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>.Enumerator), Expression.Constant(0), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>.Enumerator), null, Expression.Constant(0), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(0), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(List<>).MakeGenericType(typeof(List<>)), null, Expression.Constant(0), null));
         }
 
         [Fact]
         public void PointerExceptionType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int*), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int*), Expression.Constant(0), Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(int*), null, Expression.Constant(0), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int*), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int*), Expression.Constant(0), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(int*), null, Expression.Constant(0), null));
         }
 
         [Fact]
         public void TypedByRefExceptionType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int).MakeByRefType(), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int).MakeByRefType(), Expression.Constant(0), Expression.Constant(true)));
-            Assert.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(int).MakeByRefType(), null, Expression.Constant(0), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int).MakeByRefType(), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Catch(typeof(int).MakeByRefType(), Expression.Constant(0), Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.MakeCatchBlock(typeof(int).MakeByRefType(), null, Expression.Constant(0), null));
         }
 
         [Fact]

@@ -291,7 +291,7 @@ namespace System.Tests
 
         public static void ReflectionOnlyGetType()
         {
-            Assert.Throws<ArgumentNullException>("typeName", () => Type.ReflectionOnlyGetType(null, true, false));
+            AssertExtensions.Throws<ArgumentNullException>("typeName", () => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<TypeLoadException>(() => Type.ReflectionOnlyGetType("", true, true));
             Assert.Throws<NotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
         }

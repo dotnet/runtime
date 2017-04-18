@@ -76,7 +76,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Repeat_ThrowExceptionOnNegativeCount()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Repeat(1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Enumerable.Repeat(1, -1));
         }
 
 
@@ -226,7 +226,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ElementAtExcessive()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Enumerable.Repeat(3, 3).ElementAt(100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Enumerable.Repeat(3, 3).ElementAt(100));
         }
 
         [Fact]

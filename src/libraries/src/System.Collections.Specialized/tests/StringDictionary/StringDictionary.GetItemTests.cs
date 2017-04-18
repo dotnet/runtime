@@ -46,7 +46,7 @@ namespace System.Collections.Specialized.Tests
         public void Item_Get_NullKey_ThrowsArgumentNullException(int count)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
-            Assert.Throws<ArgumentNullException>("key", () => stringDictionary[null]);
+            AssertExtensions.Throws<ArgumentNullException>("key", () => stringDictionary[null]);
         }
     }
 }

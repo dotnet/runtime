@@ -124,7 +124,7 @@ namespace Tests.Collections
         public void Contains_NullKey_ThrowsArgumentNullException()
         {
             IDictionary dict = GetDictionary(new object[0]) as IDictionary;
-            Assert.Throws<ArgumentNullException>("key", () => dict.Contains(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dict.Contains(null));
         }
 
         [Fact]

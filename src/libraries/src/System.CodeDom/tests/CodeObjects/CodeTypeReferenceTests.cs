@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -63,8 +63,8 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullType_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("type", () => new CodeTypeReference((Type)null));
-			Assert.Throws<ArgumentNullException>("type", () => new CodeTypeReference((Type)null, CodeTypeReferenceOptions.GenericTypeParameter));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeTypeReference((Type)null));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeTypeReference((Type)null, CodeTypeReferenceOptions.GenericTypeParameter));
 		}
 
 		public static IEnumerable<object[]> Ctor_String_TestData()
@@ -177,7 +177,7 @@ namespace System.CodeDom.Tests
 		public void Ctor_NullObjectInTypeArguments_ThrowsArgumentNullException()
 		{
 			CodeTypeReference[] typeArguments = new CodeTypeReference[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTypeReference("System.Int32", typeArguments));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTypeReference("System.Int32", typeArguments));
 		}
 
 		public static IEnumerable<object[]> Ctor_CodeTypeParameter_TestData()

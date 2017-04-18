@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -109,9 +110,9 @@ namespace System.Net.Tests
         public static void InvalidArgs_Throws()
         {
             var p = new WebProxy();
-            Assert.Throws<ArgumentNullException>("destination", () => p.GetProxy(null));
-            Assert.Throws<ArgumentNullException>("host", () => p.IsBypassed(null));
-            Assert.Throws<ArgumentNullException>("c", () => p.BypassList = null);
+            AssertExtensions.Throws<ArgumentNullException>("destination", () => p.GetProxy(null));
+            AssertExtensions.Throws<ArgumentNullException>("host", () => p.IsBypassed(null));
+            AssertExtensions.Throws<ArgumentNullException>("c", () => p.BypassList = null);
             Assert.Throws<ArgumentException>(() => p.BypassList = new string[] { "*.com" });
         }
 

@@ -33,7 +33,7 @@ namespace System.Collections.Specialized.Tests
         public void ContainsKey_NullKey_ThrowsArgumentNullException(int count)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
-            Assert.Throws<ArgumentNullException>("key", () => stringDictionary.ContainsKey(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => stringDictionary.ContainsKey(null));
         }
     }
 }

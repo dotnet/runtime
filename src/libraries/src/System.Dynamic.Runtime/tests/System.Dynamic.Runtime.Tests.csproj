@@ -156,6 +156,9 @@
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.implem.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>

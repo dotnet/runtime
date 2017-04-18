@@ -38,8 +38,8 @@ namespace System.Tests
         [Fact]
         public static void NaNMultiplication()
         {
-            Assert.Throws<ArgumentException>("factor", () => TimeSpan.FromDays(1) * double.NaN);
-            Assert.Throws<ArgumentException>("factor", () => double.NaN * TimeSpan.FromDays(1));
+            AssertExtensions.Throws<ArgumentException>("factor", () => TimeSpan.FromDays(1) * double.NaN);
+            AssertExtensions.Throws<ArgumentException>("factor", () => double.NaN * TimeSpan.FromDays(1));
         }
 
         [Theory, MemberData(nameof(MultiplicationTestData))]
@@ -64,7 +64,7 @@ namespace System.Tests
         [Fact]
         public static void NaNDivision()
         {
-            Assert.Throws<ArgumentException>("divisor", () => TimeSpan.FromDays(1) / double.NaN);
+            AssertExtensions.Throws<ArgumentException>("divisor", () => TimeSpan.FromDays(1) / double.NaN);
         }
 
         [Theory, MemberData(nameof(MultiplicationTestData))]
@@ -82,7 +82,7 @@ namespace System.Tests
         [Fact]
         public static void NamedNaNMultiplication()
         {
-            Assert.Throws<ArgumentException>("factor", () => TimeSpan.FromDays(1).Multiply(double.NaN));
+            AssertExtensions.Throws<ArgumentException>("factor", () => TimeSpan.FromDays(1).Multiply(double.NaN));
         }
 
         [Theory, MemberData(nameof(MultiplicationTestData))]
@@ -107,7 +107,7 @@ namespace System.Tests
         [Fact]
         public static void NamedNaNDivision()
         {
-            Assert.Throws<ArgumentException>("divisor", () => TimeSpan.FromDays(1).Divide(double.NaN));
+            AssertExtensions.Throws<ArgumentException>("divisor", () => TimeSpan.FromDays(1).Divide(double.NaN));
         }
     }
 }

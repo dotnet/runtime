@@ -130,14 +130,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullVariableList()
         {
-            Assert.Throws<ArgumentNullException>("variables", () => Expression.RuntimeVariables(default(ParameterExpression[])));
-            Assert.Throws<ArgumentNullException>("variables", () => Expression.RuntimeVariables(default(IEnumerable<ParameterExpression>)));
+            AssertExtensions.Throws<ArgumentNullException>("variables", () => Expression.RuntimeVariables(default(ParameterExpression[])));
+            AssertExtensions.Throws<ArgumentNullException>("variables", () => Expression.RuntimeVariables(default(IEnumerable<ParameterExpression>)));
         }
 
         [Fact]
         public void NullVariableInList()
         {
-            Assert.Throws<ArgumentNullException>("variables[1]", () => Expression.RuntimeVariables(Expression.Variable(typeof(int)), null));
+            AssertExtensions.Throws<ArgumentNullException>("variables[1]", () => Expression.RuntimeVariables(Expression.Variable(typeof(int)), null));
         }
 
         [Theory]
@@ -188,7 +188,7 @@ namespace System.Linq.Expressions.Tests
         public void UpdateNullThrows()
         {
             RuntimeVariablesExpression varExp = Expression.RuntimeVariables(Enumerable.Repeat(Expression.Variable(typeof(RuntimeVariablesTests)), 0));
-            Assert.Throws<ArgumentNullException>("variables", () => varExp.Update(null));
+            AssertExtensions.Throws<ArgumentNullException>("variables", () => varExp.Update(null));
         }
 
         [Fact]

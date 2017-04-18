@@ -428,7 +428,7 @@ namespace System.Linq.Tests
             Assert.Equal(6, source.ElementAt(2));
             Assert.Equal(8, source.ElementAtOrDefault(3));
             Assert.Equal(0, source.ElementAtOrDefault(8));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-2));
         }
 
         [Fact]

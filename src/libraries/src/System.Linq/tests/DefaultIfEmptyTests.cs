@@ -94,8 +94,8 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = null;
 
-            Assert.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty());
-            Assert.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty(42));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.DefaultIfEmpty(42));
         }
 
         [Fact]

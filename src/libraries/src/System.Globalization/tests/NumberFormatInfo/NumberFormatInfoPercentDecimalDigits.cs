@@ -28,8 +28,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void PercentDecimalDigits_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("PercentDecimalDigits", () => new NumberFormatInfo().PercentDecimalDigits = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("PercentDecimalDigits", () => new NumberFormatInfo().PercentDecimalDigits = 100);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentDecimalDigits", () => new NumberFormatInfo().PercentDecimalDigits = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentDecimalDigits", () => new NumberFormatInfo().PercentDecimalDigits = 100);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentDecimalDigits = 1);
         }
     }

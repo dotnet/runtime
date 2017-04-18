@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Linq;
 using Xunit;
 
@@ -15,9 +16,9 @@ namespace System.IO.FileSystem.DriveInfoTests
         {
             Assert.All(
                 new[] { "", "\0", "\0/" },
-                driveName => Assert.Throws<ArgumentException>("driveName", () => { new DriveInfo(driveName); }));
+                driveName => AssertExtensions.Throws<ArgumentException>("driveName", () => { new DriveInfo(driveName); }));
 
-            Assert.Throws<ArgumentNullException>("driveName", () => { new DriveInfo(null); });
+            AssertExtensions.Throws<ArgumentNullException>("driveName", () => { new DriveInfo(null); });
 
             Assert.Equal("/", new DriveInfo("/").Name);
         }

@@ -77,7 +77,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_IntArray_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("bits", () => new decimal(null)); // Bits is null
+            AssertExtensions.Throws<ArgumentNullException>("bits", () => new decimal(null)); // Bits is null
             Assert.Throws<ArgumentException>(null, () => new decimal(new int[3])); // Bits.Length is not 4
             Assert.Throws<ArgumentException>(null, () => new decimal(new int[5])); // Bits.Length is not 4
         }

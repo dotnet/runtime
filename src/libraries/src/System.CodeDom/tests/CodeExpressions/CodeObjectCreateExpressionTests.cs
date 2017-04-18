@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,9 +69,9 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullParameters_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(new CodeTypeReference(), null));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression("System.Int32", null));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(typeof(int), null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(new CodeTypeReference(), null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression("System.Int32", null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(typeof(int), null));
 		}
 
 		[Fact]
@@ -79,9 +79,9 @@ namespace System.CodeDom.Tests
 		{
 			CodeExpression[] parameters = new CodeExpression[] { null };
 
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(new CodeTypeReference(), parameters));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression("System.Int32", parameters));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(typeof(int), parameters));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(new CodeTypeReference(), parameters));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression("System.Int32", parameters));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeObjectCreateExpression(typeof(int), parameters));
 		}
 
 		[Theory]

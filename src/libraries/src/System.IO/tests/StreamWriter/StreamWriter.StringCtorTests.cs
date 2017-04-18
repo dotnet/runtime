@@ -15,14 +15,14 @@ namespace System.IO.Tests
         [Fact]
         public static void NullArgs_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null));
-            Assert.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true));
-            Assert.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null));
-            Assert.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null, -1));
-            Assert.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null));
-            Assert.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null, -1));
-            Assert.Throws<ArgumentNullException>("encoding", () => new StreamWriter("", true, null));
-            Assert.Throws<ArgumentNullException>("encoding", () => new StreamWriter("", true, null, -1));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamWriter((string)null, true, null, -1));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("path", true, null, -1));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("", true, null));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamWriter("", true, null, -1));
         }
 
         [Fact]
@@ -38,8 +38,8 @@ namespace System.IO.Tests
         [Fact]
         public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", false, Encoding.UTF8, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", true, Encoding.UTF8, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", false, Encoding.UTF8, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter("path", true, Encoding.UTF8, 0));
         }
 
         [Fact]

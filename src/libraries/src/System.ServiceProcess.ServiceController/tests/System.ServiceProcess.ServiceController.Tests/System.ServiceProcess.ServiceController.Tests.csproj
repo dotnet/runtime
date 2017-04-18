@@ -10,6 +10,9 @@
   <ItemGroup>
     <Compile Include="SafeServiceControllerTests.cs" />
     <Compile Include="ServiceControllerTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' AND '$(Platform)'!='arm64'">
     <ProjectReference Include="..\System.ServiceProcess.ServiceController.TestNativeService\System.ServiceProcess.ServiceController.TestNativeService.vcxproj">

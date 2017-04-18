@@ -40,7 +40,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ToFourDigitYear_InvalidYear_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => new KoreanCalendar().ToFourDigitYear(100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => new KoreanCalendar().ToFourDigitYear(100));
         }
     }
 }

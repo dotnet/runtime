@@ -121,8 +121,8 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Null(cc.GetCredential(new Uri("http://invalid.uri"), authenticationType1)); //No such uriPrefix
             Assert.Null(cc.GetCredential(uriPrefix1, "invalid-authentication-type")); //No such authenticationType
 
-            Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
+            AssertExtensions.Throws<ArgumentNullException>("uriPrefix", () => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
+            AssertExtensions.Throws<ArgumentNullException>("authType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
         }
 
         [Fact]
@@ -159,8 +159,8 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Null(cc.GetCredential(host1, 900, authenticationType1)); //No such port
             Assert.Null(cc.GetCredential(host1, port1, "invalid-authentication-type")); //No such authenticationType
 
-            Assert.Throws<ArgumentNullException>("host", () => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
+            AssertExtensions.Throws<ArgumentNullException>("host", () => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
+            AssertExtensions.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
 
             var exception = Record.Exception(() => cc.Add("", 500, "authenticationType", new NetworkCredential())); 
             // On full framework we get exception.ParamName as null while it is "host" on netcore
@@ -169,7 +169,7 @@ namespace System.Net.Primitives.Functional.Tests
             ArgumentException ae = exception as ArgumentException;
             Assert.True(ae.ParamName == "host" || ae.ParamName == null);
 
-            Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
         }
 
         [Fact]
@@ -238,8 +238,8 @@ namespace System.Net.Primitives.Functional.Tests
         {
             CredentialCache cc = new CredentialCache();
 
-            Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
+            AssertExtensions.Throws<ArgumentNullException>("uriPrefix", () => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
+            AssertExtensions.Throws<ArgumentNullException>("authType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
         }
 
         [Fact]
@@ -247,8 +247,8 @@ namespace System.Net.Primitives.Functional.Tests
         {
             CredentialCache cc = new CredentialCache();
 
-            Assert.Throws<ArgumentNullException>("host", () => cc.GetCredential(null, 500, "authenticationType")); //Null host
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
+            AssertExtensions.Throws<ArgumentNullException>("host", () => cc.GetCredential(null, 500, "authenticationType")); //Null host
+            AssertExtensions.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
 
             var exception = Record.Exception(() => cc.GetCredential("", 500, "authenticationType")); //Empty host
             // On full framework we get exception.ParamName as null while it is "host" on netcore
@@ -257,7 +257,7 @@ namespace System.Net.Primitives.Functional.Tests
             ArgumentException ae = exception as ArgumentException;
             Assert.True(ae.ParamName == "host" || ae.ParamName == null);
 
-            Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
         }
 
         public static IEnumerable<object[]> GetEnumeratorWithCountTestData
@@ -402,7 +402,7 @@ namespace System.Net.Primitives.Functional.Tests
 
             // The full framework throw System.ArgumentException with the message
             // 'Default credentials cannot be supplied for the authenticationType1 authentication scheme.'
-            Assert.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
+            AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
         }
 
         [Fact]

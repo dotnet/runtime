@@ -65,7 +65,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Fact]
         public void Ctor_ValidationResult_NullValidationResult_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("validationResult", () => new ValidationResultSubClass(null));
+            AssertExtensions.Throws<ArgumentNullException>("validationResult", () => new ValidationResultSubClass(null));
         }
 
         public class ValidationResultSubClass : ValidationResult

@@ -187,9 +187,9 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Zip_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("first", () => ((ParallelQuery<int>)null).Zip(ParallelEnumerable.Range(0, 1), (x, y) => x));
-            Assert.Throws<ArgumentNullException>("second", () => ParallelEnumerable.Range(0, 1).Zip(null, (Func<int, int, int>)((x, y) => x)));
-            Assert.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).Zip(ParallelEnumerable.Range(0, 1), (Func<int, int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => ((ParallelQuery<int>)null).Zip(ParallelEnumerable.Range(0, 1), (x, y) => x));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => ParallelEnumerable.Range(0, 1).Zip(null, (Func<int, int, int>)((x, y) => x)));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => ParallelEnumerable.Range(0, 1).Zip(ParallelEnumerable.Range(0, 1), (Func<int, int, int>)null));
         }
     }
 }

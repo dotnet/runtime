@@ -20,8 +20,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = (value) => true;
             Func<int, int, bool> complexPredicate = (value, index) => true;
 
-            Assert.Throws<ArgumentNullException>("source", () => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>("source", () => source.Where(complexPredicate));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Where(simplePredicate));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Where(complexPredicate));
         }
 
         [Fact]
@@ -31,8 +31,8 @@ namespace System.Linq.Tests
             Func<int, bool> simplePredicate = null;
             Func<int, int, bool> complexPredicate = null;
 
-            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
         }
 
         #endregion

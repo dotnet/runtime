@@ -12,7 +12,7 @@ namespace System.Runtime.ExceptionServices.Tests
         [Fact]
         public static void StaticThrow_NullArgument_ThrowArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ExceptionDispatchInfo.Throw(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ExceptionDispatchInfo.Throw(null));
         }
 
         [Fact]

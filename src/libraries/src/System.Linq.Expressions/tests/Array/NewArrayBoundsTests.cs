@@ -188,64 +188,64 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullType_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.NewArrayBounds(null, Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.NewArrayBounds(null, Expression.Constant(2)));
         }
 
         [Fact]
         public static void VoidType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(void), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(void), Expression.Constant(2)));
         }
 
         [Fact]
         public static void NullBounds_ThrowsArgumentnNullException()
         {
-            Assert.Throws<ArgumentNullException>("bounds", () => Expression.NewArrayBounds(typeof(int), default(Expression[])));
-            Assert.Throws<ArgumentNullException>("bounds", () => Expression.NewArrayBounds(typeof(int), default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("bounds", () => Expression.NewArrayBounds(typeof(int), default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("bounds", () => Expression.NewArrayBounds(typeof(int), default(IEnumerable<Expression>)));
         }
 
         [Fact]
         public static void EmptyBounds_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("bounds", () => Expression.NewArrayBounds(typeof(int)));
+            AssertExtensions.Throws<ArgumentException>("bounds", () => Expression.NewArrayBounds(typeof(int)));
         }
 
         [Fact]
         public static void NullBoundInBounds_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new Expression[] { null, null }));
-            Assert.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new List<Expression> { null, null }));
+            AssertExtensions.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new Expression[] { null, null }));
+            AssertExtensions.Throws<ArgumentNullException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), new List<Expression> { null, null }));
         }
 
         [Fact]
         public static void NonIntegralBoundInBounds_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), Expression.Constant(2.0)));
+            AssertExtensions.Throws<ArgumentException>("bounds[0]", () => Expression.NewArrayBounds(typeof(int), Expression.Constant(2.0)));
         }
 
         [Fact]
         public static void ByRefType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(int).MakeByRefType(), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(int).MakeByRefType(), Expression.Constant(2)));
         }
 
         [Fact]
         public static void PointerType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(int).MakePointerType(), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(int).MakePointerType(), Expression.Constant(2)));
         }
 
         [Fact]
         public static void OpenGenericType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>), Expression.Constant(2)));
         }
 
         [Fact]
         public static void TypeContainsGenericParameters_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>.Enumerator), Expression.Constant(2)));
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>.Enumerator), Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(2)));
         }
 
         [Fact]
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions.Tests
             Expression bound0 = Expression.Constant(2);
             Expression bound1 = Expression.Constant(3);
             NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
-            Assert.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
+            AssertExtensions.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
         }
     }
 }

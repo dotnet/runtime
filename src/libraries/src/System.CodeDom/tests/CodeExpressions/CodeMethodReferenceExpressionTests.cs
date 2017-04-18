@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -56,7 +56,7 @@ namespace System.CodeDom.Tests
 		public void Ctor_NullObjectInParameters_ThrowsArgumentNullException()
 		{
 			CodeTypeReference[] parameters = new CodeTypeReference[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeMethodReferenceExpression(new CodePrimitiveExpression(), "", parameters));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeMethodReferenceExpression(new CodePrimitiveExpression(), "", parameters));
 		}
 
 		[Theory]

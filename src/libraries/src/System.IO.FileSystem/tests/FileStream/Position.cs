@@ -37,8 +37,8 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = long.MinValue);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = long.MinValue);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.IO.Tests
                 // no fast path
                 Assert.Throws<ObjectDisposedException>(() => fs.Position = fs.Position);
                 // parameter checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.IO.Tests
                 // no fast path
                 Assert.Throws<NotSupportedException>(() => fs.Position = fs.Position);
                 // parameter checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => fs.Position = -1);
                 // dispose checking happens first
                 fs.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => fs.Position = 1);

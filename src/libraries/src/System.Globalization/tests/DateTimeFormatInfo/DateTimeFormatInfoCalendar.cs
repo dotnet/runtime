@@ -31,8 +31,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void Calendar_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().Calendar = null); // Value is null
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().Calendar = new ThaiBuddhistCalendar()); // Value is invalid
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().Calendar = null); // Value is null
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().Calendar = new ThaiBuddhistCalendar()); // Value is invalid
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.Calendar = new GregorianCalendar()); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

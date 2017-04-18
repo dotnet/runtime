@@ -202,22 +202,22 @@ namespace System.Text.Tests
             Encoding encoding = Encoding.UTF8;
             // Bytes does not have enough capacity to accomodate result
             string s = "T\uD83D\uDE01est";
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 2, new byte[3], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 4, new byte[5], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 5, new byte[6], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 2, new byte[3], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 4, new byte[5], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 5, new byte[6], 0));
  
             char[] c = s.ToCharArray();           
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 2, new byte[3], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 3, new byte[4], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 4, new byte[5], 0));
-            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 5, new byte[6], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 2, new byte[3], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 3, new byte[4], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 4, new byte[5], 0));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 5, new byte[6], 0));
 
             byte[] b = new byte[8];
-            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 2, b, 3));
-            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 3, b, 4));
-            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 4, b, 5));
-            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 5, b, 6));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 2, b, 3));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 3, b, 4));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 4, b, 5));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 5, b, 6));
         }
         
         private static unsafe void FixedEncodingHelper(char[] c, int charCount, byte[] b, int byteCount)

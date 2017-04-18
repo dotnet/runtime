@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void Ctor_String_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null
             Assert.Throws<CultureNotFoundException>(() => new CultureInfo("en-US@x=1")); // Name doesn't support ICU keywords
             Assert.Throws<CultureNotFoundException>(() => new CultureInfo("NotAValidCulture")); // Name is invalid
 

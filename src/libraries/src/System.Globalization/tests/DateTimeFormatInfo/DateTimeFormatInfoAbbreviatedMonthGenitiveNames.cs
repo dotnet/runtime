@@ -26,9 +26,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void AbbreviatedMonths_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = null); // Value is null
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = new string[] { "1", "2", "3", null, "5", "6", "7", "8", "9", "10", "11", "12", "" }); // Value has null
-            Assert.Throws<ArgumentException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = new string[] { "Jan" }); // Value.Length is not 13
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = new string[] { "1", "2", "3", null, "5", "6", "7", "8", "9", "10", "11", "12", "" }); // Value has null
+            AssertExtensions.Throws<ArgumentException>("value", () => new DateTimeFormatInfo().AbbreviatedMonthGenitiveNames = new string[] { "Jan" }); // Value.Length is not 13
 
             // DateTimeFormatInfo.InvariantInfo is read only
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthGenitiveNames = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "" });

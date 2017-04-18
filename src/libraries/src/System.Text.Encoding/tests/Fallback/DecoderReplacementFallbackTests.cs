@@ -34,7 +34,7 @@ namespace System.Text.Tests
         [Fact]
         public void Ctor_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("replacement", () => new DecoderReplacementFallback(null));
+            AssertExtensions.Throws<ArgumentNullException>("replacement", () => new DecoderReplacementFallback(null));
 
             // Invalid surrogate pair
             Assert.Throws<ArgumentException>(() => new DecoderReplacementFallback("\uD800"));
@@ -92,7 +92,7 @@ namespace System.Text.Tests
             DecoderFallbackBuffer buffer = new DecoderReplacementFallback(replacement).CreateFallbackBuffer();
             buffer.Fallback(new byte[] { 1 }, 0);
 
-            Assert.Throws<ArgumentException>("bytesUnknown", () => buffer.Fallback(new byte[] { 1 }, 0));
+            AssertExtensions.Throws<ArgumentException>("bytesUnknown", () => buffer.Fallback(new byte[] { 1 }, 0));
         }
     }
 }

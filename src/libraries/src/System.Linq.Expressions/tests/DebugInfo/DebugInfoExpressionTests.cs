@@ -25,13 +25,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void DebugInfo_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("document", () => Expression.DebugInfo(null, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentNullException>("document", () => Expression.DebugInfo(null, 1, 1, 1, 1));
 
             SymbolDocumentInfo document = Expression.SymbolDocument("AFile");
-            Assert.Throws<ArgumentOutOfRangeException>("startLine", () => Expression.DebugInfo(document, 0, 1, 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("startColumn", () => Expression.DebugInfo(document, 1, 0, 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("endLine", () => Expression.DebugInfo(document, 1, 1, 0, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("endColumn", () => Expression.DebugInfo(document, 1, 1, 1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startLine", () => Expression.DebugInfo(document, 0, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startColumn", () => Expression.DebugInfo(document, 1, 0, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("endLine", () => Expression.DebugInfo(document, 1, 1, 0, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("endColumn", () => Expression.DebugInfo(document, 1, 1, 1, 0));
 
             Assert.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 10, 1, 1, 1));
             Assert.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 1, 10, 1, 1));

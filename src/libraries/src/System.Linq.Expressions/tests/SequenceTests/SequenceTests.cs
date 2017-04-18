@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Tests
             MethodInfo mi1 = typeof(Expression_Tests).GetMethod("Add");
             ConstantExpression ce1 = Expression.Constant(4, typeof(int));
 
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(mi1, new Expression[] { ce1 }));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(mi1, new Expression[] { ce1 }));
         }
 
         public class Atom
@@ -431,13 +431,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void TestGetFuncTypeWithNullFails()
         {
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs", () => Expression.GetFuncType(null));
         }
 
         [Fact]
         public static void TestGetFuncTypeWithTooManyArgsFails()
         {
-            Assert.Throws<ArgumentException>("typeArgs", () => Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }));
+            AssertExtensions.Throws<ArgumentException>("typeArgs", () => Expression.GetFuncType(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }));
         }
 
         [Fact]
@@ -1792,7 +1792,7 @@ namespace System.Linq.Expressions.Tests
         public static void InvokeNonTypedLambdaFails()
         {
             Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicLambda", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-            Assert.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
         }
 
         public static LambdaExpression ComputeDynamicLambda()
@@ -1804,7 +1804,7 @@ namespace System.Linq.Expressions.Tests
         public static void InvokeNonTypedDelegateFails()
         {
             Expression call = Expression.Call(null, typeof(Compiler_Tests).GetMethod("ComputeDynamicDelegate", BindingFlags.Static | BindingFlags.Public), new Expression[] { });
-            Assert.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.Invoke(call, null));
         }
 
         public static Delegate ComputeDynamicDelegate()

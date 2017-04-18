@@ -159,11 +159,11 @@ namespace System.Text.Tests
             
             byte[] b = new byte[byteLength];
             
-            Assert.Throws<ArgumentException>("bytes", () => encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoder.GetBytes(chars, 0, length, new byte[byteLength], 0, flush: true));
             
             // Fixed buffer so make larger
             b = new byte[20];
-            Assert.Throws<ArgumentException>("bytes", () => VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => VerificationFixedEncodingHelper(encoder, chars, length, b, byteLength));
         }
         
         private static unsafe void VerificationFixedEncodingHelper(Encoder encoder, char[] c, int charCount, byte[] b, int byteCount)

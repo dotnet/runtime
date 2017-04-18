@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.New(typeof(ByRefNewType).GetConstructors()[0], pX, pY), pX, pY).Compile(useInterpreter);
             int x = -9;
             int y = 4;
-            Assert.Throws<ArgumentOutOfRangeException>("x", () => del(ref x, ref y));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("x", () => del(ref x, ref y));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

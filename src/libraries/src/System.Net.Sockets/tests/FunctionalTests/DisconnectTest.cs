@@ -30,8 +30,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));
-                Assert.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
                 s.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => s.Disconnect(true));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(true, null, null));

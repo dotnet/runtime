@@ -204,11 +204,11 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Single_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Single());
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).SingleOrDefault());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Single());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).SingleOrDefault());
 
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().Single(null));
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().SingleOrDefault(null));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().Single(null));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().SingleOrDefault(null));
         }
     }
 }

@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrencyGroupSeparator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("CurrencyGroupSeparator", () => new NumberFormatInfo().CurrencyGroupSeparator = null);
+            AssertExtensions.Throws<ArgumentNullException>("CurrencyGroupSeparator", () => new NumberFormatInfo().CurrencyGroupSeparator = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyGroupSeparator = "string");
         }
     }

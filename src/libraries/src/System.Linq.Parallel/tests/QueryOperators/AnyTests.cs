@@ -146,8 +146,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Any_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Any(x => x));
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().Any(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Any(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().Any(null));
         }
 
         private static IEnumerable<int> InfiniteEnumerable()

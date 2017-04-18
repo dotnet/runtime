@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.IO.Tests
@@ -16,20 +17,20 @@ namespace System.IO.Tests
             using (TestSafeBuffer buffer = new TestSafeBuffer(capacity))
             using (UnmanagedMemoryAccessor uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentNullException>("array", () => uma.WriteArray<UmaTestStruct>(0, null, 0, 1));
-                Assert.Throws<ArgumentNullException>("array", () => uma.ReadArray<UmaTestStruct>(0, null, 0, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => uma.WriteArray<UmaTestStruct>(0, structArr, -1, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => uma.ReadArray<UmaTestStruct>(0, structArr, -1, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => uma.WriteArray<UmaTestStruct>(0, structArr, 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => uma.ReadArray<UmaTestStruct>(0, structArr, 0, -1));
+                AssertExtensions.Throws<ArgumentNullException>("array", () => uma.WriteArray<UmaTestStruct>(0, null, 0, 1));
+                AssertExtensions.Throws<ArgumentNullException>("array", () => uma.ReadArray<UmaTestStruct>(0, null, 0, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => uma.WriteArray<UmaTestStruct>(0, structArr, -1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => uma.ReadArray<UmaTestStruct>(0, structArr, -1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => uma.WriteArray<UmaTestStruct>(0, structArr, 0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => uma.ReadArray<UmaTestStruct>(0, structArr, 0, -1));
                 Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(0, structArr, 2, 0));
                 Assert.Throws<ArgumentException>(() => uma.ReadArray<UmaTestStruct>(0, structArr, 2, 0));
                 Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(0, structArr, 0, 2));
                 Assert.Throws<ArgumentException>(() => uma.ReadArray<UmaTestStruct>(0, structArr, 0, 2));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(-1, structArr, 0, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(-1, structArr, 0, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(capacity, structArr, 0, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(capacity, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(-1, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(-1, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(capacity, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(capacity, structArr, 0, 1));
             }
         }
         
@@ -94,8 +95,8 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(capacity))
             using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
-                Assert.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
             }
         }
 
@@ -122,8 +123,8 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(capacity))
             using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
-                Assert.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
             }
         }
 

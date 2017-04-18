@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetCompareInfo_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("name", () => CompareInfo.GetCompareInfo(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => CompareInfo.GetCompareInfo(null));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -69,11 +69,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetHashCode_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
 
-            Assert.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.StringSort));
-            Assert.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
-            Assert.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
         }
 
         [Theory]
@@ -373,8 +373,8 @@ namespace System.Globalization.Tests
             Assert.Equal(sk4.GetHashCode(), sk5.GetHashCode());
             Assert.Equal(sk4.KeyData, sk5.KeyData);
 
-            Assert.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
-            Assert.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
+            AssertExtensions.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
         }
 
         [Theory]

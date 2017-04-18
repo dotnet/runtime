@@ -19,6 +19,9 @@
     <Compile Include="TcpDefaultForAzureTest.cs" />
     <Compile Include="SqlConnectionTest.cs" />
     <Compile Include="TestTdsServer.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>

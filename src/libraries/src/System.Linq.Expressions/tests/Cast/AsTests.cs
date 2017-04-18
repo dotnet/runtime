@@ -849,24 +849,24 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NonNullableValueType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(0), typeof(int)));
-            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(null), typeof(DateTime)));
-            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(DateTime.MinValue), typeof(DateTime)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(0), typeof(int)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(null), typeof(DateTime)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(DateTime.MinValue), typeof(DateTime)));
         }
 
         [Fact]
         public static void NullType() =>
-            Assert.Throws<ArgumentNullException>("type", () => Expression.TypeAs(Expression.Constant(""), null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.TypeAs(Expression.Constant(""), null));
 
         [Fact]
         public static void NullExpression() =>
-            Assert.Throws<ArgumentNullException>("expression", () => Expression.TypeAs(null, typeof(string)));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Expression.TypeAs(null, typeof(string)));
 
         [Fact]
         public static void AsOpenGeneric()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>)));
-            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>).MakeGenericType(typeof(List<>))));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
         [Fact]
@@ -888,7 +888,7 @@ namespace System.Linq.Expressions.Tests
         {
             MemberExpression unreadable = Expression.Property(
                 null, typeof(Unreadable<string>), nameof(Unreadable<string>.WriteOnly));
-            Assert.Throws<ArgumentException>("expression", () => Expression.TypeAs(unreadable, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.TypeAs(unreadable, typeof(string)));
         }
 
         #endregion

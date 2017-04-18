@@ -81,10 +81,10 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null));
-            Assert.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null, -1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => new ArraySegment<T>(new T[10], -1, 0)); // Offset < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => new ArraySegment<T>(new T[10], 0, -1)); // Count < 0
+            AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null, -1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => new ArraySegment<T>(new T[10], -1, 0)); // Offset < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => new ArraySegment<T>(new T[10], 0, -1)); // Count < 0
             Assert.Throws<ArgumentException>(null, () => new ArraySegment<T>(new T[10], 10, 1)); // Offset + count > array.Length
             Assert.Throws<ArgumentException>(null, () => new ArraySegment<T>(new T[10], 9, 2)); // Offset + count > array.Length
         }
@@ -176,11 +176,11 @@ namespace System.Tests
 
             var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
             iList = new ArraySegment<int>(intArray, 2, 3);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[-1]); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count]); // Index >= list.Count
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[-1]); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count]); // Index >= list.Count
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[-1] = 0); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count] = 0); // Index >= list.Count
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[-1] = 0); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count] = 0); // Index >= list.Count
         }
 
         [Fact]
@@ -203,8 +203,8 @@ namespace System.Tests
 
             var intArray = new int[] { 7, 8, 9, 10, 11, 12, 13 };
             iList = new ArraySegment<int>(intArray, 2, 3);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[-1]); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count]); // List >= seg.Count
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[-1]); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => iList[iList.Count]); // List >= seg.Count
         }
 
         [Fact]

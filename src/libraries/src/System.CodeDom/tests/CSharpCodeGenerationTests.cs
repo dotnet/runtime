@@ -21,7 +21,7 @@ namespace System.CodeDom.Tests
         {
             Assert.Equal("cs", new CSharpCodeProvider().FileExtension);
             Assert.Equal("cs", new CSharpCodeProvider(new Dictionary<string, string>()).FileExtension);     
-            Assert.Throws<ArgumentNullException>("providerOptions", () => new CSharpCodeProvider(null));
+            AssertExtensions.Throws<ArgumentNullException>("providerOptions", () => new CSharpCodeProvider(null));
         }
 
         [Fact]

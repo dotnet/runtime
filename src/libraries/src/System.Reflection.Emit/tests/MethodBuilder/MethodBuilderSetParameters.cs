@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = builder.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ret);
 
-            Assert.Throws<ArgumentNullException>("argument", () => type.CreateTypeInfo().AsType());
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => type.CreateTypeInfo().AsType());
         }
 
         private void VerifyParameters(ParameterInfo[] parameters, Type[] parameterTypes, string[] parameterName)

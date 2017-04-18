@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -330,8 +331,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             Assert.Throws<ArgumentNullException>(() => X509Certificate.CreateFromCertFile(null));
             Assert.Throws<ArgumentNullException>(() => X509Certificate.CreateFromSignedFile(null));
-            Assert.Throws<ArgumentNullException>("cert", () => new X509Certificate2((X509Certificate2)null));
-            Assert.Throws<ArgumentException>("handle", () => new X509Certificate2(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("cert", () => new X509Certificate2((X509Certificate2)null));
+            AssertExtensions.Throws<ArgumentException>("handle", () => new X509Certificate2(IntPtr.Zero));
 
             // A null SecureString password does not throw
             using (new X509Certificate2(TestData.MsCertificate, (SecureString)null)) { }

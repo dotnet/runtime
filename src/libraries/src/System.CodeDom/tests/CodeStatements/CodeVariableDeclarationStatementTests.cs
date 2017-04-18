@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -123,8 +123,8 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullType_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("type", () => new CodeVariableDeclarationStatement((Type)null, "Name"));
-			Assert.Throws<ArgumentNullException>("type", () => new CodeVariableDeclarationStatement((Type)null, "Name", new CodePrimitiveExpression("Value")));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeVariableDeclarationStatement((Type)null, "Name"));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeVariableDeclarationStatement((Type)null, "Name", new CodePrimitiveExpression("Value")));
 		}
 
 		[Theory]

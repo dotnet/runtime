@@ -1933,7 +1933,7 @@ namespace System.Linq.Expressions.Tests
         {
             foreach (var e in new Expression[] { Expression.Parameter(typeof(int).MakeArrayType(1)), Expression.Constant(new int[2, 2]) })
             {
-                Assert.Throws<ArgumentException>("array", () => Expression.ArrayLength(e));
+                AssertExtensions.Throws<ArgumentException>("array", () => Expression.ArrayLength(e));
             }
         }
 

@@ -219,7 +219,7 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static);
             ILGenerator generator = method.GetILGenerator();
 
-            Assert.Throws<ArgumentNullException>("local", () => generator.Emit(OpCodes.Ldloc_0, (LocalBuilder)null));
+            AssertExtensions.Throws<ArgumentNullException>("local", () => generator.Emit(OpCodes.Ldloc_0, (LocalBuilder)null));
         }
 
         [Fact]
@@ -231,7 +231,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator generator = method1.GetILGenerator();
             LocalBuilder local = method2.GetILGenerator().DeclareLocal(typeof(string));
 
-            Assert.Throws<ArgumentException>("local", () => generator.Emit(OpCodes.Ldloc_0, local));
+            AssertExtensions.Throws<ArgumentException>("local", () => generator.Emit(OpCodes.Ldloc_0, local));
         }
 
         [Fact]

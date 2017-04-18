@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,8 +13,8 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentNullException>("sourceDirectoryName", () => isf.MoveDirectory(null, "bar"));
-                Assert.Throws<ArgumentNullException>("destinationDirectoryName", () => isf.MoveDirectory("foo", null));
+                AssertExtensions.Throws<ArgumentNullException>("sourceDirectoryName", () => isf.MoveDirectory(null, "bar"));
+                AssertExtensions.Throws<ArgumentNullException>("destinationDirectoryName", () => isf.MoveDirectory("foo", null));
             }
         }
 
@@ -23,8 +23,8 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>("sourceDirectoryName", () => isf.MoveDirectory(string.Empty, "bar"));
-                Assert.Throws<ArgumentException>("destinationDirectoryName", () => isf.MoveDirectory("foo", string.Empty));
+                AssertExtensions.Throws<ArgumentException>("sourceDirectoryName", () => isf.MoveDirectory(string.Empty, "bar"));
+                AssertExtensions.Throws<ArgumentException>("destinationDirectoryName", () => isf.MoveDirectory("foo", string.Empty));
             }
         }
 

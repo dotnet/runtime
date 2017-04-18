@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void LongDatePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().LongDatePattern = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().LongDatePattern = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongDatePattern = "dddd, dd MMMM yyyy"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

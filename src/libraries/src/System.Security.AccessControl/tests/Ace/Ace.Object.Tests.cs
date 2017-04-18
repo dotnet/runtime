@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -117,31 +117,31 @@ namespace System.Security.AccessControl.Tests
         [Fact]
         public void ObjectAce_Constructor_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("securityIdentifier", () => new ObjectAce((AceFlags)0, (AceQualifier)0, 1, null, (ObjectAceFlags)1, new Guid("{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}"), new Guid("{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}"), true, new byte[4]));
-            Assert.Throws<ArgumentOutOfRangeException>("qualifier", () => ObjectAce_CreateTestData(8, 4, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 4, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("qualifier", () => ObjectAce_CreateTestData(8, -1, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 4, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("opaque", () => ObjectAce_CreateTestData(2, 1, 2, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("opaque", () => ObjectAce_CreateTestData(2, 1, 2, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 17, 0));
+            AssertExtensions.Throws<ArgumentNullException>("securityIdentifier", () => new ObjectAce((AceFlags)0, (AceQualifier)0, 1, null, (ObjectAceFlags)1, new Guid("{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}"), new Guid("{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}"), true, new byte[4]));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("qualifier", () => ObjectAce_CreateTestData(8, 4, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("qualifier", () => ObjectAce_CreateTestData(8, -1, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 4, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("opaque", () => ObjectAce_CreateTestData(2, 1, 2, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("opaque", () => ObjectAce_CreateTestData(2, 1, 2, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", true, 17, 0));
         }
 
         [Fact]
         public void ObjectAce_CreateBinaryForm_Invalid()
         {
             ObjectAce ace = (ObjectAce)ObjectAce_CreateTestData(0, 0, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", false, 8, 0)[0];
-            Assert.Throws<ArgumentNullException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(null, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => ObjectAce.CreateFromBinaryForm(new byte[1], -1));
-            Assert.Throws<ArgumentException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(new byte[ace.BinaryLength + 1], 2));
-            Assert.Throws<ArgumentException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(new byte[ace.BinaryLength], 1));
+            AssertExtensions.Throws<ArgumentNullException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(null, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ObjectAce.CreateFromBinaryForm(new byte[1], -1));
+            AssertExtensions.Throws<ArgumentException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(new byte[ace.BinaryLength + 1], 2));
+            AssertExtensions.Throws<ArgumentException>("binaryForm", () => ObjectAce.CreateFromBinaryForm(new byte[ace.BinaryLength], 1));
         }
 
         [Fact]
         public void ObjectAce_GetBinaryForm_Invalid()
         {
             ObjectAce ace = (ObjectAce)ObjectAce_CreateTestData(0, 0, 1, "S-1-5-11", 1, "{73D03E18-5C03-422c-9EC7-C4C5B1CB1612}", "{3CFD5DF9-9146-43c8-BF99-78E7E2DE4BAF}", false, 8, 0)[0];
-            Assert.Throws<ArgumentNullException>("binaryForm", () => ace.GetBinaryForm(null, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => ace.GetBinaryForm(new byte[1], -1));
-            Assert.Throws<ArgumentOutOfRangeException>("binaryForm", () => ace.GetBinaryForm(new byte[ace.BinaryLength + 1], 2));
-            Assert.Throws<ArgumentOutOfRangeException>("binaryForm", () => ace.GetBinaryForm(new byte[ace.BinaryLength], 1));
+            AssertExtensions.Throws<ArgumentNullException>("binaryForm", () => ace.GetBinaryForm(null, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ace.GetBinaryForm(new byte[1], -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("binaryForm", () => ace.GetBinaryForm(new byte[ace.BinaryLength + 1], 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("binaryForm", () => ace.GetBinaryForm(new byte[ace.BinaryLength], 1));
         }
 
         [Theory]

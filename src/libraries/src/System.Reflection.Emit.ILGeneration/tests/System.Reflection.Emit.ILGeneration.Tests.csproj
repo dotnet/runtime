@@ -35,6 +35,9 @@
     <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
     <Compile Include="CustomAttributeBuilderTests.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

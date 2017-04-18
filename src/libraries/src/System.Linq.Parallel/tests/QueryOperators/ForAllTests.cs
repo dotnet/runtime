@@ -55,8 +55,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void ForAll_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ForAll(x => { }));
-            Assert.Throws<ArgumentNullException>("action", () => ParallelEnumerable.Range(0, 1).ForAll(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).ForAll(x => { }));
+            AssertExtensions.Throws<ArgumentNullException>("action", () => ParallelEnumerable.Range(0, 1).ForAll(null));
         }
     }
 }

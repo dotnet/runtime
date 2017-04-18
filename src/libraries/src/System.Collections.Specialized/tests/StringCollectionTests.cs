@@ -164,7 +164,7 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(StringCollection_Duplicates_Data))]
         public static void AddRange_NullTest(StringCollection collection, string[] data)
         {
-            Assert.Throws<ArgumentNullException>("value", () => collection.AddRange(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => collection.AddRange(null));
         }
 
         [Theory]

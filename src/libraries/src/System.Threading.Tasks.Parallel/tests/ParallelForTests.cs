@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,17 +19,17 @@ namespace System.Threading.Tasks.Tests
         {
             // ParallelOptions tests
             ParallelOptions options = new ParallelOptions();
-            Assert.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = 0);
-            Assert.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("MaxDegreeOfParallelism", () => options.MaxDegreeOfParallelism = -2);
             
             // Parallel.Invoke tests
             Action[] smallActionArray = new Action[] { () => { } };
             Action[] largeActionArray = new Action[15];
             for (int i = 0; i < 15; i++) largeActionArray[i] = () => { };
 
-            Assert.Throws<ArgumentNullException>("actions", () => Parallel.Invoke((Action[])null));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.Invoke((ParallelOptions)null, () => { }));
-            Assert.Throws<ArgumentNullException>("actions", () => Parallel.Invoke(options, null));
+            AssertExtensions.Throws<ArgumentNullException>("actions", () => Parallel.Invoke((Action[])null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.Invoke((ParallelOptions)null, () => { }));
+            AssertExtensions.Throws<ArgumentNullException>("actions", () => Parallel.Invoke(options, null));
 
             Assert.Throws<ArgumentException>(() => Parallel.Invoke(options, (Action)null));
 
@@ -46,58 +47,58 @@ namespace System.Threading.Tasks.Tests
             options = new ParallelOptions(); // Reset to get rid of CT
 
             // Test P.For(from, to, action<int>)
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, (Action<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, (Action<int>)null));
 
             // Test P.For(from, to, options, action<int>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, (Action<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, (Action<int>)null));
 
             // Test P.For(from, to, Action<int, ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, (Action<int, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, (Action<int, ParallelLoopState>)null));
 
             // Test P.For(from, to, options, Action<int, ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, (Action<int, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, (Action<int, ParallelLoopState>)null));
 
             // Test P.For<TLocal>(from, to, Func<TLocal>, Func<int, PLS, TLocal, TLocal>, Action<TLocal>)
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.For(0, 10, (Func<string>)null, (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, () => "", null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0, 10, () => "", (a, b, c) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.For(0, 10, (Func<string>)null, (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, () => "", null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0, 10, () => "", (a, b, c) => "", null));
 
             // Test P.For<TLocal>(from, to, options, Func<TLocal>, Func<int, PLS, TLocal, TLocal>, Action<TLocal>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, () => "", (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.For(0, 10, options, (Func<string>)null, (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, () => "", null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0, 10, options, () => "", (a, b, c) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0, 10, null, () => "", (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.For(0, 10, options, (Func<string>)null, (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0, 10, options, () => "", null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0, 10, options, () => "", (a, b, c) => "", null));
 
             // 
             // Parallel.For(64) tests
             //
 
             // Test P.For(from, to, Action<long>)
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, (Action<long>)null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, (Action<long>)null));
 
             // Test P.For(from, to, options, Action<long>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, (Action<long>)null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, (Action<long>)null));
 
             // Test P.For(from, to, Action<long, PLS>)
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, (Action<long, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, (Action<long, ParallelLoopState>)null));
 
             // Test P.For(from, to, options, Action<long, PLS>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, (Action<long, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, (Action<long, ParallelLoopState>)null));
 
             // Test P.For<TLocal>(from, to, Func<TLocal>, Func<long, PLS, TLocal, TLocal>, Action<TLocal>)
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.For(0L, 10L, (Func<string>)null, (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, () => "", null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0L, 10L, () => "", (a, b, c) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.For(0L, 10L, (Func<string>)null, (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, () => "", null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0L, 10L, () => "", (a, b, c) => "", null));
 
             // Test P.For<TLocal>(from, to, options, Func<TLocal>, Func<long, PLS, TLocal, TLocal>, Action<TLocal>)
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, () => "", (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.For(0L, 10L, options, (Func<string>)null, (a, b, c) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, () => "", null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0L, 10L, options, () => "", (a, b, c) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.For(0L, 10L, null, () => "", (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.For(0L, 10L, options, (Func<string>)null, (a, b, c) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.For(0L, 10L, options, () => "", null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.For(0L, 10L, options, () => "", (a, b, c) => "", null));
 
             // Check that we properly handle pre-canceled requests
             options.CancellationToken = cts.Token;
@@ -113,57 +114,57 @@ namespace System.Threading.Tasks.Tests
 
             // Test P.FE<T>(IE<T>, Action<T>)
             string[] sArray = new string[] { "one", "two", "three" };
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string>)null));
 
             // Test P.FE<T>(IE<T>, options, Action<T>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, _ => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string>)null));
 
             // Test P.FE<T>(IE<T>, Action<T,ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string, ParallelLoopState>)null));
 
             // Test P.FE<T>(IE<T>, options, Action<T,ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string, ParallelLoopState>)null));
 
             // Test P.FE<T>(IE<T>, Action<T,ParallelLoopState,idx>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, (_, state, idx) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string, ParallelLoopState, long>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, (_, state, idx) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, (Action<string, ParallelLoopState, long>)null));
 
             // Test P.FE<T>(IE<T>, options, Action<T,ParallelLoopState,idx>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, (_, state, idx) => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, (_, state, idx) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string, ParallelLoopState, long>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, (_, state, idx) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, (_, state, idx) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, (Action<string, ParallelLoopState, long>)null));
 
             //Test P.FE<T,L>(IE<T>, Func<L>, Func<T,PLS,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, (Func<string>)null, (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, () => "", (_, state, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, (Func<string>)null, (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, () => "", (_, state, local) => "", null));
 
             //Test P.FE<T,L>(IE<T>, options, Func<L>, Func<T,PLS,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, options, (Func<string>)null, (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, options, () => "", (_, state, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, options, (Func<string>)null, (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, options, () => "", (_, state, local) => "", null));
 
             //Test P.FE<T,L>(IE<T>, Func<L>, Func<T,PLS,long,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, () => "", (_, state, idx, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, (Func<string>)null, (_, state, idx, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, () => "", (Func<string, ParallelLoopState, long, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, () => "", (_, state, idx, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, () => "", (_, state, idx, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, (Func<string>)null, (_, state, idx, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, () => "", (Func<string, ParallelLoopState, long, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, () => "", (_, state, idx, local) => "", null));
 
             //Test P.FE<T,L>(IE<T>, options, Func<L>, Func<T,PLS,idx,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, () => "", (_, state, idx, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, () => "", (_, state, idx, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, options, (Func<string>)null, (_, state, idx, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, () => "", (Func<string, ParallelLoopState, long, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, options, () => "", (_, state, idx, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((IEnumerable<string>)null, options, () => "", (_, state, idx, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(sArray, null, () => "", (_, state, idx, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(sArray, options, (Func<string>)null, (_, state, idx, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(sArray, options, () => "", (Func<string, ParallelLoopState, long, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(sArray, options, () => "", (_, state, idx, local) => "", null));
 
             //
             // Parallel.ForEach(Partitioner) tests
@@ -172,35 +173,35 @@ namespace System.Threading.Tasks.Tests
             var partitioner = Partitioner.Create(sArray);
 
             // Test P.FE<T>(Partitioner<T>, Action<T>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), (Action<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), (Action<string>)null));
 
             // Test P.FE<T>(Partitioner<T>, options, Action<T>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, _ => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Action<string>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Action<string>)null));
 
             // Test P.FE<T>(Partitioner<T>, Action<T,ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), (Action<string, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), (Action<string, ParallelLoopState>)null));
 
             // Test P.FE<T>(Partitioner<T>, options, Action<T,ParallelLoopState>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, (_, state) => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Action<string, ParallelLoopState>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, (_, state) => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Action<string, ParallelLoopState>)null));
 
             //Test P.FE<T,L>(Partitioner<T>, Func<L>, Func<T,PLS,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(Partitioner.Create(sArray), (Func<string>)null, (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(Partitioner.Create(sArray), () => "", (_, state, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(Partitioner.Create(sArray), (Func<string>)null, (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(Partitioner.Create(sArray), () => "", (_, state, local) => "", null));
 
             //Test P.FE<T,L>(Partitioner<T>, options, Func<L>, Func<T,PLS,L,L>, Action<L>)
-            Assert.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, () => "", (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Func<string>)null, (_, state, local) => "", _ => { }));
-            Assert.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
-            Assert.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(Partitioner.Create(sArray), options, () => "", (_, state, local) => "", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Parallel.ForEach((Partitioner<string>)null, options, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.ForEach(Partitioner.Create(sArray), null, () => "", (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localInit", () => Parallel.ForEach(Partitioner.Create(sArray), options, (Func<string>)null, (_, state, local) => "", _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Parallel.ForEach(Partitioner.Create(sArray), options, () => "", (Func<string, ParallelLoopState, string, string>)null, _ => { }));
+            AssertExtensions.Throws<ArgumentNullException>("localFinally", () => Parallel.ForEach(Partitioner.Create(sArray), options, () => "", (_, state, local) => "", null));
         }
 
         // Cover converting P.ForEaches of arrays, lists to P.Fors

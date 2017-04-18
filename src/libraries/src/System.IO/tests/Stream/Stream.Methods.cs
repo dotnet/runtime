@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -274,14 +275,14 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Canceled, stream.WriteAsync(new byte[1], 0, 1, new CancellationToken(canceled: true)).Status);
             Assert.Equal(TaskStatus.Canceled, stream.FlushAsync(new CancellationToken(canceled: true)).Status);
 
-            Assert.Throws<ArgumentNullException>("buffer", () => { stream.ReadAsync(null, 0, 0); });
-            Assert.Throws<ArgumentNullException>("buffer", () => { stream.WriteAsync(null, 0, 0); });
+            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { stream.ReadAsync(null, 0, 0); });
+            AssertExtensions.Throws<ArgumentNullException>("buffer", () => { stream.WriteAsync(null, 0, 0); });
 
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => { stream.ReadAsync(new byte[1], -1, 0); });
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => { stream.WriteAsync(new byte[1], -1, 0); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { stream.ReadAsync(new byte[1], -1, 0); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { stream.WriteAsync(new byte[1], -1, 0); });
 
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => { stream.ReadAsync(new byte[1], 0, -1); });
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => { stream.WriteAsync(new byte[1], 0, -1); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.ReadAsync(new byte[1], 0, -1); });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.WriteAsync(new byte[1], 0, -1); });
 
             Assert.Throws<ArgumentException>(() => { stream.ReadAsync(new byte[1], 0, 2); });
             Assert.Throws<ArgumentException>(() => { stream.WriteAsync(new byte[1], 0, 2); });

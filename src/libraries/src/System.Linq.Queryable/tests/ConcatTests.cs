@@ -29,13 +29,13 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstNull()
         {
-            Assert.Throws<ArgumentNullException>("source1", () => ((IQueryable<int>)null).Concat(Enumerable.Range(0, 0).AsQueryable()));
+            AssertExtensions.Throws<ArgumentNullException>("source1", () => ((IQueryable<int>)null).Concat(Enumerable.Range(0, 0).AsQueryable()));
         }
 
         [Fact]
         public void SecondNull()
         {
-            Assert.Throws<ArgumentNullException>("source2", () => Enumerable.Range(0, 0).AsQueryable().Concat(null));
+            AssertExtensions.Throws<ArgumentNullException>("source2", () => Enumerable.Range(0, 0).AsQueryable().Concat(null));
         }
 
         [Fact]

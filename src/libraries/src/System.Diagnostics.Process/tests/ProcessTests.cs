@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -779,7 +780,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void GetProcesseses_NullMachineName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("machineName", () => Process.GetProcesses(null));
+            AssertExtensions.Throws<ArgumentNullException>("machineName", () => Process.GetProcesses(null));
         }
 
         [Fact]
@@ -852,7 +853,7 @@ namespace System.Diagnostics.Tests
         public void GetProcessesByName_NullMachineName_ThrowsArgumentNullException()
         {
             Process currentProcess = Process.GetCurrentProcess();
-            Assert.Throws<ArgumentNullException>("machineName", () => Process.GetProcessesByName(currentProcess.ProcessName, null));
+            AssertExtensions.Throws<ArgumentNullException>("machineName", () => Process.GetProcessesByName(currentProcess.ProcessName, null));
         }
 
         [Fact]
@@ -1040,7 +1041,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Start_NullStartInfo_ThrowsArgumentNullExceptionException()
         {
-            Assert.Throws<ArgumentNullException>("startInfo", () => Process.Start((ProcessStartInfo)null));
+            AssertExtensions.Throws<ArgumentNullException>("startInfo", () => Process.Start((ProcessStartInfo)null));
         }
 
         [Fact]

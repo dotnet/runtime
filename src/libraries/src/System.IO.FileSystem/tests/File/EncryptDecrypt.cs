@@ -11,8 +11,8 @@ namespace System.IO.Tests
         [Fact]
         public static void NullArg_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("path", () => File.Encrypt(null));
-            Assert.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => File.Encrypt(null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]

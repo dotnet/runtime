@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -58,7 +58,7 @@ namespace System.Globalization.Tests
             Assert.Equal("The Return Of Sherlock Holmes", ti.ToTitleCase("The Return of Sherlock Holmes"));
             Assert.Equal("UNICEF And Children", ti.ToTitleCase("UNICEF and children"));
 
-            Assert.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
         }
 
         public static IEnumerable<object[]> DutchTitleCaseInfo_TestData()

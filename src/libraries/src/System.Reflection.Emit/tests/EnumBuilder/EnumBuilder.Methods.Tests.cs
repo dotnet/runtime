@@ -80,7 +80,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineLiteral_NullLiteralName_ThrowsArgumentNullException()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            Assert.Throws<ArgumentNullException>("fieldName", () => enumBuilder.DefineLiteral(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("fieldName", () => enumBuilder.DefineLiteral(null, 1));
         }
 
         [Theory]
@@ -90,7 +90,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineLiteral_EmptyLiteralName_ThrowsArgumentException(string literalName)
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            Assert.Throws<ArgumentException>("fieldName", () => enumBuilder.DefineLiteral(literalName, 1));
+            AssertExtensions.Throws<ArgumentException>("fieldName", () => enumBuilder.DefineLiteral(literalName, 1));
         }
 
         public static IEnumerable<object[]> DefineLiteral_InvalidLiteralValue_ThrowsArgumentException_TestData()

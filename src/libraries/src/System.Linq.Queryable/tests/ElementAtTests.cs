@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -13,7 +14,7 @@ namespace System.Linq.Tests
         {
             int?[] source = { 9, 8 };
             
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(-1));
         }
 
         [Fact]
@@ -21,7 +22,7 @@ namespace System.Linq.Tests
         {
             int[] source = { 1, 2, 3, 4 };
             
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(source.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(source.Length));
         }
 
         [Fact]
@@ -29,7 +30,7 @@ namespace System.Linq.Tests
         {
             int[] source = { };
             
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(0));
         }
 
         [Fact]
@@ -51,7 +52,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).ElementAt(2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).ElementAt(2));
         }
 
         [Fact]

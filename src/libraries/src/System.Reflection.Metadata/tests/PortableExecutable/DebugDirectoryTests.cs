@@ -167,10 +167,10 @@ namespace System.Reflection.PortableExecutable.Tests
         {
             var reader = new PEReader(new MemoryStream(Misc.Members));
 
-            Assert.Throws<ArgumentException>("entry", () => reader.ReadCodeViewDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.Coff, 0, 0, 0)));
+            AssertExtensions.Throws<ArgumentException>("entry", () => reader.ReadCodeViewDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.Coff, 0, 0, 0)));
             Assert.Throws<BadImageFormatException>(() => reader.ReadCodeViewDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.CodeView, 0, 0, 0)));
 
-            Assert.Throws<ArgumentException>("entry", () => reader.ReadEmbeddedPortablePdbDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.Coff, 0, 0, 0)));
+            AssertExtensions.Throws<ArgumentException>("entry", () => reader.ReadEmbeddedPortablePdbDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.Coff, 0, 0, 0)));
             Assert.Throws<BadImageFormatException>(() => reader.ReadEmbeddedPortablePdbDebugDirectoryData(new DebugDirectoryEntry(0, 0, 0, DebugDirectoryEntryType.EmbeddedPortablePdb, 0, 0, 0)));
         }
 

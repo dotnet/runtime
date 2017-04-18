@@ -23,7 +23,7 @@ namespace System.Linq.Tests
             IQueryable<string> first = null;
             string[] second = { "ekiM", "bBo" };
 
-            var ane = Assert.Throws<ArgumentNullException>("source1", () => first.Intersect(second.AsQueryable(), new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Intersect(second.AsQueryable(), new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Linq.Tests
             string[] first = { "Tim", "Bob", "Mike", "Robert" };
             IQueryable<string> second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Intersect(second, new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Intersect(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Linq.Tests
             IQueryable<string> first = null;
             string[] second = { "ekiM", "bBo" };
 
-            var ane = Assert.Throws<ArgumentNullException>("source1", () => first.Intersect(second.AsQueryable()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Intersect(second.AsQueryable()));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
             string[] first = { "Tim", "Bob", "Mike", "Robert" };
             IQueryable<string> second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Intersect(second));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Intersect(second));
         }
 
         [Fact]

@@ -484,19 +484,19 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void OrderBy_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderBy(x => x));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderBy(x => x, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy((Func<int, int>)null, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy((Func<int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderBy(x => x, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy((Func<int, int>)null, Comparer<int>.Default));
         }
 
         [Fact]
         public static void OrderByDescending_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderByDescending(x => x));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderByDescending(x => x, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderByDescending(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).OrderByDescending(x => x, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderByDescending((Func<int, int>)null, Comparer<int>.Default));
         }
 
         // Heavily exercises OrderBy in the face of user-delegate exceptions.
@@ -1188,19 +1188,19 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void ThenBy_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenBy(x => x));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenBy((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenBy(x => x, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenBy((Func<int, int>)null, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenBy((Func<int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenBy(x => x, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenBy((Func<int, int>)null, Comparer<int>.Default));
         }
 
         [Fact]
         public static void ThenByDescending_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenByDescending(x => x));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenByDescending((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenByDescending(x => x, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenByDescending((Func<int, int>)null, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenByDescending(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenByDescending((Func<int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((OrderedParallelQuery<int>)null).ThenByDescending(x => x, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => ParallelEnumerable.Range(0, 1).OrderBy(x => 0).ThenByDescending((Func<int, int>)null, Comparer<int>.Default));
         }
 
         //

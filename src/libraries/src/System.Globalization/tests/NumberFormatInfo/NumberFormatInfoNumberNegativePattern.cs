@@ -36,8 +36,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void NumberNegativePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = 5);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("NumberNegativePattern", () => new NumberFormatInfo().NumberNegativePattern = 5);
 
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberNegativePattern = 1);
         }

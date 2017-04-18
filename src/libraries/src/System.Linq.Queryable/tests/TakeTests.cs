@@ -21,7 +21,7 @@ namespace System.Linq.Tests
         public void ThrowsOnNullSource()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Take(5));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(5));
         }
 
         [Fact]

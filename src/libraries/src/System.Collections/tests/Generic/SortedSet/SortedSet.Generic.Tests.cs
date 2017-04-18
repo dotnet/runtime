@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -238,7 +238,7 @@ namespace System.Collections.Tests
         public void SortedSet_Generic_RemoveWhere_NullPredicate_ThrowsArgumentNullException()
         {
             SortedSet<T> set = (SortedSet<T>)GenericISetFactory();
-            Assert.Throws<ArgumentNullException>("match", () => set.RemoveWhere(null));
+            AssertExtensions.Throws<ArgumentNullException>("match", () => set.RemoveWhere(null));
         }
 
 #endregion

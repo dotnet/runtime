@@ -55,14 +55,14 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             IQueryable<string> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Distinct());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Distinct());
         }
 
         [Fact]
         public void NullSourceCustomComparer()
         {
             IQueryable<string> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Distinct(StringComparer.Ordinal));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Distinct(StringComparer.Ordinal));
         }
 
         [Fact]

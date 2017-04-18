@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -48,86 +49,86 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullAddMethod()
         {
-            Assert.Throws<ArgumentNullException>("addMethod", () => Expression.ElementInit(null, Expression.Constant(0)));
-            Assert.Throws<ArgumentNullException>("addMethod", () => Expression.ElementInit(null, Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentNullException>("addMethod", () => Expression.ElementInit(null, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentNullException>("addMethod", () => Expression.ElementInit(null, Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void NullArguments()
         {
-            Assert.Throws<ArgumentNullException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), default(Expression[])));
-            Assert.Throws<ArgumentNullException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("arguments", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), default(Expression[])));
         }
 
         [Fact]
         public void NoArguments()
         {
-            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add")));
-            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Empty<Expression>()));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add")));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Empty<Expression>()));
         }
 
         [Fact]
         public void ArgumentCountWrong()
         {
-            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(0), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 2)));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(0), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 2)));
         }
 
         [Fact]
         public void ArgumentTypeMisMatch()
         {
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant("Hello")));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant("Hello"), 1)));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant("Hello")));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant("Hello"), 1)));
         }
 
         [Fact]
         public void UnreadableArgument()
         {
             Expression argument = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), argument));
-            Assert.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(argument, 1)));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), argument));
+            AssertExtensions.Throws<ArgumentException>("arguments[0]", () => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Enumerable.Repeat(argument, 1)));
         }
 
         [Fact]
         public void ParameterlessAddProhibited()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ParameterlessAdd).GetMethod("Add"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ParameterlessAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ParameterlessAdd).GetMethod("Add"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ParameterlessAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void StaticAddProhibited()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(StaticAdd).GetMethod("Add"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(StaticAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(StaticAdd).GetMethod("Add"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(StaticAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void ByRefAddProhibited()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ByRefAdd).GetMethod("Add"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ByRefAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ByRefAdd).GetMethod("Add"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(ByRefAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void GenericAddProhibited()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(GenericAdd).GetMethod("Add"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(GenericAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(GenericAdd).GetMethod("Add"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(GenericAdd).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void GenericParameterAddProhibited()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<>).GetMethod("Add"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<>).GetMethod("Add"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<>).GetMethod("Add"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void AddMethodNotCalledAdd()
         {
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<int>).GetMethod("Remove"), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<int>).GetMethod("Remove"), Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<int>).GetMethod("Remove"), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(typeof(List<int>).GetMethod("Remove"), Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
@@ -177,10 +178,10 @@ namespace System.Linq.Expressions.Tests
             Expression key = Expression.Constant("Key");
             Expression value = Expression.Constant(42);
             ElementInit init = Expression.ElementInit(typeof(Dictionary<string, int>).GetMethod("Add"), key, value);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(3));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => init.GetArgument(int.MaxValue));
         }
 
         [Fact]

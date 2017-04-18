@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -484,7 +484,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullLambda()
         {
-            Assert.Throws<ArgumentNullException>("expression", () => Quote(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Quote(null));
         }
 
         [Fact]
@@ -492,7 +492,7 @@ namespace System.Linq.Expressions.Tests
         {
             Func<int> zero = () => 0;
             Expression funcConst = Constant(zero);
-            Assert.Throws<ArgumentException>("expression", () => Quote(funcConst));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Quote(funcConst));
         }
 
         [Fact]

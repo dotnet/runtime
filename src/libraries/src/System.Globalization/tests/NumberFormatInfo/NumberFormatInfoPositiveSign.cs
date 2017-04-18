@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PositiveSign_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PositiveSign", () => new NumberFormatInfo().PositiveSign = null);
+            AssertExtensions.Throws<ArgumentNullException>("PositiveSign", () => new NumberFormatInfo().PositiveSign = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PositiveSign = "");
         }
     }

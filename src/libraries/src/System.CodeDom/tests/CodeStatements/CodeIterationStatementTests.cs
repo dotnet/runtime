@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -43,7 +43,7 @@ namespace System.CodeDom.Tests
 		[InlineData("")]
 		public void Ctor_NullStatements_ThrowsArgumentNullException(string value)
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, null));
 		}
 
 		[Theory]
@@ -52,7 +52,7 @@ namespace System.CodeDom.Tests
 		public void Ctor_NullObjectInStatements_ThrowsArgumentNullException(string value)
 		{
 			CodeStatement[] statements = new CodeStatement[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, statements));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeIterationStatement(null, null, null, statements));
 		}
 
 		[Theory]

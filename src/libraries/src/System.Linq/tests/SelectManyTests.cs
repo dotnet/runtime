@@ -245,70 +245,70 @@ namespace System.Linq.Tests
         public void NullResultSelector()
         {
             Func<StringWithIntArray, int?, string> resultSelector = null;
-            Assert.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(e => e.total, resultSelector));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(e => e.total, resultSelector));
         }
 
         [Fact]
         public void NullResultSelectorIndexedSelector()
         {
             Func<StringWithIntArray, int?, string> resultSelector = null;
-            Assert.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany((e, i) => e.total, resultSelector));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany((e, i) => e.total, resultSelector));
         }
 
         [Fact]
         public void NullSourceWithResultSelector()
         {
             StringWithIntArray[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.SelectMany(e => e.total, (e, f) => f.ToString()));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SelectMany(e => e.total, (e, f) => f.ToString()));
         }
 
         [Fact]
         public void NullCollectionSelector()
         {
             Func<StringWithIntArray, IEnumerable<int?>> collectionSelector = null;
-            Assert.Throws<ArgumentNullException>("collectionSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(collectionSelector, (e, f) => f.ToString()));
+            AssertExtensions.Throws<ArgumentNullException>("collectionSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(collectionSelector, (e, f) => f.ToString()));
         }
 
         [Fact]
         public void NullIndexedCollectionSelector()
         {
             Func<StringWithIntArray, int, IEnumerable<int?>> collectionSelector = null;
-            Assert.Throws<ArgumentNullException>("collectionSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(collectionSelector, (e, f) => f.ToString()));
+            AssertExtensions.Throws<ArgumentNullException>("collectionSelector", () => Enumerable.Empty<StringWithIntArray>().SelectMany(collectionSelector, (e, f) => f.ToString()));
         }
 
         [Fact]
         public void NullSource()
         {
             StringWithIntArray[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.SelectMany(e => e.total));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SelectMany(e => e.total));
         }
 
         [Fact]
         public void NullSourceIndexedSelector()
         {
             StringWithIntArray[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.SelectMany((e, i) => e.total));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SelectMany((e, i) => e.total));
         }
 
         [Fact]
         public void NullSourceIndexedSelectorWithResultSelector()
         {
             StringWithIntArray[] source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.SelectMany((e, i) => e.total, (e, f) => f.ToString()));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SelectMany((e, i) => e.total, (e, f) => f.ToString()));
         }
 
         [Fact]
         public void NullSelector()
         {
             Func<StringWithIntArray, int[]> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => new StringWithIntArray[0].SelectMany(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => new StringWithIntArray[0].SelectMany(selector));
         }
 
         [Fact]
         public void NullIndexedSelector()
         {
             Func<StringWithIntArray, int, int[]> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => new StringWithIntArray[0].SelectMany(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => new StringWithIntArray[0].SelectMany(selector));
         }
 
         [Fact]

@@ -26,8 +26,8 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(fs.SafeFileHandle, FileAccess.Read, -1));
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(fs.SafeFileHandle, FileAccess.Read, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(fs.SafeFileHandle, FileAccess.Read, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(fs.SafeFileHandle, FileAccess.Read, 0));
             }
         }
 

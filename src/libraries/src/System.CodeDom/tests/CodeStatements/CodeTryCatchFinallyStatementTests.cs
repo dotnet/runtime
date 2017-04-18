@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -59,44 +59,44 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullTryStatements_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(null, new CodeCatchClause[0]));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(null, new CodeCatchClause[0], new CodeStatement[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(null, new CodeCatchClause[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(null, new CodeCatchClause[0], new CodeStatement[0]));
 		}
 
 		[Fact]
 		public void Ctor_NullObjectInTryStatements_ThrowsArgumentNullException()
 		{
 			CodeStatement[] tryStatements = new CodeStatement[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(tryStatements, new CodeCatchClause[0]));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(tryStatements, new CodeCatchClause[0], new CodeStatement[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(tryStatements, new CodeCatchClause[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(tryStatements, new CodeCatchClause[0], new CodeStatement[0]));
 		}
 
 		[Fact]
 		public void Ctor_NullCodeCatchClauses_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], null));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], null, new CodeStatement[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], null, new CodeStatement[0]));
 		}
 
 		[Fact]
 		public void Ctor_NullObjectInCodeCatchClauses_ThrowsArgumentNullException()
 		{
 			CodeCatchClause[] catchClauses = new CodeCatchClause[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], catchClauses));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], catchClauses, new CodeStatement[0]));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], catchClauses));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], catchClauses, new CodeStatement[0]));
 		}
 
 		[Fact]
 		public void Ctor_NullFinallyStatements_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], new CodeCatchClause[0], null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], new CodeCatchClause[0], null));
 		}
 
 		[Fact]
 		public void Ctor_NullObjectInFinallyStatements_ThrowsArgumentNullException()
 		{
 			CodeStatement[] finallyStatements = new CodeStatement[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], new CodeCatchClause[0], finallyStatements));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeTryCatchFinallyStatement(new CodeStatement[0], new CodeCatchClause[0], finallyStatements));
 		}
 
 		[Fact]

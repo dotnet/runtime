@@ -12,7 +12,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("overlapped", () =>
+        AssertExtensions.Throws<ArgumentNullException>("overlapped", () =>
         {
             ThreadPoolBoundHandle.GetNativeOverlappedState((NativeOverlapped*)null);
         });

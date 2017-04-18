@@ -111,7 +111,7 @@ namespace System.Collections.Tests
         public static void Item_Get_NullKey_ThrowsArgumentNullException()
         {
             var dictBase = new MyDictionary();
-            Assert.Throws<ArgumentNullException>("key", () => dictBase[null]);
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictBase[null]);
         }
 
         [Fact]
@@ -138,7 +138,7 @@ namespace System.Collections.Tests
         public static void Indexer_Set_NullKey_ThrowsArgumentNullException()
         {
             var dictBase = new MyDictionary();
-            Assert.Throws<ArgumentNullException>("key", () => dictBase[null] = new FooValue());
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictBase[null] = new FooValue());
         }
 
         [Fact]
@@ -182,11 +182,11 @@ namespace System.Collections.Tests
         public static void CopyTo_Invalid()
         {
             MyDictionary dictBase = CreateDictionary(100);
-            Assert.Throws<ArgumentNullException>("array", () => dictBase.CopyTo(null, 0)); // Array is null
+            AssertExtensions.Throws<ArgumentNullException>("array", () => dictBase.CopyTo(null, 0)); // Array is null
 
             Assert.Throws<ArgumentException>(() => dictBase.CopyTo(new object[100, 100], 0)); // Array is multidimensional
 
-            Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
 
             Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 100)); // Index >= count
             Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 50)); // Index + array.Count >= count

@@ -37,11 +37,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void PercentGroupSizes_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = null);
+            AssertExtensions.Throws<ArgumentNullException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = null);
 
-            Assert.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { -1, 1, 2 });
-            Assert.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 98, 99, 100 });
-            Assert.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 0, 1, 2 });
+            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { -1, 1, 2 });
+            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 98, 99, 100 });
+            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 0, 1, 2 });
 
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentGroupSizes = new int[] { 1, 2, 3 });
         }

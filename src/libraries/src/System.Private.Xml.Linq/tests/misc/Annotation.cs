@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Test.ModuleCore;
@@ -184,42 +185,42 @@ namespace System.Xml.Linq.Tests
         [MemberData(nameof(GetXObjects))]
         public void AddNull(XObject xo)
         {
-            Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation(null));
+            AssertExtensions.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation(null));
             Assert.Null(xo.Annotation<object>());
-            Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation(null));
+            AssertExtensions.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation(null));
         }
 
         [Theory]
         [MemberData(nameof(GetXObjects))]
         public void RemoveNull(XObject xo)
         {
-            Assert.Throws<ArgumentNullException>("type", () => xo.RemoveAnnotations(null));
-            Assert.Throws<ArgumentNullException>("type", () => xo.RemoveAnnotations(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.RemoveAnnotations(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.RemoveAnnotations(null));
         }
 
         [Theory]
         [MemberData(nameof(GetXObjects))]
         public void GetAllNull(XObject xo)
         {
-            Assert.Throws<ArgumentNullException>("type", () => xo.Annotations(null));
-            Assert.Throws<ArgumentNullException>("type", () => xo.Annotations(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.Annotations(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.Annotations(null));
         }
 
         [Theory]
         [MemberData(nameof(GetXObjects))]
         public void GetOneNull(XObject xo)
         {
-            Assert.Throws<ArgumentNullException>("type", () => xo.Annotation(null));
-            Assert.Throws<ArgumentNullException>("type", () => xo.Annotation(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.Annotation(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => xo.Annotation(null));
         }
 
         [Theory]
         [MemberData(nameof(GetXObjects))]
         public void AddNullString(XObject xo)
         {
-            Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation((string)null));
             Assert.Null(xo.Annotation<object>());
-            Assert.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("annotation", () => xo.AddAnnotation((string)null));
         }
 
         [Theory]

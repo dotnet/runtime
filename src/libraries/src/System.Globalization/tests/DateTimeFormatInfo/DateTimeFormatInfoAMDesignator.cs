@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void AMDesignator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AMDesignator = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AMDesignator = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

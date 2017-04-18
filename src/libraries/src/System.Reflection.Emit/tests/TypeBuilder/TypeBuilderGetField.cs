@@ -15,7 +15,7 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
 
             FieldBuilder field = type.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
-            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetField(type.AsType(), field));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetField(type.AsType(), field));
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field2 = type2.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
 
             Type genericInt = type1.MakeGenericType(typeof(int));
-            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetField(genericInt, field2));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetField(genericInt, field2));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             FieldBuilder field = type.DefineField("Field", typeof(int), FieldAttributes.Public);
 
-            Assert.Throws<ArgumentException>("field", () => TypeBuilder.GetField(type.AsType(), field));
+            AssertExtensions.Throws<ArgumentException>("field", () => TypeBuilder.GetField(type.AsType(), field));
         }
     }
 }

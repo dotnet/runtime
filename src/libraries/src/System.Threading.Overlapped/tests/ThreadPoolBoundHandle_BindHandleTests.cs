@@ -12,7 +12,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public void BindHandle_NullAsHandle_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("handle", () =>
+        AssertExtensions.Throws<ArgumentNullException>("handle", () =>
         {
             ThreadPoolBoundHandle.BindHandle((SafeHandle)null);
         });
@@ -23,7 +23,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         using(SafeHandle handle = HandleFactory.CreateHandle(IntPtr.Zero))
         {
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 ThreadPoolBoundHandle.BindHandle(handle);
             });
@@ -35,7 +35,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         using(SafeHandle handle = HandleFactory.CreateHandle(new IntPtr(-1)))
         {
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 ThreadPoolBoundHandle.BindHandle(handle);
             });
@@ -48,7 +48,7 @@ public partial class ThreadPoolBoundHandleTests
 
         using(SafeHandle handle = HandleFactory.CreateSyncFileHandleFoWrite())
         {
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 ThreadPoolBoundHandle.BindHandle(handle);
             });
@@ -62,7 +62,7 @@ public partial class ThreadPoolBoundHandleTests
         {
             handle.CloseWithoutDisposing();
 
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 ThreadPoolBoundHandle.BindHandle(handle);
             });
@@ -76,7 +76,7 @@ public partial class ThreadPoolBoundHandleTests
         {
             handle.CloseWithoutDisposing();
 
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 ThreadPoolBoundHandle.BindHandle(handle);
             });
@@ -89,7 +89,7 @@ public partial class ThreadPoolBoundHandleTests
         Win32Handle handle = HandleFactory.CreateSyncFileHandleFoWrite();
         handle.Dispose();
 
-        Assert.Throws<ArgumentException>("handle", () =>
+        AssertExtensions.Throws<ArgumentException>("handle", () =>
         {
             ThreadPoolBoundHandle.BindHandle(handle);
         });
@@ -102,7 +102,7 @@ public partial class ThreadPoolBoundHandleTests
         Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite();
         handle.Dispose();
 
-        Assert.Throws<ArgumentException>("handle", () =>
+        AssertExtensions.Throws<ArgumentException>("handle", () =>
         {
             ThreadPoolBoundHandle.BindHandle(handle);
         });
@@ -116,7 +116,7 @@ public partial class ThreadPoolBoundHandleTests
             // Once
             ThreadPoolBoundHandle.BindHandle(handle);
 
-            Assert.Throws<ArgumentException>("handle", () =>
+            AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
                 // Twice
                 ThreadPoolBoundHandle.BindHandle(handle);

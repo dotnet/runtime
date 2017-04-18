@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -149,13 +149,13 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_CultureInfo_NullCulture_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("culture", () => new CaseInsensitiveHashCodeProvider(null));
+            AssertExtensions.Throws<ArgumentNullException>("culture", () => new CaseInsensitiveHashCodeProvider(null));
         }
 
         [Fact]
         public static void GetHashCode_NullObj_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => new CaseInsensitiveHashCodeProvider().GetHashCode(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => new CaseInsensitiveHashCodeProvider().GetHashCode(null));
         }
 
         [Theory]

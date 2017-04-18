@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -74,8 +74,8 @@ namespace System.Dynamic.Tests
         [Fact]
         public void NullName()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new MinimumOverrideSetMemberBinder(null, false));
-            Assert.Throws<ArgumentNullException>("name", () => new MinimumOverrideSetMemberBinder(null, true));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new MinimumOverrideSetMemberBinder(null, false));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new MinimumOverrideSetMemberBinder(null, true));
         }
 
         [Theory, MemberData(nameof(NamesAndBools))]

@@ -15,13 +15,13 @@ namespace System.Tests
             const int count = -1;
             const StringSplitOptions options = StringSplitOptions.None;
 
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count, options));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count, options));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count, options));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { "," }, count, options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(',', count, options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { ',' }, count, options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(",", count, options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => value.Split(new[] { "," }, count, options));
         }
 
         [Fact]

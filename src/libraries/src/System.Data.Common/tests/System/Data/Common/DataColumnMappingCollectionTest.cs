@@ -25,6 +25,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using Xunit;
+using System;
 using System.Data.Common;
 
 namespace System.Data.Tests.Common
@@ -432,7 +433,7 @@ namespace System.Data.Tests.Common
         [Fact]
         public void GetDataColumn_DataColumnMappingCollection_String_Type_DataTable_MissingMappingAction_MissingSchemaAction_InvalidArguments()
         {
-            Assert.Throws<ArgumentException>("sourceColumn", () => DataColumnMappingCollection.GetDataColumn((DataColumnMappingCollection)null, null, typeof(string), new DataTable(), new MissingMappingAction(), new MissingSchemaAction()));
+            AssertExtensions.Throws<ArgumentException>("sourceColumn", () => DataColumnMappingCollection.GetDataColumn((DataColumnMappingCollection)null, null, typeof(string), new DataTable(), new MissingMappingAction(), new MissingSchemaAction()));
         }
 
         [Fact]
@@ -450,7 +451,7 @@ namespace System.Data.Tests.Common
         [Fact]
         public void GetDataColumn_DataColumnMappingCollection_String_Type_DataTable_MissingMappingAction_MissingSchemaAction_MissingMappingActionNotFoundThrowsException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("MissingMappingAction", () => DataColumnMappingCollection.GetDataColumn((DataColumnMappingCollection)null, "not null", typeof(string), new DataTable(), new MissingMappingAction(), new MissingSchemaAction()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("MissingMappingAction", () => DataColumnMappingCollection.GetDataColumn((DataColumnMappingCollection)null, "not null", typeof(string), new DataTable(), new MissingMappingAction(), new MissingSchemaAction()));
         }
     }
 }

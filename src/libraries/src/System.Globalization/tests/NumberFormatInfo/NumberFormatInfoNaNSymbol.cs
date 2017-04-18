@@ -29,7 +29,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void NaNSymbol_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("NaNSymbol", () => new NumberFormatInfo().NaNSymbol = null);
+            AssertExtensions.Throws<ArgumentNullException>("NaNSymbol", () => new NumberFormatInfo().NaNSymbol = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NaNSymbol = "");
         }
     }

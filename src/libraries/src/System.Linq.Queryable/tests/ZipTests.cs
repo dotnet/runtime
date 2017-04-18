@@ -23,7 +23,7 @@ namespace System.Linq.Tests
         {
             IQueryable<int> first = null;
             int[] second = new int[] { 2, 5, 9 };
-            Assert.Throws<ArgumentNullException>("source1", () => first.Zip(second.AsQueryable(), (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Zip(second.AsQueryable(), (x, y) => x + y));
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Linq.Tests
         {
             int[] first = new int[] { 1, 2, 3 };
             IQueryable<int> second = null;
-            Assert.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Zip(second, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Zip(second, (x, y) => x + y));
         }
         
         [Fact]
@@ -40,7 +40,7 @@ namespace System.Linq.Tests
             IQueryable<int> first = new int[] { 1, 2, 3 }.AsQueryable();
             IQueryable<int> second = new int[] { 2, 4, 6 }.AsQueryable();
             Expression<Func<int, int, int>> func = null;            
-            Assert.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
         }
 
         [Fact]

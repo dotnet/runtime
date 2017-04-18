@@ -15,11 +15,11 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_NullSocket_ThrowsArgumentNullExceptions()
         {
-            Assert.Throws<ArgumentNullException>("socket", () => new NetworkStream(null));
-            Assert.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, false));
-            Assert.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, true));
-            Assert.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite));
-            Assert.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite, false));
+            AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null));
+            AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, false));
+            AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, true));
+            AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite));
+            AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite, false));
         }
 
         [Fact]
@@ -582,8 +582,8 @@ namespace System.Net.Sockets.Tests
         {
             await RunWithConnectedNetworkStreamsAsync((server, client) =>
             {
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => server.ReadTimeout = invalidTimeout);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => server.WriteTimeout = invalidTimeout);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => server.ReadTimeout = invalidTimeout);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => server.WriteTimeout = invalidTimeout);
                 return Task.CompletedTask;
             });
         }
@@ -646,11 +646,11 @@ namespace System.Net.Sockets.Tests
             await RunWithConnectedNetworkStreamsAsync((stream, _) =>
             {
                 // Null destination
-                Assert.Throws<ArgumentNullException>("destination", () => { stream.CopyToAsync(null); });
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => { stream.CopyToAsync(null); });
 
                 // Buffer size out-of-range
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), 0); });
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), -1, CancellationToken.None); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), 0); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), -1, CancellationToken.None); });
 
                 // Copying to non-writable stream
                 Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream(new byte[0], writable: false)); });

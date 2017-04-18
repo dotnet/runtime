@@ -104,7 +104,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new KeyValuePair<string, int>(), array[0]);
             Assert.Equal(new KeyValuePair<string, int>("five", 5), array[1]);
 
-            Assert.Throws<ArgumentNullException>("array", () => builder.CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => builder.CopyTo(null, 0));
         }
 
         [Fact]

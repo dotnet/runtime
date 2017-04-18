@@ -14,7 +14,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public static void NullKeyName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("keyName", () => Registry.GetValue(null, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("keyName", () => Registry.GetValue(null, null, null));
         }
 
         public static readonly object[][] ArgumentExceptionTestData =

@@ -27,7 +27,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             EventBuilder ev = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
-            Assert.Throws<ArgumentNullException>("con", () => ev.SetCustomAttribute(null, new byte[256]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => ev.SetCustomAttribute(null, new byte[256]));
         }
 
         [Fact]
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
 
-            Assert.Throws<ArgumentNullException>("binaryAttribute", () => eventBuilder.SetCustomAttribute(attributeConstructor, null));
+            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => eventBuilder.SetCustomAttribute(attributeConstructor, null));
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
-            Assert.Throws<ArgumentNullException>("customBuilder", () => eventBuilder.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => eventBuilder.SetCustomAttribute(null));
         }
 
         [Fact]

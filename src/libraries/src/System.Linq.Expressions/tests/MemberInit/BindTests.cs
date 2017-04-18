@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -36,13 +36,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullPropertyAccessor()
         {
-            Assert.Throws<ArgumentNullException>("propertyAccessor", () => Expression.Bind(default(MethodInfo), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentNullException>("propertyAccessor", () => Expression.Bind(default(MethodInfo), Expression.Constant(0)));
         }
 
         [Fact]
         public void NullMember()
         {
-            Assert.Throws<ArgumentNullException>("member", () => Expression.Bind(default(MemberInfo), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentNullException>("member", () => Expression.Bind(default(MemberInfo), Expression.Constant(0)));
         }
 
         [Fact]
@@ -50,15 +50,15 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StringProperty))[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
-            Assert.Throws<ArgumentNullException>("expression", () => Expression.Bind(member, null));
-            Assert.Throws<ArgumentNullException>("expression", () => Expression.Bind(property, null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Expression.Bind(member, null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Expression.Bind(property, null));
         }
 
         [Fact]
         public void ReadOnlyMember()
         {
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetProperty(nameof(string.Length)), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetMember(nameof(string.Length))[0], Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetProperty(nameof(string.Length)), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(typeof(string).GetMember(nameof(string.Length))[0], Expression.Constant(0)));
         }
 
         [Fact]
@@ -67,8 +67,8 @@ namespace System.Linq.Expressions.Tests
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StringProperty))[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
             Expression expression = Expression.Property(Expression.Constant(new Unreadable<string>()), typeof(Unreadable<string>), nameof(Unreadable<string>.WriteOnly));
-            Assert.Throws<ArgumentException>("expression", () => Expression.Bind(member, expression));
-            Assert.Throws<ArgumentException>("expression", () => Expression.Bind(property, expression));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.Bind(member, expression));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.Bind(property, expression));
         }
 
         [Fact]
@@ -76,8 +76,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(object.ToString))[0];
             MethodInfo method = typeof(PropertyAndFields).GetMethod(nameof(object.ToString));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(method, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(method, Expression.Constant("")));
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace System.Linq.Expressions.Tests
                 typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty)),
                 Expression.Constant("value")
                 );
-            Assert.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(newExp, bind));
+            AssertExtensions.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(newExp, bind));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -179,8 +179,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ReadonlyStringProperty))[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.ReadonlyStringProperty));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
         [Fact]
@@ -188,8 +188,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringProperty))[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StaticReadonlyStringProperty));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(member, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(property, Expression.Constant("")));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions.Tests
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
             module.CreateGlobalFunctions();
             MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
-            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(globalMethodInfo, Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(globalMethodInfo, Expression.Constant(2)));
         }
 
         [Fact]
@@ -276,7 +276,7 @@ namespace System.Linq.Expressions.Tests
             FieldBuilder fieldBuilder = module.DefineInitializedData("GlobalField", new byte[4], FieldAttributes.Public);
             module.CreateGlobalFunctions();
             FieldInfo globalField = module.GetField(fieldBuilder.Name);
-            Assert.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
+            AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
         }
 #endif
     }

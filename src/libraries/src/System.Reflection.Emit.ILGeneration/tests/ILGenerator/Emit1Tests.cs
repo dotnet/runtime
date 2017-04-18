@@ -200,7 +200,7 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = module.DefineGlobalMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), new Type[0]);
 
             ILGenerator ilGenerator = method.GetILGenerator();
-            Assert.Throws<ArgumentNullException>("meth", () => ilGenerator.Emit(OpCodes.Call, (MethodInfo)null));
+            AssertExtensions.Throws<ArgumentNullException>("meth", () => ilGenerator.Emit(OpCodes.Call, (MethodInfo)null));
         }
     }
 }

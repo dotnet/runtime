@@ -77,7 +77,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetAssemblyName()
         {
-            Assert.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));
             Assert.Throws<ArgumentException>(() => AssemblyName.GetAssemblyName(string.Empty));
             Assert.Throws<System.IO.FileNotFoundException>(() => AssemblyName.GetAssemblyName("IDontExist"));
 

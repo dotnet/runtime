@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
         [InlineData(DayOfWeek.Saturday + 1)]
         public void FirstDayOfWeek_Set_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek value)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = value);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = value);
         }
 
         [Fact]

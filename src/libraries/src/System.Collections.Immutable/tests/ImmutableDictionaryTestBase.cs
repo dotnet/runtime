@@ -581,7 +581,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(nonGeneric.IsSynchronized);
             Assert.True(collection.IsReadOnly);
 
-            Assert.Throws<ArgumentNullException>("array", () => nonGeneric.CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => nonGeneric.CopyTo(null, 0));
             var array = new T[collection.Count + 1];
             nonGeneric.CopyTo(array, 1);
             Assert.Equal(default(T), array[0]);

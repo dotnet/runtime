@@ -705,7 +705,7 @@ namespace System.IO.Tests
         [InlineData('?')]
         public static void GetFullPath_Windows_Wildcards(char wildcard)
         {
-            Assert.Throws<ArgumentException>("path", () => Path.GetFullPath("test" + wildcard + "ing"));
+            AssertExtensions.Throws<ArgumentException>("path", () => Path.GetFullPath("test" + wildcard + "ing"));
         }
 
         // Windows-only P/Invoke to create 8.3 short names from long names

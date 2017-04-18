@@ -117,8 +117,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void All_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).All(x => x));
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().All(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).All(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<bool>().All(null));
         }
     }
 }

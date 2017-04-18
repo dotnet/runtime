@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ReadOnly_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("ci", () => CultureInfo.ReadOnly(null));
+            AssertExtensions.Throws<ArgumentNullException>("ci", () => CultureInfo.ReadOnly(null));
         }
     }
 }
