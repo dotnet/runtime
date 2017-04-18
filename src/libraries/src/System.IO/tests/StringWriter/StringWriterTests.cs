@@ -391,6 +391,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework throws NullReferenceException")]
         public async Task NullNewLineAsync()
         {
             using (MemoryStream ms = new MemoryStream())
