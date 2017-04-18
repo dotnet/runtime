@@ -10,6 +10,11 @@
 
 #ifdef WIN64EXCEPTIONS
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#define USE_PER_FRAME_PINVOKE_INIT
+#endif // _TARGET_ARM_ || _TARGET_X86_
+
+
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
@@ -203,7 +208,11 @@ public:
         DWORD dwExceptionFlags,
         StackFrame sf,
         Thread* pThread,
-        StackTraceState STState ARM_ARG(PVOID pICFSetAsLimitFrame));
+        StackTraceState STState
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+        , PVOID pICFSetAsLimitFrame
+#endif // USE_PER_FRAME_PINVOKE_INIT
+        );
 
     CLRUnwindStatus ProcessExplicitFrame(
         CrawlFrame* pcfThisFrame,
