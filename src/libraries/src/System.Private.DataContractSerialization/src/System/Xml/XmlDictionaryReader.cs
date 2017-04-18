@@ -151,7 +151,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string contentType,
             XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
         public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
@@ -175,7 +175,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string contentType,
             XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
         public virtual bool CanCanonicalize

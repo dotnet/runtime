@@ -346,6 +346,31 @@ namespace System.Runtime.Serialization
             }
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnRead, value.Substring(index, count), DataContract.GetClrTypeFullName(UnderlyingType))));
         }
+
+        internal string GetStringFromEnumValue(long value)
+        {
+            if (IsULong)
+            {
+                return XmlConvert.ToString((ulong)value);
+            }
+            else
+            {
+                return XmlConvert.ToString(value);
+            }
+        }
+
+        internal long GetEnumValueFromString(string value)
+        {
+            if (IsULong)
+            {
+                return (long)XmlConverter.ToUInt64(value);
+            }
+            else
+            {
+                return XmlConverter.ToInt64(value);
+            }
+        }
+
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
         {
             WriteEnumValue(xmlWriter, obj);
