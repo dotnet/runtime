@@ -34,7 +34,7 @@ public:
     CrashInfo(pid_t pid, DataTarget& dataTarget);
     virtual ~CrashInfo();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(const char* pszExePath, MINIDUMP_TYPE minidumpType);
+    bool GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType);
     void ResumeThreads();
     static bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name);
 
@@ -63,7 +63,7 @@ public:
 private:
     bool GetAuxvEntries();
     bool EnumerateModuleMappings();
-    bool EnumerateMemoryRegionsWithDAC(const char* pszExePath, MINIDUMP_TYPE minidumpType);
+    bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
     bool GetDSOInfo();
     bool ReadMemory(void* address, void* buffer, size_t size);
     void InsertMemoryRegion(uint64_t address, size_t size);

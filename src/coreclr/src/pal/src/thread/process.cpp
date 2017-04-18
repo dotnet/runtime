@@ -149,7 +149,7 @@ DWORD gSID = (DWORD) -1;
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-char *g_argvCreateDump[3] = { nullptr, nullptr, nullptr };
+char* g_argvCreateDump[8] = { nullptr };
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -2895,8 +2895,11 @@ PROCAbortInitialize()
         }
         const char* DumpGeneratorName = "createdump";
         int programLen = strlen(g_szCoreCLRPath) + strlen(DumpGeneratorName);
-        char* program = new char[programLen];
-
+        char* program = (char*)InternalMalloc(programLen);
+        if (program == nullptr)
+        {
+            return FALSE;
+        }
         if (strcpy_s(program, programLen, g_szCoreCLRPath) != SAFECRT_SUCCESS)
         {
             return FALSE;
@@ -2914,19 +2917,50 @@ PROCAbortInitialize()
         {
             return FALSE;
         }
-        char pidarg[128];
-        if (sprintf_s(pidarg, sizeof(pidarg), "%d", gPID) == -1)
+        char* pidarg = (char*)InternalMalloc(128);
+        if (pidarg == nullptr)
         {
             return FALSE;
         }
-        g_argvCreateDump[0] = program;
-        g_argvCreateDump[1] = _strdup(pidarg);
-        g_argvCreateDump[2] = nullptr;
+        if (sprintf_s(pidarg, 128, "%d", gPID) == -1)
+        {
+            return FALSE;
+        }
+        const char** argv = (const char**)g_argvCreateDump;
+        *argv++ = program;
 
-        if (g_argvCreateDump[0] == nullptr || g_argvCreateDump[1] == nullptr)
+        char* envvar = getenv("COMPlus_DbgMiniDumpName");
+        if (envvar != nullptr)
         {
-            return FALSE;
+            *argv++ = "--name";
+            *argv++ = envvar;
         }
+
+        envvar = getenv("COMPlus_DbgMiniDumpType");
+        if (envvar != nullptr)
+        {
+            if (strcmp(envvar, "1") == 0)
+            {
+                *argv++ = "--normal";
+            }
+            else if (strcmp(envvar, "2") == 0)
+            {
+                *argv++ = "--withheap";
+            }
+            else if (strcmp(envvar, "3") == 0)
+            {
+                *argv++ = "--micro";
+            }
+        }
+
+        envvar = getenv("COMPlus_CreateDumpDiagnostics");
+        if (envvar != nullptr && strcmp(envvar, "1") == 0)
+        {
+            *argv++ = "--diag";
+        }
+
+        *argv++ = pidarg;
+        *argv = nullptr;
     }
     return TRUE;
 }

@@ -4,18 +4,26 @@
 
 #include "createdump.h"
 
+const char* g_help = "createdump [options] pid\n" 
+"-f, --name - dump path and file name. The pid can be placed in the name with %d. The default is '/tmp/coredump.%d'\n"
+"-n, --normal - create minidump (default).\n"
+"-h, --withheap - create minidump with heap.\n" 
+"-m, --micro - create triage minidump.\n" 
+"-d, --diag - enable diagnostic messages.\n";
+
 bool g_diagnostics = true;
 
 //
 // Create a minidump using the DAC's enum memory regions interface
 //
 static bool 
-CreateDump(const char* pszExePath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType)
+CreateDump(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType)
 {
     DataTarget* dataTarget = new DataTarget(pid);
     CrashInfo* crashInfo = new CrashInfo(pid, *dataTarget);
     DumpWriter* dumpWriter = new DumpWriter(*dataTarget, *crashInfo);
     ArrayHolder<char> dumpPath = new char[MAX_LONGPATH];
+    const char* dumpType = "minidump";
     bool result = false;
 
     // Suspend all the threads in the target process and build the list of threads
@@ -29,7 +37,7 @@ CreateDump(const char* pszExePath, const char* dumpPathTemplate, pid_t pid, MINI
         goto exit;
     }
     // Gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!crashInfo->GatherCrashInfo(pszExePath, minidumpType))
+    if (!crashInfo->GatherCrashInfo(programPath, minidumpType))
     {
         goto exit;
     }
@@ -38,6 +46,20 @@ CreateDump(const char* pszExePath, const char* dumpPathTemplate, pid_t pid, MINI
     {
         goto exit;
     }
+    switch (minidumpType)
+    {
+        case MiniDumpWithPrivateReadWriteMemory:
+            dumpType = "minidump with heap";
+            break;
+
+        case MiniDumpFilterTriage:
+            dumpType = "triage minidump";
+            break;
+
+        default:
+            break;
+    }
+    printf("Writing %s to file %s\n", dumpType, (char*)dumpPath);
     if (!dumpWriter->WriteDump())
     {
         goto exit;
@@ -56,7 +78,10 @@ exit:
 //
 int __cdecl main(const int argc, const char* argv[])
 {
+    MINIDUMP_TYPE minidumpType = MiniDumpNormal;
     const char* dumpPathTemplate = "/tmp/coredump.%d";
+    const char* programPath = nullptr;
+    pid_t pid = 0;
 
     char* diagnostics = getenv("COMPlus_CreateDumpDiagnostics");
     g_diagnostics = diagnostics != nullptr && strcmp(diagnostics, "1") == 0;
@@ -64,24 +89,52 @@ int __cdecl main(const int argc, const char* argv[])
     int exitCode = PAL_InitializeDLL();
     if (exitCode != 0)
     {
-        fprintf(stderr, "PAL_Initialize FAILED %d\n", exitCode);
+        fprintf(stderr, "PAL initialization FAILED %d\n", exitCode);
         return exitCode;
     }
-    pid_t pid;
-    if (argc < 2)
-    {
-        fprintf(stderr, "Not enough arguments\n");
-        exitCode = -1;
-        goto exit;
-    }
-    pid = _atoi64(argv[1]);
+    programPath = *argv;
+    argv++;
 
-    if (!CreateDump(argv[0], dumpPathTemplate, pid, MiniDumpNormal)) 
+    for (int i = 1; i < argc; i++)
+    {
+        if (*argv != nullptr)
+        {
+            if ((strcmp(*argv, "-f") == 0) || (strcmp(*argv, "--name") == 0))
+            {
+                dumpPathTemplate = *++argv;
+            }
+            else if ((strcmp(*argv, "-n") == 0) || (strcmp(*argv, "--normal") == 0))
+            {
+                minidumpType = MiniDumpNormal;
+            }
+            else if ((strcmp(*argv, "-h") == 0) || (strcmp(*argv, "--withheap") == 0))
+            {
+                minidumpType = MiniDumpWithPrivateReadWriteMemory;
+            }
+            else if ((strcmp(*argv, "-m") == 0) || (strcmp(*argv, "--micro") == 0))
+            {
+                minidumpType = MiniDumpFilterTriage;
+            }
+            else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
+            {
+                g_diagnostics = true;
+            }
+            else {
+                pid = atoll(*argv);
+            }
+            argv++;
+        }
+    }
+    // if no pid or invalid command line option
+    if (pid == 0)
+    {
+        fprintf(stderr, "%s", g_help);
+        exitCode = -1;
+    }
+    else if (!CreateDump(programPath, dumpPathTemplate, pid, minidumpType)) 
     {
         exitCode = -1;
-        goto exit;
     }
-exit:
     PAL_TerminateEx(exitCode);
     return exitCode;
 }
