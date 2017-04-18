@@ -5,6 +5,10 @@ if (WIN32)
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ENTRY:CoreDllMain")
     
+    # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the 
+    # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO")
+
     # Delay load libraries required for WinRT as that is not supported on all platforms
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
