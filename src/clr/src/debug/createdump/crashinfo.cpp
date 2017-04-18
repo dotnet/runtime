@@ -120,6 +120,8 @@ CrashInfo::EnumerateAndSuspendThreads()
             else 
             {
                 fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                closedir(taskDir);
+                return false;
             }
         }
     }
@@ -129,7 +131,7 @@ CrashInfo::EnumerateAndSuspendThreads()
 }
 
 bool
-CrashInfo::GatherCrashInfo(const char* pszExePath, MINIDUMP_TYPE minidumpType)
+CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
 {
     // Get the process info
     if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
@@ -160,7 +162,7 @@ CrashInfo::GatherCrashInfo(const char* pszExePath, MINIDUMP_TYPE minidumpType)
         return false;
     }
     // Gather all the useful memory regions from the DAC
-    if (!EnumerateMemoryRegionsWithDAC(pszExePath, minidumpType))
+    if (!EnumerateMemoryRegionsWithDAC(programPath, minidumpType))
     {
         return false;
     }
@@ -326,7 +328,7 @@ CrashInfo::EnumerateModuleMappings()
 }
 
 bool
-CrashInfo::EnumerateMemoryRegionsWithDAC(const char *pszExePath, MINIDUMP_TYPE minidumpType)
+CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType)
 {
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     ICLRDataEnumMemoryRegions *clrDataEnumRegions = nullptr;
@@ -336,7 +338,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(const char *pszExePath, MINIDUMP_TYPE m
 
     // We assume that the DAC is in the same location as this createdump exe
     ArrayHolder<char> dacPath = new char[MAX_LONGPATH];
-    strcpy_s(dacPath, MAX_LONGPATH, pszExePath);
+    strcpy_s(dacPath, MAX_LONGPATH, programPath);
     char *last = strrchr(dacPath, '/');
     if (last != nullptr)
     {
@@ -572,13 +574,10 @@ CrashInfo::CombineMemoryRegions()
     if (g_diagnostics)
     {
         TRACE("Memory Regions:\n");
-        uint64_t total = 0;
         for (const MemoryRegion& region : m_memoryRegions)
         {
             region.Print();
-            total += region.Size();
         }
-        TRACE("Total %ld bytes (%ld pages) to write\n", total, total >> PAGE_SHIFT);
     }
 }
 
