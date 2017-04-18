@@ -1274,7 +1274,7 @@ dnl
 dnl Boehm GC configuration
 dnl
 
-AC_ARG_WITH(libgc,   [  --with-gc=included,none  Controls the Boehm GC config, default=included],[libgc=$with_gc],[libgc=included])
+AC_ARG_WITH(libgc,   [  --with-libgc=included,none  Controls the Boehm GC config, default=included],[libgc=$with_gc],[libgc=included])
 
 AC_ARG_ENABLE(boehm, [  --disable-boehm            Disable the Boehm GC.], support_boehm=$enableval,support_boehm=${support_boehm:-yes})
 AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
@@ -1322,7 +1322,7 @@ if test "x$support_boehm" = "xyes"; then
 			;;
 
 		xsgen)
-			AC_MSG_WARN("Use --with-sgen instead, --with-gc= controls Boehm configuration")
+			AC_MSG_WARN("Use --with-sgen instead, --with-libgc= controls Boehm configuration")
 			;;
 
 		xnone)
@@ -1332,7 +1332,7 @@ if test "x$support_boehm" = "xyes"; then
 			gc_msg="none"
 			;;
 		*)
-			AC_MSG_ERROR([Invalid argument to --with-gc.])
+			AC_MSG_ERROR([Invalid argument to --with-libgc.])
 			;;
 	esac
 
