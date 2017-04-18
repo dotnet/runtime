@@ -11,9 +11,6 @@ namespace System.Net
 {
     internal class IPAddressParser
     {
-        internal const int INET_ADDRSTRLEN = 22;
-        internal const int INET6_ADDRSTRLEN = 65;
-
         internal static unsafe IPAddress Parse(string ipString, bool tryParse)
         {
             if (ipString == null)
@@ -25,41 +22,23 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(ipString));
             }
 
-            uint error = 0;
-
-            // Detect probable IPv6 addresses and use separate parse method.
             if (ipString.IndexOf(':') != -1)
             {
-                // If the address string contains the colon character
-                // then it can only be an IPv6 address. Use a separate
-                // parse method to unpack it all. Note: we don't support
-                // port specification at the end of address and so can
-                // make this decision.
+                // If the address string contains the colon character then it can only be an IPv6 address.
+                // This is valid because we don't support/parse a port specification at the end of an IPv4 address.
                 uint scope;
-                byte* bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                error = IPAddressPal.Ipv6StringToAddress(ipString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
-
-                if (error == IPAddressPal.SuccessErrorCode)
+                ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
+                if (Ipv6StringToAddress(ipString, numbers, IPAddressParserStatics.IPv6AddressShorts, out scope))
                 {
-                    // AppCompat: .Net 4.5 ignores a correct port if the address was specified in brackets.
-                    // Will still throw for an incorrect port.
-                    return new IPAddress(bytes, IPAddressParserStatics.IPv6AddressBytes, scope);
+                    return new IPAddress(numbers, IPAddressParserStatics.IPv6AddressShorts, scope);
                 }
             }
             else
             {
-                ushort port;
-                byte* bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
-                error = IPAddressPal.Ipv4StringToAddress(ipString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
-
-                if (error == IPAddressPal.SuccessErrorCode)
+                long address;
+                if (Ipv4StringToAddress(ipString, out address))
                 {
-                    if (port != 0)
-                    {
-                        throw new FormatException(SR.dns_bad_ip_address);
-                    }
-
-                    return new IPAddress(bytes, IPAddressParserStatics.IPv4AddressBytes);
+                    return new IPAddress(address);
                 }
             }
 
@@ -68,8 +47,7 @@ namespace System.Net
                 return null;
             }
 
-            throw new FormatException(SR.dns_bad_ip_address,
-                new SocketException(IPAddressPal.GetSocketErrorForErrorCode(error), error));
+            throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
         internal static unsafe string IPv4AddressToString(uint address)
@@ -89,20 +67,39 @@ namespace System.Net
             return new string(addressString, offset, MaxLength - offset);
         }
 
-        internal static string IPv6AddressToString(ushort[] numbers, uint scopeId)
+        internal static string IPv6AddressToString(ushort[] address, uint scopeId)
         {
-            StringBuilder sb = StringBuilderCache.Acquire(INET6_ADDRSTRLEN);
-            uint errorCode = IPAddressPal.Ipv6AddressToString(numbers, scopeId, sb);
+            Debug.Assert(address != null);
+            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressShorts);
 
-            if (errorCode == IPAddressPal.SuccessErrorCode)
+            const int INET6_ADDRSTRLEN = 65;
+            StringBuilder buffer = StringBuilderCache.Acquire(INET6_ADDRSTRLEN);
+
+            if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
             {
-                return StringBuilderCache.GetStringAndRelease(sb);
+                // We need to treat the last 2 ushorts as a 4-byte IPv4 address,
+                // so output the first 6 ushorts normally, followed by the IPv4 address.
+                AppendSections(address, 0, 6, buffer);
+                if (buffer[buffer.Length - 1] != ':')
+                {
+                    buffer.Append(':');
+                }
+                buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
             }
             else
             {
-                StringBuilderCache.Release(sb);
-                throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
+                // No IPv4 address.  Output all 8 sections as part of the IPv6 address
+                // with normal formatting rules.
+                AppendSections(address, 0, 8, buffer);
             }
+
+            // If there's a scope ID, append it.
+            if (scopeId != 0)
+            {
+                buffer.Append('%').Append(scopeId);
+            }
+
+            return StringBuilderCache.GetStringAndRelease(buffer);
         }
 
         private static unsafe void FormatIPv4AddressNumber(int number, char* addressString, ref int offset)
@@ -116,5 +113,157 @@ namespace System.Net
             } while (number != 0);
             offset = i;
         }
+
+        public static unsafe bool Ipv4StringToAddress(string ipString, out long address)
+        {
+            Debug.Assert(ipString != null);
+
+            long tmpAddr;
+            int end = ipString.Length;
+            fixed (char* ipStringPtr = ipString)
+            {
+                tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
+            }
+
+            if (tmpAddr != IPv4AddressHelper.Invalid && end == ipString.Length)
+            {
+                address =
+                    ((0xFF000000 & tmpAddr) >> 24) |
+                    ((0x00FF0000 & tmpAddr) >> 8) |
+                    ((0x0000FF00 & tmpAddr) << 8) |
+                    ((0x000000FF & tmpAddr) << 24);
+                return true;
+            }
+            else
+            {
+                address = 0;
+                return false;
+            }
+        }
+
+        public static unsafe bool Ipv6StringToAddress(string ipString, ushort* numbers, int numbersLength, out uint scope)
+        {
+            Debug.Assert(ipString != null);
+            Debug.Assert(numbers != null);
+            Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
+
+            int end = ipString.Length;
+            fixed (char* name = ipString)
+            {
+                if (IPv6AddressHelper.IsValidStrict(name, 0, ref end) || (end != ipString.Length))
+                {
+                    string scopeId = null;
+                    IPv6AddressHelper.Parse(ipString, numbers, 0, ref scopeId);
+
+                    long result = 0;
+                    if (!string.IsNullOrEmpty(scopeId))
+                    {
+                        if (scopeId.Length < 2)
+                        {
+                            scope = 0;
+                            return false;
+                        }
+
+                        for (int i = 1; i < scopeId.Length; i++)
+                        {
+                            char c = scopeId[i];
+                            if (c < '0' || c > '9')
+                            {
+                                scope = 0;
+                                return false;
+                            }
+                            result = (result * 10) + (c - '0');
+                            if (result > uint.MaxValue)
+                            {
+                                scope = 0;
+                                return false;
+                            }
+                        }
+                    }
+
+                    scope = (uint)result;
+                    return true;
+                }
+            }
+
+            scope = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Appends each of the numbers in address in indexed range [fromInclusive, toExclusive),
+        /// while also replacing the longest sequence of 0s found in that range with "::", as long
+        /// as the sequence is more than one 0.
+        /// </summary>
+        private static void AppendSections(ushort[] address, int fromInclusive, int toExclusive, StringBuilder buffer)
+        {
+            // Find the longest sequence of zeros to be combined into a "::"
+            (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(address, fromInclusive, toExclusive);
+            bool needsColon = false;
+
+            // Output all of the numbers before the zero sequence
+            for (int i = fromInclusive; i < zeroStart; i++)
+            {
+                if (needsColon)
+                {
+                    buffer.Append(':');
+                }
+                needsColon = true;
+                AppendHex(address[i], buffer);
+            }
+
+            // Output the zero sequence if there is one
+            if (zeroStart >= 0)
+            {
+                buffer.Append("::");
+                needsColon = false;
+                fromInclusive = zeroEnd;
+            }
+
+            // Output everything after the zero sequence
+            for (int i = fromInclusive; i < toExclusive; i++)
+            {
+                if (needsColon)
+                {
+                    buffer.Append(':');
+                }
+                needsColon = true;
+                AppendHex(address[i], buffer);
+            }
+        }
+
+        /// <summary>Appends a number as hexadecimal (without the leading "0x") to the StringBuilder.</summary>
+        private static unsafe void AppendHex(int value, StringBuilder buffer)
+        {
+            const int MaxLength = 8;
+            char* chars = stackalloc char[MaxLength];
+            int len = 0;
+
+            do
+            {
+                int rem;
+                value = Math.DivRem(value, 16, out rem);
+                chars[len++] = rem < 10 ?
+                    (char)('0' + rem) :
+                    (char)('a' + (rem - 10));
+            }
+            while (value != 0);
+
+            int mid = len / 2;
+            for (int i = 0; i < mid; i++)
+            {
+                char c = chars[i];
+                chars[i] = chars[len - i - 1];
+                chars[len - i - 1] = c;
+            }
+
+            buffer.Append(chars, len);
+        }
+
+        /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>
+        private static uint ExtractIPv4Address(ushort[] address) => (uint)(Reverse(address[7]) << 16) | Reverse(address[6]);
+
+        /// <summary>Reverses the two bytes in the ushort.</summary>
+        private static ushort Reverse(ushort number) => (ushort)(((number >> 8) & 0xFF) | ((number << 8) & 0xFF00));
     }
 }

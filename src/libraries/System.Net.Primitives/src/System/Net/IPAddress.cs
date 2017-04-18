@@ -173,6 +173,21 @@ namespace System.Net
             PrivateScopeId = (uint)scopeid;
         }
 
+        internal unsafe IPAddress(ushort* numbers, int numbersLength, uint scopeid)
+        {
+            Debug.Assert(numbers != null);
+            Debug.Assert(numbersLength == NumberOfLabels);
+
+            var arr = new ushort[NumberOfLabels];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = numbers[i];
+            }
+
+            _numbers = arr;
+            PrivateScopeId = scopeid;
+        }
+
         private IPAddress(ushort[] numbers, uint scopeid)
         {
             Debug.Assert(numbers != null);
@@ -258,20 +273,6 @@ namespace System.Net
             return IPAddressParser.Parse(ipString, false);
         }
 
-        internal static unsafe void FillIPv6AddressBytes(ushort[] numbers, byte* bytes, int bytesLength)
-        {
-            Debug.Assert(numbers != null);
-            Debug.Assert(numbers.Length == NumberOfLabels);
-            Debug.Assert(bytesLength == numbers.Length * 2);
-
-            int j = 0;
-            for (int i = 0; i < NumberOfLabels; i++)
-            {
-                bytes[j++] = (byte)((numbers[i] >> 8) & 0xFF);
-                bytes[j++] = (byte)((numbers[i]) & 0xFF);
-            }
-        }
-
         /// <devdoc>
         ///   <para>
         ///     Provides a copy of the IPAddress internals as an array of bytes.
@@ -282,13 +283,14 @@ namespace System.Net
             byte[] bytes;
             if (IsIPv6)
             {
+                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+
                 bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
-                unsafe
+                int j = 0;
+                for (int i = 0; i < NumberOfLabels; i++)
                 {
-                    fixed (byte* bytesPtr = &bytes[0])
-                    {
-                        FillIPv6AddressBytes(_numbers, bytesPtr, IPAddressParserStatics.IPv6AddressBytes);
-                    }
+                    bytes[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
+                    bytes[j++] = (byte)((_numbers[i]) & 0xFF);
                 }
             }
             else
