@@ -374,7 +374,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                return IsRanToCompletion ? "" + m_result : SR.TaskT_DebuggerNoResult;
+                return IsCompletedSuccessfully ? "" + m_result : SR.TaskT_DebuggerNoResult;
             }
         }
 
@@ -491,10 +491,10 @@ namespace System.Threading.Tasks
             if (waitCompletionNotification) NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Throw an exception if appropriate.
-            if (!IsRanToCompletion) ThrowIfExceptional(includeTaskCanceledExceptions: true);
+            if (!IsCompletedSuccessfully) ThrowIfExceptional(includeTaskCanceledExceptions: true);
 
             // We shouldn't be here if the result has not been set.
-            Debug.Assert(IsRanToCompletion, "Task<T>.Result getter: Expected result to have been set.");
+            Debug.Assert(IsCompletedSuccessfully, "Task<T>.Result getter: Expected result to have been set.");
 
             return m_result;
         }
