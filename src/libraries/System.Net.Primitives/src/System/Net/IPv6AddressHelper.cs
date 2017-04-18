@@ -68,22 +68,21 @@ namespace System
         }
 
         //
-        // InternalIsValid
+        // IsValidStrict
         //
         //  Determine whether a name is a valid IPv6 address. Rules are:
         //
         //   *  8 groups of 16-bit hex numbers, separated by ':'
         //   *  a *single* run of zeros can be compressed using the symbol '::'
         //   *  an optional string of a ScopeID delimited by '%'
-        //   *  an optional (last) 1 or 2 character prefix length field delimited by '/'
         //   *  the last 32 bits in an address can be represented as an IPv4 address
+        //
+        //  Difference between IsValid() and IsValidStrict() is that IsValid() expects part of the string to 
+        //  be ipv6 address where as IsValidStrict() expects strict ipv6 address.
         //
         // Inputs:
         //  <argument>  name
-        //      Domain name field of a URI to check for pattern match with
-        //      IPv6 address
-        //  validateStrictAddress: if set to true, it expects strict ipv6 address. Otherwise it expects
-        //      part of the string in ipv6 format.
+        //      IPv6 address in string format
         //
         // Outputs:
         //  Nothing
@@ -92,7 +91,7 @@ namespace System
         //  the correct name is terminated by  ']' character
         //
         // Returns:
-        //  true if <name> has IPv6 format/ipv6 address based on validateStrictAddress, else false
+        //  true if <name> is IPv6  address, else false
         //
         // Throws:
         //  Nothing
@@ -100,13 +99,12 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        internal unsafe static bool IsValidStrict(char* name, int start, ref int end)
         {
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
             bool haveIPv4Address = false;
-            bool havePrefix = false;
             bool expectingNumber = true;
             int lastSequence = 1;
 
@@ -120,7 +118,7 @@ namespace System
             int i;
             for (i = start; i < end; ++i)
             {
-                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : Uri.IsHexDigit(name[i]))
+                if (Uri.IsHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -218,17 +216,7 @@ namespace System
                             break;
 
                         case '/':
-                            if (validateStrictAddress)
-                            {
-                                return false;
-                            }
-                            if ((sequenceCount == 0) || havePrefix)
-                            {
-                                return false;
-                            }
-                            havePrefix = true;
-                            expectingNumber = true;
-                            break;
+                            return false;
 
                         case '.':
                             if (haveIPv4Address)
@@ -264,62 +252,15 @@ namespace System
             }
 
             //
-            // if the last token was a prefix, check number of digits
-            //
-
-            if (havePrefix && ((sequenceLength < 1) || (sequenceLength > 2)))
-            {
-                return false;
-            }
-
-            //
             // these sequence counts are -1 because it is implied in end-of-sequence
             //
 
-            int expectedSequenceCount = 8 + (havePrefix ? 1 : 0);
-
-            if (!expectingNumber && (sequenceLength <= 4) && (haveCompressor ? (sequenceCount < expectedSequenceCount) : (sequenceCount == expectedSequenceCount)))
-            {
-                return !needsClosingBracket;
-            }
-            return false;
-        }
-
-        //
-        // IsValidStrict
-        //
-        //  Determine whether a name is a valid IPv6 address. Rules are:
-        //
-        //   *  8 groups of 16-bit hex numbers, separated by ':'
-        //   *  a *single* run of zeros can be compressed using the symbol '::'
-        //   *  an optional string of a ScopeID delimited by '%'
-        //   *  the last 32 bits in an address can be represented as an IPv4 address
-        //
-        //  Difference between IsValid() and IsValidStrict() is that IsValid() expects part of the string to 
-        //  be ipv6 address where as IsValidStrict() expects strict ipv6 address.
-        //
-        // Inputs:
-        //  <argument>  name
-        //      IPv6 address in string format
-        //
-        // Outputs:
-        //  Nothing
-        //
-        // Assumes:
-        //  the correct name is terminated by  ']' character
-        //
-        // Returns:
-        //  true if <name> is IPv6  address, else false
-        //
-        // Throws:
-        //  Nothing
-        //
-
-        //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
-        //           start must be next to '[' position, or error is reported
-        internal unsafe static bool IsValidStrict(char* name, int start, ref int end)
-        {
-            return InternalIsValid(name, start, ref end, validateStrictAddress:true);
+            const int ExpectedSequenceCount = 8;
+            return
+                !expectingNumber &&
+                (sequenceLength <= 4) &&
+                (haveCompressor ? (sequenceCount < ExpectedSequenceCount) : (sequenceCount == ExpectedSequenceCount)) &&
+                !needsClosingBracket;
         }
 
         //
