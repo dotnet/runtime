@@ -449,43 +449,54 @@ namespace System.Net.Tests
         {
             yield return new object[]
             {
-                "cookie: name=value", new CookieCollection()
+                "cookie: name=value", new CookieCollection
                 {
                     new Cookie("name", "value")
                 }
             };
 
-            if (PlatformDetection.IsFullFramework)
-            {
-                // Bug in .NET Core: HttpListener doesn't support cookies separated by ';'.
-                // https://github.com/dotnet/corefx/issues/18486.
-                yield return new object[]
-                {
-                    "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection()
-                    {
-                        new Cookie("name1", "value1"),
-                        new Cookie("name2", "value2"),
-                        new Cookie("name3", "value3")
-                    }
-                };
-            }
-            else
-            {
-                yield return new object[]
-                {
-                    "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection()
-                    {
-                        new Cookie("name1", "value1"),
-                        new Cookie("name2", "value2")
-                    }
-                };
-            }
-
             yield return new object[]
             {
-                "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection()
+                "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection
                 {
-                    new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
+                    new Cookie("name1", "value1"),
+                    new Cookie("name2", "value2"),
+                    new Cookie("name3", "value3")
+                }
+            };
+
+            // [ActiveIssue(18128)] // Hangs on Unix
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[]
+                {
+                    "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
+                    {
+                        new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
+                    }
+                };
+
+                yield return new object[] { "cookie: =value", new CookieCollection() };
+            }
+
+            yield return new object[] { "cookie: $Path", new CookieCollection() };
+            yield return new object[] { "cookie: $Domain", new CookieCollection() };
+            yield return new object[] { "cookie: $Port", new CookieCollection() };
+            yield return new object[]
+            {
+                "cookie:name=value; domain=.domain.com", new CookieCollection
+                {
+                    new Cookie("name", "value"),
+                    new Cookie("domain", ".domain.com")
+                }
+            };
+            yield return new object[]
+            {
+                "cookie:name=value; expires=invaliddate",
+                new CookieCollection
+                {
+                    new Cookie("name", "value"),
+                    new Cookie("expires", "invaliddate")
                 }
             };
 
@@ -493,8 +504,9 @@ namespace System.Net.Tests
             yield return new object[] { "Unknown-Header: Test", new CookieCollection() };
         }
 
-        [Theory]//[ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(Cookies_TestData))]
+        [ActiveIssue(18486, TestPlatforms.Windows)]
         public async Task Cookies_Get_ReturnsExpected(string cookieString, CookieCollection expected)
         {
             await GetRequest("POST", null, new[] { cookieString }, (_, request) =>
@@ -504,45 +516,9 @@ namespace System.Net.Tests
                 {
                     Assert.Equal(expected[i].Name, request.Cookies[i].Name);
                     Assert.Equal(expected[i].Value, request.Cookies[i].Value);
-                    // Cookie parsing is busted with .NET Core. Port, Path and Domain are all
-                    // set differently.
-                    if (PlatformDetection.IsFullFramework)
-                    {
-                        Assert.Equal(expected[i].Port, request.Cookies[i].Port);
-                        Assert.Equal(expected[i].Path, request.Cookies[i].Path);
-                        Assert.Equal(expected[i].Domain, request.Cookies[i].Domain);
-                    }
-                }
-            });
-        }
-
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData("cookie: =value", false)]
-        [InlineData("cookie: $Version", true)]
-        [InlineData("cookie: $Path", true)]
-        [InlineData("cookie: $Domain", true)]
-        [InlineData("cookie: $Port", true)]
-        [InlineData("cookie: name=value; domain=.domain.com", true)]
-        [InlineData("cookie: name=value; expires=invaliddate", true)]
-        public async Task Cookies_GetInvalid_ThrowsCookieException(string cookieString, bool addedInNetfx)
-        {
-            await GetRequest("POST", null, new[] { cookieString }, (_, request) =>
-            {
-                if (PlatformDetection.IsFullFramework)
-                {
-                    // Cookies with an empty name aren't added.
-                    if (addedInNetfx)
-                    {
-                        Assert.NotEmpty(request.Cookies);
-                    }
-                    else
-                    {
-                        Assert.Empty(request.Cookies);
-                    }
-                }
-                else
-                {
-                    Assert.Throws<CookieException>(() => request.Cookies);
+                    Assert.Equal(expected[i].Port, request.Cookies[i].Port);
+                    Assert.Equal(expected[i].Path, request.Cookies[i].Path);
+                    Assert.Equal(expected[i].Domain, request.Cookies[i].Domain);
                 }
             });
         }
