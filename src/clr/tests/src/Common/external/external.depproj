@@ -24,9 +24,6 @@
     <PackageToInclude Include="xunit.extensibility.core"/>
     <PackageToInclude Include="xunit.extensibility.execution"/>
     <PackageToInclude Include="xunit.runner.utility"/>
-    <PackageToInclude Include="Microsoft.DotNet.xunit.performance"/>
-    <PackageToInclude Include="Microsoft.DotNet.xunit.performance.analysis"/>
-    <PackageToInclude Include="Microsoft.DotNet.xunit.performance.runner.Windows"/>
     <PackageToInclude Include="xunit.performance.api"/>
     <PackageToInclude Include="xunit.performance.core"/>
     <PackageToInclude Include="xunit.performance.execution"/>
@@ -37,7 +34,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>    
+    <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
@@ -48,7 +45,7 @@
             Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths 
+      <ReferenceCopyLocalPaths
         Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
         Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
       >
