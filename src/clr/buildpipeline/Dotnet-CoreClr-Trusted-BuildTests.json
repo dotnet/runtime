@@ -68,7 +68,7 @@
       },
       "inputs": {
         "filename": "build-test.cmd",
-        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
+        "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg) $(CrossgenArg) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "helixpublish.proj /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:CloudDropAccountName=$(CloudDropAccountName) /p:ContainerName=$(PB_ContainerName) /p:Platform=$(Architecture) /p:BuildType=$(PB_BuildType) /p:CloudResultsAccountName=$(CloudResultsAccountName) /p:CloudResultsAccessToken=$(CloudResultsAccessToken) /p:TargetsWindows=$(TargetsWindows) /p:OverwriteOnUpload=true /p:Rid=$(Rid) /p:TargetQueues=\"$(TargetQueues)\" /p:TestProduct=$(TestProduct) /p:Branch=$(HelixBranch) /p:HelixApiAccessKey=$(HelixApiAccessKey) /p:HelixApiEndpoint=$(HelixApiEndpoint) /p:FilterToOSGroup=$(FilterToOSGroup) /p:FilterToTestTFM=$(FilterToTestTFM) /p:TimeoutInSeconds=3600 /fileloggerparameters:Verbosity=diag;LogFile=helix.log",
+        "arguments": "helixpublish.proj /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:CloudDropAccountName=$(CloudDropAccountName) /p:ContainerName=$(PB_ContainerName) /p:Platform=$(Architecture) /p:BuildType=$(PB_BuildType) /p:CloudResultsAccountName=$(CloudResultsAccountName) /p:CloudResultsAccessToken=$(CloudResultsAccessToken) /p:TargetsWindows=$(TargetsWindows) /p:OverwriteOnUpload=true /p:Rid=$(Rid) /p:TargetQueues=\"$(TargetQueues)\" /p:TestProduct=$(TestProduct) /p:Branch=$(HelixBranch) /p:HelixApiAccessKey=$(HelixApiAccessKey) /p:HelixApiEndpoint=$(HelixApiEndpoint) /p:FilterToOSGroup=$(FilterToOSGroup) /p:FilterToTestTFM=$(FilterToTestTFM) /p:TimeoutInSeconds=1800 /p:HelixJobType=$(HelixJobType) /fileloggerparameters:Verbosity=diag;LogFile=helix.log",
         "workingFolder": "tests",
         "failOnStandardError": "false"
       }
