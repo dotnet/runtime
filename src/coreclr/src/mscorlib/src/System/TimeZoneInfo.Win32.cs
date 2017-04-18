@@ -398,7 +398,7 @@ namespace System
                 baseOffset = baseOffset + match.Rule.BaseUtcOffsetDelta;
                 if (match.Rule.HasDaylightSaving)
                 {
-                    isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, out isAmbiguousLocalDst, Local);
+                    isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);
                     baseOffset += (isDaylightSavings ? match.Rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
                 }
             }
