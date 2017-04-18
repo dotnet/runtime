@@ -79,7 +79,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Tools" />
