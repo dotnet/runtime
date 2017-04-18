@@ -1011,6 +1011,10 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                 CEHelper::SetupCorruptionSeverityForActiveException((STState == ExceptionTracker::STS_FirstRethrowFrame), (pTracker->GetPreviousExceptionTracker() != NULL),
                                                                     CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
             }
+
+            // Failfast if exception indicates corrupted process state            
+            if (pTracker->GetCorruptionSeverity() == ProcessCorrupting)
+                EEPOLICY_HANDLE_FATAL_ERROR(pExceptionRecord->ExceptionCode);
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
