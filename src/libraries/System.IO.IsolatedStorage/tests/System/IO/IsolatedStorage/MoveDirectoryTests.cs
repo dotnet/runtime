@@ -79,8 +79,6 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
-        // Unix doesn't throw for this, which it should- there is a bug in Directory.Move
-        [ActiveIssue(12396, TestPlatforms.AnyUnix)]
         public void MoveDirectory_MoveOver(PresetScopes scope)
         {
             TestHelper.WipeStores();
