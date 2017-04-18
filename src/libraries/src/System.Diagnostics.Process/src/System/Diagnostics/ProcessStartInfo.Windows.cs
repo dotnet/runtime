@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if FEATURE_REGISTRY
 using Microsoft.Win32;
+#endif
 using System.Collections.Generic;
 using System.IO;
 using System.Security;
@@ -36,6 +38,7 @@ namespace System.Diagnostics
         {
             get 
             {
+#if FEATURE_REGISTRY
                 string extension = Path.GetExtension(FileName);
                 if (string.IsNullOrEmpty(extension))
                     return Array.Empty<string>();
@@ -66,6 +69,9 @@ namespace System.Diagnostics
                         return verbs.ToArray();
                     }
                 }
+#else
+                return Array.Empty<string>();
+#endif
             }
         }
 
