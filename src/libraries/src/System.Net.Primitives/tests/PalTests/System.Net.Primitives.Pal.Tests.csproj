@@ -127,9 +127,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Managed.cs">
-      <Link>ProductionCode\System\Net\IPAddressPal.Managed.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs">
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
     </Compile>
