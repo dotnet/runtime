@@ -3,6 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{B11B5B76-F583-44EA-A4B7-3ABD990594F6}</ProjectGuid>
+    <!-- 
+        System.Json is a library for compat purposes so we want to keep the same identity as it originally shipped with in Silverlight
+    -->
+    <AssemblyKey>SilverlightExtension</AssemblyKey>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
