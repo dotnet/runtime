@@ -1,108 +1,108 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\eglib\src\garray.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\garray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gbytearray.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gbytearray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gdate-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gdate-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gdir-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gdir-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gerror.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gerror.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gfile.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile-posix.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gfile-posix.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gfile-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\ghashtable.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\ghashtable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\giconv.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\giconv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\glist.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\glist.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gmarkup.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmarkup.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gmem.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmem.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gmisc-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmisc-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gqueue.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmodule-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gmodule-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\goutput.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\goutput.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gpath.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gpath.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gpattern.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gpattern.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gptrarray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gptrarray.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gqsort.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gqsort.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gqueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gshell.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gshell.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gslist.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gslist.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gspawn.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gspawn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gstr.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gstr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gstring.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gstring.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gtimer-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gtimer-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gunicode.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gunicode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gutf8.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gunicode-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\src\gunicode-win32.c">
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gutf8.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\eglib\src\glib.h">
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\glib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\src\gmodule.h">
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\gmodule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\src\sort.frag.h">
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\gmodule-win32-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\src\gmodule-win32-internals.h">
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\sort.frag.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

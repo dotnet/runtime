@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gdate-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gdir-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gfile-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmisc-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmodule-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gpath.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gtimer-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gunicode-win32.c" />
+   </ItemGroup>
+   <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\gmodule-win32-internals.h" />
+  </ItemGroup>
+</Project>

@@ -150,44 +150,9 @@
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\eglib\src\garray.c" />
-    <ClCompile Include="..\eglib\src\gbytearray.c" />
-    <ClCompile Include="..\eglib\src\gdate-win32.c" />
-    <ClCompile Include="..\eglib\src\gdir-win32.c" />
-    <ClCompile Include="..\eglib\src\gerror.c" />
-    <ClCompile Include="..\eglib\src\gfile-posix.c" />
-    <ClCompile Include="..\eglib\src\gfile-win32.c" />
-    <ClCompile Include="..\eglib\src\gfile.c" />
-    <ClCompile Include="..\eglib\src\ghashtable.c" />
-    <ClCompile Include="..\eglib\src\giconv.c" />
-    <ClCompile Include="..\eglib\src\glist.c" />
-    <ClCompile Include="..\eglib\src\gmarkup.c" />
-    <ClCompile Include="..\eglib\src\gmem.c" />
-    <ClCompile Include="..\eglib\src\gmisc-win32.c" />
-    <ClCompile Include="..\eglib\src\gmodule-win32.c" />
-    <ClCompile Include="..\eglib\src\goutput.c" />
-    <ClCompile Include="..\eglib\src\gpath.c" />
-    <ClCompile Include="..\eglib\src\gpattern.c" />
-    <ClCompile Include="..\eglib\src\gptrarray.c" />
-    <ClCompile Include="..\eglib\src\gqsort.c" />
-    <ClCompile Include="..\eglib\src\gqueue.c" />
-    <ClCompile Include="..\eglib\src\gshell.c" />
-    <ClCompile Include="..\eglib\src\gslist.c" />
-    <ClCompile Include="..\eglib\src\gspawn.c" />
-    <ClCompile Include="..\eglib\src\gstr.c" />
-    <ClCompile Include="..\eglib\src\gstring.c" />
-    <ClCompile Include="..\eglib\src\gtimer-win32.c" />
-    <ClCompile Include="..\eglib\src\gunicode-win32.c" />
-    <ClCompile Include="..\eglib\src\gunicode.c" />
-    <ClCompile Include="..\eglib\src\gutf8.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\eglib\src\glib.h" />
-    <ClInclude Include="..\eglib\src\gmodule-win32-internals.h" />
-    <ClInclude Include="..\eglib\src\gmodule.h" />
-    <ClInclude Include="..\eglib\src\sort.frag.h" />
-  </ItemGroup>
+  <Import Project="eglib-common.targets" />
+  <Import Project="eglib-win32.targets" />
+  <Import Project="eglib-posix.targets" />
   <ItemGroup>
     <ProjectReference Include="build-init.vcxproj">
       <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
