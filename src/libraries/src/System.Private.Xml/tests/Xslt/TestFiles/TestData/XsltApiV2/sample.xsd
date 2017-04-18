@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+<!-- include same schema twice with unique Ids   -->
+
+<xsd:include schemaLocation="addA001av.xsd"/>
+<xsd:include schemaLocation="addA001av.xsd"/>
+
+<xsd:element name="purchaseOrder" type="PurchaseOrderType"/>
+
+<xsd:element name="comment" type="xsd:string"/>
+
+<xsd:complexType name="PurchaseOrderType">
+	<xsd:sequence>
+		<xsd:element name="shipTo"     type="Address"/>
+		<xsd:element name="billTo"     type="Address"/>
+		<xsd:element ref="comment" minOccurs="0"/>
+	</xsd:sequence>
+	<xsd:attribute name="orderDate" type="xsd:date"/>
+</xsd:complexType>
+
+</xsd:schema>

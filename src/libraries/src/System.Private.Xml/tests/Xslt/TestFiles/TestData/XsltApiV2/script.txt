@@ -1,0 +1,6 @@
+<ms:script language="C#" implements-prefix="user"  xmlns:ms="urn:schemas-microsoft-com:xslt">
+public int add(int i, int j)
+{
+	return i+j;
+}
+</ms:script>
