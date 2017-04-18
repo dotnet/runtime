@@ -310,7 +310,7 @@ namespace System.Net
                 case "referer":
                     try
                     {
-                        _referrer = new Uri(val);
+                        _referrer = new Uri(val, UriKind.RelativeOrAbsolute);
                     }
                     catch
                     {
