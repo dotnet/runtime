@@ -1095,7 +1095,7 @@ ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMem
     {
         case ELEMENT_TYPE_VALUETYPE:
         case ELEMENT_TYPE_CLASS:
-            m_type_size = pMT->IsValueType() ? typeHandle.GetSize() : typeHandle.AsMethodTable()->GetClass()->GetSize();
+            m_type_size = pMT->IsValueType() ? typeHandle.GetSize() : typeHandle.AsMethodTable()->GetBaseSize();
             break;
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
