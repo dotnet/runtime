@@ -146,7 +146,7 @@ namespace System.Runtime.CompilerServices
             task.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // And throw an exception if the task is faulted or canceled.
-            if (!task.IsRanToCompletion) ThrowForNonSuccess(task);
+            if (!task.IsCompletedSuccessfully) ThrowForNonSuccess(task);
         }
 
         /// <summary>Throws an exception to handle a task that completed in a state other than RanToCompletion.</summary>

@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner
             // task is null, return a canceled task to match the same semantics as CreateUnwrapPromise.
             return
-                !task.IsRanToCompletion ? Task.CreateUnwrapPromise<VoidTaskResult>(task, lookForOce: false) :
+                !task.IsCompletedSuccessfully ? Task.CreateUnwrapPromise<VoidTaskResult>(task, lookForOce: false) :
                 task.Result ??
                 Task.FromCanceled(new CancellationToken(true));
         }
@@ -40,7 +40,7 @@ namespace System.Threading.Tasks
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner
             // task is null, return a canceled task to match the same semantics as CreateUnwrapPromise.
             return
-                !task.IsRanToCompletion ? Task.CreateUnwrapPromise<TResult>(task, lookForOce: false) :
+                !task.IsCompletedSuccessfully ? Task.CreateUnwrapPromise<TResult>(task, lookForOce: false) :
                 task.Result ??
                 Task.FromCanceled<TResult>(new CancellationToken(true));
         }

@@ -320,7 +320,7 @@ namespace System.Threading.Tasks
             // activation criteria of the TaskContinuationOptions.
             TaskContinuationOptions options = m_options;
             bool isRightKind =
-                completedTask.IsRanToCompletion ?
+                completedTask.IsCompletedSuccessfully ?
                     (options & TaskContinuationOptions.NotOnRanToCompletion) == 0 :
                     (completedTask.IsCanceled ?
                         (options & TaskContinuationOptions.NotOnCanceled) == 0 :
