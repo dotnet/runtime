@@ -8,115 +8,105 @@ To make sense of the results, it is recommended you also read the [Reading a Jit
 
 The first thing we want to do is setup the .NET Core app we want to dump. Here are the steps to do this, if you don't have one ready:
 
-* Perform a debug build of the CoreCLR repo
-* Install the [.NET CLI](http://microsoft.com/net/core), which we'll use to compile/publish our app
-* `cd` to where you want your app to be placed, and run `dotnet new`
-* Modify your `project.json` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `runtimes` section. For example, I have a Windows 10 x64 machine, so here's my project file:
+* Perform a debug build of the CoreCLR repo.
+* Install the [.NET CLI 2.0 preview](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md), which we'll use to compile/publish our app.
+* `cd` to where you want your app to be placed, and run `dotnet new console`.
+* Modify your `csproj` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `<RuntimeIdentifier>` tag. For example, for Windows 10 x64 machine, the project file is:
 
-```json
-{
-  "buildOptions": {
-    "emitEntryPoint": true
-  },
-  "dependencies": {
-    "Microsoft.NETCore.App": "1.0.0-*"
-  },
-  "frameworks": {
-    "netcoreapp1.0": {
-      "imports": [
-        "dnxcore50",
-        "portable-net45+win8"
-      ]
-    }
-  },
-  "runtimes": {
-    "win10-x64": {}
-  }
-}
-```
+    ```xml
+    <Project Sdk="Microsoft.NET.Sdk">
 
-You can find a list of RIDs and their corresponding OSes [here](https://docs.microsoft.com/en-us/dotnet/articles/core/rid-catalog).
+      <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+        <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+      </PropertyGroup>
+
+    </Project>
+    ```
+
+   You can find a list of RIDs and their corresponding OSes [here](https://docs.microsoft.com/en-us/dotnet/articles/core/rid-catalog).
 
 * Edit `Program.cs`, and call the method(s) you want to dump in there. Make sure they are, directly or indirectly, called from `Main`. In this example, we'll be looking at the disassembly of our custom function `InefficientJoin`:
 
-```cs
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+    ```cs
+    using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
 
-namespace ConsoleApplication
-{
-    public class Program
+    namespace ConsoleApplication
     {
-        public static void Main(string[] args)
+        public class Program
         {
-            Console.WriteLine(InefficientJoin(args));
-        }
-        
-        // Add NoInlining to prevent this from getting
-        // mixed up with the rest of the code in Main
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string InefficientJoin(IEnumerable<string> args)
-        {
-            var result = string.Empty;
-            foreach (var arg in args) result += (arg + ' ');
-            return result.Substring(0, result.Length - 1);
+            public static void Main(string[] args)
+            {
+                Console.WriteLine(InefficientJoin(args));
+            }
+            
+            // Add NoInlining to prevent this from getting
+            // mixed up with the rest of the code in Main
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static string InefficientJoin(IEnumerable<string> args)
+            {
+                var result = string.Empty;
+                foreach (var arg in args) result += (arg + ' ');
+                return result.Substring(0, Math.Max(0, result.Length - 1));
+            }
         }
     }
-}
-```
+    ```
 
-* After you've finished editing the code, run `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<configuration>/<rid>/publish`.
+* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<configuration>/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
 
-```shell
-# Windows
-robocopy /e <coreclr path>\bin\Product\Windows_NT.<arch>.Debug <app root>\bin\Release\netcoreapp1.0\<rid>\publish > NUL
+    ```shell
+    # Windows
+    robocopy /e <coreclr path>\bin\Product\Windows_NT.<arch>.Debug <app root>\bin\Release\netcoreapp2.0\<rid>\publish > NUL
 
-# Unix
-cp -rT <coreclr path>/bin/Product/<OS>.<arch>.Debug <app root>/bin/Release/netcoreapp1.0/<rid>/publish
-```
+    # Unix
+    cp -rT <coreclr path>/bin/Product/<OS>.<arch>.Debug <app root>/bin/Release/netcoreapp2.0/<rid>/publish
+    ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.
 
-Here's some sample output on my machine showing the disassembly for `InefficientJoin`:
+   Here's some sample output on my machine showing the disassembly for `InefficientJoin`:
 
-```asm
-G_M2530_IG01:
-       55                   push     rbp
-       4883EC40             sub      rsp, 64
-       488D6C2440           lea      rbp, [rsp+40H]
-       33C0                 xor      rax, rax
-       488945F8             mov      qword ptr [rbp-08H], rax
-       488965E0             mov      qword ptr [rbp-20H], rsp
+   ```asm
+   G_M2530_IG01:
+          55                   push     rbp
+          4883EC40             sub      rsp, 64
+          488D6C2440           lea      rbp, [rsp+40H]
+          33C0                 xor      rax, rax
+          488945F8             mov      qword ptr [rbp-08H], rax
+          488965E0             mov      qword ptr [rbp-20H], rsp
 
-G_M2530_IG02:
-       49BB60306927E5010000 mov      r11, 0x1E527693060
-       4D8B1B               mov      r11, gword ptr [r11]
-       4C895DF8             mov      gword ptr [rbp-08H], r11
-       49BB200058F7FD7F0000 mov      r11, 0x7FFDF7580020
-       3909                 cmp      dword ptr [rcx], ecx
-       41FF13               call     gword ptr [r11]System.Collections.Generic.IEnumerable`1[__Canon][System.__Canon]:GetEnumerator():ref:this
-       488945F0             mov      gword ptr [rbp-10H], rax
+   G_M2530_IG02:
+          49BB60306927E5010000 mov      r11, 0x1E527693060
+          4D8B1B               mov      r11, gword ptr [r11]
+          4C895DF8             mov      gword ptr [rbp-08H], r11
+          49BB200058F7FD7F0000 mov      r11, 0x7FFDF7580020
+          3909                 cmp      dword ptr [rcx], ecx
+          41FF13               call     gword ptr [r11]System.Collections.Generic.IEnumerable`1[__Canon][System.__Canon]:GetEnumerator():ref:this
+          488945F0             mov      gword ptr [rbp-10H], rax
 
-; ...
-```
+   ; ...
+   ```
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has “COMPlus_” prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
-* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named ‘Main’ will be dumped:
+* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named `Main` will be dumped:
 
-```shell
-# Windows
-set COMPlus_JitDump=Main
+   ```shell
+   # Windows
+   set COMPlus_JitDump=Main
 
-# Unix
-export COMPlus_JitDump=Main
-```
+   # Unix
+   export COMPlus_JitDump=Main
+   ```
 
 * *Windows-only:* Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
 * *Windows-only:* Setting the registry key `HKLM\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
@@ -143,13 +133,13 @@ Main
 
 will match all methods named Main from any class and any number of arguments.
 
-<types> is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, `Main(Foo, Bar)` and `Main(int, int)` will both match any main method with two arguments.
+`<types>` is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, `Main(Foo, Bar)` and `Main(int, int)` will both match any main method with two arguments.
 
-The wildcard character ‘*’ can be used for <ClassName> and <MethodName>. In particular * by itself indicates every method.
+The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In particular `*` by itself indicates every method.
 
 ## Useful COMPlus variables
 
-Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specific ‘*’ to mean all methods.
+Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
 * `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](../botr/ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
