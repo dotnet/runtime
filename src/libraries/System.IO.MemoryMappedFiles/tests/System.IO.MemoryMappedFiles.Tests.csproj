@@ -18,6 +18,8 @@
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
+    <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>

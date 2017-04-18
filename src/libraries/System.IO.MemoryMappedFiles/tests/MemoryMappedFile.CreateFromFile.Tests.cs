@@ -712,9 +712,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, succeeds: true);
         }
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int geteuid();
-
         /// <summary>
         /// Test to ensure that leaveOpen is appropriately respected, either leaving the FileStream open
         /// or closing it on disposal.
