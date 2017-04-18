@@ -113,7 +113,7 @@
     </PropertyGroup>
 
     <!-- Give a warning that the UAPToolsFolder is not set and that tests won't run -->
-    <Warning Text="Could not find the UAP Tools at '$(UAPToolsFolder)'. Please run sync." Condition="'$(UAPToolsFolder)'=='' or !Exists('$(UAPToolsFolder)')" />
+    <Warning Text="Could not find the UAP Tools at '$(UAPToolsFolder)'. Please run sync." Condition="('$(UAPToolsFolder)'=='' or !Exists('$(UAPToolsFolder)')) AND '$(BuildAllConfigurations)' != 'true'" />
 
     <ItemGroup Condition="'$(UAPToolsFolder)'!=''">
       <RunnerFolderContents Include="$(UAPToolsFolder)\Runner\**\*" />
@@ -145,7 +145,7 @@
       <TestILCFolder>$(TestILCFolder.Replace('/', '\'))</TestILCFolder>
     </PropertyGroup>
 
-    <Warning Text="Could not find the TestILC Tools at '$(TestILCFolder)'. Please run sync." Condition="'$(TestILCFolder)' == '' or !Exists('$(TestILCFolder)')" />
+    <Warning Text="Could not find the TestILC Tools at '$(TestILCFolder)'. Please run sync." Condition="('$(TestILCFolder)' == '' or !Exists('$(TestILCFolder)')) AND '$(BuildAllConfigurations)' != 'true'" />
 
     <ItemGroup Condition="'$(TestILCFolder)'!=''">
       <TestILCFolderContents Include="$(TestILCFolder)\**\*" />

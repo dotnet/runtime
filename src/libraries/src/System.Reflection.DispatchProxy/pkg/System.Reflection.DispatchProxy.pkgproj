@@ -3,14 +3,21 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.DispatchProxy.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
       <!-- Make sure this doesn't get stripped during harvesting.
            We have an implementation that will work on desktop, thus needs a unique assembly version -->
       <Preserve>true</Preserve>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
+    <HarvestIncludePaths Include="runtimes/aot/lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.1" />
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/aot/lib/uap10.1</TargetPath>
+    </File>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />

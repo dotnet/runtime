@@ -6,6 +6,15 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.SqlClient.csproj" />
+    <HarvestIncludePaths Include="ref/net451;lib/net451;runtimes/win/lib/net451" />
+    <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
+    <HarvestIncludePaths Include="ref/netstandard1.2">
+      <SupportedFramework>net451;win81;wpa81</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.3">
+      <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
+    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3;runtimes/win/lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

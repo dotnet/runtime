@@ -4,6 +4,10 @@
     <BuildConfigurations>
       netstandard-Unix;
       netstandard-Windows_NT;
+      netstandard1.2;
+      netstandard1.3;
+      netstandard;
+      netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

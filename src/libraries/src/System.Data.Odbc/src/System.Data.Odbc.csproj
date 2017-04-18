@@ -117,7 +117,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System.Data" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
