@@ -462,9 +462,8 @@ nameof(value));
                 return errors;
             }
 
-            // Step 3: Test for IValidatableObject implementation
-            var validatable = instance as IValidatableObject;
-            if (validatable != null)
+            // Step 3: Test for IValidatableObject implementation            
+            if (instance is IValidatableObject validatable)
             {
                 var results = validatable.Validate(validationContext);
 
