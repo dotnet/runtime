@@ -3572,17 +3572,8 @@
   <data name="LockRecursionException_RecursiveWriteNotAllowed" xml:space="preserve">
     <value>Recursive write lock acquisitions not allowed in this mode.</value>
   </data>
-  <data name="LockRecursionException_ReadAfterWriteNotAllowed" xml:space="preserve">
-    <value>A read lock may not be acquired with the write lock held in this mode.</value>
-  </data>
   <data name="LockRecursionException_RecursiveUpgradeNotAllowed" xml:space="preserve">
     <value>Recursive upgradeable lock acquisitions not allowed in this mode.</value>
-  </data>
-  <data name="LockRecursionException_RecursiveReadNotAllowed" xml:space="preserve">
-    <value>Recursive read lock acquisitions not allowed in this mode.</value>
-  </data>
-  <data name="LockRecursionException_WriteAfterReadNotAllowed" xml:space="preserve">
-    <value>Write lock may not be acquired with read lock held. This pattern is prone to deadlocks. Please ensure that read locks are released before taking a write lock. If an upgrade is necessary, use an upgrade lock in place of the read lock.</value>
   </data>
   <data name="LockRecursionException_WriteAfterReadNotAllowed" xml:space="preserve">
     <value>Write lock may not be acquired with read lock held. This pattern is prone to deadlocks. Please ensure that read locks are released before taking a write lock. If an upgrade is necessary, use an upgrade lock in place of the read lock.</value>
