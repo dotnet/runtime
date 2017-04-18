@@ -49,7 +49,15 @@ namespace System.IO
                 {
                     attrs |= FileAttributes.ReparsePoint;
                 }
-                if (Path.GetFileName(FullPath).StartsWith("."))
+
+                // If the filename starts with a period, it's hidden. Or if this is a directory ending in a slash,
+                // if the directory name starts with a period, it's hidden.
+                string fileName = Path.GetFileName(FullPath);
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    fileName = Path.GetFileName(Path.GetDirectoryName(FullPath));
+                }
+                if (!string.IsNullOrEmpty(fileName) && fileName[0] == '.')
                 {
                     attrs |= FileAttributes.Hidden;
                 }

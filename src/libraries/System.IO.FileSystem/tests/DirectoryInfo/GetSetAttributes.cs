@@ -59,6 +59,17 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixDirectoryBeginningWithPeriodIsHidden(bool endsWithSlash)
+        {
+            string testDir = "." + GetTestFileName();
+            Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+            Assert.True(0 != (new DirectoryInfo(Path.Combine(TestDirectory, testDir) + (endsWithSlash ? "/" : "")).Attributes & FileAttributes.Hidden));
+        }
+
+        [Theory]
         [InlineData(FileAttributes.ReadOnly)]
         [InlineData(FileAttributes.Hidden)]
         [InlineData(FileAttributes.System)]
