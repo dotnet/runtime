@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Hashing.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
+            "Throws NRE on netfx")]
         public void SetKeyNull()
         {
             using (var keyedHash = new TestKeyedHashAlgorithm())
