@@ -176,6 +176,7 @@ namespace System.Net
         private IPAddress(ushort[] numbers, uint scopeid)
         {
             Debug.Assert(numbers != null);
+            Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers;
             PrivateScopeId = scopeid;
@@ -257,6 +258,20 @@ namespace System.Net
             return IPAddressParser.Parse(ipString, false);
         }
 
+        internal static unsafe void FillIPv6AddressBytes(ushort[] numbers, byte* bytes, int bytesLength)
+        {
+            Debug.Assert(numbers != null);
+            Debug.Assert(numbers.Length == NumberOfLabels);
+            Debug.Assert(bytesLength == numbers.Length * 2);
+
+            int j = 0;
+            for (int i = 0; i < NumberOfLabels; i++)
+            {
+                bytes[j++] = (byte)((numbers[i] >> 8) & 0xFF);
+                bytes[j++] = (byte)((numbers[i]) & 0xFF);
+            }
+        }
+
         /// <devdoc>
         ///   <para>
         ///     Provides a copy of the IPAddress internals as an array of bytes.
@@ -267,13 +282,13 @@ namespace System.Net
             byte[] bytes;
             if (IsIPv6)
             {
-                bytes = new byte[NumberOfLabels * 2];
-
-                int j = 0;
-                for (int i = 0; i < NumberOfLabels; i++)
+                bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+                unsafe
                 {
-                    bytes[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
-                    bytes[j++] = (byte)((_numbers[i]) & 0xFF);
+                    fixed (byte* bytesPtr = &bytes[0])
+                    {
+                        FillIPv6AddressBytes(_numbers, bytesPtr, IPAddressParserStatics.IPv6AddressBytes);
+                    }
                 }
             }
             else
@@ -348,7 +363,7 @@ namespace System.Net
             {
                 _toString = IsIPv4 ?
                     IPAddressParser.IPv4AddressToString(PrivateAddress) :
-                    IPAddressParser.IPv6AddressToString(GetAddressBytes(), PrivateScopeId);
+                    IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
             }
 
             return _toString;

@@ -12,14 +12,68 @@ namespace System.Net
     {
         public const uint SuccessErrorCode = (uint)SocketError.Success;
 
-        public static unsafe uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
+        public static unsafe uint Ipv6AddressToString(ushort[] address, uint scopeId, StringBuilder buffer)
         {
             Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressBytes);
+            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressBytes / 2);
             Debug.Assert(buffer != null);
-            Debug.Assert(buffer.Capacity >= IPAddressParser.INET6_ADDRSTRLEN);
 
-            return Interop.Sys.IPAddressToString(address, true, buffer, scopeId);
+            // Based on the byte pattern, determine if the address is compatible with IPv4
+            // and thus ends with a standard IPv4 address we need to output as such. This
+            // includes IPv4 mapped addresses, IPv4 compatible addresses, SIIT addresses,
+            // and ISATAP addresses.
+
+            bool firstFourBytesAreZero = address[0] == 0 && address[1] == 0 && address[2] == 0 && address[3] == 0;
+            bool firstFiveBytesAreZero = firstFourBytesAreZero && address[4] == 0;
+
+            if (firstFiveBytesAreZero && address[5] == 0xffff) // IPv4 mapped => 0:0:0:0:0:FFFF:w.x.y.z
+            {
+                buffer.Append("::ffff:");
+                if (address[6] == 0)
+                {
+                    buffer.Append("0:");
+                    AppendHex(address[7], buffer);
+                }
+                else
+                {
+                    buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
+                }
+            }
+            else if (firstFiveBytesAreZero && address[5] == 0) // IPv4 compatible => 0:0:0:0:0:0:w.x.y.z
+            {
+                buffer.Append("::");
+                if (address[6] != 0)
+                {
+                    buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
+                }
+                else if (address[7] != 0)
+                {
+                    AppendHex(address[7], buffer);
+                }
+            }
+            else if (firstFourBytesAreZero && address[4] == 0xffff && address[5] == 0) // Stateless IP/ICMP Translation (SIIT) => ::ffff:0:w.x.y.z
+            {
+                buffer.Append("::ffff:0:");
+                buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
+            }
+            else if (address[4] == 0 && address[5] == 0x5efe) // Intra-Site Automatic Tunnel Addressing Protocol (ISATAP) => ...::0:5EFE:w.x.y.z
+            {
+                AppendSections(address, 0, 4, buffer);
+                buffer.Append("5efe:");
+                buffer.Append(IPAddressParser.IPv4AddressToString(ExtractIPv4Address(address)));
+            }
+            else // General IPv6 address
+            {
+                AppendSections(address, 0, address.Length, buffer);
+            }
+
+            // Append the scope ID if we have one to any of the styles
+            if (scopeId != 0)
+            {
+                buffer.Append('%').Append(scopeId);
+            }
+
+            return SuccessErrorCode;
         }
 
         public static unsafe uint Ipv4StringToAddress(string ipString, byte* bytes, int bytesLength, out ushort port)
@@ -113,5 +167,110 @@ namespace System.Net
         }
 
         public static SocketError GetSocketErrorForErrorCode(uint status) => (SocketError)status;
+
+        /// <summary>
+        /// Appends each of the numbers in address in indexed range [fromInclusive, toExclusive),
+        /// while also replacing the longest sequence of 0s found in that range with "::", as long
+        /// as the sequence is more than one 0.
+        /// </summary>
+        private static void AppendSections(ushort[] address, int fromInclusive, int toExclusive, StringBuilder buffer)
+        {
+            // Find the longest sequence of zeros to be combined into a "::"
+            (int zeroStart, int zeroEnd) = FindLongestZeroSequence(address, fromInclusive, toExclusive);
+            bool needsColon = false;
+
+            // Output all of the numbers before the zero sequence
+            for (int i = fromInclusive; i < zeroStart; i++)
+            {
+                if (needsColon)
+                    buffer.Append(':');
+                needsColon = true;
+                AppendHex(address[i], buffer);
+            }
+
+            // Output the zero sequence if there is one
+            if (zeroStart >= 0)
+            {
+                buffer.Append("::");
+                needsColon = false;
+                fromInclusive = zeroEnd;
+            }
+
+            // Output everything after the zero sequence
+            for (int i = fromInclusive; i < toExclusive; i++)
+            {
+                if (needsColon)
+                    buffer.Append(':');
+                needsColon = true;
+                AppendHex(address[i], buffer);
+            }
+        }
+
+        /// <summary>Appends a number as hexadecimal (without the leading "0x") to the StringBuilder.</summary>
+        private static unsafe void AppendHex(int value, StringBuilder buffer)
+        {
+            const int MaxLength = 8;
+            char* chars = stackalloc char[MaxLength];
+            int len = 0;
+
+            do
+            {
+                int rem;
+                value = Math.DivRem(value, 16, out rem);
+                chars[len++] = rem < 10 ?
+                    (char)('0' + rem) :
+                    (char)('a' + (rem - 10));
+            }
+            while (value != 0);
+
+            int mid = len / 2;
+            for (int i = 0; i < mid; i++)
+            {
+                char c = chars[i];
+                chars[i] = chars[len - i - 1];
+                chars[len - i - 1] = c;
+            }
+
+            buffer.Append(chars, len);
+        }
+
+        /// <summary>Finds the longest sequence of zeros in the array, in the indexed range [fromInclusive, toExclusive).</summary>
+        private static (int zeroStart, int zeroEnd) FindLongestZeroSequence(ushort[] address, int fromInclusive, int toExclusive)
+        {
+            int bestStart = -1;
+            int bestLength = 0;
+            int curLength = 0;
+
+            for (int i = fromInclusive; i < toExclusive; i++)
+            {
+                if (address[i] == 0)
+                {
+                    curLength++;
+                }
+                else
+                {
+                    if (curLength > bestLength)
+                    {
+                        bestLength = curLength;
+                        bestStart = i - curLength;
+                    }
+                    curLength = 0;
+                }
+            }
+
+            if (curLength > bestLength)
+            {
+                bestLength = curLength;
+                bestStart = toExclusive - curLength;
+            }
+
+            return bestLength > 1 ? (bestStart, bestStart + bestLength) : (-1, 0);
+        }
+
+        /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>
+        private static uint ExtractIPv4Address(ushort[] address) => (uint)(Reverse(address[7]) << 16) | Reverse(address[6]);
+
+        /// <summary>Reverses the two bytes in the ushort.</summary>
+        private static ushort Reverse(ushort number) => (ushort)(((number >> 8) & 0xFF) | ((number << 8) & 0xFF00));
     }
 }
