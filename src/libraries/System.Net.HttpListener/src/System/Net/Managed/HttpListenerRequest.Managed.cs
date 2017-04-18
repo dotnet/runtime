@@ -52,7 +52,6 @@ namespace System.Net
         }
 
         private string[] _acceptTypes;
-        private Encoding _contentEncoding;
         private long _contentLength;
         private bool _clSet;
         private CookieCollection _cookies;
@@ -428,16 +427,6 @@ namespace System.Net
                 if (errors != null && errors.Length > 0)
                     return errors[0];
                 return 0;
-            }
-        }
-
-        public Encoding ContentEncoding
-        {
-            get
-            {
-                if (_contentEncoding == null)
-                    _contentEncoding = Encoding.Default;
-                return _contentEncoding;
             }
         }
 

@@ -73,11 +73,6 @@ namespace System.Net.Tests
         [MemberData(nameof(ContentEncoding_TestData))]
         public async Task ContentEncoding_Get_ReturnsExpected(string header, Encoding expected)
         {
-            if (!PlatformDetection.IsWindows)
-            {
-                expected = Encoding.Default; // ContentEncoding is never set.
-            }
-
             await GetRequest("POST", "", new string[] { header }, (_, request) =>
             {
                 Assert.Equal(expected, request.ContentEncoding);
