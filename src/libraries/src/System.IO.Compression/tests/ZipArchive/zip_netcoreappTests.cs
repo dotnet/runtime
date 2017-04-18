@@ -30,14 +30,25 @@ namespace System.IO.Compression.Tests
         [InlineData(int.MaxValue)]
         [InlineData(int.MinValue)]
         [InlineData(0)]
+        [InlineData((0x8000 + 0x01C0 + 0x0020 + 0x0010 + 0x0004) << 16)]
         public static async Task RoundTrips_UnixFilePermissions(int expectedAttr)
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Update))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")))
             {
-                foreach (ZipArchiveEntry e in archive.Entries)
+                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, true))
                 {
-                    e.ExternalAttributes = expectedAttr;
-                    Assert.Equal(expectedAttr, e.ExternalAttributes);
+                    foreach (ZipArchiveEntry e in archive.Entries)
+                    {
+                        e.ExternalAttributes = expectedAttr;
+                        Assert.Equal(expectedAttr, e.ExternalAttributes);
+                    }
+                }
+                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry e in archive.Entries)
+                    {
+                        Assert.Equal(expectedAttr, e.ExternalAttributes);
+                    }
                 }
             }
         }
