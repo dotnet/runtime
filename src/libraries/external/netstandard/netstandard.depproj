@@ -2,16 +2,11 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <IsNetFx Condition="$(NuGetTargetMoniker.StartsWith('.NETFramework,'))">true</IsNetFx>
-    <IsNetFxVertical Condition="'$(_bc_TargetGroup)' == 'netfx' OR $(_bc_TargetGroup.StartsWith('net4'))">true</IsNetFxVertical>
     <IsNETStandard1x Condition="$(NuGetTargetMoniker.StartsWith('.NETStandard,Version=v1.'))">true</IsNETStandard1x>
     <BinPlaceRef>true</BinPlaceRef>
-    <!-- when building for any NetFx vertical, also place facades in runtime folder -->
-    <IsRuntimeAndReferenceAssembly Condition="'$(IsNetFx)' == 'true' AND '$(IsNetFxVertical)' == 'true'">true</IsRuntimeAndReferenceAssembly>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <_NETStandardTFMFolder Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">netstandard2.0</_NETStandardTFMFolder>
-    <_NETStandardTFMFolder Condition="'$(IsNetFx)' == 'true'">net461</_NETStandardTFMFolder>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,8 +34,6 @@
     <!-- for all configurations this project provides refs for that configuration -->
     <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
-      <!-- only for netfx verticals will this project provide runtime assets -->
-      <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Include="$(Configuration)">
       <!-- copy shims to the testhost as well in order to be able to run the netfx tests -->
