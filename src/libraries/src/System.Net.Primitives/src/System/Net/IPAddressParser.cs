@@ -87,7 +87,7 @@ namespace System.Net
             return new string(addressString, offset, MaxLength - offset);
         }
 
-        internal static string IPv6AddressToString(byte[] numbers, uint scopeId)
+        internal static string IPv6AddressToString(ushort[] numbers, uint scopeId)
         {
             StringBuilder sb = new StringBuilder(INET6_ADDRSTRLEN);
             uint errorCode = IPAddressPal.Ipv6AddressToString(numbers, scopeId, sb);

@@ -12,12 +12,15 @@ namespace System.Net
     {
         public const uint SuccessErrorCode = Interop.StatusOptions.STATUS_SUCCESS;
 
-        public static uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
+        public static unsafe uint Ipv6AddressToString(ushort[] numbers, uint scopeId, StringBuilder buffer)
         {
-            Debug.Assert(address != null);
-            Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressBytes);
+            Debug.Assert(numbers != null);
+            Debug.Assert(numbers.Length == IPAddressParserStatics.IPv6AddressBytes / 2);
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET6_ADDRSTRLEN);
+
+            byte* address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+            IPAddress.FillIPv6AddressBytes(numbers, address, IPAddressParserStatics.IPv6AddressBytes);
 
             uint length = (uint)buffer.Capacity;
             return Interop.NtDll.RtlIpv6AddressToStringExW(address, scopeId, 0, buffer, ref length);
