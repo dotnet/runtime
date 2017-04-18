@@ -485,7 +485,6 @@
             "Rid": "win-x64",
             "TargetQueues": "windows.10.amd64",
             "TestContainerSuffix": "windows",
-            "TargetsNonWindowsArg": " "
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -502,7 +501,6 @@
             "Rid": "win-x64",
             "TargetQueues": "windows.10.amd64",
             "TestContainerSuffix": "windows-r2r",
-            "TargetsNonWindowsArg": " ",
             "CrossgenArg": "Crossgen"
           },
           "ReportingParameters": {
