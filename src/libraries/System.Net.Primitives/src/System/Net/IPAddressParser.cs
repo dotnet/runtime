@@ -127,6 +127,8 @@ namespace System.Net
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipString.Length)
             {
+                // IPv4AddressHelper.ParseNonCanonical returns the bytes in the inverse order.
+                // Reverse them and return success.
                 address =
                     ((0xFF000000 & tmpAddr) >> 24) |
                     ((0x00FF0000 & tmpAddr) >> 8) |
@@ -136,6 +138,7 @@ namespace System.Net
             }
             else
             {
+                // Failed to parse the address.
                 address = 0;
                 return false;
             }
@@ -233,31 +236,22 @@ namespace System.Net
         }
 
         /// <summary>Appends a number as hexadecimal (without the leading "0x") to the StringBuilder.</summary>
-        private static unsafe void AppendHex(int value, StringBuilder buffer)
+        private static unsafe void AppendHex(ushort value, StringBuilder buffer)
         {
-            const int MaxLength = 8;
+            const int MaxLength = sizeof(ushort) * 2; // two hex chars per byte
             char* chars = stackalloc char[MaxLength];
-            int len = 0;
+            int pos = MaxLength;
 
             do
             {
-                int rem;
-                value = Math.DivRem(value, 16, out rem);
-                chars[len++] = rem < 10 ?
-                    (char)('0' + rem) :
-                    (char)('a' + (rem - 10));
+                int rem = value % 16;
+                value /= 16;
+                chars[--pos] = rem < 10 ? (char)('0' + rem) : (char)('a' + (rem - 10));
+                Debug.Assert(pos >= 0);
             }
             while (value != 0);
 
-            int mid = len / 2;
-            for (int i = 0; i < mid; i++)
-            {
-                char c = chars[i];
-                chars[i] = chars[len - i - 1];
-                chars[len - i - 1] = c;
-            }
-
-            buffer.Append(chars, len);
+            buffer.Append(chars + pos, MaxLength - pos);
         }
 
         /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>

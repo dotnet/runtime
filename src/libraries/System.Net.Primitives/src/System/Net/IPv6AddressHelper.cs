@@ -199,11 +199,7 @@ namespace System
                             {
                                 if (haveCompressor)
                                 {
-
-                                    //
                                     // can only have one per IPv6 address
-                                    //
-
                                     return false;
                                 }
                                 haveCompressor = true;
@@ -251,9 +247,7 @@ namespace System
                 sequenceLength = 0;
             }
 
-            //
             // these sequence counts are -1 because it is implied in end-of-sequence
-            //
 
             const int ExpectedSequenceCount = 8;
             return
@@ -284,14 +278,11 @@ namespace System
         //  16-bit numbers, the characters ':' and '/', and a possible IPv4
         //  address
         //
-        // Returns:
-        //  true if this is a loopback, false otherwise. There is no falure indication as the sting must be a valid one.
-        //
         // Throws:
         //  Nothing
         //
 
-        internal static unsafe bool Parse(string address, ushort* numbers, int start, ref string scopeId)
+        internal static unsafe void Parse(string address, ushort* numbers, int start, ref string scopeId)
         {
             int number = 0;
             int index = 0;
@@ -338,21 +329,14 @@ namespace System
                         }
                         else if ((compressorIndex < 0) && (index < 6))
                         {
-
-                            //
                             // no point checking for IPv4 address if we don't
                             // have a compressor or we haven't seen 6 16-bit
                             // numbers yet
-                            //
-
                             break;
                         }
 
-                        //
                         // check to see if the upcoming number is really an IPv4
                         // address. If it is, convert it to 2 ushort numbers
-                        //
-
                         for (int j = i; j < address.Length &&
                                         (address[j] != ']') &&
                                         (address[j] != ':') &&
@@ -363,16 +347,12 @@ namespace System
 
                             if (address[j] == '.')
                             {
-
-                                //
                                 // we have an IPv4 address. Find the end of it:
                                 // we know that since we have a valid IPv6
                                 // address, the only things that will terminate
                                 // the IPv4 address are the prefix delimiter '/'
                                 // or the end-of-string (which we conveniently
                                 // delimited with ']')
-                                //
-
                                 while (j < address.Length && (address[j] != ']') && (address[j] != '/') && (address[j] != '%'))
                                 {
                                     ++j;
@@ -382,11 +362,8 @@ namespace System
                                 numbers[index++] = (ushort)number;
                                 i = j;
 
-                                //
                                 // set this to avoid adding another number to
                                 // the array if there's a prefix
-                                //
-
                                 number = 0;
                                 numberIsValid = false;
                                 break;
@@ -401,11 +378,8 @@ namespace System
                             numberIsValid = false;
                         }
 
-                        //
                         // since we have a valid IPv6 address string, the prefix
                         // length is the last token in the string
-                        //
-
                         for (++i; address[i] != ']'; ++i)
                         {
                             PrefixLength = PrefixLength * 10 + (address[i] - '0');
@@ -418,24 +392,17 @@ namespace System
                 }
             }
 
-            //
             // add number to the array if its not the prefix length or part of
             // an IPv4 address that's already been handled
-            //
-
             if (numberIsValid)
             {
                 numbers[index++] = (ushort)number;
             }
 
-            //
             // if we had a compressor sequence ("::") then we need to expand the
             // numbers array
-            //
-
             if (compressorIndex > 0)
             {
-
                 int toIndex = NumberOfLabels - 1;
                 int fromIndex = index - 1;
 
@@ -445,28 +412,6 @@ namespace System
                     numbers[fromIndex--] = 0;
                 }
             }
-
-            //
-            // is the address loopback? Loopback is defined as one of:
-            //
-            //  0:0:0:0:0:0:0:1
-            //  0:0:0:0:0:0:127.0.0.1       == 0:0:0:0:0:0:7F00:0001
-            //  0:0:0:0:0:FFFF:127.0.0.1    == 0:0:0:0:0:FFFF:7F00:0001
-            //
-
-            return ((numbers[0] == 0)
-                            && (numbers[1] == 0)
-                            && (numbers[2] == 0)
-                            && (numbers[3] == 0)
-                            && (numbers[4] == 0))
-                           && (((numbers[5] == 0)
-                                && (numbers[6] == 0)
-                                && (numbers[7] == 1))
-                               || (((numbers[6] == 0x7F00)
-                                    && (numbers[7] == 0x0001))
-                                   && ((numbers[5] == 0)
-                                       || (numbers[5] == 0xFFFF))));
-
         }
     }
 }
