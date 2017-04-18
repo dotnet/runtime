@@ -1088,6 +1088,11 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
             // of the active exception.
             CEHelper::SetupCorruptionSeverityForActiveException(bRethrownException, bNestedException, 
                 CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
+
+            // Failfast if exception indicates corrupted process state   
+            if (pExInfo->GetCorruptionSeverity() == ProcessCorrupting)
+                EEPOLICY_HANDLE_FATAL_ERROR(exceptionCode);
+                
             END_SO_INTOLERANT_CODE;
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
