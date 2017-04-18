@@ -422,7 +422,7 @@ namespace System.Net
             {
                 HttpConnection cnc = _context.Connection;
                 if (cnc.ClientCertificate == null)
-                    throw new InvalidOperationException(SR.net_no_client_certificate);
+                    return 0;
                 int[] errors = cnc.ClientCertificateErrors;
                 if (errors != null && errors.Length > 0)
                     return errors[0];
