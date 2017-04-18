@@ -547,6 +547,7 @@ typedef struct {
 	gboolean is_parallel;
 
 	GCObject* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
+	GCObject* (*alloc_for_promotion_par) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 	SgenObjectOperations serial_ops_with_concurrent_major;

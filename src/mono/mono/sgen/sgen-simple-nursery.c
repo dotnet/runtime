@@ -28,6 +28,19 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
 	return major_collector.alloc_object (vtable, objsize, has_references);
 }
 
+static inline GCObject*
+alloc_for_promotion_par (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
+{
+	/*
+	 * FIXME
+	 * Note that the stat is not precise. total_promoted_size incrementing is not atomic and
+	 * even in that case, the same object might be promoted simultaneously by different workers
+	 * leading to one of the allocated major object to be discarded.
+	 */
+	total_promoted_size += objsize;
+	return major_collector.alloc_object_par (vtable, objsize, has_references);
+}
+
 static SgenFragment*
 build_fragments_get_exclude_head (void)
 {
@@ -72,6 +85,7 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 
 #define collector_pin_object(obj, queue) sgen_pin_object (obj, queue);
 #define COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION alloc_for_promotion
+#define COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION alloc_for_promotion_par
 
 #define COPY_OR_MARK_PARALLEL
 #include "sgen-copy-object.h"
@@ -120,6 +134,7 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 	collector->is_parallel = parallel;
 
 	collector->alloc_for_promotion = alloc_for_promotion;
+	collector->alloc_for_promotion_par = alloc_for_promotion_par;
 
 	collector->prepare_to_space = prepare_to_space;
 	collector->clear_fragments = clear_fragments;
