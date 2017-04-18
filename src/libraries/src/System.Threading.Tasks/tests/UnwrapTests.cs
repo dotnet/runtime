@@ -30,8 +30,22 @@ namespace System.Threading.Tasks.Tests
             Task<Task> outer = Task.FromResult(inner);
             Task unwrappedInner = outer.Unwrap();
             Assert.True(unwrappedInner.IsCompleted);
-            Assert.Same(inner, unwrappedInner);
             AssertTasksAreEqual(inner, unwrappedInner);
+        }
+
+        /// <summary>
+        /// Tests Unwrap when both the outer task and non-generic inner task have completed by the time Unwrap is called.
+        /// </summary>
+        /// <param name="inner">Will be run with a RanToCompletion, Faulted, and Canceled task.</param>
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core optimization to return the exact same object")]
+        [Theory]
+        [MemberData(nameof(CompletedNonGenericTasks))]
+        public void NonGeneric_Completed_Completed_OptimizeToUseSameInner(Task inner)
+        {
+            Task<Task> outer = Task.FromResult(inner);
+            Task unwrappedInner = outer.Unwrap();
+            Assert.True(unwrappedInner.IsCompleted);
+            Assert.Same(inner, unwrappedInner);
         }
 
         /// <summary>
@@ -45,8 +59,22 @@ namespace System.Threading.Tasks.Tests
             Task<Task<string>> outer = Task.FromResult(inner);
             Task<string> unwrappedInner = outer.Unwrap();
             Assert.True(unwrappedInner.IsCompleted);
-            Assert.Same(inner, unwrappedInner);
             AssertTasksAreEqual(inner, unwrappedInner);
+        }
+
+        /// <summary>
+        /// Tests Unwrap when both the outer task and generic inner task have completed by the time Unwrap is called.
+        /// </summary>
+        /// <param name="inner">The inner task.</param>
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core optimization to return the exact same object")]
+        [Theory]
+        [MemberData(nameof(CompletedStringTasks))]
+        public void Generic_Completed_Completed_OptimizeToUseSameInner(Task<string> inner)
+        {
+            Task<Task<string>> outer = Task.FromResult(inner);
+            Task<string> unwrappedInner = outer.Unwrap();
+            Assert.True(unwrappedInner.IsCompleted);
+            Assert.Same(inner, unwrappedInner);
         }
 
         /// <summary>
