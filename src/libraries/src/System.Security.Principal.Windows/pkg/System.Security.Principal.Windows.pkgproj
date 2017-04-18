@@ -6,15 +6,15 @@
       <SupportedFramework>net461;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj" />
-    <!-- this package is part of the implementation closure of NETStandard.Library
-         therefore it cannot reference NETStandard.Library -->
-    <SuppressMetaPackage Include="NETStandard.Library" />
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3" />
     <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3">
       <!-- package unix impl (platform not supported) as RID agnostic -->
       <TargetPath>lib/netstandard1.3</TargetPath>
     </HarvestIncludePaths>
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
