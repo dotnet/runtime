@@ -355,8 +355,8 @@ namespace System.Xml.Serialization
 
         private bool IsSequence(Member[] members)
         {
-            // #10586: Currently the reflection based method treat this kind of type as normal types. 
-            // But potentially we can do some optimization for types that have ordered properties. 
+            // #10586: Currently the reflection based method treat this kind of type as normal types.
+            // But potentially we can do some optimization for types that have ordered properties.
 
             //for (int i = 0; i < members.Length; i++)
             //{
@@ -371,7 +371,7 @@ namespace System.Xml.Serialization
             bool isSequence = IsSequence(expectedMembers);
             if (isSequence)
             {
-                // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                // #10586: Currently the reflection based method treat this kind of type as normal types.
                 // But potentially we can do some optimization for types that have ordered properties.
             }
 
@@ -472,7 +472,7 @@ namespace System.Xml.Serialization
                         value = null;
                     }
                 }
-                else if ((element.Default != null && !Globals.IsDBNullValue(element.Default) && element.Mapping.TypeDesc.IsValueType)
+                else if ((element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc.IsValueType)
                          && (Reader.IsEmptyElement))
                 {
                     Reader.Skip();
@@ -584,7 +584,7 @@ namespace System.Xml.Serialization
 
                         if (sm.DerivedMappings != null)
                         {
-                            // #10587: To Support SpecialMapping Types Having DerivedMappings  
+                            // #10587: To Support SpecialMapping Types Having DerivedMappings
                             throw new NotImplementedException("sm.DerivedMappings != null");
                             //WriteDerivedSerializable(sm, sm, source, isWrappedAny);
                             //WriteUnknownNode("UnknownNode", "null", null, true);
@@ -1218,7 +1218,7 @@ namespace System.Xml.Serialization
 
                 if (isSequence)
                 {
-                    // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                    // #10586: Currently the reflection based method treat this kind of type as normal types.
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
@@ -1294,7 +1294,7 @@ namespace System.Xml.Serialization
                 bool IsSequenceAllMembers = IsSequence(allMembers);
                 if (IsSequenceAllMembers)
                 {
-                    // #10586: Currently the reflection based method treat this kind of type as normal types. 
+                    // #10586: Currently the reflection based method treat this kind of type as normal types.
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
