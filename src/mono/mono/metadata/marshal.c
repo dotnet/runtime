@@ -9667,7 +9667,7 @@ enum {
 };
 
 static const char *strelemref_wrapper_name[] = {
-	"object", "sealed_class", "class", "interface", "complex"
+	"object", "sealed_class", "class", "class_small_idepth", "interface", "complex"
 };
 
 static gboolean
