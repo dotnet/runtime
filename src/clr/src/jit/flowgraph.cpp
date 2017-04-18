@@ -12618,10 +12618,8 @@ bool Compiler::fgMightHaveLoop()
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 
-        AllSuccessorIter succsEnd = block->GetAllSuccs(this).end();
-        for (AllSuccessorIter succs = block->GetAllSuccs(this).begin(); succs != succsEnd; ++succs)
+        for (BasicBlock* succ : block->GetAllSuccs(this))
         {
-            BasicBlock* succ = (*succs);
             if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
             {
                 return true;
