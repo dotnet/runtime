@@ -20,7 +20,7 @@ namespace System.Net.Tests
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: ", new string[] { "" })]
         [InlineData("Unknown-Header: ", null)]
-        public async Task AcceptTypes_Get_ReturnsExpected(string acceptString, string[] expected)
+        public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[] expected)
         {
             await GetRequest("POST", "", new string[] { acceptString }, (_, request) =>
             {
@@ -71,7 +71,7 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(ContentEncoding_TestData))]
-        public async Task ContentEncoding_Get_ReturnsExpected(string header, Encoding expected)
+        public async Task ContentEncoding_GetProperty_ReturnsExpected(string header, Encoding expected)
         {
             await GetRequest("POST", "", new string[] { header }, (_, request) =>
             {
@@ -91,7 +91,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData("Content-Length: 0", 0)]
         [InlineData("Transfer-Encoding: chunked", -1)]
-        public async Task ContentLength_Get_ReturnsExpected(string contentLengthString, long expected)
+        public async Task ContentLength_GetProperty_ReturnsExpected(string contentLengthString, long expected)
         {
             await GetRequest("POST", "", new string[] { contentLengthString }, (_, request) =>
             {
@@ -106,7 +106,7 @@ namespace System.Net.Tests
         [InlineData("Referer: ", "")]
         [InlineData("Referer: http://microsoft.com<>", null)]
         [InlineData("Unknown-Header: ", null)]
-        public async Task Referer_Get_ReturnsExpected(string refererString, string expected)
+        public async Task Referer_GetProperty_ReturnsExpected(string refererString, string expected)
         {
             await GetRequest("POST", "", new string[] { refererString }, (_, request) =>
             {
@@ -119,7 +119,7 @@ namespace System.Net.Tests
         [InlineData("user-agent: Test", "Test")]
         [InlineData("User-Agent: ", "")]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserAgent_Get_ReturnsExpected(string userAgentString, string expected)
+        public async Task UserAgent_GetProperty_ReturnsExpected(string userAgentString, string expected)
         {
             await GetRequest("POST", "", new string[] { userAgentString }, (_, request) =>
             {
@@ -128,7 +128,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public async Task UserHostName_Get_ReturnsExpected()
+        public async Task UserHostName_GetProperty_ReturnsExpected()
         {
             await GetRequest("POST", null, null, (_, request) =>
             {
@@ -137,7 +137,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public async Task EndPointProperties_Get_ReturnsExpected()
+        public async Task EndPointProperties_GetProperty_ReturnsExpected()
         {
             using (HttpListenerFactory factory = new HttpListenerFactory())
             using (Socket client = factory.GetConnectedSocket())
@@ -193,7 +193,7 @@ namespace System.Net.Tests
         [InlineData("Connection: Upgrade\r\nUpgrade: Test2", false)]
         [InlineData("Connection: Upgrade\r\nUpgrade: websocket", true)]
         [InlineData("Unknown-Header: Test", false)]
-        public async Task IsWebSocketRequest_Get_ReturnsExpected(string webSocketString, bool expected)
+        public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
             await GetRequest("POST", "", new string[] { webSocketString }, (_, request) =>
             {
@@ -209,7 +209,7 @@ namespace System.Net.Tests
         [InlineData("Accept-Language:", new string[] { "" })]
         [InlineData("Accept-Language: ", new string[] { "" })]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserLanguages_Get_ReturnsExpected(string userLanguageString, string[] expected)
+        public async Task UserLanguages_GetProperty_ReturnsExpected(string userLanguageString, string[] expected)
         {
             await GetRequest("POST", "", new string[] { userLanguageString }, (_, request) =>
             {
@@ -416,7 +416,7 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(QueryString_TestData))]
-        public async Task QueryString_Get_ReturnsExpected(string query, NameValueCollection expected)
+        public async Task QueryString_GetProperty_ReturnsExpected(string query, NameValueCollection expected)
         {
             await GetRequest("POST", query, null, (_, request) =>
             {
@@ -436,7 +436,7 @@ namespace System.Net.Tests
         [InlineData("PATCH")]
         [InlineData("get")]
         [InlineData("NOSUCH")]
-        public async Task HttpMethod_Get_ReturnsExpected(string httpMethod)
+        public async Task HttpMethod_GetProperty_ReturnsExpected(string httpMethod)
         {
             await GetRequest(httpMethod, null, null, (_, request) =>
             {
@@ -507,7 +507,7 @@ namespace System.Net.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(Cookies_TestData))]
         [ActiveIssue(18486, TestPlatforms.Windows)]
-        public async Task Cookies_Get_ReturnsExpected(string cookieString, CookieCollection expected)
+        public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
             await GetRequest("POST", null, new[] { cookieString }, (_, request) =>
             {
