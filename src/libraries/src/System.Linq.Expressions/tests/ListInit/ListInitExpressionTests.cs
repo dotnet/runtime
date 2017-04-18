@@ -48,6 +48,23 @@ namespace System.Linq.Expressions.Tests
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
+        private struct ListValueType : IEnumerable<int>
+        {
+            private List<int> _store;
+
+            private List<int> EnsureStore() => _store ?? (_store = new List<int>());
+
+            public int Add(int value)
+            {
+                EnsureStore().Add(value);
+                return value;
+            }
+
+            public IEnumerator<int> GetEnumerator() => EnsureStore().GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         [Fact]
         public void NullNewMethod()
         {
@@ -313,6 +330,35 @@ namespace System.Linq.Expressions.Tests
 
             ListInitExpression e2 = Expression.ListInit(Expression.New(typeof(List<int>)), Expression.Parameter(typeof(int), "x"), Expression.Parameter(typeof(int), "y"));
             Assert.Equal("new List`1() {Void Add(Int32)(x), Void Add(Int32)(y)}", e2.ToString());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void ValueTypeList(bool useInterpreter)
+        {
+            Expression<Func<ListValueType>> lambda = Expression.Lambda<Func<ListValueType>>(
+                Expression.ListInit(
+                    Expression.New(typeof(ListValueType)),
+                    Expression.Constant(5),
+                    Expression.Constant(6),
+                    Expression.Constant(7),
+                    Expression.Constant(8)
+                )
+            );
+            Func<ListValueType> func = lambda.Compile(useInterpreter);
+            Assert.Equal(new[] { 5, 6, 7, 8 }, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void EmptyValueTypeList(bool useInterpreter)
+        {
+            Expression<Func<ListValueType>> lambda = Expression.Lambda<Func<ListValueType>>(
+                Expression.ListInit(
+                    Expression.New(typeof(ListValueType)),
+                    Array.Empty<Expression>()
+                )
+            );
+            Func<ListValueType> func = lambda.Compile(useInterpreter);
+            Assert.Empty(func());
         }
     }
 }
