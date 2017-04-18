@@ -1,99 +1,31 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using System.Globalization;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
 
 namespace System
 {
-
-    // The class designed as to keep minimal the working set of Uri class.
-    // The idea is to stay with static helper methods and strings
     internal static class IPv6AddressHelper
     {
-
-        // fields
-
         private const int NumberOfLabels = 8;
-        // Upper case hex, zero padded to 4 characters
-        private const string LegacyFormat = "{0:X4}:{1:X4}:{2:X4}:{3:X4}:{4:X4}:{5:X4}:{6:X4}:{7:X4}";
-        // Lower case hex, no leading zeros
-        private const string CanonicalNumberFormat = "{0:x}";
-        private const string EmbeddedIPv4Format = ":{0:d}.{1:d}.{2:d}.{3:d}";
-        private const string Separator = ":";
-
-        // methods
-
-        internal static string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string scopeId)
-        {
-            unsafe
-            {
-                ushort* numbers = stackalloc ushort[NumberOfLabels];
-                // optimized zeroing of 8 shorts = 2 longs
-                ((long*)numbers)[0] = 0L;
-                ((long*)numbers)[1] = 0L;
-                isLoopback = Parse(str, numbers, start, ref scopeId);
-                return '[' + CreateCanonicalName(numbers) + ']';
-            }
-        }
-
-        internal unsafe static string CreateCanonicalName(ushort* numbers)
-        {
-            // RFC 5952 Sections 4 & 5 - Compressed, lower case, with possible embedded IPv4 addresses.
-
-            // Start to finish, inclusive.  <-1, -1> for no compression
-            KeyValuePair<int, int> range = FindCompressionRange(numbers);
-            bool ipv4Embedded = ShouldHaveIpv4Embedded(numbers);
-
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < NumberOfLabels; i++)
-            {
-
-                if (ipv4Embedded && i == (NumberOfLabels - 2))
-                {
-                    // Write the remaining digits as an IPv4 address
-                    builder.Append(string.Format(CultureInfo.InvariantCulture, EmbeddedIPv4Format,
-                        numbers[i] >> 8, numbers[i] & 0xFF, numbers[i + 1] >> 8, numbers[i + 1] & 0xFF));
-                    break;
-                }
-
-                // Compression; 1::1, ::1, 1::
-                if (range.Key == i)
-                { // Start compression, add :                
-                    builder.Append(Separator);
-                }
-                if (range.Key <= i && range.Value == (NumberOfLabels - 1))
-                { // Remainder compressed; 1::
-                    builder.Append(Separator);
-                    break;
-                }
-                if (range.Key <= i && i <= range.Value)
-                {
-                    continue; // Compressed
-                }
-
-                if (i != 0)
-                {
-                    builder.Append(Separator);
-                }
-                builder.Append(string.Format(CultureInfo.InvariantCulture, CanonicalNumberFormat, numbers[i]));
-            }
-
-            return builder.ToString();
-        }
 
         // RFC 5952 Section 4.2.3
         // Longest consecutive sequence of zero segments, minimum 2.
-        // On equal, first sequence wins.
-        // <-1, -1> for no compression.
-        private unsafe static KeyValuePair<int, int> FindCompressionRange(ushort* numbers)
+        // On equal, first sequence wins. <-1, -1> for no compression.
+        internal unsafe static (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(
+            ushort[] numbers, int fromInclusive, int toExclusive)
         {
-            int longestSequenceLength = 0;
-            int longestSequenceStart = -1;
+            Debug.Assert(fromInclusive >= 0);
+            Debug.Assert(toExclusive <= NumberOfLabels);
+            Debug.Assert(fromInclusive <= toExclusive);
 
-            int currentSequenceLength = 0;
-            for (int i = 0; i < NumberOfLabels; i++)
+            int longestSequenceLength = 0, longestSequenceStart = -1, currentSequenceLength = 0;
+
+            for (int i = fromInclusive; i < toExclusive; i++)
             {
                 if (numbers[i] == 0)
-                { // In a sequence 
+                {
                     currentSequenceLength++;
                     if (currentSequenceLength > longestSequenceLength)
                     {
@@ -107,18 +39,14 @@ namespace System
                 }
             }
 
-            if (longestSequenceLength >= 2)
-            {
-                return new KeyValuePair<int, int>(longestSequenceStart,
-                    longestSequenceStart + longestSequenceLength - 1);
-            }
-
-            return new KeyValuePair<int, int>(-1, -1); // No compression
+            return longestSequenceLength > 1 ?
+                (longestSequenceStart, longestSequenceStart + longestSequenceLength) :
+                (-1, -1);
         }
 
-        // Returns true if the IPv6 address should be formated with an embedded IPv4 address:
+        // Returns true if the IPv6 address should be formatted with an embedded IPv4 address:
         // ::192.168.1.1
-        private unsafe static bool ShouldHaveIpv4Embedded(ushort* numbers)
+        internal unsafe static bool ShouldHaveIpv4Embedded(ushort[] numbers)
         {
             // 0:0 : 0:0 : x:x : x.x.x.x
             if (numbers[0] == 0 && numbers[1] == 0 && numbers[2] == 0 && numbers[3] == 0 && numbers[6] != 0)
@@ -134,13 +62,9 @@ namespace System
                     return true;
                 }
             }
-            // ISATAP
-            if (numbers[4] == 0 && numbers[5] == 0x5EFE)
-            {
-                return true;
-            }
 
-            return false;
+            // ISATAP
+            return numbers[4] == 0 && numbers[5] == 0x5EFE;
         }
 
         //
@@ -176,9 +100,8 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        unsafe private static bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
         {
-
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
@@ -318,43 +241,6 @@ namespace System
         }
 
         //
-        // IsValid
-        //
-        //  Determine whether a name is a valid IPv6 address. Rules are:
-        //
-        //   *  8 groups of 16-bit hex numbers, separated by ':'
-        //   *  a *single* run of zeros can be compressed using the symbol '::'
-        //   *  an optional string of a ScopeID delimited by '%'
-        //   *  an optional (last) 1 or 2 character prefix length field delimited by '/'
-        //   *  the last 32 bits in an address can be represented as an IPv4 address
-        //
-        // Inputs:
-        //  <argument>  name
-        //      Domain name field of a URI to check for pattern match with
-        //      IPv6 address
-        //
-        // Outputs:
-        //  Nothing
-        //
-        // Assumes:
-        //  the correct name is terminated by  ']' character
-        //
-        // Returns:
-        //  true if <name> has IPv6 format, else false
-        //
-        // Throws:
-        //  Nothing
-        //
-
-        //  Remarks: MUST NOT be used unless all input indexes are are verified and trusted.
-        //           start must be next to '[' position, or error is reported
-
-        internal unsafe static bool IsValid(char* name, int start, ref int end)
-        {
-            return InternalIsValid(name, start, ref end, false);
-        }
-
-        //
         // IsValidStrict
         //
         //  Determine whether a name is a valid IPv6 address. Rules are:
@@ -419,7 +305,7 @@ namespace System
         //  Nothing
         //
 
-        unsafe internal static bool Parse(string address, ushort* numbers, int start, ref string scopeId)
+        internal static unsafe bool Parse(string address, ushort* numbers, int start, ref string scopeId)
         {
 
             int number = 0;

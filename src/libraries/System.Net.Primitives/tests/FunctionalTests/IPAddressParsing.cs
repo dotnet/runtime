@@ -72,6 +72,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("  ")] // whitespace
         [InlineData(" 127.0.0.1")] // leading whitespace
         [InlineData("192.168.0.0/16")] // with subnet
+        [InlineData("192.168.0.0:80")] // with port
         [InlineData("192.168.0.1:80")] // with port
         [InlineData("157.3B191B")] // Hex without 0x
         [InlineData("1.1.1.0x")] // Empty trailing hex segment
