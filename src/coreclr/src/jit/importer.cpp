@@ -15507,7 +15507,8 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 
 void Compiler::impReimportMarkSuccessors(BasicBlock* block)
 {
-    for (unsigned i = 0; i < block->NumSucc(); i++)
+    const unsigned numSuccs = block->NumSucc();
+    for (unsigned i = 0; i < numSuccs; i++)
     {
         impReimportMarkBlock(block->GetSucc(i));
     }
@@ -15682,7 +15683,8 @@ void Compiler::impImportBlock(BasicBlock* block)
         JITDUMP("Marking BBF_INTERNAL block BB%02u as BBF_IMPORTED\n", block->bbNum);
         block->bbFlags |= BBF_IMPORTED;
 
-        for (unsigned i = 0; i < block->NumSucc(); i++)
+        const unsigned numSuccs = block->NumSucc();
+        for (unsigned i = 0; i < numSuccs; i++)
         {
             impImportBlockPending(block->GetSucc(i));
         }
@@ -16109,7 +16111,8 @@ SPILLSTACK:
         impReimportSpillClique(block);
 
         // For blocks that haven't been imported yet, we still need to mark them as pending import.
-        for (unsigned i = 0; i < block->NumSucc(); i++)
+        const unsigned numSuccs = block->NumSucc();
+        for (unsigned i = 0; i < numSuccs; i++)
         {
             BasicBlock* succ = block->GetSucc(i);
             if ((succ->bbFlags & BBF_IMPORTED) == 0)
@@ -16123,7 +16126,8 @@ SPILLSTACK:
         // otherwise just import the successors of block
 
         /* Does this block jump to any other blocks? */
-        for (unsigned i = 0; i < block->NumSucc(); i++)
+        const unsigned numSuccs = block->NumSucc();
+        for (unsigned i = 0; i < numSuccs; i++)
         {
             impImportBlockPending(block->GetSucc(i));
         }
@@ -16380,7 +16384,8 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
             BasicBlock* blk     = node->m_blk;
             FreeBlockListNode(node);
 
-            for (unsigned succNum = 0; succNum < blk->NumSucc(); succNum++)
+            const unsigned numSuccs = blk->NumSucc();
+            for (unsigned succNum = 0; succNum < numSuccs; succNum++)
             {
                 BasicBlock* succ = blk->GetSucc(succNum);
                 // If it's not already in the clique, add it, and also add it
