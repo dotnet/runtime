@@ -1467,8 +1467,7 @@ namespace System.Threading.Tasks
             return (flags & TASK_STATE_COMPLETED_MASK) != 0;
         }
 
-        // For use in InternalWait -- marginally faster than (Task.Status == TaskStatus.RanToCompletion)
-        internal bool IsRanToCompletion
+        public bool IsCompletedSuccessfully
         {
             get { return (m_stateFlags & TASK_STATE_COMPLETED_MASK) == TASK_STATE_RAN_TO_COMPLETION; }
         }
