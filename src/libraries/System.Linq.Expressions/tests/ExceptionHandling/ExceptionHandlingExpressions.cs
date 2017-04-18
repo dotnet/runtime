@@ -984,6 +984,33 @@ namespace System.Linq.Expressions.Tests
             TryFinallyWithinFilter(false);
         }
 
+        [Fact]
+        public void TryFinallyWithinFilterCompiledProhibited()
+        {
+            // Ideally we can change this behaviour (see issue 15719 above),
+            // but for now, check correct exception thrown.
+
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(1),
+                    Expression.TryFinally(Expression.Constant(false), Expression.Empty())
+                ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(2),
+                    Expression.TryFinally(Expression.Constant(true), Expression.Empty())
+                ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(3)
+                )
+            );
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(tryExp);
+            Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
+        }
+
         [Theory, InlineData(true)]
         public void TryCatchWithinFilter(bool useInterpreter)
         {
