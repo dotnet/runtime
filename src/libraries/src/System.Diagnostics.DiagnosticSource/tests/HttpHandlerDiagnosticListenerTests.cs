@@ -171,7 +171,7 @@ namespace System.Diagnostics.Tests
 
                 // Just compare the timestamp to make sure it's reasonable. In an poorman experiment, we
                 // found that 10 secs is roughly 30,000,000 ticks
-                Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, "The timestamp sent with the event doesn't look correct");
+                Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, $"The timestamp sent with the event doesn't look correct. Begin {beginTimestamp} End {timestamp} Diff {timestamp - beginTimestamp} Expected < {30 * 1000 * 1000}");
 
                 if (pair.Key == "System.Net.Http.Response")
                 {
@@ -241,7 +241,7 @@ namespace System.Diagnostics.Tests
 
                 // Just compare the timestamp to make sure it's reasonable. In an poorman experiment, we
                 // found that 10 secs is roughly 30,000,000 ticks
-                Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, "The timestamp sent with the event doesn't look correct");
+                Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, $"The timestamp sent with the event doesn't look correct. Begin {beginTimestamp} End {timestamp} Diff {timestamp - beginTimestamp} Expected < {30 * 1000 * 1000}");
 
                 if (pair.Key == "System.Net.Http.Request")
                 {
