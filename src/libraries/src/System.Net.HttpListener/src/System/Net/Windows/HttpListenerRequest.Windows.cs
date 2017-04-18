@@ -187,45 +187,6 @@ namespace System.Net
             }
         }
 
-        public Encoding ContentEncoding
-        {
-            get
-            {
-                if (UserAgent != null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(UserAgent, "UP"))
-                {
-                    string postDataCharset = Headers["x-up-devcap-post-charset"];
-                    if (postDataCharset != null && postDataCharset.Length > 0)
-                    {
-                        try
-                        {
-                            return Encoding.GetEncoding(postDataCharset);
-                        }
-                        catch (ArgumentException)
-                        {
-                        }
-                    }
-                }
-                if (HasEntityBody)
-                {
-                    if (ContentType != null)
-                    {
-                        string charSet = Helpers.GetAttributeFromHeader(ContentType, "charset");
-                        if (charSet != null)
-                        {
-                            try
-                            {
-                                return Encoding.GetEncoding(charSet);
-                            }
-                            catch (ArgumentException)
-                            {
-                            }
-                        }
-                    }
-                }
-                return Encoding.Default;
-            }
-        }
-
         public long ContentLength64
         {
             get
