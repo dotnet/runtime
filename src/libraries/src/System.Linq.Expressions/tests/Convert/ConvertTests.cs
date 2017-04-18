@@ -16738,6 +16738,8 @@ namespace System.Linq.Expressions.Tests
 
             public static CustomConversions ConvertFromInt(int x) => new CustomConversions {Value = x};
 
+            public static CustomConversions ConvertFromRefInt(ref int x) => new CustomConversions { Value = x++ };
+
             public static void DoNothing(CustomConversions cc)
             {
             }
@@ -16767,6 +16769,62 @@ namespace System.Linq.Expressions.Tests
                 Expression.Convert(operand, typeof(CustomConversions), method));
             Func<CustomConversions> func = lambda.Compile(useInterpreter);
             Assert.Equal(4, func().Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameFromLifted(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(4, typeof(int?));
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Expression<Func<CustomConversions>> lambda = Expression.Lambda<Func<CustomConversions>>(
+                Expression.Convert(operand, typeof(CustomConversions), method));
+            Func<CustomConversions> func = lambda.Compile(useInterpreter);
+            Assert.Equal(4, func().Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameFromLiftedNullOperand(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(null, typeof(int?));
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Expression<Func<CustomConversions>> lambda = Expression.Lambda<Func<CustomConversions>>(
+                Expression.Convert(operand, typeof(CustomConversions), method));
+            Func<CustomConversions> func = lambda.Compile(useInterpreter);
+            Assert.Throws<InvalidOperationException>(() => func());
+        }
+
+        public delegate TResult ByRefFunc<T, TResult>(ref T arg);
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameFromLiftedByRef(bool useInterpreter)
+        {
+            var param = Expression.Parameter(typeof(int?).MakeByRefType());
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromRefInt));
+            Expression<ByRefFunc<int?, CustomConversions>> lambda = Expression.Lambda<ByRefFunc<int?, CustomConversions>>(
+                Expression.Convert(param, typeof(CustomConversions), method), param);
+            ByRefFunc<int?, CustomConversions> func = lambda.Compile(useInterpreter);
+            int? x = 5;
+            Assert.Equal(5, func(ref x).Value);
+            Assert.Equal(5, x); // Refness is lost on lifting.
+        }
+
+        [Theory, InlineData(false)]
+        public static void CustomConversionNotStandardNameFromByRef(bool useInterpreter)
+        {
+            var param = Expression.Parameter(typeof(int).MakeByRefType());
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromRefInt));
+            Expression<ByRefFunc<int, CustomConversions>> lambda = Expression.Lambda<ByRefFunc<int, CustomConversions>>(
+                Expression.Convert(param, typeof(CustomConversions), method), param);
+            ByRefFunc<int, CustomConversions> func = lambda.Compile(useInterpreter);
+            int x = 5;
+            Assert.Equal(5, func(ref x).Value);
+            Assert.Equal(6, x);
+        }
+
+        [Fact, ActiveIssue(18445)]
+        public static void CustomConversionNotStandardNameFromByRefInterpreter()
+        {
+            CustomConversionNotStandardNameFromByRef(true);
         }
 
         [Fact]
@@ -16807,6 +16865,22 @@ namespace System.Linq.Expressions.Tests
             Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
             MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.FromAddition));
             Assert.Throws<ArgumentException>(() => Expression.Convert(operand, typeof(int), method));
+        }
+
+        [Fact]
+        public static void CannotConvertNonVoidToVoid()
+        {
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(Expression.Constant(1), typeof(void)));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(Expression.Constant("a"), typeof(void)));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(Expression.Constant(DateTime.MinValue), typeof(void)));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertVoidToVoid(bool useInterpreter)
+        {
+            Action act = Expression.Lambda<Action>(Expression.Convert(Expression.Empty(), typeof(void)))
+                .Compile(useInterpreter);
+            act();
         }
     }
 }

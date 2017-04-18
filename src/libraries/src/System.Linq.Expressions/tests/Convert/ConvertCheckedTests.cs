@@ -18442,5 +18442,21 @@ namespace System.Linq.Expressions.Tests
             Delegate del = lambda.Compile(useInterpreter);
             Assert.Equal(result, del.DynamicInvoke());
         }
+
+        [Fact]
+        public static void CannotConvertNonVoidToVoid()
+        {
+            Assert.Throws<InvalidOperationException>(() => Expression.ConvertChecked(Expression.Constant(1), typeof(void)));
+            Assert.Throws<InvalidOperationException>(() => Expression.ConvertChecked(Expression.Constant("a"), typeof(void)));
+            Assert.Throws<InvalidOperationException>(() => Expression.ConvertChecked(Expression.Constant(DateTime.MinValue), typeof(void)));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertVoidToVoid(bool useInterpreter)
+        {
+            Action act = Expression.Lambda<Action>(Expression.ConvertChecked(Expression.Empty(), typeof(void)))
+                .Compile(useInterpreter);
+            act();
+        }
     }
 }

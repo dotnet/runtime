@@ -336,7 +336,7 @@ namespace System.Linq.Expressions.Compiler
                     UnaryExpression e = Expression.Convert(
                         Expression.Call(
                             node.Method,
-                            Expression.Convert(node.Operand, pis[0].ParameterType)
+                            Expression.Convert(node.Operand, paramType)
                         ),
                         node.Type
                     );
