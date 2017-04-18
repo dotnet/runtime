@@ -34,7 +34,6 @@ namespace System.Dynamic.Utils
         /// </summary>
         private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes)
         {
-            Debug.Assert(mi != null);
             Debug.Assert(argTypes != null);
 
             if (mi == null)
