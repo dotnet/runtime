@@ -9,14 +9,15 @@ namespace System.Security.Cryptography.Hashing.Tests
     public class HmacAlgorithmTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
         public void SetNullAlgorithmName()
         {
             using (HMAC hmac = new TestHMAC())
             {
-                // Assert.NoThrows is implicit
+#if netfx
+                Assert.Throws<ArgumentNullException>(() => hmac.HashName = null);
+#else
                 hmac.HashName = null;
+#endif
 
                 Assert.Null(hmac.HashName);
             }
@@ -37,8 +38,6 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
         public void ResetAlgorithmName()
         {
             using (HMAC hmac = new TestHMAC())
@@ -47,9 +46,13 @@ namespace System.Security.Cryptography.Hashing.Tests
 
                 // On desktop builds this next line will succeed (modulo FIPS prohibitions on MD5).
                 // On CoreFX it throws.
+#if netfx
+                hmac.HashName = "MD5";
+                Assert.Equal("MD5", hmac.HashName);
+#else
                 Assert.Throws<PlatformNotSupportedException>(() => hmac.HashName = "MD5");
-
                 Assert.Equal("SHA1", hmac.HashName);
+#endif
             }
         }
 
@@ -71,8 +74,6 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
         public void TrivialDerivationThrows()
         {
             using (HMAC hmac = new TestHMAC())
@@ -81,7 +82,11 @@ namespace System.Security.Cryptography.Hashing.Tests
                 hmac.Key = Array.Empty<byte>();
 
                 byte[] ignored;
+#if netfx
+                ignored = hmac.ComputeHash(Array.Empty<byte>());
+#else
                 Assert.Throws<PlatformNotSupportedException>(() => ignored = hmac.ComputeHash(Array.Empty<byte>()));
+#endif
             }
         }
 

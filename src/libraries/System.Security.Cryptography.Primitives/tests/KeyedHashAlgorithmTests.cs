@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Hashing.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
+            "Throws NRE on netfx")]
         public void EnsureDisposeFreesKey()
         {
             byte[] key = new[] { (byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03, (byte)0x04, (byte)0x05, };
