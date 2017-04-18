@@ -113,15 +113,18 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                     }
                 }
 
-#if !netfx
                 // Test overflow
                 try
                 {
                     byte[] hugeKey = new byte[536870917]; // value chosen so that when multiplied by 8 (bits) it overflows to the value 40
+#if netfx
+                    // This change should be ported to netfx
+                    s.Key = hugeKey;
+#else
                     Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
+#endif
                 }
                 catch (OutOfMemoryException) { } // in case there isn't enough memory at test-time to allocate the large array
-#endif
             }
         }
 
@@ -284,7 +287,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
+            "Throws NRE on netfx")]
         public static void SetBlockSize_Uses_LegalBlockSizesProperty()
         {
             using (SymmetricAlgorithm s = new DoesNotSetKeySizesFields())

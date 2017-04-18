@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Change needs to be ported to netfx")]
+            "Throws NRE on netfx")]
         public static void ValidKeySizeUsesProperty()
         {
             using (AsymmetricAlgorithm aa = new DoesNotSetLegalKeySizesField())
