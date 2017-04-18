@@ -288,6 +288,12 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal bool IsItemTypeNullable
+        {
+            get { return _helper.IsItemTypeNullable; }
+            set { _helper.IsItemTypeNullable = value; }
+        }
+
         internal bool IsConstructorCheckRequired
         {
             get
@@ -464,6 +470,7 @@ namespace System.Runtime.Serialization
             private static Type[] s_knownInterfaces;
 
             private Type _itemType;
+            private bool _isItemTypeNullable;
             private CollectionKind _kind;
             private readonly MethodInfo _getEnumeratorMethod, _addMethod;
             private readonly ConstructorInfo _constructor;
@@ -512,6 +519,7 @@ namespace System.Runtime.Serialization
                 if (itemType != null)
                 {
                     _itemType = itemType;
+                    _isItemTypeNullable = DataContract.IsTypeNullable(itemType);
 
                     bool isDictionary = (kind == CollectionKind.Dictionary || kind == CollectionKind.GenericDictionary);
                     string itemName = null, keyName = null, valueName = null;
@@ -695,6 +703,12 @@ namespace System.Runtime.Serialization
             {
                 get { return _childElementNamespace; }
                 set { _childElementNamespace = value; }
+            }
+
+            internal bool IsItemTypeNullable
+            {
+                get { return _isItemTypeNullable; }
+                set { _isItemTypeNullable = value; }
             }
 
             internal MethodInfo GetEnumeratorMethod => _getEnumeratorMethod;

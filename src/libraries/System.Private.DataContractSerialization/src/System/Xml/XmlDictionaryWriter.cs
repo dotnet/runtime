@@ -66,7 +66,7 @@ namespace System.Xml
 
         public static XmlDictionaryWriter CreateMtomWriter(Stream stream, Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
         public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)

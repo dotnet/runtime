@@ -136,7 +136,9 @@ namespace System.Runtime.Serialization
 
         private Type ResolveDataContractTypeInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly)
         {
-            throw new PlatformNotSupportedException();
+            // The method is used only when _mode == SerializationMode.SharedType.
+            // _mode is set to SerializationMode.SharedType only when the context is for NetDataContractSerializer.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NetDataContractSerializer);
         }
 
         private DataContract ResolveDataContractInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly, out Type type)

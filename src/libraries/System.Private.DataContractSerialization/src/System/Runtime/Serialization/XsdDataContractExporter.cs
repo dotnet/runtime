@@ -36,11 +36,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                //XmlSchemaSet schemaSet = GetSchemaSet();
-                //SchemaImporter.CompileSchemaSet(schemaSet);
-                //return schemaSet;
-                // SchemaImporter is not available.
-                throw new PlatformNotSupportedException("SchemaImporter");
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_SchemaImporter);
             }
         }
 
@@ -58,34 +54,23 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                // On full framework , we set _dataContractSet = Options.GetSurrogate());
+                // But Options.GetSurrogate() is not available on NetCore because IDataContractSurrogate
+                // is not in NetStandard.
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_IDataContractSurrogate);
             }
         }
 
         void TraceExportBegin()
         {
-            // System.IdentityModel.Services.DiagnosticUtility.ShouldTraceInformation is not available.
-
-            //if (DiagnosticUtility.ShouldTraceInformation)
-            //{
-            //    TraceUtility.Trace(TraceEventType.Information, TraceCode.XsdExportBegin, SR.Format(SR.TraceCodeXsdExportBegin));
-            //}
         }
 
         void TraceExportEnd()
         {
-            //if (DiagnosticUtility.ShouldTraceInformation)
-            //{
-            //    TraceUtility.Trace(TraceEventType.Information, TraceCode.XsdExportEnd, SR.Format(SR.TraceCodeXsdExportEnd));
-            //}
         }
 
         void TraceExportError(Exception exception)
         {
-            //if (DiagnosticUtility.ShouldTraceError)
-            //{
-            //    TraceUtility.Trace(TraceEventType.Error, TraceCode.XsdExportError, SR.Format(SR.TraceCodeXsdExportError), null, exception);
-            //}
         }
 
         public void Export(ICollection<Assembly> assemblies)
