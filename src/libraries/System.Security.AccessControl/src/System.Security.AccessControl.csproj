@@ -5,7 +5,7 @@
     <AssemblyName>System.Security.AccessControl</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
     <ProjectGuid>{D27FFA1F-B446-4D24-B60A-1F88385CDB6D}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -118,16 +118,16 @@
       <Link>Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
