@@ -22,11 +22,11 @@ arguments_t::arguments_t() :
  * Setup the shared store directories.
  *
  *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
- *  o $HOME/.dotnet/{x86|x64}/ or %USERPROFILE%\.dotnet\{x86|x64}
- *  o dotnet.exe relative shared store
+ *  o $HOME/.dotnet/{x86|x64}/tfm or %USERPROFILE%\.dotnet\{x86|x64}\<tfm>
+ *  o dotnet.exe relative shared store\<arch>\<tfm>
  *  o Global location
  *      Windows: C:\Program Files (x86) or
- *      Unix: directory of dotnet on the path.
+ *      Unix: directory of dotnet on the path.\<arch>\<tfm>
  */
 void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
 {
@@ -52,12 +52,14 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     {
         args->dotnet_shared_store = own_dir;
         append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
+        append_path(&args->dotnet_shared_store, get_arch());
         append_path(&args->dotnet_shared_store, init.tfm.c_str());
     }
 
     // Global shared store dir
     if (get_global_shared_store_dir(&args->global_shared_store))
     {
+        append_path(&args->global_shared_store, get_arch());
         append_path(&args->global_shared_store, init.tfm.c_str());
     }
 }
