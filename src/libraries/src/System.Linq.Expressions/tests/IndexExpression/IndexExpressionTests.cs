@@ -650,6 +650,32 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("arguments[0]", () => Expression.Property(instance, prop, index));
         }
 
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConstrainedVirtualCall(bool useInterpreter)
+        {
+            // Virtual call via base declaration to valuetype.
+            ConstantExpression instance = Expression.Constant(new InterfaceIndexableValueType());
+            PropertyInfo prop = typeof(IIndexable).GetProperty("Item");
+            IndexExpression index = Expression.Property(instance, prop, Expression.Constant(4));
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(
+                index
+            );
+            Func<int> func = lambda.Compile(useInterpreter);
+            Assert.Equal(8, func());
+        }
+
+
+        private interface IIndexable
+        {
+            int this[int index] { get; }
+        }
+
+        private struct InterfaceIndexableValueType : IIndexable
+        {
+            public int this[int index] => index * 2;
+        }
+
         private class IntAndExpressionIndexed
         {
             public bool this[int x, Expression<Action> y] => true;
