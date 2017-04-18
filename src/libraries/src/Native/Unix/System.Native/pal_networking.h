@@ -293,21 +293,6 @@ struct SocketEvent
     uint32_t Padding;    // Pad out to 8-byte alignment
 };
 
-/**
- * Converts string-representations of IP Addresses to
- */
-extern "C" int32_t SystemNative_IPv6StringToAddress(
-    const uint8_t* address, const uint8_t* port, uint8_t* buffer, int32_t bufferLength, uint32_t* scope);
-
-extern "C" int32_t SystemNative_IPv4StringToAddress(const uint8_t* address, uint8_t* buffer, int32_t bufferLength, uint16_t* port);
-
-extern "C" int32_t SystemNative_IPAddressToString(const uint8_t* address,
-                                     int32_t addressLength,
-                                     bool isIPv6,
-                                     uint8_t* string,
-                                     int32_t stringLength,
-                                     uint32_t scope = 0);
-
 extern "C" int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry);
 
 extern "C" int32_t SystemNative_GetHostByName(const uint8_t* hostname, HostEntry* entry);

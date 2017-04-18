@@ -173,9 +173,25 @@ namespace System.Net
             PrivateScopeId = (uint)scopeid;
         }
 
+        internal unsafe IPAddress(ushort* numbers, int numbersLength, uint scopeid)
+        {
+            Debug.Assert(numbers != null);
+            Debug.Assert(numbersLength == NumberOfLabels);
+
+            var arr = new ushort[NumberOfLabels];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = numbers[i];
+            }
+
+            _numbers = arr;
+            PrivateScopeId = scopeid;
+        }
+
         private IPAddress(ushort[] numbers, uint scopeid)
         {
             Debug.Assert(numbers != null);
+            Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers;
             PrivateScopeId = scopeid;
@@ -267,8 +283,9 @@ namespace System.Net
             byte[] bytes;
             if (IsIPv6)
             {
-                bytes = new byte[NumberOfLabels * 2];
+                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
 
+                bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
                 int j = 0;
                 for (int i = 0; i < NumberOfLabels; i++)
                 {
@@ -347,8 +364,8 @@ namespace System.Net
             if (_toString == null)
             {
                 _toString = IsIPv4 ?
-                    IPAddressParser.IPv4AddressToString(GetAddressBytes()) :
-                    IPAddressParser.IPv6AddressToString(GetAddressBytes(), PrivateScopeId);
+                    IPAddressParser.IPv4AddressToString(PrivateAddress) :
+                    IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
             }
 
             return _toString;

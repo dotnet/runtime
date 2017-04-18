@@ -35,6 +35,15 @@
     <Compile Include="..\..\src\System\Net\IPAddress.cs">
       <Link>ProductionCode\System\Net\IPAddress.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
+      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPv4AddressHelper.cs">
+      <Link>ProductionCode\System\Net\IPv4AddressHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPv6AddressHelper.cs">
+      <Link>ProductionCode\System\Net\IPv6AddressHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\IPEndPoint.cs">
       <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
     </Compile>
@@ -44,10 +53,9 @@
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
-      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>ProductionCode\Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="IPAddressPalTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -78,9 +86,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Windows.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
-      <Link>ProductionCode\System\Net\IPAddressPal.Windows.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs">
       <Link>ProductionCode\System\Net\SocketException.Windows.cs</Link>
     </Compile>
@@ -120,23 +125,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs">
-      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs">
-      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs">
-      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs">
-      <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Unix.cs">
-      <Link>ProductionCode\System\Net\IPAddressPal.Unix.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs">
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
     </Compile>
