@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -9,6 +10,22 @@ namespace System.Security.Cryptography
     public sealed partial class ECDsaCng : ECDsa
     {
         private CngAlgorithmCore _core;
+        private CngAlgorithm _hashAlgorithm;
+
+        /// <summary>
+        ///     Hash algorithm to use when generating a signature over arbitrary data
+        /// </summary>
+        public CngAlgorithm HashAlgorithm
+        {
+            get
+            {
+                return _hashAlgorithm;
+            }
+            set
+            {
+                _hashAlgorithm = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
 
         /// <summary>
         ///     Creates a new ECDsaCng object that will use the specified key. The key's
@@ -74,5 +91,29 @@ namespace System.Security.Cryptography
         {
             return ECCng.ExportFullKeyBlob(Key, includePrivateParameters);
         }
+
+        public void FromXmlString(string xml, ECKeyXmlFormat format)
+            => throw new PlatformNotSupportedException();
+
+        public byte[] SignData(byte[] data)
+            => SignData(data, new HashAlgorithmName(HashAlgorithm.Algorithm));
+
+        public byte[] SignData(byte[] data, int offset, int count) =>
+            SignData(data, offset, count, new HashAlgorithmName(HashAlgorithm.Algorithm));
+
+        public byte[] SignData(Stream data)
+            => SignData(data, new HashAlgorithmName(HashAlgorithm.Algorithm));
+
+        public string ToXmlString(ECKeyXmlFormat format)
+            => throw new PlatformNotSupportedException();
+
+        public bool VerifyData(byte[] data, byte[] signature)
+            => VerifyData(data, signature, new HashAlgorithmName(HashAlgorithm.Algorithm));
+
+        public bool VerifyData(byte[] data, int offset, int count, byte[] signature)
+            => VerifyData(data, offset, count, signature, new HashAlgorithmName(HashAlgorithm.Algorithm));
+
+        public bool VerifyData(Stream data, byte[] signature)
+            => VerifyData(data, signature, new HashAlgorithmName(HashAlgorithm.Algorithm));
     }
 }

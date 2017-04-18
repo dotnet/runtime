@@ -281,6 +281,7 @@ namespace System.Security.Cryptography
 #if !netfx // types missing from netfx targeting pack
         public ECDsaCng(System.Security.Cryptography.ECCurve curve) { }
 #endif
+        public CngAlgorithm HashAlgorithm { get { throw null; } set { } }
         public System.Security.Cryptography.CngKey Key { get { throw null; } }
         public override int KeySize { get { throw null; } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
@@ -290,13 +291,28 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
 #endif
+        public void FromXmlString(string xml, ECKeyXmlFormat format) { throw null; }
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
 #if !netfx // types missing from netfx targeting pack
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
 #endif
+        public byte[] SignData(byte[] data) { throw null; }
+        public byte[] SignData(byte[] data, int offset, int count) { throw null; }
+        public byte[] SignData(System.IO.Stream data) { throw null; }
         public override byte[] SignHash(byte[] hash) { throw null; }
+        public string ToXmlString(ECKeyXmlFormat format) { throw null; }
+        public bool VerifyData(byte[] data, byte[] signature) { throw null; }
+        public bool VerifyData(byte[] data, int offset, int count, byte[] signature) { throw null; }
+        public bool VerifyData(System.IO.Stream data, byte[] signature) { throw null; }
         public override bool VerifyHash(byte[] hash, byte[] signature) { throw null; }
+    }
+    public enum ECKeyXmlFormat
+    {
+        /// <summary>
+        ///     Use the format described in RFC 4050
+        /// </summary>
+        Rfc4050
     }
     public sealed partial class RSACng : System.Security.Cryptography.RSA
     {
