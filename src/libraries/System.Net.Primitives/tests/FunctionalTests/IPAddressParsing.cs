@@ -21,8 +21,6 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("20.65535", "20.0.255.255")]
         [InlineData("157.3873051", "157.59.25.27")]
         [InlineData("157.6427", "157.0.25.27")]
-        [InlineData("0313.027035210", "203.92.58.136")]
-        [InlineData("0313.0134.035210", "203.92.58.136")]
         [InlineData("65535", "0.0.255.255")]
         [InlineData("65536", "0.1.0.0")]
         [InlineData("1434328179", "85.126.28.115")]
@@ -40,6 +38,8 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("0x89.0xab.0xcd.0xef", "137.171.205.239")]
 		[InlineData("0xff.0x7f.0x20.0x01", "255.127.32.1")]
         // Octal
+        [InlineData("0313.027035210", "203.92.58.136")]
+        [InlineData("0313.0134.035210", "203.92.58.136")]
         [InlineData("0377.0377.0377.0377", "255.255.255.255")]
         [InlineData("037777777776", "255.255.255.254")]
         [InlineData("037777777777", "255.255.255.255")]
@@ -71,6 +71,8 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData(" ")] // whitespace
         [InlineData("  ")] // whitespace
         [InlineData(" 127.0.0.1")] // leading whitespace
+        [InlineData("127.0.0.1 ")] // trailing whitespace
+        [InlineData(" 127.0.0.1 ")] // leading and trailing whitespace
         [InlineData("192.168.0.0/16")] // with subnet
         [InlineData("192.168.0.0:80")] // with port
         [InlineData("192.168.0.1:80")] // with port
@@ -235,6 +237,9 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("[Fe08::1]", "fe08::1")] // brackets dropped
         [InlineData("[Fe08::1]:0x80", "fe08::1")] // brackets and port dropped
         [InlineData("[Fe08::1]:0xFA", "fe08::1")] // brackets and port dropped
+        [InlineData("2001:0db8::0001", "2001:db8::1")] // leading 0s suppressed
+        [InlineData("3731:54:65fe:2::a7", "3731:54:65fe:2::a7")] // Unicast
+        [InlineData("3731:54:65fe:2::a8", "3731:54:65fe:2::a8")] // Anycast
         // ScopeID
         [InlineData("Fe08::1%13542", "fe08::1%13542")]
         [InlineData("1::%1", "1::%1")]
@@ -259,6 +264,15 @@ namespace System.Net.Primitives.Functional.Tests
             // Validate the ToString representation can be parsed as well back into the same IP
             IPAddress ip2 = IPAddress.Parse(ip.ToString());
             Assert.Equal(ip, ip2);
+
+            // Validate that anything that doesn't already start with brackets
+            // can be surrounded with brackets and still parse successfully.
+            if (!address.StartsWith("["))
+            {
+                Assert.Equal(
+                    expected.ToLowerInvariant(),
+                    IPAddress.Parse("[" + address + "]").ToString());
+            }
         }
 
         [Theory]
@@ -288,6 +302,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("1:")] // trailing single colon
         [InlineData(" ::1")] // leading whitespace
         [InlineData("::1 ")] // trailing whitespace
+        [InlineData(" ::1 ")] // leading and trailing whitespace
         [InlineData("1::1::1")] // ambiguous failure
         [InlineData("1234::ABCD:1234::ABCD:1234:ABCD")] // can only use :: once
         [InlineData("1:1\u67081:1:1")] // invalid char
@@ -302,6 +317,8 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/")] // errneous ending slash after ignored port
         [InlineData("::1234%0x12")] // invalid scope ID
         [InlineData("")] // empty
+        [InlineData(" ")] // whitespace
+        [InlineData("  ")] // whitespace
         public void ParseIPv6_InvalidAddress_ThrowsFormatException(string invalidAddress)
         {
             FormatException fe = Assert.Throws<FormatException>(() => IPAddress.Parse(invalidAddress));
