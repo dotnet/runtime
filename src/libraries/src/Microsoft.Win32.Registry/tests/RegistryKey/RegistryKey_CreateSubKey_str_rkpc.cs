@@ -111,17 +111,6 @@ namespace Microsoft.Win32.RegistryTests
             });
         }
 
-        [ActiveIssue(10546)]
-        [Fact]
-        public void NegativeTest_DeeplyNestedKey()
-        {
-            //According to msdn documentation max nesting level exceeds is 510 but actual is 508
-            const int maxNestedLevel = 508;
-            string exceedsNestedSubkeyName = string.Join(@"\", Enumerable.Repeat("a", maxNestedLevel));
-            Assert.Throws<IOException>(() => TestRegistryKey.CreateSubKey(exceedsNestedSubkeyName, true));
-            Assert.Throws<IOException>(() => TestRegistryKey.CreateSubKey(exceedsNestedSubkeyName, RegistryKeyPermissionCheck.ReadWriteSubTree));
-        }
-
         [Fact]
         public void CreateWritableSubkeyWithEmptyName()
         {
