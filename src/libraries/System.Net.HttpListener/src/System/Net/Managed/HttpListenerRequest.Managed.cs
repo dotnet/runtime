@@ -127,31 +127,8 @@ namespace System.Net
 
         private void CreateQueryString(string query)
         {
-            if (query == null || query.Length == 0)
-            {
-                _queryString = new NameValueCollection(1);
-                return;
-            }
-
             _queryString = new NameValueCollection();
-            if (query[0] == '?')
-                query = query.Substring(1);
-            string[] components = query.Split('&');
-            foreach (string kv in components)
-            {
-                int pos = kv.IndexOf('=');
-                if (pos == -1)
-                {
-                    _queryString.Add(null, WebUtility.UrlDecode(kv));
-                }
-                else
-                {
-                    string key = WebUtility.UrlDecode(kv.Substring(0, pos));
-                    string val = WebUtility.UrlDecode(kv.Substring(pos + 1));
-
-                    _queryString.Add(key, val);
-                }
-            }
+            Helpers.FillFromString(_queryString, Url.Query, true, ContentEncoding);
         }
 
         private static bool MaybeUri(string s)
