@@ -901,13 +901,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Cannot cast from type '{0}' to type '{1}"
-        /// </summary>
-        internal static Exception InvalidCast(object p0, object p1)
-        {
-            return new InvalidOperationException(Strings.InvalidCast(p0, p1));
-        }
-        /// <summary>
         /// ArgumentException with message like "Unhandled binary: {0}"
         /// </summary>
         internal static Exception UnhandledBinary(object p0, string paramName)
