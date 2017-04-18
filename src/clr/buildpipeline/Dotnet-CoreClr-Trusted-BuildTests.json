@@ -228,6 +228,12 @@
     },
     "RuntimeIDArg": {
       "value": "runtimeid linux-x64"
+    },
+    "TargetsNonWindowsArg": {
+      "value": " "
+    },
+    "CrossgenArg": {
+      "value": " "
     }
   },
   "retentionRules": [
