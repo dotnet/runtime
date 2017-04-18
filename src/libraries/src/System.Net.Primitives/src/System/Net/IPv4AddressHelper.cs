@@ -1,43 +1,25 @@
-﻿using System.Diagnostics;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace System
 {
-
-    // The class designed as to keep minimal the working set of Uri class.
-    // The idea is to stay with static helper methods and strings
     internal static class IPv4AddressHelper
     {
-
         internal const long Invalid = -1;
-        // Note: the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
-        private const long MaxIPv4Value = UInt32.MaxValue;
+        private const long MaxIPv4Value = uint.MaxValue; // the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
         private const int Octal = 8;
         private const int Decimal = 10;
         private const int Hex = 16;
 
         private const int NumberOfLabels = 4;
 
-        // methods
-        // Parse and canonicalize
-        internal static string ParseCanonicalName(string str, int start, int end, ref bool isLoopback)
-        {
-            unsafe
-            {
-                byte* numbers = stackalloc byte[NumberOfLabels];
-                isLoopback = Parse(str, numbers, start, end);
-                return numbers[0] + "." + numbers[1] + "." + numbers[2] + "." + numbers[3];
-            }
-        }
-
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber(string str, int start, int end)
+        internal static unsafe int ParseHostNumber(string str, int start, int end)
         {
-            unsafe
-            {
-                byte* numbers = stackalloc byte[NumberOfLabels];
-                ParseCanonical(str, numbers, start, end);
-                return (numbers[0] << 24) + (numbers[1] << 16) + (numbers[2] << 8) + numbers[3];
-            }
+            byte* numbers = stackalloc byte[NumberOfLabels];
+            ParseCanonical(str, numbers, start, end);
+            return (numbers[0] << 24) + (numbers[1] << 16) + (numbers[2] << 8) + numbers[3];
         }
 
         //
@@ -82,7 +64,7 @@ namespace System
         //
 
         //Remark: MUST NOT be used unless all input indexes are are verified and trusted.
-        internal unsafe static bool IsValid(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static unsafe bool IsValid(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
@@ -108,7 +90,7 @@ namespace System
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal unsafe static bool IsValidCanonical(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+        internal static unsafe bool IsValidCanonical(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
         {
             int dots = 0;
             int number = 0;
@@ -121,7 +103,8 @@ namespace System
                 if (allowIPv6)
                 {
                     // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (ch == ']' || ch == '/' || ch == '%') break;
+                    if (ch == ']' || ch == '/' || ch == '%')
+                        break;
                 }
                 else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
                 {
@@ -178,7 +161,7 @@ namespace System
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal unsafe static long ParseNonCanonical(char* name, int start, ref int end, bool notImplicitFile)
+        internal static unsafe long ParseNonCanonical(char* name, int start, ref int end, bool notImplicitFile)
         {
             int numberBase = Decimal;
             char ch;
@@ -321,35 +304,12 @@ namespace System
             }
         }
 
-        //
-        // Parse
-        //
-        //  Convert this IPv4 address into a sequence of 4 8-bit numbers
-        //
-        unsafe private static bool Parse(string name, byte* numbers, int start, int end)
-        {
-            fixed (char* ipString = name)
-            {
-                int changedEnd = end;
-                long result = IPv4AddressHelper.ParseNonCanonical(ipString, start, ref changedEnd, true);
-                // end includes ports, so changedEnd may be different from end
-                Debug.Assert(result != Invalid, "Failed to parse after already validated: " + name);
-
-                numbers[0] = (byte)(result >> 24);
-                numbers[1] = (byte)(result >> 16);
-                numbers[2] = (byte)(result >> 8);
-                numbers[3] = (byte)(result);
-            }
-
-            return numbers[0] == 127;
-        }
-
         // Assumes:
         //  <Name> has been validated and contains only decimal digits in groups
         //  of 8-bit numbers and the characters '.'
         //  Address may terminate with ':' or with the end of the string
         //
-        unsafe private static bool ParseCanonical(string name, byte* numbers, int start, int end)
+        private static unsafe bool ParseCanonical(string name, byte* numbers, int start, int end)
         {
             for (int i = 0; i < NumberOfLabels; ++i)
             {
