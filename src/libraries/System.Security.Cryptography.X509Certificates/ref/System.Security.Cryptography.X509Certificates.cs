@@ -18,13 +18,32 @@ namespace Microsoft.Win32.SafeHandles
 
 namespace System.Security.Cryptography.X509Certificates
 {
+    public sealed partial class CertificateRequest
+    {
+        public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.X509Certificates.PublicKey publicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public CertificateRequest(string subjectName, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public CertificateRequest(string subjectName, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public System.Collections.ObjectModel.Collection<System.Security.Cryptography.X509Certificates.X509Extension> CertificateExtensions { get { throw null; } }
+        public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName SubjectName { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Create(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.DateTimeOffset notBefore, System.DateTimeOffset notAfter, byte[] serialNumber) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Create(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.DateTimeOffset notBefore, System.DateTimeOffset notAfter, byte[] serialNumber) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 CreateSelfSigned(System.DateTimeOffset notBefore, System.DateTimeOffset notAfter) { throw null; }
+        public byte[] CreateSigningRequest() { throw null; }
+        public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
+    }
     public static partial class DSACertificateExtensions
     {
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.DSA privateKey) { throw null; }
         public static System.Security.Cryptography.DSA GetDSAPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
         public static System.Security.Cryptography.DSA GetDSAPublicKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
     public static partial class ECDsaCertificateExtensions
     {
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.ECDsa privateKey) { throw null; }
         public static System.Security.Cryptography.ECDsa GetECDsaPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
         public static System.Security.Cryptography.ECDsa GetECDsaPublicKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
@@ -47,6 +66,7 @@ namespace System.Security.Cryptography.X509Certificates
     }
     public static partial class RSACertificateExtensions
     {
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSA privateKey) { throw null; }
         public static System.Security.Cryptography.RSA GetRSAPrivateKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
         public static System.Security.Cryptography.RSA GetRSAPublicKey(this System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
@@ -65,6 +85,16 @@ namespace System.Security.Cryptography.X509Certificates
         Root = 6,
         TrustedPeople = 7,
         TrustedPublisher = 8,
+    }
+    public sealed partial class SubjectAlternativeNameBuilder
+    {
+        public SubjectAlternativeNameBuilder() { }
+        public void AddDnsName(string dnsName) { }
+        public void AddEmailAddress(string emailAddress) { }
+        public void AddIpAddress(System.Net.IPAddress ipAddress) { }
+        public void AddUri(System.Uri uri) { }
+        public void AddUserPrincipalName(string upn) { }
+        public System.Security.Cryptography.X509Certificates.X509Extension Build(bool critical=false) { throw null; }
     }
     public sealed partial class X500DistinguishedName : System.Security.Cryptography.AsnEncodedData
     {
@@ -500,6 +530,16 @@ namespace System.Security.Cryptography.X509Certificates
         NoCheck = 0,
         Offline = 2,
         Online = 1,
+    }
+    public abstract partial class X509SignatureGenerator
+    {
+        protected X509SignatureGenerator() { }
+        public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
+        protected abstract System.Security.Cryptography.X509Certificates.PublicKey BuildPublicKey();
+        public static System.Security.Cryptography.X509Certificates.X509SignatureGenerator CreateForECDsa(System.Security.Cryptography.ECDsa key) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509SignatureGenerator CreateForRSA(System.Security.Cryptography.RSA key, System.Security.Cryptography.RSASignaturePadding signaturePadding) { throw null; }
+        public abstract byte[] GetSignatureAlgorithmIdentifier(System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
+        public abstract byte[] SignData(byte[] data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm);
     }
     public sealed partial class X509Store : System.IDisposable
     {

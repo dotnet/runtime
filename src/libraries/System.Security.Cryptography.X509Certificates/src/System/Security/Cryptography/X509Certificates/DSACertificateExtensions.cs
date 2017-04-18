@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -26,6 +27,36 @@ namespace System.Security.Cryptography.X509Certificates
         public static DSA GetDSAPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<DSA>();
+        }
+
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, DSA privateKey)
+        {
+            if (certificate == null)
+                throw new ArgumentNullException(nameof(certificate));
+            if (privateKey == null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            if (certificate.HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            DSA publicKey = GetDSAPublicKey(certificate);
+
+            if (publicKey == null)
+                throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+
+            DSAParameters currentParameters = publicKey.ExportParameters(false);
+            DSAParameters newParameters = privateKey.ExportParameters(false);
+
+            if (!currentParameters.G.ContentsEqual(newParameters.G) ||
+                !currentParameters.P.ContentsEqual(newParameters.P) ||
+                !currentParameters.Q.ContentsEqual(newParameters.Q) ||
+                !currentParameters.Y.ContentsEqual(newParameters.Y))
+            {
+                throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+            }
+
+            ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
         }
     }
 }

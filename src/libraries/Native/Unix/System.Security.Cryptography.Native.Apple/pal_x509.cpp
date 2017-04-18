@@ -488,3 +488,191 @@ extern "C" int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDa
     *pOSStatus = SecItemExport(cert, dataFormat, 0, &keyParams, ppDataOut);
     return (*pOSStatus == noErr);
 }
+
+static OSStatus AddKeyToKeychain(SecKeyRef privateKey, SecKeychainRef targetKeychain)
+{
+    // This is quite similar to pal_seckey's ExportImportKey, but
+    // a) is used to put something INTO a keychain, instead of to take it out.
+    // b) Doesn't assume that the input should be CFRelease()d and overwritten.
+    // c) Doesn't return/emit the imported key reference.
+    // d) Works on private keys.
+    SecExternalFormat dataFormat = kSecFormatWrappedPKCS8;
+    CFDataRef exportData = nullptr;
+
+    SecItemImportExportKeyParameters keyParams = {};
+    keyParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
+    keyParams.passphrase = CFSTR("ExportImportPassphrase");
+
+    OSStatus status = SecItemExport(privateKey, dataFormat, 0, &keyParams, &exportData);
+
+    SecExternalFormat actualFormat = dataFormat;
+    SecExternalItemType actualType = kSecItemTypePrivateKey;
+    CFArrayRef outItems = nullptr;
+
+    if (status == noErr)
+    {
+        status =
+            SecItemImport(exportData, nullptr, &actualFormat, &actualType, 0, &keyParams, targetKeychain, &outItems);
+    }
+
+    if (exportData != nullptr)
+        CFRelease(exportData);
+
+    CFRelease(keyParams.passphrase);
+    keyParams.passphrase = nullptr;
+
+    if (outItems != nullptr)
+        CFRelease(outItems);
+
+    return status;
+}
+
+extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert,
+                                                            SecKeyRef privateKey,
+                                                            SecKeychainRef targetKeychain,
+                                                            SecIdentityRef* pIdentityOut,
+                                                            int32_t* pOSStatus)
+{
+    if (pIdentityOut != nullptr)
+        *pIdentityOut = nullptr;
+    if (pOSStatus != nullptr)
+        *pOSStatus = noErr;
+
+    if (cert == nullptr || privateKey == nullptr || targetKeychain == nullptr || pIdentityOut == nullptr ||
+        pOSStatus == nullptr)
+    {
+        return -1;
+    }
+
+    SecKeychainRef keyKeychain = nullptr;
+
+    OSStatus status = SecKeychainItemCopyKeychain(reinterpret_cast<SecKeychainItemRef>(privateKey), &keyKeychain);
+    SecKeychainItemRef itemCopy = nullptr;
+
+    // This only happens with an ephemeral key, so the keychain we're adding it to is temporary.
+    if (status == errSecNoSuchKeychain)
+    {
+        status = AddKeyToKeychain(privateKey, targetKeychain);
+    }
+
+    if (itemCopy != nullptr)
+    {
+        CFRelease(itemCopy);
+    }
+
+    CFMutableDictionaryRef query = nullptr;
+
+    if (status == noErr)
+    {
+        query = CFDictionaryCreateMutable(
+            kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+        if (query == nullptr)
+        {
+            status = errSecAllocate;
+        }
+    }
+
+    CFArrayRef searchList = nullptr;
+
+    if (status == noErr)
+    {
+        searchList = CFArrayCreate(
+            nullptr, const_cast<const void**>(reinterpret_cast<void**>(&targetKeychain)), 1, &kCFTypeArrayCallBacks);
+
+        if (searchList == nullptr)
+        {
+            status = errSecAllocate;
+        }
+    }
+
+    CFArrayRef itemMatch = nullptr;
+
+    if (status == noErr)
+    {
+        itemMatch = CFArrayCreate(
+            nullptr, const_cast<const void**>(reinterpret_cast<void**>(&cert)), 1, &kCFTypeArrayCallBacks);
+
+        if (itemMatch == nullptr)
+        {
+            status = errSecAllocate;
+        }
+    }
+
+    CFTypeRef result = nullptr;
+
+    if (status == noErr)
+    {
+        CFDictionarySetValue(query, kSecReturnRef, kCFBooleanTrue);
+        CFDictionarySetValue(query, kSecMatchSearchList, searchList);
+        CFDictionarySetValue(query, kSecMatchItemList, itemMatch);
+        CFDictionarySetValue(query, kSecClass, kSecClassIdentity);
+
+        status = SecItemCopyMatching(query, &result);
+
+        if (status != noErr && result != nullptr)
+        {
+            CFRelease(result);
+            result = nullptr;
+        }
+
+        bool added = false;
+
+        if (status == errSecItemNotFound)
+        {
+            status = SecCertificateAddToKeychain(cert, targetKeychain);
+
+            added = (status == noErr);
+        }
+
+        if (result == nullptr && status == noErr)
+        {
+            status = SecItemCopyMatching(query, &result);
+        }
+
+        if (result != nullptr && status == noErr)
+        {
+
+            if (CFGetTypeID(result) != SecIdentityGetTypeID())
+            {
+                status = errSecItemNotFound;
+            }
+            else
+            {
+                SecIdentityRef identity = reinterpret_cast<SecIdentityRef>(const_cast<void*>(result));
+                CFRetain(identity);
+                *pIdentityOut = identity;
+            }
+        }
+
+        if (added)
+        {
+            // The same query that was used to find the identity can be used
+            // to find/delete the certificate, as long as we fix the class to just the cert.
+            CFDictionarySetValue(query, kSecClass, kSecClassCertificate);
+
+            // Ignore the output status, there's no point in telling the user
+            // that the cleanup failed, since that just makes them have a dirty keychain
+            // AND their program didn't work.
+            SecItemDelete(query);
+        }
+    }
+
+    if (result != nullptr)
+        CFRelease(result);
+
+    if (itemMatch != nullptr)
+        CFRelease(itemMatch);
+
+    if (searchList != nullptr)
+        CFRelease(searchList);
+
+    if (query != nullptr)
+        CFRelease(query);
+
+    if (keyKeychain != nullptr)
+        CFRelease(keyKeychain);
+
+    *pOSStatus = status;
+    return status == noErr;
+}

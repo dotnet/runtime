@@ -153,6 +153,9 @@ namespace Internal.Cryptography.Pal
     internal sealed class AppleCertificatePal : ICertificatePal
     {
         private SafeSecIdentityHandle _identityHandle;
+        // Do not give out this reference, it's only needed in certain cases to prevent temporary keychains
+        // from being deleted.
+        private SafeSecKeyRefHandle _privateKeyHolder;
         private SafeSecCertificateHandle _certHandle;
         private CertificateData _certData;
         private bool _readCertData;
@@ -176,9 +179,11 @@ namespace Internal.Cryptography.Pal
         {
             _certHandle?.Dispose();
             _identityHandle?.Dispose();
+            _privateKeyHolder?.Dispose();
 
             _certHandle = null;
             _identityHandle = null;
+            _privateKeyHolder = null;
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
@@ -358,21 +363,6 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public AsymmetricAlgorithm GetPrivateKey()
-        {
-            switch (KeyAlgorithm)
-            {
-                case Oids.RsaRsa:
-                    return GetRSAPrivateKey();
-                case Oids.DsaDsa:
-                    return GetDSAPrivateKey();
-                case Oids.Ecc:
-                    return GetECDsaPrivateKey();
-            }
-
-            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
-        }
-
         public RSA GetRSAPrivateKey()
         {
             if (_identityHandle == null)
@@ -407,6 +397,103 @@ namespace Internal.Cryptography.Pal
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
 
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
+        }
+
+        private void HoldPrivateKey()
+        {
+            _privateKeyHolder = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            Debug.Assert(!_privateKeyHolder.IsInvalid);
+        }
+
+        public ICertificatePal CopyWithPrivateKey(DSA privateKey)
+        {
+            var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+
+            DSAParameters dsaParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(dsaParameters.X))
+            using (typedKey = new DSAImplementation.DSASecurityTransforms())
+            {
+                typedKey.ImportParameters(dsaParameters);
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
+        {
+            var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D))
+            using (typedKey = new ECDsaImplementation.ECDsaSecurityTransforms())
+            {
+                typedKey.ImportParameters(ecParameters);
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(RSA privateKey)
+        {
+            var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+
+            RSAParameters rsaParameters = privateKey.ExportParameters(true);
+            
+            using (PinAndClear.Track(rsaParameters.D))
+            using (PinAndClear.Track(rsaParameters.P))
+            using (PinAndClear.Track(rsaParameters.Q))
+            using (PinAndClear.Track(rsaParameters.DP))
+            using (PinAndClear.Track(rsaParameters.DQ))
+            using (PinAndClear.Track(rsaParameters.InverseQ))
+            using (typedKey = new RSAImplementation.RSASecurityTransforms())
+            {
+                typedKey.ImportParameters(rsaParameters);
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
+        }
+
+        private ICertificatePal CopyWithPrivateKey(SecKeyPair keyPair)
+        {
+            if (keyPair.PrivateKey == null)
+            {
+                // Both Windows and Linux/OpenSSL are unaware if they bound a public or private key.
+                // Here, we do know.  So throw if we can't do what they asked.
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
+
+            SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(keyPair.PrivateKey);
+
+            if (keychain.IsInvalid)
+            {
+                keychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+            }
+
+            using (keychain)
+            {
+                SafeSecIdentityHandle identityHandle = Interop.AppleCrypto.X509CopyWithPrivateKey(
+                    _certHandle,
+                    keyPair.PrivateKey,
+                    keychain);
+
+                AppleCertificatePal newPal = new AppleCertificatePal(identityHandle);
+                newPal.HoldPrivateKey();
+                return newPal;
+            }
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)

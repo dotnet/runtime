@@ -103,6 +103,24 @@
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
   </data>
+  <data name="Cryptography_Cert_AlreadyHasPrivateKey" xml:space="preserve">
+    <value>The certificate already has an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
+    <value>The provided notBefore value is later than the notAfter value.</value>
+  </data>
+  <data name="Cryptography_CertReq_DateTooOld" xml:space="preserve">
+    <value>The value predates 1950 and has no defined encoding.</value>
+  </data>
+  <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
+    <value>An X509Extension with OID '{0}' has already been specified.</value>
+  </data>
+  <data name="Cryptography_CertReq_IssuerRequiresPrivateKey" xml:space="preserve">
+    <value>The provided issuer certificate does not have an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
+    <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
+  </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
@@ -114,6 +132,9 @@
   </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
   </data>
   <data name="Cryptography_InvalidContextHandle" xml:space="preserve">
     <value>The chain context handle is invalid.</value>
@@ -127,6 +148,9 @@
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidPublicKey_Object" xml:space="preserve">
+    <value>The provided PublicKey object is invalid, valid Oid and EncodedKeyValue property values are required.</value>
+  </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
     <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
   </data>
@@ -135,6 +159,12 @@
   </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_DoesNotMatch" xml:space="preserve">
+    <value>The provided key does not match the public key for this certificate.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
+    <value>The provided key does not match the public key algorithm for this certificate.</value>
   </data>
   <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Stores are read-only for all users.</value>
@@ -147,6 +177,9 @@
   </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnknownKeyAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known key algorithm.</value>
   </data>
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
