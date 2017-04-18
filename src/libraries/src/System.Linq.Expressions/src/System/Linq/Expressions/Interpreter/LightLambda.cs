@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -207,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private static Func<LightLambda, Delegate> MakeRunDelegateCtor(Type delegateType)
         {
-            MethodInfo method = delegateType.GetMethod("Invoke");
+            MethodInfo method = delegateType.GetInvokeMethod();
             ParameterInfo[] paramInfos = method.GetParametersCached();
             Type[] paramTypes;
             string name = "Run";
@@ -287,7 +288,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             //PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Synchronously compiling a custom delegate");
 
-            MethodInfo method = delegateType.GetMethod("Invoke");
+            MethodInfo method = delegateType.GetInvokeMethod();
             ParameterInfo[] paramInfos = method.GetParametersCached();
             var parameters = new ParameterExpression[paramInfos.Length];
             var parametersAsObject = new Expression[paramInfos.Length];
@@ -355,7 +356,7 @@ namespace System.Linq.Expressions.Interpreter
         internal Delegate MakeDelegate(Type delegateType)
         {
 #if !NO_FEATURE_STATIC_DELEGATE
-            MethodInfo method = delegateType.GetMethod("Invoke");
+            MethodInfo method = delegateType.GetInvokeMethod();
             if (method.ReturnType == typeof(void))
             {
                 return System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(delegateType, RunVoid);

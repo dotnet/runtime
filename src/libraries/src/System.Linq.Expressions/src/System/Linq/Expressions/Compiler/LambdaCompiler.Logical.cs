@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // emit call to invoke
-                _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
+                _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetInvokeMethod());
             }
             else if (!TypeUtils.AreEquivalent(b.Type, nnLeftType))
             {
@@ -194,7 +194,7 @@ namespace System.Linq.Expressions.Compiler
             FreeLocal(loc);
 
             // emit call to invoke
-            _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
+            _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetInvokeMethod());
 
             _ilg.MarkLabel(labEnd);
         }

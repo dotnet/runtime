@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -794,5 +795,25 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false));
             AssertExtensions.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false, Enumerable.Empty<ParameterExpression>()));
         }
+
+#if FEATURE_COMPILE // When we don't have FEATURE_COMPILE we don't have the Reflection.Emit used in the tests.
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void PrivateDelegate(bool useInterpreter)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type", TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass, typeof(MulticastDelegate));
+            builder.DefineConstructor(MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(IntPtr) }).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            builder.DefineMethod("Invoke", MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            Type delType = builder.CreateTypeInfo();
+            LambdaExpression lambda = Expression.Lambda(delType, Expression.Constant(42));
+            Delegate del = lambda.Compile(useInterpreter);
+            Assert.IsType(delType, del);
+            Assert.Equal(42, del.DynamicInvoke());
+        }
+
+#endif
+
     }
 }

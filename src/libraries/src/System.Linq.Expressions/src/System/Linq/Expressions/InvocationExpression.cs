@@ -764,7 +764,7 @@ namespace System.Linq.Expressions
                 delegateType = exprType.GetGenericArguments()[0];
             }
 
-            return delegateType.GetMethod("Invoke");
+            return delegateType.GetInvokeMethod();
         }
     }
 }

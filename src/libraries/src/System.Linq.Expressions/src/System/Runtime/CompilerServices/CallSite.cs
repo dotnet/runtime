@@ -273,14 +273,14 @@ namespace System.Runtime.CompilerServices
         {
 #if !FEATURE_COMPILE
             Type target = typeof(T);
-            MethodInfo invoke = target.GetMethod("Invoke");
+            MethodInfo invoke = target.GetInvokeMethod();
 
             s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
             return CreateCustomUpdateDelegate(invoke);
 #else
             Type target = typeof(T);
             Type[] args;
-            MethodInfo invoke = target.GetMethod("Invoke");
+            MethodInfo invoke = target.GetInvokeMethod();
 
             if (target.IsGenericType && IsSimpleSignature(invoke, out args))
             {
