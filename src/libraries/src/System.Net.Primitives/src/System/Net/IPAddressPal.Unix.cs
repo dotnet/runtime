@@ -74,20 +74,10 @@ namespace System.Net
 
             scope = 0;
 
-            int offset = 0;
-            if (ipString[0] != '[')
-            {
-                ipString = ipString + ']'; //for Uri parser to find the terminator.
-            }
-            else
-            {
-                offset = 1;
-            }
-
             int end = ipString.Length;
             fixed (char* name = ipString)
             {
-                if (IPv6AddressHelper.IsValidStrict(name, offset, ref end) || (end != ipString.Length))
+                if (IPv6AddressHelper.IsValidStrict(name, 0, ref end) || (end != ipString.Length))
                 {
                     ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressBytes / 2];
                     string scopeId = null;
