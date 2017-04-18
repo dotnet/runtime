@@ -113,6 +113,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                     }
                 }
 
+#if !netfx
                 // Test overflow
                 try
                 {
@@ -120,6 +121,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                     Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
                 }
                 catch (OutOfMemoryException) { } // in case there isn't enough memory at test-time to allocate the large array
+#endif
             }
         }
 
@@ -281,6 +283,8 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
+            "Change needs to be ported to netfx")]
         public static void SetBlockSize_Uses_LegalBlockSizesProperty()
         {
             using (SymmetricAlgorithm s = new DoesNotSetKeySizesFields())
@@ -289,7 +293,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 s.BlockSize = 8;
             }
         }
-        
+
         private static byte[] GenerateRandom(int size)
         {
             byte[] data = new byte[size];

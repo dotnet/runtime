@@ -9,6 +9,8 @@ namespace System.Security.Cryptography.Hashing.Tests
     public class HmacAlgorithmTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
+            "Change needs to be ported to netfx")]
         public void SetNullAlgorithmName()
         {
             using (HMAC hmac = new TestHMAC())
@@ -35,6 +37,8 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
+            "Change needs to be ported to netfx")]
         public void ResetAlgorithmName()
         {
             using (HMAC hmac = new TestHMAC())
@@ -67,6 +71,8 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
+            "Change needs to be ported to netfx")]
         public void TrivialDerivationThrows()
         {
             using (HMAC hmac = new TestHMAC())
