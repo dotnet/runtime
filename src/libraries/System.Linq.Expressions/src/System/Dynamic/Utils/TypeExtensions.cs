@@ -19,15 +19,8 @@ namespace System.Dynamic.Utils
         public static MethodInfo GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
             Debug.Assert(types != null);
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
-            {
-                if (method.Name == name && method.MatchesArgumentTypes(types))
-                {
-                    return method;
-                }
-            }
-
-            return null;
+            MethodInfo method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
+            return method.MatchesArgumentTypes(types) ? method : null;
         }
 
         /// <summary>
@@ -41,8 +34,12 @@ namespace System.Dynamic.Utils
         /// </summary>
         private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes)
         {
-            Debug.Assert(mi != null);
             Debug.Assert(argTypes != null);
+
+            if (mi == null)
+            {
+                return false;
+            }
 
             ParameterInfo[] ps = mi.GetParametersCached();
 
