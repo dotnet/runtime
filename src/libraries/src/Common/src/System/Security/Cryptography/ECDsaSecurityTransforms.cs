@@ -302,7 +302,7 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                private SecKeyPair GetKeys()
+                internal SecKeyPair GetKeys()
                 {
                     SecKeyPair current = _keys;
 

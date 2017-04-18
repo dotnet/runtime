@@ -246,7 +246,7 @@ namespace System.Security.Cryptography
                     base.Dispose(disposing);
                 }
 
-                private SecKeyPair GetKeys()
+                internal SecKeyPair GetKeys()
                 {
                     SecKeyPair current = _keys;
 

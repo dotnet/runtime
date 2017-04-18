@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> public key from the certificate or null if the certificate does not have an RSA public key.
         /// </summary>
-        [SecuritySafeCritical]
         public static RSA GetRSAPublicKey(this X509Certificate2 certificate)
         {
             return certificate.GetPublicKey<RSA>();
@@ -25,10 +24,37 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> private key from the certificate or null if the certificate does not have an RSA private key.
         /// </summary>
-        [SecuritySafeCritical]
         public static RSA GetRSAPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<RSA>();
+        }
+
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, RSA privateKey)
+        {
+            if (certificate == null)
+                throw new ArgumentNullException(nameof(certificate));
+            if (privateKey == null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            if (certificate.HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            RSA publicKey = GetRSAPublicKey(certificate);
+
+            if (publicKey == null)
+                throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+
+            RSAParameters currentParameters = publicKey.ExportParameters(false);
+            RSAParameters newParameters = privateKey.ExportParameters(false);
+
+            if (!currentParameters.Modulus.ContentsEqual(newParameters.Modulus) ||
+                !currentParameters.Exponent.ContentsEqual(newParameters.Exponent))
+            {
+                throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+            }
+
+            ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
         }
     }
 }

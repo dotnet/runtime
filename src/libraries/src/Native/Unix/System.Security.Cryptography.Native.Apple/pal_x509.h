@@ -156,3 +156,20 @@ ppDataOut: Receives a CFDataRef with the exported blob
 pOSStatus: Receives the result of SecItemExport
 */
 extern "C" int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus);
+
+/*
+Find a SecIdentityRef for the given cert and private key in the target keychain.
+If the key does not belong to any keychain it is added to the target keychain and left there.
+If the certificate does not belong to the target keychain it is added and removed.
+
+Returns 1 on success, 0 on failure, any other value indicates invalid state.
+
+Output:
+pIdentityOut: Receives the SecIdentityRef of the mated cert/key pair.
+pOSStatus: Receives the result of the last executed system call.
+*/
+extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert,
+                                                            SecKeyRef privateKey,
+                                                            SecKeychainRef targetKeychain,
+                                                            SecIdentityRef* pIdentityOut,
+                                                            int32_t* pOSStatus);

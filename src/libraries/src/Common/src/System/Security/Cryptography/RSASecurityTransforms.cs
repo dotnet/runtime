@@ -287,7 +287,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
             }
 
-            private SecKeyPair GetKeys()
+            internal SecKeyPair GetKeys()
             {
                 SecKeyPair current = _keys;
 

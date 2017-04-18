@@ -74,6 +74,14 @@ internal static partial class Interop
             out SafeCFDataHandle pExportOut,
             out int pOSStatus);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509CopyWithPrivateKey(
+            SafeSecCertificateHandle certHandle,
+            SafeSecKeyRefHandle privateKeyHandle,
+            SafeKeychainHandle targetKeychain,
+            out SafeSecIdentityHandle pIdentityHandleOut,
+            out int pOSStatus);
+
         internal static byte[] X509GetRawData(SafeSecCertificateHandle cert)
         {
             int osStatus;
@@ -340,6 +348,38 @@ internal static partial class Interop
                     Debug.Fail($"AppleCryptoNative_X509DemuxAndRetainHandle returned {result}");
                     throw new CryptographicException();
             }
+        }
+
+        internal static SafeSecIdentityHandle X509CopyWithPrivateKey(
+            SafeSecCertificateHandle certHandle,
+            SafeSecKeyRefHandle privateKeyHandle,
+            SafeKeychainHandle targetKeychain)
+        {
+            SafeSecIdentityHandle identityHandle;
+            int osStatus;
+
+            int result = AppleCryptoNative_X509CopyWithPrivateKey(
+                certHandle,
+                privateKeyHandle,
+                targetKeychain,
+                out identityHandle,
+                out osStatus);
+
+            if (result == 1)
+            {
+                Debug.Assert(!identityHandle.IsInvalid);
+                return identityHandle;
+            }
+
+            identityHandle.Dispose();
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_X509CopyWithPrivateKey returned {result}");
+            throw new CryptographicException();
         }
 
         private static byte[] X509Export(X509ContentType contentType, SafeCreateHandle cfPassphrase, IntPtr[] certHandles)

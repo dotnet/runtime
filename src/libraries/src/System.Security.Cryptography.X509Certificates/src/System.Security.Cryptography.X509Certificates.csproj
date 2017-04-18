@@ -21,7 +21,14 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
+      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
+      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
     <Compile Include="Internal\Cryptography\CertificateExtensionsCommon.cs" />
+    <Compile Include="Internal\Cryptography\EncodingHelpers.cs" />
     <Compile Include="Internal\Cryptography\ErrorCode.cs" />
     <Compile Include="Internal\Cryptography\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
@@ -34,15 +41,24 @@
     <Compile Include="Internal\Cryptography\Oids.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaX509SignatureGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\GeneralNameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs10CertificationRequestInfo.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs9ExtensionRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\RSACertificateExtensions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\RSAPkcs1X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreLocation.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\TbsCertificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />
@@ -70,6 +86,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509NameType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationFlag.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationMode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Store.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierHashAlgorithm.cs" />
@@ -77,7 +94,6 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.CspParametersStub.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.Import.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.PrivateKey.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.BuildChain.cs" />
@@ -381,12 +397,6 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
-      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
-      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
-    </Compile>
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainVerifier.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ManagedCertificateFinder.cs" />
@@ -399,6 +409,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
