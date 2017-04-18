@@ -1025,7 +1025,7 @@ namespace System
             if (oldValue.Length == 0)
                 throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
 
-            // If they asked to replace oldValue with a null, replace all occurences
+            // If they asked to replace oldValue with a null, replace all occurrences
             // with the empty string.
             if (newValue == null)
                 newValue = string.Empty;
@@ -1039,10 +1039,11 @@ namespace System
             int matchLength = 0;
 
             bool hasDoneAnyReplacements = false;
+            CompareInfo ci = referenceCulture.CompareInfo;
 
             do
             {
-                index = referenceCulture.CompareInfo.IndexOfCore(this, oldValue, startIndex, m_stringLength - startIndex, options, &matchLength);
+                index = ci.IndexOf(this, oldValue, startIndex, m_stringLength - startIndex, options, &matchLength);
                 if (index >= 0)
                 {
                     // append the unmodified portion of string
