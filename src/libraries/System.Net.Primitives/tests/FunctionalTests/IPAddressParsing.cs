@@ -279,13 +279,17 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("Fe08::/64")] // with subnet
         [InlineData("[Fe08::1]:80Z")] // brackets and invalid port
         [InlineData("[Fe08::1")] // leading bracket
+        [InlineData("[[Fe08::1")] // two leading brackets
         [InlineData("Fe08::1]")] // trailing bracket
+        [InlineData("Fe08::1]]")] // two trailing brackets
+        [InlineData("[Fe08::1]]")] // one leading and two trailing brackets
         [InlineData("[1]")] // incomplete
         [InlineData(":1")] // leading single colon
         [InlineData("1:")] // trailing single colon
         [InlineData(" ::1")] // leading whitespace
         [InlineData("::1 ")] // trailing whitespace
         [InlineData("1::1::1")] // ambiguous failure
+        [InlineData("1234::ABCD:1234::ABCD:1234:ABCD")] // can only use :: once
         [InlineData("1:1\u67081:1:1")] // invalid char
         [InlineData("FE08::260.168.0.1")] // out of range
         [InlineData("::192.168.0.0x0")] // hex failure
@@ -295,6 +299,8 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData(":%12")] // colon scope
         [InlineData("%12")] // just scope
         [InlineData("::%1a")] // alphanumeric scope
+        [InlineData("[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/")] // errneous ending slash after ignored port
+        [InlineData("::1234%0x12")] // invalid scope ID
         [InlineData("")] // empty
         public void ParseIPv6_InvalidAddress_ThrowsFormatException(string invalidAddress)
         {
