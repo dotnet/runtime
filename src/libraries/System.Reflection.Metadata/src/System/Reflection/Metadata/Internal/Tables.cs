@@ -811,11 +811,6 @@ namespace System.Reflection.Metadata.Ecma335
             return BlobHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _ValueOffset, _IsBlobHeapRefSizeSmall));
         }
 
-        private uint GetParentTag(int index)
-        {
-            return this.Block.PeekTaggedReference(index * this.RowSize + _ParentOffset, _IsHasCustomAttributeRefSizeSmall);
-        }
-
         internal void GetAttributeRange(EntityHandle parentHandle, out int firstImplRowId, out int lastImplRowId)
         {
             int startRowNumber, endRowNumber;

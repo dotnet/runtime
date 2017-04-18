@@ -366,12 +366,6 @@ namespace System.Reflection.Metadata
                    StringHeap.EqualsRaw(TypeRefTable.GetName(handle), "Attribute");
         }
 
-        private bool IsSystemEnum(TypeReferenceHandle handle)
-        {
-            return StringHeap.EqualsRaw(TypeRefTable.GetNamespace(handle), "System") &&
-                   StringHeap.EqualsRaw(TypeRefTable.GetName(handle), "Enum");
-        }
-
         private bool NeedsWinRTPrefix(TypeAttributes flags, EntityHandle extends)
         {
             if ((flags & (TypeAttributes.VisibilityMask | TypeAttributes.Interface)) != TypeAttributes.Public)

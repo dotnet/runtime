@@ -510,10 +510,5 @@ namespace System.Reflection.Metadata.Ecma335
                 lastImplRowId = endRowNumber + 1;
             }
         }
-
-        private bool CheckSorted()
-        {
-            return Block.IsOrderedByReferenceAscending(RowSize, ParentOffset, _isHasCustomDebugInformationRefSizeSmall);
-        }
     }
 }
