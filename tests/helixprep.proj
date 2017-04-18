@@ -74,6 +74,7 @@
     Condition="'$(TargetsWindows)' == 'true' ">
 
     <PropertyGroup>
+      <CrossgenVar Condition="'$(Crossgen)' == 'true'">set RunCrossGen=true</CrossgenVar>
       <WrapperCmdContents>
         <![CDATA[
 @ECHO OFF
@@ -81,6 +82,7 @@ setlocal ENABLEDELAYEDEXPANSION
 pushd %~dp0
 
 set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%
+$(CrossgenVar)
 
 ECHO BEGIN EXECUTION
 ECHO %HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing

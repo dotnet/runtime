@@ -330,6 +330,12 @@
       "values": [ true, false ],
       "defaultValue": true
     },
+    "Crossgen": {
+      "description": "Determines if we're running Crossgen tests",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "RuntimeId": {
       "description": "Specifies the OS to build Core_Root for",
       "valueType": "property",
