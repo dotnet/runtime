@@ -277,6 +277,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
@@ -1955,8 +1956,8 @@ namespace System.Net.Sockets.Tests
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
         public void ReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1966,27 +1967,10 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]  // Expected behavior is different on OSX and Linux
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
         public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
-            {
-                ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
-            });
-        }
-
-        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
-        //       normal IPv6 socket once the socket is bound to an IPv6-specific
-        //       address. As a result, the argument validation checks in
-        //       ReceiveFrom that check that the supplied endpoint is compatible
-        //       with the socket's address family fail. We've decided that this is
-        //       an acceptable difference due to the extra state that would otherwise
-        //       be necessary to emulate the Winsock behavior.
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
-        [PlatformSpecific(TestPlatforms.Linux)]  // Read the comment above
-        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
-        {
-            Assert.Throws<ArgumentException>(() =>
             {
                 ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
             });
