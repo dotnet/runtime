@@ -775,6 +775,12 @@ namespace System.Dynamic.Utils
             return true;
         }
 
+        public static MethodInfo GetInvokeMethod(this Type delegateType)
+        {
+            Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
+            return delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        }
+
 #if FEATURE_COMPILE
 
         internal static bool IsUnsigned(this Type type) => IsUnsigned(GetNonNullableType(type).GetTypeCode());

@@ -2611,7 +2611,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitStoreLocal(local.Index);
 
                 CompileMethodCallExpression(
-                    Expression.Call(node.Conversion, node.Conversion.Type.GetMethod("Invoke"), new[] { temp })
+                    Expression.Call(node.Conversion, node.Conversion.Type.GetInvokeMethod(), new[] { temp })
                 );
 
                 _locals.UndefineLocal(local, _instructions.Count);
@@ -2640,14 +2640,14 @@ namespace System.Linq.Expressions.Interpreter
                         node.Expression,
                         compMethod
                     ),
-                    compMethod.ReturnType.GetMethod("Invoke"),
+                    compMethod.ReturnType.GetInvokeMethod(),
                     node
                 );
             }
             else
             {
                 CompileMethodCallExpression(
-                    node.Expression, node.Expression.Type.GetMethod("Invoke"), node
+                    node.Expression, node.Expression.Type.GetInvokeMethod(), node
                 );
             }
         }

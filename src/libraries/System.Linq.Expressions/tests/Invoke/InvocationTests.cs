@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -237,13 +239,48 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(invoke, new ParameterChangingVisitor().Visit(invoke));
         }
 
-
         [Theory, MemberData(nameof(InvocationExpressions))]
         public static void LambdaAndArgChangeVisit(InvocationExpression invoke)
         {
             Assert.NotSame(invoke, new ParameterAndConstantChangingVisitor().Visit(invoke));
         }
 
+#if FEATURE_COMPILE // When we don't have FEATURE_COMPILE we don't have the Reflection.Emit used in the tests.
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void InvokePrivateDelegate(bool useInterpreter)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type", TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass, typeof(MulticastDelegate));
+            builder.DefineConstructor(MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(IntPtr) }).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            builder.DefineMethod("Invoke", MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            Type delType = builder.CreateTypeInfo();
+            LambdaExpression lambda = Expression.Lambda(delType, Expression.Constant(42));
+            Delegate del = lambda.Compile(useInterpreter);
+            var invoke = Expression.Invoke(Expression.Constant(del));
+            var invLambda = Expression.Lambda<Func<int>>(invoke);
+            var invFunc = invLambda.Compile(useInterpreter);
+            Assert.Equal(42, invFunc());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void InvokePrivateDelegateTypeLambda(bool useInterpreter)
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            TypeBuilder builder = module.DefineType("Type", TypeAttributes.Class | TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass, typeof(MulticastDelegate));
+            builder.DefineConstructor(MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(IntPtr) }).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            builder.DefineMethod("Invoke", MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            Type delType = builder.CreateTypeInfo();
+            LambdaExpression lambda = Expression.Lambda(delType, Expression.Constant(42));
+            var invoke = Expression.Invoke(lambda);
+            var invLambda = Expression.Lambda<Func<int>>(invoke);
+            var invFunc = invLambda.Compile(useInterpreter);
+            Assert.Equal(42, invFunc());
+        }
+
+#endif
 
     }
 }

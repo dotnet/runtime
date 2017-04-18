@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Compiler
                 expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Array.Empty<Type>()));
             }
 
-            EmitMethodCall(expr, expr.Type.GetMethod("Invoke"), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
+            EmitMethodCall(expr, expr.Type.GetInvokeMethod(), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
         }
 
         private void EmitInlinedInvoke(InvocationExpression invoke, CompilationFlags flags)
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions.Compiler
             // stack it is entirely doable.
 
             // 1. Emit invoke arguments
-            List<WriteBack> wb = EmitArguments(lambda.Type.GetMethod("Invoke"), invoke);
+            List<WriteBack> wb = EmitArguments(lambda.Type.GetInvokeMethod(), invoke);
 
             // 2. Create the nested LambdaCompiler
             var inner = new LambdaCompiler(this, lambda, invoke);
@@ -594,7 +594,7 @@ namespace System.Linq.Expressions.Compiler
             object site = node.CreateCallSite();
             Type siteType = site.GetType();
 
-            MethodInfo invoke = node.DelegateType.GetMethod("Invoke");
+            MethodInfo invoke = node.DelegateType.GetInvokeMethod();
 
             // site.Target.Invoke(site, args)
             EmitConstant(site, siteType);
