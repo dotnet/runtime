@@ -175,9 +175,9 @@ namespace System.Net.NetworkInformation
             else
             {
                 cts.Cancel();
-                if (p.ExitCode != 0)
+                if (p.ExitCode == 1 || p.ExitCode == 2)
                 {
-                    // This means no reply was received, although transmission may have been successful.
+                    // Throw timeout for known failure return codes from ping functions.
                     return CreateTimedOutPingReply();
                 }
 
