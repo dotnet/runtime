@@ -289,10 +289,10 @@ namespace System.Net
             switch (lower)
             {
                 case "accept-language":
-                    _userLanguages = val.Split(','); // yes, only split with a ','
+                    _userLanguages = Helpers.ParseMultivalueHeader(val);
                     break;
                 case "accept":
-                    _acceptTypes = val.Split(','); // yes, only split with a ','
+                    _acceptTypes = Helpers.ParseMultivalueHeader(val);
                     break;
                 case "content-length":
                     try
