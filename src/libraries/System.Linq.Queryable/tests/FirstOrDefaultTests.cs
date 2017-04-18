@@ -55,20 +55,20 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault());
         }
 
         [Fact]
         public void NullSourcePredicateUsed()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault(i => i != 2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault(i => i != 2));
         }
 
         [Fact]
         public void NullPredicate()
         {
             Expression<Func<int, bool>> predicate = null;
-            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().FirstOrDefault(predicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().FirstOrDefault(predicate));
         }
 
         [Fact]

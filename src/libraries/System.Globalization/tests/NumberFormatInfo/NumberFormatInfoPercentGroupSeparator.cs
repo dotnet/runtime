@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PercentGroupSeparator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PercentGroupSeparator", () => new NumberFormatInfo().PercentGroupSeparator = null);
+            AssertExtensions.Throws<ArgumentNullException>("PercentGroupSeparator", () => new NumberFormatInfo().PercentGroupSeparator = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentGroupSeparator = "string");
         }
     }

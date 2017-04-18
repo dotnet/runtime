@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -14,11 +15,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetStringComparer_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("compareInfo", () => ((CompareInfo)null).GetStringComparer(CompareOptions.None));
+            AssertExtensions.Throws<ArgumentNullException>("compareInfo", () => ((CompareInfo)null).GetStringComparer(CompareOptions.None));
 
-            Assert.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer((CompareOptions)0xFFFF));
-            Assert.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.Ordinal | CompareOptions.IgnoreCase));
-            Assert.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer((CompareOptions)0xFFFF));
+            AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.Ordinal | CompareOptions.IgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
         }
 
         [Theory]
@@ -51,7 +52,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetHashCode_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.None).GetHashCode(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.None).GetHashCode(null));
         }
 
         [Theory]

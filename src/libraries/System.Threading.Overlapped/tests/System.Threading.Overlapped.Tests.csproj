@@ -23,6 +23,9 @@
     <Compile Include="ThreadPoolBoundHandle_DisposeTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
     <Compile Include="OverlappedTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

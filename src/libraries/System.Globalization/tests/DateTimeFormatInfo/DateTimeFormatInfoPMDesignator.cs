@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PMDesignator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().PMDesignator = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().PMDesignator = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.PMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

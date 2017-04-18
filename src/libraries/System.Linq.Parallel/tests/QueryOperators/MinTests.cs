@@ -447,35 +447,35 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Min_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Range(0, 1).Min((Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int?>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((int?)0, 1).Min((Func<int?, int?>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Range(0, 1).Min((Func<int, int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((int?)0, 1).Min((Func<int?, int?>)null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<long>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((long)0, 1).Min((Func<long, long>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<long?>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((long?)0, 1).Min((Func<long?, long?>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<long>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((long)0, 1).Min((Func<long, long>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<long?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((long?)0, 1).Min((Func<long?, long?>)null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<float>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((float)0, 1).Min((Func<float, float>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<float?>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((float?)0, 1).Min((Func<float?, float>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<float>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((float)0, 1).Min((Func<float, float>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<float?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((float?)0, 1).Min((Func<float?, float>)null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<double>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((double)0, 1).Min((Func<double, double>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<double?>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((double?)0, 1).Min((Func<double?, double>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<double>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((double)0, 1).Min((Func<double, double>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<double?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((double?)0, 1).Min((Func<double?, double>)null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<decimal>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((decimal)0, 1).Min((Func<decimal, decimal>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<decimal?>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((decimal?)0, 1).Min((Func<decimal?, decimal>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<decimal>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((decimal)0, 1).Min((Func<decimal, decimal>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<decimal?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat((decimal?)0, 1).Min((Func<decimal?, decimal>)null));
 
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<NotComparable>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat(0, 1).Min((Func<int, NotComparable>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).Min());
-            Assert.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat(new object(), 1).Min((Func<object, object>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<NotComparable>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat(0, 1).Min((Func<int, NotComparable>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<object>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => ParallelEnumerable.Repeat(new object(), 1).Min((Func<object, object>)null));
         }
     }
 }

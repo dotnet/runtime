@@ -408,8 +408,8 @@ namespace System.IO.Compression.Tests
         {
             using (DeflateStream ds = new DeflateStream(new MemoryStream(), CompressionMode.Decompress))
             {
-                Assert.Throws<ArgumentNullException>("destination", () => { ds.CopyToAsync(null); });
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { ds.CopyToAsync(new MemoryStream(), 0); });
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => { ds.CopyToAsync(null); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { ds.CopyToAsync(new MemoryStream(), 0); });
                 Assert.Throws<NotSupportedException>(() => { ds.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
                 ds.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => { ds.CopyToAsync(new MemoryStream()); });

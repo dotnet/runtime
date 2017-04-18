@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -336,7 +336,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
-                Assert.Throws<ArgumentNullException>("buffer", () => inputStream.Read(null, 0, 0));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => inputStream.Read(null, 0, 0));
                 await Assert.ThrowsAsync<ArgumentNullException>("buffer", () => inputStream.ReadAsync(null, 0, 0));
             }
         }
@@ -351,7 +351,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => inputStream.Read(new byte[2], offset, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => inputStream.Read(new byte[2], offset, 0));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => inputStream.ReadAsync(new byte[2], offset, 0));
             }
         }
@@ -368,7 +368,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("size", () => inputStream.Read(new byte[2], offset, size));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => inputStream.Read(new byte[2], offset, size));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>("size", () => inputStream.ReadAsync(new byte[2], offset, size));
             }
         }
@@ -381,7 +381,7 @@ namespace System.Net.Tests
             HttpListenerRequest request = await _helper.GetRequest(chunked);
             using (Stream inputStream = request.InputStream)
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => inputStream.EndRead(null));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => inputStream.EndRead(null));
             }
         }
 
@@ -399,8 +399,8 @@ namespace System.Net.Tests
             {
                 IAsyncResult beginReadResult = inputStream1.BeginRead(new byte[0], 0, 0, null, null);
 
-                Assert.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(new CustomAsyncResult()));
-                Assert.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(beginReadResult));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(new CustomAsyncResult()));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => inputStream2.EndRead(beginReadResult));
             }
         }
 

@@ -187,20 +187,20 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).First());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).First());
         }
 
         [Fact]
         public void NullSourcePredicateUsed()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).First(i => i != 2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).First(i => i != 2));
         }
 
         [Fact]
         public void NullPredicate()
         {
             Func<int, bool> predicate = null;
-            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).First(predicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).First(predicate));
         }
     }
 }

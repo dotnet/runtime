@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Tests;
@@ -140,7 +141,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_NullOrEmptyName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>("name", () => w[name] = "test");
+            AssertExtensions.Throws<ArgumentNullException>("name", () => w[name] = "test");
         }
 
         public static object[][] InvalidNames = {
@@ -153,7 +154,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_InvalidName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>("name", () => w[name] = "test");
+            AssertExtensions.Throws<ArgumentException>("name", () => w[name] = "test");
         }
 
         public static object[][] InvalidValues = {
@@ -168,7 +169,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_InvalidValue_Throws(string value)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>("value", () => w["custom"] = value);
+            AssertExtensions.Throws<ArgumentException>("value", () => w["custom"] = value);
         }
 
         public static object[][] ValidValues = {
@@ -210,14 +211,14 @@ namespace System.Net.WebHeaderCollectionTests
         public void Remove_NullOrEmptyName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>("name", () => w.Remove(name));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => w.Remove(name));
         }
 
         [Fact]
         public void Remove_IllegalCharacter_Throws()
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>("name", () => w.Remove("{"));
+            AssertExtensions.Throws<ArgumentException>("name", () => w.Remove("{"));
         }
 
         [Fact]

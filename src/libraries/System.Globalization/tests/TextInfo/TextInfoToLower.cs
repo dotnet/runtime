@@ -149,7 +149,7 @@ namespace System.Globalization.Tests
         [InlineData("fr")]
         public void ToLower_Null_ThrowsArgumentNullException(string cultureName)
         {
-            Assert.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToLower(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToLower(null));
         }
     }
 }

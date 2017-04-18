@@ -41,7 +41,7 @@ namespace System.Collections.Specialized.Tests
             StringDictionary stringDictionary = new StringDictionary();
             stringDictionary.Add("Key", "Value");
 
-            Assert.Throws<ArgumentNullException>("key", () => stringDictionary.Add(null, "value"));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => stringDictionary.Add(null, "value"));
 
             // Duplicate key
             Assert.Throws<ArgumentException>(null, () => stringDictionary.Add("Key", "value"));

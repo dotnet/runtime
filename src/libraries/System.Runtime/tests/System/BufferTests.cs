@@ -30,21 +30,21 @@ namespace System.Tests
         [Fact]
         public static void BlockCopy_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("src", () => Buffer.BlockCopy(null, 0, new int[3], 0, 0)); // Src is null
-            Assert.Throws<ArgumentNullException>("dst", () => Buffer.BlockCopy(new string[3], 0, null, 0, 0)); // Dst is null
+            AssertExtensions.Throws<ArgumentNullException>("src", () => Buffer.BlockCopy(null, 0, new int[3], 0, 0)); // Src is null
+            AssertExtensions.Throws<ArgumentNullException>("dst", () => Buffer.BlockCopy(new string[3], 0, null, 0, 0)); // Dst is null
 
-            Assert.Throws<ArgumentOutOfRangeException>("srcOffset", () => Buffer.BlockCopy(new byte[3], -1, new byte[3], 0, 0)); // SrcOffset < 0
-            Assert.Throws<ArgumentOutOfRangeException>("dstOffset", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], -1, 0)); // DstOffset < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 0, -1)); // Count < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("srcOffset", () => Buffer.BlockCopy(new byte[3], -1, new byte[3], 0, 0)); // SrcOffset < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dstOffset", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], -1, 0)); // DstOffset < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 0, -1)); // Count < 0
 
-            Assert.Throws<ArgumentException>("src", () => Buffer.BlockCopy(new string[3], 0, new byte[3], 0, 0)); // Src is not a byte array
-            Assert.Throws<ArgumentException>("dest", () => Buffer.BlockCopy(new byte[3], 0, new string[3], 0, 0)); // Dst is not a byte array
+            AssertExtensions.Throws<ArgumentException>("src", () => Buffer.BlockCopy(new string[3], 0, new byte[3], 0, 0)); // Src is not a byte array
+            AssertExtensions.Throws<ArgumentException>("dest", () => Buffer.BlockCopy(new byte[3], 0, new string[3], 0, 0)); // Dst is not a byte array
 
-            Assert.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1)); // SrcOffset + count >= src.length
-            Assert.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 4, new byte[3], 0, 0)); // SrcOffset >= src.Length
+            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1)); // SrcOffset + count >= src.length
+            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 4, new byte[3], 0, 0)); // SrcOffset >= src.Length
 
-            Assert.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1)); // DstOffset + count >= dst.Length
-            Assert.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0)); // DstOffset >= dst.Length
+            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1)); // DstOffset + count >= dst.Length
+            AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0)); // DstOffset >= dst.Length
         }
 
         public static unsafe IEnumerable<object[]> ByteLength_TestData()
@@ -80,11 +80,11 @@ namespace System.Tests
         [Fact]
         public static void ByteLength_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("array", () => Buffer.ByteLength(null)); // Array is null
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Buffer.ByteLength(null)); // Array is null
 
-            Assert.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(DateTime), 25))); // Array is not a primitive
-            Assert.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(decimal), 25))); // Array is not a primitive
-            Assert.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(string), 25))); // Array is not a primitive
+            AssertExtensions.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(DateTime), 25))); // Array is not a primitive
+            AssertExtensions.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(decimal), 25))); // Array is not a primitive
+            AssertExtensions.Throws<ArgumentException>("array", () => Buffer.ByteLength(Array.CreateInstance(typeof(string), 25))); // Array is not a primitive
         }
 
         [Theory]
@@ -100,11 +100,11 @@ namespace System.Tests
         {
             var array = new uint[] { 0x01234567, 0x89abcdef };
 
-            Assert.Throws<ArgumentNullException>("array", () => Buffer.GetByte(null, 0)); // Array is null
-            Assert.Throws<ArgumentException>("array", () => Buffer.GetByte(new object[10], 0)); // Array is not a primitive array
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Buffer.GetByte(null, 0)); // Array is null
+            AssertExtensions.Throws<ArgumentException>("array", () => Buffer.GetByte(new object[10], 0)); // Array is not a primitive array
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Buffer.GetByte(array, -1)); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Buffer.GetByte(array, 8)); // Index >= array.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Buffer.GetByte(array, -1)); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Buffer.GetByte(array, 8)); // Index >= array.Length
         }
 
         [Theory]
@@ -190,7 +190,7 @@ namespace System.Tests
             var sourceArray = new int[5000];
             var destinationArray = new int[1000];
 
-            Assert.Throws<ArgumentOutOfRangeException>("sourceBytesToCopy", () =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceBytesToCopy", () =>
             {
                 fixed (int* sourceBase = sourceArray, destinationBase = destinationArray)
                 {
@@ -198,7 +198,7 @@ namespace System.Tests
             }
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>("sourceBytesToCopy", () =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceBytesToCopy", () =>
             {
                 fixed (int* sourceBase = sourceArray, destinationBase = destinationArray)
                 {
@@ -221,11 +221,11 @@ namespace System.Tests
         {
             var array = new uint[] { 0x01234567, 0x89abcdef };
 
-            Assert.Throws<ArgumentNullException>("array", () => Buffer.SetByte(null, 0, 0xff)); // Array is null
-            Assert.Throws<ArgumentException>("array", () => Buffer.SetByte(new object[10], 0, 0xff)); // Array is not a primitive array
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Buffer.SetByte(null, 0, 0xff)); // Array is null
+            AssertExtensions.Throws<ArgumentException>("array", () => Buffer.SetByte(new object[10], 0, 0xff)); // Array is not a primitive array
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Buffer.SetByte(array, -1, 0xff)); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Buffer.SetByte(array, 8, 0xff)); // Index > array.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Buffer.SetByte(array, -1, 0xff)); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Buffer.SetByte(array, 8, 0xff)); // Index > array.Length
         }
     }
 }

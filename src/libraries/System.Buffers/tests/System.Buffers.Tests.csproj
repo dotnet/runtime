@@ -8,6 +8,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ArrayPool\UnitTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

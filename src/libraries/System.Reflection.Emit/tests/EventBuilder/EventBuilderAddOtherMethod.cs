@@ -81,7 +81,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
-            Assert.Throws<ArgumentNullException>("mdBuilder", () => eventBuilder.AddOtherMethod(null));
+            AssertExtensions.Throws<ArgumentNullException>("mdBuilder", () => eventBuilder.AddOtherMethod(null));
         }
 
         [Fact]

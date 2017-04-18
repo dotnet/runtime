@@ -136,14 +136,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullOperand()
         {
-            Assert.Throws<ArgumentNullException>("expression", () => Expression.Decrement(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Expression.Decrement(null));
         }
 
         [Fact]
         public static void UnreadableOperand()
         {
             Expression operand = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
-            Assert.Throws<ArgumentException>("expression", () => Expression.Decrement(operand));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.Decrement(operand));
         }
 
         #endregion

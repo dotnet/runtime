@@ -968,7 +968,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullType()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Constant("foo", null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Constant("foo", null));
         }
 
         [Fact]
@@ -980,7 +980,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void PointerType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Constant(null, typeof(string).MakePointerType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Constant(null, typeof(string).MakePointerType()));
         }
 
         [Fact]

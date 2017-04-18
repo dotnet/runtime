@@ -37,6 +37,9 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ExecutionContextTests.cs" />
     <Compile Include="SynchronizationContextTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>CommonTest\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

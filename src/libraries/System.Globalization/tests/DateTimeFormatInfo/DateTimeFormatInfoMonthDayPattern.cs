@@ -39,7 +39,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void MonthDayPattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().MonthDayPattern = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().MonthDayPattern = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.MonthDayPattern = "MMMM dd"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
-            Assert.Throws<ArgumentNullException>("con", () => constructor.SetCustomAttribute(null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => constructor.SetCustomAttribute(null, new byte[0]));
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
             ILGenerator ilGenerator = constructor.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ldarg_1);
 
-            Assert.Throws<ArgumentNullException>("customBuilder", () => constructor.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => constructor.SetCustomAttribute(null));
         }
 
         [Fact]

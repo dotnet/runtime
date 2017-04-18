@@ -99,7 +99,7 @@ namespace System.Threading.Tests
         [Fact]
         public void OpenExisting_InvalidNames()
         {
-            Assert.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
             Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(string.Empty));
             Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(new string('a', 10000)));
         }

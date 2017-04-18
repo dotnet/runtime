@@ -166,11 +166,11 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Last_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Last());
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).LastOrDefault());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).Last());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).LastOrDefault());
 
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().Last(null));
-            Assert.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().LastOrDefault(null));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().Last(null));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => ParallelEnumerable.Empty<int>().LastOrDefault(null));
         }
     }
 }

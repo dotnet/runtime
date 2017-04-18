@@ -14,7 +14,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            Assert.Throws<ArgumentNullException>("callback", () =>
+            AssertExtensions.Throws<ArgumentNullException>("callback", () =>
             {
                 handle.AllocateNativeOverlapped(null, new object(), new byte[256]);
             });
@@ -26,7 +26,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            Assert.Throws<ArgumentNullException>("preAllocated", () =>
+            AssertExtensions.Throws<ArgumentNullException>("preAllocated", () =>
             {
                 handle.AllocateNativeOverlapped((PreAllocatedOverlapped)null);
             });

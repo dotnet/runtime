@@ -31,7 +31,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void Ctor_NullName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new RegionInfo(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new RegionInfo(null));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
         [InlineData("en")]
         public void Ctor_InvalidName_ThrowsArgumentException(string name)
         {
-            Assert.Throws<ArgumentException>("name", () => new RegionInfo(name));
+            AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
         public static IEnumerable<object[]> Equals_TestData()

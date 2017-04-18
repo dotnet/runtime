@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata.Tests;
 using Xunit;
@@ -281,13 +282,13 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void GetOrAddErrors()
         {
             var mdBuilder = new MetadataBuilder();
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((BlobBuilder)null));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((byte[])null));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob(default(ImmutableArray<byte>)));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF8(null));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF16(null));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddDocumentName(null));
-            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddString(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((BlobBuilder)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob((byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob(default(ImmutableArray<byte>)));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF8(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF16(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddDocumentName(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddString(null));
         }
 
         [Fact]

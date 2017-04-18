@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PercentSymbol_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PercentSymbol", () => new NumberFormatInfo().PercentSymbol = null);
+            AssertExtensions.Throws<ArgumentNullException>("PercentSymbol", () => new NumberFormatInfo().PercentSymbol = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentSymbol = "");
         }
     }

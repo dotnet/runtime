@@ -19,7 +19,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidHandleThrows()
         {
-            Assert.Throws<ArgumentException>("handle", () => CreateFileStream(new SafeFileHandle(new IntPtr(-1), true), FileAccess.Read));
+            AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(new SafeFileHandle(new IntPtr(-1), true), FileAccess.Read));
         }
 
         [Fact]
@@ -27,7 +27,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(fs.SafeFileHandle, ~FileAccess.Read));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(fs.SafeFileHandle, ~FileAccess.Read));
             }
         }
 

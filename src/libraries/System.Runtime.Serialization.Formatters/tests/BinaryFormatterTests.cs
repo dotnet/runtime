@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
@@ -586,8 +587,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void SerializeDeserialize_InvalidArguments_ThrowsException()
         {
             var f = new BinaryFormatter();
-            Assert.Throws<ArgumentNullException>("serializationStream", () => f.Serialize(null, new object()));
-            Assert.Throws<ArgumentNullException>("serializationStream", () => f.Deserialize(null));
+            AssertExtensions.Throws<ArgumentNullException>("serializationStream", () => f.Serialize(null, new object()));
+            AssertExtensions.Throws<ArgumentNullException>("serializationStream", () => f.Deserialize(null));
             Assert.Throws<SerializationException>(() => f.Deserialize(new MemoryStream())); // seekable, 0-length
         }
 

@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         public void GetMethodSigHelper_Module_Type_TypeArray_NullObjectInParameterType_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentNullException>("argument", () => SignatureHelper.GetMethodSigHelper(module, typeof(string), new Type[] { typeof(char), null }));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => SignatureHelper.GetMethodSigHelper(module, typeof(string), new Type[] { typeof(char), null }));
         }
     }
 }

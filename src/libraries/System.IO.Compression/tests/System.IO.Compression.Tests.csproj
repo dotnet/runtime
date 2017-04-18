@@ -20,6 +20,9 @@
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
     <Compile Include="Utilities\WrappedStream.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>

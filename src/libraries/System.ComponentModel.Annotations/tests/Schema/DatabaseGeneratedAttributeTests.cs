@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Schema.Tests
@@ -23,7 +24,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         [InlineData((DatabaseGeneratedOption)10)]
         public static void Ctor_DatabaseGeneratedOption_UndefinedOption_ThrowsArgumentOutOfRangeException(DatabaseGeneratedOption databaseGeneratedOption)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("databaseGeneratedOption", () => new DatabaseGeneratedAttribute(databaseGeneratedOption));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("databaseGeneratedOption", () => new DatabaseGeneratedAttribute(databaseGeneratedOption));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         [Fact]
         public void Constructor_Null()
         {
-            Assert.Throws<ArgumentNullException>("el", () => new SignatureDescription(null));
+            AssertExtensions.Throws<ArgumentNullException>("el", () => new SignatureDescription(null));
         }
 
         [Fact]
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             DSA dsa = DSA.Create();
 
             // Deformatter with all properties null
-            Assert.Throws<ArgumentNullException>("name", () => sig.CreateDeformatter(dsa));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => sig.CreateDeformatter(dsa));
 
             // Deformatter with invalid DeformatterAlgorithm property
             sig.DeformatterAlgorithm = "DSA";
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             SignatureDescription sig = new SignatureDescription();
             
             // null hash
-            Assert.Throws<ArgumentNullException>("name", () => hash = sig.CreateDigest());
+            AssertExtensions.Throws<ArgumentNullException>("name", () => hash = sig.CreateDigest());
 
             sig.DigestAlgorithm = "SHA1";
             hash = sig.CreateDigest();
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             DSA dsa = DSA.Create();
 
             // Formatter with all properties null
-            Assert.Throws<ArgumentNullException>("name", () => sig.CreateFormatter(dsa));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => sig.CreateFormatter(dsa));
 
             // Formatter with invalid FormatterAlgorithm property
             AsymmetricSignatureFormatter fmt = null;

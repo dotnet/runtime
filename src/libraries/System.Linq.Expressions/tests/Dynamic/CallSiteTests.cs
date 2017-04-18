@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,19 +22,19 @@ namespace System.Runtime.CompilerServices.Tests
         public void NonGenericCreateNullType()
         {
             CallSiteBinder binder = new CallSiteBinderDefaultBehaviourTests.NopCallSiteBinder();
-            Assert.Throws<ArgumentNullException>("delegateType", () => CallSite.Create(null, binder));
+            AssertExtensions.Throws<ArgumentNullException>("delegateType", () => CallSite.Create(null, binder));
         }
 
         [Fact]
         public void NonGenericCreateNullBinder()
         {
-            Assert.Throws<ArgumentNullException>("binder", () => CallSite.Create(typeof(Func<string>), null));
+            AssertExtensions.Throws<ArgumentNullException>("binder", () => CallSite.Create(typeof(Func<string>), null));
         }
 
         [Fact]
         public void NullBinder()
         {
-            Assert.Throws<ArgumentNullException>("binder", () => CallSite<Func<CallSite, object, object>>.Create(null));
+            AssertExtensions.Throws<ArgumentNullException>("binder", () => CallSite<Func<CallSite, object, object>>.Create(null));
         }
     }
 }

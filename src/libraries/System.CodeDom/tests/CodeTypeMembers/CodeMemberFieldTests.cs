@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -43,7 +43,7 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_Type_String_NullType_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("type", () => new CodeMemberField((Type)null, "name"));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeMemberField((Type)null, "name"));
 		}
 
 		public static IEnumerable<object[]> Ctor_String_String_TestData()

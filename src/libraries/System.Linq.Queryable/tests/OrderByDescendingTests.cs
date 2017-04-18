@@ -54,28 +54,28 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.OrderByDescending(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.OrderByDescending(i => i));
         }
 
         [Fact]
         public void NullKeySelector()
         {
             Expression<Func<DateTime, int>> keySelector = null;
-            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().AsQueryable().OrderByDescending(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().AsQueryable().OrderByDescending(keySelector));
         }
 
         [Fact]
         public void NullSourceComparer()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.OrderByDescending(i => i, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.OrderByDescending(i => i, Comparer<int>.Default));
         }
 
         [Fact]
         public void NullKeySelectorComparer()
         {
             Expression<Func<DateTime, int>> keySelector = null;
-            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().AsQueryable().OrderByDescending(keySelector, Comparer<int>.Default));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().AsQueryable().OrderByDescending(keySelector, Comparer<int>.Default));
         }
 
         [Fact]

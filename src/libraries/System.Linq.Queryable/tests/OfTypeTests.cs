@@ -27,7 +27,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<object>)null).OfType<string>());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<object>)null).OfType<string>());
         }
 
         [Fact]

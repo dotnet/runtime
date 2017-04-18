@@ -129,7 +129,7 @@ namespace System.Collections.Generic.Tests
         [Fact]
         public void Comparer_ComparerCreateWithNullComparisonThrows()
         {
-            Assert.Throws<ArgumentNullException>("comparison", () => Comparer<T>.Create(comparison: null));
+            AssertExtensions.Throws<ArgumentNullException>("comparison", () => Comparer<T>.Create(comparison: null));
         }
     }
 }

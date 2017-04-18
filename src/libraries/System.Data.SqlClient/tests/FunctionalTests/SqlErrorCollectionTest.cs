@@ -1,7 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+using System;
 using System.Collections;
 
 using Xunit;
@@ -39,8 +39,8 @@ namespace System.Data.SqlClient.Tests
         {
             SqlErrorCollection c = CreateCollection();
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => c[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => c[c.Count]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => c[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => c[c.Count]);
         }
 
         [Fact]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Linq;
 using Xunit;
 
@@ -40,7 +41,7 @@ namespace System.Security.Cryptography.RNG.Tests
         {
             using (var rng = new RNGCryptoServiceProvider())
             {
-                Assert.Throws<ArgumentNullException>("data", () => rng.GetNonZeroBytes(null));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetNonZeroBytes(null));
 
                 // Array should not have any zeros
                 byte[] rand = new byte[65536];

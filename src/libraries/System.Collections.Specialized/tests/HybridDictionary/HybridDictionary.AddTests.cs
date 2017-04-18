@@ -85,7 +85,7 @@ namespace System.Collections.Specialized.Tests
         public void Add_Invalid(int count, bool caseInsensitive)
         {
             HybridDictionary hybridDictionary = Helpers.CreateHybridDictionary(count, caseInsensitive);
-            Assert.Throws<ArgumentNullException>("key", () => hybridDictionary.Add(null, "value"));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => hybridDictionary.Add(null, "value"));
 
             hybridDictionary.Add("key", "value");
             Assert.Throws<ArgumentException>(null, () => hybridDictionary.Add("key", "value"));

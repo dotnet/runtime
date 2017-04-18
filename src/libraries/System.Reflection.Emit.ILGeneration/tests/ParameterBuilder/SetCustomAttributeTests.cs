@@ -65,9 +65,9 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new Type[] { typeof(int) });
             ParameterBuilder parameter = method.DefineParameter(1, ParameterAttributes.HasDefault, "testParam");
 
-            Assert.Throws<ArgumentNullException>("con", () => parameter.SetCustomAttribute(null, new byte[0]));
-            Assert.Throws<ArgumentNullException>("binaryAttribute", () => parameter.SetCustomAttribute(typeof(ParameterBuilderCustomAttribute).GetConstructor(new Type[] { typeof(bool) }), null));
-            Assert.Throws<ArgumentNullException>("customBuilder", () => parameter.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => parameter.SetCustomAttribute(null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => parameter.SetCustomAttribute(typeof(ParameterBuilderCustomAttribute).GetConstructor(new Type[] { typeof(bool) }), null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => parameter.SetCustomAttribute(null));
         }
     }
 

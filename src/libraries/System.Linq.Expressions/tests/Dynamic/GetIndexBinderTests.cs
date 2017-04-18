@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -85,13 +85,13 @@ namespace System.Dynamic.Tests
             dynamic d = new[] {0, 1, 2, 3};
             Assert.Throws<IndexOutOfRangeException>(() => d[9]);
             d = new List<int> {0, 1, 2, 3};
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => d[9]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => d[9]);
         }
 
         [Fact]
         public void NullCallInfo()
         {
-            Assert.Throws<ArgumentNullException>("callInfo", () => new MinimumOverrideGetIndexBinder(null));
+            AssertExtensions.Throws<ArgumentNullException>("callInfo", () => new MinimumOverrideGetIndexBinder(null));
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace System.Dynamic.Tests
         {
             var binder = new MinimumOverrideGetIndexBinder(new CallInfo(0));
             var arg = new DynamicMetaObject(Expression.Parameter(typeof(object), null), BindingRestrictions.Empty);
-            Assert.Throws<ArgumentNullException>("target", () => binder.Bind(null, new[] {arg}));
+            AssertExtensions.Throws<ArgumentNullException>("target", () => binder.Bind(null, new[] {arg}));
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace System.Dynamic.Tests
         {
             var binder = new MinimumOverrideGetIndexBinder(new CallInfo(0));
             var target = new DynamicMetaObject(Expression.Parameter(typeof(object), null), BindingRestrictions.Empty);
-            Assert.Throws<ArgumentNullException>("args", () => binder.Bind(target, null));
+            AssertExtensions.Throws<ArgumentNullException>("args", () => binder.Bind(target, null));
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace System.Dynamic.Tests
             var binder = new MinimumOverrideGetIndexBinder(new CallInfo(0));
             var target = new DynamicMetaObject(Expression.Parameter(typeof(object), null), BindingRestrictions.Empty);
             var arg = new DynamicMetaObject(Expression.Parameter(typeof(object), null), BindingRestrictions.Empty);
-            Assert.Throws<ArgumentNullException>("args[1]", () => binder.Bind(target, new [] {arg, null, arg}));
+            AssertExtensions.Throws<ArgumentNullException>("args[1]", () => binder.Bind(target, new [] {arg, null, arg}));
         }
     }
 }

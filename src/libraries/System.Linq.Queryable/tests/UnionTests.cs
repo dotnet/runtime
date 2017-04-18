@@ -27,7 +27,7 @@ namespace System.Linq.Tests
             IQueryable<string> first = null;
             string[] second = { "ttaM", "Charlie", "Bbo" };
             
-            var ane = Assert.Throws<ArgumentNullException>("source1", () => first.Union(second.AsQueryable(), new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Union(second.AsQueryable(), new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace System.Linq.Tests
             string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
             IQueryable<string> second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Union(second, new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Union(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Linq.Tests
             IQueryable<string> first = null;
             string[] second = { "ttaM", "Charlie", "Bbo" };
 
-            var ane = Assert.Throws<ArgumentNullException>("source1", () => first.Union(second.AsQueryable()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source1", () => first.Union(second.AsQueryable()));
         }
 
         [Fact]
@@ -54,7 +54,7 @@ namespace System.Linq.Tests
             string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
             IQueryable<string> second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Union(second));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Union(second));
         }
 
         [Fact]

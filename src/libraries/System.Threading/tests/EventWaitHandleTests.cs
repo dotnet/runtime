@@ -144,7 +144,7 @@ namespace System.Threading.Tests
         [Fact]
         public void OpenExisting_InvalidNames_Windows()
         {
-            Assert.Throws<ArgumentNullException>("name", () => EventWaitHandle.OpenExisting(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => EventWaitHandle.OpenExisting(null));
             Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(string.Empty));
             Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(new string('a', 10000)));
         }

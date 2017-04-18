@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,7 +38,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 21;
                 ICollection<string> collection = GenericICollectionFactory(count);
-                Assert.Throws<ArgumentOutOfRangeException>("item", () => collection.Remove(default(string)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("item", () => collection.Remove(default(string)));
             }
         }
 
@@ -47,7 +47,7 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<string> collection = GenericICollectionFactory(count);
-                Assert.Throws<ArgumentOutOfRangeException>("item", () => collection.Add(default(string)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("item", () => collection.Add(default(string)));
             }
         }
     }

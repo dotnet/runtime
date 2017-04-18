@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,9 +13,9 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create));
-                Assert.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create, FileAccess.ReadWrite));
-                Assert.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create, FileAccess.ReadWrite));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => isf.OpenFile(null, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
             }
         }
 

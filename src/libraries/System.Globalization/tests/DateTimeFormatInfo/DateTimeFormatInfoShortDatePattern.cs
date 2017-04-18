@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ShortDatePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortDatePattern = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortDatePattern = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortDatePattern = "MM/dd/yyyy"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

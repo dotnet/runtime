@@ -67,8 +67,8 @@ namespace System.Tests
         public static void CreateInstance_Invalid()
         {
             Type nullType = null;
-            Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(nullType)); // Type is null
-            Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null, new object[0])); // Type is null
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(nullType)); // Type is null
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null, new object[0])); // Type is null
 
             Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));
 
@@ -94,7 +94,7 @@ namespace System.Tests
 
 #if netcoreapp
             // Type is not a valid RuntimeType
-            Assert.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
 #endif // netcoreapp
         }
 

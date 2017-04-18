@@ -62,15 +62,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullType()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Label(default(Type)));
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Label(null, "name"));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Label(default(Type)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Label(null, "name"));
         }
 
         [Fact]
         public void GenericType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>), null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(typeof(List<>), null));
         }
 
         [Fact]
@@ -78,24 +78,24 @@ namespace System.Linq.Expressions.Tests
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(listListListType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(listListListType, null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(listListListType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(listListListType, null));
         }
 
         [Fact]
         public void PointerType()
         {
             Type pointerType = typeof(int).MakePointerType();
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType, null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(pointerType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(pointerType, null));
         }
 
         [Fact]
         public void ByRefType()
         {
             Type byRefType = typeof(int).MakeByRefType();
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType));
-            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType, null));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(byRefType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Label(byRefType, null));
         }
 
         [Fact]

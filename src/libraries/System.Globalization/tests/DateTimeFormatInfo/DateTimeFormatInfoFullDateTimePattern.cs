@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void FullDateTimePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().FullDateTimePattern = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().FullDateTimePattern = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FullDateTimePattern = "dddd, dd MMMM yyyy HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

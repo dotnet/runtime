@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Globalization;
 using Xunit;
 
@@ -13,23 +14,23 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void InvalidArguments_ThrowExceptions()
         {
             var f = new FormatterConverter();
-            Assert.Throws<ArgumentNullException>("value", () => f.Convert(null, typeof(int)));
-            Assert.Throws<ArgumentNullException>("value", () => f.Convert(null, TypeCode.Char));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToBoolean(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToByte(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToChar(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToDateTime(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToDecimal(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToDouble(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToInt16(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToInt32(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToInt64(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToSByte(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToSingle(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToString(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToUInt16(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToUInt32(null));
-            Assert.Throws<ArgumentNullException>("value", () => f.ToUInt64(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.Convert(null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.Convert(null, TypeCode.Char));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToBoolean(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToByte(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToChar(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToDateTime(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToDecimal(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToDouble(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToInt16(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToInt32(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToInt64(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToSByte(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToSingle(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToString(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToUInt16(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToUInt32(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => f.ToUInt64(null));
         }
 
         [Fact]

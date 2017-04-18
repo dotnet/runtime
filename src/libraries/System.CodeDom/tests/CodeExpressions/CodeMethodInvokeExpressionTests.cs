@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -56,14 +56,14 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullParameters_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(), null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(), null));
 		}
 
 		[Fact]
 		public void Ctor_NullObjectInParameters_ThrowsArgumentNullException()
 		{
 			CodeExpression[] parameters = new CodeExpression[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(), parameters));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(), parameters));
 		}
 
 		public static IEnumerable<object[]> CodeMethodReferenceExpression_TestData()

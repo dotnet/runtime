@@ -178,7 +178,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression variable = Expression.Variable(typeof(string));
             MethodInfo method = typeof(object).GetTypeInfo().GetDeclaredMethod("ReferenceEquals");
-            Assert.Throws<ArgumentException>("method", () => Expression.PostIncrementAssign(variable, method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.PostIncrementAssign(variable, method));
         }
 
         [Fact]
@@ -255,20 +255,20 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullOperand()
         {
-            Assert.Throws<ArgumentNullException>("expression", () => Expression.PostIncrementAssign(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => Expression.PostIncrementAssign(null));
         }
 
         [Fact]
         public void UnwritableOperand()
         {
-            Assert.Throws<ArgumentException>("expression", () => Expression.PostIncrementAssign(Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.PostIncrementAssign(Expression.Constant(1)));
         }
 
         [Fact]
         public void UnreadableOperand()
         {
             Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
-            Assert.Throws<ArgumentException>("expression", () => Expression.PostIncrementAssign(value));
+            AssertExtensions.Throws<ArgumentException>("expression", () => Expression.PostIncrementAssign(value));
         }
 
         [Fact]

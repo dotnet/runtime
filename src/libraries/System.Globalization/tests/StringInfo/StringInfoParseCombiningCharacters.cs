@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ParseCombiningCharacters_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("str", () => StringInfo.ParseCombiningCharacters(null)); // Str is null
+            AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.ParseCombiningCharacters(null)); // Str is null
         }
     }
 }

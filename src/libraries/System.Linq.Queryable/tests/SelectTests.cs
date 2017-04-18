@@ -39,7 +39,7 @@ namespace System.Linq.Tests
         public void Select_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Select(i => i + 1));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Select(i => i + 1));
         }
 
         [Fact]
@@ -48,14 +48,14 @@ namespace System.Linq.Tests
             IQueryable<int> source = Enumerable.Range(1, 10).AsQueryable();
             Expression<Func<int, int, int>> selector = null;
 
-            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => source.Select(selector));
         }
 
         [Fact]
         public void Select_SourceIsNull_ArgumentNullExceptionThrown_Indexed()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Select((e, i) => i + 1));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Select((e, i) => i + 1));
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace System.Linq.Tests
             IQueryable<int> source = Enumerable.Range(1, 10).AsQueryable();
             Expression<Func<int, int>> selector = null;
 
-            Assert.Throws<ArgumentNullException>("selector", () => source.Select(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => source.Select(selector));
         }
 
         [Fact]

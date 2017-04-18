@@ -914,11 +914,11 @@ namespace System.Tests
         [Fact]
         public static void ConvertTime_NullTimeZone_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null));
-            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTimeOffset(), null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTimeOffset(), null));
 
-            Assert.Throws<ArgumentNullException>("sourceTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null, s_casablancaTz));
-            Assert.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), s_casablancaTz, null));
+            AssertExtensions.Throws<ArgumentNullException>("sourceTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), null, s_casablancaTz));
+            AssertExtensions.Throws<ArgumentNullException>("destinationTimeZone", () => TimeZoneInfo.ConvertTime(new DateTime(), s_casablancaTz, null));
         }
 
         [Fact]

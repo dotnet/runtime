@@ -136,14 +136,14 @@ namespace System.Linq.Tests
         public void CreateQueryNull()
         {
             IQueryProvider provider = Enumerable.Empty<int>().AsQueryable().Provider;
-            Assert.Throws<ArgumentNullException>("expression", () => provider.CreateQuery<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => provider.CreateQuery<int>(null));
         }
 
         [Fact]
         public void CreateQueryNullNonGeneric()
         {
             IQueryProvider provider = Enumerable.Empty<int>().AsQueryable().Provider;
-            Assert.Throws<ArgumentNullException>("expression", () => provider.CreateQuery(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => provider.CreateQuery(null));
         }
 
         [Fact]
@@ -190,14 +190,14 @@ namespace System.Linq.Tests
         public void ExecuteNull()
         {
             IQueryProvider provider = Enumerable.Empty<string>().AsQueryable().Provider;
-            Assert.Throws<ArgumentNullException>("expression", () => provider.Execute<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => provider.Execute<int>(null));
         }
 
         [Fact]
         public void ExecuteNullNonGeneric()
         {
             IQueryProvider provider = Enumerable.Empty<string>().AsQueryable().Provider;
-            Assert.Throws<ArgumentNullException>("expression", () => provider.Execute(null));
+            AssertExtensions.Throws<ArgumentNullException>("expression", () => provider.Execute(null));
         }
 
         [Fact]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Security.Principal;
 using Xunit;
 
@@ -39,8 +40,8 @@ namespace System.Security.Claims
         [Fact]
         public void Ctor_ArgumentValidation()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new GenericIdentity(null));
-            Assert.Throws<ArgumentNullException>("type", () => new GenericIdentity("user", null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new GenericIdentity(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => new GenericIdentity("user", null));
         }
     }
 }

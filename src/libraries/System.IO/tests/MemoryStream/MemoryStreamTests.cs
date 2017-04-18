@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
@@ -202,20 +203,20 @@ namespace System.IO.Tests
             MemoryStream memoryStream;
             using (memoryStream = new MemoryStream())
             {
-                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null));
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null));
                 
                 // Validate the destination parameter first.
-                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: 0));
-                Assert.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: -1));
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: 0));
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => memoryStream.CopyTo(destination: null, bufferSize: -1));
 
                 // Then bufferSize.
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // 0-length buffer doesn't make sense.
-                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // 0-length buffer doesn't make sense.
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
             }
 
             // After the Stream is disposed, we should fail on all CopyTos.
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // Not before bufferSize is validated.
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: 0)); // Not before bufferSize is validated.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => memoryStream.CopyTo(Stream.Null, bufferSize: -1));
 
             MemoryStream disposedStream = memoryStream;
 

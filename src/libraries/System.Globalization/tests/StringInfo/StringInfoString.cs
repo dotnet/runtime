@@ -22,7 +22,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void String_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("String", () => new StringInfo().String = null);
+            AssertExtensions.Throws<ArgumentNullException>("String", () => new StringInfo().String = null);
         }
     }
 }

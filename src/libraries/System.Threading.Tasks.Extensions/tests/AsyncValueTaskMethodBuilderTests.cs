@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -146,7 +147,7 @@ namespace System.Threading.Tasks.Tests
         public void SetStateMachine_InvalidArgument_ThrowsException()
         {
             AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
-            Assert.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
+            AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
             b.SetStateMachine(new DelegateStateMachine());
         }
 

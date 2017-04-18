@@ -136,8 +136,8 @@ namespace System.Linq.Expressions.Tests
         {
             var args = invoke.Arguments;
             Assert.Equal(args.Count, invoke.ArgumentCount);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(args.Count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => invoke.GetArgument(args.Count));
             for (int i = 0; i != args.Count; ++i)
             {
                 Assert.Same(args[i], invoke.GetArgument(i));
@@ -157,8 +157,8 @@ namespace System.Linq.Expressions.Tests
         public static void ArgumentTypeMismatchLambda()
         {
             Expression<Func<int, int, int>> adder = (x, y) => x + y;
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Invoke(adder, Expression.Constant(1), Expression.Constant(1L)));
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Invoke(adder, Expression.Constant(1L), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Invoke(adder, Expression.Constant(1), Expression.Constant(1L)));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Invoke(adder, Expression.Constant(1L), Expression.Constant(1)));
         }
 
         [Fact]
@@ -173,8 +173,8 @@ namespace System.Linq.Expressions.Tests
         public static void ArgumentTypeMismatchDelegate()
         {
             Func<int, int, int> adder = (x, y) => x + y;
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1), Expression.Constant(1L)));
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1L), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1), Expression.Constant(1L)));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Invoke(Expression.Constant(adder), Expression.Constant(1L), Expression.Constant(1)));
         }
 
         [Fact]

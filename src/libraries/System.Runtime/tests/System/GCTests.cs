@@ -16,11 +16,11 @@ namespace System.Tests
         [Fact]
         public static void AddMemoryPressure_InvalidBytesAllocated_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure(-1)); // Bytes allocated < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure(-1)); // Bytes allocated < 0
 
             if (s_is32Bits)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("pressure", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("pressure", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.Tests
         [Fact]
         public static void Collect_Int_NegativeGeneration_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1)); // Generation < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1)); // Generation < 0
         }
 
         [Theory]
@@ -59,8 +59,8 @@ namespace System.Tests
         [Fact]
         public static void Collect_NegativeGenerationCount_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default));
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false));
         }
 
         [Theory]
@@ -268,7 +268,7 @@ namespace System.Tests
         [Fact]
         public static void SuppressFinalizer_NullObject_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => GC.SuppressFinalize(null)); // Obj is null
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => GC.SuppressFinalize(null)); // Obj is null
         }
 
         [Fact]
@@ -280,7 +280,7 @@ namespace System.Tests
         [Fact]
         public static void ReRegisterFoFinalize_NullObject_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("obj", () => GC.ReRegisterForFinalize(null)); // Obj is null
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => GC.ReRegisterForFinalize(null)); // Obj is null
         }
 
         private class ReRegisterForFinalizeTest
@@ -323,17 +323,17 @@ namespace System.Tests
         [Fact]
         public static void CollectionCount_NegativeGeneration_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.CollectionCount(-1)); // Generation < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("generation", () => GC.CollectionCount(-1)); // Generation < 0
         }
 
         [Fact]
         public static void RemoveMemoryPressure_InvalidBytesAllocated_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure(-1)); // Bytes allocated < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure(-1)); // Bytes allocated < 0
 
             if (s_is32Bits)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
             }
         }
 

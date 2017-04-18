@@ -120,7 +120,7 @@ namespace System.Text.Tests
             fixed (char* pChars = "abc")
             {
                 char* pCharsLocal = pChars;
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, int.MaxValue / 2 + 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(pCharsLocal, int.MaxValue / 2 + 1));
             }
         }
 

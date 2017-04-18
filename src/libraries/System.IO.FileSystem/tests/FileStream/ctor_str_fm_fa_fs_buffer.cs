@@ -25,14 +25,14 @@ namespace System.IO.Tests
         [Fact]
         public void NegativeBufferSizeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, -1));
         }
 
         [Fact]
         public void ZeroBufferSizeThrows()
         {
             // Unfortunate pre-existing behavior of FileStream, we should look into enabling this sometime.
-            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0));
         }
 
         [Fact]

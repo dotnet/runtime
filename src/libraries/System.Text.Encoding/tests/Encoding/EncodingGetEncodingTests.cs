@@ -12,19 +12,19 @@ namespace System.Text.Tests
         [Fact]
         public void GetEncoding_String_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("name", () => Encoding.GetEncoding(null));
-            Assert.Throws<ArgumentException>("name", () => Encoding.GetEncoding("no-such-encoding-name"));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Encoding.GetEncoding(null));
+            AssertExtensions.Throws<ArgumentException>("name", () => Encoding.GetEncoding("no-such-encoding-name"));
         }
 
         [Fact]
         public void GetEncoding_Int_Invalid()
         {
             // Codepage is out of range
-            Assert.Throws<ArgumentOutOfRangeException>("codepage", () => Encoding.GetEncoding(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("codepage", () => Encoding.GetEncoding(65536));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("codepage", () => Encoding.GetEncoding(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("codepage", () => Encoding.GetEncoding(65536));
 
             // Codepage doesn't exist
-            Assert.Throws<ArgumentException>("codepage", () => Encoding.GetEncoding(42));
+            AssertExtensions.Throws<ArgumentException>("codepage", () => Encoding.GetEncoding(42));
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(54321));
         }
 

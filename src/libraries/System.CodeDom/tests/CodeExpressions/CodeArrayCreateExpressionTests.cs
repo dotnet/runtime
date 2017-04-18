@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -194,26 +194,26 @@ namespace System.CodeDom.Tests
 		[Fact]
 		public void Ctor_NullType_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, new CodePrimitiveExpression()));
-			Assert.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, new CodePrimitiveExpression[0]));
-			Assert.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, 0));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, new CodePrimitiveExpression()));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, new CodePrimitiveExpression[0]));
+			AssertExtensions.Throws<ArgumentNullException>("type", () => new CodeArrayCreateExpression((Type)null, 0));
 		}
 
 		[Fact]
 		public void Ctor_NullTypeInitializers_ThrowsArgumentNullException()
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression("", (CodePrimitiveExpression[])null));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(typeof(void), (CodePrimitiveExpression[])null));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(new CodeTypeReference(), (CodePrimitiveExpression[])null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression("", (CodePrimitiveExpression[])null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(typeof(void), (CodePrimitiveExpression[])null));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(new CodeTypeReference(), (CodePrimitiveExpression[])null));
 		}
 
 		[Fact]
 		public void Ctor_NullTypeInInitalizers_ThrowsArgumentNullException()
 		{
 			CodePrimitiveExpression[] initializers = new CodePrimitiveExpression[] { null };
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression("", initializers));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(typeof(void), initializers));
-			Assert.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(new CodeTypeReference(), initializers));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression("", initializers));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(typeof(void), initializers));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeArrayCreateExpression(new CodeTypeReference(), initializers));
 		}
 
 		[Theory]

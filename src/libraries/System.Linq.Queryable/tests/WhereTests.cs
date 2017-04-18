@@ -13,8 +13,8 @@ namespace System.Linq.Tests
         public void Where_SourceIsNull_ArgumentNullExceptionThrown()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.Where(i => true));
-            Assert.Throws<ArgumentNullException>("source", () => source.Where((v, i) => true));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Where(i => true));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Where((v, i) => true));
         }
 
         [Fact]
@@ -24,8 +24,8 @@ namespace System.Linq.Tests
             Expression<Func<int, bool>> simplePredicate = null;
             Expression<Func<int, int, bool>> complexPredicate = null;
 
-            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
-            Assert.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Where(simplePredicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Where(complexPredicate));
         }
 
         [Fact]

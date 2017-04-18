@@ -16,9 +16,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_MapName()
         {
             // null is an invalid map name with CreateOrOpen (it's valid with CreateNew and CreateFromFile)
-            Assert.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096));
-            Assert.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096, MemoryMappedFileAccess.ReadWrite));
-            Assert.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096));
+            AssertExtensions.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096, MemoryMappedFileAccess.ReadWrite));
+            AssertExtensions.Throws<ArgumentNullException>("mapName", () => MemoryMappedFile.CreateOrOpen(null, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
 
             // Empty string is always an invalid map name
             Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateOrOpen(string.Empty, 4096));
@@ -47,9 +47,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(-1)] // negative capacities don't make sense
         public void InvalidArguments_Capacity(long capacity)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity));
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity, MemoryMappedFileAccess.ReadWrite));
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity, MemoryMappedFileAccess.ReadWrite));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
         }
 
         /// <summary>
@@ -61,9 +61,9 @@ namespace System.IO.MemoryMappedFiles.Tests
             // On 32-bit, values larger than uint.MaxValue aren't allowed
             if (IntPtr.Size == 4)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue));
-                Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue, MemoryMappedFileAccess.ReadWrite));
-                Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue, MemoryMappedFileAccess.ReadWrite));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
             }
         }
 
@@ -75,8 +75,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData((MemoryMappedFileAccess)(42))]
         public void InvalidArgument_Access(MemoryMappedFileAccess access)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, access));
-            Assert.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, access, MemoryMappedFileOptions.None, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, access));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, access, MemoryMappedFileOptions.None, HandleInheritability.None));
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData((MemoryMappedFileOptions)(42))]
         public void InvalidArgument_Options(MemoryMappedFileOptions options)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("options", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, options, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, options, HandleInheritability.None));
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData((HandleInheritability)(42))]
         public void InvalidArgument_Inheritability(HandleInheritability inheritability)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, inheritability));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, inheritability));
         }
 
         /// <summary>
@@ -256,8 +256,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void OpenWrite()
         {
             // Write-only access fails when the map doesn't exist
-            Assert.Throws<ArgumentException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Write));
-            Assert.Throws<ArgumentException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Write));
+            AssertExtensions.Throws<ArgumentException>("access", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None));
 
             // Write-only access works when the map does exist
             const int Capacity = 4096;
@@ -278,7 +278,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             if (IntPtr.Size == 4)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), 1 + (long)uint.MaxValue));
             }
             else
             {

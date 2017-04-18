@@ -268,29 +268,29 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void AndAlso_LeftNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true)));
-            Assert.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true), null));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.AndAlso(null, Expression.Constant(true), null));
         }
 
         [Fact]
         public static void OrElse_LeftNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true)));
-            Assert.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true), null));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.OrElse(null, Expression.Constant(true), null));
         }
 
         [Fact]
         public static void AndAlso_RightNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null));
-            Assert.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null, null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.AndAlso(Expression.Constant(true), null, null));
         }
 
         [Fact]
         public static void OrElse_RightNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null));
-            Assert.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null, null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.OrElse(Expression.Constant(true), null, null));
         }
 
         [Fact]
@@ -318,8 +318,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(InvalidMethod_TestData))]
         public static void InvalidMethod_ThrowsArgumentException(MethodInfo method)
         {
-            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
 
@@ -330,8 +330,8 @@ namespace System.Linq.Expressions.Tests
         public static void Method_DoesntHaveTwoParameters_ThrowsArgumentException(Type type, string methodName)
         {
             MethodInfo method = type.GetMethod(methodName);
-            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
         [Fact]
@@ -412,7 +412,7 @@ namespace System.Linq.Expressions.Tests
             Type createdType = type.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Fact]
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions.Tests
             Type createdType = type.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Theory]
@@ -744,28 +744,28 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(UnreadableExpressionsData))]
         public static void AndAlso_LeftIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
         {
-            Assert.Throws<ArgumentException>("left", () => Expression.AndAlso(unreadableExpression, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.AndAlso(unreadableExpression, Expression.Constant(true)));
         }
 
         [Theory]
         [ClassData(typeof(UnreadableExpressionsData))]
         public static void AndAlso_RightIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
         {
-            Assert.Throws<ArgumentException>("right", () => Expression.AndAlso(Expression.Constant(true), unreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.AndAlso(Expression.Constant(true), unreadableExpression));
         }
 
         [Theory]
         [ClassData(typeof(UnreadableExpressionsData))]
         public static void OrElse_LeftIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
         {
-            Assert.Throws<ArgumentException>("left", () => Expression.OrElse(unreadableExpression, Expression.Constant(true)));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.OrElse(unreadableExpression, Expression.Constant(true)));
         }
 
         [Theory]
         [ClassData(typeof(UnreadableExpressionsData))]
         public static void OrElse_RightIsWriteOnly_ThrowsArgumentException(Expression unreadableExpression)
         {
-            Assert.Throws<ArgumentException>("right", () => Expression.OrElse(Expression.Constant(false), unreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.OrElse(Expression.Constant(false), unreadableExpression));
         }
 
         [Fact]

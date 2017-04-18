@@ -37,7 +37,7 @@ namespace System.Linq.Tests
             IEnumerable<int> first = null;
             IEnumerable<int> second = new int[] { 2, 5, 9 };
             
-            Assert.Throws<ArgumentNullException>("first", () => first.Zip<int, int, int>(second, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace System.Linq.Tests
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = null;
             
-            Assert.Throws<ArgumentNullException>("second", () => first.Zip<int, int, int>(second, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Zip<int, int, int>(second, (x, y) => x + y));
         }
         
         [Fact]
@@ -56,7 +56,7 @@ namespace System.Linq.Tests
             IEnumerable<int> second = new int[] { 2, 4, 6 };
             Func<int, int, int> func = null;
             
-            Assert.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => first.Zip(second, func));
         }
 
         [Fact]

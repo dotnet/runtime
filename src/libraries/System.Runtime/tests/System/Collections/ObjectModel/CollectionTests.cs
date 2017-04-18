@@ -30,7 +30,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void Ctor_NullList_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("list", () => new Collection<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("list", () => new Collection<int>(null));
         }
 
         [Fact]
@@ -78,19 +78,19 @@ namespace System.Collections.ObjectModel.Tests
         {
             var collection = new ModifiableCollection<int>(s_intArray);
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1] = 0);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length] = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[-1] = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length] = 0);
         }
 
         [Fact]
         public static void Item_Set_InvalidType_ThrowsArgumentException()
         {
             var collection = new Collection<int>(new Collection<int>(s_intArray));
-            Assert.Throws<ArgumentException>("value", () => ((IList)collection)[1] = "Two");
+            AssertExtensions.Throws<ArgumentException>("value", () => ((IList)collection)[1] = "Two");
         }
 
         [Fact]
@@ -172,8 +172,8 @@ namespace System.Collections.ObjectModel.Tests
         public static void Insert_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             var collection = new ModifiableCollection<int>(s_intArray);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(s_intArray.Length + 1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(s_intArray.Length + 1, 0));
         }
 
         [Fact]
@@ -270,8 +270,8 @@ namespace System.Collections.ObjectModel.Tests
         public static void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             var collection = new ModifiableCollection<int>(s_intSequence);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(s_intArray.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(s_intArray.Length));
         }
 
         [Fact]

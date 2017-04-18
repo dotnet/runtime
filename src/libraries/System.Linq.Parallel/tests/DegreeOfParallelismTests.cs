@@ -147,7 +147,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void DegreeOfParallelism_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).WithDegreeOfParallelism(2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).WithDegreeOfParallelism(2));
         }
     }
 }

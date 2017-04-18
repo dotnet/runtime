@@ -304,19 +304,19 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(s.CanWrite);
                 Assert.True(s.CanSeek);
 
-                Assert.Throws<ArgumentNullException>("buffer", () => s.Read(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => s.Read(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => s.Read(new byte[1], 0, -1));
-                Assert.Throws<ArgumentException>("buffer", () => s.Read(new byte[1], 1, 1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => s.Read(null, 0, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => s.Read(new byte[1], -1, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s.Read(new byte[1], 0, -1));
+                AssertExtensions.Throws<ArgumentException>("buffer", () => s.Read(new byte[1], 1, 1));
 
-                Assert.Throws<ArgumentNullException>("buffer", () => { s.ReadAsync(null, 0, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => { s.ReadAsync(new byte[1], -1, 0); });
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => { s.ReadAsync(new byte[1], 0, -1); });
-                Assert.Throws<ArgumentException>("buffer", () => { s.ReadAsync(new byte[1], 1, 1); });
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => { s.ReadAsync(null, 0, 0); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { s.ReadAsync(new byte[1], -1, 0); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { s.ReadAsync(new byte[1], 0, -1); });
+                AssertExtensions.Throws<ArgumentException>("buffer", () => { s.ReadAsync(new byte[1], 1, 1); });
 
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => s.Position = -1);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => s.Seek(-1, SeekOrigin.Begin));
-                Assert.Throws<ArgumentOutOfRangeException>("origin", () => s.Seek(0, (SeekOrigin)42));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => s.Position = -1);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => s.Seek(-1, SeekOrigin.Begin));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("origin", () => s.Seek(0, (SeekOrigin)42));
 
                 Assert.Throws<NotSupportedException>(() => s.Write(new byte[1], 0, 0));
                 Assert.Throws<NotSupportedException>(() => { s.WriteAsync(new byte[1], 0, 0); });

@@ -26,6 +26,9 @@
     <Compile Include="UmsTests.cs" />
     <Compile Include="UmsManager.cs" />
     <Compile Include="UmsSecurityTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

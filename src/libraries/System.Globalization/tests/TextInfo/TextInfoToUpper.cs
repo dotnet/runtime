@@ -157,7 +157,7 @@ namespace System.Globalization.Tests
         [InlineData("fr")]
         public void ToUpper_Null_ThrowsArgumentNullException(string cultureName)
         {
-            Assert.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToUpper(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToUpper(null));
         }
     }
 }

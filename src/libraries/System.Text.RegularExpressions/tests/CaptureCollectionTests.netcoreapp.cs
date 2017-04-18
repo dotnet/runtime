@@ -128,11 +128,11 @@ namespace System.Text.RegularExpressions.Tests
         public static void ICollectionOfT_CopyTo_Invalid()
         {
             ICollection<Capture> collection = CreateCollection();
-            Assert.Throws<ArgumentNullException>("array", () => collection.CopyTo((Capture[])null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], -1));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo((Capture[])null, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], -1));
             Assert.Throws<ArgumentException>(() => collection.CopyTo(new Capture[1], 0));
             Assert.Throws<ArgumentException>(() => collection.CopyTo(new Capture[1], 1));
-            Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], 2));
         }
 
         [Fact]

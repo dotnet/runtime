@@ -103,8 +103,8 @@ namespace System.Linq.Tests
             string[] first = null;
             string[] second = { "bBo", "shriC" };
 
-            Assert.Throws<ArgumentNullException>("first", () => first.Except(second));
-            Assert.Throws<ArgumentNullException>("first", () => first.Except(second, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Except(second));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Except(second, new AnagramEqualityComparer()));
         }
         
         [Fact]
@@ -113,8 +113,8 @@ namespace System.Linq.Tests
             string[] first = { "Bob", "Tim", "Robert", "Chris" };
             string[] second = null;
 
-            Assert.Throws<ArgumentNullException>("second", () => first.Except(second));
-            Assert.Throws<ArgumentNullException>("second", () => first.Except(second, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Except(second));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Except(second, new AnagramEqualityComparer()));
         }
 
         [Fact]

@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -82,21 +83,21 @@ namespace System.CodeDom.Tests
         [Fact]
         public void AddRange_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => CtorArray(null));
-            Assert.Throws<ArgumentNullException>("value", () => CtorCollection(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => CtorArray(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => CtorCollection(null));
 
             var collection = Ctor();
-            Assert.Throws<ArgumentNullException>("value", () => AddRange(collection, (TItem[])null));
-            Assert.Throws<ArgumentNullException>("value", () => AddRange(collection, (TCollection)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => AddRange(collection, (TItem[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => AddRange(collection, (TCollection)null));
         }
 
         [Fact]
         public void AddRange_NullObjectInValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => CtorArray(new TItem[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => CtorArray(new TItem[] { null }));
 
             var collection = Ctor();
-            Assert.Throws<ArgumentNullException>("value", () => AddRange(collection, new TItem[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => AddRange(collection, new TItem[] { null }));
         }
 
         [Fact]
@@ -125,7 +126,7 @@ namespace System.CodeDom.Tests
         public void Add_Null_ThrowsArgumentNullException()
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentNullException>("value", () => Add(collection, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Add(collection, null));
         }
 
         [Theory]
@@ -134,21 +135,21 @@ namespace System.CodeDom.Tests
         public void Insert_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => Insert(collection, index, new TItem()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Insert(collection, index, new TItem()));
         }
 
         [Fact]
         public void Insert_Null_ThrowsArgumentNullException()
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentNullException>("value", () => Insert(collection, 0, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Insert(collection, 0, null));
         }
 
         [Fact]
         public void Remove_Null_ThrowsArgumentNullException()
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentNullException>("value", () => Remove(collection, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => Remove(collection, null));
         }
 
         [Fact]
@@ -180,8 +181,8 @@ namespace System.CodeDom.Tests
         public void Item_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => GetItem(collection, index));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => SetItem(collection, index, new TItem()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => GetItem(collection, index));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => SetItem(collection, index, new TItem()));
         }
 
         [Fact]

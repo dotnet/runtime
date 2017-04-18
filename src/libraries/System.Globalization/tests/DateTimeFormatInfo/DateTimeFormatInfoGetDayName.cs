@@ -50,7 +50,7 @@ namespace System.Globalization.Tests
         [InlineData(DayOfWeek.Saturday + 1)]
         public void GetDayName_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek dayofweek)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("dayofweek", () => new DateTimeFormatInfo().GetDayName(dayofweek));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dayofweek", () => new DateTimeFormatInfo().GetDayName(dayofweek));
         }
     }
 }

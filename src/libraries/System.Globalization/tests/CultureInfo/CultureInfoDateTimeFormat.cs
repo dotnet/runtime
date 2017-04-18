@@ -63,7 +63,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void DateTimeFormat_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new CultureInfo("en-US").DateTimeFormat = null); // Value is null
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new CultureInfo("en-US").DateTimeFormat = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => CultureInfo.InvariantCulture.DateTimeFormat = new DateTimeFormatInfo()); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

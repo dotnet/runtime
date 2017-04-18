@@ -17,10 +17,10 @@ namespace System.Runtime.CompilerServices.Tests
             var cwt = new ConditionalWeakTable<object, object>();
 
             object ignored;
-            Assert.Throws<ArgumentNullException>("key", () => cwt.Add(null, new object())); // null key
-            Assert.Throws<ArgumentNullException>("key", () => cwt.TryGetValue(null, out ignored)); // null key
-            Assert.Throws<ArgumentNullException>("key", () => cwt.Remove(null)); // null key
-            Assert.Throws<ArgumentNullException>("createValueCallback", () => cwt.GetValue(new object(), null)); // null delegate
+            AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.Add(null, new object())); // null key
+            AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.TryGetValue(null, out ignored)); // null key
+            AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.Remove(null)); // null key
+            AssertExtensions.Throws<ArgumentNullException>("createValueCallback", () => cwt.GetValue(new object(), null)); // null delegate
 
             object key = new object();
             cwt.Add(key, key);

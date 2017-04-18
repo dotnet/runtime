@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -111,18 +111,18 @@ namespace System.Reflection.Emit.Tests
         public void DefineProperty_InvalidName_ThrowsArgumentException(string name)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
-            Assert.Throws<ArgumentException>("name", () => type.DefineProperty(name, PropertyAttributes.HasDefault, typeof(int), null, null, new Type[] { typeof(int) }, null, null));
+            AssertExtensions.Throws<ArgumentException>("name", () => type.DefineProperty(name, PropertyAttributes.HasDefault, typeof(int), null, null, new Type[] { typeof(int) }, null, null));
 
-            Assert.Throws<ArgumentException>("name", () => type.DefineProperty(name, PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }));
+            AssertExtensions.Throws<ArgumentException>("name", () => type.DefineProperty(name, PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }));
         }
 
         [Fact]
         public void DefineProperty_NullString_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
-            Assert.Throws<ArgumentNullException>("name", () => type.DefineProperty(null, PropertyAttributes.HasDefault, typeof(int), null, null, new Type[] { typeof(int) }, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => type.DefineProperty(null, PropertyAttributes.HasDefault, typeof(int), null, null, new Type[] { typeof(int) }, null, null));
 
-            Assert.Throws<ArgumentNullException>("name", () => type.DefineProperty(null, PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => type.DefineProperty(null, PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }));
         }
 
         [Fact]
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineProperty_NullParameterType_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentNullException>("argument", () => type.DefineProperty("Name", PropertyAttributes.None, typeof(void), new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => type.DefineProperty("Name", PropertyAttributes.None, typeof(void), new Type[] { null }));
         }
 
         [Fact]

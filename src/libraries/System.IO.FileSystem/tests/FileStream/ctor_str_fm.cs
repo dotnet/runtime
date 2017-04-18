@@ -36,7 +36,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidModeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
         }
 
         [Fact]

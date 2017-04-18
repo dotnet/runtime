@@ -23,7 +23,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidFileOptionsThrow()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("options", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

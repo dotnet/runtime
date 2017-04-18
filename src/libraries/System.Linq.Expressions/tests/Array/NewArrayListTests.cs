@@ -1639,7 +1639,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullType()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.NewArrayInit(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.NewArrayInit(null));
         }
 
         [Fact]
@@ -1651,15 +1651,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NullInitializers()
         {
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), default(Expression[])));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.NewArrayInit(typeof(int), default(IEnumerable<Expression>)));
         }
 
         [Fact]
         public static void NullInitializer()
         {
-            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new Expression[] { null, null }));
-            Assert.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new List<Expression> { null, null }));
+            AssertExtensions.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new Expression[] { null, null }));
+            AssertExtensions.Throws<ArgumentNullException>("initializers[0]", () => Expression.NewArrayInit(typeof(int), new List<Expression> { null, null }));
         }
 
         [Fact]
@@ -1671,7 +1671,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void PointerType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(int).MakePointerType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(int).MakePointerType()));
         }
 
         [Fact]
@@ -1768,7 +1768,7 @@ namespace System.Linq.Expressions.Tests
             Expression element0 = Expression.Constant(2);
             Expression element1 = Expression.Constant(3);
             NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(int), element0, element1);
-            Assert.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
+            AssertExtensions.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
         }
     }
 }

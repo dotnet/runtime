@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,36 +69,36 @@ namespace System.Linq.Expressions.Tests
         public void NullNewMethod()
         {
             ConstantExpression validExpression = Expression.Constant(1);
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validExpression));
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, Enumerable.Repeat(validExpression, 1)));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validExpression));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, Enumerable.Repeat(validExpression, 1)));
 
             MethodInfo validMethod = typeof(List<int>).GetMethod("Add");
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validMethod, validExpression));
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validMethod, Enumerable.Repeat(validExpression, 1)));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validMethod, validExpression));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validMethod, Enumerable.Repeat(validExpression, 1)));
 
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, default(MethodInfo), validExpression));
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, null, Enumerable.Repeat(validExpression, 1)));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, default(MethodInfo), validExpression));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, null, Enumerable.Repeat(validExpression, 1)));
 
             ElementInit validElementInit = Expression.ElementInit(validMethod, validExpression);
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validElementInit));
-            Assert.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, Enumerable.Repeat(validElementInit, 1)));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, validElementInit));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => Expression.ListInit(null, Enumerable.Repeat(validElementInit, 1)));
         }
 
         [Fact]
         public void NullInitializers()
         {
             NewExpression validNew = Expression.New(typeof(List<int>));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(Expression[])));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(IEnumerable<Expression>)));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(ElementInit[])));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(IEnumerable<ElementInit>)));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(ElementInit[])));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, default(IEnumerable<ElementInit>)));
 
             MethodInfo validMethod = typeof(List<int>).GetMethod("Add");
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, validMethod, default(Expression[])));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, validMethod, default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, validMethod, default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, validMethod, default(IEnumerable<Expression>)));
 
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(Expression[])));
-            Assert.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(IEnumerable<Expression>)));
         }
 
         private static IEnumerable<object[]> ZeroInitializerInits()
@@ -140,7 +140,7 @@ namespace System.Linq.Expressions.Tests
         {
             // () => new NonEnumerableAddable { 1, 2, 4, 16, 42 } isn't allowed because list initialization
             // is allowed only with enumerable types.
-            Assert.Throws<ArgumentException>("newExpression", () => Expression.ListInit(Expression.New(typeof(NonEnumerableAddable)), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("newExpression", () => Expression.ListInit(Expression.New(typeof(NonEnumerableAddable)), Expression.Constant(1)));
         }
 
         [Fact]
@@ -152,9 +152,9 @@ namespace System.Linq.Expressions.Tests
             // this exception behavior (rather than ArgumentException) is compatible with the .NET Framework
             Assert.Throws<InvalidOperationException>(() => Expression.ListInit(newExp, Expression.Constant("")));
 
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant("")));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Expression.Constant("")));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
         }
 
         [Fact]
@@ -175,9 +175,9 @@ namespace System.Linq.Expressions.Tests
             adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.Add)).MakeGenericMethod(typeof(List<int>));
             Assert.Throws<ArgumentException>(() => Expression.ListInit(newExp, adder, Expression.Constant(0)));
             adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.AddIntRegardless));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
             adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.AddIntRegardless)).MakeGenericMethod(typeof(List<>));
-            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -266,8 +266,8 @@ namespace System.Linq.Expressions.Tests
                 Expression.Constant(1),
                 Expression.Constant(2),
                 Expression.Constant(3));
-            Assert.Throws<ArgumentNullException>("newExpression", () => init.Update(null, init.Initializers));
-            Assert.Throws<ArgumentNullException>("initializers", () => init.Update(init.NewExpression, null));
+            AssertExtensions.Throws<ArgumentNullException>("newExpression", () => init.Update(null, init.Initializers));
+            AssertExtensions.Throws<ArgumentNullException>("initializers", () => init.Update(init.NewExpression, null));
         }
 
         [Fact]

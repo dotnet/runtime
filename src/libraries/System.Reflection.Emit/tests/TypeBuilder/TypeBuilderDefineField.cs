@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineField_NullFieldName_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentNullException>("fieldName", () => type.DefineField(null, typeof(int), FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentNullException>("fieldName", () => type.DefineField(null, typeof(int), FieldAttributes.Public));
         }
 
         [Fact]
@@ -85,14 +85,14 @@ namespace System.Reflection.Emit.Tests
         public void DefineField_InvalidFieldName_ThrowsArgumentException(string fieldName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentException>("fieldName", () => type.DefineField(fieldName, typeof(int), FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("fieldName", () => type.DefineField(fieldName, typeof(int), FieldAttributes.Public));
         }
 
         [Fact]
         public void DefineField_NullFieldType_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentNullException>("type", () => type.DefineField("Name", null, FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => type.DefineField("Name", null, FieldAttributes.Public));
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -978,8 +978,8 @@ namespace System.Tests
         [Fact]
         public void Create_String_Null_Throws_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("uriString", () => new Uri(null));
-            Assert.Throws<ArgumentNullException>("uriString", () => new Uri(null, UriKind.Absolute));
+            AssertExtensions.Throws<ArgumentNullException>("uriString", () => new Uri(null));
+            AssertExtensions.Throws<ArgumentNullException>("uriString", () => new Uri(null, UriKind.Absolute));
 
             Uri uri;
             Assert.False(Uri.TryCreate(null, UriKind.Absolute, out uri));

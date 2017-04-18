@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Immutable;
 using Xunit;
 
@@ -33,12 +34,12 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public void Ctor_Errors()
         {
-            Assert.Throws<ArgumentNullException>("id", () => new BlobContentId(null));
-            Assert.Throws<ArgumentNullException>("id", () => new BlobContentId(default(ImmutableArray<byte>)));
-            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>()));
-            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0)));
-            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13)));
-            Assert.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15)));
+            AssertExtensions.Throws<ArgumentNullException>("id", () => new BlobContentId(null));
+            AssertExtensions.Throws<ArgumentNullException>("id", () => new BlobContentId(default(ImmutableArray<byte>)));
+            AssertExtensions.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>()));
+            AssertExtensions.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0)));
+            AssertExtensions.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13)));
+            AssertExtensions.Throws<ArgumentException>("id", () => new BlobContentId(ImmutableArray.Create<byte>(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15)));
         }
 
         [Fact]

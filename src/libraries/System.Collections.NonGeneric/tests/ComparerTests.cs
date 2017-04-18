@@ -31,7 +31,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_CultureInfo_NullCulture_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("culture", () => new Comparer(null)); // Culture is null
+            AssertExtensions.Throws<ArgumentNullException>("culture", () => new Comparer(null)); // Culture is null
         }
 
         [Fact]

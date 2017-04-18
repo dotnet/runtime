@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.IO.IsolatedStorage
@@ -13,8 +14,8 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentNullException>("sourceFileName", () => isf.MoveFile(null, "bar"));
-                Assert.Throws<ArgumentNullException>("destinationFileName", () => isf.MoveFile("foo", null));
+                AssertExtensions.Throws<ArgumentNullException>("sourceFileName", () => isf.MoveFile(null, "bar"));
+                AssertExtensions.Throws<ArgumentNullException>("destinationFileName", () => isf.MoveFile("foo", null));
             }
         }
 
@@ -23,8 +24,8 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>("sourceFileName", () => isf.MoveFile(string.Empty, "bar"));
-                Assert.Throws<ArgumentException>("destinationFileName", () => isf.MoveFile("foo", string.Empty));
+                AssertExtensions.Throws<ArgumentException>("sourceFileName", () => isf.MoveFile(string.Empty, "bar"));
+                AssertExtensions.Throws<ArgumentException>("destinationFileName", () => isf.MoveFile("foo", string.Empty));
             }
         }
 

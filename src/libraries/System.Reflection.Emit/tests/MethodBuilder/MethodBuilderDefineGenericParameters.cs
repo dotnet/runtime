@@ -101,7 +101,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("TestMethod", methodAttributes);
-            Assert.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(null));
+            AssertExtensions.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(null));
         }
 
         [Theory]
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder method = type.DefineMethod("Test", methodAttributes);
             string[] typeParamNames = new string[] { "T", null, "U" };
-            Assert.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(typeParamNames));
+            AssertExtensions.Throws<ArgumentNullException>("names", () => method.DefineGenericParameters(typeParamNames));
         }
 
         [Theory]
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             MethodBuilder builder = type.DefineMethod("TestMethod", methodAttributes);
-            Assert.Throws<ArgumentException>("names", () => builder.DefineGenericParameters());
+            AssertExtensions.Throws<ArgumentException>("names", () => builder.DefineGenericParameters());
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,7 +15,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
-                Assert.Throws<ArgumentNullException>("array", () => fs.BeginWrite(null, 0, 0, null, null));
+                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.BeginWrite(null, 0, 0, null, null));
             }
         }
 
@@ -24,7 +24,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => fs.BeginWrite(new byte[0], -1, 0, null, null));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => fs.BeginWrite(new byte[0], -1, 0, null, null));
             }
         }
 
@@ -33,7 +33,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("numBytes", () => fs.BeginWrite(new byte[0], 0, -1, null, null));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("numBytes", () => fs.BeginWrite(new byte[0], 0, -1, null, null));
             }
         }
 

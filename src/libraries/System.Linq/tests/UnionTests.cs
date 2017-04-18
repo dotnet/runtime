@@ -118,7 +118,7 @@ namespace System.Linq.Tests
             string[] first = null;
             string[] second = { "ttaM", "Charlie", "Bbo" };
 
-            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Union(second, new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("first", () => first.Union(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -127,7 +127,7 @@ namespace System.Linq.Tests
             string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
             string[] second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Union(second, new AnagramEqualityComparer()));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("second", () => first.Union(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Linq.Tests
             string[] first = null;
             string[] second = { "ttaM", "Charlie", "Bbo" };
 
-            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Union(second));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("first", () => first.Union(second));
         }
 
         [Fact]
@@ -145,7 +145,7 @@ namespace System.Linq.Tests
             string[] first = { "Bob", "Robert", "Tim", "Matt", "miT" };
             string[] second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Union(second));
+            var ane = AssertExtensions.Throws<ArgumentNullException>("second", () => first.Union(second));
         }
 
         [Fact]

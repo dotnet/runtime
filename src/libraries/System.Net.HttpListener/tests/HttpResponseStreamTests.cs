@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -279,7 +280,7 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                Assert.Throws<ArgumentNullException>("buffer", () => outputStream.Write(null, 0, 0));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => outputStream.Write(null, 0, 0));
                 await Assert.ThrowsAsync<ArgumentNullException>("buffer", () => outputStream.WriteAsync(null, 0, 0));
             }
         }
@@ -292,7 +293,7 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
             }
         }
@@ -306,7 +307,7 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
             }
         }
@@ -547,7 +548,7 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => outputStream.EndWrite(null));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => outputStream.EndWrite(null));
             }
         }
 
@@ -562,8 +563,8 @@ namespace System.Net.Tests
             {
                 IAsyncResult beginWriteResult = outputStream1.BeginWrite(new byte[0], 0, 0, null, null);
 
-                Assert.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(new CustomAsyncResult()));
-                Assert.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(beginWriteResult));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(new CustomAsyncResult()));
+                AssertExtensions.Throws<ArgumentException>("asyncResult", () => outputStream2.EndWrite(beginWriteResult));
             }
         }
 

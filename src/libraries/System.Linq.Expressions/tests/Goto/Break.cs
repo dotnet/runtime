@@ -56,7 +56,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetBreakHasNoValue(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(target));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(target));
         }
 
         [Theory]
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Tests
         public void NonVoidTargetBreakHasNoValueTypeExplicit(Type type)
         {
             LabelTarget target = Expression.Label(type);
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(target, type));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(target, type));
         }
 
         [Theory]
@@ -97,16 +97,16 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(TypesData))]
         public void NullValueOnNonVoidBreak(Type type)
         {
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type)));
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type), default(Expression)));
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type), null, type));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type)));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type), default(Expression)));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(type), null, type));
         }
 
         [Theory]
         [MemberData(nameof(ConstantValueData))]
         public void ExplicitNullTypeWithValue(object value)
         {
-            Assert.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(value.GetType()), default(Type)));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Break(Expression.Label(value.GetType()), default(Type)));
         }
 
         [Fact]
@@ -114,8 +114,8 @@ namespace System.Linq.Expressions.Tests
         {
             Expression value = Expression.Property(null, typeof(Unreadable<string>), "WriteOnly");
             LabelTarget target = Expression.Label(typeof(string));
-            Assert.Throws<ArgumentException>("value", () => Expression.Break(target, value));
-            Assert.Throws<ArgumentException>("value", () => Expression.Break(target, value, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>("value", () => Expression.Break(target, value));
+            AssertExtensions.Throws<ArgumentException>("value", () => Expression.Break(target, value, typeof(string)));
         }
 
         [Theory]
@@ -191,26 +191,26 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void OpenGenericType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>)));
         }
 
         [Fact]
         public static void TypeContainsGenericParameters()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>).MakeGenericType(typeof(List<>))));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>.Enumerator)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
         [Fact]
         public void PointerType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(int).MakePointerType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(int).MakePointerType()));
         }
 
         [Fact]
         public void ByRefType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(int).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Break(Expression.Label(typeof(void)), typeof(int).MakeByRefType()));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

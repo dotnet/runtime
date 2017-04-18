@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -37,8 +38,8 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentException>("value", () => { wc.BaseAddress = "http::/invalid url"; });
-            Assert.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
+            AssertExtensions.Throws<ArgumentException>("value", () => { wc.BaseAddress = "http::/invalid url"; });
+            AssertExtensions.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -47,14 +48,14 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadData((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadData((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadData((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadData((Uri)null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((Uri)null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -63,23 +64,23 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFile((string)null, ""); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFile((Uri)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFile((string)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFile((Uri)null, ""); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, ""); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, "", null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, "", null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((string)null, ""); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((Uri)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((string)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((Uri)null, ""); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile(new Uri("http://localhost"), null); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileAsync(new Uri("http://localhost"), null, null); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync(new Uri("http://localhost"), null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -88,14 +89,14 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadString((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadString((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadString((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadString((Uri)null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((Uri)null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -104,33 +105,33 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadData((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadData((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadData((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadData((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadData((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadData((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadData((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadData((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadData("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadData("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadData(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadData(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadData("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadData("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadData(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadData(new Uri("http://localhost"), null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataAsync(new Uri("http://localhost"), null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -139,33 +140,33 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFile(new Uri("http://localhost"), null, null); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null, null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileAsync(new Uri("http://localhost"), null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -174,33 +175,33 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
             
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadString((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadString((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadString((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadString("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadString("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadString(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadString(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadString("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadString("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadString(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadString(new Uri("http://localhost"), null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringAsync(new Uri("http://localhost"), null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
@@ -209,33 +210,33 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
             
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValues((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValues((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValues((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValues("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValues("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValues(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValues(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValues("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValues("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValues(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValues(new Uri("http://localhost"), null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesAsync(new Uri("http://localhost"), null, null, null); });
 
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync("http://localhost", null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync("http://localhost", null, null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync(new Uri("http://localhost"), null); });
-            Assert.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync(new Uri("http://localhost"), null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync("http://localhost", null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync("http://localhost", null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync(new Uri("http://localhost"), null); });
+            AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadValuesTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
         [Fact]
@@ -243,10 +244,10 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((string)null, null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((Uri)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((Uri)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenWrite((Uri)null, null); });
         }
 
         [Fact]
@@ -254,8 +255,8 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
 
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenRead((string)null); });
-            Assert.Throws<ArgumentNullException>("address", () => { wc.OpenRead((Uri)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenRead((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.OpenRead((Uri)null); });
         }
 
         [Fact]

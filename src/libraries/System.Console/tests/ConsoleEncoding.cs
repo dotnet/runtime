@@ -116,7 +116,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     [Fact]
     public void InputEncoding_SetNull_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("value", () => Console.InputEncoding = null);
+        AssertExtensions.Throws<ArgumentNullException>("value", () => Console.InputEncoding = null);
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     [Fact]
     public void OutputEncoding_SetNull_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("value", () => Console.OutputEncoding = null);
+        AssertExtensions.Throws<ArgumentNullException>("value", () => Console.OutputEncoding = null);
     }
 
     [Fact]

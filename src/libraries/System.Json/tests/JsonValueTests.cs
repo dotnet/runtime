@@ -121,19 +121,19 @@ namespace System.Json.Tests
         [Fact]
         public void Load_NullStream_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("stream", () => JsonValue.Load((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => JsonValue.Load((Stream)null));
         }
 
         [Fact]
         public void Load_NullTextReader_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("textReader", () => JsonValue.Load((TextReader)null));
+            AssertExtensions.Throws<ArgumentNullException>("textReader", () => JsonValue.Load((TextReader)null));
         }
 
         [Fact]
         public void Parse_NullJsonString_ThrowArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("jsonString", () => JsonValue.Parse(null));
+            AssertExtensions.Throws<ArgumentNullException>("jsonString", () => JsonValue.Parse(null));
         }
         
         [Theory]
@@ -438,30 +438,30 @@ namespace System.Json.Tests
         public void Save_Null_ThrowsArgumentNullException()
         {
             JsonValue value = new JsonSubValue();
-            Assert.Throws<ArgumentNullException>("stream", () => value.Save((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => value.Save((Stream)null));
         }
 
         [Fact]
         public void ImplicitConversion_NullJsonValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => { bool i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { byte i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { char i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { decimal i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { double i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { float i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { int i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { long i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { sbyte i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { short i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { uint i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { ulong i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { ushort i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { DateTime i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { DateTimeOffset i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { TimeSpan i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { Guid i = (JsonValue)null; });
-            Assert.Throws<ArgumentNullException>("value", () => { Uri i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { bool i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { byte i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { char i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { decimal i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { double i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { float i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { int i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { long i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { sbyte i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { short i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { uint i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { ulong i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { ushort i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { DateTime i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { DateTimeOffset i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { TimeSpan i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { Guid i = (JsonValue)null; });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { Uri i = (JsonValue)null; });
         }
 
         [Fact]

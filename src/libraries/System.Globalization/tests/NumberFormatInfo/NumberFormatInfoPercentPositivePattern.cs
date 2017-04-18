@@ -51,8 +51,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void PercentPositivePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = 4);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = 4);
 
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentPositivePattern = 1);
         }

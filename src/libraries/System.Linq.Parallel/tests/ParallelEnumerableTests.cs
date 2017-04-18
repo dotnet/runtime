@@ -17,14 +17,14 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void NullQuery()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).AsParallel());
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable)null).AsParallel());
-            Assert.Throws<ArgumentNullException>("source", () => ((Partitioner<int>)null).AsParallel());
-            Assert.Throws<ArgumentNullException>("source", () => ((int[])null).AsParallel());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).AsParallel());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable)null).AsParallel());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((Partitioner<int>)null).AsParallel());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((int[])null).AsParallel());
 
-            Assert.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsOrdered((ParallelQuery<int>)null));
-            Assert.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsOrdered((ParallelQuery)null));
-            Assert.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsUnordered<int>((ParallelQuery<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsOrdered((ParallelQuery<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsOrdered((ParallelQuery)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ParallelEnumerable.AsUnordered<int>((ParallelQuery<int>)null));
         }
 
         //

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -107,12 +107,12 @@ namespace System.Threading.Tests
             bool lockTaken = false;
             var obj = new object();
 
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null, ref lockTaken));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null, ref lockTaken));
             Assert.False(lockTaken);
 
             lockTaken = true;
-            Assert.Throws<ArgumentException>("lockTaken", () => Monitor.Enter(obj, ref lockTaken));
+            AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.Enter(obj, ref lockTaken));
             Assert.False(lockTaken);
         }
 
@@ -121,7 +121,7 @@ namespace System.Threading.Tests
         {
             var obj = new object();
             int valueType = 1;
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Exit(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Exit(null));
 
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(obj));
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(new object()));
@@ -154,21 +154,21 @@ namespace System.Threading.Tests
         public static void IsEntered_Invalid()
         {
             var obj = new object();
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.IsEntered(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.IsEntered(null));
         }
 
         [Fact]
         public static void Pulse_Invalid()
         {
             var obj = new object();
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Pulse(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Pulse(null));
         }
 
         [Fact]
         public static void PulseAll_Invalid()
         {
             var obj = new object();
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.PulseAll(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.PulseAll(null));
         }
 
         [Fact]
@@ -189,35 +189,35 @@ namespace System.Threading.Tests
             bool lockTaken = false;
             var obj = new object();
 
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, ref lockTaken));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1, ref lockTaken));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero, ref lockTaken));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, ref lockTaken));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1, ref lockTaken));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero, ref lockTaken));
 
-            Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1, ref lockTaken));
-            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1)));
-            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1), ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1, ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1), ref lockTaken));
 
             lockTaken = true;
-            Assert.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, ref lockTaken));
+            AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, ref lockTaken));
             lockTaken = true;
-            Assert.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, 0, ref lockTaken));
+            AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, 0, ref lockTaken));
             lockTaken = true;
-            Assert.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, TimeSpan.Zero, ref lockTaken));
+            AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, TimeSpan.Zero, ref lockTaken));
         }
 
         [Fact]
         public static void Wait_Invalid()
         {
             var obj = new object();
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, 1));
-            Assert.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, TimeSpan.Zero));
-            Assert.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.Wait(null, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(null, TimeSpan.FromMilliseconds(-1)));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.Wait(null, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(null, TimeSpan.FromMilliseconds(-1)));
         }
 
         [Fact]

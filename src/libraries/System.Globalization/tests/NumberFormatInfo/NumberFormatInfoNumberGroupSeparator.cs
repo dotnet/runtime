@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void NumberGroupSeparator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("NumberGroupSeparator", () => new NumberFormatInfo().NumberGroupSeparator = null);
+            AssertExtensions.Throws<ArgumentNullException>("NumberGroupSeparator", () => new NumberFormatInfo().NumberGroupSeparator = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberGroupSeparator = "string");
         }
     }

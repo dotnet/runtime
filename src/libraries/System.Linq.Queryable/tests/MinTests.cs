@@ -18,7 +18,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullInt32Source()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).Min());
         }
 
         [Fact]
@@ -37,7 +37,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullInt64Source()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<long>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<long>)null).Min());
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSingleSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<float>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<float>)null).Min());
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullDoubleSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<double>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<double>)null).Min());
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullDecimalSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal>)null).Min());
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableInt64Source()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<long?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<long?>)null).Min());
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableDoubleSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<double?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<double?>)null).Min());
         }
 
         [Fact]
@@ -191,7 +191,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableDecimalSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal?>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal?>)null).Min());
         }
 
         [Fact]
@@ -210,7 +210,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableDateTimeSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<DateTime>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<DateTime>)null).Min());
         }
 
         [Fact]
@@ -222,7 +222,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullStringSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<string>)null).Min());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<string>)null).Min());
         }
 
         [Fact]
@@ -252,14 +252,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullInt32SourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).Min(i => i));
         }
 
         [Fact]
         public void Int32SourceWithNullSelector()
         {
             Expression<Func<int, int>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -283,14 +283,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullInt64SourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<long>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<long>)null).Min(i => i));
         }
 
         [Fact]
         public void Int64SourceWithNullSelector()
         {
             Expression<Func<long, long>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -302,7 +302,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSingleSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<float>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<float>)null).Min(i => i));
         }
 
         [Fact]
@@ -336,14 +336,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullDoubleSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<double>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<double>)null).Min(i => i));
         }
 
         [Fact]
         public void DoubleSourceWithNullSelector()
         {
             Expression<Func<double, double>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -366,14 +366,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullDecimalSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal>)null).Min(i => i));
         }
 
         [Fact]
         public void DecimalSourceWithNullSelector()
         {
             Expression<Func<decimal, decimal>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -390,14 +390,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableInt32SourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int?>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int?>)null).Min(i => i));
         }
 
         [Fact]
         public void NullableInt32SourceWithNullSelector()
         {
             Expression<Func<int?, int?>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -414,14 +414,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableInt64SourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<long?>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<long?>)null).Min(i => i));
         }
 
         [Fact]
         public void NullableInt64SourceWithNullSelector()
         {
             Expression<Func<long?, long?>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -439,14 +439,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableSingleSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<float?>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<float?>)null).Min(i => i));
         }
 
         [Fact]
         public void NullableSingleSourceWithNullSelector()
         {
             Expression<Func<float?, float?>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -462,14 +462,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableDoubleSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<double?>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<double?>)null).Min(i => i));
         }
 
         [Fact]
         public void NullableDoubleSourceWithNullSelector()
         {
             Expression<Func<double?, double?>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -486,14 +486,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullNullableDecimalSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal?>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<decimal?>)null).Min(i => i));
         }
 
         [Fact]
         public void NullableDecimalSourceWithNullSelector()
         {
             Expression<Func<decimal?, decimal?>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -505,14 +505,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullDateTimeSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<DateTime>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<DateTime>)null).Min(i => i));
         }
 
         [Fact]
         public void DateTimeSourceWithNullSelector()
         {
             Expression<Func<DateTime, DateTime>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<DateTime>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<DateTime>().AsQueryable().Min(selector));
         }
 
         [Fact]
@@ -529,14 +529,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullStringSourceWithSelector()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<string>)null).Min(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<string>)null).Min(i => i));
         }
 
         [Fact]
         public void StringSourceWithNullSelector()
         {
             Expression<Func<string, string>> selector = null;
-            Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<string>().AsQueryable().Min(selector));
+            AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<string>().AsQueryable().Min(selector));
         }
 
         [Fact]

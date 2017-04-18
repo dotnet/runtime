@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,32 +48,32 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullType()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Default(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Default(null));
         }
 
         [Fact]
         public void ByRefType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(int).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Default(typeof(int).MakeByRefType()));
         }
 
         [Fact]
         public void PointerType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(int).MakePointerType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Default(typeof(int).MakePointerType()));
         }
 
         [Fact]
         public void GenericType()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>)));
         }
 
         [Fact]
         public void TypeContainsGenericParameters()
         {
-            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>).MakeGenericType(typeof(List<>))));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>.Enumerator)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Default(typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

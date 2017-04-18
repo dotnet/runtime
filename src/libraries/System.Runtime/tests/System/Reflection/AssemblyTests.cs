@@ -62,7 +62,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetAssembly_Nullery()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Assembly.GetAssembly(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Assembly.GetAssembly(null));
         }
 
         public static IEnumerable<object[]> GetAssembly_TestData()

@@ -186,25 +186,25 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate((x, y) => x + y));
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y));
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate((x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Aggregate(0, (x, y) => x + y, i => i));
         }
 
         [Fact]
         public void NullFunc()
         {
             Func<int, int, int> func = null;
-            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(func));
-            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func));
-            Assert.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func, i => i));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(func));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => Enumerable.Range(0, 3).Aggregate(0, func, i => i));
         }
 
         [Fact]
         public void NullResultSelector()
         {
             Func<int, int> resultSelector = null;
-            Assert.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Range(0, 3).Aggregate(0, (x, y) => x + y, resultSelector));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => Enumerable.Range(0, 3).Aggregate(0, (x, y) => x + y, resultSelector));
         }
     }
 }

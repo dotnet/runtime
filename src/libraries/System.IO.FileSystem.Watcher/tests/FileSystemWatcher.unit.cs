@@ -97,11 +97,11 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             {
                 // Null filter
-                Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory.Path, null));
+                AssertExtensions.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory.Path, null));
 
                 // Null path
-                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
-                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
             }
         }
 
@@ -112,12 +112,12 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             {
                 // Empty path
-                Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty));
-                Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty, "*"));
+                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty));
+                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty, "*"));
 
                 // Invalid directory
-                Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath()));
-                Assert.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath(), "*"));
+                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath()));
+                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath(), "*"));
             }
         }
 

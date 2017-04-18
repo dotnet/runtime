@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PositiveInfinitySymbol_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PositiveInfinitySymbol", () => new NumberFormatInfo().PositiveInfinitySymbol = null);
+            AssertExtensions.Throws<ArgumentNullException>("PositiveInfinitySymbol", () => new NumberFormatInfo().PositiveInfinitySymbol = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PositiveInfinitySymbol = "");
         }
     }

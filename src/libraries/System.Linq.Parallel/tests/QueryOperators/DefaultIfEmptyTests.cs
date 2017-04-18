@@ -141,7 +141,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void DefaultIfEmpty_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).DefaultIfEmpty());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<bool>)null).DefaultIfEmpty());
         }
     }
 }

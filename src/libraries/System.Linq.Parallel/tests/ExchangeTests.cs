@@ -187,7 +187,7 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Merge_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).WithMergeOptions(ParallelMergeOptions.AutoBuffered));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((ParallelQuery<int>)null).WithMergeOptions(ParallelMergeOptions.AutoBuffered));
         }
 
         // The plinq chunk partitioner takes an IEnumerator over the source, and disposes the

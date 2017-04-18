@@ -13,7 +13,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_CustomAttributeNamedTypedArgument_Constructor()
         {
-            Assert.Throws<ArgumentNullException>("memberInfo", () => new CustomAttributeNamedArgument(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("memberInfo", () => new CustomAttributeNamedArgument(null, null));
 
             MethodInfo m = typeof(CustomAttribute_Named_Typed_ArgumentTests).GetMethod("MyMethod");
             foreach (CustomAttributeData cad in CustomAttributeData.GetCustomAttributes(m))

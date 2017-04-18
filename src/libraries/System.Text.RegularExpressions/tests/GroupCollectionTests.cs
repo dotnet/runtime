@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions.Tests
             ICollection collection = regex.Match("aaabbccccccccccaaaabc").Groups;
 
             // Array is null
-            Assert.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
 
             // Array is multidimensional
             Assert.Throws<ArgumentException>(null, () => collection.CopyTo(new object[10, 10], 0));

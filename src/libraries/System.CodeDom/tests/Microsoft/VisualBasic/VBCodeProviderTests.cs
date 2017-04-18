@@ -42,7 +42,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void Ctor_NullProviderOptions_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("providerOptions", () => new VBCodeProvider(null));
+            AssertExtensions.Throws<ArgumentNullException>("providerOptions", () => new VBCodeProvider(null));
         }
 
         [Fact]

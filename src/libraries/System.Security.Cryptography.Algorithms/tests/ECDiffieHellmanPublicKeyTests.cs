@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.ECDiffieHellman.Tests
         [Fact]
         public void TestInvalidConstructorArgs()
         {
-            Assert.Throws<ArgumentNullException>("keyBlob", () => new TestDerived(null));
+            AssertExtensions.Throws<ArgumentNullException>("keyBlob", () => new TestDerived(null));
         }
 
         [Fact]

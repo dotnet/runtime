@@ -202,9 +202,9 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(2, stringIntDictionary["2"]);
             Assert.Equal(2, intDictionary.Count);
 
-            Assert.Throws<ArgumentNullException>("keySelector", () => list.ToImmutableDictionary<int, int>(null));
-            Assert.Throws<ArgumentNullException>("keySelector", () => list.ToImmutableDictionary<int, int, int>(null, v => v));
-            Assert.Throws<ArgumentNullException>("elementSelector", () => list.ToImmutableDictionary<int, int, int>(k => k, null));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => list.ToImmutableDictionary<int, int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => list.ToImmutableDictionary<int, int, int>(null, v => v));
+            AssertExtensions.Throws<ArgumentNullException>("elementSelector", () => list.ToImmutableDictionary<int, int, int>(k => k, null));
 
             list.ToDictionary(k => k, v => v, null); // verifies BCL behavior is to not throw.
             list.ToImmutableDictionary(k => k, v => v, null, null);

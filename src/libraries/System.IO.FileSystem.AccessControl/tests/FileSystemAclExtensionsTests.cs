@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Security.AccessControl;
 using Xunit;
 
@@ -105,7 +106,7 @@ namespace System.IO
             using (var directory = new TempDirectory())
             {
                 DirectoryInfo directoryInfo = new DirectoryInfo(directory.Path);
-                Assert.Throws<ArgumentNullException>("directorySecurity", () => directoryInfo.SetAccessControl((DirectorySecurity) null));
+                AssertExtensions.Throws<ArgumentNullException>("directorySecurity", () => directoryInfo.SetAccessControl((DirectorySecurity) null));
             }
         }
 
@@ -128,7 +129,7 @@ namespace System.IO
             using (var file = new TempFile(Path.Combine(directory.Path, "file.txt")))
             {
                 FileInfo fileInfo = new FileInfo(file.Path);
-                Assert.Throws<ArgumentNullException>("fileSecurity", () => fileInfo.SetAccessControl((FileSecurity) null));
+                AssertExtensions.Throws<ArgumentNullException>("fileSecurity", () => fileInfo.SetAccessControl((FileSecurity) null));
             }
         }
 

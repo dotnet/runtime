@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -64,7 +65,7 @@ namespace System.Json.Tests
         [Fact]
         public void Ctor_NullIEnumerable_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("items", () => new JsonArray((IEnumerable<JsonValue>)null));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => new JsonArray((IEnumerable<JsonValue>)null));
         }
 
         [Fact]
@@ -72,8 +73,8 @@ namespace System.Json.Tests
         {
             JsonArray array = new JsonArray(new JsonPrimitive(true));
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array[1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array[1]);
         }
 
         [Fact]
@@ -90,8 +91,8 @@ namespace System.Json.Tests
         {
             JsonArray array = new JsonArray(new JsonPrimitive(true));
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array[-1] = false);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array[1] = false);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array[-1] = false);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array[1] = false);
         }
 
         [Fact]
@@ -120,7 +121,7 @@ namespace System.Json.Tests
         public void Add_NullItem_ThrowsArgumentNullException()
         {
             JsonArray array = new JsonArray();
-            Assert.Throws<ArgumentNullException>("item", () => array.Add(null));
+            AssertExtensions.Throws<ArgumentNullException>("item", () => array.Add(null));
         }
 
         [Fact]
@@ -159,7 +160,7 @@ namespace System.Json.Tests
         public void AddRange_NullIEnumerable_ThrowsArgumentNullException()
         {
             JsonArray array = new JsonArray();
-            Assert.Throws<ArgumentNullException>("items", () => array.AddRange((IEnumerable<JsonValue>)null));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange((IEnumerable<JsonValue>)null));
         }
 
         [Fact]
@@ -178,8 +179,8 @@ namespace System.Json.Tests
         {
             JsonArray array = new JsonArray(new JsonPrimitive(true));
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(-1, new JsonPrimitive(false)));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(2, new JsonPrimitive(false)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(-1, new JsonPrimitive(false)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(2, new JsonPrimitive(false)));
         }
 
         [Fact]
@@ -249,8 +250,8 @@ namespace System.Json.Tests
         {
             JsonArray array = new JsonArray(new JsonPrimitive(true));
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(1));
         }
 
         [Fact]
@@ -291,8 +292,8 @@ namespace System.Json.Tests
         public void Save_NullStream_ThrowsArgumentNullException()
         {
             JsonArray array = new JsonArray();
-            Assert.Throws<ArgumentNullException>("stream", () => array.Save((Stream)null));
-            Assert.Throws<ArgumentNullException>("textWriter", () => array.Save((TextWriter)null));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => array.Save((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException>("textWriter", () => array.Save((TextWriter)null));
         }
 
         [Fact]

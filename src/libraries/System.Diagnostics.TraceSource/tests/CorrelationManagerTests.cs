@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System;
 using System.Collections;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -34,7 +35,7 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void CorrelationManager_NullOperationId()
         {
-            Assert.Throws<ArgumentNullException>("operationId", () => Trace.CorrelationManager.StartLogicalOperation(null));
+            AssertExtensions.Throws<ArgumentNullException>("operationId", () => Trace.CorrelationManager.StartLogicalOperation(null));
         }
 
         [Fact]

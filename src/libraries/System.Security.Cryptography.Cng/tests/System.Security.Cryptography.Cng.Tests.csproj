@@ -20,6 +20,9 @@
     <Compile Include="ECDsaCngTests.cs" />
     <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="TestData.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">

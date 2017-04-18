@@ -65,7 +65,7 @@ namespace System.Json.Tests
         [Fact]
         public void Ctor_NullIEnumerable_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("items", () => new JsonObject((IEnumerable<KeyValuePair<string, JsonValue>>)null));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => new JsonObject((IEnumerable<KeyValuePair<string, JsonValue>>)null));
         }
         
         [Fact]
@@ -127,7 +127,7 @@ namespace System.Json.Tests
         public void Add_NullKey_ThrowsArgumentNullException()
         {
             JsonObject obj = new JsonObject();
-            Assert.Throws<ArgumentNullException>("key", () => obj.Add(null, new JsonPrimitive(true)));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => obj.Add(null, new JsonPrimitive(true)));
         }
 
         [Fact]
@@ -135,7 +135,7 @@ namespace System.Json.Tests
         {
             JsonObject obj = new JsonObject();
             KeyValuePair<string, JsonValue> item = new KeyValuePair<string, JsonValue>(null, new JsonPrimitive(true));
-            Assert.Throws<ArgumentNullException>("key", () => obj.Add(item));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => obj.Add(item));
         }
 
         [Fact]
@@ -170,8 +170,8 @@ namespace System.Json.Tests
         public void AddRange_NullItems_ThrowsArgumentNullException()
         {
             JsonObject obj = new JsonObject();
-            Assert.Throws<ArgumentNullException>("items", () => obj.AddRange(null));
-            Assert.Throws<ArgumentNullException>("items", () => obj.AddRange((IEnumerable<KeyValuePair<string, JsonValue>>)null));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => obj.AddRange(null));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => obj.AddRange((IEnumerable<KeyValuePair<string, JsonValue>>)null));
         }
 
         [Fact]
@@ -203,7 +203,7 @@ namespace System.Json.Tests
         public void ContainsKey_NullKey_ThrowsArgumentNullException()
         {
             JsonObject obj = new JsonObject();
-            Assert.Throws<ArgumentNullException>("key", () => obj.ContainsKey(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => obj.ContainsKey(null));
         }
 
         [Theory]
@@ -244,7 +244,7 @@ namespace System.Json.Tests
         public void Remove_NullKey_ThrowsArgumentNullException()
         {
             JsonObject obj = new JsonObject();
-            Assert.Throws<ArgumentNullException>("key", () => obj.Remove(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => obj.Remove(null));
         }
 
         [Fact]
@@ -289,8 +289,8 @@ namespace System.Json.Tests
         public void Save_NullStream_ThrowsArgumentNullException()
         {
             JsonObject obj = new JsonObject();
-            Assert.Throws<ArgumentNullException>("stream", () => obj.Save((Stream)null));
-            Assert.Throws<ArgumentNullException>("textWriter", () => obj.Save((TextWriter)null));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => obj.Save((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException>("textWriter", () => obj.Save((TextWriter)null));
         }
 
         [Fact]

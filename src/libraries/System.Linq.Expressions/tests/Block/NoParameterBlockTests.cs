@@ -47,15 +47,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void DoubleElementBlockNullArgument()
         {
-            Assert.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression)));
+            AssertExtensions.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression)));
         }
 
         [Fact]
         public void DoubleElementBlockUnreadable()
         {
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression));
         }
 
         [Theory]
@@ -79,17 +79,17 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TripleElementBlockNullArgument()
         {
-            Assert.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression)));
+            AssertExtensions.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression)));
         }
 
         [Fact]
         public void TripleElementBlockUnreadable()
         {
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
         }
 
         [Theory]
@@ -114,19 +114,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void QuadrupleElementBlockNullArgument()
         {
-            Assert.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression)));
+            AssertExtensions.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression)));
         }
 
         [Fact]
         public void QuadrupleElementBlockUnreadable()
         {
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
         }
 
         [Theory]
@@ -152,21 +152,21 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void QuintupleElementBlockNullArgument()
         {
-            Assert.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1)));
-            Assert.Throws<ArgumentNullException>("arg4", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression)));
+            AssertExtensions.Throws<ArgumentNullException>("arg0", () => Expression.Block(default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg1", () => Expression.Block(Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentNullException>("arg4", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), default(Expression)));
         }
 
         [Fact]
         public void QuintupleElementBlockUnreadable()
         {
-            Assert.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
-            Assert.Throws<ArgumentException>("arg4", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
+            AssertExtensions.Throws<ArgumentException>("arg0", () => Expression.Block(UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg1", () => Expression.Block(Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg2", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1), Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg3", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression, Expression.Constant(1)));
+            AssertExtensions.Throws<ArgumentException>("arg4", () => Expression.Block(Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), Expression.Constant(1), UnreadableExpression));
         }
 
         [Theory]
@@ -193,15 +193,15 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullExpicitType()
         {
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Block(default(Type), default(IEnumerable<ParameterExpression>), Expression.Constant(0)));
-            Assert.Throws<ArgumentNullException>("type", () => Expression.Block(default(Type), null, Enumerable.Repeat(Expression.Constant(0), 1)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Block(default(Type), default(IEnumerable<ParameterExpression>), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => Expression.Block(default(Type), null, Enumerable.Repeat(Expression.Constant(0), 1)));
         }
 
         [Fact]
         public void NullExpressionList()
         {
-            Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(default(Expression[])));
-            Assert.Throws<ArgumentNullException>("expressions", () => Expression.Block(default(IEnumerable<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("expressions", () => Expression.Block(default(Expression[])));
+            AssertExtensions.Throws<ArgumentNullException>("expressions", () => Expression.Block(default(IEnumerable<Expression>)));
         }
 
         [Theory]
@@ -268,8 +268,8 @@ namespace System.Linq.Expressions.Tests
         public void InvalidExpressionIndex(object value, int blockSize)
         {
             BlockExpression block = Expression.Block(PadBlock(blockSize - 1, Expression.Constant(value, value.GetType())));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[blockSize]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[blockSize]);
         }
 
         [Fact]
@@ -380,8 +380,8 @@ namespace System.Linq.Expressions.Tests
             Assert.All(copyToTest, Assert.Null);
             children.CopyTo(copyToTest, 1);
             Assert.Equal(copyToTest, exps.Prepend(null));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => children[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => children[parCount]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => children[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => children[parCount]);
             Assert.Equal(-1, children.IndexOf(Expression.Parameter(typeof(int))));
             Assert.False(children.Contains(Expression.Parameter(typeof(int))));
         }
@@ -460,7 +460,7 @@ namespace System.Linq.Expressions.Tests
 
             BlockExpression block = Expression.Block(expressions);
 
-            Assert.Throws<ArgumentNullException>("expressions", () => block.Update(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("expressions", () => block.Update(null, null));
         }
 
         [Theory, MemberData(nameof(BlockSizes))]

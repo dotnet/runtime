@@ -290,7 +290,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_NullValidationContext_ThrowsArgumentNullException()
         {
             ValidationAttributeOverrideBothIsValids attribute = new ValidationAttributeOverrideBothIsValids();
-            Assert.Throws<ArgumentNullException>("validationContext", () => attribute.Validate("Any", validationContext: null));
+            AssertExtensions.Throws<ArgumentNullException>("validationContext", () => attribute.Validate("Any", validationContext: null));
         }
 
         // GetValidationResult_successful_if_One_Arg_IsValid_validates_successfully

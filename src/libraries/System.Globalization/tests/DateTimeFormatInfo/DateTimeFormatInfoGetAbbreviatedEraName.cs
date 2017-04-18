@@ -29,10 +29,10 @@ namespace System.Globalization.Tests
         public void GetAbbreviatedEraName_Invalid()
         {
             var format = new CultureInfo("en-US").DateTimeFormat;
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => format.GetAbbreviatedEraName(-1)); // Era < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => format.GetAbbreviatedEraName(-1)); // Era < 0
 
             const int EnUSMaxEra = 1;
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => format.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => format.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
         }
     }
 }

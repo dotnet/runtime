@@ -35,6 +35,9 @@
     <Compile Include="X500DistinguishedNameTests.cs" />
     <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="X509StoreTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>

@@ -216,13 +216,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void LeftNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("left", () => Expression.Assign(null, Expression.Constant("")));
+            AssertExtensions.Throws<ArgumentNullException>("left", () => Expression.Assign(null, Expression.Constant("")));
         }
 
         [Fact]
         public void RightNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("right", () => Expression.Assign(Expression.Variable(typeof(int)), null));
+            AssertExtensions.Throws<ArgumentNullException>("right", () => Expression.Assign(Expression.Variable(typeof(int)), null));
         }
 
         [Theory]
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ReadOnlyExpressions))]
         public void LeftReadOnly_ThrowsArgumentException(Expression readonlyExp)
         {
-            Assert.Throws<ArgumentException>("left", () => Expression.Assign(readonlyExp, Expression.Default(readonlyExp.Type)));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.Assign(readonlyExp, Expression.Default(readonlyExp.Type)));
         }
 
         [Theory]
@@ -263,7 +263,7 @@ namespace System.Linq.Expressions.Tests
         public static void Right_WriteOnly_ThrowsArgumentException(Expression writeOnlyExp)
         {
             ParameterExpression variable = Expression.Variable(writeOnlyExp.Type);
-            Assert.Throws<ArgumentException>("right", () => Expression.Assign(variable, writeOnlyExp));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.Assign(variable, writeOnlyExp));
         }
 
         [Theory]
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Tests
         public static void Left_InvalidType_ThrowsArgumentException(Type type)
         {
             Expression left = new FakeExpression(ExpressionType.Parameter, type);
-            Assert.Throws<ArgumentException>("left", () => Expression.Assign(left, Expression.Parameter(typeof(int))));
+            AssertExtensions.Throws<ArgumentException>("left", () => Expression.Assign(left, Expression.Parameter(typeof(int))));
         }
 
         [Theory]
@@ -279,7 +279,7 @@ namespace System.Linq.Expressions.Tests
         public static void Right_InvalidType_ThrowsArgumentException(Type type)
         {
             Expression right = new FakeExpression(ExpressionType.Parameter, type);
-            Assert.Throws<ArgumentException>("right", () => Expression.Assign(Expression.Variable(typeof(object)), right));
+            AssertExtensions.Throws<ArgumentException>("right", () => Expression.Assign(Expression.Variable(typeof(object)), right));
         }
 
         [Theory]

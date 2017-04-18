@@ -343,7 +343,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Sort_NullComparison_Throws()
         {
-            Assert.Throws<ArgumentNullException>("comparison", () => this.SortTestHelper(ImmutableList<int>.Empty, (Comparison<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("comparison", () => this.SortTestHelper(ImmutableList<int>.Empty, (Comparison<int>)null));
         }
 
         [Fact]

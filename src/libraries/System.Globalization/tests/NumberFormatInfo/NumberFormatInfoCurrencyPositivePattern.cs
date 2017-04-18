@@ -37,8 +37,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrencyPositivePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = 4);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = 4);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyPositivePattern = 1);
         }
     }

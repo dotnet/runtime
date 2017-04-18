@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression instance = Expression.Constant(46);
             ConstantExpression index = Expression.Constant(2);
-            Assert.Throws<ArgumentException>("array", () => Expression.ArrayAccess(instance, index));
+            AssertExtensions.Throws<ArgumentException>("array", () => Expression.ArrayAccess(instance, index));
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression instance = Expression.Constant(new int[4]);
             ConstantExpression index = Expression.Constant("2");
-            Assert.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
+            AssertExtensions.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression instance = Expression.Constant(new int[4]);
             MemberExpression index = Expression.Property(null, typeof(Unreadable<int>).GetProperty(nameof(Unreadable<int>.WriteOnly)));
-            Assert.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
+            AssertExtensions.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

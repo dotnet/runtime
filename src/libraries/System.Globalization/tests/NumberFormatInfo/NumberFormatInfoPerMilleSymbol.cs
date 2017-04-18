@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PerMilleSymbol_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("PerMilleSymbol", () => new NumberFormatInfo().PerMilleSymbol = null);
+            AssertExtensions.Throws<ArgumentNullException>("PerMilleSymbol", () => new NumberFormatInfo().PerMilleSymbol = null);
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PerMilleSymbol = "");
         }
     }

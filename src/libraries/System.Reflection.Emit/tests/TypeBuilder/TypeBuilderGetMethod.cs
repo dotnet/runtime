@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
 
             Type genericIntType = type.MakeGenericType(typeof(int));
             MethodInfo createdGenericMethod = genericMethod.MakeGenericMethod(typeof(int));
-            Assert.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(genericIntType, createdGenericMethod));
+            AssertExtensions.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(genericIntType, createdGenericMethod));
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace System.Reflection.Emit.Tests
             genMethod2.SetSignature(null, null, null, new Type[] { methodParams1[0].AsType() }, null, null);
 
             Type genericIntType = type1.MakeGenericType(typeof(int));
-            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetMethod(genericIntType, genMethod2));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetMethod(genericIntType, genMethod2));
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
             genericMethod.SetSignature(null, null, null, new Type[] { methodParams[0].AsType() }, null, null);
 
-            Assert.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(type.AsType(), genericMethod));
+            AssertExtensions.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(type.AsType(), genericMethod));
         }
 
         [Fact]

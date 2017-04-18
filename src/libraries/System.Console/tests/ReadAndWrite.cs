@@ -385,18 +385,18 @@ public class ReadAndWrite
     [Fact]
     public static void OpenStandardInput_NegativeBufferSize_ThrowsArgumentOutOfRangeException()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardInput(-1));
+        AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardInput(-1));
     }
 
     [Fact]
     public static void OpenStandardOutput_NegativeBufferSize_ThrowsArgumentOutOfRangeException()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardOutput(-1));
+        AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardOutput(-1));
     }
 
     [Fact]
     public static void OpenStandardError_NegativeBufferSize_ThrowsArgumentOutOfRangeException()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardError(-1));
+        AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardError(-1));
     }
 }

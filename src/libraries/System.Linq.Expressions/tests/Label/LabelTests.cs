@@ -25,8 +25,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullTarget()
         {
-            Assert.Throws<ArgumentNullException>("target", () => Expression.Label(default(LabelTarget)));
-            Assert.Throws<ArgumentNullException>("target", () => Expression.Label(null, Expression.Default(typeof(int))));
+            AssertExtensions.Throws<ArgumentNullException>("target", () => Expression.Label(default(LabelTarget)));
+            AssertExtensions.Throws<ArgumentNullException>("target", () => Expression.Label(null, Expression.Default(typeof(int))));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullDefaultValueNotAllowedWithTypedTarget()
         {
-            Assert.Throws<ArgumentException>("target", () => Expression.Label(Expression.Label(typeof(int)), null));
+            AssertExtensions.Throws<ArgumentException>("target", () => Expression.Label(Expression.Label(typeof(int)), null));
         }
 
         [Fact]

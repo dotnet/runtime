@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -30,24 +30,24 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullBody()
         {
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Loop(null));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Loop(null, null));
-            Assert.Throws<ArgumentNullException>("body", () => Expression.Loop(null, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Loop(null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Loop(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("body", () => Expression.Loop(null, null, null));
         }
 
         [Fact]
         public void UnreadableBody()
         {
             Expression body = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
-            Assert.Throws<ArgumentException>("body", () => Expression.Loop(body));
-            Assert.Throws<ArgumentException>("body", () => Expression.Loop(body, null));
-            Assert.Throws<ArgumentException>("body", () => Expression.Loop(body, null, null));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Loop(body));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Loop(body, null));
+            AssertExtensions.Throws<ArgumentException>("body", () => Expression.Loop(body, null, null));
         }
 
         [Fact]
         public void NonVoidContinue()
         {
-            Assert.Throws<ArgumentException>("continue", () => Expression.Loop(Expression.Empty(), null, Expression.Label(typeof(int))));
+            AssertExtensions.Throws<ArgumentException>("continue", () => Expression.Loop(Expression.Empty(), null, Expression.Label(typeof(int))));
         }
 
         [Fact]

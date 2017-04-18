@@ -23,7 +23,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidShareThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("share", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, ~FileShare.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("share", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, ~FileShare.None));
         }
 
         static readonly FileShare[] shares = 

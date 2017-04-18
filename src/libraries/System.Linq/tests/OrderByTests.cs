@@ -264,14 +264,14 @@ namespace System.Linq.Tests
         public void NullSource()
         {
             IEnumerable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.OrderBy(i => i));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.OrderBy(i => i));
         }
 
         [Fact]
         public void NullKeySelector()
         {
             Func<DateTime, int> keySelector = null;
-            Assert.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderBy(keySelector));
         }
 
         [Fact]

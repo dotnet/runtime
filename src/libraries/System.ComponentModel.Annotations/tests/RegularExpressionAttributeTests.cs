@@ -72,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_InvalidMatchTimeoutInMilliseconds_ThrowsArgumentOutOfRangeException(int timeout)
         {
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+") { MatchTimeoutInMilliseconds = 0 };
-            Assert.Throws<ArgumentOutOfRangeException>("matchTimeout", () => attribute.Validate("a", new ValidationContext(new object())));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => attribute.Validate("a", new ValidationContext(new object())));
         }
 
         [Fact]

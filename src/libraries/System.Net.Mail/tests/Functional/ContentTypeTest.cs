@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Xunit;
 
 namespace System.Net.Mime.Tests
@@ -154,8 +155,8 @@ namespace System.Net.Mime.Tests
         public static void MediaType_Set_InvalidArgs_Throws()
         {
             var ct = new ContentType();
-            Assert.Throws<ArgumentNullException>("value", () => ct.MediaType = null);
-            Assert.Throws<ArgumentException>("value", () => ct.MediaType = "");
+            AssertExtensions.Throws<ArgumentNullException>("value", () => ct.MediaType = null);
+            AssertExtensions.Throws<ArgumentException>("value", () => ct.MediaType = "");
         }
 
         [Fact]

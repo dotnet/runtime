@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
 
-            Assert.Throws<ArgumentNullException>("argument", () => SignatureHelper.GetPropertySigHelper(module, typeof(string), new Type[] { null, typeof(int) }));
+            AssertExtensions.Throws<ArgumentNullException>("argument", () => SignatureHelper.GetPropertySigHelper(module, typeof(string), new Type[] { null, typeof(int) }));
         }
 
         public static IEnumerable<object[]> GetPropertySigHelper_TestData()
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit.Tests
 
             ModuleBuilder module = Helpers.DynamicModule();
 
-            Assert.Throws<ArgumentNullException>("optionalCustomModifiers", () => SignatureHelper.GetPropertySigHelper(module, typeof(string), types, types, types, customModifiers, customModifiers));
+            AssertExtensions.Throws<ArgumentNullException>("optionalCustomModifiers", () => SignatureHelper.GetPropertySigHelper(module, typeof(string), types, types, types, customModifiers, customModifiers));
         }
     }
 }

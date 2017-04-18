@@ -42,7 +42,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Fact]
         public static void GetUninitializedObject_InvalidArguments_ThrowsException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
 
             Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type

@@ -66,8 +66,8 @@ namespace System.Collections.Specialized.Tests
         public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => nameObjectCollection.RemoveAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => nameObjectCollection.RemoveAt(count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => nameObjectCollection.RemoveAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => nameObjectCollection.RemoveAt(count));
         }
 
         [Fact]

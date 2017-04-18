@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Net.Cache;
 
@@ -46,9 +47,9 @@ namespace System.Net.Tests
         [Fact]
         public void Ctor_InvalidArgs_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("level", () => new HttpRequestCachePolicy((HttpRequestCacheLevel)42));
-            Assert.Throws<ArgumentException>("cacheAgeControl", () => new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAgeAndMinFresh, TimeSpan.FromSeconds(1)));
-            Assert.Throws<ArgumentException>("cacheAgeControl", () => new HttpRequestCachePolicy(HttpCacheAgeControl.None, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("level", () => new HttpRequestCachePolicy((HttpRequestCacheLevel)42));
+            AssertExtensions.Throws<ArgumentException>("cacheAgeControl", () => new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAgeAndMinFresh, TimeSpan.FromSeconds(1)));
+            AssertExtensions.Throws<ArgumentException>("cacheAgeControl", () => new HttpRequestCachePolicy(HttpCacheAgeControl.None, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)));
         }
     }
 }

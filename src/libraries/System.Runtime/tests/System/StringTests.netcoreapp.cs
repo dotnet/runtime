@@ -95,22 +95,22 @@ namespace System.Tests
         [Fact]
         public static void Join_Char_NullValues_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => string.Join('|', (string[])null));
-            Assert.Throws<ArgumentNullException>("value", () => string.Join('|', (string[])null, 0, 0));
-            Assert.Throws<ArgumentNullException>("values", () => string.Join('|', (object[])null));
-            Assert.Throws<ArgumentNullException>("values", () => string.Join('|', (IEnumerable<object>)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => string.Join('|', (string[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => string.Join('|', (string[])null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => string.Join('|', (object[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => string.Join('|', (IEnumerable<object>)null));
         }
 
         [Fact]
         public static void Join_Char_NegativeStartIndex_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, -1, 0));
         }
 
         [Fact]
         public static void Join_Char_NegativeCount_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.Join('|', new string[] { "Foo" }, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => string.Join('|', new string[] { "Foo" }, 0, -1));
         }
 
         [Theory]
@@ -122,7 +122,7 @@ namespace System.Tests
         [InlineData(-1, 0)]
         public static void Join_Char_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException(int startIndex, int count)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, startIndex, count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, startIndex, count));
         }
 
         public static IEnumerable<object[]> Replace_StringComparison_TestData()

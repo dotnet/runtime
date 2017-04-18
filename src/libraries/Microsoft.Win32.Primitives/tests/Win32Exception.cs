@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -122,7 +123,7 @@ namespace System.ComponentModel.Tests
         public static void GetObjectData_InvalidArgs_Throws()
         {
             var e = new Win32Exception();
-            Assert.Throws<ArgumentNullException>("info", () => e.GetObjectData(null, default(StreamingContext)));
+            AssertExtensions.Throws<ArgumentNullException>("info", () => e.GetObjectData(null, default(StreamingContext)));
         }
     }
 }

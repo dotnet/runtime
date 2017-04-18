@@ -41,8 +41,8 @@ namespace System.Linq.Tests
         public void ThrowsOnNullSource()
         {
             IQueryable<int> source = null;
-            Assert.Throws<ArgumentNullException>("source", () => source.SingleOrDefault());
-            Assert.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
         {
             int[] source = { };
             Expression<Func<int, bool>> nullPredicate = null;
-            Assert.Throws<ArgumentNullException>("predicate", () => source.AsQueryable().SingleOrDefault(nullPredicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.AsQueryable().SingleOrDefault(nullPredicate));
         }
 
         [Fact]

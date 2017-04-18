@@ -62,7 +62,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null)); // Dictionary is null
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null)); // Dictionary is null
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_HashCodeProvider_Comparer_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, CaseInsensitiveHashCodeProvider.Default, StringComparer.OrdinalIgnoreCase)); // Dictionary is null
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, CaseInsensitiveHashCodeProvider.Default, StringComparer.OrdinalIgnoreCase)); // Dictionary is null
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1)); // Capacity < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1)); // Capacity < 0
             Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
         }
 
@@ -150,14 +150,14 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_Int_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f)); // Dictionary is null
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f)); // Dictionary is null
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f)); // Load factor > 1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f)); // Load factor < 0.1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity)); // Load factor is infinity
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN)); // Load factor is NaN
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity)); // Load factor is infinity
         }
 
         [Fact]
@@ -204,7 +204,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_IEqualityComparer_NullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null, null)); // Dictionary is null
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable((IDictionary)null, null)); // Dictionary is null
         }
 
         [Theory]
@@ -252,15 +252,15 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f)); // Capacity < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f)); // Capacity < 0
             Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f)); // Load factor > 1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f)); // Load factor < 0.1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity)); // Load factor is infinity
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN)); // Load factor is NaN
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity)); // Load factor is infinity
         }
 
         [Theory]
@@ -286,7 +286,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_Int_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, null)); // Capacity < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, null)); // Capacity < 0
             Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
         }
 
@@ -319,14 +319,14 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_IDictionary_LoadFactor_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f, null)); // Dictionary is null
+            AssertExtensions.Throws<ArgumentNullException>("d", () => new Hashtable(null, 1f, null)); // Dictionary is null
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f, null)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f, null)); // Load factor > 1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 0.09f, null)); // Load factor < 0.1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), 1.01f, null)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN, null)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity, null)); // Load factor is infinity
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity, null)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NaN, null)); // Load factor is NaN
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.PositiveInfinity, null)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(new Hashtable(), float.NegativeInfinity, null)); // Load factor is infinity
         }
 
         [Theory]
@@ -353,15 +353,15 @@ namespace System.Collections.Tests
         [Fact]
         public static void Ctor_Capacity_LoadFactor_IEqualityComparer_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f, null)); // Capacity < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f, null)); // Capacity < 0
             Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f, null)); // Load factor < 0.1f
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f, null)); // Load factor > 1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f, null)); // Load factor < 0.1f
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f, null)); // Load factor > 1f
 
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN, null)); // Load factor is NaN
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity, null)); // Load factor is infinity
-            Assert.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity, null)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NaN, null)); // Load factor is NaN
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.PositiveInfinity, null)); // Load factor is infinity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity, null)); // Load factor is infinity
         }
 
         [Fact]
@@ -646,8 +646,8 @@ namespace System.Collections.Tests
             var hash1 = new Hashtable();
             Helpers.PerformActionOnAllHashtableWrappers(hash1, hash2 =>
             {
-                Assert.Throws<ArgumentNullException>("key", () => hash2.ContainsKey(null)); // Key is null
-                Assert.Throws<ArgumentNullException>("key", () => hash2.Contains(null)); // Key is null
+                AssertExtensions.Throws<ArgumentNullException>("key", () => hash2.ContainsKey(null)); // Key is null
+                AssertExtensions.Throws<ArgumentNullException>("key", () => hash2.Contains(null)); // Key is null
             });
         }
 
@@ -774,7 +774,7 @@ namespace System.Collections.Tests
         [Fact]
         public static void Synchronized_NullTable_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("table", () => Hashtable.Synchronized(null)); // Table is null
+            AssertExtensions.Throws<ArgumentNullException>("table", () => Hashtable.Synchronized(null)); // Table is null
         }
 
         [Fact]

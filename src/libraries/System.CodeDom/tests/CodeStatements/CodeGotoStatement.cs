@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -29,7 +29,7 @@ namespace System.CodeDom.Tests
 		[InlineData("")]
 		public void Ctor_StringNullOrEmpty_ThrowsArgumentNullException(string value)
 		{
-			Assert.Throws<ArgumentNullException>("value", () => new CodeGotoStatement(value));
+			AssertExtensions.Throws<ArgumentNullException>("value", () => new CodeGotoStatement(value));
 		}
 
 		[Theory]
@@ -48,7 +48,7 @@ namespace System.CodeDom.Tests
 		public void Label_SetNullOrEmpty_ThrowsArgumentNullException(string value)
 		{
 			var gotoStatement = new CodeGotoStatement();
-			Assert.Throws<ArgumentNullException>("value", () => gotoStatement.Label = value);
+			AssertExtensions.Throws<ArgumentNullException>("value", () => gotoStatement.Label = value);
 		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -82,7 +82,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Stack_Generic_Constructor_IEnumerable_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("collection", () => new Stack<T>(null));
+            AssertExtensions.Throws<ArgumentNullException>("collection", () => new Stack<T>(null));
         }
 
         #endregion
@@ -100,8 +100,8 @@ namespace System.Collections.Tests
         [Fact]
         public void Stack_Generic_Constructor_int_Negative_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(int.MinValue));
         }
 
         #endregion

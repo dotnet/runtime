@@ -34,9 +34,9 @@ namespace System.Tests
         [Fact]
         public static void Ctor_InvalidArgs_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("platform", () => new OperatingSystem((PlatformID)(-1), new Version(1, 2)));
-            Assert.Throws<ArgumentOutOfRangeException>("platform", () => new OperatingSystem((PlatformID)42, new Version(1, 2)));
-            Assert.Throws<ArgumentNullException>("version", () => new OperatingSystem(PlatformID.Unix, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("platform", () => new OperatingSystem((PlatformID)(-1), new Version(1, 2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("platform", () => new OperatingSystem((PlatformID)42, new Version(1, 2)));
+            AssertExtensions.Throws<ArgumentNullException>("version", () => new OperatingSystem(PlatformID.Unix, null));
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace System.Tests
         public static void GetObjectData_InvalidArgs_Throws()
         {
             var os = new OperatingSystem(PlatformID.Win32NT, new Version(10, 0));
-            Assert.Throws<ArgumentNullException>("info", () => os.GetObjectData(null, new StreamingContext()));
+            AssertExtensions.Throws<ArgumentNullException>("info", () => os.GetObjectData(null, new StreamingContext()));
         }
     }
 }

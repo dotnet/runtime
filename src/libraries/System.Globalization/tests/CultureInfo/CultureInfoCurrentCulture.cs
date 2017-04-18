@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture_Set_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows locale support doesn't rely on LANG variable

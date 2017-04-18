@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -94,13 +94,13 @@ namespace System.Text.Encodings.Tests
                 byte *pBytes = bytesPtr;
                 char *pChars = charsPtr;
 
-                Assert.Throws<ArgumentNullException>("chars", () => decoder.Convert(pBytes, bytes.Length, null, 1, true, out bytesUsed, out charsUsed, out completed));
-                Assert.Throws<ArgumentNullException>("bytes", () => decoder.Convert(null, bytes.Length, pChars, 1, true, out bytesUsed, out charsUsed, out completed));
+                AssertExtensions.Throws<ArgumentNullException>("chars", () => decoder.Convert(pBytes, bytes.Length, null, 1, true, out bytesUsed, out charsUsed, out completed));
+                AssertExtensions.Throws<ArgumentNullException>("bytes", () => decoder.Convert(null, bytes.Length, pChars, 1, true, out bytesUsed, out charsUsed, out completed));
 
-                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.Convert(pBytes, -1, pChars, 1, true, out bytesUsed, out charsUsed, out completed));
-                Assert.Throws<ArgumentOutOfRangeException>("charCount", () => decoder.Convert(pBytes, bytes.Length, pChars, -1, true, out bytesUsed, out charsUsed, out completed));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.Convert(pBytes, -1, pChars, 1, true, out bytesUsed, out charsUsed, out completed));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("charCount", () => decoder.Convert(pBytes, bytes.Length, pChars, -1, true, out bytesUsed, out charsUsed, out completed));
 
-                Assert.Throws<ArgumentException>("chars", () => decoder.Convert(pBytes, bytes.Length, pChars, 0, true, out bytesUsed, out charsUsed, out completed));
+                AssertExtensions.Throws<ArgumentException>("chars", () => decoder.Convert(pBytes, bytes.Length, pChars, 0, true, out bytesUsed, out charsUsed, out completed));
             }
 
             decoder = Encoding.GetEncoding("us-ascii", new EncoderExceptionFallback(), new DecoderExceptionFallback()).GetDecoder();
@@ -173,15 +173,15 @@ namespace System.Text.Encodings.Tests
                 byte *pBytes = bytesPtr;
                 char *pChars = charsPtr;
 
-                Assert.Throws<ArgumentNullException>("chars", () => decoder.GetChars(pBytes, bytes.Length, null, 1, true));
-                Assert.Throws<ArgumentNullException>("bytes", () => decoder.GetChars(null, bytes.Length, pChars, 1, true));
-                Assert.Throws<ArgumentNullException>("bytes", () => decoder.GetCharCount(null, bytes.Length, true));
+                AssertExtensions.Throws<ArgumentNullException>("chars", () => decoder.GetChars(pBytes, bytes.Length, null, 1, true));
+                AssertExtensions.Throws<ArgumentNullException>("bytes", () => decoder.GetChars(null, bytes.Length, pChars, 1, true));
+                AssertExtensions.Throws<ArgumentNullException>("bytes", () => decoder.GetCharCount(null, bytes.Length, true));
 
-                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.GetChars(pBytes, -1, pChars, 1, true));
-                Assert.Throws<ArgumentOutOfRangeException>("charCount", () => decoder.GetChars(pBytes, bytes.Length, pChars, -1, true));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => decoder.GetCharCount(pBytes, -1, true));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () => decoder.GetChars(pBytes, -1, pChars, 1, true));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("charCount", () => decoder.GetChars(pBytes, bytes.Length, pChars, -1, true));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => decoder.GetCharCount(pBytes, -1, true));
 
-                Assert.Throws<ArgumentException>("chars", () => decoder.GetChars(pBytes, bytes.Length, pChars, 1, true));
+                AssertExtensions.Throws<ArgumentException>("chars", () => decoder.GetChars(pBytes, bytes.Length, pChars, 1, true));
             }
 
             decoder = Encoding.GetEncoding("us-ascii", new EncoderExceptionFallback(), new DecoderExceptionFallback()).GetDecoder();

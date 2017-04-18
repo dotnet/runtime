@@ -124,9 +124,9 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(NonBinaryTypesIncludingInvalidData))]
         public void MakeBinaryInvalidType(ExpressionType type)
         {
-            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null));
-            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null, null));
+            AssertExtensions.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null));
+            AssertExtensions.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null, null));
         }
 
         [Theory]
@@ -275,9 +275,9 @@ namespace System.Linq.Expressions.Tests
             ConstantExpression right = Expression.Constant(2);
             var genType = typeof(GenericClassWithNonGenericMethod<>);
             MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
-            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
             method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
-            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
 
             // Confirm does work when closed.
             var validType = typeof(GenericClassWithNonGenericMethod<int>);
@@ -295,9 +295,9 @@ namespace System.Linq.Expressions.Tests
             ConstantExpression right = Expression.Constant(new GenericClassWithNonGenericMethod<bool>());
             var genType = typeof(GenericClassWithNonGenericMethod<>);
             MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<bool>.DoBooleanStuff));
-            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
             method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
-            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
 
             // Confirm does work when closed.
             var validType = typeof(GenericClassWithNonGenericMethod<bool>);

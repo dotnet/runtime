@@ -138,8 +138,8 @@ namespace System.Linq.Parallel.Tests
         [Fact]
         public static void Concat_ArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("first", () => ((ParallelQuery<int>)null).Concat(ParallelEnumerable.Range(0, 1)));
-            Assert.Throws<ArgumentNullException>("second", () => ParallelEnumerable.Range(0, 1).Concat(null));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => ((ParallelQuery<int>)null).Concat(ParallelEnumerable.Range(0, 1)));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => ParallelEnumerable.Range(0, 1).Concat(null));
         }
 
         [Fact]

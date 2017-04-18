@@ -98,7 +98,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
 
-            Assert.Throws<ArgumentNullException>("customBuilder", () => method.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => method.SetCustomAttribute(null));
         }
 
         [Fact]
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            Assert.Throws<ArgumentNullException>("con", () => method.SetCustomAttribute(null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => method.SetCustomAttribute(null, new byte[0]));
         }
 
         [Fact]
@@ -127,7 +127,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder builder = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            Assert.Throws<ArgumentNullException>("binaryAttribute", () => builder.SetCustomAttribute(typeof(MethodBuilderCustomAttribute).GetConstructor(new Type[0]), null));
+            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => builder.SetCustomAttribute(typeof(MethodBuilderCustomAttribute).GetConstructor(new Type[0]), null));
         }
     }
 }

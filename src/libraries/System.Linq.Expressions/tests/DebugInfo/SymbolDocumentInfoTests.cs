@@ -48,10 +48,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void SymbolDocument_NullFileName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null));
-            Assert.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty));
-            Assert.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty, Guid.Empty));
-            Assert.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty, Guid.Empty, Guid.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null));
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty, Guid.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => Expression.SymbolDocument(null, Guid.Empty, Guid.Empty, Guid.Empty));
         }
 
         private static void VerifySymbolDocumentInfo(SymbolDocumentInfo document, string fileName, Guid language, Guid languageVendor, Guid documentType)

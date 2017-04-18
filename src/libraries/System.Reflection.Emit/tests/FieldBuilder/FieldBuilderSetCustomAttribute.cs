@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
-            Assert.Throws<ArgumentNullException>("con", () => field.SetCustomAttribute(null, new byte[256]));
+            AssertExtensions.Throws<ArgumentNullException>("con", () => field.SetCustomAttribute(null, new byte[256]));
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
-            Assert.Throws<ArgumentNullException>("binaryAttribute", () => field.SetCustomAttribute(attributeConstructor, null));
+            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => field.SetCustomAttribute(attributeConstructor, null));
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
-            Assert.Throws<ArgumentNullException>("customBuilder", () => field.SetCustomAttribute(null));
+            AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => field.SetCustomAttribute(null));
         }
 
         [Fact]

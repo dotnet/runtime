@@ -43,11 +43,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void NumberGroupSizes_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = null);
+            AssertExtensions.Throws<ArgumentNullException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = null);
 
-            Assert.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { -1, 1, 2 });
-            Assert.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 98, 99, 100 });
-            Assert.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 0, 1, 2 });
+            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { -1, 1, 2 });
+            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 98, 99, 100 });
+            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 0, 1, 2 });
 
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberGroupSizes = new int[] { 1, 2, 3 });
         }

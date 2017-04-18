@@ -34,9 +34,9 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_InvalidArguments_Throws()
         {
-            Assert.Throws<ArgumentNullException>("localEP", () => new TcpClient(null));
-            Assert.Throws<ArgumentNullException>("hostname", () => new TcpClient(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("port", () => new TcpClient("localhost", -1));
+            AssertExtensions.Throws<ArgumentNullException>("localEP", () => new TcpClient(null));
+            AssertExtensions.Throws<ArgumentNullException>("hostname", () => new TcpClient(null, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => new TcpClient("localhost", -1));
         }
 
         [Fact]
@@ -44,13 +44,13 @@ namespace System.Net.Sockets.Tests
         {
             using (var client = new TcpClient())
             {
-                Assert.Throws<ArgumentNullException>("hostname", () => client.Connect((string)null, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("port", () => client.Connect("localhost", -1));
+                AssertExtensions.Throws<ArgumentNullException>("hostname", () => client.Connect((string)null, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => client.Connect("localhost", -1));
 
-                Assert.Throws<ArgumentNullException>("address", () => client.Connect((IPAddress)null, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("port", () => client.Connect(IPAddress.Loopback, -1));
+                AssertExtensions.Throws<ArgumentNullException>("address", () => client.Connect((IPAddress)null, 0));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => client.Connect(IPAddress.Loopback, -1));
 
-                Assert.Throws<ArgumentNullException>("remoteEP", () => client.Connect(null));
+                AssertExtensions.Throws<ArgumentNullException>("remoteEP", () => client.Connect(null));
             }
         }
 

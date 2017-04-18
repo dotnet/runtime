@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,7 +38,7 @@ namespace System.Dynamic.Tests
             Assert.Contains("A string that's a key", knfe.Message);
 
             Assert.Throws<KeyNotFoundException>(() => eo[null]);
-            Assert.Throws<ArgumentNullException>("key", () => eo[null] = 0);
+            AssertExtensions.Throws<ArgumentNullException>("key", () => eo[null] = 0);
             // Can overwrite
             eo["1"] = 1;
         }
@@ -48,7 +48,7 @@ namespace System.Dynamic.Tests
         {
             IDictionary<string, object> eo = new ExpandoObject();
             eo.Add("The test key to add.", "value");
-            var ae = Assert.Throws<ArgumentException>("key", () => eo.Add("The test key to add.", "value"));
+            var ae = AssertExtensions.Throws<ArgumentException>("key", () => eo.Add("The test key to add.", "value"));
             Assert.Contains("The test key to add.", ae.Message);
         }
 

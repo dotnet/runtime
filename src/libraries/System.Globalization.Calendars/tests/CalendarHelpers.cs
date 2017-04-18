@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -254,8 +254,8 @@ namespace System.Globalization.Tests
             Assert.ThrowsAny<ArgumentException>(() => calendar.AddMonths(calendar.MaxSupportedDateTime, 1));
             Assert.ThrowsAny<ArgumentException>(() => calendar.AddMonths(calendar.MinSupportedDateTime, -1)); // JapaneseCalendar throws ArgumentException
 
-            Assert.Throws<ArgumentOutOfRangeException>("months", () => calendar.AddMonths(DateTime.Now, -120001));
-            Assert.Throws<ArgumentOutOfRangeException>("months", () => calendar.AddMonths(DateTime.Now, 120001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => calendar.AddMonths(DateTime.Now, -120001));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => calendar.AddMonths(DateTime.Now, 120001));
         }
 
         [Theory]
@@ -309,12 +309,12 @@ namespace System.Globalization.Tests
         public static void GetWeekOfYear_Invalid(Calendar calendar)
         {
             // Rule is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("rule", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay - 1, DayOfWeek.Saturday));
-            Assert.Throws<ArgumentOutOfRangeException>("rule", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstFourDayWeek + 1, DayOfWeek.Saturday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("rule", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay - 1, DayOfWeek.Saturday));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("rule", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstFourDayWeek + 1, DayOfWeek.Saturday));
 
             // FirstDayOfWeek is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("firstDayOfWeek", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday - 1));
-            Assert.Throws<ArgumentOutOfRangeException>("firstDayOfWeek", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay, DayOfWeek.Saturday + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("firstDayOfWeek", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay, DayOfWeek.Sunday - 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("firstDayOfWeek", () => calendar.GetWeekOfYear(calendar.MaxSupportedDateTime, CalendarWeekRule.FirstDay, DayOfWeek.Saturday + 1));
         }
 
         [Theory]
@@ -386,12 +386,12 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Calendars_TestData))]
         public static void ToFourDigitYear_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(MaxCalendarYearInEra(calendar, MaxEra(calendar)) + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(MaxCalendarYearInEra(calendar, MaxEra(calendar)) + 1));
             
             if (!(calendar is JapaneseLunisolarCalendar))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(MinCalendarYearInEra(calendar, MinEra(calendar)) - 2));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToFourDigitYear(MinCalendarYearInEra(calendar, MinEra(calendar)) - 2));
             }
         }
 
@@ -423,28 +423,28 @@ namespace System.Globalization.Tests
         [MemberData(nameof(DateTime_TestData))]
         public static void GetYear_Invalid(Calendar calendar, DateTime dt)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetYear(dt));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetYear(dt));
         }
 
         [Theory]
         [MemberData(nameof(DateTime_TestData))]
         public static void GetMonth_Invalid(Calendar calendar, DateTime dt)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetMonth(dt));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetMonth(dt));
         }
 
         [Theory]
         [MemberData(nameof(DateTime_TestData))]
         public static void GetDayOfYear_Invalid(Calendar calendar, DateTime dt)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfYear(dt));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfYear(dt));
         }
 
         [Theory]
         [MemberData(nameof(DateTime_TestData))]
         public static void GetDayOfMonth_Invalid(Calendar calendar, DateTime dt)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfMonth(dt));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfMonth(dt));
         }
 
         [Theory]
@@ -457,7 +457,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                Assert.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfWeek(dt));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("time", () => calendar.GetDayOfWeek(dt));
             }
         }
     }

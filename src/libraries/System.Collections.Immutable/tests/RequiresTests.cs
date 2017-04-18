@@ -14,14 +14,14 @@ namespace System.Collections.Immutable.Tests
             Requires.Argument(true);
             Requires.Argument(true, "parameterName", "message");
             Assert.Throws<ArgumentException>(null, () => Requires.Argument(false));
-            Assert.Throws<ArgumentException>("parameterName", () => Requires.Argument(false, "parameterName", "message"));
+            AssertExtensions.Throws<ArgumentException>("parameterName", () => Requires.Argument(false, "parameterName", "message"));
         }
 
         [Fact]
         public void FailRange()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.FailRange("parameterName"));
-            Assert.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.FailRange("parameterName", "message"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.FailRange("parameterName"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.FailRange("parameterName", "message"));
         }
 
         [Fact]
@@ -29,15 +29,15 @@ namespace System.Collections.Immutable.Tests
         {
             Requires.Range(true, "parameterName");
             Requires.Range(true, "parameterName", "message");
-            Assert.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.Range(false, "parameterName"));
-            Assert.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.Range(false, "parameterName", "message"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.Range(false, "parameterName"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("parameterName", () => Requires.Range(false, "parameterName", "message"));
         }
 
         [Fact]
         public void NotNull()
         {
             Requires.NotNull(new object(), "parameterName");
-            Assert.Throws<ArgumentNullException>("parameterName", () => Requires.NotNull((object)null, "parameterName"));
+            AssertExtensions.Throws<ArgumentNullException>("parameterName", () => Requires.NotNull((object)null, "parameterName"));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Collections.Immutable.Tests
         {
             Requires.NotNullAllowStructs(0, "parameterName");
             Requires.NotNullAllowStructs(new object(), "parameterName");
-            Assert.Throws<ArgumentNullException>("parameterName", () => Requires.NotNullAllowStructs((object)null, "parameterName"));
+            AssertExtensions.Throws<ArgumentNullException>("parameterName", () => Requires.NotNullAllowStructs((object)null, "parameterName"));
         }
     }
 }

@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void Ctor_String_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("String", () => new StringInfo(null));
+            AssertExtensions.Throws<ArgumentNullException>("String", () => new StringInfo(null));
         }
     }
 }

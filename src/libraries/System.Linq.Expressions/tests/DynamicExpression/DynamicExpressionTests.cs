@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -113,8 +113,8 @@ namespace System.Linq.Expressions.Tests
                 Assert.Same(arguments[i], ap.GetArgument(i));
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(size));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ap.GetArgument(size));
         }
 
         [Fact]
@@ -303,7 +303,7 @@ namespace System.Linq.Expressions.Tests
                 new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
             DynamicExpression exp = Expression.MakeDynamic(typeof(Func<CallSite, object>), binder);
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new [] {Expression.Constant(null)}));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new [] {Expression.Constant(null)}));
         }
 
         [Fact]
@@ -316,8 +316,8 @@ namespace System.Linq.Expressions.Tests
             DynamicExpression exp = Expression.MakeDynamic(typeof(Func<CallSite, object, object>), binder, arg);
             Assert.NotSame(exp, exp.Update(new[] { Expression.Constant(null) }));
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(null));
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new[] { arg, arg }));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(null));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new[] { arg, arg }));
         }
 
         [Fact]
@@ -333,8 +333,8 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg0 }));
             Assert.NotSame(exp, exp.Update(new[] { arg1, arg0 }));
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(null));
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(null));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
         }
 
         [Fact]
@@ -352,8 +352,8 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg0, arg2 }));
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg1, arg0 }));
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(null));
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(null));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
         }
 
         [Fact]
@@ -373,8 +373,8 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg1, arg0, arg3 }));
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg1, arg2, arg0 }));
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(null));
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(null));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
         }
 
         [Fact]
@@ -397,8 +397,8 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg1, arg2, arg0, arg4 }));
             Assert.NotSame(exp, exp.Update(new[] { arg0, arg1, arg2, arg3, arg0 }));
             // Wrong number of arguments continues to attempt to create new expression, which fails.
-            Assert.Throws<ArgumentException>("method", () => exp.Update(null));
-            Assert.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(null));
+            AssertExtensions.Throws<ArgumentException>("method", () => exp.Update(new Expression[0]));
         }
     }
 }

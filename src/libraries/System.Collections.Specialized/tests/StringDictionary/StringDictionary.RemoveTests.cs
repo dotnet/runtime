@@ -63,7 +63,7 @@ namespace System.Collections.Specialized.Tests
         public void Remove_NullKey_ThrowsArgumentNullException(int count)
         {
             StringDictionary stringDictionary = Helpers.CreateStringDictionary(count);
-            Assert.Throws<ArgumentNullException>("key", () => stringDictionary.Remove(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => stringDictionary.Remove(null));
         }
     }
 }

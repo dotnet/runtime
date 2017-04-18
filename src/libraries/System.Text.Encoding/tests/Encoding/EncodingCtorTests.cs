@@ -45,8 +45,8 @@ namespace System.Text.Tests
         [Fact]
         public void Ctor_NegativeCodePage_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("codePage", () => new CustomEncoding(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("codePage", () => new CustomEncoding(-1, null, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("codePage", () => new CustomEncoding(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("codePage", () => new CustomEncoding(-1, null, null));
         }
 
         [Fact]

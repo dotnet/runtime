@@ -21,8 +21,8 @@ namespace System.IO.Pipes.Tests
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
             {
-                Assert.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
-                Assert.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => client.Connect(-111));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => { client.ConnectAsync(-111); });
             }
         }
 

@@ -20,14 +20,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource()
         {
-            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).All(i => i != 0));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).All(i => i != 0));
         }
 
         [Fact]
         public void NullPredicateUsed()
         {
             Expression<Func<int, bool>> predicate = null;
-            Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().All(predicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().All(predicate));
         }
 
         [Fact]

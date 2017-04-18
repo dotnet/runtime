@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
@@ -57,19 +58,19 @@ namespace System.Threading.Tests
         {
             bool createdNew;
 
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0));
             Assert.Throws<ArgumentException>(() => new Semaphore(2, 1));
 
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, null));
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, null));
-            Assert.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, null));
             Assert.Throws<ArgumentException>(() => new Semaphore(2, 1, null));
 
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, "CtorSemaphoreTest", out createdNew));
-            Assert.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, "CtorSemaphoreTest", out createdNew));
-            Assert.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, "CtorSemaphoreTest", out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, "CtorSemaphoreTest", out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, "CtorSemaphoreTest", out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, "CtorSemaphoreTest", out createdNew));
             Assert.Throws<ArgumentException>(() => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
         }
 
@@ -134,7 +135,7 @@ namespace System.Threading.Tests
             using (Semaphore s = new Semaphore(0, 10))
             {
                 Assert.Throws<SemaphoreFullException>(() => s.Release(11));
-                Assert.Throws<ArgumentOutOfRangeException>("releaseCount", () => s.Release(-1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("releaseCount", () => s.Release(-1));
             }
 
             using (Semaphore s = new Semaphore(0, 10))
@@ -211,7 +212,7 @@ namespace System.Threading.Tests
         [Fact]
         public void OpenExisting_InvalidNames_Windows()
         {
-            Assert.Throws<ArgumentNullException>("name", () => Semaphore.OpenExisting(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Semaphore.OpenExisting(null));
             Assert.Throws<ArgumentException>(() => Semaphore.OpenExisting(string.Empty));
             Assert.Throws<ArgumentException>(() => Semaphore.OpenExisting(new string('a', 10000)));
         }

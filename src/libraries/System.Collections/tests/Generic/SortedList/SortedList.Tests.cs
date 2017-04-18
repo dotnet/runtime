@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,7 +48,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedList<string, string>();
-                Assert.Throws<ArgumentNullException>("key", () => dictionary[23] = CreateTValue(12345));
+                AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }

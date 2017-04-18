@@ -24,16 +24,16 @@ namespace System.IO.Pipes.Tests
                 Assert.True(pipe.CanWrite);
 
                 // Null is an invalid Buffer
-                Assert.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, 0, 1));
-                Assert.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, 0, 1); });
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, 0, 1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, 0, 1); });
 
                 // Buffer validity is checked before Offset
-                Assert.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, -1, 1));
-                Assert.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, -1, 1); });
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, -1, 1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, -1, 1); });
 
                 // Buffer validity is checked before Count
-                Assert.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, -1, -1));
-                Assert.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, -1, -1); });
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => pipe.Write(null, -1, -1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => { pipe.WriteAsync(null, -1, -1); });
 
             }
         }
@@ -49,8 +49,8 @@ namespace System.IO.Pipes.Tests
                 Assert.False(pipe.CanSeek);
 
                 // Offset must be nonnegative
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => pipe.Write(new byte[5], -1, 1));
-                Assert.Throws<ArgumentOutOfRangeException>("offset", () => { pipe.WriteAsync(new byte[5], -1, 1); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => pipe.Write(new byte[5], -1, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { pipe.WriteAsync(new byte[5], -1, 1); });
             }
         }
 
@@ -64,8 +64,8 @@ namespace System.IO.Pipes.Tests
                 Assert.True(pipe.CanWrite);
 
                 // Count must be nonnegative
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => pipe.Write(new byte[5], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => { pipe.WriteAsync(new byte[5], 0, -1); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => pipe.Write(new byte[5], 0, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { pipe.WriteAsync(new byte[5], 0, -1); });
             }
         }
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -167,19 +167,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitNullCollection()
         {
-            Assert.Throws<ArgumentNullException>("nodes", () => new DefaultVisitor().Visit(default(ReadOnlyCollection<Expression>)));
+            AssertExtensions.Throws<ArgumentNullException>("nodes", () => new DefaultVisitor().Visit(default(ReadOnlyCollection<Expression>)));
         }
 
         [Fact]
         public void VisitNullCollectionWithVisitorFunction()
         {
-            Assert.Throws<ArgumentNullException>("nodes", () => ExpressionVisitor.Visit(null, (Expression i) => i));
+            AssertExtensions.Throws<ArgumentNullException>("nodes", () => ExpressionVisitor.Visit(null, (Expression i) => i));
         }
 
         [Fact]
         public void VisitCollectionVisitorWithNullFunction()
         {
-            Assert.Throws<ArgumentNullException>("elementVisitor", () => ExpressionVisitor.Visit(new List<Expression> { Expression.Empty() }.AsReadOnly(), null));
+            AssertExtensions.Throws<ArgumentNullException>("elementVisitor", () => ExpressionVisitor.Visit(new List<Expression> { Expression.Empty() }.AsReadOnly(), null));
         }
 
         [Fact]
@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitAndConvertNullCollection()
         {
-            Assert.Throws<ArgumentNullException>("nodes", () => new DefaultVisitor().VisitAndConvert(default(ReadOnlyCollection<Expression>), ""));
+            AssertExtensions.Throws<ArgumentNullException>("nodes", () => new DefaultVisitor().VisitAndConvert(default(ReadOnlyCollection<Expression>), ""));
         }
 
         [Fact]

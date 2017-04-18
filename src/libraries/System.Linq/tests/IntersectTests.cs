@@ -97,8 +97,8 @@ namespace System.Linq.Tests
             string[] first = null;
             string[] second = { "ekiM", "bBo" };
 
-            Assert.Throws<ArgumentNullException>("first", () => first.Intersect(second));
-            Assert.Throws<ArgumentNullException>("first", () => first.Intersect(second, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Intersect(second));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Intersect(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -107,8 +107,8 @@ namespace System.Linq.Tests
             string[] first = { "Tim", "Bob", "Mike", "Robert" };
             string[] second = null;
 
-            Assert.Throws<ArgumentNullException>("second", () => first.Intersect(second));
-            Assert.Throws<ArgumentNullException>("second", () => first.Intersect(second, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Intersect(second));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Intersect(second, new AnagramEqualityComparer()));
         }
 
         [Fact]

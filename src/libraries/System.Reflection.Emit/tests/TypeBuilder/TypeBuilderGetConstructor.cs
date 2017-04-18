@@ -16,7 +16,7 @@ namespace System.Reflection.Emit.Tests
 
             ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorBuilder ctor2 = type2.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
             Type genericInt = type1.MakeGenericType(typeof(int));
-            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(genericInt, ctor2));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(genericInt, ctor2));
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
 
             ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            Assert.Throws<ArgumentException>("constructor", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
+            AssertExtensions.Throws<ArgumentException>("constructor", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
         }
     }
 }

@@ -23,7 +23,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void Ctor_NullList_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("list", () => new ReadOnlyCollection<int>(null));
+            AssertExtensions.Throws<ArgumentNullException>("list", () => new ReadOnlyCollection<int>(null));
         }
 
         [Fact]
@@ -55,9 +55,9 @@ namespace System.Collections.ObjectModel.Tests
         public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             var collection = new Collection<int>(s_intArray);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
         }
 
         [Fact]

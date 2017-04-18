@@ -12,7 +12,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("callback", () =>
+        AssertExtensions.Throws<ArgumentNullException>("callback", () =>
         {
             new PreAllocatedOverlapped(null, new object(), new byte[256]);
         });

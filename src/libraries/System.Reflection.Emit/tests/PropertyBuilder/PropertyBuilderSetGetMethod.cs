@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
-            Assert.Throws<ArgumentNullException>("mdBuilder", () => property.SetGetMethod(null));
+            AssertExtensions.Throws<ArgumentNullException>("mdBuilder", () => property.SetGetMethod(null));
         }
 
         [Fact]

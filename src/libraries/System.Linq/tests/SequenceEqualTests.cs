@@ -204,7 +204,7 @@ namespace System.Linq.Tests
             int[] first = null;
             int[] second = { };
             
-            Assert.Throws<ArgumentNullException>("first", () => first.SequenceEqual(second));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.SequenceEqual(second));
         }
 
         [Fact]
@@ -213,7 +213,7 @@ namespace System.Linq.Tests
             int[] first = { };
             int[] second = null;
             
-            Assert.Throws<ArgumentNullException>("second", () => first.SequenceEqual(second));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.SequenceEqual(second));
         }
     }
 }

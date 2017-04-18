@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,19 +12,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NullTypeList()
         {
-            Assert.Throws<ArgumentNullException>("typeArgs", () => Expression.GetDelegateType(default(Type[])));
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs", () => Expression.GetDelegateType(default(Type[])));
         }
 
         [Fact]
         public void NullInTypeList()
         {
-            Assert.Throws<ArgumentNullException>("typeArgs[1]", () => Expression.GetDelegateType(typeof(int), null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs[1]", () => Expression.GetDelegateType(typeof(int), null));
         }
 
         [Fact]
         public void EmptyArgs()
         {
-            Assert.Throws<ArgumentException>("typeArgs", () => Expression.GetDelegateType());
+            AssertExtensions.Throws<ArgumentException>("typeArgs", () => Expression.GetDelegateType());
         }
 
         [Theory, MemberData(nameof(ValidTypeArgs), true)]

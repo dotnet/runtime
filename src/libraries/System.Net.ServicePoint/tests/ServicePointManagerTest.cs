@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -162,24 +163,24 @@ namespace System.Net.Tests
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
 #pragma warning restore
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = ssl2);
-            Assert.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePoints = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.DefaultConnectionLimit = 0);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePointIdleTime = -2);
-            Assert.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => ServicePointManager.SetTcpKeepAlive(true, -1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => ServicePointManager.SetTcpKeepAlive(true, 1, -1));
-            Assert.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint(null));
-            Assert.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
-            Assert.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint((Uri)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePoints = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.DefaultConnectionLimit = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePointIdleTime = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => ServicePointManager.SetTcpKeepAlive(true, -1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => ServicePointManager.SetTcpKeepAlive(true, 1, -1));
+            AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint(null));
+            AssertExtensions.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint((Uri)null, null));
             Assert.Throws<NotSupportedException>(() => ServicePointManager.FindServicePoint("http://anything", new FixedWebProxy("https://anything")));
 
             ServicePoint sp = ServicePointManager.FindServicePoint("http://" + Guid.NewGuid().ToString("N"), null);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLeaseTimeout = -2);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLimit = 0);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => sp.MaxIdleTime = -2);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => sp.ReceiveBufferSize = -2);
-            Assert.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => sp.SetTcpKeepAlive(true, -1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => sp.SetTcpKeepAlive(true, 1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLeaseTimeout = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLimit = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.MaxIdleTime = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ReceiveBufferSize = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => sp.SetTcpKeepAlive(true, -1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => sp.SetTcpKeepAlive(true, 1, -1));
         }
 
         [Fact]
