@@ -163,7 +163,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
-    <Compile Include="System\Net\IPAddressPal.Unix.cs" />
+    <Compile Include="System\Net\IPAddressPal.Managed.cs" />
     <Compile Include="System\Net\IPv4AddressHelper.cs" />
     <Compile Include="System\Net\IPv6AddressHelper.cs" />
     <Compile Include="System\Net\SocketException.Unix.cs" />
