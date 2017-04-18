@@ -12,12 +12,12 @@ namespace System.Net
     {
         public const uint SuccessErrorCode = 0;
 
-        public static uint Ipv4AddressToString(byte[] address, StringBuilder buffer)
+        public static uint Ipv4AddressToString(ushort[] address, StringBuilder buffer)
         {
             return 0;
         }
 
-        public static uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
+        public static uint Ipv6AddressToString(ushort[] address, uint scopeId, StringBuilder buffer)
         {
             return 0;
         }

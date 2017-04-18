@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
@@ -25,12 +27,12 @@ namespace System.Net
 
             uint error = 0;
 
-            // IPv6 Changes: Detect probable IPv6 addresses and use separate parse method.
+            // Detect probable IPv6 addresses and use separate parse method.
             if (ipString.IndexOf(':') != -1)
             {
                 // If the address string contains the colon character
                 // then it can only be an IPv6 address. Use a separate
-                // parse method to unpick it all. Note: we don't support
+                // parse method to unpack it all. Note: we don't support
                 // port specification at the end of address and so can
                 // make this decision.
                 uint scope;
@@ -41,7 +43,7 @@ namespace System.Net
                 {
                     // AppCompat: .Net 4.5 ignores a correct port if the address was specified in brackets.
                     // Will still throw for an incorrect port.
-                    return new IPAddress(bytes, IPAddressParserStatics.IPv6AddressBytes, (long)scope);
+                    return new IPAddress(bytes, IPAddressParserStatics.IPv6AddressBytes, scope);
                 }
             }
             else
@@ -66,8 +68,8 @@ namespace System.Net
                 return null;
             }
 
-            Exception e = new SocketException(IPAddressPal.GetSocketErrorForErrorCode(error), error);
-            throw new FormatException(SR.dns_bad_ip_address, e);
+            throw new FormatException(SR.dns_bad_ip_address,
+                new SocketException(IPAddressPal.GetSocketErrorForErrorCode(error), error));
         }
 
         internal static unsafe string IPv4AddressToString(uint address)
@@ -89,15 +91,16 @@ namespace System.Net
 
         internal static string IPv6AddressToString(ushort[] numbers, uint scopeId)
         {
-            StringBuilder sb = new StringBuilder(INET6_ADDRSTRLEN);
+            StringBuilder sb = StringBuilderCache.Acquire(INET6_ADDRSTRLEN);
             uint errorCode = IPAddressPal.Ipv6AddressToString(numbers, scopeId, sb);
 
             if (errorCode == IPAddressPal.SuccessErrorCode)
             {
-                return sb.ToString();
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
             else
             {
+                StringBuilderCache.Release(sb);
                 throw new SocketException(IPAddressPal.GetSocketErrorForErrorCode(errorCode), errorCode);
             }
         }

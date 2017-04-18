@@ -151,8 +151,9 @@ namespace System
                                 {
                                     goto case '/';
                                 }
-                                else if (needsClosingBracket && (name[i] < '0' || name[i] > '9'))
+                                else if (name[i] < '0' || name[i] > '9')
                                 {
+                                    // scope ID must only contain digits
                                     return false;
                                 }
                             }
@@ -163,10 +164,15 @@ namespace System
                                 return false;
                             }
                             needsClosingBracket = false;
+
+                            // If there's more after the closing bracket, it must be a port.
+                            // We don't use the port, but we still validate it.
                             if (i + 1 < end && name[i + 1] != ':')
                             {
                                 return false;
                             }
+
+                            // If there is a port, it must either be a hexadecimal or decimal number.
                             if (i + 3 < end && name[i + 2] == '0' && name[i + 3] == 'x')
                             {
                                 i += 4;

@@ -20,6 +20,8 @@ namespace System.Net
 
             if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
             {
+                // We need to treat the last 2 ushorts as a 4-byte IPv4 address,
+                // so output the first 6 ushorts normally, followed by the IPv4 address.
                 AppendSections(address, 0, 6, buffer);
                 if (buffer[buffer.Length - 1] != ':')
                 {
@@ -29,9 +31,12 @@ namespace System.Net
             }
             else
             {
+                // No IPv4 address.  Output all 8 sections as part of the IPv6 address
+                // with normal formatting rules.
                 AppendSections(address, 0, 8, buffer);
             }
 
+            // If there's a scope ID, append it.
             if (scopeId != 0)
             {
                 buffer.Append('%').Append(scopeId);
