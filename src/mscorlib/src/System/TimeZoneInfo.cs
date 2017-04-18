@@ -1067,7 +1067,10 @@ namespace System
 
         private AdjustmentRule GetAdjustmentRuleForTime(DateTime dateTime, out int? ruleIndex)
         {
-            return GetAdjustmentRuleForTime(dateTime, dateTimeisUtc: false, ruleIndex: out ruleIndex);
+            AdjustmentRule result = GetAdjustmentRuleForTime(dateTime, dateTimeisUtc: false, ruleIndex: out ruleIndex);
+            Debug.Assert(result == null || ruleIndex.HasValue, "If an AdjustmentRule was found, ruleIndex should also be set.");
+
+            return result;
         }
         
         private AdjustmentRule GetAdjustmentRuleForTime(DateTime dateTime, bool dateTimeisUtc, out int? ruleIndex)
@@ -1744,6 +1747,8 @@ namespace System
             else
             {
                 rule = zone.GetAdjustmentRuleForTime(time, dateTimeisUtc: true, ruleIndex: out ruleIndex);
+                Debug.Assert(rule == null || ruleIndex.HasValue, 
+                    "If GetAdjustmentRuleForTime returned an AdjustmentRule, ruleIndex should also be set.");
 
                 // As we get the associated rule using the adjusted targetTime, we should use the adjusted year (targetTime.Year) too as after adding the baseOffset,
                 // sometimes the year value can change if the input datetime was very close to the beginning or the end of the year. Examples of such cases:
