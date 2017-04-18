@@ -54,6 +54,7 @@
     <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\ECKeyXmlFormat.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
