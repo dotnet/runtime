@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if FEATURE_REGISTRY
 using Microsoft.Win32;
+#endif
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -94,6 +95,7 @@ namespace System.Diagnostics
 
         private Dictionary<int, string> GetStringTable(bool isHelp)
         {
+#if FEATURE_REGISTRY
             Dictionary<int, string> stringTable;
             RegistryKey libraryKey;
 
@@ -187,11 +189,16 @@ namespace System.Diagnostics
             }
 
             return stringTable;
+#else
+            return new Dictionary<int, string>();
+#endif
         }
 
         internal class PerformanceMonitor
         {
+#if FEATURE_REGISTRY
             private RegistryKey _perfDataKey = null;
+#endif
             private string _machineName;
 
             internal PerformanceMonitor(string machineName)
@@ -202,7 +209,9 @@ namespace System.Diagnostics
 
             private void Init()
             {
+#if FEATURE_REGISTRY
                 _perfDataKey = Registry.PerformanceData;
+#endif
             }
 
             // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some 
@@ -216,6 +225,7 @@ namespace System.Diagnostics
             // in this case with InvalidOperationException after the wait time expires.
             internal byte[] GetData(string item)
             {
+#if FEATURE_REGISTRY
                 int waitRetries = 17;   //2^16*10ms == approximately 10mins
                 int waitSleep = 0;
                 byte[] data = null;
@@ -266,6 +276,9 @@ namespace System.Diagnostics
                 }
 
                 throw new Win32Exception(error);
+#else
+                return Array.Empty<byte>();
+#endif
             }
         }
     }
