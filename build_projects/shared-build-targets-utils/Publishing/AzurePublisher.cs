@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.Cli.Build
             TimeSpan? maxWaitDefault=null, 
             TimeSpan? delayDefault=null)
         {
-            TimeSpan maxWait = maxWaitDefault ?? TimeSpan.FromSeconds(120);
+            TimeSpan maxWait = maxWaitDefault ?? TimeSpan.FromSeconds(1800);
             TimeSpan delay = delayDefault ?? TimeSpan.FromMilliseconds(500);
 
             Stopwatch stopWatch = new Stopwatch();
