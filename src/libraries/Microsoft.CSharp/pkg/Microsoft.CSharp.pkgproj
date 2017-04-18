@@ -6,6 +6,9 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.CSharp.csproj" />
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.0" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
     <InboxOnTargetFramework Include="MonoAndroid10">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
@@ -33,9 +36,6 @@
     <InboxOnTargetFramework Include="xamarinwatchos10">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
-    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
-    <HarvestIncludePaths Include="ref/netstandard1.0" />
-    <HarvestIncludePaths Include="lib/netstandard1.3" />
     <ValidatePackageSuppression Include="PermitMissingImplementation">
       <!-- Supported inbox by all ns1.0-1.2 frameworks -->
       <Value>.NETStandard,Version=v1.0;.NETStandard,Version=v1.1;.NETStandard,Version=v1.2</Value>
