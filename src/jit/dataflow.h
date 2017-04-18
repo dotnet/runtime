@@ -70,11 +70,9 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
 
         if (callback.EndMerge(block))
         {
-            AllSuccessorIter succsBegin = block->GetAllSuccs(m_pCompiler).begin();
-            AllSuccessorIter succsEnd   = block->GetAllSuccs(m_pCompiler).end();
-            for (AllSuccessorIter succ = succsBegin; succ != succsEnd; ++succ)
+            for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
             {
-                worklist.insert(worklist.end(), *succ);
+                worklist.insert(worklist.end(), succ);
             }
         }
     }
