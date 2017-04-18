@@ -15,7 +15,6 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly object _namespaceTableAndListLock = new object();
         private Dictionary<NamespaceDefinitionHandle, NamespaceData> _namespaceTable;
         private NamespaceData _rootNamespace;
-        private ImmutableArray<NamespaceDefinitionHandle> _namespaceList;
         private uint _virtualNamespaceCounter;
 
         internal NamespaceCache(MetadataReader reader)
@@ -385,36 +384,6 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Populates namespaceList with distinct namespaces. No ordering is guaranteed.
-        /// </summary>
-        private void PopulateNamespaceList()
-        {
-            lock (_namespaceTableAndListLock)
-            {
-                if (_namespaceList != null)
-                {
-                    return;
-                }
-
-                Debug.Assert(_namespaceTable != null);
-                var namespaceNameSet = new Dictionary<string, string>();
-                var namespaceListBuilder = ImmutableArray.CreateBuilder<NamespaceDefinitionHandle>();
-
-                foreach (var group in _namespaceTable)
-                {
-                    var data = group.Value;
-                    if (!namespaceNameSet.ContainsKey(data.FullName))
-                    {
-                        namespaceNameSet.Add(data.FullName, null);
-                        namespaceListBuilder.Add(group.Key);
-                    }
-                }
-
-                _namespaceList = namespaceListBuilder.ToImmutable();
-            }
-        }
-
-        /// <summary>
         /// If the namespace table doesn't exist, populates it!
         /// </summary>
         private void EnsureNamespaceTableIsPopulated()
@@ -425,18 +394,6 @@ namespace System.Reflection.Metadata.Ecma335
                 PopulateNamespaceTable();
             }
             Debug.Assert(_namespaceTable != null);
-        }
-
-        /// <summary>
-        /// If the namespace list doesn't exist, populates it!
-        /// </summary>
-        private void EnsureNamespaceListIsPopulated()
-        {
-            if (_namespaceList == null)
-            {
-                PopulateNamespaceList();
-            }
-            Debug.Assert(_namespaceList != null);
         }
 
         /// <summary>

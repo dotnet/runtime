@@ -23,11 +23,6 @@ namespace System.Reflection.Metadata
             _rowId = rowId;
         }
 
-        private DeclarativeSecurityAttributeHandle Handle
-        {
-            get { return DeclarativeSecurityAttributeHandle.FromRowId(_rowId); }
-        }
-
         public DeclarativeSecurityAction Action
         {
             get
