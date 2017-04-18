@@ -752,8 +752,10 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
 
     mov         esi, esp
 
-    push        0
-    push        0
+.att_syntax
+    pushl       $0
+    pushl       $0
+.intel_syntax noprefix
 
     push        eax             // siteAddrForRegisterIndirect (for tailcalls)
     push        esi             // pTransitionBlock
@@ -784,8 +786,10 @@ NESTED_ENTRY ExternalMethodFixupStub, _TEXT_ NoHandler
     // EAX is return address into CORCOMPILE_EXTERNAL_METHOD_THUNK. Subtract 5 to get start address.
     sub         eax, 5
 
-    push        0
-    push        0
+.att_syntax
+    pushl       $0
+    pushl       $0
+.intel_syntax noprefix
 
     push        eax
 
