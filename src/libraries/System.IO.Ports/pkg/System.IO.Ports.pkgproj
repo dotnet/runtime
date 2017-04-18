@@ -3,12 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.Ports.csproj">
-      <SupportedFramework>net461;netcoreapp2.0</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Ports.csproj" />
-    <NotSupportedOnTargetFramework Include="netcore50">
-      <PackageTargetRuntime>win</PackageTargetRuntime>
-    </NotSupportedOnTargetFramework>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

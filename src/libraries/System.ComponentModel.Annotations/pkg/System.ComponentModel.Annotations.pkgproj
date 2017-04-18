@@ -6,17 +6,27 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ComponentModel.Annotations.csproj" />
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50" />
+    <HarvestIncludePaths Include="ref/netstandard1.1" />
+    <HarvestIncludePaths Include="ref/netstandard1.3" />
+    <HarvestIncludePaths Include="ref/netstandard1.4;lib/netstandard1.4" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45">
       <FrameworkReference>System.ComponentModel.DataAnnotations</FrameworkReference>
     </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.1" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="portable-net45+win8" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <ValidatePackageSuppression Include="PermitMissingImplementation">
+      <!-- Supported inbox by all ns1.1-1.3 frameworks -->
+      <Value>.NETStandard,Version=v1.1;.NETStandard,Version=v1.2;.NETStandard,Version=v1.3</Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard-Windows_NT;
-      netstandard-Unix;
+      netstandard;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

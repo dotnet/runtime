@@ -5,6 +5,7 @@
       uap-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
+      netstandard;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

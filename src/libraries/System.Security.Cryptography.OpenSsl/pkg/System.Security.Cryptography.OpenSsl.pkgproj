@@ -6,7 +6,7 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj" />
-
+    <HarvestIncludePaths Include="ref/netstandard1.6;lib/netstandard1.6;runtimes/unix/lib/netstandard1.6" />
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
