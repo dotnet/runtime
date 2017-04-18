@@ -1167,12 +1167,10 @@ class LiveVarAnalysis
         }
 
         // Additionally, union in all the live-in tracked vars of successors.
-        AllSuccessorIter succsEnd = block->GetAllSuccs(m_compiler).end();
-        for (AllSuccessorIter succs = block->GetAllSuccs(m_compiler).begin(); succs != succsEnd; ++succs)
+        for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
         {
-            BasicBlock* succ = (*succs);
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
-            m_memoryLiveOut |= (*succs)->bbMemoryLiveIn;
+            m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
             {
                 m_hasPossibleBackEdge = true;
