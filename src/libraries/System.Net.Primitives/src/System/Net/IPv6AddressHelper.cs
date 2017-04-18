@@ -110,6 +110,13 @@ namespace System
             bool expectingNumber = true;
             int lastSequence = 1;
 
+            bool needsClosingBracket = false;
+            if (start < end && name[start] == '[')
+            {
+                start++;
+                needsClosingBracket = true;
+            }
+
             int i;
             for (i = start; i < end; ++i)
             {
@@ -128,18 +135,14 @@ namespace System
                     {
                         ++sequenceCount;
                         lastSequence = i - sequenceLength;
+                        sequenceLength = 0;
                     }
                     switch (name[i])
                     {
                         case '%':
-                            while (true)
+                            while (i+1 < end)
                             {
-                                //accept anything in scopeID
-                                if (++i == end)
-                                {
-                                    // no closing ']', fail
-                                    return false;
-                                }
+                                i++;
                                 if (name[i] == ']')
                                 {
                                     goto case ']';
@@ -148,11 +151,44 @@ namespace System
                                 {
                                     goto case '/';
                                 }
+                                else if (needsClosingBracket && (name[i] < '0' || name[i] > '9'))
+                                {
+                                    return false;
+                                }
                             }
+                            break;
                         case ']':
-                            start = i;
-                            i = end;
-                            //this will make i = end+1
+                            if (!needsClosingBracket)
+                            {
+                                return false;
+                            }
+                            needsClosingBracket = false;
+                            if (i + 1 < end && name[i + 1] != ':')
+                            {
+                                return false;
+                            }
+                            if (i + 3 < end && name[i + 2] == '0' && name[i + 3] == 'x')
+                            {
+                                i += 4;
+                                for (; i < end; i++)
+                                {
+                                    if (!Uri.IsHexDigit(name[i]))
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                i += 2;
+                                for (; i < end; i++)
+                                {
+                                    if (name[i] < '0' || name[i] > '9')
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
                             continue;
                         case ':':
                             if ((i > 0) && (name[i - 1] == ':'))
@@ -201,6 +237,8 @@ namespace System
                             }
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
+                            lastSequence = i - sequenceLength;
+                            sequenceLength = 0;
                             haveIPv4Address = true;
                             --i;            // it will be incremented back on the next loop
                             break;
@@ -210,6 +248,13 @@ namespace System
                     }
                     sequenceLength = 0;
                 }
+            }
+
+            if (sequenceLength != 0)
+            {
+                ++sequenceCount;
+                lastSequence = i - sequenceLength;
+                sequenceLength = 0;
             }
 
             //
@@ -229,13 +274,7 @@ namespace System
 
             if (!expectingNumber && (sequenceLength <= 4) && (haveCompressor ? (sequenceCount < expectedSequenceCount) : (sequenceCount == expectedSequenceCount)))
             {
-                if (i == end + 1)
-                {
-                    // ']' was found
-                    end = start + 1;
-                    return true;
-                }
-                return false;
+                return !needsClosingBracket;
             }
             return false;
         }
@@ -274,7 +313,7 @@ namespace System
         //           start must be next to '[' position, or error is reported
         internal unsafe static bool IsValidStrict(char* name, int start, ref int end)
         {
-            return InternalIsValid(name, start, ref end, true);
+            return InternalIsValid(name, start, ref end, validateStrictAddress:true);
         }
 
         //
@@ -307,7 +346,6 @@ namespace System
 
         internal static unsafe bool Parse(string address, ushort* numbers, int start, ref string scopeId)
         {
-
             int number = 0;
             int index = 0;
             int compressorIndex = -1;
@@ -332,15 +370,13 @@ namespace System
                         }
 
                         start = i;
-                        for (++i; address[i] != ']' && address[i] != '/'; ++i)
+                        for (++i; i < address.Length && address[i] != ']' && address[i] != '/'; ++i)
                         {
-                            ;
                         }
                         scopeId = address.Substring(start, i - start);
                         // ignore prefix if any
-                        for (; address[i] != ']'; ++i)
+                        for (; i < address.Length && address[i] != ']'; ++i)
                         {
-                            ;
                         }
                         break;
 
@@ -370,7 +406,8 @@ namespace System
                         // address. If it is, convert it to 2 ushort numbers
                         //
 
-                        for (int j = i; (address[j] != ']') &&
+                        for (int j = i; j < address.Length &&
+                                        (address[j] != ']') &&
                                         (address[j] != ':') &&
                                         (address[j] != '%') &&
                                         (address[j] != '/') &&
@@ -389,7 +426,7 @@ namespace System
                                 // delimited with ']')
                                 //
 
-                                while ((address[j] != ']') && (address[j] != '/') && (address[j] != '%'))
+                                while (j < address.Length && (address[j] != ']') && (address[j] != '/') && (address[j] != '%'))
                                 {
                                     ++j;
                                 }
