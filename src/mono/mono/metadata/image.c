@@ -1123,6 +1123,7 @@ typedef enum {
 	SYS_TEXT_ENC_CODEPAGES = 4, //System.Text.Encoding.CodePages
 	SYS_REF_DISP_PROXY = 5, //System.Reflection.DispatchProxy
 	SYS_VALUE_TUPLE = 6, //System.ValueTuple
+	SYS_THREADING_OVERLAPPED = 7, //System.Threading.Overlapped
 } IgnoredAssemblyNames;
 
 typedef struct {
@@ -1143,6 +1144,7 @@ const char *ignored_assemblies_file_names[] = {
 	"System.Net.Http.dll",
 	"System.Text.Encoding.CodePages.dll",
 	"System.Reflection.DispatchProxy.dll",
+	"System.Threading.Overlapped.dll",
 	"System.ValueTuple.dll"
 };
 
@@ -1165,6 +1167,9 @@ static const IgnoredAssembly ignored_assemblies [] = {
 	IGNORED_ASSEMBLY (0xD07383BB, SYS_RT_INTEROP_RUNTIME_INFO, "DD91439F-3167-478E-BD2C-BF9C036A1395", "4.3.0 net45"),
 	IGNORED_ASSEMBLY (0x911D9EC3, SYS_TEXT_ENC_CODEPAGES, "C142254F-DEB5-46A7-AE43-6F10320D1D1F", "4.0.1 net46"),
 	IGNORED_ASSEMBLY (0xFA686A38, SYS_TEXT_ENC_CODEPAGES, "FD178CD4-EF4F-44D5-9C3F-812B1E25126B", "4.3.0 net46"),
+	IGNORED_ASSEMBLY (0xAA21986B, SYS_THREADING_OVERLAPPED, "9F5D4F09-787A-458A-BA08-553AA71470F1", "4.0.0 net46"),
+	IGNORED_ASSEMBLY (0x7D927C2A, SYS_THREADING_OVERLAPPED, "FCBD003B-2BB4-4940-BAEF-63AF520C2336", "4.0.1 net46"),
+	IGNORED_ASSEMBLY (0x6FE03EE2, SYS_THREADING_OVERLAPPED, "87697E71-D192-4F0B-BAD4-02BBC7793005", "4.3.0 net46"),
 	IGNORED_ASSEMBLY (0x75B4B041, SYS_VALUE_TUPLE, "F81A4140-A898-4E2B-B6E9-55CE78C273EC", "4.3.0 netstandard1.0"),
 };
 
@@ -1176,6 +1181,7 @@ const char *ignored_assemblies_names[] = {
 	"System.Net.Http",
 	"System.Text.Encoding.CodePages",
 	"System.Reflection.DispatchProxy",
+	"System.Threading.Overlapped",
 	"System.ValueTuple"
 };
 
@@ -1197,6 +1203,9 @@ static const IgnoredAssemblyVersion ignored_assembly_versions [] = {
 	IGNORED_ASM_VER (SYS_RT_INTEROP_RUNTIME_INFO, 4, 0, 1, 0),
 	IGNORED_ASM_VER (SYS_TEXT_ENC_CODEPAGES, 4, 0, 1, 0),
 	IGNORED_ASM_VER (SYS_TEXT_ENC_CODEPAGES, 4, 0, 2, 0),
+	IGNORED_ASM_VER (SYS_THREADING_OVERLAPPED, 4, 0, 0, 0),
+	IGNORED_ASM_VER (SYS_THREADING_OVERLAPPED, 4, 0, 1, 0),
+	IGNORED_ASM_VER (SYS_THREADING_OVERLAPPED, 4, 0, 2, 0),
 	IGNORED_ASM_VER (SYS_VALUE_TUPLE, 4, 0, 1, 0),
 };
 
