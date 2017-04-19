@@ -1724,36 +1724,36 @@ namespace SerializationTypes
             public static bool WriteXmlInvoked = false;
             public static bool ReadXmlInvoked = false;
 
-        public string StringValue { get; set; }
-        private T GenericValue { get; set; }
+            public string StringValue { get; set; }
+            private T GenericValue { get; set; }
 
-        public NestedGenericClassImplementingIXmlSerialiable()
-        {
-            GenericValue = default(T);
-        }
+            public NestedGenericClassImplementingIXmlSerialiable()
+            {
+                GenericValue = default(T);
+            }
 
-        public T GetPrivateMember()
-        {
-            return GenericValue;
-        }
+            public T GetPrivateMember()
+            {
+                return GenericValue;
+            }
 
-        public System.Xml.Schema.XmlSchema GetSchema()
-        {
-            return null;
-        }
+            public System.Xml.Schema.XmlSchema GetSchema()
+            {
+                return null;
+            }
 
-        public void ReadXml(System.Xml.XmlReader reader)
-        {
-            ReadXmlInvoked = true;
-            reader.MoveToContent();
-            StringValue = reader.GetAttribute("StringValue");
-        }
+            public void ReadXml(System.Xml.XmlReader reader)
+            {
+                ReadXmlInvoked = true;
+                reader.MoveToContent();
+                StringValue = reader.GetAttribute("StringValue");
+            }
 
-        public void WriteXml(System.Xml.XmlWriter writer)
-        {
-            WriteXmlInvoked = true;
-            writer.WriteAttributeString("StringValue", StringValue);
-        }
+            public void WriteXml(System.Xml.XmlWriter writer)
+            {
+                WriteXmlInvoked = true;
+                writer.WriteAttributeString("StringValue", StringValue);
+            }
         }
     }
 
@@ -4406,4 +4406,446 @@ public class Pet
     [XmlIgnoreAttribute]
     public string Comment;
     public string Comment2;
+}
+
+public class JsonTypes
+{
+    public Dictionary<string, string> StringKeyValue
+    {
+        get
+        {
+            return new Dictionary<string, string>()
+            {
+                {
+                   "Hi", "There"
+                }
+            };
+        }
+    }
+
+    public Dictionary<TestEnumValues, TestEnumValues> EnumKeyValue
+    {
+        get
+        {
+            return new Dictionary<TestEnumValues, TestEnumValues>()
+            {
+                {
+                    TestEnumValues.Value1, TestEnumValues.Value2
+                }
+            };
+        }
+    }
+
+    public Dictionary<TestStruct, TestStruct> StructKeyValue
+    {
+        get
+        {
+            return new Dictionary<TestStruct, TestStruct>()
+            {
+                {
+                    new TestStruct(){value1 = 12}, new TestStruct(){value1 = 15}
+                }
+            };
+        }
+    }
+
+    public Dictionary<TestClass, object> ObjectKeyValue
+    {
+        get
+        {
+            return new Dictionary<TestClass, object>()
+            {
+                {
+                    new TestClass(){intList = new List<int>(){1,2}, floatNum = 45f},
+                    new TestClass(){intList = new List<int>(){4,5}, floatNum = 90f}
+                },
+                {
+                    new TestClass(){intList = new List<int>(){6,7}, floatNum = 10f},
+                    new TestStruct(){value1 = 25}
+                },
+            };
+        }
+    }
+
+    [DataContract]
+    public class DictionaryClass
+    {
+        [DataMember]
+        private Dictionary<string, string> _dict = new Dictionary<string, string>()
+        {
+            {
+              "Title", "Sherlocl Kholmes"
+            },
+            {
+              "Name", "study scarlet"
+            }
+        };
+    }
+
+    public DateTimeFormat DTF_DMMMM
+    {
+        get
+        {
+            return new DateTimeFormat("d, MMMM", CultureInfo.CreateSpecificCulture("es-AR"));
+        }
+    }
+
+    public DateTimeFormat DTF_hmsFt
+    {
+        get
+        {
+            return new DateTimeFormat("hh:mm:ss.ff tt", CultureInfo.CreateSpecificCulture("es-AR"));
+        }
+    }
+
+    public DateTimeFormat DTF_MMMM
+    {
+        get
+        {
+            return new DateTimeFormat("MMMM", CultureInfo.CurrentCulture);
+        }
+    }
+
+    public DateTimeFormat DTF_s
+    {
+        get
+        {
+            return new DateTimeFormat("ss", CultureInfo.CreateSpecificCulture("de-DE"));
+        }
+    }
+
+    public DateTimeFormat DTF_yyyygg
+    {
+        get
+        {
+            return new DateTimeFormat("yyyy gg", CultureInfo.InvariantCulture);
+        }
+    }
+
+    public DateTimeFormat DTF_UTC
+    {
+        get
+        {
+            return new DateTimeFormat("yyyy-MM-ddTHH:mm:ss.fffK", CultureInfo.InvariantCulture);
+        }
+    }
+
+    public DateTimeFormat DTF_DefaultFormatProviderIsDateTimeFormatInfoDotCurrentInfo
+    {
+        get
+        {
+            return new DateTimeFormat("yyyy-MM-ddTHH:mm:ss.fffK");
+        }
+    }
+
+    [DataContract]
+    public class DTF_class
+    {
+        [DataMember]
+        public DateTime dt1 { get; set; }
+        [DataMember]
+        public DateTime dt2 { get; set; }
+        [DataMember]
+        public DateTime dt3 { get; set; }
+        [DataMember]
+        public DateTime dt4 { get; set; }
+    }
+
+    public List<DateTime> DT_List
+    {
+        get
+        {
+            return new List<DateTime>()
+            {
+                new DateTime(1, 1, 1, 3, 58, 32),
+                new DateTime(DateTime.Now.Year, 12, 20),
+                new DateTime(1998, 1, 1),
+                new DateTime(1, 1, 1, 3, 58, 32,DateTimeKind.Utc)
+            };
+        }
+    }
+
+    public Dictionary<DateTime, DateTime> DT_Dictionary
+    {
+        get
+        {
+            return new Dictionary<DateTime, DateTime>
+            {
+                { new DateTime(1, 1, 1, 3, 58, 32), new DateTime(1, 1, 1, 3, 58, 32,DateTimeKind.Utc) },
+                { new DateTime(1998, 1, 1), new DateTime(DateTime.Now.Year, 12, 20) }
+            };
+        }
+    }
+
+    public List<object> ObjectList
+    {
+        get
+        {
+            return new List<object>()
+            {
+                new Dictionary<string,string>()
+                {
+                    {
+                      "Title", "Sherlocl Kholmes"
+                    }
+                },
+                new int[]{1,2,3},
+                new object[]{"hi", 1, "there"}
+            };
+        }
+    }
+
+    public List<object> ObjectListDeserialized
+    {
+        get
+        {
+            return new List<object>()
+            {
+                new object[]{new KeyValuePair<string,string>("Title", "Sherlocl Kholmes")},
+                new object[]{1,2,3},
+                new object[]{"hi", 1, "there"}
+            };
+        }
+    }
+}
+
+public enum TestEnumValues
+{
+    Value1 = 3,
+    Value2 = 4
+}
+
+public struct TestStruct
+{
+    public int value1;
+
+    public override string ToString()
+    {
+        return this.value1.ToString();
+    }
+
+    public static TestStruct Parse(string value)
+    {
+        TestStruct result = new TestStruct();
+        result.value1 = Int32.Parse(value);
+        return result;
+    }
+}
+
+public class TestClass
+{
+    public List<int> intList { get; set; }
+    public float floatNum { get; set; }
+    private static char s_listSeparator = ',';
+    private static char s_memberSeparator = '#';
+
+    public override string ToString()
+    {
+        string ints = String.Join(",", intList);
+        return String.Format("{0}{1}{2}", ints, s_memberSeparator, floatNum);
+    }
+
+    public static TestClass Parse(string value)
+    {
+        string[] members = value.Split(s_memberSeparator);
+        string[] numbers = members[0].Split(s_listSeparator);
+
+        List<int> ints = new List<int>();
+        foreach (string number in numbers)
+        {
+            ints.Add(Int32.Parse(number));
+        }
+        TestClass o = new TestClass();
+        o.intList = ints;
+        o.floatNum = Single.Parse(members[1]);
+        return o;
+    }
+
+    public override int GetHashCode()
+    {
+        return (int)this.floatNum;
+    }
+}
+
+public class TestClassWithoutKT
+{
+    public object testClass;
+}
+
+[KnownType(typeof(TestClass))]
+public class TestClassWithKT
+{
+    public object testClass;
+}
+
+public class ImplementDictionary : IDictionary
+{
+    private DictionaryEntry[] _items;
+    private Int32 _itemsInUse = 0;
+
+    public ImplementDictionary()
+    {
+        _items = new DictionaryEntry[10];
+    }
+
+    public ImplementDictionary(Int32 numItems)
+    {
+        _items = new DictionaryEntry[numItems];
+    }
+
+    #region IDictionary Members
+    public bool IsReadOnly { get { return false; } }
+    public bool Contains(object key)
+    {
+        Int32 index;
+        return TryGetIndexOfKey(key, out index);
+    }
+    public bool IsFixedSize { get { return false; } }
+    public void Remove(object key)
+    {
+        if (key == null) throw new ArgumentNullException("key");
+        Int32 index;
+        if (TryGetIndexOfKey(key, out index))
+        {
+            Array.Copy(_items, index + 1, _items, index, _itemsInUse - index - 1);
+            _itemsInUse--;
+        }
+        else
+        {
+        }
+    }
+    public void Clear() { _itemsInUse = 0; }
+    public void Add(object key, object value)
+    {
+        if (_itemsInUse == _items.Length)
+            throw new InvalidOperationException("The dictionary cannot hold any more items.");
+        _items[_itemsInUse++] = new DictionaryEntry(key, value);
+    }
+    public ICollection Keys
+    {
+        get
+        {
+            Object[] keys = new Object[_itemsInUse];
+            for (Int32 n = 0; n < _itemsInUse; n++)
+                keys[n] = _items[n].Key;
+            return keys;
+        }
+    }
+    public ICollection Values
+    {
+        get
+        {
+            Object[] values = new Object[_itemsInUse];
+            for (Int32 n = 0; n < _itemsInUse; n++)
+                values[n] = _items[n].Value;
+            return values;
+        }
+    }
+    public object this[object key]
+    {
+        get
+        {
+            Int32 index;
+            if (TryGetIndexOfKey(key, out index))
+            {
+                return _items[index].Value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        set
+        {
+            Int32 index;
+            if (TryGetIndexOfKey(key, out index))
+            {
+                _items[index].Value = value;
+            }
+            else
+            {
+                Add(key, value);
+            }
+        }
+    }
+    private Boolean TryGetIndexOfKey(Object key, out Int32 index)
+    {
+        for (index = 0; index < _itemsInUse; index++)
+        {
+            if (_items[index].Key.Equals(key)) return true;
+        }
+        return false;
+    }
+    private class ImplementDictionaryEnumerator : IDictionaryEnumerator
+    {
+        private DictionaryEntry[] _items;
+        private Int32 _index = -1;
+
+        public ImplementDictionaryEnumerator(ImplementDictionary sd)
+        {
+            _items = new DictionaryEntry[sd.Count];
+            Array.Copy(sd._items, 0, _items, 0, sd.Count);
+        }
+
+        public Object Current { get { ValidateIndex(); return _items[_index]; } }
+
+        public DictionaryEntry Entry
+        {
+            get { return (DictionaryEntry)Current; }
+        }
+
+        public Object Key { get { ValidateIndex(); return _items[_index].Key; } }
+
+        public Object Value { get { ValidateIndex(); return _items[_index].Value; } }
+
+        public Boolean MoveNext()
+        {
+            if (_index < _items.Length - 1) { _index++; return true; }
+            return false;
+        }
+
+        private void ValidateIndex()
+        {
+            if (_index < 0 || _index >= _items.Length)
+                throw new InvalidOperationException("Enumerator is before or after the collection.");
+        }
+
+        public void Reset()
+        {
+            _index = -1;
+        }
+    }
+    public IDictionaryEnumerator GetEnumerator()
+    {
+        return new ImplementDictionaryEnumerator(this);
+    }
+    #endregion
+
+    #region ICollection Members
+    public bool IsSynchronized { get { return false; } }
+    public object SyncRoot { get { throw new NotImplementedException(); } }
+    public int Count { get { return _itemsInUse; } }
+    public void CopyTo(Array array, int index) { throw new NotImplementedException(); }
+    #endregion
+
+    #region IEnumerable Members
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IDictionary)this).GetEnumerator();
+    }
+    #endregion
+}
+
+[DataContract]
+[KnownType(typeof(DerivedType))]
+public class BaseType
+{
+    [DataMember]
+    public string StrBase = "base";
+}
+[DataContract]
+public class DerivedType : BaseType
+{
+    [DataMember]
+    public string StrDerived = "derived";
 }
