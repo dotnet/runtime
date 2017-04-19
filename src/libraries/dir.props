@@ -150,11 +150,6 @@
 
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
 
-  <PropertyGroup>
-    <!-- illink fails to run on Alpine CLI : https://github.com/dotnet/corefx/issues/18029 -->
-    <ILLinkTrimAssembly Condition="$(RuntimeOS.StartsWith('alpine'))">false</ILLinkTrimAssembly>
-  </PropertyGroup>
-
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
