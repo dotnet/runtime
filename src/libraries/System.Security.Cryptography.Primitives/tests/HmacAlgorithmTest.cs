@@ -13,9 +13,7 @@ namespace System.Security.Cryptography.Hashing.Tests
         {
             using (HMAC hmac = new TestHMAC())
             {
-                // Assert.NoThrows is implicit
-                hmac.HashName = null;
-
+                Assert.Throws<ArgumentNullException>(() => hmac.HashName = null);
                 Assert.Null(hmac.HashName);
             }
         }
@@ -43,9 +41,16 @@ namespace System.Security.Cryptography.Hashing.Tests
 
                 // On desktop builds this next line will succeed (modulo FIPS prohibitions on MD5).
                 // On CoreFX it throws.
-                Assert.Throws<PlatformNotSupportedException>(() => hmac.HashName = "MD5");
-
-                Assert.Equal("SHA1", hmac.HashName);
+                if (PlatformDetection.IsFullFramework)
+                {
+                    hmac.HashName = "MD5";
+                    Assert.Equal("MD5", hmac.HashName);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => hmac.HashName = "MD5");
+                    Assert.Equal("SHA1", hmac.HashName);
+                }
             }
         }
 
@@ -75,7 +80,14 @@ namespace System.Security.Cryptography.Hashing.Tests
                 hmac.Key = Array.Empty<byte>();
 
                 byte[] ignored;
-                Assert.Throws<PlatformNotSupportedException>(() => ignored = hmac.ComputeHash(Array.Empty<byte>()));
+                if (PlatformDetection.IsFullFramework)
+                {
+                    ignored = hmac.ComputeHash(Array.Empty<byte>());
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => ignored = hmac.ComputeHash(Array.Empty<byte>()));
+                }
             }
         }
 
