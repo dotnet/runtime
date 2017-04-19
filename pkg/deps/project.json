@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-preview1-25218-03"
+    "Microsoft.NETCore.Platforms": "2.0.0-preview1-25219-04"
   },
   "frameworks": {
     "dnxcore50": {
