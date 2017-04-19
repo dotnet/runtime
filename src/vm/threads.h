@@ -6735,29 +6735,28 @@ public:
                             Thread::TriggersGC(GetThread());                \
                         } while(0)
 
-
-inline BOOL GC_ON_TRANSITIONS(BOOL val) {
-    WRAPPER_NO_CONTRACT;
-    Thread* thread = GetThread();
-    if (thread == 0)
-        return(FALSE);
-    BOOL ret = thread->m_GCOnTransitionsOK;
-    thread->m_GCOnTransitionsOK = val;
-    return(ret);
-}
-
-#else   // _DEBUG_IMPL
+#else // ENABLE_CONTRACTS_IMPL
 
 #define BEGINFORBIDGC()
 #define ENDFORBIDGC()
 #define TRIGGERSGC_NOSTOMP() ANNOTATION_GC_TRIGGERS
 #define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
 
-inline BOOL GC_ON_TRANSITIONS(BOOL val) {
-        return FALSE;
-}
+#endif // ENABLE_CONTRACTS_IMPL
 
-#endif  // _DEBUG_IMPL
+inline BOOL GC_ON_TRANSITIONS(BOOL val) {
+    WRAPPER_NO_CONTRACT;
+#ifdef _DEBUG
+    Thread* thread = GetThread();
+    if (thread == 0)
+        return(FALSE);
+    BOOL ret = thread->m_GCOnTransitionsOK;
+    thread->m_GCOnTransitionsOK = val;
+    return(ret);
+#else // _DEBUG
+    return FALSE;
+#endif // !_DEBUG
+}
 
 #ifdef _DEBUG
 inline void ENABLESTRESSHEAP() {
