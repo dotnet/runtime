@@ -353,7 +353,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
@@ -466,7 +466,7 @@
       "value": "PassedViaPipeBuild"
     },
     "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true"
+      "value": "false"
     },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
