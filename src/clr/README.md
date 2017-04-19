@@ -9,7 +9,7 @@ that quickly points you to [.NET Core Tutorials](https://docs.microsoft.com/en-u
 .NET Core is best thought of as 'agile .NET'.   Generally speaking it is the same as 
 the [Desktop .NET Framework](https://en.wikipedia.org/wiki/.NET_Framework)
 distributed as part of the Windows operating system, but it is a cross platform 
-(Windows, Linux, OSX) and cross architecture (x86, x64, arm) subset that can be deployed
+(Windows, Linux, macOS) and cross architecture (x86, x64, arm) subset that can be deployed
 as part of the application (if desired), and thus can be updated quickly to fix bugs or add features.  
 
 ## If You Just Want to Use .NET Core
@@ -116,7 +116,7 @@ You have to be on the particular platform to build that platform.
 
  * [Windows Build Instructions](Documentation/building/windows-instructions.md)
  * [Linux Build Instructions](Documentation/building/linux-instructions.md)
- * [OSX Build Instructions](Documentation/building/osx-instructions.md)
+ * [macOS Build Instructions](Documentation/building/osx-instructions.md)
  * [FreeBSD Build Instructions](Documentation/building/freebsd-instructions.md) 
  * [NetBSD Build Instructions](Documentation/building/netbsd-instructions.md)
 
