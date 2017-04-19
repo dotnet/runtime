@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -3226,6 +3226,134 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.FirstName, actual.FirstName);
         Assert.Equal(value.MiddleName, actual.MiddleName);
         Assert.Equal(value.LastName, actual.LastName);
+    }
+
+    [Fact]
+    public static void Xml_XSCoverTest()
+    {
+        var band = new Orchestra();
+        var brass = new Brass()
+        {
+            Name = "Trumpet",
+            IsValved = true
+        };
+        Instrument[] myInstruments = { brass };
+        band.Instruments = myInstruments;
+
+        var attrs = new XmlAttributes();
+        var attr = new XmlElementAttribute()
+        {
+            ElementName = "Brass",
+            Type = typeof(Brass)
+        };
+
+        attrs.XmlElements.Add(attr);
+        var attrOverrides = new XmlAttributeOverrides();
+        attrOverrides.Add(typeof(Orchestra), "Instruments", attrs);
+
+        var actual = SerializeAndDeserialize(band,
+@"<Orchestra xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+    <Brass>
+      <Name>Trumpet</Name>
+      <IsValved>true</IsValved>
+    </Brass>
+</Orchestra>", () => { return new XmlSerializer(typeof(Orchestra), attrOverrides); });
+
+        Assert.Equal(band.Instruments.Length, actual.Instruments.Length);
+        for (int i = 0; i < band.Instruments.Length; i++)
+        {
+            Assert.Equal(((Brass)band.Instruments.ElementAt(i)).Name, ((Brass)actual.Instruments[i]).Name);
+            Assert.Equal(((Brass)band.Instruments.ElementAt(i)).IsValved, ((Brass)actual.Instruments[i]).IsValved);
+        }
+
+        band = new Orchestra();
+        band.Instruments = new Instrument[1] { new Instrument { Name = "Instrument1" } };
+        attrs = new XmlAttributes();
+        var xArray = new XmlArrayAttribute("CommonInstruments");
+        xArray.Namespace = "http://www.contoso.com";
+        attrs.XmlArray = xArray;
+        attrOverrides = new XmlAttributeOverrides();
+        attrOverrides.Add(typeof(Orchestra), "Instruments", attrs);
+        actual = SerializeAndDeserialize(band,
+@"<?xml version=""1.0""?>
+<Orchestra xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <CommonInstruments xmlns=""http://www.contoso.com"">
+    <Instrument>
+      <Name>Instrument1</Name>
+    </Instrument>
+  </CommonInstruments>
+</Orchestra>", () => { return new XmlSerializer(typeof(Orchestra), attrOverrides); });
+        Assert.Equal(band.Instruments.Length, actual.Instruments.Length);
+        for (int i = 0; i < band.Instruments.Length; i++)
+        {
+            Assert.Equal((band.Instruments.ElementAt(i)).Name, (actual.Instruments[i]).Name);
+        }
+
+        band = new Orchestra();
+        var trumpet = new Trumpet() { Name = "TrumpetKeyC", IsValved = false, Modulation = 'C' };
+        band.Instruments = new Instrument[2] { brass, trumpet };
+
+        attrs = new XmlAttributes();
+        var xArrayItem = new XmlArrayItemAttribute(typeof(Brass));
+        xArrayItem.Namespace = "http://www.contoso.com";
+        attrs.XmlArrayItems.Add(xArrayItem);
+        var xArrayItem2 = new XmlArrayItemAttribute(typeof(Trumpet));
+        xArrayItem2.Namespace = "http://www.contoso.com";
+        attrs.XmlArrayItems.Add(xArrayItem2);
+        attrOverrides = new XmlAttributeOverrides();
+        attrOverrides.Add(typeof(Orchestra), "Instruments", attrs);
+        actual = SerializeAndDeserialize(band,
+@"<?xml version=""1.0""?>
+<Orchestra xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <Instruments>
+    <Brass xmlns=""http://www.contoso.com"">
+      <Name>Trumpet</Name>
+      <IsValved>true</IsValved>
+    </Brass>
+    <Trumpet xmlns=""http://www.contoso.com"">
+      <Name>TrumpetKeyC</Name>
+      <IsValved>false</IsValved>
+      <Modulation>67</Modulation>
+    </Trumpet>
+  </Instruments>
+</Orchestra>", () => { return new XmlSerializer(typeof(Orchestra), attrOverrides); });
+        Assert.Equal(band.Instruments.Length, actual.Instruments.Length);
+        for (int i = 0; i < band.Instruments.Length; i++)
+        {
+            Assert.Equal((band.Instruments.ElementAt(i)).Name, (actual.Instruments[i]).Name);
+        }
+
+        attrOverrides = new XmlAttributeOverrides();
+        attrs = new XmlAttributes();
+        Object defaultAnimal = "Cat";
+        attrs.XmlDefaultValue = defaultAnimal;
+        attrOverrides.Add(typeof(Pet), "Animal", attrs);
+        attrs = new XmlAttributes();
+        attrs.XmlIgnore = false;
+        attrOverrides.Add(typeof(Pet), "Comment", attrs);
+        attrs = new XmlAttributes();
+        var xType = new XmlTypeAttribute();
+        xType.TypeName = "CuteFishes";
+        xType.IncludeInSchema = true;
+        attrs.XmlType = xType;
+        attrOverrides.Add(typeof(Pet), attrs);
+
+        var myPet = new Pet();
+        myPet.Animal = "fish";
+        myPet.Comment = "What a cute fish!";
+        myPet.Comment2 = "I think it is cool!";
+
+        var actual2 = SerializeAndDeserialize(myPet,
+@"<?xml version=""1.0""?>
+<CuteFishes xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <Animal>fish</Animal>
+  <Comment>What a cute fish!</Comment>
+  <Comment2>I think it is cool!</Comment2>
+</CuteFishes>
+", () => { return new XmlSerializer(typeof(Pet), attrOverrides); });
+        Assert.Equal(myPet.Animal, actual2.Animal);
+        Assert.Equal(myPet.Comment, actual2.Comment);
+        Assert.Equal(myPet.Comment2, actual2.Comment2);
     }
 
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false)
