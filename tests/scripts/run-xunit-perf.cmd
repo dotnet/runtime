@@ -32,15 +32,23 @@ setlocal
   call :run_cmd xcopy /sy "%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root"\* . >> %RUNLOG%                         || exit /b 1
 
   rem find and stage the tests
+  set /A "LV_FAILURES=0"
   for /R %CORECLR_PERF% %%T in (*.%TEST_FILE_EXT%) do (
+    rem Skip known failures
     call :run_benchmark %%T || (
-      IF /I NOT "%BENCHVIEW_RUN_TYPE%" == "local" exit /b 1
+      set /A "LV_FAILURES+=1"
     )
   )
 
   rem optionally upload results to benchview
   if not [%BENCHVIEW_PATH%] == [] (
-    call :upload_to_benchview
+    call :upload_to_benchview || exit /b 1
+  )
+
+  rem Numbers are limited to 32-bits of precision (Int32.MAX == 2^32 - 1).
+  if %LV_FAILURES% NEQ 0 (
+    call :print_error %LV_FAILURES% benchmarks has failed.
+    exit /b %LV_FAILURES%
   )
 
   exit /b %ERRORLEVEL%
@@ -307,3 +315,19 @@ rem ****************************************************************************
   call :print_to_console $ %*
   call %*
   exit /b %ERRORLEVEL%
+
+:skip_failures
+rem ****************************************************************************
+rem   Skip known failures
+rem ****************************************************************************
+  IF /I [%TEST_ARCHITECTURE%] == [x86jit32] (
+    IF /I "%~1" == "CscBench" (
+      rem https://github.com/dotnet/coreclr/issues/11088
+      exit /b 1
+    )
+    IF /I "%~1" == "SciMark2" (
+      rem https://github.com/dotnet/coreclr/issues/11089
+      exit /b 1
+    )
+  )
+  exit /b 0
