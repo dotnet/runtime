@@ -126,6 +126,7 @@ namespace System.Linq.Parallel.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(16)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core bug fix https://github.com/dotnet/corefx/pull/1215")]
         public static void Sum_Float(int count)
         {
             Assert.Equal(Functions.SumRange(0, count), ParallelEnumerable.Range(0, count).Select(x => (float)x).Sum());

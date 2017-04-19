@@ -194,7 +194,7 @@ namespace System.Linq.Parallel.Tests
             foreach (object[] parms in Ranges(counts))
             {
                 int count = (int)parms[1];
-                yield return parms.Append(modifiers(count)).ToArray();
+                yield return parms.Concat(new object[] { modifiers(count) }).ToArray();
             }
         }
 
@@ -217,7 +217,7 @@ namespace System.Linq.Parallel.Tests
             {
                 foreach (T mod in modifiers((int)parms[1]))
                 {
-                    yield return parms.Append(mod).ToArray();
+                    yield return parms.Concat(new object[] { mod }).ToArray();
                 }
             }
         }

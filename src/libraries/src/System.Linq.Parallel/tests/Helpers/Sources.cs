@@ -44,7 +44,7 @@ namespace System.Linq.Parallel.Tests
             {
                 foreach (T mod in modifiers((int)parms[1]))
                 {
-                    yield return parms.Append(mod).ToArray();
+                    yield return parms.Concat(new object[] { mod }).ToArray();
                 }
             }
         }
