@@ -2287,6 +2287,7 @@ namespace System.Transactions.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Expects PNSE due to not being supported on core")]
         public void SimpleTransactionSuperior()
         {
             MySimpleTransactionSuperior superior = new MySimpleTransactionSuperior();
