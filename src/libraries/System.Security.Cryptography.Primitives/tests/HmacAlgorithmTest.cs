@@ -13,15 +13,7 @@ namespace System.Security.Cryptography.Hashing.Tests
         {
             using (HMAC hmac = new TestHMAC())
             {
-                if (PlatformDetection.IsFullFramework)
-                {
-                    Assert.Throws<ArgumentNullException>(() => hmac.HashName = null);
-                }
-                else
-                {
-                    hmac.HashName = null;
-                }
-
+                Assert.Throws<ArgumentNullException>(() => hmac.HashName = null);
                 Assert.Null(hmac.HashName);
             }
         }
