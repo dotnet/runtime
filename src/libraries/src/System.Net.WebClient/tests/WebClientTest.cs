@@ -42,7 +42,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("Encoding", () => { wc.Encoding = null; });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadData_InvalidArguments_ThrowExceptions()
         {
@@ -54,11 +53,10 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadDataTaskAsync((string)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((Uri)null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadFile_InvalidArguments_ThrowExceptions()
         {
@@ -70,7 +68,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, ""); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, "", null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((string)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadFileTaskAsync((string)null, ""); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((Uri)null, ""); });
 
             AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile("http://localhost", null); });
@@ -83,7 +81,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFileTaskAsync(new Uri("http://localhost"), null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void DownloadString_InvalidArguments_ThrowExceptions()
         {
@@ -95,11 +92,10 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadStringTaskAsync((string)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((Uri)null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadData_InvalidArguments_ThrowExceptions()
         {
@@ -114,8 +110,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadDataTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadDataTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null, null); });
 
@@ -134,14 +130,14 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadDataTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadFile_InvalidArguments_ThrowExceptions()
         {
             var wc = new WebClient();
 
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFile((string)null, null, null); });
+
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null, null); });
 
@@ -149,8 +145,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFileTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFileTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null, null); });
 
@@ -169,7 +165,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.UploadFileTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadString_InvalidArguments_ThrowExceptions()
         {
@@ -184,8 +179,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadStringTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadStringTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null, null); });
 
@@ -204,7 +199,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("data", () => { wc.UploadStringTaskAsync(new Uri("http://localhost"), null, null); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
         [Fact]
         public static void UploadValues_InvalidArguments_ThrowExceptions()
         {
@@ -219,8 +213,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadValuesTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null, null); });
 
@@ -393,19 +387,46 @@ namespace System.Net.Tests
             Assert.Equal("ArbitraryValue", wc.ResponseHeaders["ArbitraryHeader"]);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // hangs on NETFX
+        [ActiveIssue(18680)]
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [Theory]
+        [InlineData("Connection", "close")]
+        [InlineData("Expect", "100-continue")]
+        public static async Task RequestHeaders_AddDisallowedHeaderAndSendRequest_ThrowsWebException(string headerName, string headerValue)
+        {
+            var wc = new WebClient();
+            wc.Headers[headerName] = headerValue;
+            await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
+        }
+
+        [ActiveIssue(18680)]
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [Theory]
+        [InlineData("http://localhost", true)]
+        [InlineData("localhost", false)]
+        public static async Task RequestHeaders_AddHostHeaderAndSendRequest_ExpectedResult(string hostHeaderValue, bool throwsWebException)
+        {
+            var wc = new WebClient();
+            wc.Headers["Host"] = hostHeaderValue;
+            if (throwsWebException)
+            {
+                await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
+            }
+            else
+            {
+                await wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
+            }
+        }
+
         [Fact]
         public static async Task RequestHeaders_SpecialHeaders_RequestSucceeds()
         {
             var wc = new WebClient();
 
             wc.Headers["Accept"] = "text/html";
-            wc.Headers["Connection"] = "close";
             wc.Headers["ContentType"] = "text/html; charset=utf-8";
-            wc.Headers["Expect"] = "100-continue";
             wc.Headers["Referer"] = "http://localhost";
             wc.Headers["User-Agent"] = ".NET";
-            wc.Headers["Host"] = "http://localhost";
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -667,7 +688,7 @@ namespace System.Net.Tests
             Assert.Contains(ExpectedText, result);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17882")] // Difference in behavior.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18674")] // Difference in behavior.
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
