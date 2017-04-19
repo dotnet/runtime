@@ -27,6 +27,8 @@ internal static partial class Interop
             internal long MTime;
             internal long CTime;
             internal long BirthTime;
+            internal long Dev;
+            internal long Ino;
         }
 
         internal static class FileTypes
