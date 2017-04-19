@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace System.Data.Common
 {
-    internal class DbConnectionOptions
+    internal partial class DbConnectionOptions
     {
         // instances of this class are intended to be immutable, i.e readonly
         // used by pooling classes so it is easier to verify correctness
