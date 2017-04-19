@@ -1267,7 +1267,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // If not done, loop
         // Note that regCnt is the number of bytes to stack allocate.
         assert(genIsValidIntReg(regCnt));
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regCnt, regCnt, STACK_ALIGN);
+        getEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regCnt, STACK_ALIGN, INS_FLAGS_SET);
         emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
         inst_JMP(jmpNotEqual, loop);
     }
@@ -1311,7 +1311,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         BasicBlock* done = genCreateTempLabel();
 
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        getEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+        getEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt, INS_FLAGS_SET);
 
         inst_JMP(EJ_vc, loop); // branch if the V flag is not set
 
