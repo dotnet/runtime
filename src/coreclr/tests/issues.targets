@@ -409,7 +409,7 @@
 
     <!-- The following are tests that fail on non-Windows, which we must not run when building against packages -->
 
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true' and '$(RuntimeID)' != ''">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true' and '$(TargetsWindows)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\byte\ByteToString3\ByteToString3.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
