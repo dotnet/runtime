@@ -279,6 +279,12 @@ CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughpu
                                                  // mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
 
+CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1 to measure noway_assert usage. Only
+                                                                     // valid if MEASURE_NOWAY is defined.
+CONFIG_STRING(JitMeasureNowayAssertFile,
+              W("JitMeasureNowayAssertFile")) // Set to file to write noway_assert usage to a file (if not
+                                              // set: stdout). Only valid if MEASURE_NOWAY is defined.
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
 CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0) // 1 = full xml (all methods), 2 = minimal xml (only method

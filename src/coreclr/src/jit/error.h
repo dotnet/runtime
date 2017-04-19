@@ -80,7 +80,25 @@ extern void noWayAssertBodyConditional(
     );
 extern void noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
+// Define MEASURE_NOWAY to 1 to enable code to count and rank individual noway_assert calls by occurrence.
+// These asserts would be dynamically executed, but not necessarily fail. The provides some insight into
+// the dynamic prevalence of these (if not a direct measure of their cost), which exist in non-DEBUG as
+// well as DEBUG builds.
 #ifdef DEBUG
+#define MEASURE_NOWAY 1
+#else // !DEBUG
+#define MEASURE_NOWAY 0
+#endif // !DEBUG
+
+#if MEASURE_NOWAY
+extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const char* condStr);
+#define RECORD_NOWAY_ASSERT(condStr) RecordNowayAssertGlobal(__FILE__, __LINE__, condStr);
+#else
+#define RECORD_NOWAY_ASSERT(condStr)
+#endif
+
+#ifdef DEBUG
+
 #define NO_WAY(msg) (debugError(msg, __FILE__, __LINE__), noWay())
 // Used for fallback stress mode
 #define NO_WAY_NOASSERT(msg) noWay()
@@ -90,6 +108,7 @@ extern void noWayAssertBodyConditional(const char* cond, const char* file, unsig
 #define noway_assert(cond)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
+        RECORD_NOWAY_ASSERT(#cond)                                                                                     \
         if (!(cond))                                                                                                   \
         {                                                                                                              \
             noWayAssertBodyConditional(#cond, __FILE__, __LINE__);                                                     \
@@ -99,7 +118,7 @@ extern void noWayAssertBodyConditional(const char* cond, const char* file, unsig
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(msg, __FILE__, __LINE__)
 
-#else
+#else // !DEBUG
 
 #define NO_WAY(msg) noWay()
 #define BADCODE(msg) badCode()
@@ -114,6 +133,7 @@ extern void noWayAssertBodyConditional(const char* cond, const char* file, unsig
 #define noway_assert(cond)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
+        RECORD_NOWAY_ASSERT(#cond)                                                                                     \
         if (!(cond))                                                                                                   \
         {                                                                                                              \
             noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS);                                                   \
@@ -123,7 +143,7 @@ extern void noWayAssertBodyConditional(const char* cond, const char* file, unsig
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
 
-#endif
+#endif // !DEBUG
 
 // IMPL_LIMITATION is called when we encounter valid IL that is not
 // supported by our current implementation because of various
