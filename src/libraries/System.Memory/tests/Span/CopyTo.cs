@@ -204,6 +204,12 @@ namespace System.SpanTests
         [InlineData((4L * 1024L * 1024L * 1024L) + 256)]
         public static void CopyToLargeSizeTest(long bufferSize)
         {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (Unsafe.SizeOf<IntPtr>() != sizeof(long))
+            {
+                return;
+            }
+
             int GuidCount = (int)(bufferSize / Unsafe.SizeOf<Guid>());
             bool allocatedFirst = false;
             bool allocatedSecond = false;
