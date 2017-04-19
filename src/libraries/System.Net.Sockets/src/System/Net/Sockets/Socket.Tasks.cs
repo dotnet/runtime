@@ -464,7 +464,7 @@ namespace System.Net.Sockets
                     {
                         // Get any cached, successfully-completed cached task that may exist on this SAEA.
                         Task<int> lastTask = saea._successfullyCompletedTask;
-                        Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
+                        Debug.Assert(lastTask == null || lastTask.IsCompletedSuccessfully);
 
                         // If there is a task and if it has the desired result, simply reuse it.
                         // Otherwise, create a new one for this result value, and in addition to returning it,

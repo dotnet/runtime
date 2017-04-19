@@ -5,6 +5,8 @@
     <ProjectGuid>{B6C09633-D161-499A-8FE1-46B2D53A16E7}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -49,9 +51,10 @@
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Task\TaskDisposeTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="Task\TaskStatusTest.netcoreapp.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

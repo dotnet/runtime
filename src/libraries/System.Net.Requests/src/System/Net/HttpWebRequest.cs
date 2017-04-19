@@ -816,7 +816,7 @@ namespace System.Net
         {
             get
             {
-                return (_sendRequestTask != null) && (_sendRequestTask.Status == TaskStatus.RanToCompletion);
+                return (_sendRequestTask != null) && (_sendRequestTask.IsCompletedSuccessfully);
             }
         }
 
