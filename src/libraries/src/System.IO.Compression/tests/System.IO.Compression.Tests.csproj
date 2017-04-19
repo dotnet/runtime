@@ -53,7 +53,7 @@
       <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)System.IO.Compression.TestData\1.0.5-prerelease\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.5-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>
