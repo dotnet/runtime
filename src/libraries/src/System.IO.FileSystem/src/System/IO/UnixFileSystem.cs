@@ -91,7 +91,7 @@ namespace System.IO
             // from there as necessary.
             Interop.Sys.FileStatus sourceStat, destStat;
             if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-                Interop.Sys.Stat(destFullPath, out destStat) == 0 && // dest file exists
+                Interop.Sys.LStat(destFullPath, out destStat) == 0 && // dest file exists
                 sourceStat.Dev == destStat.Dev && // source and dest are on the same device
                 sourceStat.Ino == destStat.Ino && // and source and dest are the same file on that device
                 Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
