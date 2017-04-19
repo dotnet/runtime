@@ -33,7 +33,9 @@ setlocal
 
   rem find and stage the tests
   for /R %CORECLR_PERF% %%T in (*.%TEST_FILE_EXT%) do (
-    call :run_benchmark %%T
+    call :run_benchmark %%T || (
+      IF /I NOT "%BENCHVIEW_RUN_TYPE%" == "local" exit /b 1
+    )
   )
 
   rem optionally upload results to benchview
@@ -283,22 +285,25 @@ rem ****************************************************************************
 :print_to_console
 rem ****************************************************************************
 rem   Sends text to the console screen, no matter what (even when the script's
-rem   output is redirected). This is useful to output provide information on
-rem   where the script is executing.
+rem   output is redirected). This can be useful to provide information on where
+rem   the script is executing.
 rem ****************************************************************************
-  echo [%DATE%][%TIME:~0,-3%] %* >CON
+  if defined _debug (
+    echo [%DATE%][%TIME:~0,-3%] %* >CON
+  )
+  echo [%DATE%][%TIME:~0,-3%] %*
   exit /b %ERRORLEVEL%
 
 :run_cmd
 rem ****************************************************************************
-rem   Function wrapper used to display to the console screen the command line
-rem   being executed.
+rem   Function wrapper used to send the command line being executed to the
+rem   console screen, before the command is executed.
 rem ****************************************************************************
   if "%~1" == "" (
     call :print_error No command was specified.
     exit /b 1
   )
 
-  echo [%DATE%][%TIME:~0,-3%] $ %* >CON
+  call :print_to_console $ %*
   call %*
   exit /b %ERRORLEVEL%
