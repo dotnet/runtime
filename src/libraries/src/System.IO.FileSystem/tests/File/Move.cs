@@ -121,6 +121,34 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void MoveToSameName()
+        {
+            string testDir = GetTestFilePath();
+            Directory.CreateDirectory(testDir);
+
+            FileInfo testFileSource = new FileInfo(Path.Combine(testDir, GetTestFileName()));
+            testFileSource.Create().Dispose();
+
+            Move(testFileSource.FullName, testFileSource.FullName);
+            Assert.True(File.Exists(testFileSource.FullName));
+        }
+
+        [Fact]
+        public void MoveToSameNameDifferentCasing()
+        {
+            string testDir = GetTestFilePath();
+            Directory.CreateDirectory(testDir);
+
+            FileInfo testFileSource = new FileInfo(Path.Combine(testDir, Path.GetRandomFileName().ToLowerInvariant()));
+            testFileSource.Create().Dispose();
+
+            FileInfo testFileDest = new FileInfo(Path.Combine(testFileSource.DirectoryName, testFileSource.Name.ToUpperInvariant()));
+
+            Move(testFileSource.FullName, testFileDest.FullName);
+            Assert.True(File.Exists(testFileDest.FullName));
+        }
+
+        [Fact]
         public void MultipleMoves()
         {
             FileInfo testFileSource = new FileInfo(GetTestFilePath());
