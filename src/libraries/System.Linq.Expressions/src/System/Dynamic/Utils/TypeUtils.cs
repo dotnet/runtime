@@ -719,20 +719,39 @@ namespace System.Dynamic.Utils
         public static bool IsSameOrSubclass(Type type, Type subType) =>
             AreEquivalent(type, subType) || subType.IsSubclassOf(type);
 
-        public static void ValidateType(Type type, string paramName) => ValidateType(type, paramName, -1);
+        public static void ValidateType(Type type, string paramName) => ValidateType(type, paramName, false, false);
 
-        public static void ValidateType(Type type, string paramName, int index)
+        public static void ValidateType(Type type, string paramName, bool allowByRef, bool allowPointer)
         {
-            if (type != typeof(void))
+            if (ValidateType(type, paramName, -1))
             {
-                // A check to avoid a bunch of reflection (currently not supported) during cctor
-                if (type.ContainsGenericParameters)
+                if (!allowByRef && type.IsByRef)
                 {
-                    throw type.IsGenericTypeDefinition
-                        ? Error.TypeIsGeneric(type, paramName, index)
-                        : Error.TypeContainsGenericParameters(type, paramName, index);
+                    throw Error.TypeMustNotBeByRef(paramName);
+                }
+
+                if (!allowPointer && type.IsPointer)
+                {
+                    throw Error.TypeMustNotBePointer(paramName);
                 }
             }
+        }
+
+        public static bool ValidateType(Type type, string paramName, int index)
+        {
+            if (type == typeof(void))
+            {
+                return false; // Caller can skip further checks.
+            }
+
+            if (type.ContainsGenericParameters)
+            {
+                throw type.IsGenericTypeDefinition
+                    ? Error.TypeIsGeneric(type, paramName, index)
+                    : Error.TypeContainsGenericParameters(type, paramName, index);
+            }
+
+            return true;
         }
 
         private static Assembly s_mscorlib;

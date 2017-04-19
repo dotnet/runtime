@@ -66,16 +66,6 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             return new DefaultExpression(type);
         }
     }

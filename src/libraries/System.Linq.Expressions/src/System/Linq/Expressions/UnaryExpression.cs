@@ -714,16 +714,6 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             if (type.IsValueType && !type.IsNullableType())
             {
                 throw Error.IncorrectTypeForTypeAs(type, nameof(type));
@@ -779,16 +769,6 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             if (method == null)
             {
                 if (expression.Type.HasIdentityPrimitiveOrNullableConversionTo(type) ||
@@ -829,16 +809,6 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             if (method == null)
             {
                 if (expression.Type.HasIdentityPrimitiveOrNullableConversionTo(type))
@@ -933,16 +903,6 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             if (value != null)
             {
                 ExpressionUtils.RequiresCanRead(value, nameof(value));
