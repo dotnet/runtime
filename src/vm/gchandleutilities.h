@@ -196,6 +196,11 @@ inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJEC
     return GCHandleUtilities::GetGCHandleManager()->CompareAndSwapObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
 }
 
+inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
+{
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, NULL);
+}
+
 // Handle destruction convenience functions
 
 inline void DestroyHandle(OBJECTHANDLE handle)
@@ -336,6 +341,7 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle> 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
+typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
 
 class RCOBJECTHANDLEHolder : public RefCountedOHWrapper
 {
