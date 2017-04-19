@@ -384,24 +384,7 @@ namespace System.Net
         }
 
 
-        public bool KeepAlive
-        {
-            get
-            {
-                return _webHeaderCollection[HttpKnownHeaderNames.KeepAlive] == bool.TrueString;
-            }
-            set
-            {
-                if (value)
-                {
-                    SetSpecialHeaders(HttpKnownHeaderNames.KeepAlive, bool.TrueString);
-                }
-                else
-                {
-                    SetSpecialHeaders(HttpKnownHeaderNames.KeepAlive, bool.FalseString);
-                }
-            }
-        } 
+        public bool KeepAlive { get; set; } = true;
 
         public bool UnsafeAuthenticatedConnectionSharing
         {
@@ -1187,6 +1170,15 @@ namespace System.Net
                 }
 
                 request.Headers.TransferEncodingChunked = SendChunked;
+
+                if (KeepAlive)
+                {
+                    request.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
+                }
+                else
+                {
+                    request.Headers.ConnectionClose = true;
+                }
 
                 _sendRequestTask = client.SendAsync(
                     request,
