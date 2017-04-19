@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
@@ -133,8 +129,29 @@ namespace System.IO.Packaging.Tests
             {
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+                Assert.Equal(0, ms.Length);
                 PackagePart packagePartDocument = null;
                 Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop= ;"); });
+            }
+        }
+
+        [Fact]
+        public void PackageOpen_CreateNew_NonEmptyStream_Throws()
+        {
+            byte[] ba = File.ReadAllBytes("plain.docx");
+            using (var ms = new MemoryStream())
+            {
+                ms.Write(ba, 0, ba.Length);
+                Assert.Throws<IOException>(() => Package.Open(ms, FileMode.CreateNew, FileAccess.ReadWrite));
+            }
+        }
+
+        [Fact]
+        public void PackageOpen_Open_EmptyStream_Throws()
+        {
+            using (var ms = new MemoryStream())
+            {
+                Assert.Throws<FileFormatException>(() => Package.Open(ms, FileMode.Open, FileAccess.ReadWrite));
             }
         }
 
@@ -514,7 +531,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     Assert.Throws<XmlException>(() =>
                         {
@@ -572,7 +589,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     Assert.Throws<FileFormatException>(() =>
                     {
@@ -593,7 +610,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     Assert.Throws<FileFormatException>(() =>
                     {
@@ -1710,7 +1727,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     Uri documentUri = new Uri("/word/document.xml", UriKind.Relative);
                     package.DeletePart(documentUri);
@@ -1728,7 +1745,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     PackageRelationship docPackageRelationship =
                         package.GetRelationshipsByType(DocumentRelationshipType).FirstOrDefault();
@@ -1750,7 +1767,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     PackageRelationship docPackageRelationship =
                         package.GetRelationshipsByType(DocumentRelationshipType).FirstOrDefault();
@@ -1777,7 +1794,7 @@ namespace System.IO.Packaging.Tests
             using (MemoryStream ms = new MemoryStream())
             {
                 ms.Write(ba, 0, ba.Length);
-                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                using (Package package = Package.Open(ms, FileMode.Open, FileAccess.ReadWrite))
                 {
                     PackageRelationship docPackageRelationship =
                                   package
