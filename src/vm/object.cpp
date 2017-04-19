@@ -1592,6 +1592,14 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
+#elif defined(_TARGET_ARM64_)
+
+    if (argDest->IsHFA())
+    {
+        argDest->CopyHFAStructToRegister(src, pMT->GetAlignedNumInstanceFieldBytes());
+        return;
+    }
+
 #endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
     // destOffset is only valid for Nullable<T> passed in registers
     _ASSERTE(destOffset == 0);
