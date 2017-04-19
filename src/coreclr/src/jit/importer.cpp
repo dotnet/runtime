@@ -15051,7 +15051,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
 GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
-    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_NONE);
+    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
