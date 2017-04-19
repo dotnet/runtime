@@ -1346,6 +1346,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CreateInstance_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance(Type elementType, object repeatedValue)
         {
             CreateInstance(elementType, new int[] { 10 }, new int[1], repeatedValue);
@@ -1359,6 +1360,7 @@ namespace System.Tests
         [InlineData(typeof(int), new int[] { 1, 2, 3 }, new int[] { 0, 0, 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 1, 2, 3, 4 }, new int[] { 0, 0, 0, 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, default(int))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             if (lowerBounds.All(lowerBound => lowerBound == 0))
@@ -1379,6 +1381,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_NullElementType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0));
@@ -1397,6 +1400,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CreateInstance_NotSupportedType_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_NotSupportedType_ThrowsNotSupportedException(Type elementType)
         {
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, 0));
@@ -1405,6 +1409,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1));
@@ -1413,12 +1418,14 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_LengthsNull_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_LengthsEmpty_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0]));
@@ -1426,6 +1433,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_LowerBoundNull_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstance(typeof(int), new int[] { 1 }, null));
@@ -1434,12 +1442,14 @@ namespace System.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(2)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
         {
             Assert.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
         }
         
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 }));
