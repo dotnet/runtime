@@ -251,7 +251,7 @@
       "value": "PassedViaPipeBuild"
     },
     "PUBLISH_TO_AZURE_BLOB": {
-      "value": "false",
+      "value": "true",
       "allowOverride": true
     },
     "REPO_ID": {
