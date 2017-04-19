@@ -1459,7 +1459,7 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         StructPromotionInfo->canPromote = false;
 
         unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
-        if (structSize >= MaxOffset)
+        if (structSize > MaxOffset)
         {
             return; // struct is too large
         }
