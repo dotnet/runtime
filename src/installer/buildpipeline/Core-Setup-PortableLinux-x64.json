@@ -97,6 +97,178 @@
     },
     {
       "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Copy built Portable binaries to staging directory",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(Build.SourcesDirectory)/artifacts/linux-x64/intermediate/sharedFrameworkPublish",
+        "Contents": "**",
+        "TargetFolder": "$(Build.StagingDirectory)/sharedFrameworkPublish",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Ubuntu.14.04 docker image",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerbuild.sh",
+        "args": "-d $(Build.SourcesDirectory)/scripts/docker/ubuntu.14.04 -t ubuntu.14.04-coresetup",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Debian Installer in Ubuntu.14.04 docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerrun-as-current-user.sh",
+        "args": "--rm $(DockerBuildEnvironmentVariables) -e CLI_NUGET_API_KEY -e CLI_NUGET_FEED_URL -e CLI_NUGET_SYMBOLS_FEED_URL -v $(Build.SourcesDirectory):/opt/code/ -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/opt/sharedFrameworkPublish/ -w /opt/code ubuntu.14.04-coresetup /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh --skip-prereqs --configuration Release --targets $(InstallerOnlyBuildArguments)\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Ubuntu.16.04 docker image",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerbuild.sh",
+        "args": "-d $(Build.SourcesDirectory)/scripts/docker/ubuntu.16.04 -t ubuntu.16.04-coresetup",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Debian Installer in Ubuntu.16.04 docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerrun-as-current-user.sh",
+        "args": "--rm $(DockerBuildEnvironmentVariables) -v $(Build.SourcesDirectory):/opt/code/ -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/opt/sharedFrameworkPublish/ -w /opt/code ubuntu.16.04-coresetup /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh --skip-prereqs --configuration Release --targets $(InstallerOnlyBuildArguments)\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Ubuntu.16.10 docker image",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerbuild.sh",
+        "args": "-d $(Build.SourcesDirectory)/scripts/docker/ubuntu.16.10 -t ubuntu.16.10-coresetup",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Debian Installer in Ubuntu 16.10 docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerrun-as-current-user.sh",
+        "args": "--rm $(DockerBuildEnvironmentVariables) -v $(Build.SourcesDirectory):/opt/code/ -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/opt/sharedFrameworkPublish/ -w /opt/code ubuntu.16.10-coresetup /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh --skip-prereqs --configuration Release --targets $(InstallerOnlyBuildArguments)\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Debian.8 docker image ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerbuild.sh",
+        "args": "-d $(Build.SourcesDirectory)/scripts/docker/debian.8 -t debian.8-coresetup",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build Debian Installer in Debian.8 docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "scripts/dockerrun-as-current-user.sh",
+        "args": "--rm $(DockerBuildEnvironmentVariables) -v $(Build.SourcesDirectory):/opt/code/ -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/opt/sharedFrameworkPublish/ -w /opt/code debian.8-coresetup /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh --skip-prereqs --configuration Release --targets $(InstallerOnlyBuildArguments)\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
       "displayName": "Cleanup Docker",
@@ -241,6 +413,33 @@
     },
     "NUGET_SYMBOLS_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
+    },
+    "REPO_ID": {
+      "value": "579f8fb0fedca9aeeb399132"
+    },
+    "REPO_USER": {
+      "value": "dotnet"
+    },
+    "REPO_PASS": {
+      "value": "PassedViaPipeBuild"
+    },
+    "REPO_SERVER": {
+      "value": "azure-apt-cat.cloudapp.net"
+    },
+    "DockerBuildEnvironmentVariables": {
+      "value": "-e PORTABLE_BUILD_STAGING_LOCATION=/opt/sharedFrameworkPublish -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB -e REPO_ID -e REPO_USER -e REPO_PASS -e REPO_SERVER -e NUGET_FEED_URL -e NUGET_API_KEY -e NUGET_SYMBOLS_FEED_URL -e GITHUB_PASSWORD"
+    },
+    "InstallerOnlyBuildArguments": {
+      "value": "Init,Prepare,InitPackage,GenerateVersionBadge,GenerateInstaller,TestInstaller,PublishInstallers"
+    },
+    "CLI_NUGET_API_KEY": {
+      "value": "PassedViaPipeBuild"
+    },
+    "CLI_NUGET_FEED_URL": {
+      "value": "https://dotnet.myget.org/F/cli-deps/api/v2/package"
+    },
+    "CLI_NUGET_SYMBOLS_FEED_URL": {
+      "value": "https://dotnet.myget.org/F/cli-deps/symbols/api/v2/package"
     }
   },
   "demands": [
@@ -265,6 +464,7 @@
   "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:.r)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 90,
+  "jobCancelTimeoutInMinutes": 5,
   "badgeEnabled": true,
   "repository": {
     "properties": {
@@ -288,23 +488,23 @@
   },
   "quality": "definition",
   "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
-    },
-    "id": 36,
-    "name": "DotNet-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 4573,
   "name": "Core-Setup-PortableLinux-x64",
+  "path": "\\",
+  "type": "build",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097620
+    "revision": 418097642
   }
 }
