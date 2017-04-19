@@ -344,7 +344,8 @@ Then we could replace the listener.Subscribe call above with the following code,
 Note that using reflection is relatively expensive.  However using reflection is your only
 option if the payloads was generated using anonymous types.   You can reduce this overhead by 
 making fast, specialized property fetchers  either using PropertyInfo.CreateDelegate or 
-ReflectEmit, but that is beyond the scope of this document.  
+ReflectEmit, but that is beyond the scope of this document.  (see the [PropertyFetch](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs#L823) class used in the DiagnosticSourceEventSource for an example of a fast, delegate-based
+property fetcher).  
 
 #### Filtering 
  
