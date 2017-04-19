@@ -194,7 +194,7 @@ typedef enum
 #ifdef FEATURE_PAL_SXS
     DCI_SXS,
 #endif // FEATURE_PAL_SXS
-
+    DCI_NUMA,
     DCI_LAST
 } DBG_CHANNEL_ID;
 

@@ -42,6 +42,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/debug.h"
 #include "pal/locale.h"
 #include "pal/init.h"
+#include "pal/numa.h"
 #include "pal/stackstring.hpp"
 
 #if HAVE_MACH_EXCEPTIONS
@@ -523,6 +524,12 @@ Initialize(
             goto CLEANUP15;
         }
 
+        if (FALSE == NUMASupportInitialize())
+        {
+            ERROR("Unable to initialize NUMA support\n");
+            goto CLEANUP15;
+        }
+
         TRACE("First-time PAL initialization complete.\n");
         init_count++;        
 
@@ -548,6 +555,7 @@ Initialize(
     }
     goto done;
 
+    NUMASupportCleanup();
     /* No cleanup required for CRTInitStdStreams */ 
 CLEANUP15:
     FILECleanupStdHandles();
