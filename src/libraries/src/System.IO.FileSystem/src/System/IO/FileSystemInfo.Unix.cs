@@ -173,7 +173,7 @@ namespace System.IO
                 EnsureStatInitialized();
                 long rawTime = (_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 ?
                     _fileStatus.BirthTime :
-                    Math.Min(_fileStatus.ATime, Math.Min(_fileStatus.CTime, _fileStatus.MTime)); // fall back to the oldest time we have
+                    Math.Min(_fileStatus.CTime, _fileStatus.MTime); // fall back to the oldest time we have in between change and modify time
                 return DateTimeOffset.FromUnixTimeSeconds(rawTime).ToLocalTime();
             }
             set
