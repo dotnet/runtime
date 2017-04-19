@@ -934,8 +934,8 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcessLong();
             process.Start();
 
-            // .NET Core fixes a bug where Process.StartInfo for a running process would
-            // return information about the current process, not the running process.
+            // .NET Core fixes a bug where Process.StartInfo for a unrelated process would
+            // return information about the current process, not the unrelated process.
             // See https://github.com/dotnet/corefx/issues/1100.
             if (PlatformDetection.IsFullFramework)
             {
@@ -971,8 +971,8 @@ namespace System.Diagnostics.Tests
         {
             Process process = Process.GetCurrentProcess();
 
-            // .NET Core fixes a bug where Process.StartInfo for a running process would
-            // return information about the current process, not the running process.
+            // .NET Core fixes a bug where Process.StartInfo for an unrelated process would
+            // return information about the current process, not the unrelated process.
             // See https://github.com/dotnet/corefx/issues/1100.
             if (PlatformDetection.IsFullFramework)
             {

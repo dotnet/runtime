@@ -12,9 +12,9 @@ namespace System.Collections.Specialized
     [Serializable]
     internal sealed class StringDictionaryWrapper : StringDictionary
     {
-        private readonly Dictionary<string, string> _contents;
+        private readonly DictionaryWrapper _contents;
 
-        public StringDictionaryWrapper(Dictionary<string, string> contents)
+        public StringDictionaryWrapper(DictionaryWrapper contents)
         {
             _contents = contents;
         }
@@ -27,15 +27,22 @@ namespace System.Collections.Specialized
 
         public override int Count => _contents.Count;
 
-        public override ICollection Keys => _contents.Keys;
-
-        public override ICollection Values => _contents.Values;
+        public override ICollection Keys => ((IDictionary)_contents).Keys;
+        public override ICollection Values => ((IDictionary)_contents).Values;
 
         public override bool IsSynchronized => false;
 
-        public override object SyncRoot => ((ICollection)_contents).SyncRoot;
-        
-        public override void Add(string key, string value) => _contents.Add(key, value);
+        public override object SyncRoot => _contents.SyncRoot;
+
+        public override void Add(string key, string value)
+        {
+            if (_contents.ContainsKey(key))
+            {
+                throw new ArgumentException();
+            }
+
+            _contents.Add(key, value);
+        }
 
         public override void Clear() => _contents.Clear();
 
@@ -43,9 +50,15 @@ namespace System.Collections.Specialized
 
         public override bool ContainsValue(string value) => _contents.ContainsValue(value);
 
-        public override void CopyTo(Array array, int index) => ((ICollection)_contents).CopyTo(array, index);
+        public override void CopyTo(Array array, int index) => _contents.CopyTo(array, index);
 
-        public override IEnumerator GetEnumerator() => _contents.GetEnumerator();
+        public override IEnumerator GetEnumerator()
+        {
+            foreach (KeyValuePair<string, string> keyValuePair in _contents)
+            {
+                yield return new DictionaryEntry(keyValuePair.Key, keyValuePair.Value);
+            }
+        }
 
         public override void Remove(string key) => _contents.Remove(key);
     }
