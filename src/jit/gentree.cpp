@@ -450,7 +450,7 @@ bool GenTree::IsNodeProperlySized() const
 
 #define BASH_HASH_SIZE 211
 
-inline hashme(genTreeOps op1, genTreeOps op2)
+inline unsigned hashme(genTreeOps op1, genTreeOps op2)
 {
     return ((op1 * 104729) ^ (op2 * 56569)) % BASH_HASH_SIZE;
 }
