@@ -105,7 +105,7 @@ namespace System.Net.Http
                 SetVersion();
                 SetDecompressionOptions();
                 SetProxyOptions(_requestMessage.RequestUri);
-                SetCredentialsOptions(_handler.GetCredentials(_requestMessage.RequestUri));
+                SetCredentialsOptions(_handler._useDefaultCredentials ? GetDefaultCredentialAndAuth() : _handler.GetCredentials(_requestMessage.RequestUri));
                 SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
                 SetSslOptions();
@@ -341,7 +341,9 @@ namespace System.Net.Http
                     // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is 
                     // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
                     // are specifically tied to URIs.
-                    updatedCredentials = GetCredentials(newUri, _handler.Credentials as CredentialCache, s_orderedAuthTypes);
+                    updatedCredentials = _handler._useDefaultCredentials ?
+                        GetDefaultCredentialAndAuth() : 
+                        GetCredentials(newUri, _handler.Credentials as CredentialCache, s_orderedAuthTypes);
 
                     // Reset proxy - it is possible that the proxy has different credentials for the new URI
                     SetProxyOptions(newUri);
@@ -615,7 +617,6 @@ namespace System.Net.Http
             {
                 if (credentials == CredentialCache.DefaultCredentials)
                 {
-                    // No "default credentials" on Unix; nop just like UseDefaultCredentials.
                     EventSourceTrace("DefaultCredentials set for proxy. Skipping.");
                 }
                 else if (credentials != null)
@@ -661,6 +662,9 @@ namespace System.Net.Http
 
                 EventSourceTrace("Credentials set.");
             }
+
+            private static KeyValuePair<NetworkCredential, CURLAUTH> GetDefaultCredentialAndAuth() =>
+                new KeyValuePair<NetworkCredential, CURLAUTH>(CredentialCache.DefaultNetworkCredentials, CURLAUTH.Negotiate);
 
             internal void SetCookieOption(Uri uri)
             {
