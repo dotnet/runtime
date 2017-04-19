@@ -80,17 +80,6 @@ void GCHandleValidatePinnedObject(OBJECTREF obj);
 
 int GetCurrentThreadHomeHeapNumber();
 
-inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-
-    HndAssignHandle(handle, NULL);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,ResetOBJECTHANDLE> ObjectInHandleHolder;
-#endif
-
 /*
  * Table maintenance routines
  */
