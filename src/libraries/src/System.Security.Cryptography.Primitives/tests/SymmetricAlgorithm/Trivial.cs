@@ -117,12 +117,15 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 try
                 {
                     byte[] hugeKey = new byte[536870917]; // value chosen so that when multiplied by 8 (bits) it overflows to the value 40
-#if netfx
-                    // This change should be ported to netfx
-                    s.Key = hugeKey;
-#else
-                    Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
-#endif
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        // This change should be ported to netfx
+                        s.Key = hugeKey;
+                    }
+                    else
+                    {
+                        Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
+                    }
                 }
                 catch (OutOfMemoryException) { } // in case there isn't enough memory at test-time to allocate the large array
             }
