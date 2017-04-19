@@ -1840,8 +1840,10 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	sibling_source_len = strlen (sibling_source);
 	sibling_target = g_strconcat (shadow, ".config", NULL);
 	sibling_target_len = strlen (sibling_target);
-	
+
 	copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".mdb", sibling_target, sibling_target_len, 7);
+	if (copy_result)
+		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".pdb", sibling_target, sibling_target_len, 11);
 	if (copy_result)
 		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".config", sibling_target, sibling_target_len, 7);
 	
