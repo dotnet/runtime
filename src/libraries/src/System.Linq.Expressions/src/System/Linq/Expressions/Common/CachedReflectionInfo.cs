@@ -89,6 +89,11 @@ namespace System.Linq.Expressions
                                   s_String_op_Equality_String_String ??
                                  (s_String_op_Equality_String_String = typeof(string).GetMethod("op_Equality", new[] { typeof(string), typeof(string) }));
 
+        private static MethodInfo s_String_Equals_String_String;
+        public  static MethodInfo   String_Equals_String_String =>
+                                  s_String_Equals_String_String ??
+                                 (s_String_Equals_String_String = typeof(string).GetMethod("Equals", new[] { typeof(string), typeof(string) }));
+
         private static MethodInfo s_DictionaryOfStringInt32_Add_String_Int32;
         public  static MethodInfo   DictionaryOfStringInt32_Add_String_Int32 =>
                                   s_DictionaryOfStringInt32_Add_String_Int32 ??

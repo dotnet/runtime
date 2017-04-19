@@ -833,6 +833,34 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void SwitchOnStringEqualsMethod(bool useInterpreter)
+        {
+            var values = new string[] { "foobar", "foo", "bar", "baz", "qux", "quux", "corge", "grault", "garply", "waldo", "fred", "plugh", "xyzzy", "thud", null };
+
+            for (var i = 1; i <= values.Length; i++)
+            {
+                SwitchCase[] cases = values.Take(i).Select((s, j) => Expression.SwitchCase(Expression.Constant(j), Expression.Constant(values[j], typeof(string)))).ToArray();
+                ParameterExpression value = Expression.Parameter(typeof(string));
+                Expression<Func<string, int>> e = Expression.Lambda<Func<string, int>>(Expression.Switch(value, Expression.Constant(-1), typeof(string).GetMethod("Equals", new[] { typeof(string), typeof(string) }), cases), value);
+                Func<string, int> f = e.Compile(useInterpreter);
+
+                int k = 0;
+                foreach (var str in values.Take(i))
+                {
+                    Assert.Equal(k, f(str));
+                    k++;
+                }
+
+                foreach (var str in values.Skip(i).Concat(new[] { "whatever", "FOO" }))
+                {
+                    Assert.Equal(-1, f(str));
+                    k++;
+                }
+            }
+        }
+
         [Fact]
         public void ToStringTest()
         {
