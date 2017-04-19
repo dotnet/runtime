@@ -5151,7 +5151,6 @@ void gc_heap::destroy_thread_support ()
     }
 }
 
-#if !defined(FEATURE_PAL)
 void set_thread_group_affinity_for_heap(int heap_number, GCThreadAffinity* affinity)
 {
     affinity->Group = GCThreadAffinity::None;
@@ -5231,7 +5230,6 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
         }
     }
 }
-#endif // !FEATURE_PAL
 
 bool gc_heap::create_gc_thread ()
 {
@@ -5241,7 +5239,6 @@ bool gc_heap::create_gc_thread ()
     affinity.Group = GCThreadAffinity::None;
     affinity.Processor = GCThreadAffinity::None;
 
-#if !defined(FEATURE_PAL)
     if (!gc_thread_no_affinitize_p)
     {
         // We are about to set affinity for GC threads. It is a good place to set up NUMA and
@@ -5252,7 +5249,6 @@ bool gc_heap::create_gc_thread ()
         else
             set_thread_affinity_mask_for_heap(heap_number, &affinity);
     }
-#endif // !FEATURE_PAL
 
     return GCToOSInterface::CreateThread(gc_thread_stub, this, &affinity);
 }
