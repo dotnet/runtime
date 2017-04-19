@@ -35,23 +35,54 @@ using System.Runtime.Loader;
 
 internal class CustomAssemblyResolver : AssemblyLoadContext
 {
+    private string _frameworkPath;
+    private string _testsPath;
+
+    public CustomAssemblyResolver()
+    {
+        Console.WriteLine("CustomAssemblyResolver initializing");
+        _frameworkPath = Environment.GetEnvironmentVariable("BVT_ROOT");
+        if (_frameworkPath == null)
+        {
+            Console.WriteLine("CustomAssemblyResolver: BVT_ROOT not set");
+            _frameworkPath = Environment.GetEnvironmentVariable("CORE_ROOT");
+        }
+
+        if (_frameworkPath == null)
+        {
+            Console.WriteLine("CustomAssemblyResolver: CORE_ROOT not set");
+            _frameworkPath = Directory.GetCurrentDirectory();
+        }
+
+        Console.WriteLine("CustomAssemblyResolver: looking for framework libraries at path: {0}", _frameworkPath);
+        string stressFrameworkDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        Console.WriteLine("CustomAssemblyResolver: currently executing assembly is at path: {0}", stressFrameworkDir);
+        _testsPath = Path.Combine(stressFrameworkDir, "Tests");
+        Console.WriteLine("CustomAssemblyResolver: looking for tests in dir: {0}", _testsPath);
+    }
+
     protected override Assembly Load(AssemblyName assemblyName)
     {
-        Console.WriteLine("\nCustomAssemblyLoader: Got request to load {0}\n", assemblyName.ToString());
+        Console.WriteLine("CustomAssemblyLoader: Got request to load {0}", assemblyName.ToString());
 
-        string strBVTRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
-        if (String.IsNullOrEmpty(strBVTRoot))
-            strBVTRoot = Path.Combine(Directory.GetCurrentDirectory(), "Tests");
+        string strPath;
+        if (assemblyName.Name.StartsWith("System."))
+        {
+            Console.WriteLine("CustomAssemblyLoader: this looks like a framework assembly");
+            strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
+        }
+        else
+        {
+            Console.WriteLine("CustomAssemblyLoader: this looks like a test");
+            strPath = Path.Combine(_testsPath, assemblyName.Name + ".exe");
+        }
 
-        string strPath = Path.Combine(strBVTRoot, assemblyName.Name + ".exe");
-
-        Console.WriteLine("Incoming AssemblyName: {0}\n", assemblyName.ToString());
-        Console.WriteLine("Trying to Load: {0}\n", strPath);
-        Console.WriteLine("Computed AssemblyName: {0}\n", GetAssemblyName(strPath).ToString());
+        Console.WriteLine("Incoming AssemblyName: {0}", assemblyName.ToString());
+        Console.WriteLine("Trying to Load: {0}", strPath);
+        Console.WriteLine("Computed AssemblyName: {0}", GetAssemblyName(strPath).ToString());
         Assembly asmLoaded = LoadFromAssemblyPath(strPath);
 
-        //Console.WriteLine("Loaded {0} from {1}", asmLoaded.FullName, asmLoaded.Location);
-        Console.WriteLine("Loaded {0}", asmLoaded.FullName);
+        Console.WriteLine("Loaded {0} from {1}", asmLoaded.FullName, asmLoaded.Location);
 
         return asmLoaded;
     }
@@ -217,7 +248,7 @@ public class ReliabilityFramework
                 if (eTemp == null)
                 {
                     rf._logger.WriteToInstrumentationLog(null, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
-                    Console.WriteLine("There was an exception while attempting to run the tests: See Instrumentation Log for details");
+                    Console.WriteLine("There was an exception while attempting to run the tests: See Instrumentation Log for details. (Exception: {0})", e);
                 }
             }
         }
@@ -529,6 +560,7 @@ public class ReliabilityFramework
         return (99);
     }
 
+#if !PROJECTK_BUILD
     [DllImport("kernel32.dll")]
     private extern static void DebugBreak();
 
@@ -537,6 +569,7 @@ public class ReliabilityFramework
 
     [DllImport("kernel32.dll")]
     private extern static void OutputDebugString(string debugStr);
+#endif
 
     /// <summary>
     /// Checks to see if we should block all execution due to a fatal error
@@ -558,12 +591,20 @@ public class ReliabilityFramework
     }
     internal static void MyDebugBreak(string extraData)
     {
+#if !PROJECTK_BUILD
         if (IsDebuggerPresent())
         {
             OutputDebugString(String.Format("\r\n\r\n\r\nRELIABILITYFRAMEWORK DEBUGBREAK: Breaking in because test throw an exception ({0})\r\n\r\n\r\n", extraData));
             DebugBreak();
         }
         else
+#else
+        if (Debugger.IsAttached)
+        {
+            Console.WriteLine(string.Format("DebugBreak: breaking in because test threw an exception: {0}", extraData));
+            Debugger.Break();
+        }
+#endif
         {
             // We need to stop the process now, 
             // but all the threads are still running
@@ -669,7 +710,7 @@ public class ReliabilityFramework
             ourPageFaultsCounter = new PerformanceCounter("Process", "Page Faults/sec", myProcessName);
         }
     }
-#endif 
+#endif
     /// <summary>
     /// Calculates the total number of tests to be run based upon the maximum
     /// number of loops & number of tests in the current test set.
@@ -1017,7 +1058,7 @@ public class ReliabilityFramework
         test.TestStarted();
 
         StartTestWorker(test);
-#else     
+#else
         try
         {
             if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
@@ -1062,7 +1103,7 @@ public class ReliabilityFramework
         {
             HandleOom(e, "StartTest");
         }
-#endif      
+#endif
     }
 
     /// <summary>
@@ -1439,7 +1480,7 @@ public class ReliabilityFramework
                     {
                         SignalTestFinished(daTest);
                     }
-#endif 
+#endif
                     break;
             }
         }
@@ -1531,15 +1572,31 @@ public class ReliabilityFramework
         {
             RunCommands(test.PreCommands, "pre", test);
 
+            List<string> newPaths = new List<string>(paths);
+            string bvtRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
+            if (bvtRoot != null)
+            {
+                newPaths.Add(bvtRoot);
+            }
+
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            if (coreRoot != null)
+            {
+                newPaths.Add(coreRoot);
+            }
+
+            string thisRoot = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Tests");
+            newPaths.Add(thisRoot);
+
             switch (test.TestStartMode)
             {
                 case TestStartModeEnum.ProcessLoader:
-                    TestPreLoader_Process(test, paths);
+                    TestPreLoader_Process(test, newPaths.ToArray());
                     break;
                 case TestStartModeEnum.AppDomainLoader:
 #if PROJECTK_BUILD
                     Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
-#else                    
+#else
                     TestPreLoader_AppDomain(test, paths);
 #endif
                     break;
@@ -1688,21 +1745,30 @@ public class ReliabilityFramework
     {
         Console.WriteLine("Preloading for process mode");
 
+        Console.WriteLine("basepath: {0}, asm: {1}", test.BasePath, test.Assembly);
+        foreach (var path in paths)
+        {
+            Console.WriteLine(" path: {0}", path);
+        }
         string realpath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(test.BasePath, test.Assembly);
         Debug.Assert(test.TestObject == null);
+        Console.WriteLine("Real path: {0}", realpath);
         if (File.Exists(realpath))
         {
             test.TestObject = realpath;
         }
         else if (File.Exists((string)test.Assembly))
         {
+            Console.WriteLine("asm path: {0}", test.Assembly);
             test.TestObject = test.Assembly;
         }
         else
         {
             foreach (string path in paths)
             {
+                Console.WriteLine("Candidate path: {0}", path);
                 string fullPath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(path, (string)test.Assembly);
+                Console.WriteLine("Candidate full path: {0}", fullPath);
                 if (File.Exists(fullPath))
                 {
                     test.TestObject = fullPath;
@@ -1710,6 +1776,7 @@ public class ReliabilityFramework
                 }
             }
         }
+
         if (test.TestObject == null)
         {
             Console.WriteLine("Couldn't find path for {0}", test.Assembly);
@@ -1740,7 +1807,7 @@ public class ReliabilityFramework
 
             test.EntryPointMethod = methodInfo;
         }
-#endif 
+#endif
     }
 
 #if !PROJECTK_BUILD
@@ -1902,6 +1969,7 @@ Thanks for contributing to CLR Stress!
         {
             try
             {
+#if !PROJECTK_BUILD
                 // Record the failure to the database
                 string arguments = String.Format("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a LOG_FAILED_TEST -k \"FAILED  {0}\"", test.RefOrID);
                 ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
@@ -1916,6 +1984,7 @@ Thanks for contributing to CLR Stress!
                     Console.WriteLine("//b //nologo record.js -i %STRESSID% -a LOG_FAILED_TEST -k \"{0}\"", test.RefOrID);
                 }
                 p.Dispose();
+#endif
             }
             catch
             {
