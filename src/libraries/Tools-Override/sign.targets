@@ -26,8 +26,8 @@
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'SilverlightExtension'">$(ToolsDir)SilverlightPublicKey.snk</AssemblyOriginatorKeyFile>
 
     <StrongNameSig Condition="'$(AssemblyKey)' == 'Open'">Open</StrongNameSig>
-    <StrongNameSig Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">Silverlight</StrongNameSig>
-    <StrongNameSig Condition="'$(AssemblyKey)' == 'SilverlightExtension'">SilverlightExtension</StrongNameSig>
+    <StrongNameSig Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">SilverlightCert121</StrongNameSig>
+    <StrongNameSig Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MsSharedLib</StrongNameSig>
 
     <!-- Don't sign test assemblies with the Microsoft Key, as this affects APIs checking if the test assembly is an MS Key -->
     <AssemblyOriginatorKeyFile Condition="'$(AssemblyKey)' == 'Test'">$(ToolsDir)Test.snk</AssemblyOriginatorKeyFile>
