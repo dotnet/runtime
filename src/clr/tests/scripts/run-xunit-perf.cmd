@@ -7,6 +7,7 @@
 
 setlocal
   set ERRORLEVEL=
+  set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
   set TEST_FILE_EXT=exe
   set TEST_ARCH=x64
@@ -109,7 +110,7 @@ rem ****************************************************************************
     goto :parse_command_line_arguments
   )
   IF /I [%~1] == [-runtype] (
-    set RUN_TYPE=%~2
+    set BENCHVIEW_RUN_TYPE=%~2
     shift
     shift
     goto :parse_command_line_arguments
@@ -222,23 +223,25 @@ endlocal& exit /b %ERRORLEVEL%
 rem ****************************************************************************
 rem   Generates BenchView's submission data and upload it
 rem ****************************************************************************
-  call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json ^
-                                                        --build ..\build.json ^
-                                                        --machine-data ..\machinedata.json ^
-                                                        --metadata ..\submission-metadata.json ^
-                                                        --group "CoreCLR" ^
-                                                        --type "%RUN_TYPE%" ^
-                                                        --config-name "%TEST_CONFIG%" ^
-                                                        --config Configuration "%TEST_CONFIG%" ^
-                                                        --config OS "Windows_NT" ^
-                                                        --arch "%TEST_ARCHITECTURE%" ^
-                                                        --machinepool "PerfSnake"
+setlocal
+  set LV_SUBMISSION_ARGS=
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --build ..\build.json
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machine-data ..\machinedata.json
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --metadata ..\submission-metadata.json
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --group "CoreCLR"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --type "%BENCHVIEW_RUN_TYPE%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config-name "%TEST_CONFIG%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Configuration "%TEST_CONFIG%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OS "Windows_NT"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --arch "%TEST_ARCHITECTURE%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
+  call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json %LV_SUBMISSION_ARGS%
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error Creating BenchView submission data failed.
     exit /b 1
   )
 
-  REM FIXME: call :run_cmd py.exe "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
+  call :run_cmd py.exe "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error Uploading to BenchView failed.
     exit /b 1
