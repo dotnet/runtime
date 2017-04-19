@@ -58,6 +58,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module CustomAttributes not supported on UapAot.")]
         public void CustomAttributes()
         {
             List<CustomAttributeData> customAttributes = Module.CustomAttributes.ToList();
@@ -132,6 +133,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.GetField apis not supported on UapAot.")]
         public void GetField_NullName()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
@@ -152,6 +154,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.GetField apis not supported on UapAot.")]
         public void GetField()
         {
             FieldInfo testInt = TestModule.GetField("TestInt", BindingFlags.Public | BindingFlags.Static);
@@ -165,6 +168,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.GetField apis not supported on UapAot.")]
         public void GetFields()
         {
             List<FieldInfo> fields = TestModule.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).OrderBy(f => f.Name).ToList();
@@ -178,6 +182,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Types))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveType(Type t)
         {
             Assert.Equal(t, Module.ResolveType(t.MetadataToken));
@@ -192,6 +197,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(BadResolveTypes))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveTypeFail(int token)
         {
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -205,6 +211,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Methods))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveMethod(MethodInfo t)
         {
             Assert.Equal(t, Module.ResolveMethod(t.MetadataToken));
@@ -220,6 +227,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(BadResolveMethods))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveMethodFail(int token)
         {
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -233,6 +241,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Fields))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveField(FieldInfo t)
         {
             Assert.Equal(t, Module.ResolveField(t.MetadataToken));
@@ -248,6 +257,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(BadResolveFields))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveFieldFail(int token)
         {
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -266,6 +276,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(BadResolveStrings))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveStringFail(int token)
         {
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -278,12 +289,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Types))]
         [MemberData(nameof(Methods))]
         [MemberData(nameof(Fields))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveMember(MemberInfo member)
         {
             Assert.Equal(member, Module.ResolveMember(member.MetadataToken));
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Resolve apis not supported on UapAot.")]
         public void ResolveMethodOfGenericClass()
         {
             Type t = typeof(Foo<>);

@@ -13,6 +13,7 @@ namespace System.Reflection.Tests
     public static class MethodBodyTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Method.GetMethodBody() not supported on UapAot")]
         public static void Test_MethodBody_ExceptionHandlingClause()
         {
             MethodInfo mi = typeof(MethodBodyTests).GetMethod("MethodBodyExample");
