@@ -1380,7 +1380,7 @@ public:
     static BOOL CanEnableGCNumaAware();
     static void InitNumaNodeInfo();
 
-#if !defined(FEATURE_REDHAWK)&& !defined(FEATURE_PAL)
+#if !defined(FEATURE_REDHAWK)
 private:	// apis types
 
     //GetNumaHighestNodeNumber()
@@ -1448,7 +1448,7 @@ public:
     static DWORD CalculateCurrentProcessorNumber();
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_REDHAWK)
 private:
     //GetLogicalProcessorInforomationEx()
     typedef BOOL

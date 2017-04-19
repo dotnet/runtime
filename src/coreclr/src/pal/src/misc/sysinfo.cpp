@@ -94,6 +94,39 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 #endif // __APPLE__
 
+/*++
+Function:
+    GetNumberOfProcessors
+
+Return number of processors available for the current process
+--*/
+int GetNumberOfProcessors()
+{
+    int nrcpus = 0;
+
+#if HAVE_SYSCONF
+    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (nrcpus < 1)
+    {
+        ASSERT("sysconf failed for _SC_NPROCESSORS_ONLN (%d)\n", errno);
+    }
+#elif HAVE_SYSCTL
+    int rc;
+    size_t sz;
+    int mib[2];
+
+    sz = sizeof(nrcpus);
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+    rc = sysctl(mib, 2, &nrcpus, &sz, NULL, 0);
+    if (rc != 0)
+    {
+        ASSERT("sysctl failed for HW_NCPU (%d)\n", errno);
+    }
+#endif // HAVE_SYSCONF
+
+    return nrcpus;
+}
 
 /*++
 Function:
@@ -137,27 +170,7 @@ GetSystemInfo(
     lpSystemInfo->dwPageSize = pagesize;
     lpSystemInfo->dwActiveProcessorMask_PAL_Undefined = 0;
 
-#if HAVE_SYSCONF
-    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
-    if (nrcpus < 1)
-    {
-        ASSERT("sysconf failed for _SC_NPROCESSORS_ONLN (%d)\n", errno);
-    }
-#elif HAVE_SYSCTL
-    int rc;
-    size_t sz;
-    int mib[2];
-
-    sz = sizeof(nrcpus);
-    mib[0] = CTL_HW;
-    mib[1] = HW_NCPU;
-    rc = sysctl(mib, 2, &nrcpus, &sz, NULL, 0);
-    if (rc != 0)
-    {
-        ASSERT("sysctl failed for HW_NCPU (%d)\n", errno);
-    }
-#endif // HAVE_SYSCONF
-
+    nrcpus = GetNumberOfProcessors();
     TRACE("dwNumberOfProcessors=%d\n", nrcpus);
     lpSystemInfo->dwNumberOfProcessors = nrcpus;
 

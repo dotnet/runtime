@@ -181,6 +181,7 @@ set(SOURCES
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
+  numa/numa.cpp
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp
@@ -371,6 +372,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     ${KVM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+
+if(HAVE_NUMA_H)
+  target_link_libraries(coreclrpal
+    numa
+  )
+endif(HAVE_NUMA_H)
 
 add_subdirectory(examples)
 
