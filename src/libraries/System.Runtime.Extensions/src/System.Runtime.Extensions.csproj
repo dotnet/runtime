@@ -138,12 +138,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempPathW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetTempPathW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
     </Compile>
