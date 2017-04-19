@@ -40,6 +40,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Invoking static constructors not supported on UapAot")]
         public static void TestInvoke_Nullery()
         {
             ConstructorInfo[] cis = GetConstructors(typeof(ConstructorInfoClassA));
@@ -213,7 +214,7 @@ namespace System.Reflection.Tests
         }
     }
 
-    public class ConstructorInfoClassA
+    public static class ConstructorInfoClassA
     {
         static ConstructorInfoClassA()
         {

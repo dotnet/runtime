@@ -30,6 +30,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyName.CodeBase and EscapedCodeBase not supported on UapAot")]
         public static void Verify_EscapedCodeBase()
         {
             AssemblyName n = new AssemblyName("MyAssemblyName");
@@ -75,6 +76,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyName.GetAssemblyName() not supported on UapAot")]
         public static void GetAssemblyName()
         {
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));

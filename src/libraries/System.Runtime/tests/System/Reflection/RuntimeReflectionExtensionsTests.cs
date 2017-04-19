@@ -20,7 +20,20 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetRuntimeBaseDefinition()
         {
-            Assert.Equal(typeof(Stream).GetMethod("Read"), typeof(MemoryStream).GetMethod("Read").GetRuntimeBaseDefinition());
+            MethodInfo derivedFoo = typeof(TestDerived).GetMethod(nameof(TestDerived.Foo));
+            MethodInfo baseFoo = typeof(TestBase).GetMethod(nameof(TestBase.Foo));
+            MethodInfo actual = derivedFoo.GetRuntimeBaseDefinition();
+            Assert.Equal(baseFoo, actual);
+        }
+
+        private abstract class TestBase
+        {
+            public abstract void Foo();
+        }
+
+        private class TestDerived : TestBase
+        {
+            public override void Foo() { throw null; }
         }
 
         [Fact]
