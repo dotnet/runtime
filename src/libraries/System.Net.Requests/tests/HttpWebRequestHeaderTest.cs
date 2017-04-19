@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Net.Http;
+using System.IO;
 using System.Net.Sockets;
-using System.Net.Test.Common;
-using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -33,6 +31,7 @@ namespace System.Net.Tests
             Assert.Null(request.CookieContainer);
             Assert.True(request.AllowWriteStreamBuffering);
             Assert.NotNull(request.ClientCertificates);
+            Assert.True(request.KeepAlive);
 
             // TODO: Issue #17842
             if (!PlatformDetection.IsFullFramework)
@@ -220,6 +219,35 @@ namespace System.Net.Tests
             using (var response = (HttpWebResponse)request.GetResponse())
             {
                 Assert.True(request.PreAuthenticate);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void HttpWebRequest_KeepAlive_CorrectConnectionHeaderSent(bool? keepAlive)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+
+            if (keepAlive.HasValue)
+            {
+                request.KeepAlive = keepAlive.Value;
+            }
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            using (var body = new StreamReader(response.GetResponseStream()))
+            {
+                string content = body.ReadToEnd();
+                if (!keepAlive.HasValue || keepAlive.Value)
+                {
+                    Assert.Contains("\"Connection\": \"Keep-Alive\"", content, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    Assert.Contains("\"Connection\": \"close\"", content, StringComparison.OrdinalIgnoreCase);
+                    Assert.DoesNotContain("\"Keep-Alive\"", content, StringComparison.OrdinalIgnoreCase);
+                }
             }
         }
     }
