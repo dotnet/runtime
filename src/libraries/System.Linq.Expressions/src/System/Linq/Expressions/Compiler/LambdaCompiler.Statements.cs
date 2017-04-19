@@ -633,13 +633,7 @@ namespace System.Linq.Expressions.Compiler
         private bool TryEmitHashtableSwitch(SwitchExpression node, CompilationFlags flags)
         {
             // If we have a comparison other than string equality, bail
-            MethodInfo equality = String_op_Equality_String_String;
-            if (equality != null && !equality.IsStatic)
-            {
-                equality = null;
-            }
-
-            if (node.Comparison != equality)
+            if (node.Comparison != String_op_Equality_String_String && node.Comparison != String_Equals_String_String)
             {
                 return false;
             }
