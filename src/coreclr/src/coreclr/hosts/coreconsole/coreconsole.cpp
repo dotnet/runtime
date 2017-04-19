@@ -71,7 +71,7 @@ class HostEnvironment
     // The list of paths to the assemblies that will be trusted by CoreCLR
     StringBuffer m_tpaList;
 
-    ICLRRuntimeHost2* m_CLRRuntimeHost;
+    ICLRRuntimeHost4* m_CLRRuntimeHost;
 
     HMODULE m_coreCLRModule;
 
@@ -326,8 +326,8 @@ public:
         return m_hostExeName;
     }
 
-    // Returns the ICLRRuntimeHost2 instance, loading it from CoreCLR.dll if necessary, or nullptr on failure.
-    ICLRRuntimeHost2* GetCLRRuntimeHost() {
+    // Returns the ICLRRuntimeHost4 instance, loading it from CoreCLR.dll if necessary, or nullptr on failure.
+    ICLRRuntimeHost4* GetCLRRuntimeHost() {
         if (!m_CLRRuntimeHost) {
 
             if (!m_coreCLRModule) {
@@ -347,9 +347,9 @@ public:
 
             *m_log << W("Calling GetCLRRuntimeHost(...)") << Logger::endl;
 
-            HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost2, (IUnknown**)&m_CLRRuntimeHost);
+            HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost4, (IUnknown**)&m_CLRRuntimeHost);
             if (FAILED(hr)) {
-                *m_log << W("Failed to get ICLRRuntimeHost2 interface. ERRORCODE: ") << hr << Logger::endl;
+                *m_log << W("Failed to get ICLRRuntimeHost4 interface. ERRORCODE: ") << hr << Logger::endl;
                 return nullptr;
             }
         }
@@ -405,14 +405,14 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
 
     // Start the CoreCLR
 
-    ICLRRuntimeHost2 *host = hostEnvironment.GetCLRRuntimeHost();
+    ICLRRuntimeHost4 *host = hostEnvironment.GetCLRRuntimeHost();
     if (!host) {
         return false;
     }
 
     HRESULT hr;
 
-    log << W("Setting ICLRRuntimeHost2 startup flags") << Logger::endl;
+    log << W("Setting ICLRRuntimeHost4 startup flags") << Logger::endl;
 
     // Default startup flags
     hr = host->SetStartupFlags((STARTUP_FLAGS)
@@ -424,7 +424,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         return false;
     }
 
-    log << W("Starting ICLRRuntimeHost2") << Logger::endl;
+    log << W("Starting ICLRRuntimeHost4") << Logger::endl;
 
     hr = host->Start();
     if (FAILED(hr)) {
@@ -541,15 +541,17 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
 
     log << W("Unloading the AppDomain") << Logger::endl;
 
-    hr = host->UnloadAppDomain(
+    hr = host->UnloadAppDomain2(
         domainId, 
-        true);                          // Wait until done
+        true,
+        (int *)&exitCode);                          // Wait until done
 
     if (FAILED(hr)) {
         log << W("Failed to unload the AppDomain. ERRORCODE: ") << hr << Logger::endl;
         return false;
     }
 
+    log << W("App domain unloaded exit value = ") << exitCode << Logger::endl;
 
     //-------------------------------------------------------------
 
@@ -568,7 +570,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
 
     // Release the reference to the host
 
-    log << W("Releasing ICLRRuntimeHost2") << Logger::endl;
+    log << W("Releasing ICLRRuntimeHost4") << Logger::endl;
 
     host->Release();
 
