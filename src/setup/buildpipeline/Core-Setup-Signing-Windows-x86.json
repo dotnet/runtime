@@ -339,7 +339,7 @@
       "inputs": {}
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish Build Artifacts",
@@ -439,7 +439,7 @@
       "value": "PassedViaPipeBuild"
     },
     "PUBLISH_TO_AZURE_BLOB": {
-      "value": "false"
+      "value": "true"
     },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
