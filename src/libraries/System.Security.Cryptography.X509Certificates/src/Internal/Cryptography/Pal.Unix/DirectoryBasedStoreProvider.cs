@@ -379,9 +379,20 @@ namespace Internal.Cryptography.Pal
                         new IOException(error.GetErrorMessage(), error.RawErrno));
                 }
 
-                Debug.Assert(Interop.Sys.FStat(stream.SafeFileHandle, out stat) == 0);
-                Debug.Assert((stat.Mode & (int)requiredPermissions) == (int)requiredPermissions);
-                Debug.Assert((stat.Mode & (int)forbiddenPermissions) == 0);
+                // Verify the chmod applied.
+                if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw new CryptographicException(
+                        SR.Cryptography_FileStatusError,
+                        new IOException(error.GetErrorMessage(), error.RawErrno));
+                }
+
+                if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
+                    (stat.Mode & (int)forbiddenPermissions) != 0)
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
+                }
             }
         }
     }
