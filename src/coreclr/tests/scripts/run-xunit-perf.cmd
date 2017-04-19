@@ -212,7 +212,13 @@ rem ****************************************************************************
   set BENCHVIEW_MEASUREMENT_PARSER=xunit
   if defined IS_SCENARIO_TEST set BENCHVIEW_MEASUREMENT_PARSER=xunitscenario
 
-  call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %BENCHVIEW_MEASUREMENT_PARSER% "Perf-%BENCHNAME%.xml" --better desc --drop-first-value --append
+  set LV_MEASUREMENT_ARGS=
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% %BENCHVIEW_MEASUREMENT_PARSER%
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% "Perf-%BENCHNAME%.xml"
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --better desc
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --drop-first-value
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --append
+  call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS%
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error Failed to generate BenchView measurement data.
     exit /b 1
