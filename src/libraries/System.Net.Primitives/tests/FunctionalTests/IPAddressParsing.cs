@@ -74,8 +74,6 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("127.0.0.1 ")] // trailing whitespace
         [InlineData(" 127.0.0.1 ")] // leading and trailing whitespace
         [InlineData("192.168.0.0/16")] // with subnet
-        [InlineData("192.168.0.0:80")] // with port
-        [InlineData("192.168.0.1:80")] // with port
         [InlineData("157.3B191B")] // Hex without 0x
         [InlineData("1.1.1.0x")] // Empty trailing hex segment
         [InlineData("0000X9D.0x3B.0X19.0x1B")] // Leading zeros on hex
@@ -105,13 +103,15 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("12.1.abc.5")] // text in section
         public void ParseIPv4_InvalidAddress_Failure(string address)
         {
-            FormatException fe = Assert.Throws<FormatException>(() => IPAddress.Parse(address));
-            SocketException se = Assert.IsType<SocketException>(fe.InnerException);
-            Assert.NotEmpty(se.Message);
+            ParseInvalidAddress(address, hasInnerSocketException: !PlatformDetection.IsFullFramework);
+        }
 
-            IPAddress result = IPAddress.Loopback;
-            Assert.False(IPAddress.TryParse(address, out result));
-            Assert.Null(result);
+        [Theory]
+        [InlineData("192.168.0.0:80")] // with port
+        [InlineData("192.168.0.1:80")] // with port
+        public void ParseIPv4_InvalidAddress_ThrowsFormatExceptionWithInnerException(string address)
+        {
+            ParseInvalidAddress(address, hasInnerSocketException: true);
         }
 
         [Theory]
@@ -297,7 +297,6 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("Fe08::1]")] // trailing bracket
         [InlineData("Fe08::1]]")] // two trailing brackets
         [InlineData("[Fe08::1]]")] // one leading and two trailing brackets
-        [InlineData("[1]")] // incomplete
         [InlineData(":1")] // leading single colon
         [InlineData("1:")] // trailing single colon
         [InlineData(" ::1")] // leading whitespace
@@ -308,22 +307,41 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("1:1\u67081:1:1")] // invalid char
         [InlineData("FE08::260.168.0.1")] // out of range
         [InlineData("::192.168.0.0x0")] // hex failure
-        [InlineData("[192.168.0.1]")] // raw v4
         [InlineData("G::")] // invalid hex
         [InlineData("FFFFF::")] // invalid value
         [InlineData(":%12")] // colon scope
-        [InlineData("%12")] // just scope
         [InlineData("::%1a")] // alphanumeric scope
         [InlineData("[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/")] // errneous ending slash after ignored port
         [InlineData("::1234%0x12")] // invalid scope ID
+        public void ParseIPv6_InvalidAddress_ThrowsFormatException(string invalidAddress)
+        {
+            ParseInvalidAddress(invalidAddress, hasInnerSocketException: true);
+        }
+
+        [Theory]
         [InlineData("")] // empty
         [InlineData(" ")] // whitespace
         [InlineData("  ")] // whitespace
-        public void ParseIPv6_InvalidAddress_ThrowsFormatException(string invalidAddress)
+        [InlineData("%12")] // just scope
+        [InlineData("[192.168.0.1]")] // raw v4
+        [InlineData("[1]")] // incomplete
+        public void ParseIPv6_InvalidAddress_ThrowsFormatExceptionWithNoInnerExceptionInNetfx(string invalidAddress)
+        {
+            ParseInvalidAddress(invalidAddress, hasInnerSocketException: !PlatformDetection.IsFullFramework);
+        }
+
+        private static void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
         {
             FormatException fe = Assert.Throws<FormatException>(() => IPAddress.Parse(invalidAddress));
-            SocketException se = Assert.IsType<SocketException>(fe.InnerException);
-            Assert.NotEmpty(se.Message);
+            if (hasInnerSocketException)
+            {
+                SocketException se = Assert.IsType<SocketException>(fe.InnerException);
+                Assert.NotEmpty(se.Message);
+            }
+            else
+            {
+                Assert.Null(fe.InnerException);
+            }
 
             IPAddress result = IPAddress.Loopback;
             Assert.False(IPAddress.TryParse(invalidAddress, out result));
