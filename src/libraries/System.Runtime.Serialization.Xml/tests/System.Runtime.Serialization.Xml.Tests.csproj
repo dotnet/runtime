@@ -23,6 +23,11 @@
     <Compile Include="$(TestSourceFolder)MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)XmlDictionaryWriterTest.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTestTypes\ComparisonHelper.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTestTypes\DataContractResolverLibrary.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTestTypes\DCRSampleType.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTestTypes\DCRTypeLibrary.cs" />
+    <Compile Include="$(TestSourceFolder)SerializationTestTypes\Primitives.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
