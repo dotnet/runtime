@@ -2303,7 +2303,7 @@
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:MONO_FEATURE_THREAD_ABORT -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>Mono.CSharp.dll</output>
-      <built_sources></built_sources>
+      <built_sources>net_4_x-parser.cs</built_sources>
       <library_output>./../../class/lib/net_4_x/Mono.CSharp.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
@@ -2314,7 +2314,7 @@
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/Mono.CSharp.dll</flags>
       <output>net_4_x_Mono.CSharp_test.dll</output>
-      <built_sources></built_sources>
+      <built_sources>net_4_x-parser.cs</built_sources>
       <library_output>net_4_x_Mono.CSharp_test.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
