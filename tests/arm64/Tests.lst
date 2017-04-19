@@ -76801,7 +76801,7 @@ RelativePath=Regressions\coreclr\GitHub_7685\Test7685\Test7685.cmd
 WorkingDir=Regressions\coreclr\GitHub_7685\Test7685
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10107;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated921.cmd_9903]

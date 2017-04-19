@@ -30,6 +30,9 @@ public:
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
+#elif defined(_TARGET_ARM64_)
+        // This assert is not interesting on arm64. argLocDescForStructInRegs could be
+        // initialized if the args are being enregistered.
 #else        
         _ASSERTE(argLocDescForStructInRegs == NULL);
 #endif        
@@ -41,6 +44,46 @@ public:
         LIMITED_METHOD_CONTRACT;
         return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + m_offset);
     }
+
+#if defined(_TARGET_ARM64_)
+#ifndef DACCESS_COMPILE
+
+    // Returns true if the ArgDestination represents an HFA struct
+    bool IsHFA()
+    {
+        return m_argLocDescForStructInRegs != NULL;
+    }
+
+    // Copy struct argument into registers described by the current ArgDestination.
+    // Arguments:
+    //  src = source data of the structure 
+    //  fieldBytes - size of the structure
+    void CopyHFAStructToRegister(void *src, int fieldBytes)
+    {
+        // We are either copying either a float or double HFA and need to
+        // enregister each field.
+
+        int floatRegCount = m_argLocDescForStructInRegs->m_cFloatReg;
+        bool typeFloat = m_argLocDescForStructInRegs->m_isSinglePrecision;
+        void* dest = this->GetDestinationAddress();
+
+        if (typeFloat)
+        {
+            for (int i = 0; i < floatRegCount; ++i) 
+            {
+                // Copy 4 bytes on 8 bytes alignment
+                *((UINT64*)dest + i) = *((UINT32*)src + i);
+            }
+        }
+        else
+        {
+            // We can just do a memcpy.
+            memcpyNoGCRefs(dest, src, fieldBytes);
+        }
+    }
+
+#endif // !DACCESS_COMPILE
+#endif // defined(_TARGET_ARM64_)
 
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
