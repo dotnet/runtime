@@ -355,4 +355,10 @@
   <data name="XsdDateTimeExpected" xml:space="preserve">
     <value>Core Properties part: Text data of XSD type 'DateTime' was expected.</value>
   </data>
+  <data name="CreateNewOnNonEmptyStream" xml:space="preserve">
+    <value>CreateNew is not a valid FileMode for a non-empty stream.</value>
+  </data>
+  <data name="ZipZeroSizeFileIsNotValidArchive" xml:space="preserve">
+    <value>Archive file cannot be size 0.</value>
+  </data>
 </root>
