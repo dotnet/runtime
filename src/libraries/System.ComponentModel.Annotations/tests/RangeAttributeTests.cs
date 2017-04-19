@@ -71,7 +71,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(stringIntRange, "0");
             yield return new TestCase(stringIntRange, 4);
             yield return new TestCase(stringIntRange, "4");
-            yield return new TestCase(stringIntRange, "abc");
             yield return new TestCase(stringIntRange, new object());
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(stringIntRange, new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
@@ -81,10 +80,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(stringDoubleRange, (0.9999999).ToString());
             yield return new TestCase(stringDoubleRange, 3.0000001);
             yield return new TestCase(stringDoubleRange, (3.0000001).ToString());
-            yield return new TestCase(stringDoubleRange, "abc");
             yield return new TestCase(stringDoubleRange, new object());
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(stringDoubleRange, new IConvertibleImplementor() { DoubleThrow = new NotSupportedException() });
+        }
+
+        [Theory]
+        [InlineData(typeof(int), "1", "3")]
+        [InlineData(typeof(double), "1", "3")]
+        public static void Validate_CantConvertValueToTargetType_ThrowsException(Type type, string minimum, string maximum)
+        {
+            var attribute = new RangeAttribute(type, minimum, maximum);
+            Assert.Throws<Exception>(() => attribute.Validate("abc", new ValidationContext(new object())));
+            Assert.Throws<Exception>(() => attribute.IsValid("abc"));
         }
 
         [Fact]
@@ -152,15 +160,21 @@ namespace System.ComponentModel.DataAnnotations.Tests
             RangeAttribute attribute = new RangeAttribute(typeof(int), minimum, maximum);
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
-
         [Theory]
-        [InlineData(typeof(DateTime), "Cannot Convert", "2014-03-19")]
-        [InlineData(typeof(DateTime), "2014-03-19", "Cannot Convert")]
         [InlineData(typeof(int), "Cannot Convert", "3")]
         [InlineData(typeof(int), "1", "Cannot Convert")]
         [InlineData(typeof(double), "Cannot Convert", "3")]
         [InlineData(typeof(double), "1", "Cannot Convert")]
-        public static void Validate_MinimumOrMaximumCantBeConvertedToType_ThrowsFormatException(Type type, string minimum, string maximum)
+        public static void Validate_MinimumOrMaximumCantBeConvertedToIntegralType_ThrowsException(Type type, string minimum, string maximum)
+        {
+            RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
+            Assert.Throws<Exception>(() => attribute.Validate("Any", new ValidationContext(new object())));
+        }
+
+        [Theory]
+        [InlineData(typeof(DateTime), "Cannot Convert", "2014-03-19")]
+        [InlineData(typeof(DateTime), "2014-03-19", "Cannot Convert")]
+        public static void Validate_MinimumOrMaximumCantBeConvertedToDateTime_ThrowsFormatException(Type type, string minimum, string maximum)
         {
             RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
             Assert.Throws<FormatException>(() => attribute.Validate("Any", new ValidationContext(new object())));
@@ -188,7 +202,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_IConvertibleThrowsCustomException_IsNotCaught()
         {
             RangeAttribute attribute = new RangeAttribute(typeof(int), "1", "1");
-            Assert.Throws<ArithmeticException>(() => attribute.Validate(new IConvertibleImplementor() { IntThrow = new ArithmeticException() }, new ValidationContext(new object())));
+            Assert.Throws<ValidationException>(() => attribute.Validate(new IConvertibleImplementor() { IntThrow = new ArithmeticException() }, new ValidationContext(new object())));
         }
     }
 }

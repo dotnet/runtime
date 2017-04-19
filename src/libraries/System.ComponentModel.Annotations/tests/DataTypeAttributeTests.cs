@@ -65,25 +65,33 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Throws<IndexOutOfRangeException>(() => attribute.GetDataTypeName());
         }
 
+        public static IEnumerable<object[]> Ctor_String_TestData()
+        {
+            yield return new object[] { "CustomValue", true };
+            yield return new object[] { "", false };
+            yield return new object[] { null, false };
+
+            // .NET Core fixed a bug where whitespace strings were allowed as CustomDataType.
+            // See https://github.com/dotnet/corefx/issues/4465.
+            yield return new object[] { "   ", PlatformDetection.IsFullFramework };
+        }
+
         [Theory]
-        [InlineData("CustomValue")]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData(null)]
-        public static void Ctor_String(string customDataType)
+        [MemberData(nameof(Ctor_String_TestData))]
+        public static void Ctor_String(string customDataType, bool valid)
         {
             DataTypeAttribute attribute = new DataTypeAttribute(customDataType);
             Assert.Equal(DataType.Custom, attribute.DataType);
             Assert.Equal(customDataType, attribute.CustomDataType);
 
-            if (string.IsNullOrWhiteSpace(customDataType))
+            if (valid)
             {
-                Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
-                Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));
+                Assert.Equal(customDataType, attribute.GetDataTypeName());
             }
             else
             {
-                Assert.Equal(customDataType, attribute.GetDataTypeName());
+                Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
+                Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));
             }
         }
 

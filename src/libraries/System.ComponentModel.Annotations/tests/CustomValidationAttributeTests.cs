@@ -77,7 +77,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void RequiresValidationContext_Get_ReturnsExpected(string method, bool expected)
         {
             CustomValidationAttribute attribute = GetAttribute(method);
-            Assert.Equal(expected, attribute.RequiresValidationContext);
+
+            // The full .NET Framework has a bug where CustomValidationAttribute doesn't
+            // validate the context. See https://github.com/dotnet/corefx/issues/18360.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.False(attribute.RequiresValidationContext);
+            }
+            else
+            {
+                Assert.Equal(expected, attribute.RequiresValidationContext);
+            }
         }
 
         public static IEnumerable<object[]> BadlyFormed_TestData()
@@ -96,11 +106,21 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
         [MemberData(nameof(BadlyFormed_TestData))]
-        public static void RequiresValidationContext_BadlyFormed_ThrowsInvalidOperationException(Type validatorType, string method)
+        public static void RequiresValidationContext_BadlyFormed_NetCore_ThrowsInvalidOperationException(Type validatorType, string method)
         {
             CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
             Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The full .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
+        [MemberData(nameof(BadlyFormed_TestData))]
+        public static void RequiresValidationContext_BadlyFormed_NetFx_DoesNotThrow(Type validatorType, string method)
+        {
+            CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
+            Assert.False(attribute.RequiresValidationContext);
         }
 
         [Theory]
