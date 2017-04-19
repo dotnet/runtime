@@ -413,11 +413,22 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                         case RFConfigOptions.RFConfigOptions_Test_MinMaxTestsUseCPUCount:
                                             if (GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_MinMaxTestsUseCPUCount))
                                             {
-                                                int CPUCount = Convert.ToInt32(Environment.GetEnvironmentVariable("NUMBER_OF_PROCESSORS"));
-                                                if (CPUCount <= 0)
-                                                    throw new Exception("Invalid Value when reading NUMBER_OF_PROCESSORS: {0}" + CPUCount);
-                                                _curTestSet.MinTestsRunning = CPUCount;
-                                                _curTestSet.MaxTestsRunning = (int)(CPUCount * 1.5);
+                                                string numProcessors = Environment.GetEnvironmentVariable("NUMBER_OF_PROCESSORS");
+                                                int cpuCount;
+                                                if (numProcessors == null)
+                                                {
+                                                    Console.WriteLine("NUMBER_OF_PROCESSORS environment variable not supplied, falling back to Environment");
+                                                    cpuCount = Environment.ProcessorCount;
+                                                }
+                                                else
+                                                {
+                                                    cpuCount = Convert.ToInt32(Environment.GetEnvironmentVariable("NUMBER_OF_PROCESSORS"));
+                                                }
+
+                                               if (cpuCount <= 0)
+                                                    throw new Exception("Invalid Value when reading processor count: " + cpuCount);
+                                                _curTestSet.MinTestsRunning = cpuCount;
+                                                _curTestSet.MaxTestsRunning = (int)(cpuCount * 1.5);
                                             }
                                             break;
                                         case RFConfigOptions.RFConfigOptions_Test_SuppressConsoleOutputFromTests:
