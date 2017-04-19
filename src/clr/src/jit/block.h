@@ -1066,8 +1066,6 @@ struct BasicBlock : private LIR::Range
     GenTree* firstNode();
     GenTree* lastNode();
 
-    bool containsStatement(GenTree* statement);
-
     bool endsWithJmpMethod(Compiler* comp);
 
     bool endsWithTailCall(Compiler* comp,
