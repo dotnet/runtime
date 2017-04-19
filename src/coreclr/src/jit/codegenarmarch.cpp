@@ -771,16 +771,10 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         var_types elemType = arrOffset->gtArrElemType;
         unsigned  offset   = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
 
-// Load tmpReg with the dimension size and evaluate
-// tgtReg = offsetReg*dim_size + indexReg.
-#if defined(_TARGET_ARM_)
-        emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_4BYTE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
-        emit->emitIns_R_R_R(INS_MUL, EA_4BYTE, tgtReg, tmpReg, offsetReg);
-        emit->emitIns_R_R_R(INS_add, EA_4BYTE, tgtReg, tgtReg, indexReg);
-#elif defined(_TARGET_ARM64_)
-        emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_8BYTE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
-        emit->emitIns_R_R_R_R(INS_madd, EA_4BYTE, tgtReg, tmpReg, offsetReg, indexReg);
-#endif // _TARGET_*
+        // Load tmpReg with the dimension size and evaluate
+        // tgtReg = offsetReg*tmpReg + indexReg.
+        emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_PTRSIZE, tmpReg, arrReg, offset);
+        emit->emitIns_R_R_R_R(INS_MULADD, EA_PTRSIZE, tgtReg, tmpReg, offsetReg, indexReg);
     }
     else
     {
