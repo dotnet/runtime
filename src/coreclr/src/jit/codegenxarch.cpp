@@ -4979,9 +4979,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
 #if defined(_TARGET_X86_)
-    bool fCallerPop = (call->gtFlags & GTF_CALL_POP_ARGS) != 0;
+    bool fCallerPop = call->CallerPop();
 
 #ifdef UNIX_X86_ABI
+    if (!call->IsUnmanaged())
     {
         CorInfoCallConv callConv = CORINFO_CALLCONV_DEFAULT;
 
