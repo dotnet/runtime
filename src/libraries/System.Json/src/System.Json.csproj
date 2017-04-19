@@ -6,9 +6,7 @@
     <!-- 
         System.Json is a library for compat purposes so we want to keep the same identity as it originally shipped with in Silverlight
     -->
-    <!-- Temporarily disabled due to signing service not knowing this signing key.
-         Reenable for https://github.com/dotnet/corefx/pull/18558 when this can work.
-    <AssemblyKey>SilverlightExtension</AssemblyKey> -->
+    <AssemblyKey>SilverlightExtension</AssemblyKey>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
