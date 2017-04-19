@@ -2775,6 +2775,41 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.IntProperty, actual.IntProperty);
     }
 
+    [Fact]
+    public static void DCS_ResolveNameReturnsEmptyNamespace()
+    {
+        EmptyNsContainer instance = new EmptyNsContainer(new EmptyNSAddress());
+        var settings = new DataContractSerializerSettings() { MaxItemsInObjectGraph = int.MaxValue, IgnoreExtensionDataObject = false, PreserveObjectReferences = false };
+        string baseline1 = @"<EmptyNsContainer xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>P1</Name><address i:type=""EmptyNSAddress"" xmlns=""""><street>downing street</street></address></EmptyNsContainer>";
+        EmptyNsContainer result = SerializeAndDeserialize(instance, baseline1, settings);
+        Assert.True(result.address == null, "Address not null");
+
+        settings = new DataContractSerializerSettings() { DataContractResolver = new EmptyNamespaceResolver(), MaxItemsInObjectGraph = int.MaxValue, IgnoreExtensionDataObject = false, PreserveObjectReferences = false };
+        result = SerializeAndDeserialize(instance, baseline1, settings);
+        Assert.True(result.address == null, "Address not null");
+
+        instance = new EmptyNsContainer(new UknownEmptyNSAddress());        
+        string baseline2 = @"<EmptyNsContainer xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>P1</Name><address i:type=""AddressFoo"" xmlns=""""><street>downing street</street></address></EmptyNsContainer>";
+        result = SerializeAndDeserialize(instance, baseline2, settings);
+        Assert.True(result.address == null, "Address not null");       
+    }
+
+    [Fact]
+    public static void DCS_ResolveDatacontractBaseType()
+    {
+        Customer customerInstance = new PreferredCustomerProxy();
+        Type customerBaseType = customerInstance.GetType().BaseType;
+        var settings = new DataContractSerializerSettings() { DataContractResolver = new ProxyDataContractResolver(), MaxItemsInObjectGraph = int.MaxValue, IgnoreExtensionDataObject = false, PreserveObjectReferences = true };
+        string baseline1 = @"<Customer z:Id=""1"" i:type=""PreferredCustomer"" xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><Name i:nil=""true""/><VipInfo i:nil=""true""/></Customer>";
+        object result = SerializeAndDeserialize(customerInstance, baseline1, settings);
+        Assert.Equal(customerBaseType, result.GetType());
+
+        settings = new DataContractSerializerSettings() { DataContractResolver = new ProxyDataContractResolver(), MaxItemsInObjectGraph = int.MaxValue, IgnoreExtensionDataObject = false, PreserveObjectReferences = false };
+        string baseline2 = @"<Customer z:Id=""i1"" i:type=""PreferredCustomer"" xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><Name i:nil=""true""/><VipInfo i:nil=""true""/></Customer>";
+        result = SerializeAndDeserialize(customerInstance, baseline2, settings);
+        Assert.Equal(customerBaseType, result.GetType());
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
