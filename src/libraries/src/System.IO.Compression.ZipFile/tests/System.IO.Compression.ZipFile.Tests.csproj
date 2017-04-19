@@ -44,7 +44,7 @@
     <Compile Include="ZipFileConvenienceMethods.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.4-prerelease\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.5-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>
