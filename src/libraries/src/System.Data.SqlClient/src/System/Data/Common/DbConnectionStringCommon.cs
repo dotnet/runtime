@@ -297,6 +297,7 @@ namespace System.Data.Common
         internal const string DataSource = "Data Source";
         internal const string IntegratedSecurity = "Integrated Security";
         internal const string Password = "Password";
+        internal const string Driver = "Driver";
         internal const string PersistSecurityInfo = "Persist Security Info";
         internal const string UserID = "User ID";
 

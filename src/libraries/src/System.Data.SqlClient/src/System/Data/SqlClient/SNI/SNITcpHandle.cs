@@ -110,7 +110,7 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                TimeSpan ts;
+                TimeSpan ts = default(TimeSpan);
 
                 // In case the Timeout is Infinite, we will receive the max value of Int64 as the tick count
                 // The infinite Timeout is a function of ConnectionString Timeout=0

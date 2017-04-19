@@ -179,6 +179,7 @@
     <Compile Include="System\Data\Common\DBConnectionString.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
+    <Compile Include="System\Data\Common\DbConnectionStringBuilderDescriptor.cs" />
     <Compile Include="System\Data\Common\DbDataAdapter.cs" />
     <Compile Include="System\Data\Common\DbDataReader.cs" />
     <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />

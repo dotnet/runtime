@@ -135,6 +135,7 @@
     <Compile Include="System\Data\SqlClient\TdsEnums.cs" />
     <Compile Include="System\Data\SqlClient\TdsParameterSetter.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParser.RegisterEncoding.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserHelperClasses.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSessionPool.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObject.cs" />

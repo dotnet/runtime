@@ -26,7 +26,7 @@ namespace System.Data.ProviderBase
             _defaultLocaleID = defaultLocaleID;
         }
 
-        public FieldNameLookup(DbDataReader reader, int defaultLocaleID) : base(reader)
+        public FieldNameLookup(IDataReader reader, int defaultLocaleID) : base(reader)
         {
             _defaultLocaleID = defaultLocaleID;
         }
