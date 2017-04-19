@@ -13701,20 +13701,20 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
             /* Make sure we have the operator range right */
 
-            noway_assert(GT_SUB == GT_ADD + 1);
-            noway_assert(GT_MUL == GT_ADD + 2);
-            noway_assert(GT_DIV == GT_ADD + 3);
-            noway_assert(GT_MOD == GT_ADD + 4);
-            noway_assert(GT_UDIV == GT_ADD + 5);
-            noway_assert(GT_UMOD == GT_ADD + 6);
+            static_assert(GT_SUB == GT_ADD + 1, "bad oper value");
+            static_assert(GT_MUL == GT_ADD + 2, "bad oper value");
+            static_assert(GT_DIV == GT_ADD + 3, "bad oper value");
+            static_assert(GT_MOD == GT_ADD + 4, "bad oper value");
+            static_assert(GT_UDIV == GT_ADD + 5, "bad oper value");
+            static_assert(GT_UMOD == GT_ADD + 6, "bad oper value");
 
-            noway_assert(GT_OR == GT_ADD + 7);
-            noway_assert(GT_XOR == GT_ADD + 8);
-            noway_assert(GT_AND == GT_ADD + 9);
+            static_assert(GT_OR == GT_ADD + 7, "bad oper value");
+            static_assert(GT_XOR == GT_ADD + 8, "bad oper value");
+            static_assert(GT_AND == GT_ADD + 9, "bad oper value");
 
-            noway_assert(GT_LSH == GT_ADD + 10);
-            noway_assert(GT_RSH == GT_ADD + 11);
-            noway_assert(GT_RSZ == GT_ADD + 12);
+            static_assert(GT_LSH == GT_ADD + 10, "bad oper value");
+            static_assert(GT_RSH == GT_ADD + 11, "bad oper value");
+            static_assert(GT_RSZ == GT_ADD + 12, "bad oper value");
 
             /* Check for a suitable operator on the RHS */
 
