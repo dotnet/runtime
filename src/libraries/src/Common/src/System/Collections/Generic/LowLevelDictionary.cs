@@ -141,15 +141,6 @@ namespace System.Collections.Generic
             return false;
         }
 
-        internal TValue LookupOrAdd(TKey key, TValue value)
-        {
-            Entry entry = Find(key);
-            if (entry != null)
-                return entry._value;
-            UncheckedAdd(key, value);
-            return value;
-        }
-
         private Entry Find(TKey key)
         {
             int bucket = GetBucket(key);
@@ -216,7 +207,6 @@ namespace System.Collections.Generic
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }
 
-
         private sealed class Entry
         {
             public TKey _key;
@@ -246,76 +236,6 @@ namespace System.Collections.Generic
             {
                 return ((object)obj).GetHashCode();
             }
-        }
-
-        protected sealed class LowLevelDictEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
-        {
-            public LowLevelDictEnumerator(LowLevelDictionary<TKey, TValue> dict)
-            {
-                _dict = dict;
-                _version = _dict._version;
-                Entry[] entries = new Entry[_dict._numEntries];
-                int dst = 0;
-                for (int bucket = 0; bucket < _dict._buckets.Length; bucket++)
-                {
-                    Entry entry = _dict._buckets[bucket];
-                    while (entry != null)
-                    {
-                        entries[dst++] = entry;
-                        entry = entry._next;
-                    }
-                }
-                _entries = entries;
-                Reset();
-            }
-
-            public KeyValuePair<TKey, TValue> Current
-            {
-                get
-                {
-                    if (_version != _dict._version)
-                        throw new InvalidOperationException("InvalidOperation_EnumFailedVersion");
-                    if (_curPosition == -1 || _curPosition == _entries.Length)
-                        throw new InvalidOperationException("InvalidOperation_EnumOpCantHappen");
-                    Entry entry = _entries[_curPosition];
-                    return new KeyValuePair<TKey, TValue>(entry._key, entry._value);
-                }
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public bool MoveNext()
-            {
-                if (_version != _dict._version)
-                    throw new InvalidOperationException("InvalidOperation_EnumFailedVersion");
-                if (_curPosition != _entries.Length)
-                    _curPosition++;
-                bool anyMore = (_curPosition != _entries.Length);
-                return anyMore;
-            }
-
-            object IEnumerator.Current
-            {
-                get
-                {
-                    KeyValuePair<TKey, TValue> kv = Current;
-                    return kv;
-                }
-            }
-
-            public void Reset()
-            {
-                if (_version != _dict._version)
-                    throw new InvalidOperationException("InvalidOperation_EnumFailedVersion");
-                _curPosition = -1;
-            }
-
-            private LowLevelDictionary<TKey, TValue> _dict;
-            private Entry[] _entries;
-            private int _curPosition;
-            private int _version;
         }
     }
 }

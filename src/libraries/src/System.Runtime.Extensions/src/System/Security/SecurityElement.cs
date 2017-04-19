@@ -10,13 +10,6 @@ using System.Text;
 
 namespace System.Security
 {
-    internal enum SecurityElementType
-    {
-        Regular = 0,
-        Format = 1,
-        Comment = 2
-    }
-
     internal interface ISecurityElementFactory
     {
         SecurityElement CreateSecurityElement();
@@ -217,16 +210,6 @@ namespace System.Security
             }
         }
 
-        internal ArrayList InternalChildren
-        {
-            get
-            {
-                // Beware!  This array list can contain SecurityElements and other ISecurityElementFactories.
-                // If you want to get a consistent SecurityElement view, call get_Children.
-                return _children;
-            }
-        }
-
         //-------------------------- Public Methods -----------------------------
 
         internal void AddAttributeSafe(string name, string value)
@@ -279,38 +262,6 @@ namespace System.Security
                 _children = new ArrayList(ChildrenTypical);
 
             _children.Add(child);
-        }
-
-        internal void AddChild(ISecurityElementFactory child)
-        {
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
-
-            if (_children == null)
-                _children = new ArrayList(ChildrenTypical);
-
-            _children.Add(child);
-        }
-
-        internal void AddChildNoDuplicates(ISecurityElementFactory child)
-        {
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
-
-            if (_children == null)
-            {
-                _children = new ArrayList(ChildrenTypical);
-                _children.Add(child);
-            }
-            else
-            {
-                for (int i = 0; i < _children.Count; ++i)
-                {
-                    if (_children[i] == child)
-                        return;
-                }
-                _children.Add(child);
-            }
         }
 
         public bool Equal(SecurityElement other)
@@ -552,11 +503,6 @@ namespace System.Security
             return sb.ToString();
         }
 
-        internal void ToWriter(StreamWriter writer)
-        {
-            ToString("", writer, (obj, str) => ((StreamWriter)obj).Write(str));
-        }
-
         private void ToString(string indent, object obj, Action<object, string> write)
         {
             write(obj, "<");
@@ -668,32 +614,6 @@ namespace System.Security
             foreach (SecurityElement current in _children)
             {
                 if (current != null && string.Equals(current.Tag, tag))
-                    return current;
-            }
-            return null;
-        }
-
-        internal string SearchForTextOfLocalName(string strLocalName)
-        {
-            // Search on each child in order and each
-            // child's child, depth-first
-            if (strLocalName == null)
-                throw new ArgumentNullException(nameof(strLocalName));
-
-            // Note: we don't check for a valid tag here because
-            // an invalid tag simply won't be found.    
-            if (_tag == null)
-                return null;
-            if (_tag.Equals(strLocalName) || _tag.EndsWith(":" + strLocalName, StringComparison.Ordinal))
-                return Unescape(_text);
-            if (_children == null)
-                return null;
-
-            IEnumerator enumerator = _children.GetEnumerator();
-            foreach (SecurityElement currentElement in _children)
-            {
-                string current = currentElement.SearchForTextOfLocalName(strLocalName);
-                if (current != null)
                     return current;
             }
             return null;
