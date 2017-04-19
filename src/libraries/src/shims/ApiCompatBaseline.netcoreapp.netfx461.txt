@@ -22,8 +22,6 @@ MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.g
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.ComponentModel.DataAnnotations:
-MembersMustExist : Member 'System.ComponentModel.DataAnnotations.ValidationContext.ServiceContainer.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Data:
 MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
@@ -93,4 +91,4 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(Syst
 Compat issues with assembly System.Xml:
 MembersMustExist : Member 'System.Xml.Xsl.XslCompiledTransform.TemporaryFiles.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 83
+Total Issues: 82
