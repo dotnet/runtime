@@ -192,6 +192,18 @@
       "values": [ true, false ],
       "defaultValue": false
     },
+    "RestoreDefaultOptimizationDataPackage": {
+      "description": "Instructs BuildTools to restore the default OptimizationData package.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
+    "UsePartialNGENOptimization": {
+      "description": "Adds the `-partialNGEN -minify` arguments when invoking IBCMerge.",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "OptimizationDataDir": {
       "description": "Sets the path where the build should look for IBC profile data.",
       "valueType": "property",
@@ -481,7 +493,9 @@
           "MsBuildLog": "default",
           "MsBuildWrn": "default",
           "MsBuildErr": "default",
-          "MsBuildEventLogging": "default"
+          "MsBuildEventLogging": "default",
+          "RestoreDefaultOptimizationDataPackage": "false",
+          "UsePartialNGENOptimization": "false"
         }
       }
     },
