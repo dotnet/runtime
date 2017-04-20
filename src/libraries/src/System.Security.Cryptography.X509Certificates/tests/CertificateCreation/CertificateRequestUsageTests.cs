@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using Test.Cryptography;
 using Xunit;
 
@@ -366,6 +367,112 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 Assert.Throws<InvalidOperationException>(() => request.CreateSelfSigned(now, now.AddDays(1)));
+            }
+        }
+
+        [Theory]
+        [InlineData("Length Exceeds Payload", "0501")]
+        [InlineData("Leftover Data", "0101FF00")]
+        [InlineData("Constructed Null", "2500")]
+        [InlineData("Primitive Sequence", "1000")]
+        // SEQUENCE
+        // 30 10
+        //   SEQUENCE
+        //   30 02
+        //     OCTET STRING
+        //       04 01 -- Length exceeds data for inner SEQUENCE, but not the outer one.
+        //   OCTET STRING
+        //   04 04
+        //      00 00 00 00
+        [InlineData("Big Length, Nested", "3010" + "30020401" + "040400000000")]
+        [InlineData("Big Length, Nested - Context Specific", "A010" + "30020401" + "040400000000")]
+        [InlineData("Tag Only", "05")]
+        [InlineData("Empty", "")]
+        [InlineData("Reserved Tag", "0F00")]
+        [InlineData("Zero Tag", "0000")]
+        public static void InvalidPublicKeyEncoding(string caseName, string parametersHex)
+        {
+            var generator = new InvalidSignatureGenerator(
+                Array.Empty<byte>(),
+                parametersHex.HexToByteArray(),
+                new byte[] { 0x05, 0x00 });
+
+            CertificateRequest request = new CertificateRequest(
+                new X500DistinguishedName("CN=Test"),
+                generator.PublicKey,
+                HashAlgorithmName.SHA256);
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            Exception exception = Assert.Throws<CryptographicException>(
+                () => request.Create(request.SubjectName, generator, now, now.AddDays(1), new byte[1]));
+
+            if (CultureInfo.CurrentCulture.Name == "en-US")
+            {
+                Assert.Contains("ASN1", exception.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData("Empty", "")]
+        [InlineData("Empty Sequence", "3000")]
+        [InlineData("Empty OID", "30020600")]
+        [InlineData("Non-Nested Data", "300206035102013001")]
+        [InlineData("Indefinite Encoding", "3002060351020130800000")]
+        [InlineData("Dangling LengthLength", "300206035102013081")]
+        public static void InvalidSignatureAlgorithmEncoding(string caseName, string sigAlgHex)
+        {
+            var generator = new InvalidSignatureGenerator(
+                Array.Empty<byte>(),
+                new byte[] { 0x05, 0x00 },
+                sigAlgHex.HexToByteArray());
+
+            CertificateRequest request = new CertificateRequest(
+                new X500DistinguishedName("CN=Test"),
+                generator.PublicKey,
+                HashAlgorithmName.SHA256);
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            Exception exception = Assert.Throws<CryptographicException>(
+                () =>
+                request.Create(request.SubjectName, generator, now, now.AddDays(1), new byte[1]));
+
+            if (CultureInfo.CurrentCulture.Name == "en-US")
+            {
+                Assert.Contains("ASN1", exception.Message);
+            }
+        }
+
+        private class InvalidSignatureGenerator : X509SignatureGenerator
+        {
+            private readonly byte[] _signatureAlgBytes;
+            private readonly PublicKey _publicKey;
+
+            internal InvalidSignatureGenerator(byte[] keyBytes, byte[] parameterBytes, byte[] sigAlgBytes)
+            {
+                _signatureAlgBytes = sigAlgBytes;
+
+                Oid oid = new Oid("2.1.2.1", "DER");
+                _publicKey = new PublicKey(
+                    oid,
+                    parameterBytes == null ? null : new AsnEncodedData(oid, parameterBytes),
+                    new AsnEncodedData(oid, keyBytes));
+            }
+
+            protected override PublicKey BuildPublicKey()
+            {
+                return _publicKey;
+            }
+
+            public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
+            {
+                return _signatureAlgBytes;
+            }
+
+            public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
+            {
+                throw new InvalidOperationException("The test should not have made it this far");
             }
         }
     }
