@@ -437,6 +437,23 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithMyCollectionField
+    {
+        public MyCollection<string> Collection;
+    }
+
+    public class TypeWithReadOnlyMyCollectionProperty
+    {
+        private MyCollection<string> _ro = new MyCollection<string>();
+        public MyCollection<string> Collection
+        {
+            get
+            {
+                return _ro;
+            }
+        }
+    }
+
     public class MyList : IList
     {
         private List<object> _items = new List<object>();
@@ -2807,6 +2824,22 @@ namespace SerializationTypes
         Amount
     }
 
+    public class TypeWithPropertyHavingChoice
+    {
+        // The ManyChoices field can contain an array
+        // of choices. Each choice must be matched to
+        // an array item in the ChoiceArray field.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Item", typeof(string))]
+        [XmlElement("Amount", typeof(int))]
+        public object[] ManyChoices { get; set; }
+
+        // TheChoiceArray field contains the enumeration
+        // values, one for each item in the ManyChoices array.
+        [XmlIgnore]
+        public MoreChoices[] ChoiceArray;
+    }
+
     public class TypeWithFieldsOrdered
     {
         [XmlElement(Order = 0)]
@@ -4052,6 +4085,14 @@ public class SoapEncodedTestType3
     public string StringValue;
 }
 
+public class SoapEncodedTestType4
+{
+    [SoapElement(IsNullable = true)]
+    public int? IntValue;
+    [SoapElement(IsNullable = true)]
+    public double? DoubleValue;
+}
+
 public class SoapEncodedTestType5
 {
     public string Name;
@@ -4180,6 +4221,26 @@ public partial class CompositeTypeForXmlMembersMapping
             StringValueField = value;
         }
     }
+}
+
+public class XmlMembersMappingTypeHavingIntArray
+{
+    public int[] IntArray;
+}
+
+public class TypeWithXmlAttributes
+{
+    [XmlAttribute(Namespace = "http://www.MyNs.org")]
+    public string MyName;
+
+    [XmlAttribute(DataType = "date", AttributeName = "CreationDate")]
+    public DateTime Today;
+}
+
+public class TypeWithNullableObject
+{
+    [SoapElement(IsNullable = true)]
+    public object MyObject;
 }
 
 public delegate void MyDelegate();
