@@ -303,7 +303,9 @@ namespace System.Diagnostics
                 }
 
                 if (StartTimeUtc == default(DateTime))
-                    StartTimeUtc = DateTime.UtcNow;
+                {
+                    StartTimeUtc = GetUtcNow();
+                }
 
                 Id = GenerateId();
                 Current = this;
@@ -331,7 +333,9 @@ namespace System.Diagnostics
                 isFinished = true;
 
                 if (Duration == TimeSpan.Zero)
-                    SetEndTime(DateTime.UtcNow);
+                {
+                    SetEndTime(GetUtcNow());
+                }
 
                 Current = Parent;
             }
