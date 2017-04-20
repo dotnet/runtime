@@ -2537,6 +2537,11 @@ reflection_create_generic_class (MonoReflectionTypeBuilderHandle ref_tb, MonoErr
 	}
 
 	generic_container->context.class_inst = mono_get_shared_generic_inst (generic_container);
+	MonoGenericContext* context = &generic_container->context;
+	MonoType *canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
+	canonical_inst->type = MONO_TYPE_GENERICINST;
+	canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
+
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
