@@ -2386,7 +2386,7 @@ BOOL CanRunManagedCode(LoaderLockCheck::kind checkKind, HINSTANCE hInst /*= 0*/)
 //  no longer maintains a ref count since the EE doesn't support being
 //  unloaded and re-loaded. It simply ensures the EE has been started.
 // ---------------------------------------------------------------------------
-HRESULT STDMETHODCALLTYPE CoInitializeEE(DWORD fFlags)
+HRESULT STDAPICALLTYPE CoInitializeEE(DWORD fFlags)
 {
     CONTRACTL
     {
@@ -2417,7 +2417,7 @@ HRESULT STDMETHODCALLTYPE CoInitializeEE(DWORD fFlags)
 // Description:
 //  Must be called by client on shut down in order to free up the system.
 // ---------------------------------------------------------------------------
-void STDMETHODCALLTYPE CoUninitializeEE(BOOL fIsDllUnloading)
+void STDAPICALLTYPE CoUninitializeEE(BOOL fIsDllUnloading)
 {
     LIMITED_METHOD_CONTRACT;
     //BEGIN_ENTRYPOINT_VOIDRET;
