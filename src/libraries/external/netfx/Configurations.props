@@ -9,6 +9,7 @@
       net461;
       net462;
       net463;
+      net47;
       netfx;
       netcoreapp;
       uap;
