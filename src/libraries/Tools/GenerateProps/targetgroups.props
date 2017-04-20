@@ -184,6 +184,13 @@
       <Imports>net462</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="net47">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net47</NuGetTargetMonikerShort>
+      <Imports>net462</Imports>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
+    </TargetGroups>
     <TargetGroups Include="netfx">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>

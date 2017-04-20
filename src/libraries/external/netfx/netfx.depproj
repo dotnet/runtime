@@ -19,7 +19,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="$(TargetingPackNugetPackageId)">
-      <Version>1.0.1</Version>
+      <Version Condition="'$(TargetGroup)' != 'net47'">1.0.1</Version>
+      <Version Condition="'$(TargetGroup)' == 'net47'">1.0.0-prerelease</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
