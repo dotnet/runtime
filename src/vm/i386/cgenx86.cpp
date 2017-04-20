@@ -1878,23 +1878,47 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
     END_DYNAMIC_HELPER_EMIT();
 }
 
+EXTERN_C VOID DynamicHelperArgsStub();
+
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+#ifdef UNIX_X86_ABI
+    BEGIN_DYNAMIC_HELPER_EMIT(18);
+#else
     BEGIN_DYNAMIC_HELPER_EMIT(12);
+#endif
 
+#ifdef UNIX_X86_ABI
+	// sub esp, 8
+	*p++ = 0x83;
+	*p++ = 0xec;
+	*p++ = 0x8;
+#else
     // pop eax
     *p++ = 0x58;
+#endif
 
     // push arg
     *p++ = 0x68;
     *(INT32 *)p = arg;
     p += 4;
 
+#ifdef UNIX_X86_ABI
+    // mov eax, target
+    *p++ = 0xB8;
+    *(INT32 *)p = target;
+    p += 4;
+#else
     // push eax
     *p++ = 0x50;
+#endif
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
+#ifdef UNIX_X86_ABI
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, (PCODE)DynamicHelperArgsStub);
+#else
     *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target);
+#endif
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -1902,10 +1926,21 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+#ifdef UNIX_X86_ABI
+    BEGIN_DYNAMIC_HELPER_EMIT(23);
+#else
     BEGIN_DYNAMIC_HELPER_EMIT(17);
+#endif
 
+#ifdef UNIX_X86_ABI
+	// sub esp, 4
+	*p++ = 0x83;
+	*p++ = 0xec;
+	*p++ = 0x4;
+#else
     // pop eax
     *p++ = 0x58;
+#endif
 
     // push arg
     *p++ = 0x68;
@@ -1917,11 +1952,22 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     *(INT32 *)p = arg2;
     p += 4;
 
+#ifdef UNIX_X86_ABI
+    // mov eax, target
+    *p++ = 0xB8;
+    *(INT32 *)p = target;
+    p += 4;
+#else
     // push eax
     *p++ = 0x50;
+#endif
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
+#ifdef UNIX_X86_ABI
+    *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, (PCODE)DynamicHelperArgsStub);
+#else
     *(INT32 *)p = rel32UsingJumpStub((INT32 *)p, target);
+#endif
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
