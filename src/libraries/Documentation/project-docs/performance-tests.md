@@ -65,8 +65,11 @@ Next, the project.json for the tests directory also needs to import the xunit li
     "xunit": "2.1.0",  
     "xunit.netcore.extensions": "1.0.0-prerelease-*"  
 ```
-Once that’s all done, you can actually add tests to the file. The basic structure of a perf test file with file name Perf.Dictionary.cs should be like so:
-```
+Once that’s all done, you can actually add tests to the file.
+
+Writing Test Cases
+-----------
+```C#
 using Xunit;
 using Microsoft.Xunit.Performance;
 
@@ -74,18 +77,30 @@ namespace System.Collections.Tests
 {
     public class Perf_Dictionary
     {
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 2000)]
         public void ctor()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 20000; i++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         new Dictionary<int, string>();
                     }
+                }
         }
     }
 }
 ```
-The perf-test runner handles a lot of the specifics of the testing for you like iteration control. You won't need to add any Asserts or anything generally used in functional testing to get perf measurements, just make sure the thing within the “using” is big enough to avoid timer resolution errors.
 
+The above benchmark will test the performance of the Dictionary<int, string> constructor. Each iteration of the benchmark will call the constructor 2000 times (`InnerIterationCount`).
+
+Test cases should adhere to the following guidelines, within reason:
+
+* Individual test cases should be of the "microbenchmark" variety. They should test a single function, in as isolated an environment as possible.
+* The "real work" must be done inside of the `using (iteration.StartMeasurement())` block. All extra work (setup, cleanup) should be done outside of this block, so as to not pollute the data being collected.
+* Individual iterations of a test case should take from 100 milliseconds to 1 second. This is everything inside of the `using (iteration.StartMeasurement())` block.
+* Test cases may need to use an "inner iteration" concept in order for individual invocations of the "outer iteration" to last from 100 ms to 1s. The example above shows this.
+* Some functions are prone to being entirely optimized out from test cases. For example, if the results of `Vector3.Add()` are not stored anywhere, then there are no observable side-effects, and the entire operation can be optimized out by the JIT. For operations which are susceptible to this, care must be taken to ensure that the operations are not entirely skipped. Try one of the following:
+  * Pass intermediate values to a volatile static field. If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
+  * Pass intermediate values to a no-inline method (`MethodImplOptions.NoInlining`)
+  * Conditionally store intermediate values to a field, where the condition is never true at runtime (but is still evaluated).
