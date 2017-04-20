@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public ITaskItem[] Items { get; set; }
 
+        [Output]
         [Required]
         public string[] Files { get; set; }
 
