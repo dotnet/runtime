@@ -488,7 +488,7 @@ namespace System.Numerics.Tests
             Vector2 actual;
 
             actual = Vector2.TransformNormal(v, m);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Tranfrom did not return the expected value.");
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Tranform did not return the expected value.");
         }
 
         // A test for TransformNormal (Vector2f, Matrix3x2)
