@@ -3817,17 +3817,13 @@
         "4.3.0"
       ],
       "BaselineVersion": "4.3.0",
-      "InboxOn": {
-        "netcoreapp2.0": "4.3.0.0",
-        "net461": "4.2.0.0",
-        "netstandard2.0": "4.2.0.0",
-        "uap10.1": "4.3.0.0"
-      },
+      "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
         "4.2.0.0": "4.2.0",
-        "4.2.1.0": "4.3.0"
+        "4.2.1.0": "4.3.0",
+        "4.3.0.0": "4.4.0"
       }
     },
     "System.Security.Cryptography.Csp": {
