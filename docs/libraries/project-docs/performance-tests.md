@@ -86,7 +86,6 @@ namespace System.Collections.Tests
                     {
                         new Dictionary<int, string>();
                     }
-                }
         }
     }
 }
