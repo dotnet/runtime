@@ -241,7 +241,9 @@ namespace System.Net.Tests
                 string content = body.ReadToEnd();
                 if (!keepAlive.HasValue || keepAlive.Value)
                 {
-                    Assert.Contains("\"Connection\": \"Keep-Alive\"", content, StringComparison.OrdinalIgnoreCase);
+                    // Validate that the request doesn't contain Connection: "close", but we can't validate
+                    // that it does contain Connection: "keep-alive", as that's optional as of HTTP 1.1.
+                    Assert.DoesNotContain("\"Connection\": \"close\"", content, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
