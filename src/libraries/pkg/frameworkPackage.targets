@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
@@ -26,13 +26,6 @@
   <!-- Bring in ref content from binplaced ref props -->
   <Import Condition="'$(IncludeReferenceFiles)' == 'true'" Project="$(RefBinDir)\*.props" />
   <ItemGroup Condition="'$(IncludeReferenceFiles)' == 'true'">
-    <!-- Include refs -->
-    <File Include="@(RefFile)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">$(RefFileTargetPath)%(File.SubFolder)</TargetPath>
-    </File>
-    <!-- force a missing file if ref build is absent -->
-    <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(RefFile)' == ''" />
-
     <_buildRIDWithMetadata Include="@(BuildRID)">
       <TargetRuntime>%(Identity)</TargetRuntime>
       <Version>$(PackageVersion)</Version>
@@ -56,80 +49,97 @@
 
   <!-- Bring in lib content from binplaced lib props -->
   <Import Condition="'$(IncludeLibFiles)' == 'true'" Project="$(LibBinDir)\*.props" />
-  <ItemGroup Condition="'$(IncludeLibFiles)' == 'true'">
-    <!-- Include lib -->
-    <File Include="@(LibFile)">
-      <TargetPath Condition="'%(File.TargetPath)' == ''">$(LibFileTargetPath)%(File.SubFolder)</TargetPath>
-    </File>
-    <!-- force a missing file if lib build is absent -->
-    <File Include="$(LibBinDir)/MISSING_LIB_BUILD" Condition="'@(LibFile)' == ''" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(IncludeNativeFiles)' == 'true'">
     <!-- Include native -->
     <ExcludeNative Include="$(NativeBinDir)/*.lib" />
-    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
-      <TargetPath>$(NativeFileTargetPath)</TargetPath>
-    </NativeFile>
-    <File Include="@(NativeFile)" />
+    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)" />
     <!-- force a missing file if native build is absent -->
-    <File Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
+    <NativeFile Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
   </ItemGroup>
-
-  <Target Name="_getFinalFilesExisting">
+  
+  <Target Name="_CheckForFiles">
+    <Error Condition="'$(IncludeReferenceFiles)' == 'true' AND '@(RefFile)' == ''"
+           Text="IncludeReferenceFiles was specified but no file props were found in '$(RefBinDir)'" />
+    <Error Condition="'$(IncludeLibFiles)' == 'true' AND '@(LibFile)' == ''"
+           Text="IncludeLibFiles was specified but no file props were found in '$(LibBinDir)'" />
+    <Error Condition="'$(IncludeNativeFiles)' == 'true' AND '@(NativeFile)' == ''"
+           Text="IncludeNativeFiles was specified but no files were found in '$(NativeBinDir)'" />
+  </Target>
+  
+  <Target Name="IncludeFiles">
     <ItemGroup>
-      <_refFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND ($([System.String]::new('%(File.TargetPath)').StartsWith('ref')) OR '%(File.TargetPath)' == '$(RefFileTargetPath)')" />
-      <_refFileNames Include="@(_refFileExisting -> '%(FileName)')">
-        <Original>%(_refFileExisting.Identity)</Original>
-      </_refFileNames>
-      <_refFileNamesFiltered Include="@(_refFileNames)" Exclude="@(ExcludeFromClosure)" />
-      <_refFilesFiltered Include="@(_refFileNamesFiltered->'%(Original)')" />
+      <!-- Include refs -->
+      <File Include="@(RefFile)">
+        <TargetPath Condition="'%(RefFile.TargetPath)' == ''">$(RefFileTargetPath)%(RefFile.SubFolder)</TargetPath>
+      </File>
+      
+      <!-- Include lib -->
+      <File Include="@(LibFile)">
+        <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">$(LibFileTargetPath)$(TargetFramework)%(LibFile.SubFolder)</TargetPath>
+      </File>
 
-      <_runtimeFileExisting Include="@(File)" Condition="Exists('%(FullPath)') AND ($([System.String]::new('%(File.TargetPath)').StartsWith('lib')) OR $([System.String]::new('%(File.TargetPath)').StartsWith('runtimes')) OR '%(File.TargetPath)' == '$(LibFileTargetPath)')" />
-      <_runtimeFileNames Include="@(_runtimeFileExisting -> '%(FileName)')">
-        <Original>%(_runtimeFileExisting.Identity)</Original>
-      </_runtimeFileNames>
-      <_runtimeFileNamesFiltered Include="@(_runtimeFileNames)" Exclude="@(ExcludeFromClosure)" />
-      <_runtimeFilesFiltered Include="@(_runtimeFileNamesFiltered->'%(Original)')" />
+      <File Include="@(NativeFile)">
+        <TargetPath>$(NativeFileTargetPath)</TargetPath>
+      </File>
     </ItemGroup>
+  </Target>
+
+  <Target Name="GetClosureFiles">
+    <!-- sets up ClosureFile items that are organized by file-set -->
+    <ItemGroup>
+      <ClosureFile Include="@(RefFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')" >
+        <FileSet>reference</FileSet>
+      </ClosureFile>
+
+      <ClosureFile Include="@(LibFile);@(NativeFile)" Condition="Exists('%(FullPath)') AND ('%(Extension)' == '.dll' OR '%(Extension)' == '$(LibraryFileExtension)')">
+        <FileSet>runtime</FileSet>
+      </ClosureFile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="VerifyClosure" 
+          DependsOnTargets="GetClosureFiles" 
+          AfterTargets="Build"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_closureFileNames Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_closureFileNames>
+      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
+      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyClosure Sources="@(_closureFileFiltered)"
+                   IgnoredReferences="@(IgnoredReference)" />
+
+  </Target>
+
+  <Target Name="VerifyNETStandard" 
+          DependsOnTargets="GetClosureFiles" 
+          AfterTargets="Build"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+
     <PropertyGroup>
-      <_hasRefFiles Condition="'@(_refFilesFiltered)' != '' and '%(_refFilesFiltered.Extension)' != '._'">true</_hasRefFiles>
-      <_hasRuntimeFiles Condition="'@(_runtimeFilesFiltered)' != '' AND '%(_runtimeFilesFiltered.Extension)' != '._'">true</_hasRuntimeFiles>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
     </PropertyGroup>
-  </Target>
 
-  <Target Name="VerifyClosure" DependsOnTargets="_getFinalFilesExisting" AfterTargets="Build">
-    <Message Condition="'$(_hasRefFiles)' == 'true'" Text="Verifying closure of reference assemblies" />
-    <VerifyClosure Condition="'$(_hasRefFiles)' == 'true'"
-                   Sources="@(_refFilesFiltered)"
-                   IgnoredReferences="@(IgnoredReference)" />
-
-    <Message Condition="'$(_hasRuntimeFiles)' == 'true'" Text="Verifying closure of runtime assemblies" />
-    <VerifyClosure Condition="'$(_hasRuntimeFiles)' == 'true'"
-                   Sources="@(_runtimeFilesFiltered)"
-                   IgnoredReferences="@(IgnoredReference)" />
-  </Target>
-
-  <Target Name="VerifyNETStandard" DependsOnTargets="_getFinalFilesExisting" AfterTargets="Build">
     <ItemGroup>
       <_NETStandardFile Include="$(NETStandardPackageRefPath)\*.dll" />
-      <!-- force a missing file there are no files found in the package -->
-      <_NETStandardFile Include="$(NETStandardPackageRefPath)\MISSING_NETSTANDARD_PACKAGE" Condition="'@(_NETStandardFile)' == ''" />
 
-      <_NETStandardRefMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(_refFileNames)" />
-      <_NETStandardRefMissingFileError Include="@(_NETStandardRefMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
-      <_NETStandardRefSuppressedMissingFile Include="@(_NETStandardRefMissingFile)" Exclude="@(_NETStandardRefMissingFileError)" />
-
-      <_NETStandardRuntimeMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(_runtimeFileNames)" />
-      <_NETStandardRuntimeMissingFileError Include="@(_NETStandardRuntimeMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
-      <_NETStandardRuntimeSuppressedMissingFile Include="@(_NETStandardRuntimeMissingFile)" Exclude="@(_NETStandardRuntimeMissingFileError)" />
+      <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(ClosureFile->'%(FileName)')" />
+      <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
+      <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
     </ItemGroup>
 
-    <Message Condition="'$(_hasRefFiles)' == 'true' AND '@(_NETStandardRefSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardRefSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package.  This error has been suppressed." />
-    <Error Condition="'$(_hasRefFiles)' == 'true' AND '@(_NETStandardRefMissingFileError)' != ''" Text="Files '@(_NETStandardRefMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package." />
-    
-    <Message Condition="'$(_hasRuntimeFiles)' == 'true' AND '@(_NETStandardRuntimeSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardRuntimeSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package.  This error has been suppressed." />
-    <Error Condition="'$(_hasRuntimeFiles)' == 'true' AND '@(_NETStandardRuntimeMissingFileError)' != ''" Text="Files '@(_NETStandardRuntimeMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package." />
+    <Error Condition="'@(_NETStandardFile)' == ''"
+           Text="Could not locate NETStandard package content at '$(NETStandardPackageRefPath)'" />
+
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardPackageId)' but missing from this package's $(_fileSet) files." />
   </Target>
 
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
