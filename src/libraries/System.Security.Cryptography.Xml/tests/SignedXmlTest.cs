@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.ComputeSignature();
 
             Assert.Null(signedXml.SigningKeyName);
-            Assert.Equal(SignedXml.XmlDsigRSASHA1Url, signedXml.SignatureMethod);
+            Assert.Equal(SignedXml.XmlDsigRSASHA256Url, signedXml.SignatureMethod);
             Assert.Equal(key.KeySize / 8, signedXml.SignatureValue.Length);
             Assert.Null(signedXml.SigningKeyName);
 
@@ -659,6 +659,7 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml signedXml = new SignedXml(doc);
             signedXml.SigningKey = cert.PrivateKey;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 
             Reference reference = new Reference();
             reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
@@ -716,6 +717,7 @@ namespace System.Security.Cryptography.Xml.Tests
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
             SignedXml signedXml = new SignedXml(doc);
             signedXml.SigningKey = cert.PrivateKey;
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
             Reference reference = new Reference();
@@ -957,6 +959,7 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml signedXml = new SignedXml(doc);
             signedXml.SigningKey = cert.PrivateKey;
             signedXml.SignedInfo.CanonicalizationMethod = canonicalizationMethod;
+            signedXml.SignedInfo.SignatureMethod = SignedXml.XmlDsigRSASHA1Url;
 
             Reference reference = new Reference();
             reference.DigestMethod = SignedXml.XmlDsigSHA1Url;

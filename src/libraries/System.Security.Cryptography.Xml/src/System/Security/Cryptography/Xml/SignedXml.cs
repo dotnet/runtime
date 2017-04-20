@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     // Default to RSA-SHA1
                     if (SignedInfo.SignatureMethod == null)
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA1Url;
+                        SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
                 }
                 else
                 {
