@@ -303,7 +303,9 @@
 
     <SaveItems ItemName="%(_packageFileDir.SaveItemName)"
                Items="@(_itemsToSave)"
-               Files="%(_packageFileDir.Identity)\$(_propsFilename).props"/>
+               Files="%(_packageFileDir.Identity)\$(_propsFilename).props">
+      <Output TaskParameter="Files" ItemName="FileWrites" />
+    </SaveItems>
   </Target>
 
   <Target Name="GetBinPlaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">
@@ -354,7 +356,14 @@
     </CreateProperty>
   </Target>
 
-  <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
+  <!-- IncrementalClean and CoreClean only clean paths under Intermediate or OutDir, handle additional paths -->
+  <ItemGroup>
+    <AdditionalCleanDirectories Include="@(BinPlaceConfiguration->'%(RefPath)')" />
+    <AdditionalCleanDirectories Include="@(BinPlaceConfiguration->'%(RuntimePath)')" />
+    <AdditionalCleanDirectories Include="@(BinPlaceConfiguration->'%(PackageFileRefPath)')" />
+    <AdditionalCleanDirectories Include="@(BinPlaceConfiguration->'%(PackageFileRuntimePath)')" />
+  </ItemGroup>
+
   <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites" Condition="'@(AdditionalCleanDirectories)' != ''">
     <!-- find files under paths we care about and add them to _CleanCurrentFileWrites to ensure they are written to the file list -->
     <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(FileWrites)" UpdateToAbsolutePaths="true">
@@ -362,11 +371,7 @@
     </FindUnderPath>
   </Target>
 
-  <ItemGroup>
-    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RefPath)" />
-    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RuntimePath)" />
-  </ItemGroup>
-
+  <!-- delete files under our AdditionalCleanDirectories on Incremental clean -->
   <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean" Condition="'@(AdditionalCleanDirectories)' != ''">
     <ItemGroup>
       <_CleanOrphanAdditionalFileWrites Include="@(_CleanPriorFileWrites)" Exclude="@(_CleanCurrentFileWrites)" />
@@ -379,6 +384,33 @@
     <Delete Files="@(_CleanOrphanFileWritesInAdditionalDirectories)" TreatErrorsAsWarnings="true">
       <Output TaskParameter="DeletedFiles" ItemName="_CleanOrphanFilesDeleted" />
     </Delete>
+  </Target>
+
+  <!-- delete files under our AdditionalCleanDirectories on CoreClean -->
+  <Target Name="CleanAdditionalDirectories" AfterTargets="CoreClean" Condition="'@(AdditionalCleanDirectories)' != ''">
+    <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(_CleanUniqueRemainingFileWrites)">
+      <Output TaskParameter="InPath" ItemName="_CleanUniqueRemainingFileWritesInAdditionalDirectories"/>
+    </FindUnderPath>
+    
+    <Delete Files="@(_CleanUniqueRemainingFileWritesInAdditionalDirectories)" TreatErrorsAsWarnings="true">
+      <Output TaskParameter="DeletedFiles" ItemName="_CleanUniqueRemainingFileWritesInAdditionalDirectoriesDeleted" />
+    </Delete>
+    
+    <!-- Create a list of everything that wasn't deleted. -->
+    <ItemGroup>
+      <_CleanRemainingFileWritesAfterCleanAdditionalDirectories Include="@(_CleanUniqueRemainingFileWrites)" Exclude="@(_CleanUniqueRemainingFileWritesInAdditionalDirectoriesDeleted)"/>
+    </ItemGroup>
+
+    <!-- Remove duplicates. -->
+    <RemoveDuplicates Inputs="@(_CleanRemainingFileWritesAfterCleanAdditionalDirectories)">
+      <Output TaskParameter="Filtered" ItemName="_CleanAdditionalDirectoriesUniqueRemainingFileWrites"/>
+    </RemoveDuplicates>
+
+    <!-- Make sure the directory exists. -->
+    <MakeDir Directories="$(IntermediateOutputPath)"/>
+
+    <!-- Write new list of current files back to disk. -->
+    <WriteLinesToFile File="$(IntermediateOutputPath)$(CleanFile)" Lines="@(_CleanAdditionalDirectoriesUniqueRemainingFileWrites)" Overwrite="true" />
   </Target>
 
 </Project>
