@@ -128,20 +128,46 @@ fi
 if [ -d "$__RootfsDir" ]; then
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
+        if [ $? -ne 0 ]; then
+            echo "Failed to unmount RootfsDir."
+            exit 1
+        fi
     fi
     rm -rf $__RootfsDir
 fi
 
 if [[ -n $__LinuxCodeName ]]; then
     qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     cp $__CrossDir/$__BuildArch/sources.list.$__LinuxCodeName $__RootfsDir/etc/apt/sources.list
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get update
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get -f -y install
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir symlinks -cr /usr
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
 
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
+        if [ $? -ne 0 ]; then
+            echo "Failed to unmount RootfsDir."
+            exit 1
+        fi
     fi
 
     if [[ "$__BuildArch" == "arm" && "$__LinuxCodeName" == "trusty" ]]; then
@@ -156,3 +182,9 @@ else
     usage;
     exit 1
 fi
+
+install_Failed()
+{
+    echo "Failed to install/symlink packages."
+    exit 1
+}
