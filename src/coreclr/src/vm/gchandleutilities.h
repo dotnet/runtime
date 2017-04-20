@@ -193,7 +193,7 @@ inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJEC
 {
     ValidateHandleAssignment(handle, object);
 
-    return GCHandleUtilities::GetGCHandleManager()->CompareAndSwapObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
+    return GCHandleUtilities::GetGCHandleManager()->InterlockedCompareExchangeObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
 }
 
 inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)

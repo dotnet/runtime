@@ -449,7 +449,7 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) = 0;
 
-    virtual Object* CompareAndSwapObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
