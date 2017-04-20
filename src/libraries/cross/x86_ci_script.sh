@@ -24,7 +24,7 @@ function cross_build_native_with_docker {
     __currentWorkingDirectory=`pwd`
 
     # choose Docker image
-    __dockerImage=" hseok82/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3_x86"
+    __dockerImage=" hseok82/dotnet-buildtools-prereqs:ubuntu-16.04-crossx86-ef0ac75-20175511035548"
     __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/x86"
     __runtimeOS="ubuntu.16.04"
     
