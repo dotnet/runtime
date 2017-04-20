@@ -229,7 +229,7 @@ namespace System.Tests
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
 
-            const string key = "EnumerateEnvironmentVariables";
+            string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
 
             try

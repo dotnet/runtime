@@ -66,7 +66,7 @@ namespace System.Tests
         [InlineData(EnvironmentVariableTarget.User)]
         public void Default(EnvironmentVariableTarget target)
         {
-            const string varName = "Test_SetEnvironmentVariable_Default";
+            string varName = $"Test_SetEnvironmentVariable_Default ({target})";
             const string value = "true";
 
             ExecuteAgainstTarget(target,
@@ -90,7 +90,7 @@ namespace System.Tests
         [InlineData(EnvironmentVariableTarget.User)]
         public void ModifyEnvironmentVariable(EnvironmentVariableTarget target)
         {
-            const string varName = "Test_ModifyEnvironmentVariable";
+            string varName = $"Test_ModifyEnvironmentVariable ({target})";
             const string value = "false";
 
             ExecuteAgainstTarget(target,
@@ -117,7 +117,7 @@ namespace System.Tests
         [InlineData(EnvironmentVariableTarget.User)]
         public void ModifyEnvironmentVariable_AndEnumerate(EnvironmentVariableTarget target)
         {
-            const string varName = "Test_ModifyEnvironmentVariable_AndEnumerate";
+            string varName = $"Test_ModifyEnvironmentVariable_AndEnumerate ({target})";
             const string value = "false";
 
             ExecuteAgainstTarget(target,
@@ -152,7 +152,7 @@ namespace System.Tests
         [InlineData(EnvironmentVariableTarget.User)]
         public void DeleteEnvironmentVariable(EnvironmentVariableTarget target)
         {
-            const string varName = "Test_DeleteEnvironmentVariable";
+            string varName = $"Test_DeleteEnvironmentVariable ({target})";
             const string value = "false";
 
             ExecuteAgainstTarget(target,
