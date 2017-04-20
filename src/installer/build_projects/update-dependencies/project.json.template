@@ -2,23 +2,16 @@
   "version": "1.0.0-*",
   "description": "Updates the repos dependencies",
   "buildOptions": {
-    "emitEntryPoint": true
+    "emitEntryPoint": true,
+    "compile": [
+      "../Microsoft.DotNet.Cli.Build.Framework/DebugHelper.cs",
+      "../shared-build-targets-utils/Utils/BranchInfo.cs"
+    ]
   },
   "dependencies": {
     "NETStandard.Library": "1.6.1-beta-24506-02",
-    "Microsoft.CSharp": "4.0.1",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24507-05",
-    "System.Runtime.Serialization.Primitives": "4.1.1",
-    "Microsoft.DotNet.Cli.Build.Framework": {
-      "target": "project"
-    },
-    "shared-build-targets-utils": {
-      "target": "project"
-    },
-    "NuGet.Versioning": "3.5.0-rc-1285",
-    "Newtonsoft.Json": "9.0.1",
-    "Octokit": "0.18.0",
-    "Microsoft.Net.Http": "2.2.29"
+    "Microsoft.DotNet.VersionTools": "1.0.27-prerelease-01518-03"
   },
   "frameworks": {
     "netcoreapp1.0": {
