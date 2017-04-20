@@ -127,7 +127,6 @@ namespace Microsoft.DotNet.Host.Build
                 Environment.SetEnvironmentVariable("TARGETRID", targetRID);
             }
 
-            string portableBuildStagingLocation = Environment.GetEnvironmentVariable("PORTABLE_BUILD_STAGING_LOCATION")?.Trim();
 
             c.BuildContext["TargetRID"] = targetRID;
 
@@ -136,7 +135,6 @@ namespace Microsoft.DotNet.Host.Build
             c.BuildContext["ArtifactsTargetRID"] = realTargetRID; 
             c.BuildContext["LinkPortable"] = linkPortable;
             c.BuildContext["Platform"] = platformEnv;
-            c.BuildContext["PortableBuildStagingLocation"] = portableBuildStagingLocation;
 
             return c.Success();
         }
