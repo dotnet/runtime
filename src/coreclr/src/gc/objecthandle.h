@@ -21,16 +21,6 @@
 #include <weakreference.h>
 #endif // FEATURE_COMINTEROP
 
-/*
- * Convenience macros for accessing handles.  StoreFirstObjectInHandle is like
- * StoreObjectInHandle, except it only succeeds if transitioning from NULL to
- * non-NULL.  In other words, if this handle is being initialized for the first
- * time.
- */
-#define StoreObjectInHandle(handle, object)        HndAssignHandle(handle, object)
-#define InterlockedCompareExchangeObjectInHandle(handle, object, oldObj)        HndInterlockedCompareExchangeHandle(handle, object, oldObj)
-#define StoreFirstObjectInHandle(handle, object)   HndFirstAssignHandle(handle, object)
-
 typedef DPTR(struct HandleTableMap) PTR_HandleTableMap;
 typedef DPTR(struct HandleTableBucket) PTR_HandleTableBucket;
 typedef DPTR(PTR_HandleTableBucket) PTR_PTR_HandleTableBucket;
@@ -89,17 +79,6 @@ void GCHandleValidatePinnedObject(OBJECTREF obj);
  */
 
 int GetCurrentThreadHomeHeapNumber();
-
-inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-
-    StoreObjectInHandle(handle, NULL);
-}
-
-#ifndef FEATURE_REDHAWK
-typedef Holder<OBJECTHANDLE,DoNothing<OBJECTHANDLE>,ResetOBJECTHANDLE> ObjectInHandleHolder;
-#endif
 
 /*
  * Table maintenance routines
