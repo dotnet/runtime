@@ -97,7 +97,8 @@ namespace System.Net.Tests
 
         public Socket GetConnectedSocket()
         {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+            Socket socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
             socket.Connect(Hostname, _port);
             return socket;
         }
