@@ -5,6 +5,7 @@
     <ProjectGuid>{239347DB-D566-48C9-9551-28AB3AD12EC3}</ProjectGuid>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>0436</NoWarn> <!-- Avoid warnings about type conflicts for types we're building in -->
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -20,14 +21,13 @@
     <TargetingPackExclusions Include="System.Net.NameResolution" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs">
       <Link>ProductionCode\System\Net\IPHostEntry.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\DNS.cs">
       <Link>ProductionCode\System\Net\DNS.cs</Link>
     </Compile>
-
   </ItemGroup>
   
   <ItemGroup>
@@ -35,6 +35,7 @@
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeContextAwareResult.cs" />
+    <Compile Include="Fakes\FakeExceptionDispatchInfo.cs" />
     <Compile Include="Fakes\FakeNameResolutionPal.cs" />
     <Compile Include="Fakes\FakeNameResolutionUtilities.cs" />
     <Compile Include="Fakes\FakeSocketExceptionFactory.cs" />
