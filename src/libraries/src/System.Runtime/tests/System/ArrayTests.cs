@@ -353,11 +353,14 @@ namespace System.Tests
                 // Basic: forward SZArray
                 BinarySearch_Array(array, index, length, value, (IComparer)comparer, expected);
 
-                // Advanced: convert SZArray to an array with non-zero lower bound
-                const int lowerBound = 5;
-                Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, lowerBound);
-                int lowerBoundExpected = expected < 0 ? expected - lowerBound : expected + lowerBound;
-                BinarySearch_Array(nonZeroLowerBoundArray, index + lowerBound, length, value, (IComparer)comparer, lowerBoundExpected);
+                if (s_NonZeroLowerBoundsAvailable)
+                {
+                    // Advanced: convert SZArray to an array with non-zero lower bound
+                    const int lowerBound = 5;
+                    Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, lowerBound);
+                    int lowerBoundExpected = expected < 0 ? expected - lowerBound : expected + lowerBound;
+                    BinarySearch_Array(nonZeroLowerBoundArray, index + lowerBound, length, value, (IComparer)comparer, lowerBoundExpected);
+                }
             }
             
             if (index == 0 && length == array.Length)
@@ -640,14 +643,17 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Copy_Array_Reliable_TestData()
         {
-            // Array -> SZArray
-            Array lowerBoundArray1 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
-            lowerBoundArray1.SetValue(2, lowerBoundArray1.GetLowerBound(0));
-            yield return new object[] { lowerBoundArray1, lowerBoundArray1.GetLowerBound(0), new int[1], 0, 1, new int[] { 2 } };
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                // Array -> SZArray
+                Array lowerBoundArray1 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
+                lowerBoundArray1.SetValue(2, lowerBoundArray1.GetLowerBound(0));
+                yield return new object[] { lowerBoundArray1, lowerBoundArray1.GetLowerBound(0), new int[1], 0, 1, new int[] { 2 } };
 
-            // SZArray -> Array
-            Array lowerBoundArray2 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
-            yield return new object[] { new int[] { 2 }, 0, lowerBoundArray2, lowerBoundArray2.GetLowerBound(0), 1, lowerBoundArray1 };
+                // SZArray -> Array
+                Array lowerBoundArray2 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
+                yield return new object[] { new int[] { 2 }, 0, lowerBoundArray2, lowerBoundArray2.GetLowerBound(0), 1, lowerBoundArray1 };
+            }
 
             // int[,] -> int[,]
             int[,] intRank2Array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
@@ -911,11 +917,14 @@ namespace System.Tests
             // Basic: forward SZArray
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, expected);
 
-            // Advanced: convert SZArray to an array with non-zero lower bound
-            const int LowerBound = 5;
-            Array nonZeroSourceArray = NonZeroLowerBoundArray(sourceArray, LowerBound);
-            Array nonZeroDestinationArray = sourceArray == destinationArray ? nonZeroSourceArray : NonZeroLowerBoundArray(destinationArray, LowerBound);
-            Copy(nonZeroSourceArray, sourceIndex + LowerBound, nonZeroDestinationArray, destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                // Advanced: convert SZArray to an array with non-zero lower bound
+                const int LowerBound = 5;
+                Array nonZeroSourceArray = NonZeroLowerBoundArray(sourceArray, LowerBound);
+                Array nonZeroDestinationArray = sourceArray == destinationArray ? nonZeroSourceArray : NonZeroLowerBoundArray(destinationArray, LowerBound);
+                Copy(nonZeroSourceArray, sourceIndex + LowerBound, nonZeroDestinationArray, destinationIndex + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            }
 
             if (sourceIndex == 0 && length == sourceArray.Length)
             {
@@ -1607,8 +1616,11 @@ namespace System.Tests
 
             yield return new object[] { new char[] { '7', '8', '9' } };
 
-            yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3 }, new int[] { 4 }) };
-            yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3, 3 }, new int[] { 4, 5 }) };
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3 }, new int[] { 4 }) };
+                yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3, 3 }, new int[] { 4, 5 }) };
+            }
         }
 
         [Theory]
@@ -1949,10 +1961,13 @@ namespace System.Tests
             // Basic: forward SZArray
             IndexOf_Array(array, value, startIndex, count, expected);
 
-            // Advanced: convert SZArray to an array with non-zero lower bound
-            const int LowerBound = 5;
-            Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, LowerBound);
-            IndexOf_Array(nonZeroLowerBoundArray, value, startIndex + LowerBound, count, expected + LowerBound);
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                // Advanced: convert SZArray to an array with non-zero lower bound
+                const int LowerBound = 5;
+                Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, LowerBound);
+                IndexOf_Array(nonZeroLowerBoundArray, value, startIndex + LowerBound, count, expected + LowerBound);
+            }
         }
 
         [Theory]
@@ -2304,10 +2319,13 @@ namespace System.Tests
             // Basic: forward SZArray
             LastIndexOf_Array(array, value, startIndex, count, expected);
 
-            // Advanced: convert SZArray to an array with non-zero lower bound
-            const int LowerBound = 5;
-            Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, LowerBound);
-            LastIndexOf_Array(nonZeroLowerBoundArray, value, startIndex + LowerBound, count, expected + LowerBound);
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                // Advanced: convert SZArray to an array with non-zero lower bound
+                const int LowerBound = 5;
+                Array nonZeroLowerBoundArray = NonZeroLowerBoundArray(array, LowerBound);
+                LastIndexOf_Array(nonZeroLowerBoundArray, value, startIndex + LowerBound, count, expected + LowerBound);
+            }
         }
 
         [Theory]
@@ -2620,9 +2638,12 @@ namespace System.Tests
             // Basic: forward SZArray
             Reverse(array, index, length, expected);
 
-            // Advanced: convert SZArray to an array with non-zero lower bound
-            const int LowerBound = 5;
-            Reverse(NonZeroLowerBoundArray(array, LowerBound), index + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                // Advanced: convert SZArray to an array with non-zero lower bound
+                const int LowerBound = 5;
+                Reverse(NonZeroLowerBoundArray(array, LowerBound), index + LowerBound, length, NonZeroLowerBoundArray(expected, LowerBound));
+            }
         }
 
         public static void Reverse(Array array, int index, int length, Array expected)
@@ -2657,12 +2678,14 @@ namespace System.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Non-zero lower-bounded arrays not supported on UapAot")]
         public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Non-zero lower-bounded arrays not supported on UapAot")]
         public static void Reverse_IndexLessThanPositiveLowerBound_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", "length", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], 1), 0, 0));
@@ -3040,9 +3063,12 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10])); // Keys is multidimensional
             Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10])); // Items is multidimensional
 
-            Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-            Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-            Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items)); // Keys and items have different lower bounds
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
+                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
+                Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items)); // Keys and items have different lower bounds
+            }
 
             // One or more objects in keys do not implement IComparable
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3]));
@@ -3063,9 +3089,12 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], null)); // Keys is multidimensional
             Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], null)); // Items is multidimensional
 
-            Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-            Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-            Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, null)); // Keys and items have different lower bounds
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
+                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
+                Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, null)); // Keys and items have different lower bounds
+            }
 
             // One or more objects in keys do not implement IComparable
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], null));
@@ -3086,9 +3115,12 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0)); // Keys is multidimensional
             Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0)); // Items is multidimensional
 
-            Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-            Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-            Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1)); // Keys and items have different lower bounds
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
+                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
+                Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1)); // Keys and items have different lower bounds
+            }
 
             // One or more objects in keys do not implement IComparable
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3));
@@ -3125,9 +3157,12 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0, null)); // Keys is multidimensional
             Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0, null)); // Items is multidimensional
 
-            Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-            Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-            Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1, null)); // Keys and items have different lower bounds
+            if (s_NonZeroLowerBoundsAvailable)
+            {
+                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
+                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
+                Assert.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1, null)); // Keys and items have different lower bounds
+            }
 
             // One or more objects in keys do not implement IComparable
             Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3, null));
@@ -3614,6 +3649,13 @@ namespace System.Tests
         }
 
         public enum Int64Enum : long { }
+
+        private static readonly bool s_NonZeroLowerBoundsAvailable =
+#if uapaot
+            false;
+#else
+            true;
+#endif
     }
 }
 
