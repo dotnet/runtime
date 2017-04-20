@@ -42,6 +42,7 @@
     <Compile Include="SerialPort\Handshake.cs" />
     <Compile Include="SerialPort\IsOpen.cs" />
     <Compile Include="SerialPort\NewLine.cs" />
+    <Compile Include="SerialPort\AbortOnError.cs" />
     <Compile Include="SerialPort\Open.cs" />
     <Compile Include="SerialPort\OpenDevices.cs" />
     <Compile Include="SerialPort\Open_Stress.cs" />

@@ -1307,6 +1307,8 @@ namespace System.IO.Ports
             // Later the user may change this via the NullDiscard property.
             SetDcbFlag(NativeMethods.FNULL, discardNull ? 1 : 0);
 
+            // SerialStream does not handle the fAbortOnError behaviour, so we must make sure it's not enabled
+            SetDcbFlag(NativeMethods.FABORTONOERROR, 0);
 
             // Setting RTS control, which is RTS_CONTROL_HANDSHAKE if RTS / RTS-XOnXOff handshaking
             // used, RTS_ENABLE (RTS pin used during operation) if rtsEnable true but XOnXoff / No handshaking
