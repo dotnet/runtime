@@ -237,3 +237,19 @@ need to modify your .csproj to target netcoreapp2.0 and reference the nightly bu
 ```
 
 In a future update to Visual Studio, it will no longer be necessary to make this edit.
+
+## Finding specific builds
+
+The URL scheme for the runtime is as follows:
+
+```
+https://dotnetcli.azureedge.net/dotnet/master/Installers/$version$/dotnet-$os$-$arch$.$version$.exe
+https://dotnetcli.azureedge.net/dotnet/master/Installers/2.0.0-preview1-001915-00/dotnet-win-x64.2.0.0-preview1-001915-00.exe
+```
+
+The URL scheme for the SDK & CLI is as follows:
+
+```
+https://dotnetcli.azureedge.net/dotnet/Sdk/$version$/dotnet-dev-$os$-$arch.$version$.exe
+https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0-preview1-005791/dotnet-dev-win-x86.2.0.0-preview1-005791.exe
+```
