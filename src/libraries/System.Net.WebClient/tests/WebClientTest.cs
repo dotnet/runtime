@@ -53,7 +53,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataAsync((Uri)null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadDataTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.DownloadDataTaskAsync((string)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadDataTaskAsync((Uri)null); });
         }
 
@@ -68,7 +68,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, ""); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileAsync((Uri)null, "", null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadFileTaskAsync((string)null, ""); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.DownloadFileTaskAsync((string)null, ""); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadFileTaskAsync((Uri)null, ""); });
 
             AssertExtensions.Throws<ArgumentNullException>("fileName", () => { wc.DownloadFile("http://localhost", null); });
@@ -92,7 +92,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringAsync((Uri)null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.DownloadStringTaskAsync((string)null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.DownloadStringTaskAsync((string)null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.DownloadStringTaskAsync((Uri)null); });
         }
 
@@ -110,8 +110,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadDataTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadDataTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadDataTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadDataTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadDataTaskAsync((Uri)null, null, null); });
 
@@ -136,7 +136,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFile((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadFile((string)null, null, null); });
 
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFile((Uri)null, null, null); });
@@ -145,8 +145,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFileTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadFileTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadFileTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadFileTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadFileTaskAsync((Uri)null, null, null); });
 
@@ -179,8 +179,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadStringTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadStringTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadStringTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadStringTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadStringTaskAsync((Uri)null, null, null); });
 
@@ -213,8 +213,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesAsync((Uri)null, null, null, null); });
 
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadValuesTaskAsync((string)null, null); });
-            AssertExtensions.Throws<ArgumentNullException>(PlatformDetection.IsFullFramework ? "path" : "address", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadValuesTaskAsync((string)null, null); });
+            AssertExtensions.Throws<ArgumentNullException>("address", "path", () => { wc.UploadValuesTaskAsync((string)null, null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null); });
             AssertExtensions.Throws<ArgumentNullException>("address", () => { wc.UploadValuesTaskAsync((Uri)null, null, null); });
 
