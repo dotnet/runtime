@@ -208,6 +208,7 @@
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptions.cs" />
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\HandleTests.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
