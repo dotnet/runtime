@@ -263,8 +263,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_propsFilename>$(TargetName)</_propsFilename>
-      <_propsFilename Condition="'$(_propsFilename)' == ''">$(MSBuildProjectName)</_propsFilename>
+      <_propsFilename>$(TargetName).$(TargetGroup)-$(OSGroup)</_propsFilename>
+      <_propsFilename Condition="'$(TargetName)' == ''">$(MSBuildProjectName).$(TargetGroup)-$(OSGroup)</_propsFilename>
       <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
     </PropertyGroup>
 
