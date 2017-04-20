@@ -6321,7 +6321,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
     int    cntPop = 0;
     OPCODE nextOpcode;
 
-#ifdef _TARGET_AMD64_
+#if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
     do
     {
         nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
@@ -6332,7 +6332,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
                                                                                          // one pop seen so far.
 #else
     nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
-#endif
+#endif // !FEATURE_CORECLR && _TARGET_AMD64_
 
     if (isCallPopAndRet)
     {
@@ -6340,15 +6340,15 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
         *isCallPopAndRet = (nextOpcode == CEE_RET) && (cntPop == 1);
     }
 
-#ifdef _TARGET_AMD64_
+#if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
     // Jit64 Compat:
     // Tail call IL pattern could be either of the following
     // 1) call/callvirt/calli + ret
     // 2) call/callvirt/calli + pop + ret in a method returning void.
     return (nextOpcode == CEE_RET) && ((cntPop == 0) || ((cntPop == 1) && (info.compRetType == TYP_VOID)));
-#else //!_TARGET_AMD64_
+#else
     return (nextOpcode == CEE_RET) && (cntPop == 0);
-#endif
+#endif // !FEATURE_CORECLR && _TARGET_AMD64_
 }
 
 /*****************************************************************************
@@ -15455,14 +15455,14 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
     // We must have imported a tailcall and jumped to RET
     if (prefixFlags & PREFIX_TAILCALL)
     {
-#ifndef _TARGET_AMD64_
+#if defined(FEATURE_CORECLR) || !defined(_TARGET_AMD64_)
         // Jit64 compat:
         // This cannot be asserted on Amd64 since we permit the following IL pattern:
         //      tail.call
         //      pop
         //      ret
         assert(verCurrentState.esStackDepth == 0 && impOpcodeIsCallOpcode(opcode));
-#endif
+#endif // FEATURE_CORECLR || !_TARGET_AMD64_
 
         opcode = CEE_RET; // To prevent trying to spill if CALL_SITE_BOUNDARIES
 

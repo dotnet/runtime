@@ -7863,7 +7863,7 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         // the call.
         GenTreeStmt* nextMorphStmt = fgMorphStmt->gtNextStmt;
 
-#ifdef _TARGET_AMD64_
+#if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
         // Legacy Jit64 Compat:
         // There could be any number of GT_NOPs between tail call and GT_RETURN.
         // That is tail call pattern could be one of the following:
@@ -7930,7 +7930,7 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
                 fgRemoveStmt(compCurBB, morphStmtToRemove);
             }
         }
-#endif // _TARGET_AMD64_
+#endif // !FEATURE_CORECLR && _TARGET_AMD64_
 
         // Delete GT_RETURN  if any
         if (nextMorphStmt != nullptr)
