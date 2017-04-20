@@ -4679,7 +4679,8 @@ OBJECTREF AppDomain::GetExposedObject()
         obj = (APPDOMAINREF) AllocateObject(pMT);
         obj->SetDomain(this);
 
-        if(StoreFirstObjectInHandle(m_ExposedObject, (OBJECTREF) obj) == FALSE) {
+        if (!StoreFirstObjectInHandle(m_ExposedObject, (OBJECTREF) obj))
+        {
             obj = (APPDOMAINREF) GetRawExposedObject();
             _ASSERTE(obj);
         }
