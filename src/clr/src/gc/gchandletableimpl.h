@@ -59,7 +59,7 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
 
-    virtual Object* CompareAndSwapObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 };
 
 #endif  // GCHANDLETABLE_H_
