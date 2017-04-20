@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     // Default to RSA-SHA1
                     if (SignedInfo.SignatureMethod == null)
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA1Url;
+                        SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
                 }
                 else
                 {
@@ -911,7 +911,7 @@ namespace System.Security.Cryptography.Xml
             {
                 // If no DigestMethod has yet been set, default it to sha1
                 if (reference.DigestMethod == null)
-                    reference.DigestMethod = XmlDsigSHA1Url;
+                    reference.DigestMethod = Reference.DefaultDigestMethod;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 
