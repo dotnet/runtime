@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
             var sw = Stopwatch.StartNew();
 
             activity.Start();
-            SpinWait.SpinUntil(() => sw.ElapsedMilliseconds > 1, 3);
+            SpinWait.SpinUntil(() => sw.ElapsedMilliseconds > 1, 2);
             activity.Stop();
             
             sw.Stop();
