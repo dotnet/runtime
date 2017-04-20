@@ -138,6 +138,7 @@ namespace System.Net.Http
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         private CredentialCache _credentialCache = null; // protected by LockObject
+        private bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
         private CookieContainer _cookieContainer = new CookieContainer();
         private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
         private TimeSpan _connectTimeout = Timeout.InfiniteTimeSpan;
@@ -405,8 +406,12 @@ namespace System.Net.Http
 
         internal bool UseDefaultCredentials
         {
-            get { return false; }
-            set { }
+            get { return _useDefaultCredentials; }
+            set
+            {
+                CheckDisposedOrStarted();
+                _useDefaultCredentials = value;
+            }
         }
 
         public IDictionary<string, object> Properties
