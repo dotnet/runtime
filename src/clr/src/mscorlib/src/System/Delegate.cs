@@ -179,7 +179,10 @@ namespace System
             else
                 return unchecked((int)((long)this._methodPtrAux));
             */
-            return GetType().GetHashCode();
+            if (_methodPtrAux.IsNull())
+                return ( _target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
+            else
+                return GetType().GetHashCode();
         }
 
         public static Delegate Combine(Delegate a, Delegate b)
