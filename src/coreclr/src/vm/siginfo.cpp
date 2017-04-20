@@ -1199,7 +1199,10 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             
             PREFIX_ASSUME(pZapSigContext != NULL);
             pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
-            if (pModule != NULL)
+
+            // For ReadyToRunCompilation we return a null TypeHandle when we reference a non-local module
+            //
+            if ((pModule != NULL) && pModule->IsInCurrentVersionBubble())
             {
                 thRet = psig.GetTypeHandleThrowing(pModule, 
                                                    pTypeContext, 
