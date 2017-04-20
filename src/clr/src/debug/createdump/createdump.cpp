@@ -83,9 +83,6 @@ int __cdecl main(const int argc, const char* argv[])
     const char* programPath = nullptr;
     pid_t pid = 0;
 
-    char* diagnostics = getenv("COMPlus_CreateDumpDiagnostics");
-    g_diagnostics = diagnostics != nullptr && strcmp(diagnostics, "1") == 0;
-
     int exitCode = PAL_InitializeDLL();
     if (exitCode != 0)
     {
