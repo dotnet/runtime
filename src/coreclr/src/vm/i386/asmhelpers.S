@@ -815,6 +815,14 @@ PATCH_LABEL ExternalMethodFixupPatchLabel
 NESTED_END ExternalMethodFixupStub, _TEXT
 
 #ifdef FEATURE_READYTORUN
+NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
+    .cfi_def_cfa_offset 16
+    CHECK_STACK_ALIGNMENT
+    call  eax
+    add   esp, 12
+    ret
+NESTED_END DynamicHelperArgsStub, _TEXT
+
 // ==========================================================================
 NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
     STUB_PROLOG_2_HIDDEN_ARGS
@@ -971,6 +979,7 @@ NESTED_ENTRY DelayLoad_Helper\suffix, _TEXT, NoHandler
     push        eax             // indirection cell address.
     push        esi             // pTransitionBlock
 
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(DynamicHelperWorker)
     test        eax,eax
     jnz         LOCAL_LABEL(TailCallDelayLoad_Helper\suffix)
