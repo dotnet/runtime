@@ -479,6 +479,15 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
         }
 
+        [Fact]
+        public static void Load_AssemblyNameWithCodeBase()
+        {
+            AssemblyName an = typeof(AssemblyTests).Assembly.GetName();
+            Assert.NotNull(an.CodeBase); 
+            Assembly a = Assembly.Load(an);
+            Assert.Equal(a, typeof(AssemblyTests).Assembly);
+        }
+
         // Helpers
         private static Assembly GetGetCallingAssembly()
         {
