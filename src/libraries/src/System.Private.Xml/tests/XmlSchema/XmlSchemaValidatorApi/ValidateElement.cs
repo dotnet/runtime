@@ -457,7 +457,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //Dev10_40497
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This checks a quirked behavior and Full Framework always gets old behavior as Xunit runner always targets 4.5.2 TFM ")]
         [Fact]
         public void StringPassedToValidateEndElementDoesNotSatisfyIdentityConstraints()
         {
