@@ -444,6 +444,7 @@ TypesMustExist : Type 'System.Security.Cryptography.CngUIPolicy' does not exist 
 TypesMustExist : Type 'System.Security.Cryptography.CngUIProtectionLevels' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.DSACng' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECDsaCng' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECKeyXmlFormat' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RSACng' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.TripleDESCng' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Cryptography.Csp:
@@ -570,4 +571,4 @@ TypesMustExist : Type 'System.Xml.XPath.XPathNavigator' does not exist in the im
 TypesMustExist : Type 'System.Xml.XPath.XPathNodeIterator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.XPath.XPathNodeType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.XPath.XPathResultType' does not exist in the implementation but it does exist in the contract.
-Total Issues: 479
+Total Issues: 480

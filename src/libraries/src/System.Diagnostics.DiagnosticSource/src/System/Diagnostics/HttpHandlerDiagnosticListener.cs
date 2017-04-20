@@ -571,13 +571,7 @@ namespace System.Diagnostics
                 // Only send start event to users who subscribed for it, but start activity anyway
                 if (this.IsEnabled(RequestStartName))
                 {
-                    long timestamp = Stopwatch.GetTimestamp();
-                    this.StartActivity(activity,
-                        new
-                        {
-                            Request = request,
-                            Timestamp = timestamp
-                        });
+                    this.StartActivity(activity, new { Request = request });
                 }
                 else
                 {
@@ -585,7 +579,7 @@ namespace System.Diagnostics
                 }
 
                 request.Headers.Add(RequestIdHeaderName, activity.Id);
-                //we expect baggage to be empty or contain a few items
+                // we expect baggage to be empty or contain a few items
                 using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
                 {
                     if (e.MoveNext())
@@ -613,14 +607,7 @@ namespace System.Diagnostics
             if (request.Headers[RequestIdHeaderName] != null)
             {
                 // only send Stop if request was instrumented
-                long timestamp = Stopwatch.GetTimestamp();
-                this.Write(RequestStopName,
-                    new
-                    {
-                        Request = request,
-                        Response = response,
-                        Timestamp = timestamp
-                    });
+                this.Write(RequestStopName, new { Request = request, Response = response });
             }
         }
 

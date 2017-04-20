@@ -300,13 +300,7 @@ namespace System.Diagnostics.Tests
                         "An unexpected event of name " + pair.Key + "was received");
 
                     WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
-                    long timestamp = ReadPublicProperty<long>(eventFields, "Timestamp");
-
                     Assert.Equal(request.GetType().Name, "HttpWebRequest");
-
-                    // Just compare the timestamp to make sure it's reasonable. In an poorman experiment, we
-                    // found that 10 secs is roughly 30,000,000 ticks
-                    Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, $"The timestamp sent with the event doesn't look correct. Begin {beginTimestamp} End {timestamp} Diff {timestamp - beginTimestamp} Expected < {30 * 1000 * 1000}");
 
                     if (pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop")
                     {
@@ -379,12 +373,6 @@ namespace System.Diagnostics.Tests
                         pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start" ||
                         pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop",
                         "An unexpected event of name " + pair.Key + "was received");
-
-                    long timestamp = ReadPublicProperty<long>(eventFields, "Timestamp");
-
-                    // Just compare the timestamp to make sure it's reasonable. In an poorman experiment, we
-                    // found that 10 secs is roughly 30,000,000 ticks
-                    Assert.True(timestamp - beginTimestamp > 0 && timestamp - beginTimestamp < 30 * 1000 * 1000, $"The timestamp sent with the event doesn't look correct. Begin {beginTimestamp} End {timestamp} Diff {timestamp - beginTimestamp} Expected < {30 * 1000 * 1000}");
 
                     WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
                     Assert.Equal(request.GetType().Name, "HttpWebRequest");
