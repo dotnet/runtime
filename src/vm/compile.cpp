@@ -3140,8 +3140,8 @@ HRESULT NGenModulePdbWriter::WritePDBData()
 	SString dllPath = pLoadedLayout->GetPath();
 	if (!dllPath.EndsWithCaseInsensitive(L".ni.dll") && !dllPath.EndsWithCaseInsensitive(L".ni.exe"))
 	{
-		SString::Iterator fileNameStart = dllPath.Begin();
-		dllPath.FindBack(fileNameStart, '\\');
+		SString::Iterator fileNameStart = dllPath.End();
+		dllPath.FindBack(fileNameStart, DIRECTORY_SEPARATOR_STR_W);
 
 		SString::Iterator ext = dllPath.End();
 		dllPath.FindBack(ext, '.');
