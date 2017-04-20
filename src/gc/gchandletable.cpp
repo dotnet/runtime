@@ -132,3 +132,18 @@ void* GCHandleManager::GetExtraInfoFromHandle(OBJECTHANDLE handle)
 {
     return (void*)::HndGetHandleExtraInfo(handle);
 }
+
+void GCHandleManager::StoreObjectInHandle(OBJECTHANDLE handle, Object* object)
+{
+    ::HndAssignHandle(handle, ObjectToOBJECTREF(object));
+}
+
+bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object)
+{
+    return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
+}
+
+Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
+{
+    return (Object*)::HndInterlockedCompareExchangeHandle(handle, ObjectToOBJECTREF(object), ObjectToOBJECTREF(comparandObject));
+}

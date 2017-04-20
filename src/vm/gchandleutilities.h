@@ -30,7 +30,8 @@ private:
     GCHandleUtilities() = delete;
 };
 
-void ValidateHandleAndAppDomain(OBJECTHANDLE handle);
+void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex);
+void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef);
 
 // Given a handle, returns an OBJECTREF for the object it refers to.
 inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
@@ -38,7 +39,10 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     _ASSERTE(handle);
 
 #ifdef _DEBUG_IMPL
-    ValidateHandleAndAppDomain(handle);
+    DWORD context = (DWORD)GCHandleUtilities::GetGCHandleManager()->GetHandleContext(handle);
+    OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
+
+    ValidateObjectAndAppDomain(objRef, ADIndex(context));
 #endif // _DEBUG_IMPL
 
     // Wrap the raw OBJECTREF and return it
@@ -167,6 +171,34 @@ inline OBJECTHANDLE CreateWinRTWeakHandle(IGCHandleStore* store, OBJECTREF objec
 inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
 {
     return store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
+}
+
+// Handle object manipulation convenience functions
+
+inline void StoreObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
+{
+    ValidateHandleAssignment(handle, object);
+
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, OBJECTREFToObject(object));
+}
+
+inline bool StoreFirstObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
+{
+    ValidateHandleAssignment(handle, object);
+
+    return GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandleIfNull(handle, OBJECTREFToObject(object));
+}
+
+inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJECTREF object, OBJECTREF comparandObject)
+{
+    ValidateHandleAssignment(handle, object);
+
+    return GCHandleUtilities::GetGCHandleManager()->InterlockedCompareExchangeObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
+}
+
+inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
+{
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, NULL);
 }
 
 // Handle destruction convenience functions
@@ -309,6 +341,7 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle> 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
+typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
 
 class RCOBJECTHANDLEHolder : public RefCountedOHWrapper
 {
