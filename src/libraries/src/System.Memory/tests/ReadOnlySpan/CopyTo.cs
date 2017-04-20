@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -120,6 +121,69 @@ namespace System.SpanTests
 
             int[] expected = { 90, 92, 93, 94, 95, 96, 97, 97 };
             Assert.Equal<int>(expected, a);
+        }
+
+        // This test case tests the Span.CopyTo method for large buffers of size 4GB or more. In the fast path,
+        // the CopyTo method performs copy in chunks of size 4GB (uint.MaxValue) with final iteration copying
+        // the residual chunk of size (bufferSize % 4GB). The inputs sizes to this method, 4GB and 4GB+256B,
+        // test the two size selection paths in CoptyTo method - memory size that is multiple of 4GB or,
+        // a multiple of 4GB + some more size.
+        [Theory]
+        [OuterLoop]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [InlineData(4L * 1024L * 1024L * 1024L)]
+        [InlineData((4L * 1024L * 1024L * 1024L) + 256)]
+        public static void CopyToLargeSizeTest(long bufferSize)
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (Unsafe.SizeOf<IntPtr>() != sizeof(long))
+            {
+                return;
+            }
+
+            int GuidCount = (int)(bufferSize / Unsafe.SizeOf<Guid>());
+            bool allocatedFirst = false;
+            bool allocatedSecond = false;
+            IntPtr memBlockFirst = IntPtr.Zero;
+            IntPtr memBlockSecond = IntPtr.Zero;
+
+            unsafe
+            {
+                try
+                {
+                    allocatedFirst = AllocationHelper.TryAllocNative((IntPtr)bufferSize, out memBlockFirst);
+                    allocatedSecond = AllocationHelper.TryAllocNative((IntPtr)bufferSize, out memBlockSecond);
+
+                    if (allocatedFirst && allocatedSecond)
+                    {
+                        ref Guid memoryFirst = ref Unsafe.AsRef<Guid>(memBlockFirst.ToPointer());
+                        var spanFirst = new ReadOnlySpan<Guid>(memBlockFirst.ToPointer(), GuidCount);
+
+                        ref Guid memorySecond = ref Unsafe.AsRef<Guid>(memBlockSecond.ToPointer());
+                        var spanSecond = new Span<Guid>(memBlockSecond.ToPointer(), GuidCount);
+
+                        Guid theGuid = Guid.Parse("900DBAD9-00DB-AD90-00DB-AD900DBADBAD");
+                        for (int count = 0; count < GuidCount; ++count)
+                        {
+                            Unsafe.Add(ref memoryFirst, count) = theGuid;
+                        }
+
+                        spanFirst.CopyTo(spanSecond);
+
+                        for (int count = 0; count < GuidCount; ++count)
+                        {
+                            var guidfirst = Unsafe.Add(ref memoryFirst, count);
+                            var guidSecond = Unsafe.Add(ref memorySecond, count);
+                            Assert.Equal(guidfirst, guidSecond);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (allocatedFirst) AllocationHelper.ReleaseNative(ref memBlockFirst);
+                    if (allocatedSecond) AllocationHelper.ReleaseNative(ref memBlockSecond);
+                }
+            }
         }
     }
 }
