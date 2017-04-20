@@ -344,6 +344,7 @@ TESTS_CS_SRC=		\
 	generic-static-methods.2.cs	\
 	generic-null-call.2.cs	\
 	generic-special.2.cs	\
+	generic-special2.2.cs	\
 	generic-exceptions.2.cs	\
 	generic-virtual2.2.cs	\
 	generic-valuetype-interface.2.cs	\
@@ -616,6 +617,7 @@ TESTS_GSHARED_SRC = \
 	generic-tailcall2.2.cs			\
 	generic-array-exc.2.cs	\
 	generic-special.2.cs			\
+	generic-special2.2.cs	\
 	generic-exceptions.2.cs	\
 	generic-delegate2.2.cs		\
 	generic-virtual2.2.cs	\
