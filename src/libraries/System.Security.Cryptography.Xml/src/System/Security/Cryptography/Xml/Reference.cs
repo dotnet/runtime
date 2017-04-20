@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Xml
             _refTarget = null;
             _refTargetType = ReferenceTargetType.UriReference;
             _cachedXml = null;
-            _digestMethod = SignedXml.XmlDsigSHA1Url;
+            _digestMethod = SignedXml.XmlDsigSHA256Url;
         }
 
         public Reference(Stream stream)
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Xml
             _refTarget = stream;
             _refTargetType = ReferenceTargetType.Stream;
             _cachedXml = null;
-            _digestMethod = SignedXml.XmlDsigSHA1Url;
+            _digestMethod = SignedXml.XmlDsigSHA256Url;
         }
 
         public Reference(string uri)
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Xml
             _uri = uri;
             _refTargetType = ReferenceTargetType.UriReference;
             _cachedXml = null;
-            _digestMethod = SignedXml.XmlDsigSHA1Url;
+            _digestMethod = SignedXml.XmlDsigSHA256Url;
         }
 
         internal Reference(XmlElement element)
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Xml
             _refTarget = element;
             _refTargetType = ReferenceTargetType.XmlElement;
             _cachedXml = null;
-            _digestMethod = SignedXml.XmlDsigSHA1Url;
+            _digestMethod = SignedXml.XmlDsigSHA256Url;
         }
 
         //

@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void Ctor_Uri(string uri)
         {
             Reference reference = new Reference(uri);
-            Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
+            Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
             Assert.Null(reference.DigestValue);
             Assert.Null(reference.Id);
             Assert.Null(reference.Type);
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Xml.Tests
             using (MemoryStream memoryStream = data != null ? new MemoryStream(Encoding.UTF8.GetBytes(data)) : null)
             {
                 Reference reference = new Reference(memoryStream);
-                Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
+                Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
                 Assert.Null(reference.DigestValue);
                 Assert.Null(reference.Id);
                 Assert.Null(reference.Type);
@@ -187,6 +187,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Reference reference = new Reference();
             // adding an empty hash value
             byte[] hash = new byte[20];
+            reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
             reference.DigestValue = hash;
             XmlElement xel = reference.GetXml();
             // this is the minimal Reference (DigestValue)!

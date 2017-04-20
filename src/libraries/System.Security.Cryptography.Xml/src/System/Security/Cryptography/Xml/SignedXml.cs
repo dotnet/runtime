@@ -911,7 +911,7 @@ namespace System.Security.Cryptography.Xml
             {
                 // If no DigestMethod has yet been set, default it to sha1
                 if (reference.DigestMethod == null)
-                    reference.DigestMethod = XmlDsigSHA1Url;
+                    reference.DigestMethod = XmlDsigSHA256Url;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 

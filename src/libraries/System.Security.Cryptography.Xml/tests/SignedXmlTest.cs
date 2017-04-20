@@ -15,6 +15,7 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
+using System.Xml.XPath;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -660,6 +661,7 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
             Reference reference = new Reference();
+            reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
             reference.Uri = "";
 
             XmlDsigEnvelopedSignatureTransform env = new XmlDsigEnvelopedSignatureTransform();
@@ -717,6 +719,7 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
 
             Reference reference = new Reference();
+            reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
             reference.Uri = "";
 
             XmlDsigEnvelopedSignatureTransform env = new XmlDsigEnvelopedSignatureTransform();
@@ -956,6 +959,7 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.SignedInfo.CanonicalizationMethod = canonicalizationMethod;
 
             Reference reference = new Reference();
+            reference.DigestMethod = SignedXml.XmlDsigSHA1Url;
             reference.Uri = "";
 
             XmlDsigEnvelopedSignatureTransform env = new XmlDsigEnvelopedSignatureTransform();
@@ -1542,6 +1546,52 @@ namespace System.Security.Cryptography.Xml.Tests
 ";
             SignedXml sign = GetSignedXml(xml);
             Assert.Throws<FormatException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
+        }
+
+        [Fact]
+        public void SignedXmlUsesSha256ByDefault()
+        {
+            const string expectedSignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+            const string expectedDigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256";
+
+            const string xml = @"<?xml version=""1.0""?>
+<example>
+<test>some text node</test>
+</example>";
+
+            var doc = new XmlDocument();
+            doc.PreserveWhitespace = true;
+            doc.LoadXml(xml);
+
+            using (RSA key = RSA.Create())
+            {
+                var sxml = new SignedXml(doc)
+                {
+                    SigningKey = key
+                };
+
+                Assert.Null(sxml.SignedInfo.SignatureMethod);
+
+                var reference = new Reference();
+                Assert.Equal(expectedDigestMethod, reference.DigestMethod);
+
+                reference.Uri = "";
+                reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                sxml.AddReference(reference);
+                sxml.ComputeSignature();
+
+                XmlElement dsig = sxml.GetXml();
+                XPathNavigator xp = dsig.CreateNavigator();
+
+                XmlNamespaceManager nsMgr = new XmlNamespaceManager(xp.NameTable);
+                nsMgr.AddNamespace("ds", "http://www.w3.org/2000/09/xmldsig#");
+
+                Assert.Equal(expectedSignatureMethod,
+                    xp.SelectSingleNode("/ds:SignedInfo/ds:SignatureMethod/@Algorithm", nsMgr)?.Value);
+
+                Assert.Equal(expectedDigestMethod,
+                    xp.SelectSingleNode("/ds:SignedInfo/ds:Reference/ds:DigestMethod/@Algorithm", nsMgr)?.Value);
+            }
         }
     }
 }
