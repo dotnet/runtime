@@ -59,6 +59,9 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Runtime.Remoting" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard'">
+    <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
   </ItemGroup>
@@ -78,7 +81,8 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <Compile Include="AssemblyInfo.Net46.cs" />
+    <Compile Include="AssemblyInfo.netfx.cs" />
+    <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />    
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
