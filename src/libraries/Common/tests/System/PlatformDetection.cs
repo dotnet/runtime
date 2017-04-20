@@ -12,29 +12,35 @@ namespace System
 {
     public static partial class PlatformDetection
     {
+        //
+        // Do not use the " { get; } = <expression> " pattern here. Having all the initialization happen in the type initializer
+        // means that one exception anywhere means all tests using PlatformDetection fail. If you feel a value is worth latching,
+        // do it in a way that failures don't cascade.
+        //
+
         public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
-        public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
-        public static bool IsWindows8x { get; } = IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
-        public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
-        public static bool IsOpenSUSE { get; } = IsDistroAndVersion("opensuse");
-        public static bool IsUbuntu { get; } = IsDistroAndVersion("ubuntu");
-        public static bool IsNotWindowsNanoServer { get; } = (!IsWindows ||
+        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
+        public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
+        public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
+        public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
+        public static bool IsNotWindowsNanoServer => (!IsWindows ||
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
-        public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
+        public static bool IsWindows10Version1607OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
-        public static bool IsWindows10Version1703OrGreater { get; } = IsWindows &&
+        public static bool IsWindows10Version1703OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 15063;
         // Windows OneCoreUAP SKU doesn't have httpapi.dll
-        public static bool HasHttpApi { get; } = (IsWindows &&
+        public static bool HasHttpApi => (IsWindows &&
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
 
-        public static bool IsNotOneCoreUAP { get; } = (!IsWindows || 
+        public static bool IsNotOneCoreUAP => (!IsWindows || 
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
 
-        public static int WindowsVersion { get; } = GetWindowsVersion();
+        public static int WindowsVersion => GetWindowsVersion();
 
         private static int s_isWinRT = -1;
 
@@ -122,15 +128,15 @@ namespace System
             return false;
         }
 
-        public static bool IsDebian8 { get; } = IsDistroAndVersion("debian", "8");
-        public static bool IsUbuntu1404 { get; } = IsDistroAndVersion("ubuntu", "14.04");
-        public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
-        public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");
-        public static bool IsUbuntu1610 { get; } = IsDistroAndVersion("ubuntu", "16.10");
-        public static bool IsFedora24 { get; } = IsDistroAndVersion("fedora", "24");
-        public static bool IsFedora25 { get; } = IsDistroAndVersion("fedora", "25");
-        public static bool IsFedora26 { get; } = IsDistroAndVersion("fedora", "26");
-        public static bool IsCentos7 { get; } = IsDistroAndVersion("centos", "7");
+        public static bool IsDebian8 => IsDistroAndVersion("debian", "8");
+        public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", "14.04");
+        public static bool IsUbuntu1510 => IsDistroAndVersion("ubuntu", "15.10");
+        public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", "16.04");
+        public static bool IsUbuntu1610 => IsDistroAndVersion("ubuntu", "16.10");
+        public static bool IsFedora24 => IsDistroAndVersion("fedora", "24");
+        public static bool IsFedora25 => IsDistroAndVersion("fedora", "25");
+        public static bool IsFedora26 => IsDistroAndVersion("fedora", "26");
+        public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
 
         /// <summary>
         /// Get whether the OS platform matches the given Linux distro and optional version.
