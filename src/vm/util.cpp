@@ -2525,12 +2525,12 @@ HMODULE CLRGetCurrentModuleHandle()
 
 #endif // !FEATURE_PAL
 
-extern LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
-extern BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
-extern void ShutdownRuntimeWithoutExiting(int exitCode);
-extern BOOL IsRuntimeStarted(DWORD *pdwStartupFlags);
+LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
+BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
+void ShutdownRuntimeWithoutExiting(int exitCode);
+BOOL IsRuntimeStarted(DWORD *pdwStartupFlags);
 
-void * __stdcall GetCLRFunction(LPCSTR FunctionName)
+void *GetCLRFunction(LPCSTR FunctionName)
 {
 
     void* func = NULL;

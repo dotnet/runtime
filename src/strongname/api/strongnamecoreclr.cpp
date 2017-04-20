@@ -39,15 +39,15 @@ FunctionPointer ApiShim(LPCSTR szApiName)
 // Shim APIs, passing off into the desktop VM
 //
 
-IExecutionEngine * __stdcall SnIEE()
+IExecutionEngine* SnIEE()
 {
-    typedef IExecutionEngine * ( __stdcall *IEEFn_t)();
+    typedef IExecutionEngine* (* IEEFn_t)();
     return ApiShim<IEEFn_t>("IEE")();
 }
 
-STDAPI SnGetCorSystemDirectory(SString&  pbuffer)
+HRESULT SnGetCorSystemDirectory(SString&  pbuffer)
 {
-    typedef HRESULT (__stdcall *GetCorSystemDirectoryFn_t)(SString&);
+    typedef HRESULT (*GetCorSystemDirectoryFn_t)(SString&);
     return ApiShim<GetCorSystemDirectoryFn_t>("GetCORSystemDirectory")(pbuffer);
 }
 
