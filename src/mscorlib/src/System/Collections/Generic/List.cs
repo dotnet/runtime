@@ -350,6 +350,7 @@ namespace System.Collections.Generic
 
 
         // Clears the contents of List.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
