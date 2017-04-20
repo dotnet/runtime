@@ -3,22 +3,27 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}</ProjectGuid>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <ProjectGuid>{9891F9AC-9A0A-47DF-8D96-92B21AFC3B93}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="$(TestSourceFolder)XmlSerializerTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="$(TestSourceFolder)XsPerformanceTest.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
-    <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
+  <ItemGroup>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
