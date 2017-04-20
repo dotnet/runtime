@@ -144,5 +144,17 @@ namespace System.Net.Test.Common
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.Run(() => Write(buffer, offset, count));
         }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
     }
 }
