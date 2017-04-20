@@ -218,7 +218,7 @@ namespace DelegateTest
         {
             bool retVal = true;
 
-            TestLibrary.TestFramework.BeginScenario("PosTest7:  Use the different instance's same instance method to create two delegate which delegate object is the same,their hashcode is equal");
+            TestLibrary.TestFramework.BeginScenario("PosTest7:  Use the different instance's same instance method to create two delegate which delegate object is the same, their hashcode is different");
 
             try
             {
@@ -226,7 +226,7 @@ namespace DelegateTest
                 booldelegate workDelegate = new booldelegate(new TestClass(1).StartWork_Bool);
                 booldelegate workDelegate1 = new booldelegate(new TestClass1(2).StartWork_Bool );
 
-                if (workDelegate.GetHashCode()!=workDelegate1.GetHashCode())
+                if (workDelegate.GetHashCode()==workDelegate1.GetHashCode())
                 {
                     TestLibrary.TestFramework.LogError("013", "HashCode is not excepted ");
                     retVal = false;
