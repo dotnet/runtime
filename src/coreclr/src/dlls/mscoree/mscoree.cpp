@@ -48,7 +48,7 @@ HINSTANCE g_hThisInst;  // This library.
 
 #include <process.h> // for __security_init_cookie()
 
-extern "C" IExecutionEngine* __stdcall IEE();
+extern "C" IExecutionEngine* IEE();
 
 #ifdef NO_CRT_INIT
 #define _CRT_INIT(hInstance, dwReason, lpReserved) (TRUE)
