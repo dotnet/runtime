@@ -126,6 +126,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core difference in behavior: https://github.com/dotnet/corefx/issues/5241")]
         public void NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";
@@ -272,6 +273,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Relies on FlushAsync override not available in desktop")]
         public void NegotiateStream_StreamToStream_FlushAsync_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();
