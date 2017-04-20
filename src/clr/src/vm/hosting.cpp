@@ -444,6 +444,11 @@ LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_TOLERANT;
 
+#ifdef _DEBUG
+    // Check whether (indispensable) implicit casting in ClrAllocInProcessHeapBootstrap is safe.
+    static FastAllocInProcessHeapFunc pFunc = EEHeapAllocInProcessHeap;
+#endif
+
     static HANDLE ProcessHeap = NULL;
 
     // We need to guarentee a very small stack consumption in allocating.  And we can't allow
@@ -505,6 +510,11 @@ BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#ifdef _DEBUG
+    // Check whether (indispensable) implicit casting in ClrFreeInProcessHeapBootstrap is safe.
+    static FastFreeInProcessHeapFunc pFunc = EEHeapFreeInProcessHeap;
+#endif
 
     // Take a look at comment in EEHeapFree and EEHeapAllocInProcessHeap, obviously someone
     // needs to take a little time to think more about this code.

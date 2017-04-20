@@ -5109,9 +5109,9 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 //----------------------------------------------------------------------------------------
 struct CoreClrCallbacks
 {
-    typedef IExecutionEngine* (__stdcall * pfnIEE_t)();
-    typedef HRESULT (__stdcall * pfnGetCORSystemDirectory_t)(SString& pbuffer);
-    typedef void* (__stdcall * pfnGetCLRFunction_t)(LPCSTR functionName);
+    typedef IExecutionEngine* (* pfnIEE_t)();
+    typedef HRESULT (* pfnGetCORSystemDirectory_t)(SString& pbuffer);
+    typedef void* (* pfnGetCLRFunction_t)(LPCSTR functionName);
 
     HINSTANCE                   m_hmodCoreCLR;
     pfnIEE_t                    m_pfnIEE;
@@ -5516,6 +5516,6 @@ extern SpinConstants g_SpinConstants;
 
 // ======================================================================================
 
-void* __stdcall GetCLRFunction(LPCSTR FunctionName);
+void* GetCLRFunction(LPCSTR FunctionName);
 
 #endif // __UtilCode_h__
