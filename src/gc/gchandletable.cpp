@@ -143,7 +143,7 @@ bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* obj
     return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
 }
 
-Object* GCHandleManager::CompareAndSwapObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
+Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
 {
     return (Object*)::HndInterlockedCompareExchangeHandle(handle, ObjectToOBJECTREF(object), ObjectToOBJECTREF(comparandObject));
 }
