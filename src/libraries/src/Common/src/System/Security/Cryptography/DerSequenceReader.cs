@@ -24,6 +24,8 @@ namespace System.Security.Cryptography
         internal const byte ContextSpecificConstructedTag3 = ContextSpecificConstructedTag0 | 3;
         internal const byte ConstructedSequence = ConstructedFlag | (byte)DerTag.Sequence;
 
+        // 0b1100_0000
+        internal const byte TagClassMask = 0xC0; 
         internal const byte TagNumberMask = 0x1F;
 
         internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
@@ -34,16 +36,17 @@ namespace System.Security.Cryptography
 
         internal int ContentLength { get; private set; }
 
-        private DerSequenceReader(bool startAtPayload, byte[] data)
+        private DerSequenceReader(bool startAtPayload, byte[] data, int offset, int length)
         {
             Debug.Assert(startAtPayload, "This overload is only for bypassing the sequence tag");
             Debug.Assert(data != null, "Data is null");
+            Debug.Assert(offset >= 0, "Offset is negative");
 
             _data = data;
-            _position = 0;
-            _end = data.Length;
+            _position = offset;
+            _end = offset + length;
 
-            ContentLength = data.Length;
+            ContentLength = length;
         }
 
         internal DerSequenceReader(byte[] data)
@@ -74,7 +77,7 @@ namespace System.Security.Cryptography
 
         internal static DerSequenceReader CreateForPayload(byte[] payload)
         {
-            return new DerSequenceReader(true, payload);
+            return new DerSequenceReader(true, payload, 0, payload.Length);
         }
 
         internal bool HasData
@@ -104,6 +107,61 @@ namespace System.Security.Cryptography
         {
             EatTag((DerTag)PeekTag());
             int contentLength = EatLength();
+            _position += contentLength;
+        }
+
+        internal void ValidateAndSkipDerValue()
+        {
+            byte tag = PeekTag();
+
+            // If the tag is in the UNIVERSAL class
+            if ((tag & TagClassMask) == 0)
+            {
+                // Tag 0 is special ("reserved for use by the encoding rules"), but mainly is used
+                // as the End-of-Contents marker for the indefinite length encodings, which DER prohibits.
+                //
+                // Tag 15 is reserved.
+                //
+                // So either of these are invalid.
+
+                if (tag == 0 || tag == 15)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+                // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
+                // a defined encoding as being an IMPLICIT SEQUENCE.
+
+                bool expectConstructed = false;
+
+                switch (tag & TagNumberMask)
+                {
+                    case 0x08: // External or Instance-Of
+                    case 0x0B: // EmbeddedPDV
+                    case (byte)DerTag.Sequence:
+                    case (byte)DerTag.Set:
+                    case 0x1D: // Unrestricted Character String
+                        expectConstructed = true;
+                        break;
+                }
+
+                bool isConstructed = (tag & ConstructedFlag) == ConstructedFlag;
+
+                if (expectConstructed != isConstructed)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            EatTag((DerTag)tag);
+            int contentLength = EatLength();
+
+            if (contentLength > 0 && (tag & ConstructedFlag) == ConstructedFlag)
+            {
+                var childReader = new DerSequenceReader(true, _data, _position, _end - _position);
+
+                while (childReader.HasData)
+                {
+                    childReader.ValidateAndSkipDerValue();
+                }
+            }
+
             _position += contentLength;
         }
 
@@ -161,6 +219,15 @@ namespace System.Security.Cryptography
             EatTag(DerTag.BitString);
 
             int contentLength = EatLength();
+
+            if (contentLength < 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            byte unusedBits = _data[_position];
+
+            if (unusedBits > 7)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             // skip the "unused bits" byte
             contentLength--;
             _position++;
@@ -183,6 +250,9 @@ namespace System.Security.Cryptography
         {
             EatTag(DerTag.ObjectIdentifier);
             int contentLength = EatLength();
+
+            if (contentLength < 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             // Each byte could cause 3 decimal characters to be written, plus a period. Over-allocate
             // and avoid re-alloc.
@@ -457,6 +527,10 @@ namespace System.Security.Cryptography
             int answer = ScanContentLength(_data, _position, out bytesConsumed);
 
             _position += bytesConsumed;
+
+            if (answer > _end - _position)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             return answer;
         }
 

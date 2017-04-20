@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -16,6 +17,23 @@ namespace Internal.Cryptography
             // ConstructSegmentedSequence understands triplets, but doesn't care they're valid,
             // so lift this up into a "triplet".
             return new[] { Array.Empty<byte>(), Array.Empty<byte>(), derData };
+        }
+
+        internal static void ValidateSignatureAlgorithm(byte[] signatureAlgorithm)
+        {
+            Debug.Assert(signatureAlgorithm != null);
+
+            // AlgorithmIdentifier ::= SEQUENCE { OBJECT IDENTIFIER, ANY }
+            DerSequenceReader validator = new DerSequenceReader(signatureAlgorithm);
+            validator.ReadOidAsString();
+
+            if (validator.HasData)
+            {
+                validator.ValidateAndSkipDerValue();
+            }
+
+            if (validator.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
 
         internal static byte[][] SegmentedEncodeSubjectPublicKeyInfo(this PublicKey publicKey)
@@ -49,6 +67,14 @@ namespace Internal.Cryptography
             }
             else
             {
+                DerSequenceReader validator =
+                    DerSequenceReader.CreateForPayload(publicKey.EncodedParameters.RawData);
+
+                validator.ValidateAndSkipDerValue();
+
+                if (validator.HasData)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
                 algorithmIdentifier = DerEncoder.ConstructSegmentedSequence(
                     DerEncoder.SegmentedEncodeOid(publicKey.Oid),
                     publicKey.EncodedParameters.RawData.WrapAsSegmentedForSequence());
