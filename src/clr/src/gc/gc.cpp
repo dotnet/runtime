@@ -34218,7 +34218,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
                     if (g_pConfig->AppDomainLeaks() && str->SetAppDomainNoThrow())
                     {
 #endif
-                        StoreObjectInHandle(m_StressObjs[i], ObjectToOBJECTREF(str));
+                        HndAssignHandle(m_StressObjs[i], ObjectToOBJECTREF(str));
 #if CHECK_APP_DOMAIN_LEAKS
                     }
 #endif
@@ -34251,7 +34251,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
             {
                 // Let the string itself become garbage.
                 // will be realloced next time around
-                StoreObjectInHandle(m_StressObjs[m_CurStressObj], 0);
+                HndAssignHandle(m_StressObjs[m_CurStressObj], 0);
             }
         }
     }

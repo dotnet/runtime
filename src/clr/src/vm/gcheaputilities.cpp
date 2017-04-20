@@ -40,17 +40,12 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 gc_alloc_context g_global_alloc_context = {};
 
 // Debug-only validation for handle.
-void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
+
+void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex)
 {
 #ifdef _DEBUG_IMPL
-    OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
     VALIDATEOBJECTREF(objRef);
 
-    IGCHandleManager *pHandleManager = GCHandleUtilities::GetGCHandleManager();
-
-    DWORD context = (DWORD)pHandleManager->GetHandleContext(handle);
-
-    ADIndex appDomainIndex = ADIndex(context);
     AppDomain *domain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
 
     // Access to a handle in an unloaded domain is not allowed
@@ -70,5 +65,27 @@ void ValidateHandleAndAppDomain(OBJECTHANDLE handle)
         }
     }
 #endif // CHECK_APP_DOMAIN_LEAKS
+#endif // _DEBUG_IMPL
+}
+
+void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
+{
+#ifdef _DEBUG_IMPL
+    _ASSERTE(handle);
+
+#ifdef DEBUG_DestroyedHandleValue
+    // Verify that we are not trying to access a freed handle.
+    _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF*)handle != DEBUG_DestroyedHandleValue);
+#endif
+
+    ADIndex appDomainIndex = HndGetHandleADIndex(handle);
+
+    AppDomain *unloadingDomain = SystemDomain::AppDomainBeingUnloaded();
+    if (unloadingDomain && unloadingDomain->GetIndex() == appDomainIndex && unloadingDomain->NoAccessToHandleTable())
+    {
+        _ASSERTE (!"Access to a handle in unloaded domain is not allowed");
+    }
+
+    ValidateObjectAndAppDomain(objRef, appDomainIndex);
 #endif // _DEBUG_IMPL
 }

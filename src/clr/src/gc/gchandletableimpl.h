@@ -54,6 +54,12 @@ public:
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle);
+
+    virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object);
+
+    virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
+
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 };
 
 #endif  // GCHANDLETABLE_H_
