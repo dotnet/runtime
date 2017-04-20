@@ -409,7 +409,6 @@ mono_domain_create (void)
 	domain->assembly_bindings_parsed = FALSE;
 	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
-	domain->static_data_array = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain string constants table");
 	domain->num_jit_info_tables = 1;
@@ -1150,10 +1149,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->class_vtable_array = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
-	if (domain->static_data_array) {
-		mono_gc_free_fixed (domain->static_data_array);
-		domain->static_data_array = NULL;
-	}
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
 
 	/*
@@ -1451,40 +1446,6 @@ gint32
 mono_context_get_domain_id (MonoAppContext *context)
 {
 	return context->domain_id;
-}
-
-/* LOCKING: the caller holds the lock for this domain */
-void
-mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap)
-{
-	/* Note [Domain Static Data Array]:
-	 *
-	 * Entry 0 in the array is the index of the next free slot.
-	 * Entry 1 is the total size of the array.
-	 */
-	int next;
-	if (domain->static_data_array) {
-		int size = GPOINTER_TO_INT (domain->static_data_array [1]);
-		next = GPOINTER_TO_INT (domain->static_data_array [0]);
-		if (next >= size) {
-			/* 'data' is allocated by alloc_fixed */
-			gpointer *new_array = (gpointer *)mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), MONO_GC_ROOT_DESCR_FOR_FIXED (size * 2), MONO_ROOT_SOURCE_DOMAIN, "static field list");
-			mono_gc_memmove_aligned (new_array, domain->static_data_array, sizeof (gpointer) * size);
-			size *= 2;
-			new_array [1] = GINT_TO_POINTER (size);
-			mono_gc_free_fixed (domain->static_data_array);
-			domain->static_data_array = new_array;
-		}
-	} else {
-		int size = 32;
-		gpointer *new_array = (gpointer *)mono_gc_alloc_fixed (sizeof (gpointer) * size, MONO_GC_ROOT_DESCR_FOR_FIXED (size), MONO_ROOT_SOURCE_DOMAIN, "static field list");
-		next = 2;
-		new_array [0] = GINT_TO_POINTER (next);
-		new_array [1] = GINT_TO_POINTER (size);
-		domain->static_data_array = new_array;
-	}
-	domain->static_data_array [next++] = data;
-	domain->static_data_array [0] = GINT_TO_POINTER (next);
 }
 
 /**
