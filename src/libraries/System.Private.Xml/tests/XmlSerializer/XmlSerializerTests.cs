@@ -3224,10 +3224,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(requestBodyValue.composite.BoolValue, requestBodyActual.composite.BoolValue);
         Assert.Equal(requestBodyValue.composite.StringValue, requestBodyActual.composite.StringValue);
     }
-    
-#if ReflectionOnly
-    [ActiveIssue(18076)]
-#endif
+
     [Fact]
     public static void Xml_HiddenDerivedFieldTest()
     {
