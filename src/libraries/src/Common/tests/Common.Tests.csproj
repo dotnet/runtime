@@ -85,6 +85,9 @@
     </Compile>
     <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
     <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
