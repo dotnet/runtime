@@ -903,56 +903,32 @@ bool BasicBlock::bbFallsThrough()
     }
 }
 
-unsigned BasicBlock::NumSucc(Compiler* comp)
+//------------------------------------------------------------------------
+// NumSucc: Returns the count of block successors. See the declaration comment for details.
+//
+// Arguments:
+//    None.
+//
+// Return Value:
+//    Count of block successors.
+//
+unsigned BasicBlock::NumSucc()
 {
-    // As described in the spec comment of NumSucc at its declaration, whether "comp" is null determines
-    // whether NumSucc and GetSucc yield successors of finally blocks.
-
     switch (bbJumpKind)
     {
-
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFILTERRET:
             return 0;
 
-        case BBJ_EHFILTERRET:
-            if (comp == nullptr)
-            {
-                return 0;
-            }
-            else
-            {
-                return 1;
-            }
-
-        case BBJ_EHFINALLYRET:
-        {
-            if (comp == nullptr)
-            {
-                return 0;
-            }
-            else
-            {
-                // The first block of the handler is labelled with the catch type.
-                BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-                if (hndBeg->bbCatchTyp == BBCT_FINALLY)
-                {
-                    return comp->fgNSuccsOfFinallyRet(this);
-                }
-                else
-                {
-                    assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                    // A FAULT block has no successors.
-                    return 0;
-                }
-            }
-        }
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
         case BBJ_NONE:
             return 1;
+
         case BBJ_COND:
             if (bbJumpDest == bbNext)
             {
@@ -962,46 +938,147 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             {
                 return 2;
             }
+
         case BBJ_SWITCH:
-            if (comp == nullptr)
-            {
-                return bbJumpSwt->bbsCount;
-            }
-            else
-            {
-                Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-                return sd.numDistinctSuccs;
-            }
+            return bbJumpSwt->bbsCount;
 
         default:
             unreached();
     }
 }
 
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc().
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i)
 {
-    // As described in the spec comment of GetSucc at its declaration, whether "comp" is null determines
-    // whether NumSucc and GetSucc yield successors of finally blocks.
-
-    assert(i < NumSucc(comp)); // Index bounds check.
-    // printf("bbjk=%d\n", bbJumpKind);
+    assert(i < NumSucc()); // Index bounds check.
     switch (bbJumpKind)
     {
+        case BBJ_CALLFINALLY:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+            return bbJumpDest;
 
+        case BBJ_NONE:
+            return bbNext;
+
+        case BBJ_COND:
+            if (i == 0)
+            {
+                return bbNext;
+            }
+            else
+            {
+                assert(i == 1);
+                return bbJumpDest;
+            }
+
+        case BBJ_SWITCH:
+            return bbJumpSwt->bbsDstTab[i];
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// NumSucc: Returns the count of block successors. See the declaration comment for details.
+//
+// Arguments:
+//    comp - Compiler instance
+//
+// Return Value:
+//    Count of block successors.
+//
+unsigned BasicBlock::NumSucc(Compiler* comp)
+{
+    assert(comp != nullptr);
+
+    switch (bbJumpKind)
+    {
         case BBJ_THROW:
         case BBJ_RETURN:
-            unreached(); // Should have been covered by assert above.
+            return 0;
 
+        case BBJ_EHFINALLYRET:
+        {
+            // The first block of the handler is labelled with the catch type.
+            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
+            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
+            {
+                return comp->fgNSuccsOfFinallyRet(this);
+            }
+            else
+            {
+                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
+                // A FAULT block has no successors.
+                return 0;
+            }
+        }
+
+        case BBJ_CALLFINALLY:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_LEAVE:
+        case BBJ_NONE:
+            return 1;
+
+        case BBJ_COND:
+            if (bbJumpDest == bbNext)
+            {
+                return 1;
+            }
+            else
+            {
+                return 2;
+            }
+
+        case BBJ_SWITCH:
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+            return sd.numDistinctSuccs;
+        }
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc(comp).
+//    comp - Compiler instance
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+{
+    assert(comp != nullptr);
+
+    assert(i < NumSucc(comp)); // Index bounds check.
+    switch (bbJumpKind)
+    {
         case BBJ_EHFILTERRET:
         {
-            assert(comp != nullptr); // Or else we're not looking for successors.
-            BasicBlock* result = comp->fgFirstBlockOfHandler(this);
-            noway_assert(result == bbJumpDest);
             // Handler is the (sole) normal successor of the filter.
-            return result;
+            assert(comp->fgFirstBlockOfHandler(this) == bbJumpDest);
+            return bbJumpDest;
         }
 
         case BBJ_EHFINALLYRET:
+            // Note: the following call is expensive.
             return comp->fgSuccOfFinallyRet(this, i);
 
         case BBJ_CALLFINALLY:
@@ -1012,6 +1089,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
 
         case BBJ_NONE:
             return bbNext;
+
         case BBJ_COND:
             if (i == 0)
             {
@@ -1021,20 +1099,14 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             {
                 assert(i == 1);
                 return bbJumpDest;
-            };
+            }
+
         case BBJ_SWITCH:
-            if (comp == nullptr)
-            {
-                assert(i < bbJumpSwt->bbsCount); // Range check.
-                return bbJumpSwt->bbsDstTab[i];
-            }
-            else
-            {
-                // Remove duplicates.
-                Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-                assert(i < sd.numDistinctSuccs); // Range check.
-                return sd.nonDuplicates[i];
-            }
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+            assert(i < sd.numDistinctSuccs); // Range check.
+            return sd.nonDuplicates[i];
+        }
 
         default:
             unreached();
