@@ -74,10 +74,13 @@ namespace System.Security.Cryptography.X509Certificates
 
             byte[] encoded = Encode();
             byte[] signature = signatureGenerator.SignData(encoded, hashAlgorithm);
+            byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+
+            EncodingHelpers.ValidateSignatureAlgorithm(signatureAlgorithm);
 
             return DerEncoder.ConstructSequence(
                 encoded.WrapAsSegmentedForSequence(),
-                signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm).WrapAsSegmentedForSequence(),
+                signatureAlgorithm.WrapAsSegmentedForSequence(),
                 DerEncoder.SegmentedEncodeBitString(signature));
         }
     }

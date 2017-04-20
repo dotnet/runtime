@@ -51,11 +51,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(SerialNumber != null);
             Debug.Assert(Issuer != null);
 
-            if (SignatureAlgorithm != null)
-            {
-                ValidateSignatureAlgorithm();
-            }
-
             List<byte[][]> encodedFields = new List<byte[][]>();
 
             byte version = Version;
@@ -74,6 +69,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             // SignatureAlgorithm: Use the specified value, or ask the generator (without mutating the class)
             byte[] signatureAlgorithm = SignatureAlgorithm ?? signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+            EncodingHelpers.ValidateSignatureAlgorithm(signatureAlgorithm);
+
             encodedFields.Add(signatureAlgorithm.WrapAsSegmentedForSequence());
 
             // For public API allowing self-sign ease-of-use, this could be (Issuer ?? Subject).
@@ -184,23 +181,14 @@ namespace System.Security.Cryptography.X509Certificates
 
             byte[] encoded = Encode(signatureGenerator, hashAlgorithm);
             byte[] signature = signatureGenerator.SignData(encoded, hashAlgorithm);
+            byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+
+            EncodingHelpers.ValidateSignatureAlgorithm(signatureAlgorithm);
 
             return DerEncoder.ConstructSequence(
                 encoded.WrapAsSegmentedForSequence(),
-                signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm).WrapAsSegmentedForSequence(),
+                signatureAlgorithm.WrapAsSegmentedForSequence(),
                 DerEncoder.SegmentedEncodeBitString(signature));
-        }
-
-        private void ValidateSignatureAlgorithm()
-        {
-            DerSequenceReader algReader = new DerSequenceReader(SignatureAlgorithm);
-            algReader.ReadOid();
-
-            if (algReader.HasData)
-                algReader.SkipValue();
-
-            if (algReader.HasData)
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
     }
 }
