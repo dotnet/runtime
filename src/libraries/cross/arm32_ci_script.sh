@@ -231,7 +231,7 @@ function cross_build_corefx_with_docker {
     fi
 
     # Cross building corefx with rootfs in Docker
-    __buildNativeCmd="/opt/corefx/build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag clang3.9"
+    __buildNativeCmd="/opt/corefx/build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag"
     if [ "$__buildArch" == "arm" ]; then
         __buildManagedCmd="./build-managed.sh -$__buildConfig -buildArch=$__buildArch -RuntimeOS=$__runtimeOS"
     else
