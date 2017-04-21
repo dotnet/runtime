@@ -42,6 +42,7 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.Null(request.Accept);
             Assert.False(request.AllowReadStreamBuffering);
+            Assert.True(request.AllowWriteStreamBuffering);
             Assert.Null(request.ContentType);
             Assert.Equal(350, request.ContinueTimeout);
             Assert.Null(request.CookieContainer);
@@ -104,11 +105,13 @@ namespace System.Net.Tests
             Assert.False(request.AllowReadStreamBuffering);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "not supported on .NET Framework")]
         [Theory, MemberData(nameof(EchoServers))]
-        public void AllowReadStreamBuffering_SetTrue_Throws(Uri remoteServer)
+        public void AllowReadStreamBuffering_SetTrueThenGet_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<InvalidOperationException>(() => { request.AllowReadStreamBuffering = true; });            
+            request.AllowReadStreamBuffering = true;
+            Assert.True(request.AllowReadStreamBuffering);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
