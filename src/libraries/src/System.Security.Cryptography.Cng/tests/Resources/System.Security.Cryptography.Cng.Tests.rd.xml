@@ -1,0 +1,8 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of ECDsaCng instance in [Theory] data which causes xunit to reflect to ToString() on it -->
+    <Type Name="System.Security.Cryptography.ECDsaCng" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+

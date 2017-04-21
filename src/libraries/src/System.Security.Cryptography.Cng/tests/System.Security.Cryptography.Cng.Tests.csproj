@@ -158,5 +158,8 @@
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
