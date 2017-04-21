@@ -172,7 +172,7 @@
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
       <Imports>net46</Imports>
-      <CompatibleWith>netstandard1.4</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <!-- netfx is an alias for net461 since that's our primary target as it added ns2.0 support -->
     <TargetGroups Include="netfx">
@@ -187,21 +187,21 @@
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net462</NuGetTargetMonikerShort>
       <Imports>netfx</Imports>
-      <CompatibleWith>netstandard1.5</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net463">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net463</NuGetTargetMonikerShort>
       <Imports>net462</Imports>
-      <CompatibleWith>netstandard2.0</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net47">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.7</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net47</NuGetTargetMonikerShort>
       <Imports>net462</Imports>
-      <CompatibleWith>netstandard2.0</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
