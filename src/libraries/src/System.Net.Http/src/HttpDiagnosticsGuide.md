@@ -39,10 +39,10 @@ var subscription = DiagnosticListener.AllListeners.Subscribe(delegate (Diagnosti
 ## Events
 If there is **at least one consumer**, subscribed for "HttpHandlerDiagnosticListener" events, `HttpClientHandler` instruments outgoing request depending on subscription and request properties.
 
-Avoid having more than one consumer for DiagnosticListener. Note that DiagnosticListener best practice is to guard every `Write` method with `IsEnabled` check. In case there is more than one consumer, **each consumer** will receive Write event if **at least one** consumer returned true for `IsEnabled`.
+Note that DiagnosticListener best practice is to guard every `Write` method with `IsEnabled` check. In case there is more than one consumer, **each consumer** will receive Write event if **at least one** consumer returned true for `IsEnabled`.
 
 #### IsEnabled: System.Net.Http.Activity
-If there is a consumer, instrumentation calls `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` to check if particular request needs to be instrumented.
+If there is a consumer, instrumentation calls `DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut", request)` to check if particular request needs to be instrumented.
 Consumer may optionally provide predicate to DiagnosticListener to prevent some requests from being instrumented: e.g. if logging system has HTTP interface, it could be necessary to filter out requests to logging system itself.
 
 ```C#
@@ -58,17 +58,18 @@ Consumer may optionally provide predicate to DiagnosticListener to prevent some 
     listener.Subscribe(observer, predicate);
 ```
 ### System.Net.Http.Activity.Start
-After initial instrumentation preconditions are met and `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` check is passed, instrumentation starts a new Activity to represent outgoing request.
-If **"System.Net.Http.Activity.Start"** is enabled, instrumentation writes it. Event payload has Request property with `HttpRequestMessage` object representing request.
+After initial instrumentation preconditions are met and `DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut", request)` check is passed, instrumentation starts a new Activity to represent outgoing request.
+If **"System.Net.Http.HttpRequestOut.Start"** is enabled, instrumentation writes it. Event payload has Request property with `HttpRequestMessage` object representing request.
 
 ### System.Net.Http.Activity.Stop
-When request is completed (faulted with exception, cancelled or successfully completed), instrumentation stops activity and writes  **"System.Net.Http.Activity.Stop"** event.
+When request is completed (faulted with exception, cancelled or successfully completed), instrumentation stops activity and writes  **"System.Net.Http.HttpRequestOut.Stop"** event.
 
 Event payload has following properties:
 * **Response**  with `HttpResponseMessage` object representing response, which could be null if request was failed or cancelled.  
+* **Request**  with `HttpRequestMessage` object representing request. If response was received, you can also access it with `HttpResponseMessage.RequestMessage`, but if there was no response, it could be accessed only from the event payload  
 * **RequestTaskStatus** with `TaskStatus` enum value that describes status of the request task.
 
-This event is sent under the same conditions as "System.Net.Http.Activity.Start" event.
+This event is sent under the same conditions as "System.Net.Http.HttpRequestOut.Start" event.
 
 #### IsEnabled: System.Net.Http.Exception
 If request processing causes an exception, instrumentation first checks if consumer wants to receive Exception event.
@@ -82,13 +83,13 @@ Otherwise, `Activity.Current` represent some 'parent' activity (presumably incom
 # Events Flow and Order
 
 1. `DiagnosticListener.IsEnabled()` - determines if there is a consumer
-2. `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` - determines if this particular request should be instrumented
-3. `DiagnosticListener.IsEnabled("System.Net.Http.Activity.Start")` - determines if Start event should be written
-4. `DiagnosticListener.Write("System.Net.Http.Activity.Start", new {Request})` - notifies that activity (outgoing request) was started
+2. `DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut", request)` - determines if this particular request should be instrumented
+3. `DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut.Start")` - determines if Start event should be written
+4. `DiagnosticListener.Write("System.Net.Http.HttpRequestOut.Start", new {Request})` - notifies that activity (outgoing request) was started
 5. `DiagnosticListener.IsEnabled("System.Net.Http.Exception")` - determines if exception event (if thrown) should be written
-6. `DiagnosticListener.Write("System.Net.Http.Activity.Exception", new {Exception, Request})` - notifies about exception during request processing (if thrown)
-7. `DiagnosticListener.Write("System.Net.Http.Activity.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
+6. `DiagnosticListener.Write("System.Net.Http.HttpRequestOut.Exception", new {Exception, Request})` - notifies about exception during request processing (if thrown)
+7. `DiagnosticListener.Write("System.Net.Http.HttpRequestOut.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
 
 # Non-Activity events (deprecated)
-If there is a subscriber to "HttpHandlerDiagnosticListener", but Activity events are disabled (`DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` returns false), instrumentation attempts to send legacy "System.Net.Http.Request" and "System.Net.Http.Response" events if they are enabled.
+If there is a subscriber to "HttpHandlerDiagnosticListener", but Activity events are disabled (`DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut", request)` returns false), instrumentation attempts to send legacy "System.Net.Http.Request" and "System.Net.Http.Response" events if they are enabled.
 Consumers should consider migrating to Activity events instead of Request/Response events.
