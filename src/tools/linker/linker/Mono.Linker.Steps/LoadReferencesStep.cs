@@ -1,4 +1,4 @@
-//
+﻿//
 // LoadReferencesStep.cs
 //
 // Author:
@@ -27,15 +27,15 @@
 //
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
 
 	public class LoadReferencesStep : BaseStep {
-
-		IDictionary _references = new Hashtable ();
+		
+		readonly Dictionary<AssemblyNameDefinition, AssemblyDefinition> _references = new Dictionary<AssemblyNameDefinition, AssemblyDefinition> ();
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
@@ -44,7 +44,7 @@ namespace Mono.Linker.Steps {
 
 		void ProcessReferences (AssemblyDefinition assembly)
 		{
-			if (_references.Contains (assembly.Name))
+			if (_references.ContainsKey (assembly.Name))
 				return;
 
 			_references.Add (assembly.Name, assembly);

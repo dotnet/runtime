@@ -1,4 +1,4 @@
-//
+﻿//
 // ResolveStep.cs
 //
 // Author:
@@ -26,17 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Linker.Steps {
+using System.Collections.Generic;
 
-	using System.Collections;
+namespace Mono.Linker.Steps {
 
 	public abstract class ResolveStep : BaseStep {
 
-		ArrayList _unResolved;
+		readonly List<string> _unResolved;
 
 		protected ResolveStep ()
 		{
-			_unResolved = new ArrayList ();
+			_unResolved = new List<string> ();
 		}
 
 		public bool AllMarkerResolved
@@ -46,7 +46,7 @@ namespace Mono.Linker.Steps {
 
 		public string [] GetUnresolvedMarkers ()
 		{
-			return _unResolved.ToArray (typeof (string)) as string [];
+			return _unResolved.ToArray ();
 		}
 
 		protected void AddUnresolveMarker (string signature)

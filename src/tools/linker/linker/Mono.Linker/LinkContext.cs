@@ -1,4 +1,4 @@
-//
+﻿//
 // LinkContext.cs
 //
 // Author:
@@ -27,7 +27,6 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
@@ -39,9 +38,9 @@ namespace Mono.Linker {
 
 		Pipeline _pipeline;
 		AssemblyAction _coreAction;
-		Hashtable _actions;
+		Dictionary<string, AssemblyAction> _actions;
 		string _outputDirectory;
-		Hashtable _parameters;
+		readonly Dictionary<string, string> _parameters;
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
 		bool _keepMembersForDebuggerAttributes;
@@ -89,7 +88,7 @@ namespace Mono.Linker {
 			set { _keepMembersForDebuggerAttributes = value; }
 		}
 
-		public IDictionary Actions {
+		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}
 
@@ -130,8 +129,8 @@ namespace Mono.Linker {
 		{
 			_pipeline = pipeline;
 			_resolver = resolver;
-			_actions = new Hashtable ();
-			_parameters = new Hashtable ();
+			_actions = new Dictionary<string, AssemblyAction> ();
+			_parameters = new Dictionary<string, string> ();
 			_annotations = new AnnotationStore ();
 			_readerParameters = readerParameters;
 		}
@@ -238,14 +237,16 @@ namespace Mono.Linker {
 
 		protected void SetAction (AssemblyDefinition assembly)
 		{
-			AssemblyAction action = AssemblyAction.Link;
+			AssemblyAction action;
 
 			AssemblyNameDefinition name = assembly.Name;
 
-			if (_actions.Contains (name.Name))
-				action = (AssemblyAction) _actions [name.Name];
-			else if (IsCore (name))
+			if (_actions.TryGetValue (name.Name, out action)) {
+			} else if (IsCore (name)) {
 				action = _coreAction;
+			} else {
+				action = AssemblyAction.Link;
+			}
 
 			_annotations.SetAction (assembly, action);
 		}
@@ -273,7 +274,7 @@ namespace Mono.Linker {
 
 		public AssemblyDefinition [] GetAssemblies ()
 		{
-			IDictionary cache = _resolver.AssemblyCache;
+			var cache = _resolver.AssemblyCache;
 			AssemblyDefinition [] asms = new AssemblyDefinition [cache.Count];
 			cache.Values.CopyTo (asms, 0);
 			return asms;
@@ -286,12 +287,14 @@ namespace Mono.Linker {
 
 		public bool HasParameter (string key)
 		{
-			return _parameters.Contains (key);
+			return _parameters.ContainsKey (key);
 		}
 
 		public string GetParameter (string key)
 		{
-			return (string) _parameters [key];
+			string val = null;
+			_parameters.TryGetValue (key, out val);
+			return val;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-//
+﻿//
 // AssemblyResolver.cs
 //
 // Author:
@@ -27,7 +27,6 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
@@ -40,9 +39,9 @@ namespace Mono.Linker {
 	public class AssemblyResolver : BaseAssemblyResolver {
 #endif
 
-		IDictionary _assemblies;
+		readonly Dictionary<string, AssemblyDefinition> _assemblies;
 
-		public IDictionary AssemblyCache {
+		public System.Collections.IDictionary AssemblyCache {
 			get { return _assemblies; }
 		}
 
@@ -51,15 +50,15 @@ namespace Mono.Linker {
 		{
 		}
 
-		public AssemblyResolver (IDictionary assembly_cache)
+		public AssemblyResolver (Dictionary<string, AssemblyDefinition> assembly_cache)
 		{
 			_assemblies = assembly_cache;
 		}
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
-			AssemblyDefinition asm = (AssemblyDefinition) _assemblies [name.Name];
-			if (asm == null) {
+			AssemblyDefinition asm;
+			if (!_assemblies.TryGetValue (name.Name, out asm)) {
 				asm = base.Resolve (name, parameters);
 				_assemblies [asm.Name.Name] = asm;
 			}

@@ -1,4 +1,4 @@
-//
+﻿//
 // XApiReader.cs
 //
 // Author:
@@ -27,12 +27,13 @@
 //
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker {
 
@@ -47,7 +48,7 @@ namespace Mono.Linker {
 
 		AssemblyDefinition _assembly;
 		string _namespace;
-		Stack _types = new Stack ();
+		Stack<TypeDefinition> _types = new Stack<TypeDefinition> ();
 		StringBuilder _signature;
 
 		public XApiReader (XPathDocument document, IXApiVisitor visitor)
@@ -101,12 +102,12 @@ namespace Mono.Linker {
 
 		TypeDefinition PeekType ()
 		{
-			return (TypeDefinition) _types.Peek ();
+			return _types.Peek ();
 		}
 
 		TypeDefinition PopType ()
 		{
-			return (TypeDefinition) _types.Pop ();
+			return _types.Pop ();
 		}
 
 		void OnNamespace (XPathNavigator nav)
@@ -193,7 +194,7 @@ namespace Mono.Linker {
 			return GetMethod (PeekType ().Methods, signature);
 		}
 
-		static MethodDefinition GetMethod (ICollection methods, string signature)
+		static MethodDefinition GetMethod (Collection<MethodDefinition> methods, string signature)
 		{
 			foreach (MethodDefinition method in methods)
 				if (signature == GetSignature (method))

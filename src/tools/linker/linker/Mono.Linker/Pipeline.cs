@@ -1,4 +1,4 @@
-//
+﻿//
 // Pipeline.cs
 //
 // Author:
@@ -27,8 +27,7 @@
 //
 
 using System;
-using System.Collections;
-using System.Diagnostics;
+using System.Collections.Generic;
 
 using Mono.Linker.Steps;
 
@@ -36,11 +35,11 @@ namespace Mono.Linker {
 
 	public class Pipeline {
 
-		ArrayList _steps;
+		readonly List<IStep> _steps;
 
 		public Pipeline ()
 		{
-			_steps = new ArrayList();
+			_steps = new List<IStep>();
 		}
 
 		public void PrependStep (IStep step)
@@ -123,7 +122,7 @@ namespace Mono.Linker {
 		public void Process (LinkContext context)
 		{
 			while (_steps.Count > 0) {
-				IStep step = (IStep) _steps [0];
+				IStep step = _steps [0];
 				context.Annotations.Push (step);
 				step.Process (context);
 				context.Annotations.Pop ();
@@ -133,7 +132,7 @@ namespace Mono.Linker {
 
 		public IStep [] GetSteps ()
 		{
-			return (IStep []) _steps.ToArray (typeof (IStep));
+			return _steps.ToArray ();
 		}
 
 		public bool ContainsStep (Type type)
