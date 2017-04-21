@@ -8,7 +8,6 @@
 
 namespace System.Diagnostics
 {
-#if !netfx
     public partial class StackFrame
     {
         public StackFrame() { }
@@ -26,7 +25,6 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
     }
-#endif // !netfx
     public static partial class StackFrameExtensions
     {
         public static System.IntPtr GetNativeImageBase(this System.Diagnostics.StackFrame stackFrame) { throw null; }
@@ -36,7 +34,6 @@ namespace System.Diagnostics
         public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { throw null; }
         public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { throw null; }
     }
-#if !netfx
     public partial class StackTrace
     {
         public const int METHODS_TO_SKIP = 0;
@@ -54,10 +51,8 @@ namespace System.Diagnostics
         public virtual System.Diagnostics.StackFrame GetFrame(int index) { throw null; }
         public override string ToString() { throw null; }
     }
-#endif // !netfx
 }
 
-#if !netfx
 namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
@@ -214,4 +209,3 @@ namespace System.Diagnostics.SymbolStore
         public SymLanguageVendor() { }
     }
 }
-#endif // !netfx

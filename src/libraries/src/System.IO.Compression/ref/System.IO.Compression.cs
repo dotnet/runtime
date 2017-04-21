@@ -8,7 +8,6 @@
 
 namespace System.IO.Compression
 {
-#if !netfx
     public enum CompressionLevel
     {
         Fastest = 1,
@@ -70,7 +69,6 @@ namespace System.IO.Compression
         public override void Write(byte[] array, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] array, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-#endif
     public partial class ZipArchive : System.IDisposable
     {
         public ZipArchive(System.IO.Stream stream) { }
