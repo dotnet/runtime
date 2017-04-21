@@ -125,10 +125,6 @@ namespace Microsoft.DotNet.Host.Build
                     // Generate the Sharedfx Version text files
                     List<string> versionFiles = new List<string>() 
                     {
-                        "win.x86.version",
-                        "win.x64.version",
-                        "win.arm.version",
-                        "win.arm64.version",
                         "win.x86.portable.version",
                         "win.x64.portable.version",
                         "win.arm.portable.version",
@@ -141,7 +137,6 @@ namespace Microsoft.DotNet.Host.Build
                         "ubuntu.16.04.arm.version",
                         "ubuntu.16.10.x64.version",
                         "rhel.x64.version",
-                        "osx.x64.version",
                         "osx.x64.portable.version",
                         "debian.8.armel.version",
                         "debian.x64.version",
@@ -207,10 +202,6 @@ namespace Microsoft.DotNet.Host.Build
         {
             Dictionary<string, bool> badges = new Dictionary<string, bool>()
              {
-                 { "sharedfx_Windows_x86", false },
-                 { "sharedfx_Windows_x64", false },
-                 { "sharedfx_Windows_arm", false },
-                 { "sharedfx_Windows_arm64", false },
                  { "sharedfx_win_portable_x86", false },
                  { "sharedfx_win_portable_x64", false },
                  { "sharedfx_win_portable_arm", false },
@@ -223,7 +214,6 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Ubuntu_16_04_arm", false },
                  { "sharedfx_Ubuntu_16_10_x64", false },
                  { "sharedfx_RHEL_x64", false },
-                 { "sharedfx_OSX_x64", false },
                  { "sharedfx_osx_portable_x64", false },
                  // { "sharedfx_Debian_8_armel", false },
                  { "sharedfx_Debian_x64", false },

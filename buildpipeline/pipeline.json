@@ -97,14 +97,6 @@
         },
         {
           "Name": "Core-Setup-OSX-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "OSX",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-OSX-x64",
           "Parameters": {
             "PB_PortableBuild": "-portable"
           },
@@ -139,19 +131,7 @@
         {
           "Name": "Core-Setup-Signing-Windows-x64",
           "Parameters": {
-            "SIGNED_PACKAGES": "true"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x64",
-          "Parameters": {
-            "PB_PortableBuild": "-portable",
-            "RID": "win-x64"
+            "PB_PortableBuild": "-portable"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -162,17 +142,8 @@
         },
         {
           "Name": "Core-Setup-Signing-Windows-x86",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x86"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x86",
           "Parameters": {
-            "PB_PortableBuild": "-portable",
-            "RID": "win-x86"
+            "PB_PortableBuild": "-portable"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -221,14 +192,6 @@
         },
         {
           "Name": "Core-Setup-Windows-arm32",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "arm"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm32",
           "Parameters": {
             "PB_PortableBuild": "-portable"
           },
@@ -247,14 +210,6 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm64",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Platform": "arm64"
           }
