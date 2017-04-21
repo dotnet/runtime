@@ -77,6 +77,8 @@ namespace System.Collections.Tests
 {
     public class Perf_Dictionary
     {
+        private volatile Dictionary<int, string> dict;
+
         [Benchmark(InnerIterationCount = 2000)]
         public void ctor()
         {
@@ -84,7 +86,7 @@ namespace System.Collections.Tests
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        new Dictionary<int, string>();
+                        dict = new Dictionary<int, string>();
                     }
         }
     }
@@ -103,3 +105,6 @@ Test cases should adhere to the following guidelines, within reason:
   * Pass intermediate values to a volatile static field. If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
   * Pass intermediate values to a no-inline method (`MethodImplOptions.NoInlining`)
   * Conditionally store intermediate values to a field, where the condition is never true at runtime (but is still evaluated).
+* There are two main ways to detect when a test case is being "optimized out":
+  * Look at the disassembly of the function (with the Visual Studio disassembler, for example)
+  * Observe unusual changes in the duration metric. If your test suddenly takes 1% of its previous time, odds are something has gone wrong.
