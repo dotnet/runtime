@@ -1976,8 +1976,8 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
         public void ReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
