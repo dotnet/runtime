@@ -40,16 +40,14 @@ Daily Builds
 |   **Linux (x64)** (for glibc based OS)  |   [![][linux-x64-badge-master-portable]][linux-x64-version-master-portable]<br>[tar.gz][linux-x64-targz-master-portable]<br>[Symbols (tar.gz)][linux-x64-symbols-targz-master-portable]   |   N/A   |   N/A   |
 |   **Linux (arm)** (for glibc based OS)  |   [![][linux-arm-badge-master-portable]][linux-arm-version-master-portable]<br>[tar.gz][linux-arm-targz-master-portable]<br>[Symbols (tar.gz)][linux-arm-symbols-targz-master-portable]   |   N/A   |   N/A   |
 |   **Ubuntu 14.04 (x64)**   |   [![][ubuntu-14.04-badge-master]][ubuntu-14.04-version-master]<br>[Host][ubuntu-14.04-host-master]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-master]<br>[Shared Framework][ubuntu-14.04-sharedfx-master]<br>[tar.gz][ubuntu-14.04-targz-master]<br>[Symbols (tar.gz)][ubuntu-14.04-symbols-targz-master]   |   [![][ubuntu-14.04-badge-1.1.X]][ubuntu-14.04-version-1.1.X]<br>[Host][ubuntu-14.04-host-1.1.X]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-14.04-sharedfx-1.1.X]<br>[tar.gz][ubuntu-14.04-targz-1.1.X]   |   [![][ubuntu-14.04-badge-preview]][ubuntu-14.04-version-preview]<br>[Host][ubuntu-14.04-host-preview]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-preview]<br>[Shared Framework][ubuntu-14.04-sharedfx-preview]<br>[tar.gz][ubuntu-14.04-targz-preview]   |
-|   **Ubuntu 14.04 (arm32)**   |   [![][ubuntu-14.04-arm-badge-master]][ubuntu-14.04-arm-version-master]<br>[tar.gz][ubuntu-14.04-arm-targz-master]<br>[Symbols (tar.gz)][ubuntu-14.04-arm-symbols-targz-master]   |   N/A   |   N/A   |
 |   **Ubuntu 16.04 (x64)**   |   [![][ubuntu-16.04-badge-master]][ubuntu-16.04-version-master]<br>[Host][ubuntu-16.04-host-master]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-master]<br>[Shared Framework][ubuntu-16.04-sharedfx-master]<br>[tar.gz][ubuntu-16.04-targz-master]<br>[Symbols (tar.gz)][ubuntu-16.04-symbols-targz-master]   |   [![][ubuntu-16.04-badge-1.1.X]][ubuntu-16.04-version-1.1.X]<br>[Host][ubuntu-16.04-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.04-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.04-targz-1.1.X]   |   [![][ubuntu-16.04-badge-preview]][ubuntu-16.04-version-preview]<br>[Host][ubuntu-16.04-host-preview]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-preview]<br>[Shared Framework][ubuntu-16.04-sharedfx-preview]<br>[tar.gz][ubuntu-16.04-targz-preview]   |
-|   **Ubuntu 16.04 (arm32)**   |   [![][ubuntu-16.04-arm-badge-master]][ubuntu-16.04-arm-version-master]<br>[tar.gz][ubuntu-16.04-arm-targz-master]<br>[Symbols (tar.gz)][ubuntu-16.04-arm-symbols-targz-master]   |   N/A   |   N/A   |
 |   **Ubuntu 16.10 (x64)**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master]<br>[Shared Framework][ubuntu-16.10-sharedfx-master]<br>[tar.gz][ubuntu-16.10-targz-master]<br>[Symbols (tar.gz)][ubuntu-16.10-symbols-targz-master]   |   [![][ubuntu-16.10-badge-1.1.X]][ubuntu-16.10-version-1.1.X]<br>[Host][ubuntu-16.10-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.10-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.10-targz-1.1.X]   |   N/A   |
 |   **Debian 8.2 (x64)**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Host][debian-8.2-host-master]<br>[Host FX Resolver][debian-8.2-hostfxr-master]<br>[Shared Framework][debian-8.2-sharedfx-master]<br>[tar.gz][debian-8.2-targz-master]<br>[Symbols (tar.gz)][debian-8.2-symbols-targz-master]   |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **CentOS 7.1 (x64)**     |   N/A   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
-|   **RHEL 7.2 (x64)**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]<br>[Symbols (tar.gz)][rhel-symbols-targz-master]   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
+|   **RHEL 7.2 (x64)**       |   N/A   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23 (x64)**      |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
-|   **Fedora 24 (x64)**      |   [![][fedora-24-badge-master]][fedora-24-version-master]<br>[tar.gz][fedora-24-targz-master]<br>[Symbols (tar.gz)][fedora-24-symbols-targz-master]   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
-|   **OpenSUSE 42.1 (x64)**  |   [![][opensuse-42.1-badge-master]][opensuse-42.1-version-master]<br>[tar.gz][opensuse-42.1-targz-master]<br>[Symbols (tar.gz)][opensuse-42.1-symbols-targz-master]   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
+|   **Fedora 24 (x64)**      |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
+|   **OpenSUSE 42.1 (x64)**  |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
@@ -155,12 +153,6 @@ Daily Builds
 [ubuntu-14.04-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz
 
 
-[ubuntu-14.04-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_arm_Release_version_badge.svg
-[ubuntu-14.04-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.arm.version
-[ubuntu-14.04-arm-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-ubuntu-arm.latest.tar.gz
-[ubuntu-14.04-arm-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-ubuntu-arm.latest.tar.gz
-
-
 [ubuntu-16.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_16_04_x64_Release_version_badge.svg
 [ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.16.04.x64.version
 [ubuntu-16.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-host-ubuntu.16.04-x64.latest.deb
@@ -182,12 +174,6 @@ Daily Builds
 [ubuntu-16.04-hostfxr-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-sharedfx-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-ubuntu.16.04-x64.latest.tar.gz
-
-
-[ubuntu-16.04-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_16_04_arm_Release_version_badge.svg
-[ubuntu-16.04-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.16.04.arm.version
-[ubuntu-16.04-arm-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-ubuntu.16.04-arm.latest.tar.gz
-[ubuntu-16.04-arm-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-ubuntu.16.04-arm.latest.tar.gz
 
 
 [ubuntu-16.10-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_16_10_x64_Release_version_badge.svg
@@ -238,11 +224,6 @@ Daily Builds
 [centos-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-centos-x64.latest.tar.gz
 
 
-[rhel-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_RHEL_x64_Release_version_badge.svg
-[rhel-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.rhel.x64.version
-[rhel-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-rhel-x64.latest.tar.gz
-[rhel-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-rhel-x64.latest.tar.gz
-
 [rhel-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_RHEL_x64_Release_version_badge.svg
 [rhel-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.rhel.x64.version
 [rhel-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-rhel-x64.latest.tar.gz
@@ -261,20 +242,10 @@ Daily Builds
 [fedora-23-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-fedora.23-x64.latest.tar.gz
 
 
-[fedora-24-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Fedora_24_x64_Release_version_badge.svg
-[fedora-24-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.fedora.24.x64.version
-[fedora-24-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
-[fedora-24-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-fedora.24-x64.latest.tar.gz
-
 [fedora-24-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Fedora_24_x64_Release_version_badge.svg
 [fedora-24-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.24.x64.version
 [fedora-24-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
 
-
-[opensuse-42.1-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_openSUSE_42_1_x64_Release_version_badge.svg
-[opensuse-42.1-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.opensuse.42.1.x64.version
-[opensuse-42.1-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-opensuse.42.1-x64.latest.tar.gz
-[opensuse-42.1-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-opensuse.42.1-x64.latest.tar.gz
 
 [opensuse-42.1-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_openSUSE_42_1_x64_Release_version_badge.svg
 [opensuse-42.1-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.opensuse.42.1.x64.version
