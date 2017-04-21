@@ -13,7 +13,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(MI_NonGenericClass), nameof(MI_NonGenericClass.PublicMethod))]
         [InlineData(typeof(MI_NonGenericClass), nameof(MI_NonGenericClass.PublicStaticMethod))]
-        [InlineData(typeof(string), nameof(string.IsNullOrEmpty))]
+        [InlineData(typeof(StringImpersonator), nameof(StringImpersonator.IsNullOrEmpty))]
         public void Properties(Type type, string name)
         {
             MethodInfo method = Helpers.GetMethod(type, name);

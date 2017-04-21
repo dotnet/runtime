@@ -970,6 +970,7 @@ namespace System.Reflection.Tests
         [IndexerName("Chars")]
         public char this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
+        public static bool IsNullOrEmpty(string value) { throw null; }
         internal char FirstChar { get { throw null; } }
     }
 
