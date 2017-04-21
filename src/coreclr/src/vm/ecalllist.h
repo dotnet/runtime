@@ -946,6 +946,7 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("DestroyStructure", MarshalNative::DestroyStructure)
     FCFuncElement("UnsafeAddrOfPinnedArrayElement", MarshalNative::FCUnsafeAddrOfPinnedArrayElement)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
+    FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
     QCFuncElement("GetHINSTANCE", COMModule::GetHINSTANCE)
 
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
