@@ -16,24 +16,24 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 OLDPATH="$PATH"
 
 REPOROOT="$DIR/../.."
+PROJECTARGS=""
 source "$REPOROOT/scripts/common/_prettyprint.sh"
 
 while [[ $# > 0 ]]; do
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
-        --targets)
-            IFS=',' read -r -a targets <<< $2
-            shift
+        --update)
+            PROJECTARGS="--update"
             ;;
         --env-vars)
             IFS=',' read -r -a envVars <<< $2
             shift
             ;;
         --help)
-            echo "Usage: $0 [--targets <TARGETS...>]"
+            echo "Usage: $0"
             echo ""
             echo "Options:"
-            echo "  --targets <TARGETS...>               Comma separated build targets to run (UpdateFile, PushPR; Default is everything"
+            echo "  --update                             Update dependencies (but don't open a PR)"
             echo "  --env-vars <'V1=val1','V2=val2'...>  Comma separated list of environment variable name value-pairs"
             echo "  --help                               Display this help message"
             exit 0
@@ -93,5 +93,5 @@ export PATH="$OLDPATH"
 echo "Invoking Build Scripts..."
 echo "Configuration: $CONFIGURATION"
 
-$DIR/bin/update-dependencies -t ${targets[@]} -e ${envVars[@]}
+$DIR/bin/update-dependencies "$PROJECTARGS" -e ${envVars[@]}
 exit $?

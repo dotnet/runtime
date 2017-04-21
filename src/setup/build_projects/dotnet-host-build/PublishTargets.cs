@@ -145,7 +145,6 @@ namespace Microsoft.DotNet.Host.Build
                         "osx.x64.portable.version",
                         "debian.8.armel.version",
                         "debian.x64.version",
-                        "centos.x64.version",
                         "fedora.24.x64.version",
                         "opensuse.42.1.x64.version"
                     };
@@ -228,7 +227,6 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_osx_portable_x64", false },
                  // { "sharedfx_Debian_8_armel", false },
                  { "sharedfx_Debian_x64", false },
-                 { "sharedfx_CentOS_x64", false },
                  { "sharedfx_Fedora_24_x64", false },
                  { "sharedfx_openSUSE_42_1_x64", false }
              };
