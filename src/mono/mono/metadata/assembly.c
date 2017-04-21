@@ -60,6 +60,7 @@ typedef struct  {
 	guint8 version_set_index;
 	const char* new_assembly_name;
 	gboolean only_lower_versions;
+	gboolean framework_facade_assembly;
 } AssemblyVersionMap;
 
 /* Flag bits for assembly_names_equal_flags (). */
@@ -1134,6 +1135,12 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		int index = vmap->version_set_index;
 		g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
 		vset = &current_runtime->version_sets [index];
+
+		if (vmap->framework_facade_assembly) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s is a framework Facade asseembly",
+				    aname->name);
+			return aname;
+		}
 
 		if (aname->major == vset->major && aname->minor == vset->minor &&
 			aname->build == vset->build && aname->revision == vset->revision) {
@@ -3467,10 +3474,18 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 #ifndef DISABLE_ASSEMBLY_REMAPPING
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
 	if (vmap) {
-		/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
-		gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
-		return result;
+		if (!vmap->framework_facade_assembly) {
+			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
+			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+			return result;
+		} else {
+			/* For facades, the name and public key token should
+			 * match, but the version doesn't matter. */
+			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_VERSION);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+			return result;
+		}
 	}
 #endif
 	return FALSE;
