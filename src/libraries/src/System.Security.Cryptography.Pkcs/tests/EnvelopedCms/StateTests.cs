@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void PostDecode_Encode_net46()
         {
             PostDecode_Encode(isRunningOnDesktop: true);
@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void PostDecode_ContentInfo_net46()
         {
             PostDecode_ContentInfo(isRunningOnDesktop: true);
