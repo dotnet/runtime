@@ -25,5 +25,10 @@
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="MethodBaseTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
