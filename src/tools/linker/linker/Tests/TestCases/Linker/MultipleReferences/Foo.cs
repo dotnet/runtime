@@ -1,20 +1,22 @@
-using System;
-
-public class Foo {
-
-	public Bar b;
-
-	public Foo (Bar b)
+﻿namespace TestCases.Linker.MultipleReferences
+{
+	public class Foo
 	{
-		this.b = b;
-	}
+		public Bar b;
 
-	public void UseBar ()
-	{
-		b.Bang ();
-	}
+		public Foo (Bar b)
+		{
+			this.b = b;
+		}
 
-	[NotLinked] public void Blam ()
-	{
+		public void UseBar ()
+		{
+			b.Bang ();
+		}
+
+		[AssertLinked]
+		public void Blam ()
+		{
+		}
 	}
 }

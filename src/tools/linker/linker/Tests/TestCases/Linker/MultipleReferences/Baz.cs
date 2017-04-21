@@ -1,13 +1,15 @@
-using System;
-
-public class Baz {
-
-	public void Chain (Foo f)
+﻿namespace TestCases.Linker.MultipleReferences
+{
+	public class Baz
 	{
-		f.b.Bang ();
-	}
+		public void Chain (Foo f)
+		{
+			f.b.Bang ();
+		}
 
-	[NotLinked] public void Lurman ()
-	{
+		[AssertLinked]
+		public void Lurman ()
+		{
+		}
 	}
 }

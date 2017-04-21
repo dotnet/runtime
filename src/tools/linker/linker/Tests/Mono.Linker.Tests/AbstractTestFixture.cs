@@ -1,4 +1,4 @@
-//
+﻿//
 // AbstractTestFixture.cs
 //
 // Author:
@@ -26,16 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Linker.Tests {
+using System.IO;
 
-	using System;
-	using System.IO;
+using Mono.Cecil;
 
-	using Mono.Cecil;
+using NUnit.Framework;
 
-	using NUnit.Framework;
+namespace Mono.Linker.Tests
+{
 
-	public abstract class AbstractTestFixture {
+	public abstract class AbstractTestFixture
+	{
 
 		string _testCasesRoot;
 		string _testCase;
@@ -95,18 +96,7 @@ namespace Mono.Linker.Tests {
 
 		protected string GetTestCasePath ()
 		{
-			return Path.Combine (
-				Path.Combine (
-#if DEBUG
-					Path.Combine (Environment.CurrentDirectory,
-						Path.Combine ("..", "..")),
-#else
-					Environment.CurrentDirectory,
-#endif
-					"TestCases"),
-				Path.Combine (
-					_testCasesRoot,
-					_testCase));
+			return Path.GetDirectoryName (GetType ().Assembly.Location);
 		}
 
 		protected virtual void RunTest (string testCase)
@@ -117,18 +107,12 @@ namespace Mono.Linker.Tests {
 
 		protected virtual void Run ()
 		{
-			string cd = Environment.CurrentDirectory;
-			Environment.CurrentDirectory = GetTestCasePath ();
-			try {
-				_pipeline.Process (_context);
-			} finally {
-				Environment.CurrentDirectory = cd;
-			}
+			_pipeline.Process (_context);
 		}
 
 		protected static string GetAssemblyFileName (AssemblyDefinition asm)
 		{
-			return asm.Name.Name + (asm.Kind == AssemblyKind.Dll ? ".dll" : ".exe");
+			return asm.Name.Name + (asm.MainModule.Kind == ModuleKind.Dll ? ".dll" : ".exe");
 		}
 	}
 }

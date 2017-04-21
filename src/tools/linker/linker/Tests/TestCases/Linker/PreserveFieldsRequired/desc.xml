@@ -1,7 +1,0 @@
-<linker>
-	<assembly fullname="Library">
-		<type fullname="Foo" />
-		<type fullname="NotRequiredButUsedNotPreserved" preserve="nothing" required="false" />
-		<type fullname="NotRequiredButUsedAndFieldsPreserved" preserve="fields" required="false" />
-	</assembly>
-</linker>

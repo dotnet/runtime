@@ -1,15 +1,18 @@
-using System;
+﻿using System;
 
-public class Bar {
-
-	string bang = "bang !";
-
-	public Bar ()
+namespace TestCases.Linker.MultipleReferences
+{
+	public class Bar
 	{
-	}
+		string bang = "bang !";
 
-	public void Bang ()
-	{
-		Console.WriteLine (bang);
+		public Bar ()
+		{
+		}
+
+		public void Bang ()
+		{
+			Console.WriteLine (bang);
+		}
 	}
 }

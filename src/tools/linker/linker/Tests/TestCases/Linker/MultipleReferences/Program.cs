@@ -1,21 +1,23 @@
-using System;
-
-public class Program {
-
-	public static int Main ()
+﻿namespace TestCases.Linker.MultipleReferences
+{
+	public class Program
 	{
-		Program p = new Program ();
-		p.Run ();
+		[Mark]
+		public static int Main ()
+		{
+			Program p = new Program ();
+			p.Run ();
 
-		return 0;
-	}
+			return 0;
+		}
 
-	void Run ()
-	{
-		Foo f = new Foo (new Bar ());
-		f.UseBar ();
+		void Run ()
+		{
+			Foo f = new Foo (new Bar ());
+			f.UseBar ();
 
-		Baz b = new Baz ();
-		b.Chain (f);
+			Baz b = new Baz ();
+			b.Chain (f);
+		}
 	}
 }

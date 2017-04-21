@@ -1,16 +1,18 @@
-using System;
-
-public class Program {
-
-	public static int Main ()
+﻿namespace TestCases.Linker.Simple
+{
+	public class Program
 	{
-		Program p = new Program ();
-		return p.Run ();
-	}
+		[Mark]
+		public static int Test ()
+		{
+			Program p = new Program ();
+			return p.Run ();
+		}
 
-	int Run ()
-	{
-		Library lib = new Library ();
-		return lib.Hello ();
+		int Run ()
+		{
+			Library lib = new Library ();
+			return lib.Hello ();
+		}
 	}
 }

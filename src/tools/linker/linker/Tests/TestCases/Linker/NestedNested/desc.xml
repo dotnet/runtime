@@ -1,5 +1,0 @@
-<linker>
-	<assembly fullname="Library">
-		<type fullname="Foo" />
-	</assembly>
-</linker>
