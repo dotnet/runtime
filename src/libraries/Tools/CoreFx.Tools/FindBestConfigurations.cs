@@ -56,6 +56,10 @@ namespace Microsoft.DotNet.Build.Tasks
 
                     // preserve the configuration that selected this
                     bestConfigurationItem.SetMetadata("BuildConfiguration", configurationItem.ItemSpec);
+                    foreach(var additionalProperty in buildConfiguration.GetProperties())
+                    {
+                        bestConfigurationItem.SetMetadata("BuildConfiguration_" + additionalProperty.Key, additionalProperty.Value);
+                    }
 
                     bestConfigurations.Add(bestConfigurationItem);
                 }
