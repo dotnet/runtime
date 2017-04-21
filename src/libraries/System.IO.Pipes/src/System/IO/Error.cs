@@ -31,5 +31,10 @@ namespace System.IO
         {
             return new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
+
+        internal static Exception GetOperationAborted()
+        {
+            return new IOException(SR.IO_OperationAborted);
+        }
     }
 }
