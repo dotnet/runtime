@@ -16,6 +16,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         public static void Test(string srcConstr, string dstConstr, string dstTable)
         {
+#if DEBUG
             string initialQueryTemplate = "create table {0} (col1 int, col2 nvarchar(20), col3 nvarchar(10), col4 varchar(8000))";
             string sourceQuery = "select EmployeeID, LastName, FirstName, REPLICATE('a', 8000) from employees";
             string initialQuery = string.Format(initialQueryTemplate, dstTable);
@@ -64,6 +65,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Helpers.TryDropTable(dstConstr, dstTable);
                 }
             }
+#endif
         }
     }
 }
