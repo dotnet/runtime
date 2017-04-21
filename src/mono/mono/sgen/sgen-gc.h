@@ -714,6 +714,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_object_copy) (GCObject* obj, GCObject *src);
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
+	void (*wbarrier_range_copy) (gpointer dest, gpointer src, int count);
 
 	void (*start_scan_remsets) (void);
 
@@ -734,7 +735,7 @@ void mono_gc_wbarrier_generic_nostore (gpointer ptr);
 void mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value);
 void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
 
-void sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap);
+void sgen_wbarrier_range_copy (gpointer _dest, gpointer _src, int size);
 
 static inline SgenDescriptor
 sgen_obj_get_descriptor (GCObject *obj)
@@ -1003,6 +1004,7 @@ extern mword total_promoted_size;
 extern mword total_allocated_major;
 extern volatile gboolean sgen_suspend_finalizers;
 extern MonoCoopMutex gc_mutex;
+extern volatile gboolean concurrent_collection_in_progress;
 
 /* Nursery helpers. */
 
