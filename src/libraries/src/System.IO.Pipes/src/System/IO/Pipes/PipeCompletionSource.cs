@@ -162,9 +162,8 @@ namespace System.IO.Pipes
                 {
                     if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
                     {
-                        // If this is unexpected abortion, we don't want to store _cancellationToken,
-                        // so just generically say it's been canceled.
-                        TrySetCanceled();
+                        // If this is unexpected abortion
+                        TrySetException(Error.GetOperationAborted());
                     }
                     else
                     {
