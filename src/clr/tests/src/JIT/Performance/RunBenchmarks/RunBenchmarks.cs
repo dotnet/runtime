@@ -70,11 +70,11 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Xml;
-using System.Xml.XPath;
+using System.Xml.Linq;
 using System.IO;
 
 namespace BenchmarkConsoleApplication
@@ -497,115 +497,6 @@ namespace BenchmarkConsoleApplication
             }
         }
 
-        // XML processing, select a single node given root node and xpath field name.
-
-        public XmlNode SelectSingleNode
-        (
-            XmlNode node,
-            string xpath
-        )
-        {
-#if DESKTOP
-            return node.SelectSingleNode(xpath);
-#else
-            return XmlDocumentXPathExtensions.SelectSingleNode(node, xpath);
-#endif
-        }
-
-        // XML processing, get a string field value given a node and xpath field name.  
-        // Can be optional field.
-
-        public string GetField
-        (
-            XmlNode node,
-            string xpath,
-            bool optional = false
-        )
-        {
-            XmlNode fieldNode = SelectSingleNode(node, xpath);
-            if (fieldNode == null)
-            {
-                if (optional)
-                {
-                    return "";
-                }
-                throw new Exception("missing field: " + xpath);
-            }
-
-            return fieldNode.InnerText;
-        }
-
-        // XML processing, get a boolean field value given a node and xpath field name.
-        // Can be optional field.
-
-        public bool GetBooleanField
-        (
-            XmlNode node,
-            string xpath,
-            bool optional = false
-        )
-        {
-            string value = GetField(node, xpath, optional);
-
-            if (value == "true")
-                return true;
-            if (value == "false")
-                return false;
-            if (optional)
-                return false;
-
-            throw new Exception("bad boolean value: " + value);
-        }
-
-        // XML processing, get an integer field value given a node and xpath field name.
-        // Can be optional field.
-
-        public int GetIntegerField
-        (
-            XmlNode node,
-            string xpath,
-            bool optional = false
-        )
-        {
-            string value = GetField(node, xpath, optional);
-
-            if (value != "")
-            {
-                int number = Int32.Parse(value);
-                return number;
-            }
-            if (optional)
-                return 0;
-
-            throw new Exception("bad integer value: " + value);
-        }
-
-        // XML processing, select a list of nodes given root node and xpath field name.
-
-        public XmlNodeList SelectNodes
-        (
-            XmlNode node,
-            string xpath
-        )
-        {
-#if DESKTOP 
-            return node.SelectNodes(xpath);
-#else
-            return XmlDocumentXPathExtensions.SelectNodes(node, xpath);
-#endif
-        }
-
-        // XML processing, get a list of nodes given root node and xpath field name.
- 
-        public XmlNodeList GetList
-        (
-            XmlNode node,
-            string xpath
-        )
-        {
-            return SelectNodes(node, xpath);
-        }
-
         // Exit benchmark system with specified exit code.
 
         public int Exit(int exitCode)
@@ -657,6 +548,45 @@ namespace BenchmarkConsoleApplication
             return platformSpecificDirectoryName;
         }
 
+        public static bool GetBool
+        (
+            XElement node,
+            string name,
+            bool optional = true
+        )
+        {
+            string value = node.Element(name)?.Value;
+
+            if (value == "true")
+                return true;
+            if (value == "false")
+                return false;
+            if (optional)
+                return false;
+
+            throw new Exception("bad boolean value: " + value);
+        }
+
+        public static int GetInteger
+        (
+            XElement node,
+            string name,
+            bool optional = true
+        )
+        {
+            string value = node.Element(name)?.Value;
+
+            if (value != "")
+            {
+                int number = Int32.Parse(value);
+                return number;
+            }
+            if (optional)
+                return 0;
+
+            throw new Exception("bad integer value: " + value);
+        }
+
         // Build list of benchmarks by reading in and processing .XML file.
 
         public void BuildBenchmarksList()
@@ -691,9 +621,7 @@ namespace BenchmarkConsoleApplication
 
             // Load XML description of benchmarks.
 
-            XmlDocument benchmarkXml = new XmlDocument();
-            var xmlFile = new FileStream(benchmarkXmlFullFileName, FileMode.Open, FileAccess.Read);
-            benchmarkXml.Load(xmlFile);
+            XElement benchmarkXml = XElement.Load(benchmarkXmlFullFileName);
 
             // Get root directory for benchmark system.  Command line argument overrides 
             // specification in benchmark control file.
@@ -701,7 +629,7 @@ namespace BenchmarkConsoleApplication
             benchmarkRootDirectoryName = Controls.BenchmarksRootDirectory;
             if (benchmarkRootDirectoryName == "")
             {
-                benchmarkRootDirectoryName = GetField(benchmarkXml.DocumentElement, "benchmark-root-directory");
+                benchmarkRootDirectoryName = 
                 Controls.BenchmarksRootDirectory = benchmarkRootDirectoryName;
             }
             benchmarkRootDirectoryName = PlatformSpecificDirectoryName(benchmarkRootDirectoryName);
@@ -709,26 +637,26 @@ namespace BenchmarkConsoleApplication
 
             // Process each benchmark suite in the list of benchmark suites.
 
-            XmlNodeList benchmarkSuiteList = GetList(benchmarkXml.DocumentElement, "benchmark-suite");
-            foreach (XmlNode benchmarkSuite in benchmarkSuiteList)
+            var benchmarkSuiteList = from e in benchmarkXml.Descendants("benchmark-suite") select e;
+            foreach (XElement benchmarkSuite in benchmarkSuiteList)
             {
-                benchmarkSuiteName = GetField(benchmarkSuite, "name");
+                benchmarkSuiteName = benchmarkSuite.Element("name").Value;
 
                 //Process each benchmark in benchmark suite.
 
-                XmlNodeList benchmarkList = GetList(benchmarkSuite, "benchmark");
-                foreach (XmlNode benchmark in benchmarkList)
+                var benchmarkList = from e in benchmarkSuite.Descendants("benchmark") select e;
+                foreach (XElement benchmark in benchmarkList)
                 {
-                    benchmarkName = GetField(benchmark, "name");
-                    benchmarkDirectoryName = GetField(benchmark, "directory", OptionalField);
+                    benchmarkName = benchmark.Element("name").Value;
+                    benchmarkDirectoryName = benchmark.Element("directory")?.Value ?? "";
                     benchmarkDirectoryName = PlatformSpecificDirectoryName(benchmarkDirectoryName);
-                    benchmarkExecutableName = GetField(benchmark, "executable");
-                    benchmarkArgs = GetField(benchmark, "args", OptionalField);
-                    useSSE = GetBooleanField(benchmark, "useSSE", OptionalField);
-                    useAVX = GetBooleanField(benchmark, "useAVX", OptionalField);
-                    expectedResults = GetIntegerField(benchmark, "expected-results", OptionalField);
-                    doRunInShell = GetBooleanField(benchmark, "run-in-shell", OptionalField);
-                    tags = GetField(benchmark, "tags", OptionalField);
+                    benchmarkExecutableName = benchmark.Element("executable").Value;
+                    benchmarkArgs = benchmark.Element("args")?.Value ?? "";
+                    useSSE = GetBool(benchmark, "useSSE");
+                    useAVX = GetBool(benchmark, "useAVX");
+                    doRunInShell = GetBool(benchmark, "run-in-shell");
+                    expectedResults = GetInteger(benchmark, "expected-results");
+                    tags = benchmark.Element("tags")?.Value ?? "";
                     AddBenchmark(benchmarkName, benchmarkSuiteName, tags, benchmarkDirectoryName,
                         benchmarkExecutableName, benchmarkArgs, doRunInShell, useSSE, useAVX, expectedResults);
                 }
