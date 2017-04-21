@@ -4,8 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{C303A051-8D54-4460-8BFD-DE10F0473BDB}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -13,7 +11,7 @@
   <ItemGroup>
     <Compile Include="System.Reflection.TypeExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net461'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

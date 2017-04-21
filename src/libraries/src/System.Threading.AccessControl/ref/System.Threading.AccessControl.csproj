@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{C2B1A23B-16F9-4015-BE3C-DD871A7C108D}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
@@ -10,7 +11,11 @@
     <Compile Include="System.Threading.AccessControl.cs" />
     <Compile Include="System.Threading.AccessControl.Manual.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
     <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>

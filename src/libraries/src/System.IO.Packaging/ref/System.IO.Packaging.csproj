@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4DD91348-1D1F-4964-B5CB-047D916E79EE}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
@@ -10,6 +11,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.IO.Packaging.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net46'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />

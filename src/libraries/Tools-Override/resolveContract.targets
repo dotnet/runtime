@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
-      <ResolvedMatchingContract Condition="'$(IsDesktopFacade)' != 'true' and Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
+      <ResolvedMatchingContract Condition="Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
 
       <!-- If the contract doesn't exist in the default contract output path add a project reference to the contract project to resolve -->
       <ProjectReference Condition="'@(ResolvedMatchingContract)' == ''" Include="$(ContractProject)">

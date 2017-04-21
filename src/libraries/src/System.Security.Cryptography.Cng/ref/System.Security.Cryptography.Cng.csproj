@@ -3,9 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);netfx</DefineConstants>
-    <NoWarn Condition="'$(TargetGroup)' == 'netfx'">$(NoWarn);0436</NoWarn>
     <ProjectGuid>{9FD12550-3A7C-49D3-9A1E-C4B7410989DD}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_HASHDATA</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargeGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_HASHDATA</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
