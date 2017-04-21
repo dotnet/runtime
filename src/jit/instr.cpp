@@ -244,8 +244,15 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     //
     // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
     //
-    assert(tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel || compiler->rpFrameType != FT_ESP_FRAME);
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef UNIX_X86_ABI
+    // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == (genStackLevel - curNestedAlignment)) || isFramePointerUsed());
+#else
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif
+#endif // !FEATURE_FIXED_OUT_ARGS
 
     getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
