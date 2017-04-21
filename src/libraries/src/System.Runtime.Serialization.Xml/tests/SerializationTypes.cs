@@ -4910,3 +4910,39 @@ public class DerivedType : BaseType
     [DataMember]
     public string StrDerived = "derived";
 }
+
+public class Group1WithXmlTextAttr
+{
+    [XmlText(typeof(string))]
+    [XmlElement(typeof(int))]
+    [XmlElement(typeof(double))]
+    public object[] All = new object[] { 321, "One", 2, 3.0, "Two" };
+}
+
+public class Group2WithXmlTextAttr
+{
+    [XmlText(Type = typeof(GroupType))]
+    public GroupType TypeOfGroup;
+}
+
+public enum GroupType
+{
+    Small,
+    Medium,
+    Large
+}
+
+public class Group3WithXmlTextAttr
+{
+    [XmlText(Type = typeof(DateTime))]
+    public DateTime CreationTime = new DateTime(2017, 4, 20, 3, 8, 15, DateTimeKind.Utc);
+}
+
+public class Group4WithXmlTextAttr
+{
+    [XmlText(Type = typeof(DateTime))]
+    public DateTime CreationTime = new DateTime(2017, 4, 20, 3, 8, 15, DateTimeKind.Utc);
+
+    [XmlText]
+    public string Text = "SomeText";
+}
