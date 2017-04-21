@@ -18,6 +18,7 @@ class fx_muxer_t
 public:
     static int execute(const int argc, const pal::char_t* argv[]);
     static std::vector<host_option> get_known_opts(bool exec_mode, host_mode_t mode, bool get_all_options = false);
+    static bool resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk);
 private:
     static int read_config_and_execute(
         const pal::string_t& own_dir,

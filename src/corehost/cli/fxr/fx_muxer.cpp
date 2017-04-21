@@ -600,8 +600,20 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 {
     trace::verbose(_X("--- Resolving dotnet from working dir"));
     pal::string_t cwd;
+    if (!pal::getcwd(&cwd))
+    {
+        trace::verbose(_X("Failed to obtain current working dir"));
+        assert(cwd.empty());
+    }
+
+    return resolve_sdk_dotnet_path(own_dir, cwd, cli_sdk);
+}
+
+bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk)
+{
     pal::string_t global;
-    if (pal::getcwd(&cwd))
+
+    if (!cwd.empty())
     {
         for (pal::string_t parent_dir, cur_dir = cwd; true; cur_dir = parent_dir)
         {
@@ -623,10 +635,6 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
             }
         }
     }
-    else
-    {
-        trace::verbose(_X("Failed to obtain current working dir"));
-    }
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
@@ -635,7 +643,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 
     if (multilevel_lookup)
     {
-        if (pal::getcwd(&cwd))
+        if (!cwd.empty())
         {
             hive_dir.push_back(cwd);
         }
@@ -644,7 +652,12 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
             hive_dir.push_back(local_dir);
         }
     }
-    hive_dir.push_back(own_dir);
+
+    if (!own_dir.empty())
+    {
+        hive_dir.push_back(own_dir);
+    }
+
     if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
     {
         hive_dir.push_back(global_dir);
