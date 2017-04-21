@@ -138,14 +138,11 @@ namespace System.Net
         {
             get
             {
-                return false;
+                return _allowReadStreamBuffering;
             }
             set
             {
-                if (value)
-                {
-                    throw new InvalidOperationException(SR.net_OperationNotSupportedException);
-                }
+                _allowReadStreamBuffering = value;
             }            
         }
 
