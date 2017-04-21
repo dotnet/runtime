@@ -63,12 +63,13 @@
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(IsUAPRef)'=='true' AND ('$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true')" Include="uap-$(_bc_OSGroup)">
+      <PackageFileRefPath>$(UAPPackageRefPath)</PackageFileRefPath>
+    </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(_bc_OSGroup)">
-      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
-      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="('$(IsNetFxNETStandard)' == 'true' OR '$(IsNetFxNETStandardRef)' == 'true') AND '$(BuildingNETFxVertical)' == 'true'" 
