@@ -121,7 +121,6 @@
           Returns="$(PackageConfigurations)">
      <ItemGroup Condition="'$(PackageConfigurations)' == ''">
        <_buildConfigurations Include="$(BuildConfigurations)" />
-       <_excludeBuildConfigurations Include="@(_buildConfigurations)" Condition="'$(IsReferenceAssembly)' == 'true' AND ('%(Identity)' == 'netfx' OR $([System.String]::new('%(Identity)').StartsWith('net4'))) AND '$(IncludeDesktopRefInPackage)' != 'true'"/>
        <_excludeBuildConfigurations Include="mono" />
        <_packageConfigurations Include="@(_buildConfigurations)" Exclude="@(_excludeBuildConfigurations)" />
      </ItemGroup>

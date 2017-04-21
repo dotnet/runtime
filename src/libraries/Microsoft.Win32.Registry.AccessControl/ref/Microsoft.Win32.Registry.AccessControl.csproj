@@ -9,7 +9,10 @@
   <ItemGroup>
     <Compile Include="Microsoft.Win32.Registry.AccessControl.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ProjectReference Include="..\..\Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>

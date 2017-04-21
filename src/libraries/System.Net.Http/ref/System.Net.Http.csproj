@@ -3,9 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{132BF813-FC40-4D39-8B6F-E55D7633F0ED}</ProjectGuid>
-    <!-- in most cases the desktop configuration of a contract is just for APICompat,
-         however in this case it is the actual ref we want to ship -->
-    <IncludeDesktopRefInPackage>true</IncludeDesktopRefInPackage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Release|AnyCPU'" />

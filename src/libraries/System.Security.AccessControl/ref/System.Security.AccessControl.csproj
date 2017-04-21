@@ -4,14 +4,18 @@
   <PropertyGroup>
     <ProjectGuid>{F80C478C-48EE-46A5-89C4-EE0CFB23A14F}</ProjectGuid>
     <!-- UAP10.1 is not yet mapped to netstandard2.0, manually duplicate this ref -->
-    <PackageTargetFramework>netstandard2.0;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard2.0;uap10.1</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Security.AccessControl.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
     <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
