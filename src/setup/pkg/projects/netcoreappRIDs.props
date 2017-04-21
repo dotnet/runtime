@@ -31,13 +31,7 @@
     <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.14.04-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.16.04-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRid Include="tizen.4.0.0-armel">
