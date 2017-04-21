@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <CrossGenFiles Include="..\packages\runtime.$(MinOSForArch)-$(PackagePlatform).Microsoft.NETCore.Runtime.CoreCLR\$(CoreClrPackageVersion)\tools\crossgen.exe"/>
+    <CrossGenFiles Include="..\packages\runtime.$(TargetRid).Microsoft.NETCore.Runtime.CoreCLR\$(CoreClrPackageVersion)\tools\crossgen*"/>
   </ItemGroup>
 
   <PropertyGroup>
