@@ -223,6 +223,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(ManyConcatsData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Stack overflows on desktop due to inefficient Concat implementation")]
         public void ManyConcatsRunOnce(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
         {
             foreach (var transform in IdentityTransforms<int>())
@@ -283,6 +284,7 @@ namespace System.Linq.Tests
 
         [Fact]
         [OuterLoop("This test tries to catch stack overflows and can take a long time.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Stack overflows on desktop due to inefficient Concat implementation")]
         public void CountOfConcatCollectionChainShouldBeResilientToStackOverflow()
         {
             // Currently, .Concat chains of 3+ ICollections are represented as a
@@ -317,6 +319,7 @@ namespace System.Linq.Tests
 
         [Fact]
         [OuterLoop("This test tries to catch stack overflows and can take a long time.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Stack overflows on desktop due to inefficient Concat implementation")]
         public void CountOfConcatEnumerableChainShouldBeResilientToStackOverflow()
         {
             // Concat chains where one or more of the inputs is not an ICollection
@@ -352,6 +355,7 @@ namespace System.Linq.Tests
 
         [Fact]
         [OuterLoop("This test tries to catch stack overflows and can take a long time.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Stack overflows on desktop due to inefficient Concat implementation")]
         public void GettingFirstEnumerableShouldBeResilientToStackOverflow()
         {
             // When MoveNext() is first called on a chain of 3+ Concats, we have to
@@ -380,6 +384,7 @@ namespace System.Linq.Tests
 
         [Fact]
         [OuterLoop("This test tries to catch stack overflows and can take a long time.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Stack overflows on desktop due to inefficient Concat implementation")]
         public void GetEnumerableOfConcatCollectionChainFollowedByEnumerableNodeShouldBeResilientToStackOverflow()
         {
             // Since concatenating even 1 lazy enumerable ruins the ability for ToArray/ToList
