@@ -48,6 +48,9 @@ namespace System.Collections.Specialized.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
+            if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
+                return;
+
             ICollection collection = NonGenericICollectionFactory(count);
             Array arr = Array.CreateInstance(typeof(object), new int[] { count }, new int[] { 2 });
             Assert.Equal(1, arr.Rank);

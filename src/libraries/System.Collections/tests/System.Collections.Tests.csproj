@@ -74,6 +74,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs" Condition="'$(TargetGroup)'!='netcoreapp'">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
     <!-- Generic tests -->
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs"  Condition="'$(TargetGroup)' == 'netcoreapp'"/>
     <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />

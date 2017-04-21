@@ -108,6 +108,9 @@
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
