@@ -132,16 +132,10 @@ namespace Microsoft.DotNet.Host.Build
                         "linux.x64.portable.version",
                         "ubuntu.x64.version",
                         "linux.arm.portable.version",
-                        "ubuntu.arm.version",
                         "ubuntu.16.04.x64.version",
-                        "ubuntu.16.04.arm.version",
                         "ubuntu.16.10.x64.version",
-                        "rhel.x64.version",
                         "osx.x64.portable.version",
-                        "debian.8.armel.version",
                         "debian.x64.version",
-                        "fedora.24.x64.version",
-                        "opensuse.42.1.x64.version"
                     };
                     
                     PublishCoreHostPackagesToFeed();
@@ -208,17 +202,11 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_win_portable_arm64", false },
                  { "sharedfx_linux_portable_x64", false },
                  { "sharedfx_Ubuntu_x64", false },
-                 { "sharedfx_Ubuntu_arm", false },
                  { "sharedfx_linux_portable_arm", false },
                  { "sharedfx_Ubuntu_16_04_x64", false },
-                 { "sharedfx_Ubuntu_16_04_arm", false },
                  { "sharedfx_Ubuntu_16_10_x64", false },
-                 { "sharedfx_RHEL_x64", false },
                  { "sharedfx_osx_portable_x64", false },
-                 // { "sharedfx_Debian_8_armel", false },
                  { "sharedfx_Debian_x64", false },
-                 { "sharedfx_Fedora_24_x64", false },
-                 { "sharedfx_openSUSE_42_1_x64", false }
              };
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
