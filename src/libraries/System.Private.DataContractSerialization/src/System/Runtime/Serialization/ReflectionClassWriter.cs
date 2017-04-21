@@ -27,6 +27,11 @@ namespace System.Runtime.Serialization
             }
             else
             {
+                if (classContract.HasExtensionData)
+                {
+                    context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, -1);
+                }
+
                 ReflectionWriteMembers(xmlWriter, obj, context, classContract, classContract, 0 /*childElementIndex*/, memberNames);
             }
 

@@ -243,6 +243,11 @@ namespace System.Runtime.Serialization.Json
                         ReflectionWriteValue(xmlWriter, context, memberType, memberValue, false/*writeXsiType*/, primitiveContractForParamType: null);
                         ReflectionWriteEndElement(xmlWriter);
                     }
+
+                    if(classContract.HasExtensionData)
+                    {
+                        context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, memberCount);
+                    }
                 }
             }
 
