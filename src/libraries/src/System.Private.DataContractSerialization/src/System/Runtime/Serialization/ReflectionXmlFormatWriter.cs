@@ -183,6 +183,11 @@ namespace System.Runtime.Serialization
                         ReflectionWriteValue(xmlWriter, context, memberType, memberValue, writeXsiType, primitiveContractForParamType: null);
                         ReflectionWriteEndElement(xmlWriter);
                     }
+
+                    if(classContract.HasExtensionData)
+                    {
+                        context.WriteExtensionData(xmlWriter, ((IExtensibleDataObject)obj).ExtensionData, memberCount);
+                    }
                 }
             }
 

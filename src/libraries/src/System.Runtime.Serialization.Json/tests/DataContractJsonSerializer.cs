@@ -2277,9 +2277,6 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(result.Equal, $"The serialization payload was not as expected.{Environment.NewLine}Expected: {expectedString}.{Environment.NewLine}Actual: {actualString}");
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13699)]
-#endif
     [Fact]
     public static void DCJS_ExtensionDataObjectTest()
     {
