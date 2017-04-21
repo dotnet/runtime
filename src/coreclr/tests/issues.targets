@@ -419,6 +419,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\decimal\DecimalToInt32\DecimalToInt32.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\delegate\DelegateGetHashCode1\DelegateGetHashCode1.cmd">
+            <Issue>11137</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\double\DoubleToString3\DoubleToString3.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1132,6 +1135,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JITBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
+            <Issue>11142</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-Beta1\b302509\b302509\b302509.cmd">
             <Issue>needs triage</Issue>
