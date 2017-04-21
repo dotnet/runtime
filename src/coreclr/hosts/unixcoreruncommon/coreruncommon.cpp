@@ -35,6 +35,10 @@
 // disabled. Server GC is off by default.
 static const char* serverGcVar = "CORECLR_SERVER_GC";
 
+// Name of environment variable to control "System.Globalization.Invariant"
+// Set to 1 for Globalization Invariant mode to be true. Default is false.
+static const char* globalizationInvariantVar = "CORECLR_GLOBAL_INVARIANT";
+
 #if defined(__linux__)
 #define symlinkEntrypointExecutable "/proc/self/exe"
 #elif !defined(__APPLE__)
@@ -260,6 +264,17 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
     closedir(dir);
 }
 
+const char* GetEnvValueBoolean(const char* envVariable)
+{
+    const char* envValue = std::getenv(envVariable);
+    if (envValue == nullptr)
+    {
+        envValue = "0";
+    }
+    // CoreCLR expects strings "true" and "false" instead of "1" and "0".
+    return (std::strcmp(envValue, "1") == 0 || strcasecmp(envValue, "true") == 0) ? "true" : "false";
+}
+
 int ExecuteManagedAssembly(
             const char* currentExeAbsolutePath,
             const char* clrFilesAbsolutePath,
@@ -338,14 +353,10 @@ int ExecuteManagedAssembly(
         else
         {
             // Check whether we are enabling server GC (off by default)
-            const char* useServerGc = std::getenv(serverGcVar);
-            if (useServerGc == nullptr)
-            {
-                useServerGc = "0";
-            }
+            const char* useServerGc = GetEnvValueBoolean(serverGcVar);
 
-            // CoreCLR expects strings "true" and "false" instead of "1" and "0".
-            useServerGc = std::strcmp(useServerGc, "1") == 0 ? "true" : "false";
+            // Check Globalization Invariant mode (false by default)
+            const char* globalizationInvariant = GetEnvValueBoolean(globalizationInvariantVar);
 
             // Allowed property names:
             // APPBASE
@@ -369,6 +380,7 @@ int ExecuteManagedAssembly(
                 "APP_NI_PATHS",
                 "NATIVE_DLL_SEARCH_DIRECTORIES",
                 "System.GC.Server",
+                "System.Globalization.Invariant",
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -381,6 +393,8 @@ int ExecuteManagedAssembly(
                 nativeDllSearchDirs.c_str(),
                 // System.GC.Server
                 useServerGc,
+                // System.Globalization.Invariant
+                globalizationInvariant,
             };
 
             void* hostHandle;
