@@ -1295,10 +1295,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     ctx.Esi = lazyState->_esi = baseState->_esi;
     ctx.Ebx = lazyState->_ebx = baseState->_ebx;
 
-    nonVolRegPtrs.Edi = &(lazyState->_edi);
-    nonVolRegPtrs.Esi = &(lazyState->_esi);
-    nonVolRegPtrs.Ebx = &(lazyState->_ebx);
-    nonVolRegPtrs.Ebp = &(lazyState->_ebp);
+    nonVolRegPtrs.Edi = &(baseState->_edi);
+    nonVolRegPtrs.Esi = &(baseState->_esi);
+    nonVolRegPtrs.Ebx = &(baseState->_ebx);
+    nonVolRegPtrs.Ebp = &(baseState->_ebp);
 
     PCODE pvControlPc;
 
