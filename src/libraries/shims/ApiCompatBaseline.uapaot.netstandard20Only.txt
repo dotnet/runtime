@@ -1,32 +1,4 @@
 Compat issues with assembly netstandard:
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Stream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.UnmanagedMemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Compression.DeflateStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Compression.GZipStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.IsolatedStorage.IsolatedStorageFileStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryMappedFiles.MemoryMappedViewStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.AnonymousPipeClientStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.AnonymousPipeServerStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.NamedPipeClientStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.NamedPipeServerStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.AuthenticatedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.NegotiateStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.SslStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptoStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Text.Encoding.BodyName.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.GetEncodings()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.HeaderName.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.IsBrowserDisplay.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.IsBrowserSave.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.Overlapped' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.RegisteredWaitHandle' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
@@ -49,4 +21,4 @@ MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSing
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.UInt32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 50
+Total Issues: 22
