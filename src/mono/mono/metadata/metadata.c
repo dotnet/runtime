@@ -3073,6 +3073,18 @@ mono_metadata_get_image_set_for_method (MonoMethodInflated *method)
 	return set;
 }
 
+static gboolean
+type_is_gtd (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+		return mono_class_is_gtd (type->data.klass);
+	default:
+		return FALSE;
+	}
+}
+
 /*
  * mono_metadata_get_generic_inst:
  *
@@ -3099,6 +3111,13 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	ginst->is_open = is_open;
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));
+
+	for (i = 0; i < type_argc; ++i) {
+		MonoType *t = ginst->type_argv [i];
+		if (type_is_gtd (t)) {
+			ginst->type_argv [i] = mono_class_gtd_get_canonical_inst (t->data.klass);
+		}
+	}
 
 	return mono_metadata_get_canonical_generic_inst (ginst);
 }

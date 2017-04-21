@@ -5574,6 +5574,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
 		context = &generic_container->context;
 		mono_class_set_generic_container (klass, generic_container);
+		MonoType *canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
+		canonical_inst->type = MONO_TYPE_GENERICINST;
+		canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
 		enable_gclass_recording ();
 	}
 
