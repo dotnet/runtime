@@ -26,9 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
@@ -185,7 +184,7 @@ namespace Mono.Linker.Steps
 			Annotations.Pop ();
 		}
 
-		static void MarkFields (LinkContext context, ICollection fields, RootVisibility rootVisibility)
+		static void MarkFields (LinkContext context, Collection<FieldDefinition> fields, RootVisibility rootVisibility)
 		{
 			foreach (FieldDefinition field in fields) {
 				bool markField;
@@ -208,7 +207,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		static void MarkMethods (LinkContext context, ICollection methods, RootVisibility rootVisibility)
+		static void MarkMethods (LinkContext context, Collection<MethodDefinition> methods, RootVisibility rootVisibility)
 		{
 			foreach (MethodDefinition method in methods)
 				MarkMethod (context, method, MethodAction.ForceParse, rootVisibility);
