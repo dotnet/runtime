@@ -4182,6 +4182,26 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(value.Collection.SequenceEqual(actual.Collection));
     }
 
+    [Fact]
+    public static void Xml_XmlTextAttributeTest()
+    {
+        var myGroup1 = new Group1WithXmlTextAttr();
+        var actual1 = SerializeAndDeserialize(myGroup1, @"<?xml version=""1.0""?><Group1WithXmlTextAttr xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><int>321</int>One<int>2</int><double>3</double>Two</Group1WithXmlTextAttr>");
+        Assert.True(Enumerable.SequenceEqual(myGroup1.All, actual1.All));
+
+        var myGroup2 = new Group2WithXmlTextAttr();
+        myGroup2.TypeOfGroup = GroupType.Medium;
+        var actual2 = SerializeAndDeserialize(myGroup2, @"<?xml version=""1.0""?><Group2WithXmlTextAttr xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">Medium</Group2WithXmlTextAttr>");
+        Assert.Equal(myGroup2.TypeOfGroup, actual2.TypeOfGroup);
+
+        var myGroup3 = new Group3WithXmlTextAttr();
+        var actual3 = SerializeAndDeserialize(myGroup3, @"<?xml version=""1.0""?><Group3WithXmlTextAttr xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">2017-04-20T03:08:15Z</Group3WithXmlTextAttr>");
+        Assert.Equal(myGroup3.CreationTime, actual3.CreationTime);
+
+        var myGroup4 = new Group4WithXmlTextAttr();
+        Assert.Throws<InvalidOperationException>(() => { SerializeAndDeserialize(myGroup4, null, null, true); });
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
