@@ -1,4 +1,4 @@
-//
+﻿//
 // ResolveFromXApiStep.cs
 //
 // Author:
@@ -28,13 +28,13 @@
 
 using System.Xml.XPath;
 
-using Mono.Linker;
-
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps {
+namespace Mono.Linker.Steps
+{
 
-	public class ResolveFromXApiStep : ResolveStep, IXApiVisitor {
+	public class ResolveFromXApiStep : ResolveStep, IXApiVisitor
+	{
 
 		static readonly string _name = "name";
 		static readonly string _ns = string.Empty;

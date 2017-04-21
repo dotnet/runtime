@@ -1,7 +1,0 @@
-<linker>
-	<assembly fullname="Library">
-		<type fullname="Foo.*Baz">
-			<method signature="System.Void .ctor()" />
-		</type>
-	</assembly>
-</linker>

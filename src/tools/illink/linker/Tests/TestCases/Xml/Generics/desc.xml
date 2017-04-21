@@ -1,0 +1,5 @@
+﻿<linker>
+	<assembly fullname="TestCases">
+		<type fullname="TestCases.Xml.Generics.Foo" />
+	</assembly>
+</linker>

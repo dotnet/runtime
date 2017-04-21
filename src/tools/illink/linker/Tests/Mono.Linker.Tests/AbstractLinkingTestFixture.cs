@@ -1,4 +1,4 @@
-//
+﻿//
 // AbstractLinkingTestFixture.cs
 //
 // Author:
@@ -30,10 +30,14 @@ using System.IO;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 using NUnit.Framework;
+using System.Linq;
+using System.Collections.Generic;
 
-namespace Mono.Linker.Tests {
+namespace Mono.Linker.Tests
+{
 
-	public abstract class AbstractLinkingTestFixture : AbstractTestFixture {
+	public abstract class AbstractLinkingTestFixture : AbstractTestFixture
+	{
 
 		[SetUp]
 		public override void SetUp ()
@@ -90,39 +94,49 @@ namespace Mono.Linker.Tests {
 
 		void Compare ()
 		{
+			bool compared = false;
 			foreach (AssemblyDefinition assembly in Context.GetAssemblies ()) {
-				if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				if (Context.Annotations.GetAction (assembly) != AssemblyAction.Link)
 					continue;
 
 				string fileName = GetAssemblyFileName (assembly);
 
-				CompareAssemblies (
-					AssemblyFactory.GetAssembly (
-						Path.Combine (GetTestCasePath (), fileName)),
-					AssemblyFactory.GetAssembly (
-						Path.Combine (GetOutputPath (), fileName)));
+				var original = AssemblyDefinition.ReadAssembly (Path.Combine (GetTestCasePath (), fileName));
+				var linked = AssemblyDefinition.ReadAssembly (Path.Combine (GetOutputPath (), fileName));
+				compared = CompareAssemblies (original, linked);
 			}
+
+			Assert.IsTrue (compared, $"No data compared (are you missing '{TestCase}' namespace for the test case?)");
 		}
 
-		static void CompareAssemblies (AssemblyDefinition original, AssemblyDefinition linked)
+		bool CompareAssemblies (AssemblyDefinition original, AssemblyDefinition linked)
 		{
+			bool compared = false;
 			foreach (TypeDefinition originalType in original.MainModule.Types) {
-				TypeDefinition linkedType = linked.MainModule.Types [originalType.FullName];
-				if (NotLinked (originalType)) {
-					Assert.IsNull (linkedType, string.Format ("Type `{0}' should not have been linked", originalType));
+				if (!originalType.FullName.StartsWith (TestCase, System.StringComparison.Ordinal))
+					continue;
+
+				compared = true;
+
+				TypeDefinition linkedType = linked.MainModule.Types.FirstOrDefault (l => l.FullName == originalType.FullName);
+				if (MustBeLinked (originalType)) {
+					Assert.IsNull (linkedType, string.Format ("Type `{0}' was not linked", originalType));
 					continue;
 				}
 
-				Assert.IsNotNull (linkedType, string.Format ("Type `{0}' should have been linked", originalType));
+				Assert.IsNotNull (linkedType, string.Format ("Type `{0}' was linked", originalType));
 				CompareTypes (originalType, linkedType);
 			}
+
+			return compared;
 		}
 
 		static void CompareTypes (TypeDefinition type, TypeDefinition linkedType)
 		{
 			foreach (FieldDefinition originalField in type.Fields) {
-				FieldDefinition linkedField = linkedType.Fields.GetField (originalField.Name);// TODO: also get with the type!
-				if (NotLinked (originalField)) {
+				IEnumerable<FieldDefinition> fd = linkedType.Fields;
+				FieldDefinition linkedField = fd.FirstOrDefault (l => l.Name == originalField.Name);// TODO: also get with the type!
+				if (MustBeLinked (originalField)) {
 					Assert.IsNull (linkedField, string.Format ("Field `{0}' should not have been linked", originalField));
 					continue;
 				}
@@ -130,31 +144,21 @@ namespace Mono.Linker.Tests {
 				Assert.IsNotNull (linkedField, string.Format ("Field `{0}' should have been linked", originalField));
 			}
 
-			foreach (MethodDefinition originalCtor in type.Constructors) {
-				MethodDefinition linkedCtor = linkedType.Constructors.GetConstructor (originalCtor.IsStatic, originalCtor.Parameters);
-				if (NotLinked (originalCtor)) {
-					Assert.IsNull (linkedCtor, string.Format ("Constructor `{0}' should not have been linked", originalCtor));
-					continue;
-				}
-
-				Assert.IsNotNull (linkedCtor, string.Format ("Constructor `{0}' should have been linked", originalCtor));
-			}
-
 			foreach (MethodDefinition originalMethod in type.Methods) {
-				MethodDefinition linkedMethod = linkedType.Methods.GetMethod (originalMethod.Name, originalMethod.Parameters);
-				if (NotLinked (originalMethod)) {
-					Assert.IsNull (linkedMethod, string.Format ("Method `{0}' should not have been linked", originalMethod));
+				MethodDefinition linkedMethod = linkedType.Methods.FirstOrDefault (l => l.Name == originalMethod.Name && l.Parameters.Count == originalMethod.Parameters.Count); // TODO: lame
+				if (MustBeLinked (originalMethod)) {
+					Assert.IsNull (linkedMethod, string.Format ("Method `{0}' was not linked", originalMethod));
 					continue;
 				}
 
-				Assert.IsNotNull (linkedMethod, string.Format ("Method `{0}' should have been linked", originalMethod));
+				Assert.IsNotNull (linkedMethod, string.Format ("Method `{0}' was linked", originalMethod));
 			}
 		}
 
-		static bool NotLinked(ICustomAttributeProvider provider)
+		static bool MustBeLinked (ICustomAttributeProvider provider)
 		{
 			foreach (CustomAttribute ca in provider.CustomAttributes)
-				if (ca.Constructor.DeclaringType.Name == "NotLinkedAttribute")
+				if (ca.Constructor.DeclaringType.Name == "AssertLinkedAttribute")
 					return true;
 
 			return false;

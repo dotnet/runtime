@@ -1,4 +1,4 @@
-//
+﻿//
 // XmlLinkingTestFixture.cs
 //
 // Author:
@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.IO;
 using System.Xml.XPath;
 
 using Mono.Linker.Steps;
 using NUnit.Framework;
-
 
 namespace Mono.Linker.Tests {
 
@@ -88,12 +88,31 @@ namespace Mono.Linker.Tests {
 
 		protected override void RunTest (string testCase)
 		{
-			base.RunTest (testCase);
-			Pipeline.PrependStep (
-				new ResolveFromXmlStep (
-					new XPathDocument (Path.Combine (GetTestCasePath (), "desc.xml"))));
+			var fullTestCaseName = "TestCases.Xml." + testCase;
+			string resourceName = fullTestCaseName + ".desc.xml";
 
-			Run ();
+			var ms = new MemoryStream ();
+			var assembly = typeof (TestCases.AssertLinkedAttribute).Assembly;
+			using (Stream stream = assembly.GetManifestResourceStream (resourceName)) {
+				Assert.IsNotNull (stream, "Missing embedded desc.xml");
+				using (StreamReader reader = new StreamReader (stream)) {
+					stream.CopyTo (ms);
+				}
+			}
+
+			ms.Seek (0, SeekOrigin.Begin);
+
+			base.RunTest (fullTestCaseName);
+
+			Pipeline.PrependStep (new ResolveFromXmlStep (new XPathDocument (ms)));
+
+			string cd = Environment.CurrentDirectory;
+			Environment.CurrentDirectory = GetTestCasePath ();
+			try {
+				Run ();
+			} finally {
+				Environment.CurrentDirectory = cd;
+			}
 		}
 	}
 }

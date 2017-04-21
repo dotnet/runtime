@@ -1,2 +1,0 @@
-#!/bin/sh
-mono $MONO_EXTRA_ARGS @prefix@/lib/mink/mink.exe "$@"
