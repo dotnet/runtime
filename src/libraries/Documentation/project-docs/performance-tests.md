@@ -102,7 +102,7 @@ Test cases should adhere to the following guidelines, within reason:
 * Individual iterations of a test case should take from 100 milliseconds to 1 second. This is everything inside of the `using (iteration.StartMeasurement())` block.
 * Test cases may need to use an "inner iteration" concept in order for individual invocations of the "outer iteration" to last from 100 ms to 1s. The example above shows this.
 * Some functions are prone to being entirely optimized out from test cases. For example, if the results of `Vector3.Add()` are not stored anywhere, then there are no observable side-effects, and the entire operation can be optimized out by the JIT. For operations which are susceptible to this, care must be taken to ensure that the operations are not entirely skipped. Try one of the following:
-  * Pass intermediate values to a volatile static field. If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
+  * Pass intermediate values to a volatile static field. This is done in the example code above. If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
   * Pass intermediate values to a no-inline method (`MethodImplOptions.NoInlining`)
   * Conditionally store intermediate values to a field, where the condition is never true at runtime (but is still evaluated).
 * There are two main ways to detect when a test case is being "optimized out":
