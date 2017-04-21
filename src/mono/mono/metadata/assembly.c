@@ -68,8 +68,10 @@ typedef enum {
 	ANAME_EQ_NONE = 0x0,
 	/* Don't compare public key token */
 	ANAME_EQ_IGNORE_PUBKEY = 0x1,
+	/* Don't compare the versions */
+	ANAME_EQ_IGNORE_VERSION = 0x2,
 
-	ANAME_EQ_MASK = 0x1
+	ANAME_EQ_MASK = 0x3
 } AssemblyNameEqFlags;
 
 /* the default search path is empty, the first slot is replaced with the computed value */
@@ -545,8 +547,9 @@ assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNa
 	if (l->culture && r->culture && strcmp (l->culture, r->culture))
 		return FALSE;
 
-	if (l->major != r->major || l->minor != r->minor ||
-			l->build != r->build || l->revision != r->revision)
+	if ((l->major != r->major || l->minor != r->minor ||
+	     l->build != r->build || l->revision != r->revision) &&
+	    (flags & ANAME_EQ_IGNORE_VERSION) == 0)
 		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
 			return FALSE;
 
