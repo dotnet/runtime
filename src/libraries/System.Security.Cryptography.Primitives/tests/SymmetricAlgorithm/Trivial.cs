@@ -289,8 +289,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Throws NRE on netfx")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NRE on netfx (https://github.com/dotnet/corefx/issues/18690)")]
         public static void SetBlockSize_Uses_LegalBlockSizesProperty()
         {
             using (SymmetricAlgorithm s = new DoesNotSetKeySizesFields())
