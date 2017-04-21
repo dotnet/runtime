@@ -55,10 +55,10 @@ goto :Arg_Loop
 :: can be found.
 if not defined VisualStudioVersion (
     if defined VS150COMNTOOLS (
-        call "%VS150COMNTOOLS%\VsDevCmd.bat"
+        call "%VS150COMNTOOLS%VsDevCmd.bat"
         goto :VS2017
     ) else if defined VS140COMNTOOLS (
-        call "%VS140COMNTOOLS%\VsDevCmd.bat"
+        call "%VS140COMNTOOLS%VsDevCmd.bat"
         goto :VS2015
     )
     goto :MissingVersion
@@ -82,7 +82,7 @@ set __VSVersion=vs2017
 set __PlatformToolset=v141
 if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
-    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+    call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 )
 goto :SetupDirs
 
@@ -92,7 +92,7 @@ set __VSVersion=vs2015
 set __PlatformToolset=v140
 if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
-    call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+    call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %__VCBuildArch%
 )
 goto :SetupDirs
 
