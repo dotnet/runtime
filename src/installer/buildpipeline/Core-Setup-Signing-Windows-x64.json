@@ -484,7 +484,8 @@
       "value": "400"
     },
     "RID": {
-      "value": "win81-x64"
+      "value": "win81-x64",
+      "allowOverride": true
     },
     "MsbuildSigningArguments": {
       "value": "/p:RID=$(RID) /p:CertificateId=$(CertificateId) /v:detailed"
