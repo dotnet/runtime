@@ -756,6 +756,12 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlRootAttribut
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlSchemaProviderAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTextAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ImportedFromTypeLibAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.TypeLibFuncAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.TypeLibImportClassAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.TypeLibTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.TypeLibVarAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.TypeLibVersionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 
 // TypesMustExist isn't a goal for netcore20:
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.

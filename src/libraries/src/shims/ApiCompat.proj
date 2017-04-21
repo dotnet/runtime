@@ -24,7 +24,7 @@
   >
     <PropertyGroup>
       <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(ApiCompatImplementationDirs)"</ApiCompatArgs>
-      <ApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">$(ApiCompatArgs) -baseline:"$(ApiCompatBaselineIgnoreFile)"</ApiCompatArgs>
+      <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">-baseline:"$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
       <ApiCompatExitCode>0</ApiCompatExitCode>
 
       <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
@@ -33,7 +33,7 @@
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
-    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot;  &gt; $(ApiCompatBaselineFile)"
           Condition="'$(TargetGroup)'=='netcoreapp'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
@@ -42,7 +42,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSBaselineFile)"
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)/netstandard.dll&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSOnlyBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -50,7 +50,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)/netstandard.dll&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSOnlyBaselineFile)"
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; -baseline:$(ApiCompatNSOnlyBaselineFile) &gt; $(ApiCompatNSBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
