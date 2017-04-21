@@ -1218,13 +1218,13 @@ struct fgArgTabEntry
     regNumber otherRegNum; // The (second) register to use when passing this argument.
 
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-#elif defined(_TARGET_X86_)
+#elif !defined(_TARGET_64BIT_)
     __declspec(property(get = getIsStruct)) bool isStruct;
     bool getIsStruct()
     {
         return varTypeIsStruct(node);
     }
-#endif // _TARGET_X86_
+#endif // !_TARGET_64BIT_
 
 #ifdef _TARGET_ARM_
     void SetIsHfaRegArg(bool hfaRegArg)
