@@ -254,16 +254,22 @@
   <Target Name="BinPlaceProps"
           Condition="'@(PackageFileDir)' != ''"
           DependsOnTargets="GetBinPlaceItems"
-          Inputs="@(PackageFileDir);%(PackageFileDir.ItemName)"
+          Inputs="%(PackageFileDir.Identity);%(PackageFileDir.ItemName)"
           Outputs="unused"  >
+    <ItemGroup>
+      <!-- in the case of an overlapping batch (eg: multiple configurations using same directory)
+           use the first -->
+      <_packageFileDir Include="@(PackageFileDir->Distinct())" />
+    </ItemGroup>
+
     <PropertyGroup>
-      <_propsFilename>$(TargetName)</_propsFilename>
-      <_propsFilename Condition="'$(_propsFilename)' == ''">$(MSBuildProjectName)</_propsFilename>
+      <_propsFilename>$(TargetName).$(TargetGroup)-$(OSGroup)</_propsFilename>
+      <_propsFilename Condition="'$(TargetName)' == ''">$(MSBuildProjectName).$(TargetGroup)-$(OSGroup)</_propsFilename>
       <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
     </PropertyGroup>
 
     <PropertyGroup>
-      <_BinPlaceItemName>%(PackageFileDir.ItemName)</_BinPlaceItemName>
+      <_BinPlaceItemName>%(_packageFileDir.ItemName)</_BinPlaceItemName>
       <_BinPlaceItemName Condition="'$(_BinPlaceItemName)' == ''">BinPlaceItem</_BinPlaceItemName>
     </PropertyGroup>
 
@@ -271,12 +277,16 @@
       <_itemsToSave Include="@($(_BinPlaceItemName))">
         <!-- intentionally empty: to be set by pkgproj -->
         <TargetPath></TargetPath>
+        <TargetFramework>%(_packageFileDir.BuildConfiguration_NuGetTargetMonikerShort)</TargetFramework>
       </_itemsToSave>
 
       <!-- Include doc files. -->
       <_docFiles Condition="'$(BinPlaceRef)' == 'true'" Include="$(XmlDocDir)/**/$(TargetName).xml" />
       <_docFiles>
         <SubFolder Condition="'%(RecursiveDir)' != ''">/$([System.String]::new('%(RecursiveDir)').TrimEnd('\').TrimEnd('/'))</SubFolder>
+      </_docFiles>
+      <_docFiles>
+        <TargetFramework>%(_packageFileDir.BuildConfiguration_NuGetTargetMonikerShort)</TargetFramework>
       </_docFiles>
       <_itemsToSave Include="@(_docFiles)"/>
       
@@ -290,9 +300,9 @@
     
     <Message Importance="low" Text="PackageFileDir: @(PackageFileDir)" />
 
-    <SaveItems ItemName="%(PackageFileDir.SaveItemName)"
+    <SaveItems ItemName="%(_packageFileDir.SaveItemName)"
                Items="@(_itemsToSave)"
-               Files="%(PackageFileDir.Identity)\$(_propsFilename).props" />
+               Files="%(_packageFileDir.Identity)\$(_propsFilename).props"/>
   </Target>
 
   <Target Name="GetBinPlaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">

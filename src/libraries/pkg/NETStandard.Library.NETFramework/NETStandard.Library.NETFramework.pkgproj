@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" InitialTargets="FillInPackageContent"  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" InitialTargets="IncludeFiles"  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
@@ -13,17 +13,14 @@
 
     <IsFrameworkPackage>true</IsFrameworkPackage>
     <IncludeLibFiles>true</IncludeLibFiles>
-
-    <RefFileTargetPath>build/$(TargetFramework)/ref</RefFileTargetPath>
-    <LibFileTargetPath>build/$(TargetFramework)/lib</LibFileTargetPath>
   </PropertyGroup>
   
   <ItemGroup>
-    <StampFile Include="targets\NETStandard.Library.NETFramework.props">
-      <TargetPath>build/$(TargetFramework)</TargetPath>
+    <StampFile Include="targets\NETStandard.Library.NETFramework.common.props">
+      <TargetPath>build</TargetPath>
     </StampFile>
-    <File Include="targets\NETStandard.Library.NETFramework.targets">
-      <TargetPath>build/$(TargetFramework)</TargetPath>
+    <File Include="targets\**\*.*" Exclude="@(StampFile)">
+      <TargetPath>build/%(RecursiveDir)</TargetPath>
     </File>
   </ItemGroup>
 
@@ -35,8 +32,7 @@
 
   <Import Project="$(SourceDir)\shims\netfxreference.props" />
 
-  <!-- runs as initial target -->
-  <Target Name="FillInPackageContent">
+  <Target Name="IncludeNETStandardShims">
     <ItemGroup>
       <_refFileNames Include="@(RefFile->'%(FileName)')" Condition="'%(Extension)' == '.dll'" />
       <_libFileNames Include="@(LibFile->'%(FileName)')" Condition="'%(Extension)' == '.dll'" />
@@ -53,12 +49,12 @@
       <_excludeShimsLib Include="@(_netFxReference);@(_libFileNames)"/>
 
       <!-- fill in with netstandard.dll-based shims -->
-      <File Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsRef->'$(NETStandardPackageRefPath)\%(Identity).dll')">
-        <TargetPath>$(RefFileTargetPath)</TargetPath>
-      </File>
-      <File Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsLib->'$(NETStandardPackageRefPath)\%(Identity).dll')">
-        <TargetPath>$(LibFileTargetPath)</TargetPath>
-      </File>
+      <RefFile Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsRef->'$(NETStandardPackageRefPath)\%(Identity).dll')">
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </RefFile>
+      <LibFile Include="$(NETStandardPackageRefPath)\*.dll" Exclude="@(_excludeShimsLib->'$(NETStandardPackageRefPath)\%(Identity).dll')">
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </LibFile>
     </ItemGroup>
   </Target>
 
@@ -93,5 +89,55 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="ExpandClosureFilesByTargetFramework" 
+          AfterTargets="GetClosureFiles"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-Closure-metadata">
+    <ItemGroup>
+      <_closureFileByFileName Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_closureFileByFileName>
+
+      <!-- Create items by framework that fallback to previous framework for non-existent files -->
+      <!-- this could be done better if we used a test project that imported the actual shipping targets -->
+      <_closureFileNet461 Include="@(_closureFileByFileName)" Condition="'%(_closureFileByFileName.TargetFramework)' == 'net461'" />
+      <_closureFileNet462 Include="@(_closureFileByFileName)" Condition="'%(_closureFileByFileName.TargetFramework)' == 'net462'" />
+      <_closureFileNet462 Include="@(_closureFileNet461)" Exclude="@(_closureFileNet462)" />
+      <_closureFileNet47 Include="@(_closureFileByFileName)" Condition="'%(_closureFileByFileName.TargetFramework)' == 'net47'" />
+      <_closureFileNet47 Include="@(_closureFileNet462)" Exclude="@(_closureFileNet47)" />
+
+      <!-- remove all the ones we're operating on, we'll replace with framework-specific closure sets -->
+      <ClosureFile Remove="@(ClosureFile)" />
+
+      <ClosureFile Include="@(_closureFileNet461->'%(Original)')">
+        <FileSet>%(FileSet)-net461</FileSet>
+      </ClosureFile>
+
+      <ClosureFile Include="@(_closureFileNet462->'%(Original)')">
+        <FileSet>%(FileSet)-net462</FileSet>
+      </ClosureFile>
+      
+      <ClosureFile Include="@(_closureFileNet47->'%(Original)')" >
+        <FileSet>%(FileSet)-net47</FileSet>
+      </ClosureFile>
+    </ItemGroup>
+  </Target>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- runs as initial target, overrides IncludeFiles in frameworkPackage.targets to define TFM-specific TargetPath 
+       under the build folder  -->
+  <Target Name="IncludeFiles" DependsOnTargets="IncludeNETStandardShims">
+    <ItemGroup>
+      <!-- Include refs -->
+      <File Include="@(RefFile)">
+        <TargetPath Condition="'%(RefFile.TargetPath)' == ''">build/%(RefFile.TargetFramework)/ref%(RefFile.SubFolder)</TargetPath>
+      </File>
+      
+      <!-- Include lib -->
+      <File Include="@(LibFile)">
+        <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">build/%(LibFile.TargetFramework)/lib%(LibFile.SubFolder)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
 </Project>

@@ -1,6 +1,8 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Condition="'$(ImplicitlyExpandNETStandardFacades)' == 'true'">
-    <Reference Include="$(MSBuildThisFileDirectory)\ref\*.dll">
+    <_NETStandardLibraryNETFrameworkReference Include="$(MSBuildThisFileDirectory)\ref\*.dll" 
+                                              Exclude="@(_NETStandardLibraryNETFrameworkReference->'$(MSBuildThisFileDirectory)\ref\%(FileName).dll'" />
+    <Reference Include="@(_NETStandardLibraryNETFrameworkReference)">
       <!-- Private = false to make these reference only -->
       <Private>false</Private>
       <NuGetPackageId>NETStandard.Library.NETFramework</NuGetPackageId>
@@ -8,7 +10,10 @@
       <NuGetIsFrameworkReference>false</NuGetIsFrameworkReference>
       <NuGetSourceType>Package</NuGetSourceType>
     </Reference>
-    <ReferenceCopyLocalPaths Include="$(MSBuildThisFileDirectory)\lib\*.dll">
+
+    <_NETStandardLibraryNETFrameworkLib Include="$(MSBuildThisFileDirectory)\lib\*.dll" 
+                                        Exclude="@(_NETStandardLibraryNETFrameworkLib->'$(MSBuildThisFileDirectory)\ref\%(FileName).dll'" />
+    <ReferenceCopyLocalPaths Include="@(_NETStandardLibraryNETFrameworkLib)">
       <Private>false</Private>
       <NuGetPackageId>NETStandard.Library.NETFramework</NuGetPackageId>
       <NuGetPackageVersion>$(NETStandardLibraryPackageVersion)</NuGetPackageVersion>
