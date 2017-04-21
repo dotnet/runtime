@@ -324,5 +324,28 @@ namespace System
         public static extern int GetCurrentApplicationUserModelId(
             ref uint applicationUserModelIdLength,
             byte[] applicationUserModelId);
+
+        public static bool IsNonZeroLowerBoundArraySupported
+        {
+            get
+            {
+                if (s_lazyNonZeroLowerBoundArraySupported == null)
+                {
+                    bool nonZeroLowerBoundArraysSupported = false;
+                    try
+                    {
+                        Array.CreateInstance(typeof(int), new int[] { 5 }, new int[] { 5 });
+                        nonZeroLowerBoundArraysSupported = true;
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                    }
+                    s_lazyNonZeroLowerBoundArraySupported = Tuple.Create<bool>(nonZeroLowerBoundArraysSupported);
+                }
+                return s_lazyNonZeroLowerBoundArraySupported.Item1;
+            }
+        }
+
+        private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
     }
 }

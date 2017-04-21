@@ -162,9 +162,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<ArgumentException>(() => ic.CopyTo(new CryptographicAttributeObject[2, 2], 0));
             Assert.Throws<InvalidCastException>(() => ic.CopyTo(new int[10], 0));
 
-            // Array has non-zero lower bound
-            Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
-            Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                // Array has non-zero lower bound
+                Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+                Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
+            }
         }
 
         private static void AssertEquals(CryptographicAttributeObjectCollection c, IList<CryptographicAttributeObject> expected)

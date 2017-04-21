@@ -170,9 +170,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<ArgumentException>(() => ic.CopyTo(new CmsRecipient[2, 2], 1));
             Assert.Throws<InvalidCastException>(() => ic.CopyTo(new int[10], 1));
 
-            // Array has non-zero lower bound
-            Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
-            Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                // Array has non-zero lower bound
+                Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+                Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
+            }
         }
 
 

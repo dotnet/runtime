@@ -140,9 +140,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, 6));
 
-            // Array has non-zero lower bound
-            Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
-            Assert.Throws<IndexOutOfRangeException>(() => col.CopyTo(array, 0));
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                // Array has non-zero lower bound
+                Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+                Assert.Throws<IndexOutOfRangeException>(() => col.CopyTo(array, 0));
+            }
         }
 
 
