@@ -114,6 +114,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop default SecurityProtocol to Ssl3; explicitly changed to SystemDefault for core.")]
         public static void SecurityProtocol_Roundtrips()
         {
             var orig = (SecurityProtocolType)0; // SystemDefault.
@@ -156,13 +157,9 @@ namespace System.Net.Tests
         {
             const int ssl2Client = 0x00000008;
             const int ssl2Server = 0x00000004;
-
-            SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
-#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
-            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
-            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
-#pragma warning restore
+            const SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = ssl2);
+
             AssertExtensions.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePoints = -1);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.DefaultConnectionLimit = 0);
@@ -181,6 +178,20 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ReceiveBufferSize = -2);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => sp.SetTcpKeepAlive(true, -1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => sp.SetTcpKeepAlive(true, 1, -1));
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Ssl3 is supported by desktop but explicitly not by core")]
+        [Fact]
+        public static void SecurityProtocol_Ssl3_NotSupported()
+        {
+            const int ssl2Client = 0x00000008;
+            const int ssl2Server = 0x00000004;
+            const SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
+
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
+            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
+            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
+#pragma warning restore
         }
 
         [Fact]
@@ -217,6 +228,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop ServicePoint lifetime is slightly longer due to implementation details of real implementation")]
         public static void FindServicePoint_Collectible()
         {
             string address = "http://" + Guid.NewGuid().ToString("N");
