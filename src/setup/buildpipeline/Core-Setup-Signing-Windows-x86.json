@@ -457,7 +457,8 @@
       "value": "400"
     },
     "RID": {
-      "value": "win81-x86"
+      "value": "win81-x86",
+      "allowOverride": true
     },
     "PB_PortableBuild": {
       "value": "",

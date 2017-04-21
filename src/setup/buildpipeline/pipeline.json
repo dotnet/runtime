@@ -150,7 +150,8 @@
         {
           "Name": "Core-Setup-Signing-Windows-x64",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuild": "-portable",
+            "RID": "win-x64"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -170,7 +171,8 @@
         {
           "Name": "Core-Setup-Signing-Windows-x86",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuild": "-portable",
+            "RID": "win-x86"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
