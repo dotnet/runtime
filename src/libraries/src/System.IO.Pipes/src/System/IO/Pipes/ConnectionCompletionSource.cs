@@ -38,6 +38,8 @@ namespace System.IO.Pipes
         {
             TrySetException(Win32Marshal.GetExceptionForWin32Error(errorCode));
         }
+
+        protected override void HandleUnexpectedCancellation() => TrySetException(Error.GetOperationAborted());
     }
 
     internal struct VoidResult { }

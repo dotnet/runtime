@@ -254,7 +254,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
-        public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_OperationCanceledException()
+        public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_IOException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
             {
@@ -263,7 +263,7 @@ namespace System.IO.Pipes.Tests
                 Task waitForConnectionTask = server.WaitForConnectionAsync(cts.Token);
 
                 Assert.True(Interop.CancelIoEx(server.SafePipeHandle), "Outer cancellation failed");
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitForConnectionTask);
+                await Assert.ThrowsAsync<IOException>(() => waitForConnectionTask);
             }
         }
 

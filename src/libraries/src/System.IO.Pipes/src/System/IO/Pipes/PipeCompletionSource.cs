@@ -150,6 +150,8 @@ namespace System.IO.Pipes
             }
         }
 
+        protected virtual void HandleUnexpectedCancellation() => TrySetCanceled();
+
         private void CompleteCallback(int resultState)
         {
             Debug.Assert(resultState == ResultSuccess || resultState == ResultError, "Unexpected result state " + resultState);
@@ -162,9 +164,7 @@ namespace System.IO.Pipes
                 {
                     if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
                     {
-                        // If this is unexpected abortion, we don't want to store _cancellationToken,
-                        // so just generically say it's been canceled.
-                        TrySetCanceled();
+                        HandleUnexpectedCancellation();
                     }
                     else
                     {
