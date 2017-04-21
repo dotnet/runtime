@@ -434,6 +434,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\multicastdelegate\MulticastDelegateCtor\MulticastDelegateCtor.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\reflection\emit\DynMethodJumpStubTests\DynMethodJumpStubTests\DynMethodJumpStubTests.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\runtime\interopservices\marshal\MarshalGetLastWin32Error_PSC\MarshalGetLastWin32Error_PSC.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
