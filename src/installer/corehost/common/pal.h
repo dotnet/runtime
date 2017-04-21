@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdarg>
+#include <cstdint>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
