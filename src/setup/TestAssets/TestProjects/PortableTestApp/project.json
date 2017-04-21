@@ -12,7 +12,7 @@
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
-          "version": "2.0.0-preview1-*"
+          "version": "2.0.0-preview2-*"
         },
         "Newtonsoft.Json": "9.0.1-beta1",
         "xunit": "2.1.0",
