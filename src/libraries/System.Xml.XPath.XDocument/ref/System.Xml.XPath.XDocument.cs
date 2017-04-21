@@ -8,7 +8,6 @@
 
 namespace System.Xml.XPath
 {
-#if !netfx
     public static partial class Extensions
     {
         public static System.Xml.XPath.XPathNavigator CreateNavigator(this System.Xml.Linq.XNode node) { throw null; }
@@ -20,7 +19,6 @@ namespace System.Xml.XPath
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> XPathSelectElements(this System.Xml.Linq.XNode node, string expression) { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> XPathSelectElements(this System.Xml.Linq.XNode node, string expression, System.Xml.IXmlNamespaceResolver resolver) { throw null; }
     }
-#endif // !netfx
     public static partial class XDocumentExtensions
     {
         public static System.Xml.XPath.IXPathNavigable ToXPathNavigable(this System.Xml.Linq.XNode node) { throw null; }
