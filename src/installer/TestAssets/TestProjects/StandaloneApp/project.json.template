@@ -5,7 +5,7 @@
   "frameworks": {
     "netcoreapp2.0": {
       "dependencies": {
-        "Microsoft.NETCore.App": "2.0.0-preview1-*",
+        "Microsoft.NETCore.App": "2.0.0-preview2-*",
         "Newtonsoft.Json": "9.0.1-beta1",
         
         "Microsoft.CodeAnalysis.Analyzers": {
