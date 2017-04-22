@@ -478,13 +478,13 @@
       "value": "PassedViaPipeBuild"
     },
     "SIGNED_PACKAGES": {
-      "value": "false"
+      "value": "true"
     },
     "CertificateId": {
       "value": "400"
     },
     "RID": {
-      "value": "win81-x64",
+      "value": "win-x64",
       "allowOverride": true
     },
     "MsbuildSigningArguments": {
