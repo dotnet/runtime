@@ -1105,4 +1105,7 @@
   <data name="PlatformNotSupported_SchemaImporter" xml:space="preserve">
     <value>The implementation of the function requires System.Runtime.Serialization.SchemaImporter which is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_Canonicalization" xml:space="preserve">
+    <value>The canonicalization process is not supported on this platform.</value>
+  </data>
 </root>

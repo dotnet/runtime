@@ -1620,12 +1620,12 @@ namespace System.Xml
 
         public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
         }
 
         public override void EndCanonicalization()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
         }
 
 
