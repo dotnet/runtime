@@ -6216,6 +6216,12 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
         return true;
     }
 
+    // If the class handles are the same and not null, the return types are compatible.
+    if ((callerRetTypeClass != nullptr) && (callerRetTypeClass == calleeRetTypeClass))
+    {
+        return true;
+    }
+
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
