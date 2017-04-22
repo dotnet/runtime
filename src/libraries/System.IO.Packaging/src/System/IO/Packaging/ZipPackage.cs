@@ -311,6 +311,33 @@ namespace System.IO.Packaging
 
             try
             {
+                if (s.CanSeek)
+                {
+                    switch (packageFileMode)
+                    {
+                        case FileMode.Open:
+                            if (s.Length == 0)
+                            {
+                                throw new FileFormatException(SR.ZipZeroSizeFileIsNotValidArchive);
+                            }
+                            break;
+
+                        case FileMode.CreateNew:
+                            if (s.Length != 0)
+                            {
+                                throw new IOException(SR.CreateNewOnNonEmptyStream);
+                            }
+                            break;
+
+                        case FileMode.Create:
+                            if (s.Length != 0)
+                            {
+                                s.SetLength(0); // Discard existing data
+                            }
+                            break;
+                    }
+                }
+
                 ZipArchiveMode zipArchiveMode = ZipArchiveMode.Update;
                 if (packageFileAccess == FileAccess.Read)
                     zipArchiveMode = ZipArchiveMode.Read;
