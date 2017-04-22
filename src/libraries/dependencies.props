@@ -9,8 +9,8 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>e42204ec9796f5ac1363bfdd2fa12ffcc2532a6a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>e42204ec9796f5ac1363bfdd2fa12ffcc2532a6a</CoreClrCurrentRef>
+    <CoreFxCurrentRef>70c2cfd9f1be592ed5d2f895dfe2e35f115d29de</CoreFxCurrentRef>
+    <CoreClrCurrentRef>70c2cfd9f1be592ed5d2f895dfe2e35f115d29de</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>e84480e8160b65a59a4868ed5cddbba30f34b976</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>e84480e8160b65a59a4868ed5cddbba30f34b976</ProjectNTfsTestILCCurrentRef>
@@ -20,8 +20,8 @@
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview2-25222-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>preview2-25221-07</CoreClrExpectedPrerelease>
+    <CoreFxExpectedPrerelease>preview2-25222-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>preview2-25222-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25221-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25221-00</ProjectNTfsTestILCExpectedPrerelease>
