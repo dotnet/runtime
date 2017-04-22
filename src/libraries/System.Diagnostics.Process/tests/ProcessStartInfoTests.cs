@@ -43,8 +43,8 @@ namespace System.Diagnostics.Tests
             environment.Remove("NewKey");
             Assert.Equal(countItems + 1, environment.Count);
 
-            environment.Add("NewKey2", "NewValue2Overriden");
-            Assert.Equal("NewValue2Overriden", environment["NewKey2"]);
+            environment.Add("NewKey2", "NewValue2Overridden");
+            Assert.Equal("NewValue2Overridden", environment["NewKey2"]);
 
             //Clear
             environment.Clear();
@@ -128,8 +128,8 @@ namespace System.Diagnostics.Tests
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() => environment.Add(null, "NewValue2"));
 
-            environment.Add("NewKey2", "NewValue2OverridenAgain");
-            Assert.Equal("NewValue2OverridenAgain", environment["NewKey2"]);
+            environment.Add("NewKey2", "NewValue2OverriddenAgain");
+            Assert.Equal("NewValue2OverriddenAgain", environment["NewKey2"]);
 
             //Remove Item
             environment.Remove("NewKey98");
@@ -141,11 +141,11 @@ namespace System.Diagnostics.Tests
             //"Exception not thrown with null key"
             Assert.Throws<KeyNotFoundException>(() => environment["1bB"]);
 
-            Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey2", "NewValue2OverridenAgain")));
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverridenAgain")));
+            Assert.True(environment.Contains(new KeyValuePair<string, string>("NewKey2", "NewValue2OverriddenAgain")));
+            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), environment.Contains(new KeyValuePair<string, string>("NEWKeY2", "NewValue2OverriddenAgain")));
 
-            Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey2", "newvalue2overridenagain")));
-            Assert.False(environment.Contains(new KeyValuePair<string, string>("newkey2", "newvalue2overridenagain")));
+            Assert.False(environment.Contains(new KeyValuePair<string, string>("NewKey2", "newvalue2Overriddenagain")));
+            Assert.False(environment.Contains(new KeyValuePair<string, string>("newkey2", "newvalue2Overriddenagain")));
 
             //Use KeyValuePair Enumerator
             string[] results = new string[2];
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tests
             x.MoveNext();
             results[1] = x.Current.Key + " " + x.Current.Value;
 
-            Assert.Equal(new string[] { "NewKey NewValue", "NewKey2 NewValue2OverridenAgain" }, results.OrderBy(s => s));
+            Assert.Equal(new string[] { "NewKey NewValue", "NewKey2 NewValue2OverriddenAgain" }, results.OrderBy(s => s));
 
             //IsReadonly
             Assert.False(environment.IsReadOnly);
@@ -471,8 +471,8 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(null, () => psi.EnvironmentVariables.Add("NewKey2", "NewValue2"));
             psi.EnvironmentVariables.Add("NewKey3", "NewValue3");
 
-            psi.Environment.Add("NewKey3", "NewValue3Overriden");
-            Assert.Equal("NewValue3Overriden", psi.Environment["NewKey3"]);
+            psi.Environment.Add("NewKey3", "NewValue3Overridden");
+            Assert.Equal("NewValue3Overridden", psi.Environment["NewKey3"]);
 
             psi.EnvironmentVariables.Clear();
             Assert.Equal(0, psi.Environment.Count);
@@ -721,7 +721,7 @@ namespace System.Diagnostics.Tests
 
             result = null;
             index = 0;
-            foreach (KeyValuePair<string, string> e1 in environmentVariables)
+            foreach (DictionaryEntry e1 in environmentVariables)
             {
                 index++;
                 result += e1.Key;
@@ -744,16 +744,15 @@ namespace System.Diagnostics.Tests
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() => environmentVariables.Add(null, "NewValue2"));
 
-            //Invalid Key to add
             Assert.Throws<ArgumentException>(() => environmentVariables.Add("newkey2", "NewValue2"));
 
-            //Use KeyValuePair Enumerator
-            var x = environmentVariables.GetEnumerator() as IEnumerator<KeyValuePair<string, string>>;
+            //Use DictionaryEntry Enumerator
+            var x = environmentVariables.GetEnumerator() as IEnumerator;
             x.MoveNext();
-            var y1 = x.Current;
+            var y1 = (DictionaryEntry)x.Current;
             Assert.Equal("NewKey newvalue", y1.Key + " " + y1.Value);
             x.MoveNext();
-            y1 = x.Current;
+            y1 = (DictionaryEntry)x.Current;
             Assert.Equal("newkey2 NewValue2", y1.Key + " " + y1.Value);
 
             environmentVariables.Add("newkey3", "newvalue3");

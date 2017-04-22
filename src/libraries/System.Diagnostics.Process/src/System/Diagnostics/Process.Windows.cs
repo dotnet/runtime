@@ -648,7 +648,7 @@ namespace System.Diagnostics
                     if (startInfo._environmentVariables != null)
                     {
                         creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
-                        byte[] environmentBytes = EnvironmentVariablesToByteArray(startInfo.Environment);
+                        byte[] environmentBytes = EnvironmentVariablesToByteArray(startInfo._environmentVariables);
                         environmentHandle = GCHandle.Alloc(environmentBytes, GCHandleType.Pinned);
                         environmentPtr = environmentHandle.AddrOfPinnedObject();
                     }
