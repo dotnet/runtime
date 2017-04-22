@@ -18,6 +18,26 @@
       <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
       <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32Unix.cs">
+      <Link>Internals\Helper.Win32Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetsWindows)' == 'true'">
+	  <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs">
+      <Link>Internals\Helper.Win32.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetsUnix)' == 'true'">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs">
+      <Link>Internals\Helper.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.WinRT.cs">
+      <Link>Internals\Helper.WinRT.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
@@ -30,9 +50,6 @@
     </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.cs">
       <Link>Internals\Helper.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.Unix.cs">
-      <Link>Internals\Helper.Win32.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
