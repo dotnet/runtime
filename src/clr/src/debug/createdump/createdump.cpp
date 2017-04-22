@@ -11,7 +11,7 @@ const char* g_help = "createdump [options] pid\n"
 "-m, --micro - create triage minidump.\n" 
 "-d, --diag - enable diagnostic messages.\n";
 
-bool g_diagnostics = true;
+bool g_diagnostics = false;
 
 //
 // Create a minidump using the DAC's enum memory regions interface
@@ -78,7 +78,7 @@ exit:
 //
 int __cdecl main(const int argc, const char* argv[])
 {
-    MINIDUMP_TYPE minidumpType = MiniDumpNormal;
+    MINIDUMP_TYPE minidumpType = MiniDumpWithPrivateReadWriteMemory;
     const char* dumpPathTemplate = "/tmp/coredump.%d";
     const char* programPath = nullptr;
     pid_t pid = 0;
