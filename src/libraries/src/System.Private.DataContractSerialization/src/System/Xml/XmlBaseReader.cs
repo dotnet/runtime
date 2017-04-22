@@ -1869,6 +1869,15 @@ namespace System.Xml
             return _chars;
         }
 
+        public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        {
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
+        }
+
+        public override void EndCanonicalization()
+        {
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
+        }
 
         protected enum QNameType
         {

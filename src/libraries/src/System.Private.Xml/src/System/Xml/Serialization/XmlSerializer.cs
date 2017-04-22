@@ -1040,16 +1040,16 @@ namespace System.Xml.Serialization
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateReader"]/*' />
         ///<internalonly/>
-        protected virtual XmlSerializationReader CreateReader() { throw new PlatformNotSupportedException(); }
+        protected virtual XmlSerializationReader CreateReader() { throw new NotImplementedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize4"]/*' />
         ///<internalonly/>
-        protected virtual object Deserialize(XmlSerializationReader reader) { throw new PlatformNotSupportedException(); }
+        protected virtual object Deserialize(XmlSerializationReader reader) { throw new NotImplementedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateWriter"]/*' />
         ///<internalonly/>
-        protected virtual XmlSerializationWriter CreateWriter() { throw new PlatformNotSupportedException(); }
+        protected virtual XmlSerializationWriter CreateWriter() { throw new NotImplementedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize7"]/*' />
         ///<internalonly/>
-        protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new PlatformNotSupportedException(); }
+        protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new NotImplementedException(); }
 
         internal void SetTempAssembly(TempAssembly tempAssembly, XmlMapping mapping)
         {
