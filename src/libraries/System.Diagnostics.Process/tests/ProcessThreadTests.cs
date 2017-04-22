@@ -23,7 +23,10 @@ namespace System.Diagnostics.Tests
             {
                 if (ThreadState.Terminated != thread.ThreadState)
                 {
-                    Assert.True(thread.Id >= 0);
+                    // On OSX, thread id is a 64bit unsigned value. We truncate the ulong to int
+                    // due to .NET API surface area. Hence, on overflow id can be negative while
+                    // casting the ulong to int.
+                    Assert.True(thread.Id >= 0 || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
                     Assert.Equal(_process.BasePriority, thread.BasePriority);
                     Assert.True(thread.CurrentPriority >= 0);
                     Assert.True(thread.PrivilegedProcessorTime.TotalSeconds >= 0);
