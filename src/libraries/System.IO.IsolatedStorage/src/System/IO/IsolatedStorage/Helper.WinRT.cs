@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Security;
 using Windows.ApplicationModel;
 using Windows.Storage;
@@ -22,16 +21,13 @@ namespace System.IO.IsolatedStorage
             {
                 dataDirectory = ApplicationData.Current.SharedLocalFolder.Path;
             }
+            if (!IsRoaming(scope))
+            {
+                dataDirectory = ApplicationData.Current.LocalFolder.Path;
+            }
             else
             {
-                if (!IsRoaming(scope))
-                {
-                    dataDirectory = ApplicationData.Current.LocalFolder.Path;
-                }
-                else
-                {
-                    dataDirectory = ApplicationData.Current.RoamingFolder.Path;
-                }
+                dataDirectory = ApplicationData.Current.RoamingFolder.Path;
             }
 
             dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
