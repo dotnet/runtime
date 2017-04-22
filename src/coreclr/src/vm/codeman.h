@@ -1490,6 +1490,7 @@ private:
     static unsigned m_LCG_JumpStubBlockAllocCount;
     static unsigned m_LCG_JumpStubBlockFullCount;
 
+public:
     struct JumpStubCache
     {
         JumpStubCache() 
