@@ -690,12 +690,6 @@ GCEvent::GCEvent()
 {
 }
 
-GCEvent::~GCEvent()
-{
-    delete m_impl;
-    m_impl = nullptr;
-}
-
 void GCEvent::CloseEvent()
 {
     assert(m_impl != nullptr);
