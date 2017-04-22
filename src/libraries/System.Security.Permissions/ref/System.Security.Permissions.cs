@@ -27,6 +27,74 @@ namespace System
     }
 }
 
+namespace System.Data.Common
+{
+    public abstract partial class DBDataPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        protected DBDataPermission() { }
+        protected DBDataPermission(System.Data.Common.DBDataPermission permission) { }
+        protected DBDataPermission(System.Data.Common.DBDataPermissionAttribute permissionAttribute) { }
+        protected DBDataPermission(System.Security.Permissions.PermissionState state) { }
+        protected DBDataPermission(System.Security.Permissions.PermissionState state, bool allowBlankPassword) { }
+        public bool AllowBlankPassword { get; set; }
+        public virtual void Add(string connectionString, string restrictions, System.Data.KeyRestrictionBehavior behavior) { }
+        protected void Clear() { }
+        public override System.Security.IPermission Copy() { throw null; }
+        protected virtual System.Data.Common.DBDataPermission CreateInstance() { throw null; }
+        public override void FromXml(System.Security.SecurityElement securityElement) { }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+    }
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method,
+        AllowMultiple = true, Inherited = false)]
+    public abstract partial class DBDataPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        protected DBDataPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(action) { }
+        public bool AllowBlankPassword { get { throw null; } set { } }
+        public string ConnectionString { get { throw null; } set { } }
+        public System.Data.KeyRestrictionBehavior KeyRestrictionBehavior { get { throw null; } set { } }
+        public string KeyRestrictions { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeConnectionString() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public bool ShouldSerializeKeyRestrictions() { throw null; }
+    }
+}
+
+namespace System.Drawing.Printing
+{
+    public sealed partial class PrintingPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        public PrintingPermission(System.Drawing.Printing.PrintingPermissionLevel printingLevel) { }
+        public PrintingPermission(System.Security.Permissions.PermissionState state) { }
+        public System.Drawing.Printing.PrintingPermissionLevel Level { get { throw null; } set { } }
+        public override System.Security.IPermission Copy() { throw null; }
+        public override void FromXml(System.Security.SecurityElement element) { }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+    }
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
+    public sealed partial class PrintingPermissionAttribute : Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public PrintingPermissionAttribute(Security.Permissions.SecurityAction action) : base(action) { }
+        public PrintingPermissionLevel Level { get; set; }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+    public enum PrintingPermissionLevel
+    {
+        AllPrinting = 3,
+        DefaultPrinting = 2,
+        NoPrinting = 0,
+        SafePrinting = 1,
+    }
+}
+
 namespace System.Net.NetworkInformation
 {
     [Flags]
@@ -274,6 +342,7 @@ namespace System.Security
         public XmlSyntaxException(string message, System.Exception inner) : base(message, inner) { }
     }
 }
+
 namespace System.Security.Permissions
 {
     public sealed partial class EnvironmentPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
