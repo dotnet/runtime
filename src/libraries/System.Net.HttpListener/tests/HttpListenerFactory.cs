@@ -97,10 +97,20 @@ namespace System.Net.Tests
 
         public Socket GetConnectedSocket()
         {
-            AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-            Socket socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
-            socket.Connect(Hostname, _port);
-            return socket;
+            // Some platforms or distributions require IPv6 sockets if the OS supports IPv6. Others (e.g. Ubunutu) don't.
+            try
+            {
+                AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+                Socket socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(Hostname, _port);
+                return socket;
+            }
+            catch
+            {
+                Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(Hostname, _port);
+                return socket;
+            }            
         }
 
         public byte[] GetContent(string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
