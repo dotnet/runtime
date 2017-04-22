@@ -107,6 +107,7 @@ class LCGMethodResolver : public DynamicResolver
     friend class ExecutionManager;
     friend class EEJitManager;
     friend class HostCodeHeap;
+    friend struct ExecutionManager::JumpStubCache;
 
 public:
     void Destroy(BOOL fDomainUnload = FALSE);
@@ -162,7 +163,7 @@ private:
     ChunkAllocator m_jitTempData;
     DynamicStringLiteral* m_DynamicStringLiterals;
     IndCellList * m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
-    JumpStubBlockHeader* m_jumpStubBlock;
+    ExecutionManager::JumpStubCache * m_pJumpStubCache;
 };  // class LCGMethodResolver
 
 //---------------------------------------------------------------------------------------
