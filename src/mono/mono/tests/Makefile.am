@@ -817,7 +817,10 @@ PROFILE_DISABLED_TESTS += \
 	call_missing_class.exe \
 	ldfld_missing_field.exe \
 	ldfld_missing_class.exe \
-	vt-sync-method.exe
+	vt-sync-method.exe \
+	resolve_method_bug.2.exe \
+	resolve_field_bug.2.exe \
+	resolve_type_bug.2.exe
 
 # Tests which rely on remoting
 PROFILE_DISABLED_TESTS += \
