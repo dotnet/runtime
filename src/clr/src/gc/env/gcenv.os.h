@@ -50,6 +50,14 @@ struct GCThreadAffinity
 // An event is a synchronization object whose state can be set and reset
 // indicating that an event has occured. It is used pervasively throughout
 // the GC.
+//
+// Note that GCEvent deliberately leaks its contents by not having a non-trivial destructor.
+// This is by design; since all uses of GCEvent have static lifetime, their destructors
+// are run on process exit, potentially concurrently with other threads that may still be
+// operating on the static event. To avoid these sorts of unsafety, GCEvent chooses to
+// not have a destructor at all. The cost of this is leaking a small amount of memory, but
+// this is not a problem since a majority of the uses of GCEvent are static. See CoreCLR#11111
+// for more details on the hazards of static destructors.
 class GCEvent {
 private:
     class Impl;
@@ -58,9 +66,6 @@ private:
 public:
     // Constructs a new uninitialized event.
     GCEvent();
-
-    // Destructs an event.
-    ~GCEvent();
 
     // Closes the event. Attempting to use the event past calling CloseEvent
     // is a logic error.
