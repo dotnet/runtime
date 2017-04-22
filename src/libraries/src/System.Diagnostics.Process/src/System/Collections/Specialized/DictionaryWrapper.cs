@@ -41,18 +41,7 @@ namespace System.Collections.Specialized
         public bool IsFixedSize => ((IDictionary)_contents).IsFixedSize;
         public object SyncRoot => ((IDictionary)_contents).SyncRoot;
 
-        public void Add(string key, string value)
-        {
-            // If the key already exists, overwrite it.
-            if (ContainsKey(key))
-            {
-                this[key] = value;
-            }
-            else
-            {
-                _contents.Add(key, value);
-            }
-        }
+        public void Add(string key, string value) => this[key] = value;
 
         public void Add(KeyValuePair<string, string> item) => Add(item.Key, item.Value);
 
