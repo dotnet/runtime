@@ -687,6 +687,11 @@ if /i "%__ToolsetDir%" == "" (
     exit /b 1
 )
 
+if not exist "%__ToolsetDir%"\buildenv_arm64.cmd goto :Not_EWDK
+call "%__ToolsetDir%"\buildenv_arm64.cmd
+exit /b 0
+
+:Not_EWDK
 set PATH=%__ToolsetDir%\VC_sdk\bin;%PATH%
 set LIB=%__ToolsetDir%\VC_sdk\lib\arm64;%__ToolsetDir%\sdpublic\sdk\lib\arm64
 set INCLUDE=^
