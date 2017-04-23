@@ -48,6 +48,7 @@ namespace System.Collections.Generic
     using System.Collections;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
+    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
 
     /// <summary>
@@ -614,8 +615,15 @@ namespace System.Collections.Generic
                         }
                         entry.hashCode = -1;
                         entry.next = freeList;
-                        entry.key = default(TKey);
-                        entry.value = default(TValue);
+
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                        {
+                            entry.key = default(TKey);
+                        }
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                        {
+                            entry.value = default(TValue);
+                        }
                         freeList = i;
                         freeCount++;
                         version++;
@@ -664,8 +672,15 @@ namespace System.Collections.Generic
 
                         entry.hashCode = -1;
                         entry.next = freeList;
-                        entry.key = default(TKey);
-                        entry.value = default(TValue);
+
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                        {
+                            entry.key = default(TKey);
+                        }
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                        {
+                            entry.value = default(TValue);
+                        }
                         freeList = i;
                         freeCount++;
                         version++;
