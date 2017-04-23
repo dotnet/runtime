@@ -75,7 +75,6 @@ namespace System.Net.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Difference in behavior
         [OuterLoop]
         [Fact]
         public async Task HttpWebResponse_Close_Success()
@@ -96,23 +95,34 @@ namespace System.Net.Tests
                 WebResponse response = await getResponse;
                 HttpWebResponse httpResponse = (HttpWebResponse)response;
                 httpResponse.Close();
-                Assert.Throws<ObjectDisposedException>(() =>
+                if (PlatformDetection.IsFullFramework)
                 {
-                    httpResponse.GetResponseStream();
-                });
+                    Stream stream = httpResponse.GetResponseStream();
+                }
+                else
+                {
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        httpResponse.GetResponseStream();
+                    });
+                }
             });
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Hangs in Desktop
-        public async Task HttpWebResponse_Serialize_Fails()
+        public async Task HttpWebResponse_Serialize_ExpectedResult()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server, "HTTP/1.1 200 OK\r\n");
+                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {utcNow:R}\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n");
 
                 using (WebResponse response = await getResponse)
                 {
@@ -122,7 +132,14 @@ namespace System.Net.Tests
                         BinaryFormatter formatter = new BinaryFormatter();
                         HttpWebResponse hwr = (HttpWebResponse)response;
 
-                        Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
+                        if (PlatformDetection.IsFullFramework)
+                        {
+                            formatter.Serialize(fs, hwr);
+                        }
+                        else
+                        {
+                            Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
+                        }
                     }
                 }
             });

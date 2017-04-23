@@ -38,7 +38,6 @@ namespace System.Net.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public void Select_Success()
         {
@@ -48,7 +47,10 @@ namespace System.Net.Tests
 
 #pragma warning disable 0618 //GlobalProxySelection is Deprecated.
                 Assert.NotNull(GlobalProxySelection.Select);
-                Assert.Equal(GlobalProxySelection.Select, WebRequest.DefaultWebProxy);
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    Assert.Equal(GlobalProxySelection.Select, WebRequest.DefaultWebProxy);
+                }
 #pragma warning restore 0618
 
                 WebRequest.DefaultWebProxy = myProxy;
@@ -87,7 +89,6 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public void GetEmptyWebProxy_Success()
         {
