@@ -17,6 +17,17 @@ namespace System.Net.Tests
     {
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
 
+        public HttpWebRequestHeaderTest()
+        {
+            if (PlatformDetection.IsFullFramework)
+            {
+                // On .NET Framework, the default limit for connections/server is very low (2). 
+                // On .NET Core, the default limit is higher. Since these tests run in parallel,
+                // the limit needs to be increased to avoid timeouts when running the tests.
+                System.Net.ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+            }
+        }
+
         [OuterLoop] 
         [Theory, MemberData(nameof(EchoServers))]
         public void Ctor_VerifyHttpRequestDefaults(Uri remoteServer)
@@ -82,13 +93,19 @@ namespace System.Net.Tests
             Assert.Equal(request.CookieContainer.GetCookies(remoteServer).Count, 2);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] // Difference in behavior
         [OuterLoop]
         [Theory, MemberData(nameof(EchoServers))]
-        public void HttpWebRequest_ServicePoint_Throws(Uri remoteServer)
+        public void HttpWebRequest_ServicePoint_ExpectedResult(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<PlatformNotSupportedException>(() => request.ServicePoint);
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.NotNull(request.ServicePoint);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => request.ServicePoint);
+            }
         }
 
         [OuterLoop]
@@ -133,7 +150,6 @@ namespace System.Net.Tests
             Assert.Equal(Cache.RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hangs in desktop.
         [OuterLoop]
         [Theory, MemberData(nameof(EchoServers))]
         public void HttpWebRequest_ProxySetAfterGetResponse_Fails(Uri remoteServer)
@@ -211,7 +227,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hangs in desktop.
         public void HttpWebRequest_PreAuthenticateGetSet_Ok()
         {
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);

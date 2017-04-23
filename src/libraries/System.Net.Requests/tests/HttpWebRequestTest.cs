@@ -19,14 +19,6 @@ namespace System.Net.Tests
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);
         private readonly NetworkCredential _explicitCredential = new NetworkCredential("user", "password", "domain");
-
-        private HttpWebRequest _savedHttpWebRequest = null;
-        private WebHeaderCollection _savedResponseHeaders = null;
-        private Exception _savedRequestStreamException = null;
-        private Exception _savedResponseException = null;
-
-        private int _requestStreamCallbackCallCount = 0;
-        private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
@@ -245,47 +237,45 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "no exception thrown on netfx")]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
-            _savedHttpWebRequest.Method = "POST";
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
+            request.Method = "POST";
 
-            IAsyncResult asyncResult = _savedHttpWebRequest.BeginGetRequestStream(null, null);
+            IAsyncResult asyncResult = request.BeginGetRequestStream(null, null);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                _savedHttpWebRequest.BeginGetRequestStream(null, null);
+                request.BeginGetRequestStream(null, null);
             });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "request stream not allowed for GET on netfx")]
         public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsInvalidOperationException(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
 
-            IAsyncResult asyncResult = _savedHttpWebRequest.BeginGetResponse(null, null);
+            IAsyncResult asyncResult = request.BeginGetResponse(null, null);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                _savedHttpWebRequest.BeginGetRequestStream(null, null);
+                request.BeginGetRequestStream(null, null);
             });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public void BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
 
-            IAsyncResult asyncResult = _savedHttpWebRequest.BeginGetResponse(null, null);
+            IAsyncResult asyncResult = request.BeginGetResponse(null, null);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                _savedHttpWebRequest.BeginGetResponse(null, null);
+                request.BeginGetResponse(null, null);
             });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public void BeginGetResponse_CreatePostRequestThenAbort_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -296,7 +286,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -313,7 +302,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -323,7 +311,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task GetResponseAsync_GetResponseStream_ExpectNotNull(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -368,7 +355,6 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
         [MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -403,7 +389,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -413,7 +398,6 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
         [MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -469,7 +453,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")] //Test hang forever in desktop.
         public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -526,97 +509,106 @@ namespace System.Net.Tests
             Assert.True(responseBody.Contains("Content-Type"));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
-            _savedHttpWebRequest.Method = "POST";
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
+            request.Method = "POST";
+            RequestState state = new RequestState();
+            state.Request = request;
 
-            _savedHttpWebRequest.BeginGetResponse(new AsyncCallback(RequestStreamCallback), null);
+            request.BeginGetResponse(new AsyncCallback(RequestStreamCallback), state);
 
-            _savedHttpWebRequest.Abort();
-            _savedHttpWebRequest = null;
-            WebException wex = _savedRequestStreamException as WebException;
+            request.Abort();
+            Assert.Equal(1, state.RequestStreamCallbackCallCount);
+            WebException wex = state.SavedRequestStreamException as WebException;
             Assert.Equal(WebExceptionStatus.RequestCanceled, wex.Status);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ResponseCallback not called after Abort on netfx")]
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
+            RequestState state = new RequestState();
+            state.Request = request;
 
-            _savedHttpWebRequest.BeginGetResponse(new AsyncCallback(ResponseCallback), null);
+            request.BeginGetResponse(new AsyncCallback(ResponseCallback), state);
 
-            _savedHttpWebRequest.Abort();
-            Assert.Equal(1, _responseCallbackCallCount);
+            request.Abort();
+            Assert.Equal(1, state.ResponseCallbackCallCount);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
+        [ActiveIssue(18800)]
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
+            RequestState state = new RequestState();
+            state.Request = request;
 
-            _savedHttpWebRequest.BeginGetResponse(new AsyncCallback(ResponseCallback), null);
+            request.BeginGetResponse(new AsyncCallback(ResponseCallback), state);
 
-            _savedHttpWebRequest.Abort();
-            WebException wex = _savedResponseException as WebException;
+            request.Abort();
+            WebException wex = state.SavedResponseException as WebException;
             Assert.Equal(WebExceptionStatus.RequestCanceled, wex.Status);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetResponseUsingNoCallbackThenAbort_Success(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
 
-            _savedHttpWebRequest.BeginGetResponse(null, null);
+            request.BeginGetResponse(null, null);
 
-            _savedHttpWebRequest.Abort();
+            request.Abort();
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_CreateRequestThenAbort_Success(Uri remoteServer)
         {
-            _savedHttpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
 
-            _savedHttpWebRequest.Abort();
+            request.Abort();
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
-            _requestStreamCallbackCallCount++;
+            RequestState state = (RequestState) asynchronousResult.AsyncState;
+            state.RequestStreamCallbackCallCount++;
 
             try
             {
-                Stream stream = (Stream)_savedHttpWebRequest.EndGetRequestStream(asynchronousResult);
+                HttpWebRequest request = state.Request;
+                state.Response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
+      
+                Stream stream = (Stream) request.EndGetRequestStream(asynchronousResult);
                 stream.Dispose();
             }
             catch (Exception ex)
             {
-                _savedRequestStreamException = ex;
+                state.SavedRequestStreamException = ex;
             }
         }
 
         private void ResponseCallback(IAsyncResult asynchronousResult)
         {
-            _responseCallbackCallCount++;
+            RequestState state = (RequestState) asynchronousResult.AsyncState;
+            state.ResponseCallbackCallCount++;
 
             try
             {
-                using (HttpWebResponse response = (HttpWebResponse)_savedHttpWebRequest.EndGetResponse(asynchronousResult))
+                using (HttpWebResponse response = (HttpWebResponse) state.Request.EndGetResponse(asynchronousResult))
                 {
-                    _savedResponseHeaders = response.Headers;
+                    state.SavedResponseHeaders = response.Headers;
                 }
             }
             catch (Exception ex)
             {
-                _savedResponseException = ex;
+                state.SavedResponseException = ex;
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public void HttpWebRequest_Serialize_Fails()
         {
@@ -625,8 +617,30 @@ namespace System.Net.Tests
                 BinaryFormatter formatter = new BinaryFormatter();
                 var hwr = HttpWebRequest.CreateHttp("http://localhost");
 
-                Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // .NET Framework throws a more detailed exception.
+                    // System.Runtime.Serialization.SerializationException):
+                    //  Type 'System.Net.WebRequest+WebProxyWrapper' in Assembly 'System, Version=4.0.0.
+                    //        0, Culture=neutral, PublicKeyToken=b77a5c561934e089' is not marked as serializable.
+                    Assert.Throws<System.Runtime.Serialization.SerializationException>(() => formatter.Serialize(fs, hwr));
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
+                }
             }
         }
     }
+
+    public class RequestState
+    {
+      public HttpWebRequest Request;
+      public HttpWebResponse Response;
+      public WebHeaderCollection SavedResponseHeaders;
+      public int RequestStreamCallbackCallCount;
+      public int ResponseCallbackCallCount;
+      public Exception SavedRequestStreamException;
+      public Exception SavedResponseException;
+    }    
 }

@@ -92,7 +92,6 @@ namespace System.Net.Tests
         public abstract Task<WebResponse> GetResponseAsync(WebRequest request);
         public abstract Task<Stream> GetRequestStreamAsync(WebRequest request);
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
         [Fact]
         public async Task ReadFile_ContainsExpectedContent()
         {
@@ -109,10 +108,8 @@ namespace System.Net.Tests
                 using (WebResponse response = await GetResponseAsync(request))
                 {
                     Assert.Equal(data.Length, response.ContentLength);
-                    Assert.Equal(data.Length.ToString(), response.Headers[HttpRequestHeader.ContentLength]);
 
                     Assert.Equal("application/octet-stream", response.ContentType);
-                    Assert.Equal("application/octet-stream", response.Headers[HttpRequestHeader.ContentType]);
 
                     Assert.True(response.SupportsHeaders);
                     Assert.NotNull(response.Headers);
@@ -232,7 +229,7 @@ namespace System.Net.Tests
 
     public abstract class AsyncFileWebRequestTestBase : FileWebRequestTestBase
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17842")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "concurrent read/write not supported on netfx")]
         [Fact]
         public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
         {
