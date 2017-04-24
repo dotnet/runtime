@@ -23,7 +23,7 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         mov   eax, [esp + 8]  // ebx: CONTEXT *
 
         mov   ebp, [eax + CONTEXT_Ebp]
-        mov   esp, [eax + CONTEXT_ResumeEsp]
+        mov   esp, [eax + CONTEXT_Esp]
         mov   ebx, [eax + CONTEXT_Ebx]
         mov   esi, [eax + CONTEXT_Esi]
         mov   edi, [eax + CONTEXT_Edi]

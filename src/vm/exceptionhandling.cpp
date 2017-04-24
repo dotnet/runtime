@@ -135,7 +135,7 @@ void FixContext(PCONTEXT pContextRecord)
 
 #ifdef _TARGET_X86_
     size_t resumeSp = EECodeManager::GetResumeSp(pContextRecord);
-    FIXUPREG(ResumeEsp, resumeSp);
+    FIXUPREG(Esp, resumeSp);
 #endif // _TARGET_X86_
 
 #undef FIXUPREG
