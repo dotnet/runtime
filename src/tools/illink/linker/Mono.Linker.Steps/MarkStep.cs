@@ -544,11 +544,14 @@ namespace Mono.Linker.Steps {
 
 			reference = GetOriginalType (reference);
 
+			if (reference is FunctionPointerType)
+				return null;
+
 			if (reference is GenericParameter)
 				return null;
 
 //			if (IgnoreScope (reference.Scope))
-//				return;
+//				return null;
 
 			TypeDefinition type = ResolveTypeDefinition (reference);
 
@@ -1029,10 +1032,29 @@ namespace Mono.Linker.Steps {
 				if (mod != null)
 					MarkModifierType (mod);
 
-				type = ((TypeSpecification) type).ElementType;
+				var fnptr = type as FunctionPointerType;
+				if (fnptr != null) {
+					MarkParameters (fnptr);
+					MarkType (fnptr.ReturnType);
+					break; // FunctionPointerType is the original type
+				}
+				else {
+					type = ((TypeSpecification) type).ElementType;
+				}
 			}
 
 			return type;
+		}
+
+		void MarkParameters (FunctionPointerType fnptr)
+		{
+			if (!fnptr.HasParameters)
+				return;
+
+			for (int i = 0; i < fnptr.Parameters.Count; i++)
+			{
+				MarkType (fnptr.Parameters[i].ParameterType);
+			}
 		}
 
 		void MarkModifierType (IModifierType mod)
