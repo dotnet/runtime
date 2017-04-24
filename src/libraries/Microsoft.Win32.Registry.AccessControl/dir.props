@@ -4,6 +4,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
-    <IsDesktopFacade>true</IsDesktopFacade>
   </PropertyGroup>
 </Project>

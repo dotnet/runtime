@@ -6,7 +6,6 @@
     <AssemblyKey>MSFT</AssemblyKey>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
-    <IsDesktopFacade>true</IsDesktopFacade>
     <IsUAP>true</IsUAP>
     <ISUAPRef>false</ISUAPRef>
   </PropertyGroup>

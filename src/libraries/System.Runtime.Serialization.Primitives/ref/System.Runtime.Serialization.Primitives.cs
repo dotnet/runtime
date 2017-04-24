@@ -15,7 +15,6 @@
 
 namespace System.Runtime.Serialization
 {
-#if !netfx
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = false, AllowMultiple = false)]
     public sealed partial class CollectionDataContractAttribute : System.Attribute
     {
@@ -81,14 +80,12 @@ namespace System.Runtime.Serialization
         public InvalidDataContractException(string message, System.Exception innerException) { }
         protected InvalidDataContractException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-#endif // !netfx
     public partial interface ISerializationSurrogateProvider
     {
         object GetDeserializedObject(object obj, System.Type targetType);
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
     }
-#if !netfx
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = true, AllowMultiple = true)]
     public sealed partial class KnownTypeAttribute : System.Attribute
     {
@@ -97,5 +94,4 @@ namespace System.Runtime.Serialization
         public string MethodName { get { throw null; } }
         public System.Type Type { get { throw null; } }
     }
-#endif // !netfx
 }

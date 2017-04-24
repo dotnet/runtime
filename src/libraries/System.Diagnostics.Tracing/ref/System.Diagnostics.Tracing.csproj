@@ -3,8 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);netfx</DefineConstants>
     <ProjectGuid>{0D8C8BAE-E5A5-4E9F-B101-3D18BD81D261}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -14,7 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Diagnostics.Tracing.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System.Diagnostics.Tracing.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
