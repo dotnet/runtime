@@ -45,11 +45,11 @@ namespace System.Diagnostics
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         /// <example>
-        /// Id looks like '|Server1-5d183ab6-a000b421.1.8e2d4c28_1.':<para />
-        ///  - '|Server1-5d183ab6-a000b421.' - Id of the first, top-most, Activity created<para />
-        ///  - '|Server1-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
-        ///  - '|Server1-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
-        /// 'Server1-5d183ab6-a000b421' is a <see cref="RootId"/> for the first Activity and all its children
+        /// Id looks like '|a000b421-5d183ab6-Server1.1.8e2d4c28_1.':<para />
+        ///  - '|a000b421-5d183ab6-Server1.' - Id of the first, top-most, Activity created<para />
+        ///  - '|a000b421-5d183ab6-Server1.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
+        ///  - '|a000b421-5d183ab6-Server1.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// 'a000b421-5d183ab6-Server1' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
         public string Id { get; private set; }
 
