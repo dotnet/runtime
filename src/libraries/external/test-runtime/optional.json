@@ -4,7 +4,7 @@
       "dependencies": {
         "Microsoft.DotNet.IBCMerge": "4.6.0-alpha-00001",
         "Microsoft.DotNet.UAP.TestTools": "1.0.2",
-        "TestILCNugetPackageForCoreFX": "1.0.0-beta-25221-00"
+        "TestILCNugetPackageForCoreFX": "1.0.0-beta-25224-00"
       }
     }
   }
