@@ -22,7 +22,6 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(false, false)]
@@ -61,13 +60,27 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     var stopwatch = Stopwatch.StartNew();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    if (PlatformDetection.IsFullFramework)
                     {
-                        Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken);
-                        await triggerRequestCancel.Task;
-                        cts.Cancel();
-                        await getResponse;
-                    });
+                        // .NET Framework throws WebException instead of OperationCancledException.
+                        await Assert.ThrowsAnyAsync<WebException>(async () =>
+                        {
+                            Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken);
+                            await triggerRequestCancel.Task;
+                            cts.Cancel();
+                            await getResponse;
+                        });
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                        {
+                            Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken);
+                            await triggerRequestCancel.Task;
+                            cts.Cancel();
+                            await getResponse;
+                        });
+                    }
                     stopwatch.Stop();
                     _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
 
@@ -77,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18864")] // Hangs on NETFX
         [ActiveIssue(9075, TestPlatforms.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
         [OuterLoop] // includes seconds of delay
         [Fact]
@@ -86,7 +99,7 @@ namespace System.Net.Http.Functional.Tests
             return ReadAsStreamAsync_ReadAsync_Cancel_TaskCanceledQuickly(false);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18864")] // Hangs on NETFX
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(true)]
