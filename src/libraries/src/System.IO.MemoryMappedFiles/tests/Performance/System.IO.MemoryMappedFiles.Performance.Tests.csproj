@@ -9,12 +9,14 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="..\MemoryMappedFilesTestsBase.cs" />
-    <Compile Include="..\MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
-    <Compile Include="..\MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
+    <Compile Include="..\MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="..\MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
