@@ -352,9 +352,6 @@
   <data name="TypeNotIEnumerable" xml:space="preserve">
     <value>Type '{0}' is not IEnumerable</value>
   </data>
-  <data name="InvalidCast" xml:space="preserve">
-    <value>Cannot cast from type '{0}' to type '{1}</value>
-  </data>
   <data name="UnhandledBinary" xml:space="preserve">
     <value>Unhandled binary: {0}</value>
   </data>
@@ -427,9 +424,6 @@
   <data name="NonLocalJumpWithValue" xml:space="preserve">
     <value>Cannot jump to non-local label '{0}' with a value. Only jumps to labels defined in outer blocks can pass values.</value>
   </data>
-  <data name="ExtensionNotReduced" xml:space="preserve">
-    <value>Extension should have been reduced.</value>
-  </data>
   <data name="CannotCompileConstant" xml:space="preserve">
     <value>CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value.</value>
   </data>
@@ -438,9 +432,6 @@
   </data>
   <data name="InvalidLvalue" xml:space="preserve">
     <value>Invalid lvalue for assignment: {0}.</value>
-  </data>
-  <data name="UnknownLiftType" xml:space="preserve">
-    <value>unknown lift type: '{0}'.</value>
   </data>
   <data name="UndefinedVariable" xml:space="preserve">
     <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>

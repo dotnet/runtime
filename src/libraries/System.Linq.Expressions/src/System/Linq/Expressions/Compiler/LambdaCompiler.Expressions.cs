@@ -181,12 +181,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             expr = node.Expression;
-            if (typeof(LambdaExpression).IsAssignableFrom(expr.Type))
-            {
-                // if the invoke target is a lambda expression tree, first compile it into a delegate
-                expr = Expression.Call(expr, expr.Type.GetMethod("Compile", Array.Empty<Type>()));
-            }
-
+            Debug.Assert(!typeof(LambdaExpression).IsAssignableFrom(expr.Type));
             EmitMethodCall(expr, expr.Type.GetInvokeMethod(), node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitExpressionStart);
         }
 
@@ -926,12 +921,6 @@ namespace System.Linq.Expressions.Compiler
             return;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
-        private static void EmitExtensionExpression(Expression expr)
-        {
-            throw Error.ExtensionNotReduced();
-        }
-
         #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
@@ -1117,24 +1106,6 @@ namespace System.Linq.Expressions.Compiler
 
         #region Expression helpers
 
-        internal static void ValidateLift(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> arguments)
-        {
-            Debug.Assert(variables != null);
-            Debug.Assert(arguments != null);
-
-            if (variables.Count != arguments.Count)
-            {
-                throw Error.IncorrectNumberOfIndexes();
-            }
-            for (int i = 0, n = variables.Count; i < n; i++)
-            {
-                if (!TypeUtils.AreReferenceAssignable(variables[i].Type, arguments[i].Type.GetNonNullableType()))
-                {
-                    throw Error.ArgumentTypesMustMatch();
-                }
-            }
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList)
         {
@@ -1208,17 +1179,12 @@ namespace System.Linq.Expressions.Compiler
                         }
                         else
                         {
-                            switch (nodeType)
-                            {
-                                case ExpressionType.LessThan:
-                                case ExpressionType.LessThanOrEqual:
-                                case ExpressionType.GreaterThan:
-                                case ExpressionType.GreaterThanOrEqual:
-                                    _ilg.Emit(OpCodes.Ldc_I4_0);
-                                    break;
-                                default:
-                                    throw Error.UnknownLiftType(nodeType);
-                            }
+                            Debug.Assert(nodeType == ExpressionType.LessThan
+                                || nodeType == ExpressionType.LessThanOrEqual
+                                || nodeType == ExpressionType.GreaterThan
+                                || nodeType == ExpressionType.GreaterThanOrEqual);
+
+                            _ilg.Emit(OpCodes.Ldc_I4_0);
                         }
                         _ilg.MarkLabel(exit);
                         FreeLocal(anyNull);

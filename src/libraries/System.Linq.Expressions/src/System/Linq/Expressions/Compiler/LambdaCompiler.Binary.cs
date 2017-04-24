@@ -104,29 +104,20 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    switch (b.NodeType)
-                    {
-                        case ExpressionType.Equal:
-                        case ExpressionType.NotEqual:
-                        case ExpressionType.LessThan:
-                        case ExpressionType.LessThanOrEqual:
-                        case ExpressionType.GreaterThan:
-                        case ExpressionType.GreaterThanOrEqual:
-                            if (mc.Type != typeof(bool))
-                            {
-                                throw Error.ArgumentMustBeBoolean(nameof(b));
-                            }
-                            resultType = typeof(bool);
-                            break;
-                        default:
-                            resultType = mc.Type.GetNullableType();
-                            break;
-                    }
+                    Debug.Assert(mc.Type == typeof(bool));
+                    Debug.Assert(b.NodeType == ExpressionType.Equal
+                        || b.NodeType == ExpressionType.NotEqual
+                        || b.NodeType == ExpressionType.LessThan
+                        || b.NodeType == ExpressionType.LessThanOrEqual
+                        || b.NodeType == ExpressionType.GreaterThan
+                        || b.NodeType == ExpressionType.GreaterThanOrEqual);
+
+                    resultType = typeof(bool);
                 }
-                var variables = new ParameterExpression[] { p1, p2 };
-                var arguments = new Expression[] { b.Left, b.Right };
-                ValidateLift(variables, arguments);
-                EmitLift(b.NodeType, resultType, mc, variables, arguments);
+
+                Debug.Assert(TypeUtils.AreReferenceAssignable(p1.Type, b.Left.Type.GetNonNullableType()));
+                Debug.Assert(TypeUtils.AreReferenceAssignable(p2.Type, b.Right.Type.GetNonNullableType()));
+                EmitLift(b.NodeType, resultType, mc, new[] {p1, p2}, new[] {b.Left, b.Right});
             }
             else
             {
@@ -275,8 +266,6 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
                     // Guaranteed to fit within result type: no conversion
                     return;
-                default:
-                    throw ContractUtils.Unreachable;
             }
 
             EmitConvertArithmeticResult(op, leftType);
@@ -387,10 +376,6 @@ namespace System.Linq.Expressions.Compiler
                         EmitLiftedRelational(op, leftType);
                     }
                     break;
-                case ExpressionType.AndAlso:
-                case ExpressionType.OrElse:
-                default:
-                    throw ContractUtils.Unreachable;
             }
         }
 
