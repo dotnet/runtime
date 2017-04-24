@@ -1,18 +1,15 @@
 Compat issues with assembly System.Security.Cryptography.Cng:
 MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.AesCng' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDiffieHellman.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDsa.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPrivateBlob.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPublicBlob.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.DSACng' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.TripleDESCng' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Principal.Windows:
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
@@ -48,4 +45,4 @@ MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Sec
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
-Total Issues: 48
+Total Issues: 45

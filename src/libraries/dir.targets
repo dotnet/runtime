@@ -39,14 +39,8 @@
     <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
     <IsNetFxNETStandardRef Condition="'$(IsNetFxNETStandardRef)' == ''">$(IsNetFxNETStandard)</IsNetFxNETStandardRef>
 
-    <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
-
-    <!-- if building desktop facade, we don't bin place the refs -->
-    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And '$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
-
-    <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
-    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
@@ -98,17 +92,13 @@
     <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>
     </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
+    <_TargetGroupsWithIsAot Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
+      <IsAot>$([System.String]::new('%(Identity)').Contains('aot'))</IsAot>
+    </_TargetGroupsWithIsAot>
     <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netcoreapp">
-      <RefPath>$(RefRootPath)netcoreapp/</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="uap">
-      <RefPath>$(RefRootPath)uap/</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netfx">
-      <RefPath>$(RefRootPath)netfx/</RefPath>
+                           Include="@(_TargetGroupsWithIsAot->WithMetadataValue('IsAot', 'false'))">
+      <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
   </ItemGroup>
 

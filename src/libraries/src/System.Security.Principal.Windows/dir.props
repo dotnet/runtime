@@ -8,6 +8,5 @@
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
     <IsUAP>true</IsUAP>
     <IsUAPRef>false</IsUAPRef>
-    <IsDesktopFacade>true</IsDesktopFacade>
   </PropertyGroup>
 </Project>

@@ -8,9 +8,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
-    <!-- CSC adds a typeforward for the internal nested type StackTrace.TraceFormat but
-         GenFacades doesn't consider this as a viable target for a typeforward since it's internal -->
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'netfx'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />

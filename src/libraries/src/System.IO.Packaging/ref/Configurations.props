@@ -3,10 +3,12 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard1.3;
+      net46;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       netstandard;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
