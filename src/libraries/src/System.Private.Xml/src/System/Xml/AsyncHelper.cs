@@ -16,7 +16,7 @@ namespace System.Xml
 
         public static bool IsSuccess(this Task task)
         {
-            return task.Status == TaskStatus.RanToCompletion;
+            return task.IsCompletedSuccessfully;
         }
 
         public static Task CallVoidFuncWhenFinishAsync<TArg>(this Task task, Action<TArg> func, TArg arg)
