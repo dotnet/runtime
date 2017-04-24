@@ -16,6 +16,19 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#if MEASURE_BLOCK_SIZE
+/* static  */
+size_t BasicBlock::s_Size;
+/* static */
+size_t BasicBlock::s_Count;
+#endif // MEASURE_BLOCK_SIZE
+
+#ifdef DEBUG
+// The max # of tree nodes in any BB
+/* static */
+unsigned BasicBlock::s_nMaxTrees;
+#endif // DEBUG
+
 #ifdef DEBUG
 flowList* ShuffleHelper(unsigned hash, flowList* res)
 {
@@ -803,4 +816,481 @@ bool BasicBlock::isEmpty()
     }
 
     return true;
+}
+
+GenTreeStmt* BasicBlock::FirstNonPhiDef()
+{
+    GenTreePtr stmt = bbTreeList;
+    if (stmt == nullptr)
+    {
+        return nullptr;
+    }
+    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+    while ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_PHI) ||
+           (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_PHI))
+    {
+        stmt = stmt->gtNext;
+        if (stmt == nullptr)
+        {
+            return nullptr;
+        }
+        tree = stmt->gtStmt.gtStmtExpr;
+    }
+    return stmt->AsStmt();
+}
+
+GenTreePtr BasicBlock::FirstNonPhiDefOrCatchArgAsg()
+{
+    GenTreePtr stmt = FirstNonPhiDef();
+    if (stmt == nullptr)
+    {
+        return nullptr;
+    }
+    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+    if ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_CATCH_ARG) ||
+        (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_CATCH_ARG))
+    {
+        stmt = stmt->gtNext;
+    }
+    return stmt;
+}
+
+/*****************************************************************************
+ *
+ *  Mark a block as rarely run, we also don't want to have a loop in a
+ *   rarely run block, and we set it's weight to zero.
+ */
+
+void BasicBlock::bbSetRunRarely()
+{
+    setBBWeight(BB_ZERO_WEIGHT);
+    if (bbWeight == BB_ZERO_WEIGHT)
+    {
+        bbFlags |= BBF_RUN_RARELY; // This block is never/rarely run
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Can a BasicBlock be inserted after this without altering the flowgraph
+ */
+
+bool BasicBlock::bbFallsThrough()
+{
+    switch (bbJumpKind)
+    {
+
+        case BBJ_THROW:
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_EHCATCHRET:
+        case BBJ_RETURN:
+        case BBJ_ALWAYS:
+        case BBJ_LEAVE:
+        case BBJ_SWITCH:
+            return false;
+
+        case BBJ_NONE:
+        case BBJ_COND:
+            return true;
+
+        case BBJ_CALLFINALLY:
+            return ((bbFlags & BBF_RETLESS_CALL) == 0);
+
+        default:
+            assert(!"Unknown bbJumpKind in bbFallsThrough()");
+            return true;
+    }
+}
+
+unsigned BasicBlock::NumSucc(Compiler* comp)
+{
+    // As described in the spec comment of NumSucc at its declaration, whether "comp" is null determines
+    // whether NumSucc and GetSucc yield successors of finally blocks.
+
+    switch (bbJumpKind)
+    {
+
+        case BBJ_THROW:
+        case BBJ_RETURN:
+            return 0;
+
+        case BBJ_EHFILTERRET:
+            if (comp == nullptr)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+
+        case BBJ_EHFINALLYRET:
+        {
+            if (comp == nullptr)
+            {
+                return 0;
+            }
+            else
+            {
+                // The first block of the handler is labelled with the catch type.
+                BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
+                if (hndBeg->bbCatchTyp == BBCT_FINALLY)
+                {
+                    return comp->fgNSuccsOfFinallyRet(this);
+                }
+                else
+                {
+                    assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
+                    // A FAULT block has no successors.
+                    return 0;
+                }
+            }
+        }
+        case BBJ_CALLFINALLY:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+        case BBJ_NONE:
+            return 1;
+        case BBJ_COND:
+            if (bbJumpDest == bbNext)
+            {
+                return 1;
+            }
+            else
+            {
+                return 2;
+            }
+        case BBJ_SWITCH:
+            if (comp == nullptr)
+            {
+                return bbJumpSwt->bbsCount;
+            }
+            else
+            {
+                Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+                return sd.numDistinctSuccs;
+            }
+
+        default:
+            unreached();
+    }
+}
+
+BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+{
+    // As described in the spec comment of GetSucc at its declaration, whether "comp" is null determines
+    // whether NumSucc and GetSucc yield successors of finally blocks.
+
+    assert(i < NumSucc(comp)); // Index bounds check.
+    // printf("bbjk=%d\n", bbJumpKind);
+    switch (bbJumpKind)
+    {
+
+        case BBJ_THROW:
+        case BBJ_RETURN:
+            unreached(); // Should have been covered by assert above.
+
+        case BBJ_EHFILTERRET:
+        {
+            assert(comp != nullptr); // Or else we're not looking for successors.
+            BasicBlock* result = comp->fgFirstBlockOfHandler(this);
+            noway_assert(result == bbJumpDest);
+            // Handler is the (sole) normal successor of the filter.
+            return result;
+        }
+
+        case BBJ_EHFINALLYRET:
+            return comp->fgSuccOfFinallyRet(this, i);
+
+        case BBJ_CALLFINALLY:
+        case BBJ_ALWAYS:
+        case BBJ_EHCATCHRET:
+        case BBJ_LEAVE:
+            return bbJumpDest;
+
+        case BBJ_NONE:
+            return bbNext;
+        case BBJ_COND:
+            if (i == 0)
+            {
+                return bbNext;
+            }
+            else
+            {
+                assert(i == 1);
+                return bbJumpDest;
+            };
+        case BBJ_SWITCH:
+            if (comp == nullptr)
+            {
+                assert(i < bbJumpSwt->bbsCount); // Range check.
+                return bbJumpSwt->bbsDstTab[i];
+            }
+            else
+            {
+                // Remove duplicates.
+                Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+                assert(i < sd.numDistinctSuccs); // Range check.
+                return sd.nonDuplicates[i];
+            }
+
+        default:
+            unreached();
+    }
+}
+
+void BasicBlock::InitVarSets(Compiler* comp)
+{
+    VarSetOps::AssignNoCopy(comp, bbVarUse, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
+    VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));
+
+    bbMemoryUse     = emptyMemoryKindSet;
+    bbMemoryDef     = emptyMemoryKindSet;
+    bbMemoryLiveIn  = emptyMemoryKindSet;
+    bbMemoryLiveOut = emptyMemoryKindSet;
+}
+
+// Returns true if the basic block ends with GT_JMP
+bool BasicBlock::endsWithJmpMethod(Compiler* comp)
+{
+    if (comp->compJmpOpUsed && (bbJumpKind == BBJ_RETURN) && (bbFlags & BBF_HAS_JMP))
+    {
+        GenTree* lastNode = this->lastNode();
+        assert(lastNode != nullptr);
+        return lastNode->OperGet() == GT_JMP;
+    }
+
+    return false;
+}
+
+// Returns true if the basic block ends with either
+//  i) GT_JMP or
+// ii) tail call (implicit or explicit)
+//
+// Params:
+//    comp              - Compiler instance
+//    fastTailCallsOnly - Only consider fast tail calls excluding tail calls via helper.
+//
+bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/)
+{
+    GenTreePtr tailCall                       = nullptr;
+    bool       tailCallsConvertibleToLoopOnly = false;
+    return endsWithJmpMethod(comp) ||
+           endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
+}
+
+//------------------------------------------------------------------------------
+// endsWithTailCall : Check if the block ends with a tail call.
+//
+// Arguments:
+//    comp                            - compiler instance
+//    fastTailCallsOnly               - check for fast tail calls only
+//    tailCallsConvertibleToLoopOnly  - check for tail calls convertible to loop only
+//    tailCall                        - a pointer to a tree that will be set to the call tree if the block
+//                                      ends with a tail call and will be set to nullptr otherwise.
+//
+// Return Value:
+//    true if the block ends with a tail call; false otherwise.
+//
+// Notes:
+//    At most one of fastTailCallsOnly and tailCallsConvertibleToLoopOnly flags can be true.
+//
+bool BasicBlock::endsWithTailCall(Compiler* comp,
+                                  bool      fastTailCallsOnly,
+                                  bool      tailCallsConvertibleToLoopOnly,
+                                  GenTree** tailCall)
+{
+    assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
+    *tailCall   = nullptr;
+    bool result = false;
+
+    // Is this a tail call?
+    // The reason for keeping this under RyuJIT is so as not to impact existing Jit32 x86 and arm
+    // targets.
+    if (comp->compTailCallUsed)
+    {
+        if (fastTailCallsOnly || tailCallsConvertibleToLoopOnly)
+        {
+            // Only fast tail calls or only tail calls convertible to loops
+            result = (bbFlags & BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN);
+        }
+        else
+        {
+            // Fast tail calls, tail calls convertible to loops, and tails calls dispatched via helper
+            result = (bbJumpKind == BBJ_THROW) || ((bbFlags & BBF_HAS_JMP) && (bbJumpKind == BBJ_RETURN));
+        }
+
+        if (result)
+        {
+            GenTree* lastNode = this->lastNode();
+            if (lastNode->OperGet() == GT_CALL)
+            {
+                GenTreeCall* call = lastNode->AsCall();
+                if (tailCallsConvertibleToLoopOnly)
+                {
+                    result = call->IsTailCallConvertibleToLoop();
+                }
+                else if (fastTailCallsOnly)
+                {
+                    result = call->IsFastTailCall();
+                }
+                else
+                {
+                    result = call->IsTailCall();
+                }
+
+                if (result)
+                {
+                    *tailCall = call;
+                }
+            }
+            else
+            {
+                result = false;
+            }
+        }
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+// endsWithTailCallConvertibleToLoop : Check if the block ends with a tail call convertible to loop.
+//
+// Arguments:
+//    comp  -  compiler instance
+//    tailCall  -  a pointer to a tree that will be set to the call tree if the block
+//                 ends with a tail call convertible to loop and will be set to nullptr otherwise.
+//
+// Return Value:
+//    true if the block ends with a tail call convertible to loop.
+//
+bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall)
+{
+    bool fastTailCallsOnly              = false;
+    bool tailCallsConvertibleToLoopOnly = true;
+    return endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, tailCall);
+}
+
+/*****************************************************************************
+ *
+ *  Allocate a basic block but don't append it to the current BB list.
+ */
+
+BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
+{
+    BasicBlock* block;
+
+    /* Allocate the block descriptor and zero it out */
+    assert(fgSafeBasicBlockCreation);
+
+    block = new (this, CMK_BasicBlock) BasicBlock;
+
+#if MEASURE_BLOCK_SIZE
+    BasicBlock::s_Count += 1;
+    BasicBlock::s_Size += sizeof(*block);
+#endif
+
+#ifdef DEBUG
+    // fgLookupBB() is invalid until fgInitBBLookup() is called again.
+    fgBBs = (BasicBlock**)0xCDCD;
+#endif
+
+    // TODO-Throughput: The following memset is pretty expensive - do something else?
+    // Note that some fields have to be initialized to 0 (like bbFPStateX87)
+    memset(block, 0, sizeof(*block));
+
+    // scopeInfo needs to be able to differentiate between blocks which
+    // correspond to some instrs (and so may have some LocalVarInfo
+    // boundaries), or have been inserted by the JIT
+    block->bbCodeOffs    = BAD_IL_OFFSET;
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
+
+    /* Give the block a number, set the ancestor count and weight */
+
+    ++fgBBcount;
+
+    if (compIsForInlining())
+    {
+        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
+    }
+    else
+    {
+        block->bbNum = ++fgBBNumMax;
+    }
+
+#ifndef LEGACY_BACKEND
+    if (compRationalIRForm)
+    {
+        block->bbFlags |= BBF_IS_LIR;
+    }
+#endif // !LEGACY_BACKEND
+
+    block->bbRefs   = 1;
+    block->bbWeight = BB_UNITY_WEIGHT;
+
+    block->bbStkTempsIn  = NO_BASE_TMP;
+    block->bbStkTempsOut = NO_BASE_TMP;
+
+    block->bbEntryState = nullptr;
+
+    /* Record the jump kind in the block */
+
+    block->bbJumpKind = jumpKind;
+
+    if (jumpKind == BBJ_THROW)
+    {
+        block->bbSetRunRarely();
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("New Basic Block BB%02u [%p] created.\n", block->bbNum, dspPtr(block));
+    }
+#endif
+
+    // We will give all the blocks var sets after the number of tracked variables
+    // is determined and frozen.  After that, if we dynamically create a basic block,
+    // we will initialize its var sets.
+    if (fgBBVarSetsInited)
+    {
+        VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::MakeEmpty(this));
+        VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::MakeEmpty(this));
+        VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
+        VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
+        VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::MakeEmpty(this));
+    }
+    else
+    {
+        VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::UninitVal());
+        VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::UninitVal());
+    }
+
+    block->bbMemoryUse     = emptyMemoryKindSet;
+    block->bbMemoryDef     = emptyMemoryKindSet;
+    block->bbMemoryLiveIn  = emptyMemoryKindSet;
+    block->bbMemoryLiveOut = emptyMemoryKindSet;
+
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        block->bbMemorySsaPhiFunc[memoryKind] = nullptr;
+        block->bbMemorySsaNumIn[memoryKind]   = 0;
+        block->bbMemorySsaNumOut[memoryKind]  = 0;
+    }
+
+    // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
+    static_assert_no_msg(MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
+
+    block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    return block;
 }
