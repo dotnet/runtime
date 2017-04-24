@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Http;
+using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -63,6 +64,119 @@ namespace System.Net.Tests
             await ValidateNullUser();
         }
 
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void AuthenticationSchemeSelectorDelegate_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.AuthenticationSchemeSelectorDelegate = null);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void AuthenticationSchemes_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.AuthenticationSchemes = AuthenticationSchemes.Basic);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void ExtendedProtectionPolicy_SetNull_ThrowsArgumentNullException()
+        {
+            using (var listener = new HttpListener())
+            {
+                Assert.Throws<ArgumentNullException>("value", () => listener.ExtendedProtectionPolicy = null);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void ExtendedProtectionPolicy_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.ExtendedProtectionPolicy = null);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void ExtendedProtectionPolicy_SetCustomChannelBinding_ThrowsObjectDisposedException()
+        {
+            using (var listener = new HttpListener())
+            {
+                var protectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Always, new CustomChannelBinding());
+                AssertExtensions.Throws<ArgumentException>("value", "CustomChannelBinding", () => listener.ExtendedProtectionPolicy = protectionPolicy);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnsafeConnectionNtlmAuthentication_Unix_ThrowsPlatformNotSupportedException()
+        {
+            using (var listener = new HttpListener())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication);
+                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication = false);
+            }
+        }
+        
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UnsafeConnectionNtlmAuthentication_SetGet_ReturnsExpected()
+        {
+            using (var listener = new HttpListener())
+            {
+                Assert.Equal(false, listener.UnsafeConnectionNtlmAuthentication);
+
+                listener.UnsafeConnectionNtlmAuthentication = true;
+                Assert.True(listener.UnsafeConnectionNtlmAuthentication);
+
+                listener.UnsafeConnectionNtlmAuthentication = false;
+                Assert.False(listener.UnsafeConnectionNtlmAuthentication);
+
+                listener.UnsafeConnectionNtlmAuthentication = false;
+                Assert.False(listener.UnsafeConnectionNtlmAuthentication);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UnsafeConnectionNtlmAuthentication_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.UnsafeConnectionNtlmAuthentication = false);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void ExtendedProtectionSelectorDelegate_SetNull_ThrowsArgumentNullException()
+        {
+            using (var listener = new HttpListener())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("value", null, () => listener.ExtendedProtectionSelectorDelegate = null);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void ExtendedProtectionSelectorDelegate_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.ExtendedProtectionSelectorDelegate = null);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public void Realm_SetDisposed_ThrowsObjectDisposedException()
+        {
+            var listener = new HttpListener();
+            listener.Close();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.Realm = null);
+        }
+
         private async Task ValidateNullUser()
         {
             var serverContextTask = _listener.GetContextAsync();
@@ -106,6 +220,12 @@ namespace System.Net.Tests
         private AuthenticationSchemes SelectAnonymousScheme(HttpListenerRequest request)
         {
             return AuthenticationSchemes.Anonymous;
+        }
+
+        private class CustomChannelBinding : ChannelBinding
+        {
+            public override int Size => 0;
+            protected override bool ReleaseHandle() => true;
         }
     }
 }

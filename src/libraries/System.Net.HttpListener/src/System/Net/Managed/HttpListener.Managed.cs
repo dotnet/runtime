@@ -366,6 +366,7 @@ namespace System.Net
 
         public HttpListenerContext GetContext()
         {
+            CheckDisposed();
             if (_state == State.Stopped)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "Start()"));
