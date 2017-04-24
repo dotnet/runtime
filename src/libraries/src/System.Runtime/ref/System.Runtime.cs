@@ -6488,7 +6488,16 @@ namespace System.Runtime.CompilerServices
         Default = 0,
         Sometimes = 2,
     }
-    
+    public static class RuntimeFeature
+    {
+        public static bool IsSupported(string feature) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [AttributeUsage(AttributeTargets.All, Inherited = false)]
+    public sealed class IsReadOnlyAttribute : Attribute
+    {
+        public IsReadOnlyAttribute() { }
+    }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
         internal RuntimeWrappedException() { }
