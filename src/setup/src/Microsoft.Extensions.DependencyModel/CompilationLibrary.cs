@@ -51,31 +51,31 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IEnumerable<string> ResolveReferencePaths()
         {
-            return ResolveReferencePaths(DefaultResolver);
+            var assemblies = new List<string>();
+
+            return ResolveReferencePaths(DefaultResolver, assemblies);
         }
 
-        public IEnumerable<string> ResolveReferencePaths(params ICompilationAssemblyResolver[] additionalResolvers)
-        {
-            ICompilationAssemblyResolver resolver;
-            if (additionalResolvers?.Length > 0)
-            {
-                var allResolvers = new ICompilationAssemblyResolver[additionalResolvers.Length + 1];
-                additionalResolvers.CopyTo(allResolvers, 0);
-                allResolvers[additionalResolvers.Length] = DefaultResolver;
-
-                resolver = new CompositeCompilationAssemblyResolver(allResolvers);
-            }
-            else
-            {
-                resolver = DefaultResolver;
-            }
-
-            return ResolveReferencePaths(resolver);
-        }
-
-        private IEnumerable<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver)
+        public IEnumerable<string> ResolveReferencePaths(params ICompilationAssemblyResolver[] customResolvers)
         {
             var assemblies = new List<string>();
+
+            if (customResolvers?.Length > 0)
+            {
+                foreach (var resolver in customResolvers)
+                {
+                    if (resolver.TryResolveAssemblyPaths(this, assemblies))
+                    {
+                        return assemblies;
+                    }
+                }
+            }
+
+            return ResolveReferencePaths(DefaultResolver, assemblies);
+        }
+
+        private IEnumerable<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
+        {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {
                 throw new InvalidOperationException($"Cannot find compilation library location for package '{Name}'");
