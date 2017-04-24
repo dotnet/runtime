@@ -100,4 +100,4 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
     ret     16
 
-NESTED_END CallEHFunclet, _TEXT
+NESTED_END CallEHFilterFunclet, _TEXT
