@@ -961,12 +961,12 @@ BOOL SegmentHandleAsyncPinHandles (TableSegment *pSegment)
 }
 
 // Replace an async pin handle with one from default domain
-void SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTargetTable)
+bool SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTargetTable)
 {
     CONTRACTL
     {
         GC_NOTRIGGER;
-        THROWS;
+        NOTHROW;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -975,7 +975,7 @@ void SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTarge
     if (uBlock == BLOCK_INVALID)
     {
         // There is no pinning handles.
-        return;
+        return true;
     }
     for (uBlock = 0; uBlock < pSegment->bEmptyLine; uBlock ++)
     {
@@ -1005,11 +1005,19 @@ void SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTarge
                 BashMTForPinnedObject(ObjectToOBJECTREF(value));
 
                 overlapped->m_pinSelf = HndCreateHandle((HHANDLETABLE)pTargetTable, HNDTYPE_ASYNCPINNED, ObjectToOBJECTREF(value));
+                if (!overlapped->m_pinSelf)
+                {
+                    // failed to allocate a new handle - callers have to handle this.
+                    return false;
+                }
+
                 *pValue = NULL;
             }
             pValue ++;
         } while (pValue != pLast);
     }
+
+    return true;
 }
 
 // Mark all non-pending AsyncPinHandle ready for cleanup.
@@ -1068,6 +1076,7 @@ void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable
 
     BOOL fGotException = FALSE;
     TableSegment *pSegment = pTable->pSegmentList;
+    bool wasSuccessful = true;
     
 #ifdef _DEBUG
     // on debug builds, execute the OOM path 10% of the time.
@@ -1076,21 +1085,18 @@ void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable
 #endif
 
     // Step 1: replace pinning handles with ones from default domain
-    EX_TRY
+    while (pSegment)
     {
-        while (pSegment)
+        wasSuccessful = wasSuccessful && SegmentRelocateAsyncPinHandles (pSegment, pTargetTable);
+        if (!wasSuccessful)
         {
-            SegmentRelocateAsyncPinHandles (pSegment, pTargetTable);
-            pSegment = pSegment->pNextSegment;
+            break;
         }
-    }
-    EX_CATCH
-    {
-        fGotException = TRUE;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 
-    if (!fGotException)
+        pSegment = pSegment->pNextSegment;
+    }
+
+    if (wasSuccessful)
     {
         return;
     }
@@ -2720,9 +2726,8 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

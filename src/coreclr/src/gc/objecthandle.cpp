@@ -740,9 +740,9 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        INJECT_FAULT(COMPlusThrowOM());
+        INJECT_FAULT(return false);
     }
     CONTRACTL_END;
 
@@ -759,13 +759,18 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context)
 
     HandleTableBucketHolder bucketHolder(result, n_slots);
 
-    result->pTable = new HHANDLETABLE[n_slots];
+    result->pTable = new (nothrow) HHANDLETABLE[n_slots];
+    if (!result->pTable)
+    {
+        return false;
+    }
+
     ZeroMemory(result->pTable, n_slots * sizeof(HHANDLETABLE));
 
     for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++) {
         result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags), ADIndex((DWORD)(uintptr_t)context));
         if (!result->pTable[uCPUindex])
-            COMPlusThrowOM();
+            return false;
     }
 
     for (;;) {
@@ -792,9 +797,18 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context)
         // No free slot.
         // Let's create a new node
         NewHolder<HandleTableMap> newMap;
-        newMap = new HandleTableMap;
+        newMap = new (nothrow) HandleTableMap;
+        if (!newMap)
+        {
+            return false;
+        }
 
-        newMap->pBuckets = new HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ];
+        newMap->pBuckets = new (nothrow) HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ];
+        if (!newMap->pBuckets)
+        {
+            return false;
+        }
+
         newMap.SuppressRelease();
 
         newMap->dwMaxIndex = last->dwMaxIndex + INITIAL_HANDLE_TABLE_ARRAY_SIZE;
