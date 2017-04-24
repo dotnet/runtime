@@ -263,15 +263,11 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMainModuleOnNonOSX()
         {
-            string fileName = "dotnet";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                fileName = "dotnet.exe";
-
             Process p = Process.GetCurrentProcess();
             Assert.True(p.Modules.Count > 0);
-            Assert.Equal(fileName, p.MainModule.ModuleName);
-            Assert.EndsWith(fileName, p.MainModule.FileName);
-            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", fileName), p.MainModule.ToString());
+            Assert.Equal(HostRunnerName, p.MainModule.ModuleName);
+            Assert.EndsWith(HostRunnerName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", HostRunnerName), p.MainModule.ToString());
         }
 
         [Fact]
@@ -666,11 +662,13 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        public void TestInvalidPriorityClass()
+        [Theory]
+        [InlineData((ProcessPriorityClass)0)]
+        [InlineData(ProcessPriorityClass.Normal | ProcessPriorityClass.Idle)]
+        public void TestInvalidPriorityClass(ProcessPriorityClass priorityClass)
         {
-            Process p = new Process();
-            Assert.Throws<ArgumentException>(() => { p.PriorityClass = ProcessPriorityClass.Normal | ProcessPriorityClass.Idle; });
+            var process = new Process();
+            Assert.Throws<InvalidEnumArgumentException>(() => process.PriorityClass = priorityClass);
         }
 
         [Fact]
@@ -683,7 +681,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessName()
         {
-            Assert.Equal(Path.GetFileNameWithoutExtension(_process.ProcessName), Path.GetFileNameWithoutExtension(HostRunner), StringComparer.OrdinalIgnoreCase);
+            // Processes are not hosted by dotnet in the full .NET Framework.
+            string expected = PlatformDetection.IsFullFramework ? TestConsoleApp : HostRunner;
+            Assert.Equal(Path.GetFileNameWithoutExtension(_process.ProcessName), Path.GetFileNameWithoutExtension(expected), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -913,44 +913,75 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestStartInfo()
+        public void StartInfo_GetFileName_ReturnsExpected()
         {
+            Process process = CreateProcessLong();
+            process.Start();
+
+            // Processes are not hosted by dotnet in the full .NET Framework.
+            string expectedFileName = PlatformDetection.IsFullFramework ? TestConsoleApp : HostRunner;
+            Assert.Equal(expectedFileName, process.StartInfo.FileName);
+
+            process.Kill();
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+        
+        [Fact]
+        public void StartInfo_SetOnRunningProcess_ThrowsInvalidOperationException()
+        {
+            Process process = CreateProcessLong();
+            process.Start();
+
+            // .NET Core fixes a bug where Process.StartInfo for a unrelated process would
+            // return information about the current process, not the unrelated process.
+            // See https://github.com/dotnet/corefx/issues/1100.
+            if (PlatformDetection.IsFullFramework)
             {
-                Process process = CreateProcessLong();
-                process.Start();
-
-                Assert.Equal(HostRunner, process.StartInfo.FileName);
-
-                process.Kill();
-                Assert.True(process.WaitForExit(WaitInMS));
+                var startInfo = new ProcessStartInfo();
+                process.StartInfo = startInfo;
+                Assert.Equal(startInfo, process.StartInfo);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => process.StartInfo = new ProcessStartInfo());
             }
 
+            process.Kill();
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [Fact]
+        public void StartInfo_SetGet_ReturnsExpected()
+        {
+            var process = new Process() { StartInfo = new ProcessStartInfo(TestConsoleApp) };
+            Assert.Equal(TestConsoleApp, process.StartInfo.FileName);
+        }
+
+        [Fact]
+        public void StartInfo_SetNull_ThrowsArgumentNullException()
+        {
+            var process = new Process();
+            Assert.Throws<ArgumentNullException>("value", () => process.StartInfo = null);
+        }
+
+        [Fact]
+        public void StartInfo_GetOnRunningProcess_ThrowsInvalidOperationException()
+        {
+            Process process = Process.GetCurrentProcess();
+
+            // .NET Core fixes a bug where Process.StartInfo for an unrelated process would
+            // return information about the current process, not the unrelated process.
+            // See https://github.com/dotnet/corefx/issues/1100.
+            if (PlatformDetection.IsFullFramework)
             {
-                Process process = CreateProcessLong();
-                process.Start();
-
-                Assert.Throws<System.InvalidOperationException>(() => (process.StartInfo = new ProcessStartInfo()));
-
-                process.Kill();
-                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.NotNull(process.StartInfo);
             }
-
+            else
             {
-                Process process = new Process();
-                process.StartInfo = new ProcessStartInfo(TestConsoleApp);
-                Assert.Equal(TestConsoleApp, process.StartInfo.FileName);
-            }
-
-            {
-                Process process = new Process();
-                Assert.Throws<ArgumentNullException>(() => process.StartInfo = null);
-            }
-
-            {
-                Process process = Process.GetCurrentProcess();
-                Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
+                Assert.Throws<InvalidOperationException>(() => process.StartInfo);
             }
         }
+
         [Theory]
         [InlineData(@"""abc"" d e", @"abc,d,e")]
         [InlineData(@"""abc""      d e", @"abc,d,e")]
@@ -1451,15 +1482,17 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithDuplicatePassword()
         {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            psi.FileName = "exe";
-            psi.UserName = "dummyUser";
-            psi.PasswordInClearText = "Value";
-            psi.Password = AsSecureString("Value");
+            var startInfo = new ProcessStartInfo()
+            {
+                FileName = "exe",
+                UserName = "dummyUser",
+                PasswordInClearText = "Value",
+                Password = AsSecureString("Value"),
+                UseShellExecute = false
+            };
 
-            Process p = new Process();
-            p.StartInfo = psi;
-            Assert.Throws<ArgumentException>(() => p.Start());
+            var process = new Process() { StartInfo = startInfo };
+            Assert.Throws<ArgumentException>(null, () => process.Start());
         }
 
         private string GetCurrentProcessName()

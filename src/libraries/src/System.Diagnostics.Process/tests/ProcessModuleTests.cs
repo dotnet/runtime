@@ -29,10 +29,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestModulesContainsDotnet()
+        public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
-            Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains("dotnet"));
+            Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains(HostRunnerName));
         }
 
         [Fact]

@@ -23,7 +23,7 @@ namespace System.Diagnostics
         private string _verb;
         private ProcessWindowStyle _windowStyle;
 
-        internal Dictionary<string, string> _environmentVariables;
+        internal DictionaryWrapper _environmentVariables;
 
         /// <devdoc>
         ///     Default constructor.  At least the <see cref='System.Diagnostics.ProcessStartInfo.FileName'/>
@@ -62,7 +62,7 @@ namespace System.Diagnostics
 
         public bool CreateNoWindow { get; set; }
 
-        public StringDictionary EnvironmentVariables => new StringDictionaryWrapper(Environment as Dictionary<string,string>);
+        public StringDictionary EnvironmentVariables => new StringDictionaryWrapper(Environment as DictionaryWrapper);
 
         public IDictionary<string, string> Environment
         {
@@ -73,9 +73,9 @@ namespace System.Diagnostics
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
 #pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
-                    _environmentVariables = new Dictionary<string, string>(
+                    _environmentVariables = new DictionaryWrapper(new Dictionary<string, string>(
                         envVars.Count,
-                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
 #pragma warning restore 0429
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
