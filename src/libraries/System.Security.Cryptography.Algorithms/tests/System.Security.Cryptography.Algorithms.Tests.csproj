@@ -131,9 +131,16 @@
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="DefaultECDsaProvider.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Folder Include="Common\Interop\Unix\" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="AesManagedTests.cs" />
@@ -218,7 +225,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Common\Interop\Unix\" />
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
