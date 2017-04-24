@@ -105,21 +105,7 @@ OOPStackUnwinderX86::VirtualUnwind(
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    SIZE_T paramSize = codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
-    SIZE_T paddingSize = 0;
-
-#ifdef UNIX_X86_ABI
-    // On UNIX_X86_ABI, function call may have stack alignment padding.
-    if (paramSize % 16 != 0)
-    {
-        paddingSize += 16 - (paramSize % 16);
-    }
-#endif // UNIX_X86_ABI
-
-    ContextRecord->Esp = rd.SP - paramSize;
-    ContextRecord->ResumeEsp = ExecutionManager::IsManagedCode((PCODE) rd.ControlPC)
-                             ? rd.SP + paddingSize
-                             : ContextRecord->Esp;
+    ContextRecord->Esp = rd.SP - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
     ContextRecord->Eip = rd.ControlPC;
 
     // For x86, the value of Establisher Frame Pointer is Caller SP
