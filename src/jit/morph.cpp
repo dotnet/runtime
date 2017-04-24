@@ -3785,7 +3785,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef LEGACY_BACKEND
                 else if (size > 4 && passUsingIntRegs)
                 {
-                    NYI("Struct can be split between registers and stack");
+                    NYI_ARM("Struct can be split between registers and stack");
                 }
 #endif // !LEGACY_BACKEND
 #endif // _TARGET_ARM_
@@ -4080,6 +4080,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifdef _TARGET_ARM_
                         if (fltArgRegNum > MAX_FLOAT_REG_ARG)
                         {
+#ifndef LEGACY_BACKEND
+                            NYI_ARM("Struct split between float registers and stack");
+#endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
                             assert(varTypeIsStruct(argx));
                             unsigned numRegsPartial = size - (fltArgRegNum - MAX_FLOAT_REG_ARG);
@@ -4109,6 +4112,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifdef _TARGET_ARM_
                         if (intArgRegNum > MAX_REG_ARG)
                         {
+#ifndef LEGACY_BACKEND
+                            NYI_ARM("Struct split between integer registers and stack");
+#endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIsCopyBlkOp() ||
                                    (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
@@ -4208,7 +4214,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 #endif // !LEGACY_BACKEND
 
-#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
         if (isStructArg)
         {
             GenTree* lclNode = fgIsIndirOfAddrOfLocal(argx);
@@ -4243,7 +4249,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 }
             }
         }
-#endif // defined (_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#endif // _TARGET_X86_ && !LEGACY_BACKEND
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (isStructArg && !isRegArg)
@@ -4799,10 +4805,9 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 #elif defined(_TARGET_ARM_)
         BYTE gcPtrs[4] = {TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE};
         elemCount      = (unsigned)roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+        info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
         for (unsigned inx = 0; inx < elemCount; inx++)
         {
-            gcPtrs[inx] = TYPE_GC_NONE;
-            info.compCompHnd->getClassGClayout(objClass, &gcPtrs[inx]);
             type[inx] = getJitGCType(gcPtrs[inx]);
         }
 #endif // _TARGET_ARM_
@@ -4998,7 +5003,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 
                 for (unsigned inx = 0; inx < elemCount; inx++)
                 {
-                    varDscs[inx] = &lvaTable[inx];
+                    varDscs[inx] = &lvaTable[varNums[inx]];
                     varType[inx] = varDscs[inx]->lvType;
                     if (varTypeIsFloating(varType[inx]))
                     {
