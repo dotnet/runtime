@@ -9,7 +9,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns high resolution (~1 usec) current UTC DateTime.
         /// </summary>
-        private DateTime GetUtcNow()
+        internal static DateTime GetUtcNow()
         {
             // .NET Core CLR gives accurate UtcNow
             return DateTime.UtcNow;
