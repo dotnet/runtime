@@ -291,9 +291,10 @@
       <_itemsToSave Include="@(_docFiles)"/>
       
       <!-- Include source files. -->
+      <!-- Here we use "sources" rather than "src" because MyGet treats packages with "src" as symbol packages  -->
       <_itemsToSave Condition="'@(Compile)' != ''" Include="@(Compile->'%(FullPath)')">
-        <TargetPath>src</TargetPath>
-        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
+        <TargetPath>sources</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">sources/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
         <IsSourceCodeFile>true</IsSourceCodeFile>
       </_itemsToSave>
     </ItemGroup>
