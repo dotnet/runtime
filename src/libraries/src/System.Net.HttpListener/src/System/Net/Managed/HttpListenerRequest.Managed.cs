@@ -52,7 +52,6 @@ namespace System.Net
         }
 
         private string[] _acceptTypes;
-        private Encoding _contentEncoding;
         private long _contentLength;
         private bool _clSet;
         private CookieCollection _cookies;
@@ -128,31 +127,8 @@ namespace System.Net
 
         private void CreateQueryString(string query)
         {
-            if (query == null || query.Length == 0)
-            {
-                _queryString = new NameValueCollection(1);
-                return;
-            }
-
             _queryString = new NameValueCollection();
-            if (query[0] == '?')
-                query = query.Substring(1);
-            string[] components = query.Split('&');
-            foreach (string kv in components)
-            {
-                int pos = kv.IndexOf('=');
-                if (pos == -1)
-                {
-                    _queryString.Add(null, WebUtility.UrlDecode(kv));
-                }
-                else
-                {
-                    string key = WebUtility.UrlDecode(kv.Substring(0, pos));
-                    string val = WebUtility.UrlDecode(kv.Substring(pos + 1));
-
-                    _queryString.Add(key, val);
-                }
-            }
+            Helpers.FillFromString(_queryString, Url.Query, true, ContentEncoding);
         }
 
         private static bool MaybeUri(string s)
@@ -289,10 +265,10 @@ namespace System.Net
             switch (lower)
             {
                 case "accept-language":
-                    _userLanguages = val.Split(','); // yes, only split with a ','
+                    _userLanguages = Helpers.ParseMultivalueHeader(val);
                     break;
                 case "accept":
-                    _acceptTypes = val.Split(','); // yes, only split with a ','
+                    _acceptTypes = Helpers.ParseMultivalueHeader(val);
                     break;
                 case "content-length":
                     try
@@ -311,7 +287,7 @@ namespace System.Net
                 case "referer":
                     try
                     {
-                        _referrer = new Uri(val);
+                        _referrer = new Uri(val, UriKind.RelativeOrAbsolute);
                     }
                     catch
                     {
@@ -423,21 +399,11 @@ namespace System.Net
             {
                 HttpConnection cnc = _context.Connection;
                 if (cnc.ClientCertificate == null)
-                    throw new InvalidOperationException(SR.net_no_client_certificate);
+                    return 0;
                 int[] errors = cnc.ClientCertificateErrors;
                 if (errors != null && errors.Length > 0)
                     return errors[0];
                 return 0;
-            }
-        }
-
-        public Encoding ContentEncoding
-        {
-            get
-            {
-                if (_contentEncoding == null)
-                    _contentEncoding = Encoding.Default;
-                return _contentEncoding;
             }
         }
 

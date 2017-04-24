@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
@@ -14,6 +16,7 @@ namespace System.Net.Tests
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
         private const string Hostname = "localhost";
+        private readonly string _path;
         private readonly int _port;
 
         internal HttpListenerFactory()
@@ -23,10 +26,11 @@ namespace System.Net.Tests
             // can't steal it.
 
             Guid processGuid = Guid.NewGuid();
+            _path = processGuid.ToString("N");
 
             for (int port = 1024; port <= IPEndPoint.MaxPort; port++)
             {
-                string prefix = $"http://{Hostname}:{port}/{processGuid:N}/";
+                string prefix = $"http://{Hostname}:{port}/{_path}/";
 
                 var listener = new HttpListener();
                 try
@@ -85,28 +89,61 @@ namespace System.Net.Tests
             }
         }
 
+        public string Path => _path;
+
         public HttpListener GetListener() => _processPrefixListener;
 
         public void Dispose() => _processPrefixListener.Close();
 
         public Socket GetConnectedSocket()
         {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Connect(Hostname, _port);
-            return socket;
+            // Some platforms or distributions require IPv6 sockets if the OS supports IPv6. Others (e.g. Ubunutu) don't.
+            try
+            {
+                AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+                Socket socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(Hostname, _port);
+                return socket;
+            }
+            catch
+            {
+                Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(Hostname, _port);
+                return socket;
+            }            
         }
 
-        public byte[] GetContent(string requestType, string text, bool headerOnly)
+        public byte[] GetContent(string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
         {
             Uri listeningUri = new Uri(ListeningUrl);
+            string rawUrl = listeningUri.PathAndQuery;
+            if (query != null)
+            {
+                rawUrl += query;
+            }
 
-            string content = $"{requestType} {listeningUri.PathAndQuery} HTTP/1.1\r\nHost: {listeningUri.Host}\r\nContent-Length: {text.Length}\r\n\r\n";
-            if (!headerOnly)
+            string content = $"{requestType} {rawUrl} HTTP/1.1\r\nHost: {listeningUri.Host}\r\n";
+            if (text != null)
+            {
+                content += $"Content-Length: {text.Length}\r\n";
+            }
+            foreach (string header in headers ?? Enumerable.Empty<string>())
+            {
+                content += header + "\r\n";
+            }
+            content += "\r\n";
+
+            if (!headerOnly && text != null)
             {
                 content += text;
             }
 
             return Encoding.UTF8.GetBytes(content);
+        }
+
+        public byte[] GetContent(string requestType, string text, bool headerOnly)
+        {
+            return GetContent(requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
         }
     }
 
