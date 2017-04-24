@@ -59,12 +59,16 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [InlineData(64)]        // too small
-        [InlineData(129)]       // in valid range but not valid increment
-        [InlineData(384)]       // too large
-        [InlineData(536870928)] // number of bits overflows and wraps around to a valid size
-        public static void InvalidKeySizes(int invalidKeySize)
+        [InlineData(64, false)]        // too small
+        [InlineData(129, false)]       // in valid range but not valid increment
+        [InlineData(384, false)]       // too large
+        // Skip on netfx because change is not ported https://github.com/dotnet/corefx/issues/18690
+        [InlineData(536870928, true)] // number of bits overflows and wraps around to a valid size
+        public static void InvalidKeySizes(int invalidKeySize, bool skipOnNetfx)
         {
+            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+                return;
+
             using (Aes aes = AesFactory.Create())
             {
                 // Test KeySize property
@@ -83,19 +87,23 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     return;
                 }
                 Exception e = Record.Exception(() => aes.CreateEncryptor(key, iv));
-                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
                 
                 e = Record.Exception(() => aes.CreateDecryptor(key, iv));
-                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
             }
         }
 
         [Theory]
-        [InlineData(64)]        // smaller than default BlockSize
-        [InlineData(129)]       // larger than default BlockSize
-        [InlineData(536870928)] // number of bits overflows and wraps around to default BlockSize
-        public static void InvalidIVSizes(int invalidIvSize)
+        [InlineData(64, false)]        // smaller than default BlockSize
+        [InlineData(129, false)]       // larger than default BlockSize
+        // Skip on netfx because change is not ported https://github.com/dotnet/corefx/issues/18690
+        [InlineData(536870928, true)] // number of bits overflows and wraps around to default BlockSize
+        public static void InvalidIVSizes(int invalidIvSize, bool skipOnNetfx)
         {
+            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+                return;
+
             using (Aes aes = AesFactory.Create())
             {
                 aes.GenerateKey();
@@ -109,11 +117,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 {
                     return;
                 }
+
                 Exception e = Record.Exception(() => aes.CreateEncryptor(key, iv));
-                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
                 
                 e = Record.Exception(() => aes.CreateDecryptor(key, iv));
-                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {e}");
+                Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
             }
         }
 
