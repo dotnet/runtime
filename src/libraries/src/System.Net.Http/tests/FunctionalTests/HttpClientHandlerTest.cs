@@ -89,6 +89,13 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandlerTest(ITestOutputHelper output)
         {
             _output = output;
+            if (PlatformDetection.IsFullFramework)
+            {
+                // On .NET Framework, the default limit for connections/server is very low (2). 
+                // On .NET Core, the default limit is higher. Since these tests run in parallel,
+                // the limit needs to be increased to avoid timeouts when running the tests.
+                System.Net.ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+            }
         }
 
         [Fact]
@@ -123,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
         [Fact]
         public void MaxRequestContentBufferSize_Get_ReturnsZero()
         {
@@ -133,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
         [Fact]
         public void MaxRequestContentBufferSize_Set_ThrowsPlatformNotSupportedException()
         {
@@ -265,7 +272,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_Cancel_CancellationTokenPropagates()
@@ -278,7 +284,11 @@ namespace System.Net.Http.Functional.Tests
                 TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
                     client.SendAsync(request, cts.Token));
                 Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
-                Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    // .NET Framework has bug where it doesn't propagate token information.
+                    Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
+                }
             }
         }
 
@@ -459,7 +469,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows HTTPS to HTTP redirection")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
@@ -516,6 +526,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Skip this test if running on Windows but on a release prior to Windows 10 Creators Update.
                 _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
+                return;
+            }
+            else if (PlatformDetection.IsFullFramework)
+            {
+                // Skip this test if running on .NET Framework. Exceeding max redirections will not throw
+                // exception. Instead, it simply returns the 3xx response.
+                _output.WriteLine("Skipping test on .NET Framework due to behavior difference.");
                 return;
             }
 
@@ -888,7 +905,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
@@ -934,7 +950,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
+        [ActiveIssue(18864)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
@@ -1569,13 +1585,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(HttpMethodsThatAllowContent))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
             bool secureServer)
         {
+            if (PlatformDetection.IsFullFramework)
+            {
+                // .NET Framework doesn't allow a content body with this HTTP verb.
+                // It will throw a System.Net.ProtocolViolation exception.
+                if (method == "GET")
+                {
+                    return;
+                }
+            }
+
             using (var client = new HttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -1633,13 +1658,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,
             bool secureServer)
         {
+            if (PlatformDetection.IsFullFramework)
+            {
+                // .NET Framework doesn't allow a content body with this HTTP verb.
+                // It will throw a System.Net.ProtocolViolation exception.
+                if (method == "HEAD")
+                {
+                    return;
+                }
+            }
+
             using (var client = new HttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -1687,7 +1721,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Hangs on NETFX
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws exception sending request using Version(0,0)")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
@@ -1698,6 +1732,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Http2Servers))]
@@ -1812,7 +1847,6 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Proxy tests
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -1856,7 +1890,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(BypassedProxies))]
@@ -1899,7 +1932,6 @@ namespace System.Net.Http.Functional.Tests
         private static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };
-            yield return new object[] { new PlatformNotSupportedWebProxy() };
             yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://{Guid.NewGuid().ToString().Substring(0, 15)}:12345"), bypass: true) };
         }
 
@@ -1908,7 +1940,6 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { null, false };
             foreach (bool wrapCredsInCache in new[] { true, false })
             {
-                yield return new object[] { CredentialCache.DefaultCredentials, wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("user:name", "password"), wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("username", "password", "dom:\\ain"), wrapCredsInCache };
             }

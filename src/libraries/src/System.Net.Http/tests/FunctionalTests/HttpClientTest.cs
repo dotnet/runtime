@@ -88,7 +88,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [Fact]
         public void MaxResponseContentBufferSize_Roundtrip_Equal()
         {
@@ -102,7 +101,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [Fact]
         public void MaxResponseContentBufferSize_OutOfRange_Throws()
         {
@@ -114,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "no exception throw on netfx")]
         [Fact]
         public async Task MaxResponseContentBufferSize_TooSmallForContent_Throws()
         {

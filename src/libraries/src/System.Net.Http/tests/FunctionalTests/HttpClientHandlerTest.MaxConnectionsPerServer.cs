@@ -15,7 +15,6 @@ namespace System.Net.Http.Functional.Tests
 
     public class HttpClientHandler_MaxConnectionsPerServer_Test
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [Fact]
         public void Default_ExpectedValue()
         {
@@ -25,7 +24,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")] // Difference in behavior
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]

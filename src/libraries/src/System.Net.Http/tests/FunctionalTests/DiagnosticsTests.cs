@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17691")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core specific diagnostic test")]
     public class DiagnosticsTest : RemoteExecutorTestBase
     {
         [Fact]
