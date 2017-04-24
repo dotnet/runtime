@@ -932,9 +932,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Unknown binding type"
         /// </summary>
-        internal static Exception UnknownBindingType()
+        internal static Exception UnknownBindingType(int index)
         {
-            return new ArgumentException(Strings.UnknownBindingType);
+            return new ArgumentException(Strings.UnknownBindingType, $"bindings[{index}]");
         }
         /// <summary>
         /// ArgumentException with message like "The user-defined operator method '{1}' for operator '{0}' must have identical parameter and return types."
