@@ -263,9 +263,6 @@ CHECK PEDecoder::CheckNTHeaders() const
     CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.FileAlignment), 512));
     CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.SectionAlignment), VAL32(pNT->OptionalHeader.FileAlignment)));
 
-    // INVESTIGATE: this doesn't seem to be necessary on Win64 - why??
-    //CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.SectionAlignment), OS_PAGE_SIZE));
-    CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.SectionAlignment), 0x1000)); // for base relocs logic
     CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.SizeOfImage), VAL32(pNT->OptionalHeader.SectionAlignment)));
     CHECK(CheckAligned((UINT)VAL32(pNT->OptionalHeader.SizeOfHeaders), VAL32(pNT->OptionalHeader.FileAlignment)));
 
