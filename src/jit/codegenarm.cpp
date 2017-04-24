@@ -216,14 +216,8 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = getEmitter();
 
-    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_LO || oper == GT_ADD_HI || oper == GT_SUB_LO ||
-           oper == GT_SUB_HI || oper == GT_OR || oper == GT_XOR || oper == GT_AND);
-
-    if ((oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI) && treeNode->gtOverflow())
-    {
-        // This is also checked in the importer.
-        NYI("Overflow not yet implemented");
-    }
+    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL || oper == GT_ADD_LO || oper == GT_ADD_HI ||
+           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_OR || oper == GT_XOR || oper == GT_AND);
 
     GenTreePtr op1 = treeNode->gtGetOp1();
     GenTreePtr op2 = treeNode->gtGetOp2();
@@ -403,32 +397,9 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_SUB_HI:
         case GT_ADD:
         case GT_SUB:
+        case GT_MUL:
             genConsumeOperands(treeNode->AsOp());
             genCodeForBinary(treeNode);
-            break;
-
-        case GT_MUL:
-        {
-            genConsumeOperands(treeNode->AsOp());
-
-            const genTreeOps oper = treeNode->OperGet();
-            if (treeNode->gtOverflow())
-            {
-                // This is also checked in the importer.
-                NYI("Overflow not yet implemented");
-            }
-
-            GenTreePtr  op1 = treeNode->gtGetOp1();
-            GenTreePtr  op2 = treeNode->gtGetOp2();
-            instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
-
-            // The arithmetic node must be sitting in a register (since it's not contained)
-            noway_assert(targetReg != REG_NA);
-
-            regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
-            assert(r == targetReg);
-        }
-            genProduceReg(treeNode);
             break;
 
         case GT_LSH:
