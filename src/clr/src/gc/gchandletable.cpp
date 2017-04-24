@@ -47,8 +47,12 @@ OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secon
 {
     HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
     OBJECTHANDLE handle = ::HndCreateHandle(handletable, HNDTYPE_DEPENDENT, ObjectToOBJECTREF(primary));
-    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
+    if (!handle)
+    {
+        return nullptr;
+    }
 
+    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(secondary));
     return handle;
 }
 

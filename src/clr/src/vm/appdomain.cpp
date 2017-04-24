@@ -4280,6 +4280,11 @@ void AppDomain::Init()
         m_handleStore = GCHandleUtilities::GetGCHandleManager()->CreateHandleStore((void*)(uintptr_t)m_dwIndex.m_dwIndex);
     }
 
+    if (!m_handleStore)
+    {
+        COMPlusThrowOM();
+    }
+
 #endif // CROSSGEN_COMPILE
 
 #ifdef FEATURE_TYPEEQUIVALENCE

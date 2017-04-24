@@ -1244,7 +1244,14 @@ public:
     OBJECTHANDLE CreateTypedHandle(OBJECTREF object, int type)
     {
         WRAPPER_NO_CONTRACT;
-        return m_handleStore->CreateHandleOfType(OBJECTREFToObject(object), type);
+
+        OBJECTHANDLE hnd = m_handleStore->CreateHandleOfType(OBJECTREFToObject(object), type);
+        if (!hnd)
+        {
+            COMPlusThrowOM();
+        }
+
+        return hnd;
     }
 
     OBJECTHANDLE CreateHandle(OBJECTREF object)
@@ -1317,7 +1324,7 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
+            NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
         }
@@ -1337,13 +1344,19 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
+            NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
 
-        return m_handleStore->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+        OBJECTHANDLE hnd = m_handleStore->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+        if (!hnd)
+        {
+            COMPlusThrowOM();
+        }
+
+        return hnd;
     }
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
