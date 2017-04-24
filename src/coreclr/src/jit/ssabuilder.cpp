@@ -1391,11 +1391,8 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
  */
 void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pRenameState)
 {
-    BasicBlock::AllSuccs allSuccs    = block->GetAllSuccs(m_pCompiler);
-    AllSuccessorIter     allSuccsEnd = allSuccs.end();
-    for (AllSuccessorIter allSuccsIter = allSuccs.begin(); allSuccsIter != allSuccsEnd; ++allSuccsIter)
+    for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
     {
-        BasicBlock* succ = (*allSuccsIter);
         // Walk the statements for phi nodes.
         for (GenTreePtr stmt = succ->bbTreeList; stmt != nullptr && stmt->IsPhiDefnStmt(); stmt = stmt->gtNext)
         {
