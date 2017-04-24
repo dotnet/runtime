@@ -15,7 +15,7 @@
          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
          packages.  This is needed so that we have a complete platform manifest in the shipping version of
          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
-    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(SIGNED_PACKAGES)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BUILD_FULL_PLATFORM_MANIFEST)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
   
   
