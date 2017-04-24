@@ -627,6 +627,7 @@ namespace System.Net.Tests
                 }
                 else
                 {
+                    // TODO: Issue #18850. Change HttpWebRquest to throw SerializationException similar to .NET Framework.
                     Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
                 }
             }
