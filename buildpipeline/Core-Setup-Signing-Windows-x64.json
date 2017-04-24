@@ -477,7 +477,10 @@
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
-    "SIGNED_PACKAGES": {
+    "BUILD_FULL_PLATFORM_MANIFEST": {
+      "value": "true"
+    },
+    "PUBLISH_RID_AGNOSTIC_PACKAGES": {
       "value": "true"
     },
     "CertificateId": {
