@@ -229,7 +229,7 @@ namespace System.Net.Tests
 
     public abstract class AsyncFileWebRequestTestBase : FileWebRequestTestBase
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "concurrent read/write not supported on netfx")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Concurrent read/write only supported on .NET Core via PR 12231")]
         [Fact]
         public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
         {

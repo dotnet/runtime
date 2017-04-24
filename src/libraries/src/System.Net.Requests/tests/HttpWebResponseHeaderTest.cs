@@ -101,6 +101,8 @@ namespace System.Net.Tests
                 }
                 else
                 {
+                    // TODO: Issue #18851. Investigate .NET Core to see if it can
+                    // match .NET Framework.
                     Assert.Throws<ObjectDisposedException>(() =>
                     {
                         httpResponse.GetResponseStream();
@@ -138,6 +140,7 @@ namespace System.Net.Tests
                         }
                         else
                         {
+                            // HttpWebResponse is not serializable on .NET Core.
                             Assert.Throws<PlatformNotSupportedException>(() => formatter.Serialize(fs, hwr));
                         }
                     }
