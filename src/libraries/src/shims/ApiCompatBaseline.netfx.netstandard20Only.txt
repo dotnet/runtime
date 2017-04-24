@@ -7,17 +7,14 @@ MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collect
 MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 21
+Total Issues: 18
