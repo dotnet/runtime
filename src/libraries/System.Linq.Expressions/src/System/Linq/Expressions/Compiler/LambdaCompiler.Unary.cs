@@ -103,91 +103,49 @@ namespace System.Linq.Expressions.Compiler
             {
                 switch (op)
                 {
-                    case ExpressionType.Not:
-                        {
-                            if (operandType != typeof(bool?))
-                            {
-                                goto case ExpressionType.Negate;
-                            }
-                            Label labEnd = _ilg.DefineLabel();
-                            LocalBuilder loc = GetLocal(operandType);
-
-                            // store values (reverse order since they are already on the stack)
-                            _ilg.Emit(OpCodes.Stloc, loc);
-
-                            // test for null
-                            _ilg.Emit(OpCodes.Ldloca, loc);
-                            _ilg.EmitHasValue(operandType);
-                            _ilg.Emit(OpCodes.Brfalse_S, labEnd);
-
-                            // do op on non-null value
-                            _ilg.Emit(OpCodes.Ldloca, loc);
-                            _ilg.EmitGetValueOrDefault(operandType);
-                            Type nnOperandType = operandType.GetNonNullableType();
-                            EmitUnaryOperator(op, nnOperandType, typeof(bool));
-
-                            // construct result
-                            ConstructorInfo ci = resultType.GetConstructor(ArrayOfType_Bool);
-                            _ilg.Emit(OpCodes.Newobj, ci);
-                            _ilg.Emit(OpCodes.Stloc, loc);
-
-                            _ilg.MarkLabel(labEnd);
-                            _ilg.Emit(OpCodes.Ldloc, loc);
-                            FreeLocal(loc);
-                            return;
-                        }
                     case ExpressionType.UnaryPlus:
-                    case ExpressionType.NegateChecked:
-                    case ExpressionType.Negate:
-                    case ExpressionType.Increment:
-                    case ExpressionType.Decrement:
-                    case ExpressionType.OnesComplement:
-                    case ExpressionType.IsFalse:
-                    case ExpressionType.IsTrue:
-                        {
-                            Debug.Assert(TypeUtils.AreEquivalent(operandType, resultType));
-                            Label labIfNull = _ilg.DefineLabel();
-                            Label labEnd = _ilg.DefineLabel();
-                            LocalBuilder loc = GetLocal(operandType);
-
-                            // check for null
-                            _ilg.Emit(OpCodes.Stloc, loc);
-                            _ilg.Emit(OpCodes.Ldloca, loc);
-                            _ilg.EmitHasValue(operandType);
-                            _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
-
-                            // apply operator to non-null value
-                            _ilg.Emit(OpCodes.Ldloca, loc);
-                            _ilg.EmitGetValueOrDefault(operandType);
-                            Type nnOperandType = resultType.GetNonNullableType();
-                            EmitUnaryOperator(op, nnOperandType, nnOperandType);
-
-                            // construct result
-                            ConstructorInfo ci = resultType.GetConstructor(new Type[] { nnOperandType });
-                            _ilg.Emit(OpCodes.Newobj, ci);
-                            _ilg.Emit(OpCodes.Stloc, loc);
-                            _ilg.Emit(OpCodes.Br_S, labEnd);
-
-                            // if null then create a default one
-                            _ilg.MarkLabel(labIfNull);
-                            _ilg.Emit(OpCodes.Ldloca, loc);
-                            _ilg.Emit(OpCodes.Initobj, resultType);
-
-                            _ilg.MarkLabel(labEnd);
-                            _ilg.Emit(OpCodes.Ldloc, loc);
-                            FreeLocal(loc);
-                            return;
-                        }
+                        return;
                     case ExpressionType.TypeAs:
-                        _ilg.Emit(OpCodes.Box, operandType);
-                        _ilg.Emit(OpCodes.Isinst, resultType);
-                        if (resultType.IsNullableType())
+                        if (operandType != resultType)
                         {
-                            _ilg.Emit(OpCodes.Unbox_Any, resultType);
+                            _ilg.Emit(OpCodes.Box, operandType);
+                            _ilg.Emit(OpCodes.Isinst, resultType);
+                            if (resultType.IsNullableType())
+                            {
+                                _ilg.Emit(OpCodes.Unbox_Any, resultType);
+                            }
                         }
+
                         return;
                     default:
-                        throw Error.UnhandledUnary(op, nameof(op));
+                        Debug.Assert(TypeUtils.AreEquivalent(operandType, resultType));
+                        Label labIfNull = _ilg.DefineLabel();
+                        Label labEnd = _ilg.DefineLabel();
+                        LocalBuilder loc = GetLocal(operandType);
+
+                        // check for null
+                        _ilg.Emit(OpCodes.Stloc, loc);
+                        _ilg.Emit(OpCodes.Ldloca, loc);
+                        _ilg.EmitHasValue(operandType);
+                        _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
+
+                        // apply operator to non-null value
+                        _ilg.Emit(OpCodes.Ldloca, loc);
+                        _ilg.EmitGetValueOrDefault(operandType);
+                        Type nnOperandType = resultType.GetNonNullableType();
+                        EmitUnaryOperator(op, nnOperandType, nnOperandType);
+
+                        // construct result
+                        ConstructorInfo ci = resultType.GetConstructor(new Type[] { nnOperandType });
+                        _ilg.Emit(OpCodes.Newobj, ci);
+                        _ilg.Emit(OpCodes.Br_S, labEnd);
+
+                        // if null then push back on stack.
+                        _ilg.MarkLabel(labIfNull);
+                        _ilg.Emit(OpCodes.Ldloc, loc);
+                        FreeLocal(loc);
+                        _ilg.MarkLabel(labEnd);
+                        return;
                 }
             }
             else
@@ -231,15 +189,20 @@ namespace System.Linq.Expressions.Compiler
                         // (integer NegateChecked was rewritten to 0 - operand and doesn't hit here).
                         return;
                     case ExpressionType.TypeAs:
-                        if (operandType.IsValueType)
+                        if (operandType != resultType)
                         {
-                            _ilg.Emit(OpCodes.Box, operandType);
+                            if (operandType.IsValueType)
+                            {
+                                _ilg.Emit(OpCodes.Box, operandType);
+                            }
+
+                            _ilg.Emit(OpCodes.Isinst, resultType);
+                            if (resultType.IsNullableType())
+                            {
+                                _ilg.Emit(OpCodes.Unbox_Any, resultType);
+                            }
                         }
-                        _ilg.Emit(OpCodes.Isinst, resultType);
-                        if (resultType.IsNullableType())
-                        {
-                            _ilg.Emit(OpCodes.Unbox_Any, resultType);
-                        }
+
                         // Not an arithmetic operation -> no conversion
                         return;
                     case ExpressionType.Increment:
