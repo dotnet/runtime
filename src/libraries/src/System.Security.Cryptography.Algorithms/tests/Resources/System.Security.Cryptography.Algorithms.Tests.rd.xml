@@ -1,0 +1,10 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of [Theory] data that xunit reflects on for ToString() -->
+    <Type Name="System.Security.Cryptography.ECDsaCng" Dynamic="Required Public" />
+    <Type Name="System.Security.Cryptography.MD5" Dynamic="Required Public" />
+    <Type Name="System.Security.Cryptography.HMACMD5" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+
