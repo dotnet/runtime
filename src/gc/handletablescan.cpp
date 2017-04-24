@@ -1423,7 +1423,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
 {
     CONTRACTL
     {
-        WRAPPER(THROWS);
+        WRAPPER(NOTHROW);
         WRAPPER(GC_TRIGGERS);
         FORBID_FAULT;
         SUPPORTS_DAC;
