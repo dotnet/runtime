@@ -7680,8 +7680,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
 regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2)
 {
-    regNumber result = REG_NA;
-
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -7728,18 +7726,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!src1->isContained());
         }
     }
-    bool isMulOverflow = false;
+
+    insFlags flags         = INS_FLAGS_DONT_CARE;
+    bool     isMulOverflow = false;
     if (dst->gtOverflowEx())
     {
-        NYI_ARM("emitInsTernary overflow");
-#if 0
-        if (ins == INS_add)
+        if ((ins == INS_add) || (ins == INS_adc) || (ins == INS_sub) || (ins == INS_sbc))
         {
-            ins = INS_adds;
-        }
-        else if (ins == INS_sub)
-        {
-            ins = INS_subs;
+            flags = INS_FLAGS_SET;
         }
         else if (ins == INS_mul)
         {
@@ -7750,88 +7744,67 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             assert(!"Invalid ins for overflow check");
         }
-#endif
     }
     if (intConst != nullptr)
     {
-        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, intConst->IconValue());
+        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, intConst->IconValue(), flags);
     }
     else
     {
         if (isMulOverflow)
         {
-            NYI_ARM("emitInsTernary overflow");
-#if 0
             regNumber extraReg = dst->GetSingleTempReg();
             assert(extraReg != dst->gtRegNum);
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
             {
-                if (attr == EA_4BYTE)
-                {
-                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
-                    emitIns_R_R_R(INS_umull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                // Compute 8 byte result from 4 byte by 4 byte multiplication.
+                emitIns_R_R_R_R(INS_umull, EA_4BYTE, dst->gtRegNum, extraReg, src1->gtRegNum, src2->gtRegNum);
 
-                    // Get the high result by shifting dst.
-                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
-                }
-                else
-                {
-                    assert(attr == EA_8BYTE);
-                    // Compute the high result.
-                    emitIns_R_R_R(INS_umulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
-
-                    // Now multiply without skewing the high result.
-                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
-                }
-
-                // zero-sign bit comparison to detect overflow.
+                // Overflow exists if the result's high word is non-zero.
                 emitIns_R_I(INS_cmp, attr, extraReg, 0);
             }
             else
             {
-                int bitShift = 0;
-                if (attr == EA_4BYTE)
-                {
-                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
-                    emitIns_R_R_R(INS_smull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                // Compute 8 byte result from 4 byte by 4 byte multiplication.
+                emitIns_R_R_R_R(INS_smull, EA_4BYTE, dst->gtRegNum, extraReg, src1->gtRegNum, src2->gtRegNum);
 
-                    // Get the high result by shifting dst.
-                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
-
-                    bitShift = 31;
-                }
-                else
-                {
-                    assert(attr == EA_8BYTE);
-                    // Save the high result in a temporary register.
-                    emitIns_R_R_R(INS_smulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
-
-                    // Now multiply without skewing the high result.
-                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
-
-                    bitShift = 63;
-                }
-
-                // Sign bit comparison to detect overflow.
-                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, bitShift, INS_OPTS_ASR);
+                // Overflow exists if the result's high word is not merely a sign bit.
+                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, 31, INS_FLAGS_DONT_CARE, INS_OPTS_ASR);
             }
-#endif
         }
         else
         {
-            // We can just multiply.
-            emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+            // We can just do the arithmetic, setting the flags if needed.
+            emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum, flags);
         }
     }
 
     if (dst->gtOverflowEx())
     {
-        NYI_ARM("emitInsTernary overflow");
-#if 0
         assert(!varTypeIsFloating(dst));
-        codeGen->genCheckOverflow(dst);
-#endif
+
+        emitJumpKind jumpKind;
+
+        if (dst->OperGet() == GT_MUL)
+        {
+            jumpKind = EJ_ne;
+        }
+        else
+        {
+            bool isUnsignedOverflow = ((dst->gtFlags & GTF_UNSIGNED) != 0);
+            jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
+            if (jumpKind == EJ_lo)
+            {
+                if ((dst->OperGet() != GT_SUB) && (dst->OperGet() != GT_ASG_SUB) && (dst->OperGet() != GT_SUB_HI))
+                {
+                    jumpKind = EJ_hs;
+                }
+            }
+        }
+
+        // Jump to the block which will throw the exception.
+        codeGen->genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
     }
 
     return dst->gtRegNum;
