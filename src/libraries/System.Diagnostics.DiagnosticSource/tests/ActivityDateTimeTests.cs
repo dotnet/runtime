@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tests
             
             sw.Stop();
 
-            Assert.True(activity.Duration.TotalMilliseconds > 1 && activity.Duration.TotalMilliseconds <= sw.ElapsedMilliseconds);
+            Assert.True(activity.Duration.TotalMilliseconds > 1 && activity.Duration <= sw.Elapsed);
         }
     }
 }

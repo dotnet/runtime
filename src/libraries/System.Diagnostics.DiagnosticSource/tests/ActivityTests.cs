@@ -406,7 +406,12 @@ namespace System.Diagnostics.Tests
                     var activity = new Activity("activity");
 
                     // Test Activity.Start
+                    Stopwatch sw = Stopwatch.StartNew();
                     source.StartActivity(activity, arguments);
+
+                    // DateTime.UtcNow is not precise on some platforms, we check that StartTime of Activity is within 20ms from now
+                    Assert.True(Math.Abs((DateTime.UtcNow - observer.Activity.StartTimeUtc).TotalMilliseconds) <= 20);
+
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
 
@@ -423,13 +428,14 @@ namespace System.Diagnostics.Tests
 
                     // Test Activity.Stop
                     source.StopActivity(activity, arguments);
+                    sw.Stop();
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
 
                     // Confirm that duration is set. 
                     Assert.NotNull(observer.Activity);
                     Assert.True(TimeSpan.Zero < observer.Activity.Duration);
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddTicks(1));
+                    Assert.True(observer.Activity.Duration <= sw.Elapsed);
                 } 
             }
         }

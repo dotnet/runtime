@@ -11,29 +11,35 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns high resolution (1 DateTime tick) current UTC DateTime. 
         /// </summary>
-        private DateTime GetUtcNow()
+        internal static DateTime GetUtcNow()
         {
-            // DateTime.UtcNow accuracyon .NET Framework is 16ms, this method 
+            // DateTime.UtcNow accuracy on .NET Framework is ~16ms, this method 
             // uses combination of Stopwatch and DateTime to calculate accurate UtcNow.
 
+            var tmp = timeSync;
+
             // Timer ticks need to be converted to DateTime ticks
-            long dateTimeTicksDiff = (long)((Stopwatch.GetTimestamp() - syncStopwatchTicks) * 10000000L /
-                                   (double)Stopwatch.Frequency);
-            
+            long dateTimeTicksDiff = (long)((Stopwatch.GetTimestamp() - tmp.SyncStopwatchTicks) * 10000000L /
+                                            (double)Stopwatch.Frequency);
+
             // DateTime.AddSeconds (or Milliseconds) rounds value to 1 ms, use AddTicks to prevent it
-            return syncUtcNow.AddTicks(dateTimeTicksDiff);
+            return tmp.SyncUtcNow.AddTicks(dateTimeTicksDiff);
         }
 
         private static void Sync()
         {
             // wait for DateTime.UtcNow update to the next granular value
             Thread.Sleep(1);
-            syncStopwatchTicks = Stopwatch.GetTimestamp();
-            syncUtcNow = DateTime.UtcNow;
+            timeSync = new TimeSync();
         }
 
-        private static DateTime syncUtcNow = DateTime.UtcNow;
-        private static long syncStopwatchTicks = Stopwatch.GetTimestamp();
+        private class TimeSync
+        {
+            public readonly DateTime SyncUtcNow = DateTime.UtcNow;
+            public readonly long SyncStopwatchTicks = Stopwatch.GetTimestamp();
+        }
+
+        private static TimeSync timeSync = new TimeSync();
 
         // sync DateTime and Stopwatch ticks every 2 hours
         private static Timer syncTimeUpdater = new Timer(s => { Sync(); }, null, 0, 7200000);
