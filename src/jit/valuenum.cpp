@@ -4371,10 +4371,8 @@ struct ValueNumberState
 
         SetVisitBit(blk->bbNum, BVB_complete);
 
-        AllSuccessorIter succsEnd = blk->GetAllSuccs(m_comp).end();
-        for (AllSuccessorIter succs = blk->GetAllSuccs(m_comp).begin(); succs != succsEnd; ++succs)
+        for (BasicBlock* succ : blk->GetAllSuccs(m_comp))
         {
-            BasicBlock* succ = (*succs);
 #ifdef DEBUG_VN_VISIT
             JITDUMP("   Succ(BB%02u).\n", succ->bbNum);
 #endif // DEBUG_VN_VISIT
