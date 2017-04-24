@@ -79,6 +79,15 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             }
         }
 
+        // https://github.com/dotnet/corefx/issues/18863
+        private void ReinitilizeHashIfNetfx(HashAlgorithm hash)
+        {
+            if (PlatformDetection.IsFullFramework)
+            {
+                hash.Initialize();
+            }
+        }
+
         private void VerifyTransformBlockHash(byte[] block1, byte[] block2, byte[] expected, byte[] expectedEmpty)
         {
             using (HashAlgorithm hash = Create())
@@ -87,16 +96,20 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 hash.TransformBlock(Array.Empty<byte>(), 0, 0, null, 0);
                 hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 Assert.Equal(hash.Hash, expectedEmpty);
+
+                ReinitilizeHashIfNetfx(hash);
                 hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 Assert.Equal(hash.Hash, expectedEmpty);
 
                 // Verify Hash
+                ReinitilizeHashIfNetfx(hash);
                 hash.TransformBlock(block1, 0, block1.Length, null, 0);
                 hash.TransformFinalBlock(block2, 0, block2.Length);
                 Assert.Equal(expected, hash.Hash);
                 Assert.Equal(expected, hash.Hash); // .Hash doesn't clear hash
 
                 // Verify bad State
+                ReinitilizeHashIfNetfx(hash);
                 hash.TransformBlock(block1, 0, block1.Length, null, 0);
                 // Can't access hash until TransformFinalBlock is called
                 Assert.Throws<CryptographicUnexpectedOperationException>(() => hash.Hash);
@@ -104,6 +117,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Equal(expected, hash.Hash);
 
                 // Verify clean State
+                ReinitilizeHashIfNetfx(hash);
                 hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 Assert.Equal(hash.Hash, expectedEmpty);
             }
@@ -122,6 +136,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Throws<CryptographicUnexpectedOperationException>(() => hash.Hash);
                 hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 Assert.Equal(expectedEmpty, hash.Hash);
+                ReinitilizeHashIfNetfx(hash);
                 actual = hash.ComputeHash(Array.Empty<byte>(), 0, 0);
                 Assert.Equal(expectedEmpty, actual);
 
