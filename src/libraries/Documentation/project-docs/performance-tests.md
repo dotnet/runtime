@@ -110,5 +110,5 @@ Test cases should adhere to the following guidelines, within reason:
 
 Avoid the following performance test test anti-patterns:
 * Tests for multiple methods which all end up calling the same final overload. This just adds noise and extra duplicate data to sift through.
-* Having too many test cases which only differ by "input data". For example, testing the same operation on a collection with size 1, 10, 100, 1000, 10000, etc. This is an easy pit to fall into when using `[Theory]` and `[InlineData]` Instead, focus on the key scenarios and minimize the numbers of test cases. This results in less noise, less data to sift through, and less test maintenance cost.
+* Having too many test cases which only differ by "input data". For example, testing the same operation on a collection with size 1, 10, 100, 1000, 10000, etc. This is a common pitfall when using `[Theory]` and `[InlineData]`. Instead, focus on the key scenarios and minimize the numbers of test cases. This results in less noise, less data to sift through, and less test maintenance cost.
 * Performing more than a single operation in the "core test loop". There are times when this is necessary, but they are few and far between. Take extra care if you notice that your test case is doing too many things, and try to focus on creating a small, isolated microbenchmark.
