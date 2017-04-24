@@ -44,6 +44,13 @@ using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL);
 
+#include "pal/utils.h"
+
+// This is temporary until #10981 merges.
+// There will be an equivalent but opposite temporary fix in #10981 which
+// will trigger a merge conflict to be sure both of these workarounds are removed
+#define GetVirtualPageSize() VIRTUAL_PAGE_SIZE
+
 //
 // The mapping critical section guards access to the list
 // of currently mapped views. If a thread needs to access
@@ -2012,14 +2019,14 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
         real_map_sz = pView->NumberOfBytesToMap;
 #endif
 
-        MappedSize = ((real_map_sz-1) & ~VIRTUAL_PAGE_MASK) + VIRTUAL_PAGE_SIZE; 
+        MappedSize = ALIGN_UP(real_map_sz, GetVirtualPageSize());
         if ( real_map_addr <= lpAddress && 
              (VOID *)((UINT_PTR)real_map_addr+MappedSize) > lpAddress )
         {
             if (lpBuffer)
             {
-                SIZE_T regionSize = MappedSize + (UINT_PTR) real_map_addr - 
-                       ((UINT_PTR) lpAddress & ~VIRTUAL_PAGE_MASK);
+                SIZE_T regionSize = MappedSize + (UINT_PTR) real_map_addr -
+                       ALIGN_DOWN((UINT_PTR)lpAddress, GetVirtualPageSize());
 
                 lpBuffer->BaseAddress = lpAddress;
                 lpBuffer->AllocationProtect = 0;
@@ -2241,7 +2248,9 @@ MAPmmapAndRecord(
     PAL_ERROR palError = NO_ERROR;
     LPVOID pvBaseAddress = NULL;
 
-    pvBaseAddress = mmap(addr, len, prot, flags, fd, offset);
+    off_t adjust = offset & (GetVirtualPageSize() - 1);
+
+    pvBaseAddress = mmap(static_cast<char *>(addr) - adjust, len + adjust, prot, flags, fd, offset - adjust);
     if (MAP_FAILED == pvBaseAddress)
     {
         ERROR_(LOADER)( "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
@@ -2368,14 +2377,6 @@ void * MAPMapPEFile(HANDLE hFile)
         goto done;
     }
 
-    //this code requires that the file alignment be the same as the page alignment
-    if (ntHeader.OptionalHeader.FileAlignment < VIRTUAL_PAGE_SIZE)
-    {
-        ERROR_(LOADER)( "Optional header file alignment is bad\n" );
-        palError = ERROR_INVALID_PARAMETER;
-        goto done;
-    }
-
     //This doesn't read the entire NT header (the optional header technically has a variable length.  But I
     //don't need more directories.
 
@@ -2416,7 +2417,7 @@ void * MAPMapPEFile(HANDLE hFile)
     {
         //if we're forcing relocs, create an anonymous mapping at the preferred base.  Only create the
         //mapping if we can create it at the specified address.
-        pForceRelocBase = mmap( (void*)preferredBase, VIRTUAL_PAGE_SIZE, PROT_NONE, MAP_ANON|MAP_FIXED|MAP_PRIVATE, -1, 0 );
+        pForceRelocBase = mmap( (void*)preferredBase, GetVirtualPageSize(), PROT_NONE, MAP_ANON|MAP_FIXED|MAP_PRIVATE, -1, 0 );
         if (pForceRelocBase == MAP_FAILED)
         {
             TRACE_(LOADER)("Attempt to take preferred base of %p to force relocation failed\n", (void*)preferredBase);
@@ -2445,7 +2446,7 @@ void * MAPMapPEFile(HANDLE hFile)
     // First try to reserve virtual memory using ExecutableAllcator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
     // more efficient code (by avoiding usage of jump stubs).
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, virtualSize);
+    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(virtualSize, GetVirtualPageSize()));
     if (loadedBase == NULL)
     {
         // MAC64 requires we pass MAP_SHARED (or MAP_PRIVATE) flags - otherwise, the call is failed.
@@ -2468,7 +2469,7 @@ void * MAPMapPEFile(HANDLE hFile)
     if (forceRelocs)
     {
         _ASSERTE(((SIZE_T)loadedBase) != preferredBase);
-        munmap(pForceRelocBase, VIRTUAL_PAGE_SIZE); // now that we've forced relocation, let the original address mapping go
+        munmap(pForceRelocBase, GetVirtualPageSize()); // now that we've forced relocation, let the original address mapping go
     }
     if (((SIZE_T)loadedBase) != preferredBase)
     {
@@ -2484,7 +2485,7 @@ void * MAPMapPEFile(HANDLE hFile)
     //separately.
 
     size_t headerSize;
-    headerSize = VIRTUAL_PAGE_SIZE; // if there are lots of sections, this could be wrong
+    headerSize = GetVirtualPageSize(); // if there are lots of sections, this could be wrong
 
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
@@ -2519,10 +2520,8 @@ void * MAPMapPEFile(HANDLE hFile)
         goto doneReleaseMappingCriticalSection;
     }
 
-    void* prevSectionBase;
-    prevSectionBase = loadedBase; // the first "section" for our purposes is the header
-    size_t prevSectionSizeInMemory;
-    prevSectionSizeInMemory = headerSize;
+    void* prevSectionEnd;
+    prevSectionEnd = (char*)loadedBase + headerSize; // the first "section" for our purposes is the header
     for (unsigned i = 0; i < numSections; ++i)
     {
         //for each section, map the section of the file to the correct virtual offset.  Gather the
@@ -2532,12 +2531,13 @@ void * MAPMapPEFile(HANDLE hFile)
         IMAGE_SECTION_HEADER &currentHeader = firstSection[i];
 
         void* sectionBase = (char*)loadedBase + currentHeader.VirtualAddress;
+        void* sectionBaseAligned = ALIGN_DOWN(sectionBase, GetVirtualPageSize());
 
         // Validate the section header
         if (   (sectionBase < loadedBase)                                                           // Did computing the section base overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
             || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedBase + virtualSize) // Does the section extend past the end of the image as the header stated?
-            || ((char*)prevSectionBase + prevSectionSizeInMemory > sectionBase)                     // Does this section overlap the previous one?
+            || (prevSectionEnd > sectionBase)                                                       // Does this section overlap the previous one?
             )
         {
             ERROR_(LOADER)( "section %d is corrupt\n", i );
@@ -2552,13 +2552,12 @@ void * MAPMapPEFile(HANDLE hFile)
         }
 
         // Is there space between the previous section and this one? If so, add a PROT_NONE mapping to cover it.
-        if ((char*)prevSectionBase + prevSectionSizeInMemory < sectionBase)
+        if (prevSectionEnd < sectionBaseAligned)
         {
-            char* gapBase = (char*)prevSectionBase + prevSectionSizeInMemory;
             palError = MAPRecordMapping(pFileObject,
                             loadedBase,
-                            (void*)gapBase,
-                            (char*)sectionBase - gapBase,
+                            prevSectionEnd,
+                            (char*)sectionBaseAligned - (char*)prevSectionEnd,
                             PROT_NONE);
             if (NO_ERROR != palError)
             {
@@ -2602,20 +2601,18 @@ void * MAPMapPEFile(HANDLE hFile)
         }
 #endif // _DEBUG
 
-        prevSectionBase = sectionBase;
-        prevSectionSizeInMemory = (currentHeader.SizeOfRawData + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK; // round up to page boundary
+        prevSectionEnd = ALIGN_UP((char*)sectionBase + currentHeader.SizeOfRawData, GetVirtualPageSize()); // round up to page boundary
     }
 
     // Is there space after the last section and before the end of the mapped image? If so, add a PROT_NONE mapping to cover it.
     char* imageEnd;
     imageEnd = (char*)loadedBase + virtualSize; // actually, points just after the mapped end
-    if ((char*)prevSectionBase + prevSectionSizeInMemory < imageEnd)
+    if (prevSectionEnd < imageEnd)
     {
-        char* gapBase = (char*)prevSectionBase + prevSectionSizeInMemory;
         palError = MAPRecordMapping(pFileObject,
                         loadedBase,
-                        (void*)gapBase,
-                        imageEnd - gapBase,
+                        prevSectionEnd,
+                        (char*)imageEnd - (char*)prevSectionEnd,
                         PROT_NONE);
         if (NO_ERROR != palError)
         {
