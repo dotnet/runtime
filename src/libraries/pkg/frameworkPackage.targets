@@ -76,7 +76,7 @@
       
       <!-- Include lib -->
       <File Include="@(LibFile)">
-        <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">$(LibFileTargetPath)$(TargetFramework)%(LibFile.SubFolder)</TargetPath>
+        <TargetPath Condition="'%(LibFile.TargetPath)' == '' ">$(LibFileTargetPath)%(LibFile.SubFolder)</TargetPath>
       </File>
 
       <File Include="@(NativeFile)">
