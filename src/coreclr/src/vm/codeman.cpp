@@ -5082,7 +5082,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
 
         numJumpStubs = 4;
 
-#ifdef _TARGET_ARM64_
+#ifdef _TARGET_AMD64_
         // Note this these values are not requirements, instead we are 
         // just confirming the values that are mentioned in the comments.
         _ASSERTE(BACK_TO_BACK_JUMP_ALLOCATE_SIZE == 12);
