@@ -1044,7 +1044,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static byte[] EnvironmentVariablesToByteArray(Dictionary<string, string> sd)
+        private static byte[] EnvironmentVariablesToByteArray(IDictionary<string, string> sd)
         {
             // get the keys
             string[] keys = new string[sd.Count];

@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
+    <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
