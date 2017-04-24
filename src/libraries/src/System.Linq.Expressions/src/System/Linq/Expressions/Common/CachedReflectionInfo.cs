@@ -10,11 +10,6 @@ namespace System.Linq.Expressions
 {
     internal static partial class CachedReflectionInfo
     {
-        private static Type[] s_ArrayOfType_Bool;
-        public  static Type[]   ArrayOfType_Bool =>
-                              s_ArrayOfType_Bool ??
-                             (s_ArrayOfType_Bool = new[] { typeof(bool) });
-
         private static ConstructorInfo s_Nullable_Boolean_Ctor;
 
         public static ConstructorInfo Nullable_Boolean_Ctor
