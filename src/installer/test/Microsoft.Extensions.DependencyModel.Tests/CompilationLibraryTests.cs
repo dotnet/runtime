@@ -4,7 +4,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Moq;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
@@ -12,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     public class CompilationLibraryTests
     {
         [Fact]
-        public void ResolveReferencePathsAcceptsAdditionalResolvers()
+        public void ResolveReferencePathsAcceptsCustomResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
             var success = new Mock<ICompilationAssemblyResolver>();
@@ -44,6 +46,32 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Times.Once());
             failTwo.Verify(r => r.TryResolveAssemblyPaths(It.IsAny<CompilationLibrary>(), It.IsAny<List<string>>()),
                 Times.Never());
+        }
+
+        [Fact]
+        public void ResolveReferencePathsAcceptsNullCustomResolvers()
+        {
+            var library = TestLibraryFactory.Create();
+            var assemblyPath = Path.Combine(AppContext.BaseDirectory, "refs", library.Name + ".dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
+            File.WriteAllText(assemblyPath, "hello");
+
+            try
+            {
+                var result = library.ResolveReferencePaths(null);
+                result.ShouldBeEquivalentTo(new[] { assemblyPath });
+            }
+            finally
+            {
+                File.Delete(assemblyPath);
+            }
+        }
+
+        [Fact]
+        public void ResolveReferencePathsThrowsOnNotFound()
+        {
+            var library = TestLibraryFactory.Create();
+            Assert.Throws<InvalidOperationException>(() => library.ResolveReferencePaths(null));
         }
     }
 }
