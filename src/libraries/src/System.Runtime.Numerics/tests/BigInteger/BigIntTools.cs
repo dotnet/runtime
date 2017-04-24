@@ -35,15 +35,31 @@ namespace BigIntTools
             }
         }
 
-        private static readonly TypeInfo s_internalCalculator =
-            typeof(BigInteger).GetTypeInfo()
-                              .Assembly
-                              .GetType("System.Numerics.BigIntegerCalculator")
-                              .GetTypeInfo();
+        private static TypeInfo InternalCalculator
+        {
+            get
+            {
+                if (s_lazyInternalCalculator == null)
+                {
+                    Type t = typeof(BigInteger).Assembly.GetType("System.Numerics.BigIntegerCalculator");
+                    if (t != null)
+                    {
+                        s_lazyInternalCalculator = t.GetTypeInfo();
+                    }
+                }
+                return s_lazyInternalCalculator;
+            }
+        }
+
+        private static volatile TypeInfo s_lazyInternalCalculator;
 
         public static void RunWithFakeThreshold(string name, int value, Action action)
         {
-            FieldInfo field = s_internalCalculator.GetDeclaredField(name);
+            TypeInfo internalCalculator = InternalCalculator;
+            if (internalCalculator == null)
+                return; // Internal frame types are not reflectable on AoT platforms. Skip the test.
+
+            FieldInfo field = internalCalculator.GetDeclaredField(name);
             int lastValue = (int)field.GetValue(null);
             field.SetValue(null, value);
             try
