@@ -371,7 +371,7 @@ namespace System.Diagnostics
 
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
-                string parentId = ParentId[0] == RootIdPrefix ? ParentId : RootIdPrefix + ParentId;
+                string parentId = ParentId[0] == '|' ? ParentId : '|' + ParentId;
 
                 char lastChar = parentId[parentId.Length - 1];
                 if (lastChar != '.' && lastChar != '_')
@@ -398,7 +398,7 @@ namespace System.Diagnostics
             int rootEnd = id.IndexOf('.');
             if (rootEnd < 0)
                 rootEnd = id.Length;
-            int rootStart = id[0] == RootIdPrefix ? 1 : 0;
+            int rootStart = id[0] == '|' ? 1 : 0;
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
@@ -439,9 +439,9 @@ namespace System.Diagnostics
                 Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
             }
 #if DEBUG
-            string ret = s_uniqPrefix + "-" + OperationName.Replace('.', '-') + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + OperationName.Replace('.', '-') + "-" + s_uniqPrefix + '.';
 #else       // To keep things short, we drop the operation name 
-            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + s_uniqPrefix + '.';
 #endif
             return ret;
         }
@@ -466,7 +466,6 @@ namespace System.Diagnostics
         private static long s_currentRootId = (uint)GetRandomNumber();
 
         private const int RequestIdMaxLength = 1024;
-        private const char RootIdPrefix = '|';
 
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  

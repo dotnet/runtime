@@ -7,7 +7,7 @@
         private string GenerateInstancePrefix()
         {
             int uniqNum = unchecked((int)Stopwatch.GetTimestamp());
-            return $"{RootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
+            return $"{uniqNum:x}-{Environment.MachineName}";
         }
 
         #endregion
