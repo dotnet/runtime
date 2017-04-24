@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -255,6 +256,33 @@ namespace System.Linq.Expressions.Tests
         {
             MemberAssignment bind = Expression.Bind(typeof(PropertyAndFields).GetProperty("StringProperty"), Expression.Constant("Hello Property"));
             Assert.Equal(MemberBindingType.Assignment, bind.BindingType);
+        }
+
+        private class BogusBinding : MemberBinding
+        {
+            public BogusBinding(MemberBindingType type, MemberInfo member)
+#pragma warning disable 618
+                : base(type, member)
+#pragma warning restore 618
+            {
+            }
+
+            public override string ToString() => ""; // Called internal to test framework and default would throw.
+        }
+
+        private static IEnumerable<object[]> BogusBindings()
+        {
+            MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringField))[0];
+            foreach (MemberBindingType type in new[] {MemberBindingType.Assignment, MemberBindingType.ListBinding, MemberBindingType.MemberBinding, (MemberBindingType)(-1)})
+            {
+                yield return new object[] {new BogusBinding(type, member)};
+            }
+        }
+
+        [Theory, MemberData(nameof(BogusBindings))]
+        public void BogusBindingType(MemberBinding binding)
+        {
+            Assert.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(Expression.New(typeof(PropertyAndFields)), binding));
         }
 
 #if FEATURE_COMPILE
