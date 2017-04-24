@@ -595,7 +595,7 @@ namespace System.IO
             }
 
             // Return the results.
-            return tcs.Task.Status == TaskStatus.RanToCompletion ?
+            return tcs.Task.IsCompletedSuccessfully ?
                 tcs.Task.Result :
                 WaitForChangedResult.TimedOutResult;
         }

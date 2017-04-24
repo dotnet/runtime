@@ -520,9 +520,8 @@ namespace System.IO
 
         private Task<int> LastSyncCompletedReadTask(int val)
         {
-
             Task<int> t = _lastSyncCompletedReadTask;
-            Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion);
+            Debug.Assert(t == null || t.IsCompletedSuccessfully);
 
             if (t != null && t.Result == val)
                 return t;
@@ -557,9 +556,8 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync();
-            if (semaphoreLockTask.Status == TaskStatus.RanToCompletion)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
-
                 bool completeSynchronously = true;
                 try
                 {
@@ -889,7 +887,7 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync();
-            if (semaphoreLockTask.Status == TaskStatus.RanToCompletion)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 bool completeSynchronously = true;
                 try
