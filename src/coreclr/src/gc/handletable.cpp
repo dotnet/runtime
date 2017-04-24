@@ -285,12 +285,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
 {
     CONTRACTL
     {
-#ifdef FEATURE_REDHAWK
-        // Redhawk returns NULL on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_NOTRIGGER;
         if (object != NULL) 
         { 
@@ -308,8 +303,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_HANDLETABLE))
     {
         FAULT_NOT_FATAL();
-        char *a = new char;
-        delete a;
+        return NULL;
     }
 #endif // _DEBUG && !FEATURE_REDHAWK
 
@@ -331,11 +325,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     // did the allocation succeed?
     if (!handle)
     {
-#ifdef FEATURE_REDHAWK
         return NULL;
-#else
-        ThrowOutOfMemory();
-#endif
     }
 
 #ifdef DEBUG_DestroyedHandleValue
