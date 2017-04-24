@@ -55,7 +55,13 @@ void ZapWriter::Initialize()
     m_FileAlignment = 0x200;
 }
 
+#if defined(FEATURE_PAL) && defined(BIT64)
+#define SECTION_ALIGNMENT   m_FileAlignment
+#define PAL_MAX_PAGE_SIZE   0x10000
+#else
 #define SECTION_ALIGNMENT   0x1000
+#define PAL_MAX_PAGE_SIZE   0
+#endif
 
 void ZapWriter::Save(IStream * pStream)
 {
@@ -119,7 +125,7 @@ void ZapWriter::ComputeRVAs()
 
         pPhysicalSection->m_dwFilePos = dwFilePos;
 
-        dwPos = AlignUp(dwPos, SECTION_ALIGNMENT);
+        dwPos = AlignUp(dwPos, SECTION_ALIGNMENT) + PAL_MAX_PAGE_SIZE;
         pPhysicalSection->SetRVA(dwPos);
 
         DWORD dwEndOfRawData = dwPos;
@@ -193,7 +199,7 @@ void ZapWriter::SaveContent()
         WritePad(dwAlignedFilePos - dwFilePos);
         dwFilePos = dwAlignedFilePos;
 
-        dwPos = AlignUp(dwPos, SECTION_ALIGNMENT);
+        dwPos = AlignUp(dwPos, SECTION_ALIGNMENT) + PAL_MAX_PAGE_SIZE;
 
         if (m_fWritingRelocs)
         {
