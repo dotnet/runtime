@@ -101,10 +101,14 @@ Test cases should adhere to the following guidelines, within reason:
 * The "real work" must be done inside of the `using (iteration.StartMeasurement())` block. All extra work (setup, cleanup) should be done outside of this block, so as to not pollute the data being collected.
 * Individual iterations of a test case should take from 100 milliseconds to 1 second. This is everything inside of the `using (iteration.StartMeasurement())` block.
 * Test cases may need to use an "inner iteration" concept in order for individual invocations of the "outer iteration" to last from 100 ms to 1s. The example above shows this.
-* Some functions are prone to being entirely optimized out from test cases. For example, if the results of `Vector3.Add()` are not stored anywhere, then there are no observable side-effects, and the entire operation can be optimized out by the JIT. For operations which are susceptible to this, care must be taken to ensure that the operations are not entirely skipped. Try one of the following:
-  * Pass intermediate values to a volatile static field. This is done in the example code above. If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
-  * Pass intermediate values to a no-inline method (`MethodImplOptions.NoInlining`)
-  * Conditionally store intermediate values to a field, where the condition is never true at runtime (but is still evaluated).
+* Some functions are prone to being entirely optimized out from test cases. For example, if the results of `Vector3.Add()` are not stored anywhere, then there are no observable side-effects, and the entire operation can be optimized out by the JIT. For operations which are susceptible to this, care must be taken to ensure that the operations are not entirely skipped. Try the following:
+  * Pass intermediate values to a volatile static field. This is done in the example code above.
+  * If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
 * There are two main ways to detect when a test case is being "optimized out":
-  * Look at the disassembly of the function (with the Visual Studio disassembler, for example)
+  * Look at the disassembly of the function (with the Visual Studio disassembler, for example).
   * Observe unusual changes in the duration metric. If your test suddenly takes 1% of its previous time, odds are something has gone wrong.
+
+Avoid the following performance test test anti-patterns:
+* Tests for multiple methods which all end up calling the same final overload. This just adds noise and extra duplicate data to sift through.
+* Having too many test cases which only differ by "input data". For example, testing the same operation on a collection with size 1, 10, 100, 1000, 10000, etc. This is an easy pit to fall into when using `[Theory]` and `[InlineData]` Instead, focus on the key scenarios and minimize the numbers of test cases. This results in less noise, less data to sift through, and less test maintenance cost.
+* Performing more than a single operation in the "core test loop". There are times when this is necessary, but they are few and far between. Take extra care if you notice that your test case is doing too many things, and try to focus on creating a small, isolated microbenchmark.
