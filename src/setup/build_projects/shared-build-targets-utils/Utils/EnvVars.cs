@@ -7,7 +7,7 @@ namespace Microsoft.DotNet.Cli.Build
     {
         public static readonly bool Verbose = GetBool("DOTNET_BUILD_VERBOSE");
 
-        public static readonly bool Signed = GetBool("SIGNED_PACKAGES");
+        public static readonly bool PublishRidAgnosticPackages = GetBool("PUBLISH_RID_AGNOSTIC_PACKAGES");
 
         private static bool GetBool(string name, bool defaultValue = false)
         {
