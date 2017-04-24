@@ -5,6 +5,7 @@
 @echo off
 @if defined _echo echo on
 
+setlocal ENABLEDELAYEDEXPANSION
 setlocal
   set ERRORLEVEL=
   set BENCHVIEW_RUN_TYPE=local
@@ -15,14 +16,17 @@ setlocal
   set TEST_CONFIG=Release
   set IS_SCENARIO_TEST=
   set USAGE_DISPLAYED=
+  set SHOULD_UPLOAD_TO_BENCHVIEW=
+  set BENCHVIEW_PATH=
 
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
 
-  call :set_test_architecture || exit /b 1
-  call :verify_core_overlay   || exit /b 1
-  call :set_perf_run_log      || exit /b 1
-  call :setup_sandbox         || exit /b 1
+  call :set_test_architecture  || exit /b 1
+  call :verify_benchview_tools || exit /b 1
+  call :verify_core_overlay    || exit /b 1
+  call :set_perf_run_log       || exit /b 1
+  call :setup_sandbox          || exit /b 1
 
   call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\project.json"                                        || exit /b 1
   call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\project.json" -c Release -o "%CORECLR_REPO%\sandbox" || exit /b 1
@@ -92,7 +96,7 @@ setlocal
   )
 
   rem optionally generate results for benchview
-  if not [%BENCHVIEW_PATH%] == [] (
+  if exist "%BENCHVIEW_PATH%" (
     call :generate_results_for_benchview || exit /b 1
   ) else (
     type "%XMLOUT%" | findstr /i /c:"test name"
@@ -119,6 +123,11 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
+  IF /I [%~1] == [-uploadtobenchview] (
+    set SHOULD_UPLOAD_TO_BENCHVIEW=1
+    shift
+    goto :parse_command_line_arguments
+  )
   IF /I [%~1] == [-runtype] (
     set BENCHVIEW_RUN_TYPE=%~2
     shift
@@ -130,7 +139,7 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
-  IF /I [%~1] == [-uploadtobenchview] (
+  IF /I [%~1] == [-generatebenchviewdata] (
     set BENCHVIEW_PATH=%~2
     shift
     shift
@@ -175,7 +184,19 @@ rem   Sets the test architecture.
 rem ****************************************************************************
   set TEST_ARCH=%TEST_ARCHITECTURE%
   exit /b 0
-
+  
+:verify_benchview_tools
+rem ****************************************************************************
+rem   Verifies that the path to the benchview tools is correct.
+rem ****************************************************************************
+  if defined BENCHVIEW_PATH (
+    if not exist "%BENCHVIEW_PATH%" (
+      call :print_error BenchView path: "%BENCHVIEW_PATH%" was specified, but it does not exist.
+      exit /b 1
+    )
+  )
+  exit /b 0
+  
 :verify_core_overlay
 rem ****************************************************************************
 rem   Verify that the Core_Root folder exist.
@@ -253,10 +274,12 @@ setlocal
     exit /b 1
   )
 
-  call :run_cmd py.exe "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
-  IF %ERRORLEVEL% NEQ 0 (
-    call :print_error Uploading to BenchView failed.
-    exit /b 1
+  if defined SHOULD_UPLOAD_TO_BENCHVIEW (
+    call :run_cmd py.exe "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
+    IF !ERRORLEVEL! NEQ 0 (
+      call :print_error Uploading to BenchView failed.
+      exit /b 1
+    )
   )
   exit /b %ERRORLEVEL%
 
@@ -265,14 +288,15 @@ rem ****************************************************************************
 rem   Script's usage.
 rem ****************************************************************************
   set USAGE_DISPLAYED=1
-  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-uploadToBenchview] ^<path_to_benchview_tools^> [-runtype] ^<rolling^|private^> [-scenarioTest]
+  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-runtype] ^<rolling^|private^> [-scenarioTest]
   echo/
   echo For the path to the tests you can pass a parent directory and the script will grovel for
   echo all tests in subdirectories and run them.
   echo The library flag denotes whether the tests are build as libraries (.dll) or an executable (.exe)
   echo Architecture defaults to x64 and configuration defaults to release.
-  echo -uploadtoBenchview is used to specify a path to the Benchview tooling and when this flag is
-  echo set we will upload the results of the tests to the coreclr container in benchviewupload.
+  echo -generateBenchviewData is used to specify a path to the Benchview tooling and when this flag is
+  echo set we will generate the results for upload to benchview.
+  echo -uploadToBenchview If this flag is set the generated benchview test data will be uploaded.
   echo Runtype sets the runtype that we upload to Benchview, rolling for regular runs, and private for
   echo PRs.
   echo -scenarioTest should be included if you are running a scenario benchmark.
