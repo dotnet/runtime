@@ -135,7 +135,10 @@ namespace System.Diagnostics
 
             // If we need the host (if it exists), use it, otherwise target the console app directly.
             string testConsoleAppArgs = "\"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args);
-            
+
+            if (!File.Exists(TestConsoleApp))
+                throw new IOException("RemoteExecutorConsoleApp test app isn't present in the test runtime directory.");
+
             if (IsFullFramework)
             {
                 psi.FileName = TestConsoleApp;

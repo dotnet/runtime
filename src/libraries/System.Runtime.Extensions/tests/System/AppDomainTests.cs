@@ -196,19 +196,19 @@ namespace System.Tests
         [Fact]
         public void ProcessExit_Called()
         {
-            System.IO.File.Delete("success.txt");
-            RemoteInvoke(() =>
+            string path = GetTestFilePath();
+            RemoteInvoke((pathToFile) =>
             {
                 EventHandler handler = (sender, e) => 
                 {
-                    System.IO.File.Create("success.txt");
+                    File.Create(pathToFile);
                 };
 
                 AppDomain.CurrentDomain.ProcessExit += handler;
                 return SuccessExitCode;
-            }).Dispose();
+            }, path).Dispose();
 
-            Assert.True(System.IO.File.Exists("success.txt"));
+            Assert.True(File.Exists(path));
         }
 
         [Fact]
