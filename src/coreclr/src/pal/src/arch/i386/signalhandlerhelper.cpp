@@ -70,7 +70,6 @@ void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, 
     // We don't care about the other registers state since the stack unwinding restores
     // them for the target frame directly from the signal context.
     context2.Esp = (size_t)sp;
-    context2.ResumeEsp = (size_t)sp;
     context2.Ebp = (size_t)fp;
     context2.Eip = (size_t)signal_handler_worker;
 
