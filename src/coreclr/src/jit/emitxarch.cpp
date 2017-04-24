@@ -332,16 +332,9 @@ bool IsXMMReg(regNumber reg)
 unsigned RegEncoding(regNumber reg)
 {
 #ifndef LEGACY_BACKEND
-    // XMM registers do not share the same reg numbers as integer registers.
-    // But register encoding of integer and XMM registers is the same.
-    // Therefore, subtract XMMBASE from regNumber to get the register encoding
-    // in case of XMM registers.
-    return (unsigned)((IsXMMReg(reg) ? reg - XMMBASE : reg) & 0x7);
-#else  // LEGACY_BACKEND
-    // Legacy X86: XMM registers share the same reg numbers as integer registers and
-    // hence nothing to do to get reg encoding.
+    static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
+#endif
     return (unsigned)(reg & 0x7);
-#endif // LEGACY_BACKEND
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
