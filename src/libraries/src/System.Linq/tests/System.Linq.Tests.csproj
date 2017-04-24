@@ -9,6 +9,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="SkipLastTests.cs" />
@@ -34,7 +36,6 @@
     <Compile Include="ElementAtTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
     <Compile Include="EmptyPartitionTests.cs" />
-    <Compile Include="EnumerableDebugViewTests.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="ExceptTests.cs" />
     <Compile Include="FirstOrDefaultTests.cs" />
@@ -79,9 +80,6 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
@@ -89,6 +87,18 @@
       <Link>Common\System\Linq\SkipTakeData.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
+       The proper way to test these is via the debugger expression evaluator, not Reflection. -->
+  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="GroupByTests.DebuggerAttributes.cs" />
+    <Compile Include="ToLookupTests.DebuggerAttributes.cs" />
+    <Compile Include="EnumerableDebugViewTests.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
