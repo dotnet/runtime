@@ -90,17 +90,13 @@
     <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>
     </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
+    <_TargetGroupsWithIsAot Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
+      <IsAot>$([System.String]::new('%(Identity)').Contains('aot'))</IsAot>
+    </_TargetGroupsWithIsAot>
     <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netcoreapp">
-      <RefPath>$(RefRootPath)netcoreapp/</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="uap">
-      <RefPath>$(RefRootPath)uap/</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netfx">
-      <RefPath>$(RefRootPath)netfx/</RefPath>
+                           Include="@(_TargetGroupsWithIsAot->WithMetadataValue('IsAot', 'false'))">
+      <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
   </ItemGroup>
 
