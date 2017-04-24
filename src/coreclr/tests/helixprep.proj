@@ -110,7 +110,7 @@ EXIT /B %ERRORLEVEL%
     <PropertyGroup>
       <WrapperShContents>#!/bin/sh%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents> 
-      <WrapperShContents>$(WrapperShContents)export CORE_ROOT="$HELIX_CORRELATION_PAYLOAD"%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)export CORE_ROOT="%24HELIX_CORRELATION_PAYLOAD"%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)for scriptFilePath in %24(find . -type f -iname '%2A.sh' ! -iname "runtests.sh" | sort)%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)do%0a</WrapperShContents>
@@ -118,6 +118,32 @@ EXIT /B %ERRORLEVEL%
       <WrapperShContents>$(WrapperShContents) chmod +x "%24scriptFilePath"%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)done%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
+
+      <!-- Crossgen FX assemblies, if running R2R tests. 
+      TODO - remove this when we build tests on Linux -->
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)overlayDir=%24CORE_ROOT%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)if [ ! -f %24overlayDir/crossgenCompleted.mrk ]%3B then%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  filesToPrecompile=%24(find -L %24overlayDir -iname \%2A.dll -not -iname \%2A.ni.dll -not -iname \%2A-ms-win-\%2A -type f )%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  for fileToPrecompile in %24{filesToPrecompile}%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  do%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    filename=%24{fileToPrecompile}%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    echo Precompiling %24filename%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    %24overlayDir/crossgen /Platform_Assemblies_Paths %24overlayDir %24filename 1> %24filename.stdout 2>%24filename.stderr%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    exitCode=%24%3F%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    if [ %24exitCode != 0 ]%3B then%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      if grep -q -e '(COR_E_ASSEMBLYEXPECTED)' %24filename.stderr%3B then%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)        printf "\n\t%24filename is not a managed assembly.\n\n"%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      else%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)        echo Unable to precompile %24filename.%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      fi%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    fi%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    rm %24filename.stdout%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    rm %24filename.stderr%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  done%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  touch %24overlayDir/crossgenCompleted.mrk%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)fi%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)%0a</WrapperShContents>
+
       <WrapperShContents>$(WrapperShContents)echo BEGIN EXECUTION%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)echo "%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)"%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
