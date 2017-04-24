@@ -32,10 +32,8 @@ namespace System.Linq.Expressions.Compiler
                 _scope.EmitGet(_scope.NearestHoistedLocals.SelfVariable);
                 _ilg.Emit(OpCodes.Call, RuntimeOps_Quote);
 
-                if (quote.Type != typeof(Expression))
-                {
-                    _ilg.Emit(OpCodes.Castclass, quote.Type);
-                }
+                Debug.Assert(typeof(LambdaExpression).IsAssignableFrom(quote.Type));
+                _ilg.Emit(OpCodes.Castclass, quote.Type);
             }
         }
 
@@ -252,8 +250,6 @@ namespace System.Linq.Expressions.Compiler
                         EmitConstantOne(resultType);
                         _ilg.Emit(OpCodes.Sub);
                         break;
-                    default:
-                        throw Error.UnhandledUnary(op, nameof(op));
                 }
 
                 EmitConvertArithmeticResult(op, resultType);
@@ -264,12 +260,6 @@ namespace System.Linq.Expressions.Compiler
         {
             switch (type.GetTypeCode())
             {
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                    _ilg.Emit(OpCodes.Ldc_I4_1);
-                    break;
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     _ilg.Emit(OpCodes.Ldc_I4_1);
@@ -282,9 +272,8 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(OpCodes.Ldc_R8, 1.0d);
                     break;
                 default:
-                    // we only have to worry about arithmetic types, see
-                    // TypeUtils.IsArithmetic
-                    throw ContractUtils.Unreachable;
+                    _ilg.Emit(OpCodes.Ldc_I4_1);
+                    break;
             }
         }
 

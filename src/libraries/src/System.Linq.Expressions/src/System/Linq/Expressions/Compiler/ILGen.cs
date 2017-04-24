@@ -679,25 +679,18 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitCastToType(this ILGenerator il, Type typeFrom, Type typeTo)
         {
-            if (!typeFrom.IsValueType && typeTo.IsValueType)
+            if (typeFrom.IsValueType)
             {
-                il.Emit(OpCodes.Unbox_Any, typeTo);
-            }
-            else if (typeFrom.IsValueType && !typeTo.IsValueType)
-            {
+                Debug.Assert(!typeTo.IsValueType);
                 il.Emit(OpCodes.Box, typeFrom);
                 if (typeTo != typeof(object))
                 {
                     il.Emit(OpCodes.Castclass, typeTo);
                 }
             }
-            else if (!typeFrom.IsValueType && !typeTo.IsValueType)
-            {
-                il.Emit(OpCodes.Castclass, typeTo);
-            }
             else
             {
-                throw Error.InvalidCast(typeFrom, typeTo);
+                il.Emit(typeTo.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, typeTo);
             }
         }
 

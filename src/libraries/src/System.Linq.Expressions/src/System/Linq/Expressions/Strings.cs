@@ -570,11 +570,6 @@ namespace System.Linq.Expressions
         internal static string TypeNotIEnumerable(object p0) => SR.Format(SR.TypeNotIEnumerable, p0);
 
         /// <summary>
-        /// A string like "Cannot cast from type '{0}' to type '{1}"
-        /// </summary>
-        internal static string InvalidCast(object p0, object p1) => SR.Format(SR.InvalidCast, p0, p1);
-
-        /// <summary>
         /// A string like "Unhandled binary: {0}"
         /// </summary>
         internal static string UnhandledBinary(object p0) => SR.Format(SR.UnhandledBinary, p0);
@@ -694,11 +689,6 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static string NonLocalJumpWithValue(object p0) => SR.Format(SR.NonLocalJumpWithValue, p0);
 
-        /// <summary>
-        /// A string like "Extension should have been reduced."
-        /// </summary>
-        internal static string ExtensionNotReduced => SR.ExtensionNotReduced;
-
 #if FEATURE_COMPILE_TO_METHODBUILDER
         /// <summary>
         /// A string like "CompileToMethod cannot compile constant '{0}' because it is a non-trivial value, such as a live object. Instead, create an expression tree that can construct this value."
@@ -720,11 +710,6 @@ namespace System.Linq.Expressions
         /// A string like "Invalid lvalue for assignment: {0}."
         /// </summary>
         internal static string InvalidLvalue(object p0) => SR.Format(SR.InvalidLvalue, p0);
-
-        /// <summary>
-        /// A string like "unknown lift type: '{0}'."
-        /// </summary>
-        internal static string UnknownLiftType(object p0) => SR.Format(SR.UnknownLiftType, p0);
 
         /// <summary>
         /// A string like "variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined"

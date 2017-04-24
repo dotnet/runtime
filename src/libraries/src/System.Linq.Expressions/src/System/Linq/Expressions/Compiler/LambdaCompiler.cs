@@ -154,12 +154,7 @@ namespace System.Linq.Expressions.Compiler
             AddReturnLabel(_lambda);
             _boundConstants.EmitCacheConstants(this);
         }
-
-        public override string ToString()
-        {
-            return _method.ToString();
-        }
-
+        
         internal ILGenerator IL => _ilg;
 
         internal IParameterProvider Parameters => _lambda;
