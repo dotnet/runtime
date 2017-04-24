@@ -11,11 +11,10 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
     public class RequestStreamTest
     {
         readonly byte[] buffer = new byte[1];
-        
+
         [Fact]
         public void WriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
@@ -48,16 +47,41 @@ namespace System.Net.Tests
         {
             using (Stream stream = GetRequestStream())
             {
-                Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, 0, buffer.Length+1); });
+                // TODO: #18787
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .NET Framework, the request stream is a System.Net.ConnectStream
+                    // which throws ArgumentOutOfRangeException in this case.
+                    Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, 0, buffer.Length+1); });
+                }
+                else
+                {
+                    // In .NET Core, the request stream is a System.IO.MemoryStream
+                    // which throws ArgumentException in this case.
+                    Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, 0, buffer.Length+1); });
+                }
             }
         }
 
         [Fact]
-        public void WriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_ThrowsArgumentException()
+        public void WriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
             using (Stream stream = GetRequestStream())
             {
-                Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
+                // TODO: #18787
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .NET Framework, the request stream is a System.Net.ConnectStream
+                    // which throws ArgumentOutOfRangeException in this case.
+                    Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
+
+                }
+                else
+                {
+                    // In .NET Core, the request stream is a System.IO.MemoryStream
+                    // which throws ArgumentException in this case.
+                    Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
+                }
             }
         }
 
@@ -93,6 +117,7 @@ namespace System.Net.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "cancellation token ignored on netfx")]
         [Fact]
         public void FlushAsync_TokenIsCanceled_TaskIsCanceled()
         {
