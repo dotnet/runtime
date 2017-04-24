@@ -17169,7 +17169,8 @@ void Compiler::impCheckCanInline(GenTreePtr             call,
         CORINFO_CONTEXT_HANDLE exactContextHnd;
         InlineResult*          result;
         InlineCandidateInfo**  ppInlineCandidateInfo;
-    } param = {nullptr};
+    } param;
+    memset(&param, 0, sizeof(param));
 
     param.pThis                 = this;
     param.call                  = call;
