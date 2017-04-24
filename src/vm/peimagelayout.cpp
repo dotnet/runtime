@@ -155,6 +155,17 @@ void PEImageLayout::ApplyBaseRelocations()
     {
         PIMAGE_BASE_RELOCATION r = (PIMAGE_BASE_RELOCATION)(dir + dirPos);
 
+        COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
+
+        USHORT *fixups = (USHORT *) (r + 1);
+
+        _ASSERTE(fixupsSize > sizeof(IMAGE_BASE_RELOCATION));
+        _ASSERTE((fixupsSize - sizeof(IMAGE_BASE_RELOCATION)) % 2 == 0);
+
+        COUNT_T fixupsCount = (fixupsSize - sizeof(IMAGE_BASE_RELOCATION)) / 2;
+
+        _ASSERTE((BYTE *)(fixups + fixupsCount) <= (BYTE *)(dir + dirSize));
+
         DWORD rva = VAL32(r->VirtualAddress);
 
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
@@ -172,7 +183,9 @@ void PEImageLayout::ApplyBaseRelocations()
                 dwOldProtection = 0;
             }
 
-            IMAGE_SECTION_HEADER *pSection = RvaToSection(rva);
+            USHORT fixup = VAL16(fixups[0]);
+
+            IMAGE_SECTION_HEADER *pSection = RvaToSection(rva + (fixup & 0xfff));
             PREFIX_ASSUME(pSection != NULL);
 
             pWriteableRegion = (BYTE*)GetRvaData(VAL32(pSection->VirtualAddress));
@@ -198,17 +211,6 @@ void PEImageLayout::ApplyBaseRelocations()
 #endif // FEATURE_PAL
             }
         }
-
-        COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
-
-        USHORT *fixups = (USHORT *) (r + 1);
-
-        _ASSERTE(fixupsSize > sizeof(IMAGE_BASE_RELOCATION));
-        _ASSERTE((fixupsSize - sizeof(IMAGE_BASE_RELOCATION)) % 2 == 0);
-
-        COUNT_T fixupsCount = (fixupsSize - sizeof(IMAGE_BASE_RELOCATION)) / 2;
-
-        _ASSERTE((BYTE *)(fixups + fixupsCount) <= (BYTE *)(dir + dirSize));
 
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
         {
