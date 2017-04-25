@@ -3989,6 +3989,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_STELEM_I1) /* fall through */ 
 		MINT_IN_CASE(MINT_STELEM_U1) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_I2) /* fall through */
+		MINT_IN_CASE(MINT_STELEM_U2) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_I4) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_I8) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_R4) /* fall through */
@@ -4019,6 +4020,9 @@ array_constructed:
 				break;
 			case MINT_STELEM_I2:
 				mono_array_set ((MonoArray *)o, gint16, aindex, sp [2].data.i);
+				break;
+			case MINT_STELEM_U2:
+				mono_array_set ((MonoArray *)o, guint16, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_I4:
 				mono_array_set ((MonoArray *)o, gint32, aindex, sp [2].data.i);

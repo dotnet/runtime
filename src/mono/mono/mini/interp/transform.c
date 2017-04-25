@@ -2539,6 +2539,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				case MINT_TYPE_U1:
 					SIMPLE_OP (td, MINT_STELEM_U1);
 					break;
+				case MINT_TYPE_U2:
+					SIMPLE_OP (td, MINT_STELEM_U2);
+					break;
 				case MINT_TYPE_I4:
 					SIMPLE_OP (td, MINT_STELEM_I4);
 					break;
