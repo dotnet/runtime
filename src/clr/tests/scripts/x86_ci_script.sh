@@ -37,13 +37,13 @@ __buildDirName="$__buildOS.$__buildArch.$__buildConfig"
 set -x
 set -e
 
-__dockerImage="hseok82/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3_x86"
+__dockerImage="hseok82/dotnet-buildtools-prereqs:ubuntu-16.04-crossx86-ef0ac75-20175511035548"
 
 # Begin cross build
 # We cannot build nuget package yet
 __dockerEnvironmentSet="-e ROOTFS_DIR=/crossrootfs/x86"
 __currentWorkingDir=`pwd`
-__dockerCmd="docker run -i --rm ${__dockerEnvironmentVariable} -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
+__dockerCmd="docker run -i --rm ${__dockerEnvironmentSet} -v $__currentWorkingDir:/opt/code -w /opt/code $__dockerImage"
 __buildCmd="./build.sh x86 cross skipnuget $__buildConfig"
 $__dockerCmd $__buildCmd
 
