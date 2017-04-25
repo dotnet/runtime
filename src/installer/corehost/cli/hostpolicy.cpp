@@ -80,7 +80,11 @@ int run(const arguments_t& args)
     // Note: these variables' lifetime should be longer than coreclr_initialize.
     std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
-    pal::pal_clrstring(args.app_dir, &app_base_cstr);
+
+    //removing trailing directory seperator for app compat reasons
+    pal::string_t trimmed_app_dir = trim_end(args.app_dir, DIR_SEPARATOR);
+    pal::pal_clrstring(trimmed_app_dir, &app_base_cstr);
+
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
     pal::pal_clrstring(probe_paths.resources, &resources_dirs_cstr);
 
