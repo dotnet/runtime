@@ -102,7 +102,7 @@ namespace System.Data.SqlClient.Tests
         public void NamedPipeInvalidConnStringTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-            builder.ConnectTimeout = 2;
+            builder.ConnectTimeout = 1;
 
             string invalidConnStringError = "(provider: Named Pipes Provider, error: 25 - Connection string is not valid)";
             string fakeServerName = Guid.NewGuid().ToString("N");
