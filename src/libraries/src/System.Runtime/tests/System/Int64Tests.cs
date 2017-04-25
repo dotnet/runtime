@@ -63,8 +63,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotLong_ThrowsArgumentException()
         {
             IComparable comparable = (long)234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a long
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a long
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a long
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a long
         }
 
         [Theory]

@@ -160,8 +160,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotDouble_ThrowsArgumentException()
         {
             IComparable comparable = (double)234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo((float)234)); // Obj is not a double
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a double
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo((float)234)); // Obj is not a double
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a double
         }
 
         [Theory]

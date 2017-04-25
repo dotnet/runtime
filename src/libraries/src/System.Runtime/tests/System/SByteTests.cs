@@ -60,8 +60,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotSByte_ThrowsArgumentException()
         {
             IComparable comparable = (sbyte)114;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
         }
 
         [Theory]
@@ -141,8 +141,8 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             IComparable comparable = (sbyte)123;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
         }
 
         public static IEnumerable<object[]> ParseValidData()

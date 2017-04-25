@@ -414,7 +414,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Theory, MemberData(nameof(RealImplementations))]
         public void SignHash_NullHash_ThrowsArgumentNullException(ECDsa ecdsa)
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "hash",
                 () => ecdsa.SignHash(null));
         }
@@ -422,7 +422,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyHash_NullHash_ThrowsArgumentNullException(ECDsa ecdsa)
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "hash",
                 () => ecdsa.VerifyHash(null, null));
         }
@@ -430,7 +430,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Theory, MemberData(nameof(RealImplementations))]
         public void VerifyHash_NullSignature_ThrowsArgumentNullException(ECDsa ecdsa)
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "signature",
                 () => ecdsa.VerifyHash(new byte[0], null));
         }

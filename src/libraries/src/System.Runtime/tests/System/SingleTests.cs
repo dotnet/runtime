@@ -161,8 +161,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotFloat_ThrowsArgumentException()
         {
             IComparable comparable = (float)234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo((double)234)); // Obj is not a float
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a float
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo((double)234)); // Obj is not a float
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a float
         }
 
         [Theory]

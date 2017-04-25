@@ -52,8 +52,8 @@ namespace System.Tests
         [Fact]
         public static void Ctor_Int_Int_Int_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MinValue.TotalHours - 1, 0, 0)); // TimeSpan < TimeSpan.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MaxValue.TotalHours + 1, 0, 0)); // TimeSpan > TimeSpan.MaxValue
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MinValue.TotalHours - 1, 0, 0)); // TimeSpan < TimeSpan.MinValue
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan((int)TimeSpan.MaxValue.TotalHours + 1, 0, 0)); // TimeSpan > TimeSpan.MaxValue
         }
 
         [Fact]
@@ -68,19 +68,19 @@ namespace System.Tests
         {
             // TimeSpan > TimeSpan.MinValue
             TimeSpan min = TimeSpan.MinValue;
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days - 1, min.Hours, min.Minutes, min.Seconds, min.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours - 1, min.Minutes, min.Seconds, min.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes - 1, min.Seconds, min.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds - 1, min.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds, min.Milliseconds - 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days - 1, min.Hours, min.Minutes, min.Seconds, min.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours - 1, min.Minutes, min.Seconds, min.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes - 1, min.Seconds, min.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds - 1, min.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(min.Days, min.Hours, min.Minutes, min.Seconds, min.Milliseconds - 1));
 
             // TimeSpan > TimeSpan.MaxValue
             TimeSpan max = TimeSpan.MaxValue;
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days + 1, max.Hours, max.Minutes, max.Seconds, max.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours + 1, max.Minutes, max.Seconds, max.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds));
-            Assert.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days + 1, max.Hours, max.Minutes, max.Seconds, max.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours + 1, max.Minutes, max.Seconds, max.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes + 1, max.Seconds, max.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds + 1, max.Milliseconds));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds + 1));
         }
 
         public static IEnumerable<object[]> Total_Days_Hours_Minutes_Seconds_Milliseconds_TestData()
@@ -220,7 +220,7 @@ namespace System.Tests
         public static void CompareTo_ObjectNotTimeSpan_ThrowsArgumentException()
         {
             IComparable comparable = new TimeSpan(10000);
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("10000")); // Obj is not a time span
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("10000")); // Obj is not a time span
         }
 
         public static IEnumerable<object[]> Duration_TestData()
@@ -327,7 +327,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromDays(maxDays)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromDays(-maxDays)); // Value < TimeSpan.MinValue
 
-            Assert.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
+            AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
         }
 
         public static IEnumerable<object[]> FromHours_TestData()
@@ -359,7 +359,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromHours(maxHours)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromHours(-maxHours)); // Value < TimeSpan.MinValue
 
-            Assert.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
+            AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
         }
 
         public static IEnumerable<object[]> FromMinutes_TestData()
@@ -391,7 +391,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(maxMinutes)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(-maxMinutes)); // Value < TimeSpan.MinValue
 
-            Assert.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
+            AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMinutes(double.NaN)); // Value is NaN
         }
 
         public static IEnumerable<object[]> FromSeconds_TestData()
@@ -423,7 +423,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromSeconds(maxSeconds)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromSeconds(-maxSeconds)); // Value < TimeSpan.MinValue
 
-            Assert.Throws<ArgumentException>(null, () => TimeSpan.FromSeconds(double.NaN)); // Value is NaN
+            AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromSeconds(double.NaN)); // Value is NaN
         }
 
         public static IEnumerable<object[]> FromMilliseconds_TestData()
@@ -455,7 +455,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(maxMilliseconds)); // Value > TimeSpan.MaxValue
             Assert.Throws<OverflowException>(() => TimeSpan.FromMilliseconds(-maxMilliseconds)); // Value < TimeSpan.MinValue
 
-            Assert.Throws<ArgumentException>(null, () => TimeSpan.FromMilliseconds(double.NaN)); // Value is NaN
+            AssertExtensions.Throws<ArgumentException>(null, () => TimeSpan.FromMilliseconds(double.NaN)); // Value is NaN
         }
 
         public static IEnumerable<object[]> FromTicks_TestData()
