@@ -125,7 +125,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <XUnitPackageVersion>2.2.0-beta4-build3444</XUnitPackageVersion>
+    <XUnitPackageVersion>2.3.0-beta1-build3642</XUnitPackageVersion>
   </PropertyGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
