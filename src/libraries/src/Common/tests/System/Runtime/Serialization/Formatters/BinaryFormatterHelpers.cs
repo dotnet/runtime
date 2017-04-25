@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
+
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
@@ -12,6 +14,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 	{
 		internal static T Clone<T>(T obj)
 		{
+            // https://github.com/dotnet/corefx/issues/18942 - Binary serialization still WIP on AOT platforms.
+            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+                return obj;
+
 			var f = new BinaryFormatter();
 			using (var s = new MemoryStream())
 			{
