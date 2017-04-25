@@ -69,12 +69,6 @@
     <Compile Include="$(SourceDir)\System\Xml\Serialization\PrimitiveXmlSerializers.cs">
       <Link>System\Xml\Serialization\PrimitiveXmlSerializers.cs</Link>
     </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\ReflectionXmlSerializationReader.cs">
-      <Link>System\Xml\Serialization\ReflectionXmlSerializationReader.cs</Link>
-    </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\ReflectionXmlSerializationWriter.cs">
-      <Link>System\Xml\Serialization\ReflectionXmlSerializationWriter.cs</Link>
-    </Compile>
     <Compile Include="$(SourceDir)\System\Xml\Serialization\SoapAttributeAttribute.cs">
       <Link>System\Xml\Serialization\SoapAttributeAttribute.cs</Link>
     </Compile>

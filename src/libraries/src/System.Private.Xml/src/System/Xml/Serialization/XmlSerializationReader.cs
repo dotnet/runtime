@@ -188,6 +188,7 @@ namespace System.Xml.Serialization
             InitIDs();
         }
 
+#if !XMLSERIALIZERGENERATOR
         protected bool DecodeName
         {
             get
@@ -223,9 +224,7 @@ namespace System.Xml.Serialization
                 if (_d == null)
                 {
                     _d = new XmlDocument(_r.NameTable);
-#if !XMLSERIALIZERGENERATOR
                     _d.SetBaseURI(_r.BaseURI);
-#endif
                 }
                 return _d;
             }
@@ -2145,6 +2144,7 @@ namespace System.Xml.Serialization
                 get { return _collectionItems; }
             }
         }
+#endif
     }
 
     ///<internalonly/>
