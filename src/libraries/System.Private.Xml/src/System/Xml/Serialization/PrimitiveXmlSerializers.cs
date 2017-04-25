@@ -236,11 +236,8 @@ namespace System.Xml.Serialization
         }
     }
 
-#if XMLSERIALIZERGENERATOR
-    internal class XmlSerializationPrimitiveReader : Microsoft.XmlSerializer.Generator.XmlSerializationReader
-#else
+#if !XMLSERIALIZERGENERATOR
     internal class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
-#endif
     {
         internal object Read_string()
         {
@@ -762,4 +759,5 @@ namespace System.Xml.Serialization
             _id1_QName = Reader.NameTable.Add(@"QName");
         }
     }
+#endif
 }
