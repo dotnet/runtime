@@ -707,6 +707,9 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 	MonoError error;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 
+	if (!context)
+		return;
+
 	MonoInvocation *frame = context->current_frame;
 
 	while (frame) {
@@ -4594,7 +4597,7 @@ array_constructed:
 			sp [-1].data.p = alloca (len);
 			MonoMethodHeader *header = mono_method_get_header_checked (frame->runtime_method->method, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			if (header->init_locals)
+			if (header && header->init_locals)
 				memset (sp [-1].data.p, 0, len);
 			++ip;
 			MINT_IN_BREAK;
