@@ -3061,6 +3061,7 @@ MonoGenericContext* mini_class_get_context (MonoClass *klass);
 
 MonoType* mini_get_underlying_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_type_get_underlying_type (MonoType *type);
+MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
 MonoMethod* mini_get_shared_method (MonoMethod *method);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
 MonoMethod* mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt);

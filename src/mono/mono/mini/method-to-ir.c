@@ -6780,7 +6780,7 @@ mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klas
 	return method;
 }
 
-static inline MonoClass*
+MonoClass*
 mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 {
 	MonoError error;

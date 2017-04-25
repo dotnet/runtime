@@ -916,6 +916,22 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 }
 
+static MonoClassField *
+interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, MonoGenericContext *generic_context)
+{
+	MonoClassField *field = NULL;
+	if (method->wrapper_type != MONO_WRAPPER_NONE) {
+		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
+		*klass = field->parent;
+	} else {
+		MonoError error;
+		error_init (&error);
+		field = mono_field_from_token_checked (method->klass->image, token, klass, generic_context, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	}
+	return field;
+}
+
 static void
 generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context)
 {
@@ -1943,7 +1959,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_CASTCLASS:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			ADD_CODE(&td, MINT_CASTCLASS);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			td.sp [-1].klass = klass;
@@ -1952,7 +1968,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_ISINST:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			ADD_CODE(&td, MINT_ISINST);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			td.ip += 5;
@@ -1995,10 +2011,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 
-			g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 
 			if (mini_type_is_reference (&klass->byval_arg)) {
+				int mt = mint_type (&klass->byval_arg);
 				ADD_CODE (&td, MINT_CASTCLASS);
 				ADD_CODE (&td, get_data_item_index (&td, klass));
 				SET_TYPE (td.sp - 1, stack_type [mt], klass);
@@ -2033,7 +2049,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_LDFLDA:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			if (is_static) {
@@ -2056,7 +2072,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_LDFLD: {
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 
@@ -2097,7 +2113,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_STFLD: {
 			CHECK_STACK (&td, 2);
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			mt = mint_type(field->type);
@@ -2129,7 +2145,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		}
 		case CEE_LDSFLDA:
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			ADD_CODE(&td, MINT_LDSFLDA);
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			td.ip += 5;
@@ -2137,7 +2153,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			break;
 		case CEE_LDSFLD:
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			mt = mint_type(field->type);
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
@@ -2158,7 +2174,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_STSFLD:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			field = interp_field_from_token (method, token, &klass, generic_context);
 			mt = mint_type(field->type);
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
@@ -2178,7 +2194,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
-				klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
 
 			ADD_CODE(&td, td.sp [-1].type == STACK_TYPE_VT ? MINT_STOBJ_VT : MINT_STOBJ);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
@@ -2247,7 +2263,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
-				klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
 
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
@@ -2278,7 +2294,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
-				klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
 
 			unsigned char lentype = (td.sp - 1)->type;
 			if (lentype == STACK_TYPE_I8) {
@@ -2308,7 +2324,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *) mono_method_get_wrapper_data (method, token);
 			else
-				klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
 
 			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
 				ADD_CODE (&td, MINT_LDELEMA_TC);
@@ -2404,7 +2420,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_LDELEM:
 			CHECK_STACK (&td, 2);
 			token = read32 (td.ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			switch (mint_type (&klass->byval_arg)) {
 				case MINT_TYPE_I1:
 					ENSURE_I4 (&td, 1);
@@ -2534,7 +2550,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			CHECK_STACK (&td, 3);
 			ENSURE_I4 (&td, 2);
 			token = read32 (td.ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			switch (mint_type (&klass->byval_arg)) {
 				case MINT_TYPE_U1:
 					SIMPLE_OP (td, MINT_STELEM_U1);
@@ -3141,7 +3157,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			case CEE_INITOBJ:
 				CHECK_STACK(&td, 1);
 				token = read32 (td.ip + 1);
-				klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
 				if (klass->valuetype) {
 					ADD_CODE (&td, MINT_INITOBJ);
 					i32 = mono_class_value_size (klass, NULL);
@@ -3166,7 +3182,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				break;
 			case CEE_CONSTRAINED_:
 				token = read32 (td.ip + 1);
-				constrained_class = mono_class_get_full (image, token, generic_context);
+				constrained_class = mini_get_class (method, token, generic_context);
 				mono_class_init (constrained_class);
 				td.ip += 5;
 				break;
@@ -3196,7 +3212,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 					size = mono_type_size (type, &align);
 				} else {
 					int align;
-					MonoClass *szclass = mono_class_get_full (image, token, generic_context);
+					MonoClass *szclass = mini_get_class (method, token, generic_context);
 					mono_class_init (szclass);
 #if 0
 					if (!szclass->valuetype)
@@ -3430,7 +3446,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			break;
 		case MonoInlineType:
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
+				class = mini_get_class (method, read32 (ip + 1), generic_context);
 				mono_class_init (class);
 				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
 #if 0
