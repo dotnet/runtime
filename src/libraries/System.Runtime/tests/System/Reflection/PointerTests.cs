@@ -28,11 +28,10 @@ namespace System.Reflection.Tests
         [Fact]
         public void Box_TypeNull()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
+            ArgumentNullException ex = AssertExtensions.Throws<ArgumentNullException>("type", () =>
             {
                 Pointer.Box((void*)0, null);
             });
-            Assert.Equal("type", ex.ParamName);
         }
 
         [Fact]

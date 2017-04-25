@@ -123,34 +123,31 @@ namespace System.Reflection.Tests
         [Fact]
         public void IsDefined_NullType()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
+            ArgumentNullException ex = AssertExtensions.Throws<ArgumentNullException>("attributeType", () =>
             {
                 Module.IsDefined(null, false);
             });
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.Equal("attributeType", ex.ParamName);
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.GetField apis not supported on UapAot.")]
         public void GetField_NullName()
         {
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
+            ArgumentNullException ex = AssertExtensions.Throws<ArgumentNullException>("name", () =>
             {
                 Module.GetField(null);
             });
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.Equal("name", ex.ParamName);
 
-            ex = Assert.Throws<ArgumentNullException>(() =>
+            ex = AssertExtensions.Throws<ArgumentNullException>("name", () =>
             {
                 Module.GetField(null, 0);
             });
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.Equal("name", ex.ParamName);
         }
 
         [Fact]

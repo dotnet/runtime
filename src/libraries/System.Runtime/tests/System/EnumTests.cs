@@ -732,8 +732,12 @@ namespace System.Tests
         [MemberData(nameof(ToObject_InvalidValue_TestData))]
         public static void ToObject_InvalidValue_ThrowsException(Type enumType, object value, Type exceptionType)
         {
-            ArgumentException ex = (ArgumentException)Assert.Throws(exceptionType, () => Enum.ToObject(enumType, value));
-            Assert.Equal("value", ex.ParamName);
+            if (exceptionType == typeof(ArgumentNullException))
+                AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.ToObject(enumType, value));
+            else if (exceptionType == typeof(ArgumentException))
+                AssertExtensions.Throws<ArgumentException>("value", () => Enum.ToObject(enumType, value));
+            else
+                throw new Exception($"Unexpected exception type in {nameof(ToObject_InvalidValue_TestData)} : {exceptionType}");
         }
 
         public static IEnumerable<object[]> Equals_TestData()
