@@ -5,14 +5,12 @@
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Globalization;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
-    internal sealed unsafe class HttpResponseStream : Stream
+    internal sealed unsafe partial class HttpResponseStream : Stream
     {
         private readonly HttpListenerContext _httpContext;
         private long _leftToWrite = long.MinValue;
@@ -44,12 +42,6 @@ namespace System.Net
             return flags;
         }
 
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override bool CanRead => false;
-
         internal bool Closed => _closed;
 
         internal HttpListenerContext InternalHttpContext => _httpContext;
@@ -59,79 +51,8 @@ namespace System.Net
             _closed = true;
         }
 
-        public override void Flush()
-        {
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        public override long Length
-        {
-            get
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-        }
-
-        public override long Position
-        {
-            get
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-            set
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override int Read(byte[] buffer, int offset, int size)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override void Write(byte[] buffer, int offset, int size)
-        {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
-            }
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+        private void WriteCore(byte[] buffer, int offset, int size)
+        {            
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
             {
@@ -231,22 +152,8 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
             {
@@ -337,17 +244,8 @@ namespace System.Net
             return asyncResult;
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        private void EndWriteCore(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"asyncResult:{asyncResult}");
-            }
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
             HttpResponseStreamAsyncResult castedAsyncResult = asyncResult as HttpResponseStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
