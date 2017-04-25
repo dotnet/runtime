@@ -2894,7 +2894,7 @@ PROCAbortInitialize()
             return FALSE;
         }
         const char* DumpGeneratorName = "createdump";
-        int programLen = strlen(g_szCoreCLRPath) + strlen(DumpGeneratorName);
+        int programLen = strlen(g_szCoreCLRPath) + strlen(DumpGeneratorName) + 1;
         char* program = (char*)InternalMalloc(programLen);
         if (program == nullptr)
         {
@@ -2949,7 +2949,7 @@ PROCAbortInitialize()
             }
             else if (strcmp(envvar, "3") == 0)
             {
-                *argv++ = "--micro";
+                *argv++ = "--triage";
             }
         }
 

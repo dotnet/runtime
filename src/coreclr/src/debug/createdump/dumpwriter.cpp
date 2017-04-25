@@ -4,13 +4,11 @@
 
 #include "createdump.h"
 
-DumpWriter::DumpWriter(DataTarget& dataTarget, CrashInfo& crashInfo) :
+DumpWriter::DumpWriter(CrashInfo& crashInfo) :
     m_ref(1),
     m_fd(-1),
-    m_dataTarget(dataTarget),
     m_crashInfo(crashInfo)
 {
-    m_dataTarget.AddRef();
     m_crashInfo.AddRef();
 }
 
@@ -21,7 +19,6 @@ DumpWriter::~DumpWriter()
         close(m_fd);
         m_fd = -1;
     }
-    m_dataTarget.Release();
     m_crashInfo.Release();
 }
 
@@ -62,7 +59,7 @@ DumpWriter::Release()
 }
 
 bool
-DumpWriter::OpenDump(char* dumpFileName)
+DumpWriter::OpenDump(const char* dumpFileName)
 {
     m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
     if (m_fd == -1)
@@ -242,7 +239,7 @@ DumpWriter::WriteDump()
             uint32_t bytesToRead = std::min(size, (uint32_t)sizeof(m_tempBuffer));
             uint32_t read = 0;
 
-            if (FAILED(m_dataTarget.ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
+            if (FAILED(m_crashInfo.DataTarget()->ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
                 fprintf(stderr, "ReadVirtual(%016lx, %08x) FAILED\n", address, bytesToRead);
                 return false;
             }

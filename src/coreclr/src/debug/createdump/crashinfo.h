@@ -22,7 +22,8 @@ private:
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
     char* m_name;                                   // exe name
-    DataTarget& m_dataTarget;                       // read process memory
+    bool m_sos;                                     // true if running under sos
+    ICLRDataTarget* m_dataTarget;                   // read process memory, etc.
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
     std::vector<ThreadInfo*> m_threads;             // threads found and suspended
@@ -31,7 +32,7 @@ private:
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
 
 public:
-    CrashInfo(pid_t pid, DataTarget& dataTarget);
+    CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos);
     virtual ~CrashInfo();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType);
@@ -42,6 +43,7 @@ public:
     const pid_t Ppid() const { return m_ppid; }
     const pid_t Tgid() const { return m_tgid; }
     const char* Name() const { return m_name; }
+    ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
     const std::vector<ThreadInfo*> Threads() const { return m_threads; }
     const std::set<MemoryRegion> ModuleMappings()  const { return m_moduleMappings; }

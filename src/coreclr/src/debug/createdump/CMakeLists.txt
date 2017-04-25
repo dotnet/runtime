@@ -19,11 +19,16 @@ set(CREATEDUMP_SOURCES
     dumpwriter.cpp
 )
 
-_add_executable(createdump
+_add_library(createdump_lib
     ${CREATEDUMP_SOURCES}
 )
 
+_add_executable(createdump
+    main.cpp
+)
+
 target_link_libraries(createdump
+    createdump_lib
     # share the PAL in the dac module
     mscordaccore
 )

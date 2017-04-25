@@ -4,14 +4,15 @@
 
 #include "createdump.h"
 
-CrashInfo::CrashInfo(pid_t pid, DataTarget& dataTarget) :
+CrashInfo::CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos) :
     m_ref(1),
     m_pid(pid),
     m_ppid(-1),
     m_name(nullptr),
+    m_sos(sos),
     m_dataTarget(dataTarget)
 {
-    dataTarget.AddRef();
+    dataTarget->AddRef();
     m_auxvValues.fill(0);
 }
 
@@ -39,7 +40,7 @@ CrashInfo::~CrashInfo()
         const_cast<MemoryRegion&>(region).Cleanup();
     }
     m_otherMappings.clear();
-    m_dataTarget.Release();
+    m_dataTarget->Release();
 }
 
 STDMETHODIMP
@@ -107,22 +108,25 @@ CrashInfo::EnumerateAndSuspendThreads()
         pid_t tid = static_cast<pid_t>(strtol(entry->d_name, nullptr, 10));
         if (tid != 0)
         {
-            //  Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
-            if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
+            // Don't suspend the threads if running under sos
+            if (!m_sos)
             {
-                int waitStatus;
-                waitpid(tid, &waitStatus, __WALL);     
-
-                // Add to the list of (suspended) threads
-                ThreadInfo* thread = new ThreadInfo(tid);
-                m_threads.push_back(thread);
+                //  Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
+                if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
+                {
+                    int waitStatus;
+                    waitpid(tid, &waitStatus, __WALL);
+                }
+                else
+                {
+                    fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                    closedir(taskDir);
+                    return false;
+                }
             }
-            else 
-            {
-                fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
-                closedir(taskDir);
-                return false;
-            }
+            // Add to the list of threads
+            ThreadInfo* thread = new ThreadInfo(tid);
+            m_threads.push_back(thread);
         }
     }
 
@@ -141,7 +145,7 @@ CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
     // Get the info about the threads (registers, etc.)
     for (ThreadInfo* thread : m_threads)
     {
-        if (!thread->Initialize())
+        if (!thread->Initialize(m_sos ? m_dataTarget : nullptr))
         {
             return false;
         }
@@ -187,9 +191,12 @@ CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
 void
 CrashInfo::ResumeThreads()
 {
-    for (ThreadInfo* thread : m_threads)
+    if (!m_sos)
     {
-        thread->ResumeThread();
+        for (ThreadInfo* thread : m_threads)
+        {
+            thread->ResumeThread();
+        }
     }
 }
 
@@ -337,24 +344,16 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE 
     bool result = false;
 
     // We assume that the DAC is in the same location as this createdump exe
-    ArrayHolder<char> dacPath = new char[MAX_LONGPATH];
-    strcpy_s(dacPath, MAX_LONGPATH, programPath);
-    char *last = strrchr(dacPath, '/');
-    if (last != nullptr)
-    {
-        *(last + 1) = '\0';
-    }
-    else
-    {
-        dacPath[0] = '\0';
-    }
-    strcat_s(dacPath, MAX_LONGPATH, MAKEDLLNAME_A("mscordaccore"));
+    std::string dacPath;
+    dacPath.append(programPath);
+    dacPath.append("/");
+    dacPath.append(MAKEDLLNAME_A("mscordaccore"));
     
     // Load and initialize the DAC
-    hdac = LoadLibraryA(dacPath);
+    hdac = LoadLibraryA(dacPath.c_str());
     if (hdac == nullptr)
     {
-        fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", (char*)dacPath, GetLastError());
+        fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
         goto exit;
     }
     pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
@@ -363,7 +362,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE 
         fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), &m_dataTarget, (void**)&clrDataEnumRegions);
+    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&clrDataEnumRegions);
     if (FAILED(hr))
     {
         fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
@@ -479,7 +478,7 @@ bool
 CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
 {
     uint32_t read = 0;
-    if (FAILED(m_dataTarget.ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), size, &read)))
+    if (FAILED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), size, &read)))
     {
         return false;
     }

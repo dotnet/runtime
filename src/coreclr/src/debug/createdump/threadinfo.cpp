@@ -4,6 +4,11 @@
 
 #include "createdump.h"
 
+#define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
+#define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
+#define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
+#define FPREG_DataSelector(fpregs) *(((WORD*)&((fpregs).rdp)) + 2)
+
 ThreadInfo::ThreadInfo(pid_t tid) :
     m_tid(tid)
 {
@@ -14,15 +19,24 @@ ThreadInfo::~ThreadInfo()
 }
 
 bool
-ThreadInfo::Initialize()
+ThreadInfo::Initialize(ICLRDataTarget* dataTarget)
 {
     if (!CrashInfo::GetStatus(m_tid, &m_ppid, &m_tgid, nullptr)) 
     {
         return false;
     }
-    if (!GetRegisters())
+    if (dataTarget != nullptr)
     {
-        return false;
+        if (!GetRegistersWithDataTarget(dataTarget))
+        {
+            return false;
+        }
+    }
+    else {
+        if (!GetRegistersWithPTrace())
+        {
+            return false;
+        }
     }
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, m_gpRegisters.rip, m_gpRegisters.rsp);
     return true;
@@ -39,7 +53,7 @@ ThreadInfo::ResumeThread()
 }
 
 bool 
-ThreadInfo::GetRegisters()
+ThreadInfo::GetRegistersWithPTrace()
 {
     if (ptrace((__ptrace_request)PTRACE_GETREGS, m_tid, nullptr, &m_gpRegisters) == -1)
     {
@@ -57,6 +71,70 @@ ThreadInfo::GetRegisters()
         fprintf(stderr, "ptrace(GETFPXREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
+#endif
+    return true;
+}
+
+bool 
+ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
+{
+    CONTEXT context;
+    context.ContextFlags = CONTEXT_ALL;
+    if (dataTarget->GetThreadContext(m_tid, context.ContextFlags, sizeof(context), reinterpret_cast<PBYTE>(&context)) != S_OK)
+    {
+        return false;
+    }
+#if defined(__x86_64__)
+    m_gpRegisters.rbp = context.Rbp;
+    m_gpRegisters.rip = context.Rip;
+    m_gpRegisters.cs = context.SegCs;
+    m_gpRegisters.eflags = context.EFlags;
+    m_gpRegisters.ss = context.SegSs;
+    m_gpRegisters.rsp = context.Rsp;
+    m_gpRegisters.rdi = context.Rdi;
+
+    m_gpRegisters.rsi = context.Rsi;
+    m_gpRegisters.rbx = context.Rbx;
+    m_gpRegisters.rdx = context.Rdx;
+    m_gpRegisters.rcx = context.Rcx;
+    m_gpRegisters.rax = context.Rax;
+    m_gpRegisters.orig_rax = context.Rax;
+    m_gpRegisters.r8 = context.R8;
+    m_gpRegisters.r9 = context.R9;
+    m_gpRegisters.r10 = context.R10;
+    m_gpRegisters.r11 = context.R11;
+    m_gpRegisters.r12 = context.R12;
+    m_gpRegisters.r13 = context.R13;
+    m_gpRegisters.r14 = context.R14;
+    m_gpRegisters.r15 = context.R15;
+
+    m_gpRegisters.ds = context.SegDs;
+    m_gpRegisters.es = context.SegEs;
+    m_gpRegisters.fs = context.SegFs;
+    m_gpRegisters.gs = context.SegGs;
+    m_gpRegisters.fs_base = 0;
+    m_gpRegisters.gs_base = 0;
+
+    m_fpRegisters.cwd = context.FltSave.ControlWord;
+    m_fpRegisters.swd = context.FltSave.StatusWord;
+    m_fpRegisters.ftw = context.FltSave.TagWord;
+    m_fpRegisters.fop = context.FltSave.ErrorOpcode;
+
+    FPREG_ErrorOffset(m_fpRegisters) = context.FltSave.ErrorOffset;
+    FPREG_ErrorSelector(m_fpRegisters) = context.FltSave.ErrorSelector;
+    FPREG_DataOffset(m_fpRegisters) = context.FltSave.DataOffset;
+    FPREG_DataSelector(m_fpRegisters) = context.FltSave.DataSelector;
+
+    m_fpRegisters.mxcsr = context.FltSave.MxCsr;
+    m_fpRegisters.mxcr_mask = context.FltSave.MxCsr_Mask;
+
+    assert(sizeof(context.FltSave.FloatRegisters) == sizeof(m_fpRegisters.st_space));
+    memcpy(m_fpRegisters.st_space, context.FltSave.FloatRegisters, sizeof(m_fpRegisters.st_space));
+
+    assert(sizeof(context.FltSave.XmmRegisters) == sizeof(m_fpRegisters.xmm_space));
+    memcpy(m_fpRegisters.xmm_space, context.FltSave.XmmRegisters, sizeof(m_fpRegisters.xmm_space));
+#else 
+#error Platform not supported
 #endif
     return true;
 }
@@ -95,6 +173,7 @@ void
 ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
 {
     context->ContextFlags = flags;
+#if defined(__x86_64__)
     if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         context->Rbp = m_gpRegisters.rbp;
@@ -135,10 +214,10 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         context->FltSave.TagWord = m_fpRegisters.ftw;
         context->FltSave.ErrorOpcode = m_fpRegisters.fop;
 
-        context->FltSave.ErrorOffset = (DWORD)m_fpRegisters.rip;
-        context->FltSave.ErrorSelector = *(((WORD *)&m_fpRegisters.rip) + 2);
-        context->FltSave.DataOffset = (DWORD)m_fpRegisters.rdp;
-        context->FltSave.DataSelector = *(((WORD *)&m_fpRegisters.rdp) + 2);
+        context->FltSave.ErrorOffset = FPREG_ErrorOffset(m_fpRegisters);
+        context->FltSave.ErrorSelector = FPREG_ErrorSelector(m_fpRegisters);
+        context->FltSave.DataOffset = FPREG_DataOffset(m_fpRegisters);
+        context->FltSave.DataSelector = FPREG_DataSelector(m_fpRegisters);
 
         context->FltSave.MxCsr = m_fpRegisters.mxcsr;
         context->FltSave.MxCsr_Mask = m_fpRegisters.mxcr_mask;
@@ -150,5 +229,7 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         memcpy(context->FltSave.XmmRegisters, m_fpRegisters.xmm_space, sizeof(context->FltSave.XmmRegisters));
     }
     // TODO: debug registers?
-    // TODO: x86 registers
+#else 
+#error Platform not supported
+#endif
 }

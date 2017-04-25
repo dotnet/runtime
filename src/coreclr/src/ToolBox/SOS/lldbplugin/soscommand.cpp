@@ -125,6 +125,7 @@ sosCommandInitialize(lldb::SBDebugger debugger)
     interpreter.AddCommand("bpmd", new sosCommand("bpmd"), "Creates a breakpoint at the specified managed method in the specified module.");
     interpreter.AddCommand("clrstack", new sosCommand("ClrStack"), "Provides a stack trace of managed code only.");
     interpreter.AddCommand("clrthreads", new sosCommand("Threads"), "List the managed threads running.");
+    interpreter.AddCommand("createdump", new sosCommand("CreateDump"), "Create a xplat minidump.");
     interpreter.AddCommand("clru", new sosCommand("u"), "Displays an annotated disassembly of a managed method.");
     interpreter.AddCommand("dumpclass", new sosCommand("DumpClass"), "Displays information about a EE class structure at the specified address.");
     interpreter.AddCommand("dumpheap", new sosCommand("DumpHeap"), "Displays info about the garbage-collected heap and collection statistics about objects.");
