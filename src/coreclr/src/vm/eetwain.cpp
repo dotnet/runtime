@@ -4368,7 +4368,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
         }
     }
 
-
     bool        willContinueExecution = !(flags & ExecutionAborted);
     unsigned    pushedSize = 0;
 
@@ -4663,60 +4662,69 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
     /* Process the untracked frame variable table */
 
-    count = info.untrackedCnt;
-    int lastStkOffs = 0;
-    while (count-- > 0)
+#if defined(WIN64EXCEPTIONS)   // funclets
+    // Filters are the only funclet that run during the 1st pass, and must have
+    // both the leaf and the parent frame reported.  In order to avoid double
+    // reporting of the untracked variables, do not report them for the filter.
+    if (!pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
+#endif // WIN64EXCEPTIONS
     {
-        int stkOffs = fastDecodeSigned(table);
-        stkOffs = lastStkOffs - stkOffs;
-        lastStkOffs = stkOffs;
+        count = info.untrackedCnt;
+        int lastStkOffs = 0;
+        while (count-- > 0)
+        {
+            int stkOffs = fastDecodeSigned(table);
+            stkOffs = lastStkOffs - stkOffs;
+            lastStkOffs = stkOffs;
 
-        _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
+            _ASSERTE(0 == ~OFFSET_MASK % sizeof(void*));
 
-        lowBits  =   OFFSET_MASK & stkOffs;
-        stkOffs &=  ~OFFSET_MASK;
+            lowBits  =   OFFSET_MASK & stkOffs;
+            stkOffs &=  ~OFFSET_MASK;
 
-        ptrAddr = argBase + stkOffs;
-        if (info.doubleAlign && stkOffs >= int(info.stackSize - sizeof(void*))) {
-            // We encode the arguments as if they were ESP based variables even though they aren't
-            // If this frame would have ben an ESP based frame,   This fake frame is one DWORD
-            // smaller than the real frame because it did not push EBP but the real frame did.
-            // Thus to get the correct EBP relative offset we have to ajust by info.stackSize-sizeof(void*)
-            ptrAddr = EBP + (stkOffs-(info.stackSize - sizeof(void*)));
-        }
+            ptrAddr = argBase + stkOffs;
+            if (info.doubleAlign && stkOffs >= int(info.stackSize - sizeof(void*))) {
+                // We encode the arguments as if they were ESP based variables even though they aren't
+                // If this frame would have ben an ESP based frame,   This fake frame is one DWORD
+                // smaller than the real frame because it did not push EBP but the real frame did.
+                // Thus to get the correct EBP relative offset we have to ajust by info.stackSize-sizeof(void*)
+                ptrAddr = EBP + (stkOffs-(info.stackSize - sizeof(void*)));
+            }
 
 #ifdef  _DEBUG
-        if (dspPtr)
-        {
-            printf("    Untracked %s%s local at [E",
-                        (lowBits & pinned_OFFSET_FLAG) ? "pinned " : "",
-                        (lowBits & byref_OFFSET_FLAG)  ? "byref"   : "");
+            if (dspPtr)
+            {
+                printf("    Untracked %s%s local at [E",
+                            (lowBits & pinned_OFFSET_FLAG) ? "pinned " : "",
+                            (lowBits & byref_OFFSET_FLAG)  ? "byref"   : "");
 
-            int   dspOffs = ptrAddr;
-            char  frameType;
+                int   dspOffs = ptrAddr;
+                char  frameType;
 
-            if (info.ebpFrame) {
-                dspOffs   -= EBP;
-                frameType  = 'B';
+                if (info.ebpFrame) {
+                    dspOffs   -= EBP;
+                    frameType  = 'B';
+                }
+                else {
+                    dspOffs   -= ESP;
+                    frameType  = 'S';
+                }
+
+                if (dspOffs < 0)
+                    printf("%cP-%02XH]: ", frameType, -dspOffs);
+                else
+                    printf("%cP+%02XH]: ", frameType, +dspOffs);
             }
-            else {
-                dspOffs   -= ESP;
-                frameType  = 'S';
-            }
-
-            if (dspOffs < 0)
-                printf("%cP-%02XH]: ", frameType, -dspOffs);
-            else
-                printf("%cP+%02XH]: ", frameType, +dspOffs);
-        }
 #endif
 
-        _ASSERTE((pinned_OFFSET_FLAG == GC_CALL_PINNED) &&
-               (byref_OFFSET_FLAG  == GC_CALL_INTERIOR));
-        pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, lowBits | CHECK_APP_DOMAIN
-                  DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
-                                          info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
-                                          true)));
+            _ASSERTE((pinned_OFFSET_FLAG == GC_CALL_PINNED) &&
+                   (byref_OFFSET_FLAG  == GC_CALL_INTERIOR));
+            pCallBack(hCallBack, (OBJECTREF*)(size_t)ptrAddr, lowBits | CHECK_APP_DOMAIN
+                      DAC_ARG(DacSlotLocation(info.ebpFrame ? REGI_EBP : REGI_ESP,
+                                              info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
+                                              true)));
+        }
+
     }
 
 #if VERIFY_GC_TABLES
