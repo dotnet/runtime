@@ -125,10 +125,6 @@ namespace Microsoft.DotNet.Host.Build
                     // Generate the Sharedfx Version text files
                     List<string> versionFiles = new List<string>() 
                     {
-                        "win.x86.version",
-                        "win.x64.version",
-                        "win.arm.version",
-                        "win.arm64.version",
                         "win.x86.portable.version",
                         "win.x64.portable.version",
                         "win.arm.portable.version",
@@ -136,17 +132,10 @@ namespace Microsoft.DotNet.Host.Build
                         "linux.x64.portable.version",
                         "ubuntu.x64.version",
                         "linux.arm.portable.version",
-                        "ubuntu.arm.version",
                         "ubuntu.16.04.x64.version",
-                        "ubuntu.16.04.arm.version",
                         "ubuntu.16.10.x64.version",
-                        "rhel.x64.version",
-                        "osx.x64.version",
                         "osx.x64.portable.version",
-                        "debian.8.armel.version",
                         "debian.x64.version",
-                        "fedora.24.x64.version",
-                        "opensuse.42.1.x64.version"
                     };
                     
                     PublishCoreHostPackagesToFeed();
@@ -207,28 +196,17 @@ namespace Microsoft.DotNet.Host.Build
         {
             Dictionary<string, bool> badges = new Dictionary<string, bool>()
              {
-                 { "sharedfx_Windows_x86", false },
-                 { "sharedfx_Windows_x64", false },
-                 { "sharedfx_Windows_arm", false },
-                 { "sharedfx_Windows_arm64", false },
                  { "sharedfx_win_portable_x86", false },
                  { "sharedfx_win_portable_x64", false },
                  { "sharedfx_win_portable_arm", false },
                  { "sharedfx_win_portable_arm64", false },
                  { "sharedfx_linux_portable_x64", false },
                  { "sharedfx_Ubuntu_x64", false },
-                 { "sharedfx_Ubuntu_arm", false },
                  { "sharedfx_linux_portable_arm", false },
                  { "sharedfx_Ubuntu_16_04_x64", false },
-                 { "sharedfx_Ubuntu_16_04_arm", false },
                  { "sharedfx_Ubuntu_16_10_x64", false },
-                 { "sharedfx_RHEL_x64", false },
-                 { "sharedfx_OSX_x64", false },
                  { "sharedfx_osx_portable_x64", false },
-                 // { "sharedfx_Debian_8_armel", false },
                  { "sharedfx_Debian_x64", false },
-                 { "sharedfx_Fedora_24_x64", false },
-                 { "sharedfx_openSUSE_42_1_x64", false }
              };
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
@@ -331,12 +309,25 @@ namespace Microsoft.DotNet.Host.Build
         {
             foreach (var file in Directory.GetFiles(Dirs.CorehostLocalPackages, "*.nupkg"))
             {
-                var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
-                AzurePublisherTool.PublishFile(hostBlob, file);
-                Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+                if (!IsRidAgnosticPackage(file) || EnvVars.PublishRidAgnosticPackages)
+                {
+                    var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
+                    AzurePublisherTool.PublishFile(hostBlob, file);
+                    Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping publishing package {file} to Azure because it is RID-agnostic and EnvVars.PublishRidAgnosticPackages is not set to true.");
+                }
             }
 
             return c.Success();
+        }
+
+        private static bool IsRidAgnosticPackage(string packagePath)
+        {
+            var fileName = Path.GetFileName(packagePath);
+            return !fileName.StartsWith("runtime.", StringComparison.OrdinalIgnoreCase);
         }
 
         [Target]
@@ -345,7 +336,7 @@ namespace Microsoft.DotNet.Host.Build
             // When building on non windows platforms, we don't compile the full set of
             // tfms a package targets (to prevent the need of having mono and the reference
             // assemblies installed. So we shouldn't publish these packages.
-            if (EnvVars.Signed && CurrentPlatform.IsWindows)
+            if (EnvVars.PublishRidAgnosticPackages && CurrentPlatform.IsWindows)
             {
                 foreach (var file in Directory.GetFiles(Dirs.Packages, "*.nupkg"))
                 {
