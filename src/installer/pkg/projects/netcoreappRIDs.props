@@ -20,35 +20,18 @@
       <Platform>armel</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
-    <OfficialBuildRID Include="osx.10.12-x64" />
     <OfficialBuildRID Include="osx-x64" />
-    <OfficialBuildRID Include="win7-x86">
-      <Platform>x86</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="win7-x64"/>
     <OfficialBuildRID Include="win-x64"/>
-    <OfficialBuildRID Include="win8-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="win10-arm64">
-      <Platform>arm64</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.14.04-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="ubuntu.16.04-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="tizen.4.0.0-armel">
