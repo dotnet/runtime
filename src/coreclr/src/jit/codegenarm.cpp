@@ -780,22 +780,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
         case GT_JTRUE:
-        {
-            GenTree* cmp = treeNode->gtOp.gtOp1->gtEffectiveVal();
-            assert(cmp->OperIsCompare());
-            assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-            // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
-            // is governed by a flag NOT by the inherent type of the node
-            // TODO-ARM-CQ: Check if we can use the currently set flags.
-            CompareKind compareKind = ((cmp->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-
-            emitJumpKind jmpKind   = genJumpKindForOper(cmp->gtOper, compareKind);
-            BasicBlock*  jmpTarget = compiler->compCurBB->bbJumpDest;
-
-            inst_JMP(jmpKind, jmpTarget);
-        }
-        break;
+            genCodeForJumpTrue(treeNode);
+            break;
 
         case GT_JCC:
         {
