@@ -169,7 +169,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Progress.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\ReadOnlySpan.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\ReadOnlySpan.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AmbiguousMatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Assembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyAlgorithmIdAttribute.cs" />
@@ -339,8 +339,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SuppressUnmanagedCodeSecurityAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\UnverifiableCodeAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\VerificationException.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Span.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\Span.NonGeneric.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Span.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Span.NonGeneric.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparer.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparison.cs"/>
