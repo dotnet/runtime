@@ -265,6 +265,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+#if TESTING_CNG_IMPLEMENTATION
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18882")]
+#endif
         public static void ImportNoDP()
         {
             // Because RSAParameters is a struct, this is a copy,
