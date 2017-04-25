@@ -5,6 +5,9 @@
     <AssemblyVersion>4.3.0.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
     <IsNETCoreApp>true</IsNETCoreApp>
+    <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsDesktopFacade>true</IsDesktopFacade>
     <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>

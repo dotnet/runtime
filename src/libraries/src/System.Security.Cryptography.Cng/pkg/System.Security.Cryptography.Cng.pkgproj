@@ -3,20 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Cng.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;uap10.1</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.csproj" />
     
     <!-- All elements from previous packages that will be included in the newly built package -->
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3" />
-    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />
-    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6;runtimes/unix/lib/netstandard1.6" />
-    
-    <!-- net461 was previously included under an older assembly version. Explicitly replace it to avoid conflicts. -->
-    <HarvestExcludePaths Include="ref/net461;lib/net461;runtimes/win/lib/net461" /> 
-    <!-- since the latest assembly is being included for net461, the net463-specific assembly from previous packages is no longer required --> 
-    <HarvestExcludePaths Include="ref/net463;lib/net463;runtimes/win/lib/net463" />
+    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />   
+    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6" />
+    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.6">
+      <!-- package unix impl (platform not supported) as RID agnostic -->
+      <TargetPath>lib/netstandard1.6</TargetPath>
+    </HarvestIncludePaths>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
