@@ -2165,7 +2165,7 @@ combinedScenarios.each { scenario ->
                     if (testBuildScenario == 'coverage' || testBuildScenario == 'pri1r2r'|| testBuildScenario == 'gcstress15_pri1r2r') {
                         testBuildScenario = 'pri1'
                     }
-                    else if ( testBuildScenario == 'r2r' || isLongGc(testBuildScenario)) {
+                    else if ( testBuildScenario == 'r2r' || Constants.r2rJitStressScenarios.indexOf(testBuildScenario) != -1 || isLongGc(testBuildScenario)) {
                         testBuildScenario = 'default'
                     }
                     def inputWindowTestsBuildName = ''
