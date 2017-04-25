@@ -6,7 +6,7 @@
 
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
 
-DataTarget::DataTarget(pid_t pid) :
+DumpDataTarget::DumpDataTarget(pid_t pid) :
     m_ref(1),
     m_pid(pid),
     m_fd(-1),
@@ -14,7 +14,7 @@ DataTarget::DataTarget(pid_t pid) :
 {
 }
 
-DataTarget::~DataTarget()
+DumpDataTarget::~DumpDataTarget()
 {
     if (m_fd != -1)
     {
@@ -24,7 +24,7 @@ DataTarget::~DataTarget()
 }
 
 bool
-DataTarget::Initialize(CrashInfo * crashInfo)
+DumpDataTarget::Initialize(CrashInfo * crashInfo)
 {
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
@@ -40,7 +40,7 @@ DataTarget::Initialize(CrashInfo * crashInfo)
 }
 
 STDMETHODIMP
-DataTarget::QueryInterface(
+DumpDataTarget::QueryInterface(
     ___in REFIID InterfaceId,
     ___out PVOID* Interface
     )
@@ -66,14 +66,14 @@ DataTarget::QueryInterface(
 }
 
 STDMETHODIMP_(ULONG)
-DataTarget::AddRef()
+DumpDataTarget::AddRef()
 {
     LONG ref = InterlockedIncrement(&m_ref);    
     return ref;
 }
 
 STDMETHODIMP_(ULONG)
-DataTarget::Release()
+DumpDataTarget::Release()
 {
     LONG ref = InterlockedDecrement(&m_ref);
     if (ref == 0)
@@ -84,7 +84,7 @@ DataTarget::Release()
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetMachineType(
+DumpDataTarget::GetMachineType(
     /* [out] */ ULONG32 *machine)
 {
 #ifdef _AMD64_
@@ -102,7 +102,7 @@ DataTarget::GetMachineType(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetPointerSize(
+DumpDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
 #if defined(_AMD64_) || defined(_ARM64_)
@@ -116,7 +116,7 @@ DataTarget::GetPointerSize(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetImageBase(
+DumpDataTarget::GetImageBase(
     /* [string][in] */ LPCWSTR moduleName,
     /* [out] */ CLRDATA_ADDRESS *baseAddress)
 {
@@ -149,7 +149,7 @@ DataTarget::GetImageBase(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::ReadVirtual(
+DumpDataTarget::ReadVirtual(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [length_is][size_is][out] */ PBYTE buffer,
     /* [in] */ ULONG32 size,
@@ -168,7 +168,7 @@ DataTarget::ReadVirtual(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::WriteVirtual(
+DumpDataTarget::WriteVirtual(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [size_is][in] */ PBYTE buffer,
     /* [in] */ ULONG32 size,
@@ -179,7 +179,7 @@ DataTarget::WriteVirtual(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetTLSValue(
+DumpDataTarget::GetTLSValue(
     /* [in] */ ULONG32 threadID,
     /* [in] */ ULONG32 index,
     /* [out] */ CLRDATA_ADDRESS* value)
@@ -189,7 +189,7 @@ DataTarget::GetTLSValue(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::SetTLSValue(
+DumpDataTarget::SetTLSValue(
     /* [in] */ ULONG32 threadID,
     /* [in] */ ULONG32 index,
     /* [in] */ CLRDATA_ADDRESS value)
@@ -199,7 +199,7 @@ DataTarget::SetTLSValue(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetCurrentThreadID(
+DumpDataTarget::GetCurrentThreadID(
     /* [out] */ ULONG32* threadID)
 {
     assert(false);
@@ -207,7 +207,7 @@ DataTarget::GetCurrentThreadID(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::GetThreadContext(
+DumpDataTarget::GetThreadContext(
     /* [in] */ ULONG32 threadID,
     /* [in] */ ULONG32 contextFlags,
     /* [in] */ ULONG32 contextSize,
@@ -232,7 +232,7 @@ DataTarget::GetThreadContext(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::SetThreadContext(
+DumpDataTarget::SetThreadContext(
     /* [in] */ ULONG32 threadID,
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
@@ -242,7 +242,7 @@ DataTarget::SetThreadContext(
 }
 
 HRESULT STDMETHODCALLTYPE
-DataTarget::Request(
+DumpDataTarget::Request(
     /* [in] */ ULONG32 reqCode,
     /* [in] */ ULONG32 inBufferSize,
     /* [size_is][in] */ BYTE *inBuffer,
@@ -254,7 +254,7 @@ DataTarget::Request(
 }
 
 HRESULT STDMETHODCALLTYPE 
-DataTarget::VirtualUnwind(
+DumpDataTarget::VirtualUnwind(
     /* [in] */ DWORD threadId,
     /* [in] */ ULONG32 contextSize,
     /* [in, out, size_is(contextSize)] */ PBYTE context)
