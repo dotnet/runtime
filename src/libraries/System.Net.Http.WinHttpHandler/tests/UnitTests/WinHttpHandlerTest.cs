@@ -577,7 +577,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public async Task SendAsync_PostNoContentObjectWithChunkedEncodingHeader_ExpectInvalidOperationException()
+        public async Task SendAsync_PostNoContentObjectWithChunkedEncodingHeader_ExpectHttpRequestException()
         {
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
@@ -587,7 +587,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
                 var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
 
-                await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
             }
         }
 
