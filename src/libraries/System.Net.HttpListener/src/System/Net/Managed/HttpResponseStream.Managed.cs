@@ -37,7 +37,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class HttpResponseStream : Stream
+    internal partial class HttpResponseStream : Stream
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;
@@ -160,8 +160,6 @@ namespace System.Net
 
         private void WriteCore(byte[] buffer, int offset, int size)
         {
-            if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
             if (size == 0)
                 return;
 
@@ -201,7 +199,13 @@ namespace System.Net
         private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
             if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
+            {
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                ares._callback = cback;
+                ares._state = state;
+                ares.Complete();
+                return ares;
+            }
 
             byte[] bytes = null;
             MemoryStream ms = GetHeaders(false);
@@ -232,7 +236,7 @@ namespace System.Net
         private void EndWriteCore(IAsyncResult asyncResult)
         {
             if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
+                return;
 
             if (_ignore_errors)
             {

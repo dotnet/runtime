@@ -60,6 +60,11 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
+            if (_closed)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                return;
+            }
 
             WriteCore(buffer, offset, size);
         }
