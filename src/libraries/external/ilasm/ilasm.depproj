@@ -22,7 +22,7 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <!-- When zipped/unzipped in a package, ilasm loses its executable flag. Reset it. -->
+  <!-- Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424 -->
   <Target Name="MakeIlasmExecutable" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(RunningOnUnix)' == 'true'">
     <Exec Command="chmod +x $(OutputPath)ilasm" />
   </Target>
