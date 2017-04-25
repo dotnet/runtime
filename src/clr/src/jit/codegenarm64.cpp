@@ -3461,11 +3461,14 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
-    // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = cpObjNode->GetSingleTempReg();
-    assert(genIsValidIntReg(tmpReg));
-
     unsigned slots = cpObjNode->gtSlots;
+
+    // Temp register used to perform the sequence of loads and stores.
+    regNumber tmpReg = cpObjNode->ExtractTempReg();
+    regNumber tmpReg2 = (slots > 1) ? cpObjNode->GetSingleTempReg() : REG_NA;
+    assert(genIsValidIntReg(tmpReg) && (tmpReg != REG_WRITE_BARRIER_SRC_BYREF) && (tmpReg != REG_WRITE_BARRIER_DST_BYREF));
+    assert((slots == 1) || (genIsValidIntReg(tmpReg2) && (tmpReg2 != tmpReg) && (tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF) && (tmpReg2 != REG_WRITE_BARRIER_DST_BYREF)));
+
     emitter* emit  = getEmitter();
 
     BYTE* gcPtrs = cpObjNode->gtGcPtrs;
@@ -3473,7 +3476,6 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     // If we can prove it's on the stack we don't need to use the write barrier.
     if (dstOnStack)
     {
-        // TODO-ARM64-CQ: Consider using LDP/STP to save codesize.
         for (unsigned i = 0; i < slots; ++i)
         {
             emitAttr attr = EA_8BYTE;
@@ -3482,10 +3484,21 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             else if (gcPtrs[i] == GCT_BYREF)
                 attr = EA_BYREF;
 
-            emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                INS_OPTS_POST_INDEX);
-            emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                INS_OPTS_POST_INDEX);
+            if((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
+            {
+                emit->emitIns_R_R_R_I(INS_ldp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2*TARGET_POINTER_SIZE,
+                                      INS_OPTS_POST_INDEX);
+                emit->emitIns_R_R_R_I(INS_stp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, 2*TARGET_POINTER_SIZE,
+                                      INS_OPTS_POST_INDEX);
+                ++i;
+            }
+            else
+            {
+                emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                    INS_OPTS_POST_INDEX);
+                emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                    INS_OPTS_POST_INDEX);
+            }
         }
     }
     else
@@ -3498,11 +3511,21 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // TODO-ARM64-CQ: Consider using LDP/STP to save codesize in case of contigous NON-GC slots.
-                    emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
+                    if((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
+                    {
+                        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2*TARGET_POINTER_SIZE,
+                                              INS_OPTS_POST_INDEX);
+                        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, 2*TARGET_POINTER_SIZE,
+                                              INS_OPTS_POST_INDEX);
+                        ++i;
+                    }
+                    else
+                    {
+                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                            INS_OPTS_POST_INDEX);
+                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                            INS_OPTS_POST_INDEX);
+                    }
                     break;
 
                 default:
