@@ -4297,6 +4297,13 @@ array_constructed:
 		MINT_IN_CASE(MINT_ICALL_PPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPI_V)
 			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
+			if (*mono_thread_interruption_request_flag ()) {
+				MonoException *exc = mono_thread_interruption_checkpoint ();
+				if (exc) {
+					frame->ex = exc;
+					context->search_for_handler = 1;
+				}
+			}
 			if (frame->ex != NULL)
 				goto handle_exception;
 			ip += 2;
