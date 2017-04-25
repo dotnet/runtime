@@ -16,7 +16,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="Common\System\Data\Common\AdapterUtil.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
+      <Link>Common\System\Data\Common\AdapterUtil.cs</Link>
+    </Compile>
+    <Compile Include="Common\System\Data\Common\AdapterUtil.Odbc.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>

@@ -276,6 +276,30 @@
   <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve">
     <value>{0} '{1}', the current limit of '{2}' is insufficient.</value>
   </data>
+  <data name="ADP_NotSupportedEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is not supported by the {2} method.</value>
+  </data>
+  <data name="ADP_StreamClosed" xml:space="preserve">
+    <value>Invalid attempt to {0} when stream is closed.</value>
+  </data>
+  <data name="ADP_InvalidSourceBufferIndex" xml:space="preserve">
+    <value>Invalid source buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="ADP_InvalidDestinationBufferIndex" xml:space="preserve">
+    <value>Invalid destination buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="SQL_InvalidBufferSizeOrIndex" xml:space="preserve">
+    <value>Buffer offset '{1}' plus the bytes available '{0}' is greater than the length of the passed in buffer.</value>
+  </data>
+  <data name="SQL_InvalidDataLength" xml:space="preserve">
+    <value>Data length '{0}' is less than 0.</value>
+  </data>
+  <data name="ADP_InvalidSeekOrigin" xml:space="preserve">
+    <value>Specified SeekOrigin value is invalid.</value>
+  </data>
+  <data name="SQL_WrongType" xml:space="preserve">
+    <value>Expecting argument of type {1}, but received type {0}.</value>
+  </data>
   <data name="ODBC_ODBCCommandText" xml:space="preserve">
     <value>OdbcCommandBuilder.DeriveParameters failed because the OdbcCommand.CommandText property value is an invalid multipart name</value>
   </data>
