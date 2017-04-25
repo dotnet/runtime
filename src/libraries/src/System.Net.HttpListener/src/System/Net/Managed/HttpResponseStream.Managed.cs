@@ -41,7 +41,6 @@ namespace System.Net
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;
-        private bool _disposed;
         private bool _trailer_sent;
         private Stream _stream;
 
@@ -52,49 +51,45 @@ namespace System.Net
             _stream = stream;
         }
 
-        public override void Close()
+        private void DisposeCore()
         {
-            if (_disposed == false)
+            byte[] bytes = null;
+            MemoryStream ms = GetHeaders(true);
+            bool chunked = _response.SendChunked;
+            if (_stream.CanWrite)
             {
-                _disposed = true;
-                byte[] bytes = null;
-                MemoryStream ms = GetHeaders(true);
-                bool chunked = _response.SendChunked;
-                if (_stream.CanWrite)
+                try
                 {
-                    try
+                    if (ms != null)
                     {
-                        if (ms != null)
-                        {
-                            long start = ms.Position;
-                            if (chunked && !_trailer_sent)
-                            {
-                                bytes = GetChunkSizeBytes(0, true);
-                                ms.Position = ms.Length;
-                                ms.Write(bytes, 0, bytes.Length);
-                            }
-                            InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
-                            _trailer_sent = true;
-                        }
-                        else if (chunked && !_trailer_sent)
+                        long start = ms.Position;
+                        if (chunked && !_trailer_sent)
                         {
                             bytes = GetChunkSizeBytes(0, true);
-                            InternalWrite(bytes, 0, bytes.Length);
-                            _trailer_sent = true;
+                            ms.Position = ms.Length;
+                            ms.Write(bytes, 0, bytes.Length);
                         }
+                        InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
+                        _trailer_sent = true;
                     }
-                    catch (IOException)
+                    else if (chunked && !_trailer_sent)
                     {
-                        // Ignore error due to connection reset by peer
+                        bytes = GetChunkSizeBytes(0, true);
+                        InternalWrite(bytes, 0, bytes.Length);
+                        _trailer_sent = true;
                     }
                 }
-                _response.Close();
+                catch (IOException)
+                {
+                    // Ignore error due to connection reset by peer
+                }
             }
+            _response.Close();
         }
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
-            if (_disposed)
+            if (_closed)
                 throw new ObjectDisposedException(GetType().ToString());
 
             if (_stream.CanWrite)
@@ -163,9 +158,9 @@ namespace System.Net
             catch { }
         }
 
-        private void Write(byte[] buffer, int offset, int size)
+        private void WriteCore(byte[] buffer, int offset, int size)
         {
-            if (_disposed)
+            if (_closed)
                 throw new ObjectDisposedException(GetType().ToString());
             if (size == 0)
                 return;
@@ -205,7 +200,7 @@ namespace System.Net
 
         private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
-            if (_disposed)
+            if (_closed)
                 throw new ObjectDisposedException(GetType().ToString());
 
             byte[] bytes = null;
@@ -236,7 +231,7 @@ namespace System.Net
 
         private void EndWriteCore(IAsyncResult asyncResult)
         {
-            if (_disposed)
+            if (_closed)
                 throw new ObjectDisposedException(GetType().ToString());
 
             if (_ignore_errors)
