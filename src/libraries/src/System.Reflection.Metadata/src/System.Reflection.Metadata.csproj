@@ -10,6 +10,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.1'">NETSTANDARD11</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
@@ -21,6 +22,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\Reflection\Internal\Utilities\PinnedObject.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" Condition="'$(TargetGroup)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.netstandard1.1.cs" Condition="'$(TargetGroup)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PathUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\FunctionPointerAttributes.cs" />

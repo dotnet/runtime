@@ -4,33 +4,12 @@
 
 using System.Collections.Generic;
 using System.Reflection.Internal;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection.Metadata.Ecma335
 {
-    internal struct VirtualHeapBlob
-    {
-        private GCHandle _pinned;
-        private readonly byte[] _array;
-
-        public VirtualHeapBlob(byte[] array)
-        {
-            _pinned = GCHandle.Alloc(array, GCHandleType.Pinned);
-            _array = array;
-        }
-
-        public unsafe MemoryBlock GetMemoryBlock()
-        {
-            return new MemoryBlock((byte*)_pinned.AddrOfPinnedObject(), _array.Length);
-        }
-
-        public void Free()
-        {
-            _pinned.Free();
-        }
-    }
-
     // Container for virtual heap blobs that unpins handles on finalization.
     // This is not handled via dispose because the only resource is managed memory
     // and we don't have user visible disposable object that could own this memory.
@@ -38,24 +17,98 @@ namespace System.Reflection.Metadata.Ecma335
     // Since the number of virtual blobs we need is small (the number of attribute classes in .winmd files)
     // we can create a pinned handle for each of them.
     // If we needed many more blobs we could create and pin a single byte[] and allocate blobs there.
-    internal sealed class VirtualHeap
+    internal sealed class VirtualHeap : CriticalDisposableObject
     {
-        public readonly Dictionary<uint, VirtualHeapBlob> Table;
+        private struct PinnedBlob
+        {
+            // can't be read-only since GCHandle is a mutable struct
+            public GCHandle Handle;
+
+            public readonly int Length;
+
+            public PinnedBlob(GCHandle handle, int length)
+            {
+                Handle = handle;
+                Length = length;
+            }
+
+            public unsafe MemoryBlock GetMemoryBlock() => 
+                new MemoryBlock((byte*)Handle.AddrOfPinnedObject(), Length);
+        }
+
+        // maps raw value of StringHandle or BlobHandle to the corresponding pinned array
+        private Dictionary<uint, PinnedBlob> _blobs;
 
         private VirtualHeap()
         {
-            Table = new Dictionary<uint, VirtualHeapBlob>();
+            _blobs = new Dictionary<uint, PinnedBlob>();
         }
 
-        ~VirtualHeap()
+        protected override void Release()
         {
-            if (Table != null)
+            // Make sure the current thread isn't aborted in the middle of the operation.
+#if !NETSTANDARD11
+            RuntimeHelpers.PrepareConstrainedRegions();
+#endif
+            try
             {
-                foreach (var blobPair in Table)
+            }
+            finally
+            {
+                var blobs = Interlocked.Exchange(ref _blobs, null);
+
+                if (blobs != null)
                 {
-                    blobPair.Value.Free();
+                    foreach (var blobPair in blobs)
+                    {
+                        blobPair.Value.Handle.Free();
+                    }
                 }
             }
+        }
+
+        private Dictionary<uint, PinnedBlob> GetBlobs()
+        {
+            var blobs = _blobs;
+            if (blobs == null)
+            {
+                throw new ObjectDisposedException(nameof(VirtualHeap));
+            }
+
+            return blobs;
+        }
+
+        public bool TryGetMemoryBlock(uint rawHandle, out MemoryBlock block)
+        {
+            if (!GetBlobs().TryGetValue(rawHandle, out var blob))
+            {
+                block = default(MemoryBlock);
+                return false;
+            }
+
+            block = blob.GetMemoryBlock();
+            return true;
+        }
+
+        internal MemoryBlock AddBlob(uint rawHandle, byte[] value)
+        {
+            var blobs = GetBlobs();
+
+            MemoryBlock result;
+#if !NETSTANDARD11
+            RuntimeHelpers.PrepareConstrainedRegions();
+#endif
+            try
+            {
+            }
+            finally
+            {
+                var blob = new PinnedBlob(GCHandle.Alloc(value, GCHandleType.Pinned), value.Length);
+                blobs.Add(rawHandle, blob);
+                result = blob.GetMemoryBlock();
+            }
+
+            return result;
         }
 
         internal static VirtualHeap GetOrCreateVirtualHeap(ref VirtualHeap lazyHeap)

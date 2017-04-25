@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection.Internal
@@ -52,18 +51,12 @@ namespace System.Reflection.Internal
         protected override void Dispose(bool disposing)
         {
             Debug.Assert(disposing);
-
-            if (!_leaveOpen && _stream != null)
+            if (!_leaveOpen)
             {
-                _stream.Dispose();
-                _stream = null;
+                Interlocked.Exchange(ref _stream, null)?.Dispose();
             }
 
-            if (_lazyMemoryMap != null)
-            {
-                _lazyMemoryMap.Dispose();
-                _lazyMemoryMap = null;
-            }
+            Interlocked.Exchange(ref _lazyMemoryMap, null)?.Dispose();
         }
 
         public override int Size
@@ -162,15 +155,13 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            SafeBuffer safeBuffer;
-            byte* pointer = MemoryMapLightUp.AcquirePointer(accessor, out safeBuffer);
-            if (pointer == null)
+            if (!MemoryMapLightUp.TryGetSafeBufferAndPointerOffset(accessor, out var safeBuffer, out long offset))
             {
                 block = null;
                 return false;
             }
 
-            block = new MemoryMappedFileBlock(accessor, safeBuffer, pointer, size);
+            block = new MemoryMappedFileBlock(accessor, safeBuffer, offset, size);
             return true;
         }
     }

@@ -5,6 +5,8 @@
 using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata.Tests;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Internal.Tests
@@ -183,6 +185,78 @@ namespace System.Reflection.Internal.Tests
             {
                 File.Delete(filePath);
             }
+        }
+
+        private class TestSafeBuffer : SafeBuffer
+        {
+            private int _i;
+
+            public TestSafeBuffer() : base(true)
+            {
+                Initialize(10);
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                Assert.Equal(1, Interlocked.Increment(ref _i));
+                return true;
+            }
+        }
+
+        private class TestOnceDisposable : IDisposable
+        {
+            private int _i;
+            public void Dispose() => Assert.Equal(1, Interlocked.Increment(ref _i));
+        }
+
+        [Fact]
+        public unsafe void DisposeThreadSafety()
+        {
+            var nativeBlocks = new NativeHeapMemoryBlock[20];
+            var memoryMappedBlocks = new MemoryMappedFileBlock[20];
+
+            for (int i = 0; i < nativeBlocks.Length; i++)
+            {
+                nativeBlocks[i] = new NativeHeapMemoryBlock(10);
+            }
+
+            for (int i = 0; i < memoryMappedBlocks.Length; i++)
+            {
+                memoryMappedBlocks[i] = new MemoryMappedFileBlock(new TestOnceDisposable(), new TestSafeBuffer(), offset: 0, size: 1);
+            }
+
+            var worker = new ThreadStart(() =>
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    for (int i = 0; i < nativeBlocks.Length; i++)
+                    {
+                        nativeBlocks[i].Dispose();
+                        Thread.Yield();
+                    }
+
+                    for (int i = 0; i < memoryMappedBlocks.Length; i++)
+                    {
+                        memoryMappedBlocks[i].Dispose();
+                        Thread.Yield();
+                    }
+                }
+            });
+
+            var t1 = new Thread(worker);
+            var t2 = new Thread(worker);
+            var t3 = new Thread(worker);
+            var t4 = new Thread(worker);
+
+            t1.Start();
+            t2.Start();
+            t3.Start();
+            t4.Start();
+
+            t1.Join();
+            t2.Join();
+            t3.Join();
+            t4.Join();
         }
     }
 }

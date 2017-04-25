@@ -92,6 +92,8 @@
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\MemoryBlocks\NativeHeapMemoryBlock.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\MemoryBlocks\StreamConstraints.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
+    <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" />
+    <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\Utilities\PinnedObject.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\Utilities\StringUtils.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\Internal\Utilities\EmptyArray.cs" />
