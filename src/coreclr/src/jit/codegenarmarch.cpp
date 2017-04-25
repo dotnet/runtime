@@ -1673,6 +1673,163 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
 }
 
+//-------------------------------------------------------------------------------------------
+// genJumpKindsForTree:  Determine the number and kinds of conditional branches
+//                       necessary to implement the given GT_CMP node
+//
+// Arguments:
+//   cmpTree           - (input) The GenTree node that is used to set the Condition codes
+//                     - The GenTree Relop node that was used to set the Condition codes
+//   jmpKind[2]        - (output) One or two conditional branch instructions
+//   jmpToTrueLabel[2] - (output) On Arm64 both branches will always branch to the true label
+//
+// Return Value:
+//    Sets the proper values into the array elements of jmpKind[] and jmpToTrueLabel[]
+//
+// Assumptions:
+//    At least one conditional branch instruction will be returned.
+//    Typically only one conditional branch is needed
+//     and the second jmpKind[] value is set to EJ_NONE
+//
+void CodeGen::genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2])
+{
+    // On ARM both branches will always branch to the true label
+    jmpToTrueLabel[0] = true;
+    jmpToTrueLabel[1] = true;
+
+    // For integer comparisons just use genJumpKindForOper
+    if (!varTypeIsFloating(cmpTree->gtOp.gtOp1->gtEffectiveVal()))
+    {
+        CompareKind compareKind = ((cmpTree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+        jmpKind[0]              = genJumpKindForOper(cmpTree->gtOper, compareKind);
+        jmpKind[1]              = EJ_NONE;
+    }
+    else // We have a Floating Point Compare operation
+    {
+        assert(cmpTree->OperIsCompare());
+
+        // For details on this mapping, see the ARM Condition Code table
+        // at section A8.3   in the ARMv7 architecture manual or
+        // at section C1.2.3 in the ARMV8 architecture manual.
+
+        // We must check the GTF_RELOP_NAN_UN to find out
+        // if we need to branch when we have a NaN operand.
+        //
+        if ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        {
+            // Must branch if we have an NaN, unordered
+            switch (cmpTree->gtOper)
+            {
+                case GT_EQ:
+                    jmpKind[0] = EJ_eq; // branch or set when equal (and no NaN's)
+                    jmpKind[1] = EJ_vs; // branch or set when we have a NaN
+                    break;
+
+                case GT_NE:
+                    jmpKind[0] = EJ_ne; // branch or set when not equal (or have NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_LT:
+                    jmpKind[0] = EJ_lt; // branch or set when less than (or have NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_LE:
+                    jmpKind[0] = EJ_le; // branch or set when less than or equal (or have NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_GT:
+                    jmpKind[0] = EJ_hi; // branch or set when greater than (or have NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_GE:
+                    jmpKind[0] = EJ_hs; // branch or set when greater than or equal (or have NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
+        else // ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) == 0)
+        {
+            // Do not branch if we have an NaN, unordered
+            switch (cmpTree->gtOper)
+            {
+                case GT_EQ:
+                    jmpKind[0] = EJ_eq; // branch or set when equal (and no NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_NE:
+                    jmpKind[0] = EJ_gt; // branch or set when greater than (and no NaN's)
+                    jmpKind[1] = EJ_lo; // branch or set when less than (and no NaN's)
+                    break;
+
+                case GT_LT:
+                    jmpKind[0] = EJ_lo; // branch or set when less than (and no NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_LE:
+                    jmpKind[0] = EJ_ls; // branch or set when less than or equal (and no NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_GT:
+                    jmpKind[0] = EJ_gt; // branch or set when greater than (and no NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                case GT_GE:
+                    jmpKind[0] = EJ_ge; // branch or set when greater than or equal (and no NaN's)
+                    jmpKind[1] = EJ_NONE;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJumpTrue: Generates code for jmpTrue statement.
+//
+// Arguments:
+//    tree - The GT_JTRUE tree node.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genCodeForJumpTrue(GenTreePtr tree)
+{
+    GenTree* cmp = tree->gtOp.gtOp1->gtEffectiveVal();
+    assert(cmp->OperIsCompare());
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
+    // is governed by a flag NOT by the inherent type of the node
+    emitJumpKind jumpKind[2];
+    bool         branchToTrueLabel[2];
+    genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
+    assert(jumpKind[0] != EJ_NONE);
+
+    // On ARM the branches will always branch to the true label
+    assert(branchToTrueLabel[0]);
+    inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
+
+    if (jumpKind[1] != EJ_NONE)
+    {
+        // the second conditional branch always has to be to the true label
+        assert(branchToTrueLabel[1]);
+        inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
+    }
+}
+
 #endif // _TARGET_ARMARCH_
 
 #endif // !LEGACY_BACKEND
