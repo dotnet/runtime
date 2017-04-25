@@ -1046,8 +1046,6 @@ INTERP_DISABLED_TESTS = \
 	call_missing_method.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
-	constant-division.exe \
-	context-static.exe \
 	cross-domain.exe \
 	delegate-async-exit.exe \
 	delegate-delegate-exit.exe \
@@ -1058,9 +1056,6 @@ INTERP_DISABLED_TESTS = \
 	delegate5.exe \
 	delegate8.exe \
 	delegate9.exe \
-	dynamic-method-access.2.exe \
-	dynamic-method-finalize.2.exe \
-	dynamic-method-resurrection.exe \
 	dynamic-method-stack-traces.exe \
 	even-odd.exe \
 	exception18.exe \
