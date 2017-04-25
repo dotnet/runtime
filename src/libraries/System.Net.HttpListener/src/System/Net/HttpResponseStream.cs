@@ -10,6 +10,9 @@ namespace System.Net
 {
     internal sealed partial class HttpResponseStream : Stream
     {
+        private bool _closed;
+        internal bool Closed => _closed;
+
         public override bool CanRead => false;
         public override bool CanSeek => false;
         public override bool CanWrite => true;
@@ -93,6 +96,30 @@ namespace System.Net
             }
 
             EndWriteCore(asyncResult);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            try
+            {
+                if (disposing)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_closed:" + _closed);
+                    if (_closed)
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                        return;
+                    }
+                    _closed = true;
+                    DisposeCore();
+                }
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
     }
 }

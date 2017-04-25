@@ -14,7 +14,6 @@ namespace System.Net
     {
         private readonly HttpListenerContext _httpContext;
         private long _leftToWrite = long.MinValue;
-        private bool _closed;
         private bool _inOpaqueMode;
         // The last write needs special handling to cancel.
         private HttpResponseStreamAsyncResult _lastWrite;
@@ -41,8 +40,6 @@ namespace System.Net
             }
             return flags;
         }
-
-        internal bool Closed => _closed;
 
         internal HttpListenerContext InternalHttpContext => _httpContext;
 
@@ -292,103 +289,88 @@ namespace System.Net
 
         private static readonly byte[] s_chunkTerminator = new byte[] { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
 
-        protected override void Dispose(bool disposing)
+        private void DisposeCore()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            try
+            Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
+            if (_leftToWrite > 0 && !_inOpaqueMode)
             {
-                if (disposing)
+                throw new InvalidOperationException(SR.net_io_notenoughbyteswritten);
+            }
+            bool sentHeaders = _httpContext.Response.SentHeaders;
+            if (sentHeaders && _leftToWrite == 0)
+            {
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Exit(this);
+                return;
+            }
+
+            uint statusCode = 0;
+            if ((_httpContext.Response.BoundaryType == BoundaryType.Chunked || _httpContext.Response.BoundaryType == BoundaryType.None) && (String.Compare(_httpContext.Request.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase) != 0))
+            {
+                if (_httpContext.Response.BoundaryType == BoundaryType.None)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_closed:" + _closed);
-                    if (_closed)
+                    flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
+                }
+                fixed (void* pBuffer = &s_chunkTerminator[0])
+                {
+                    Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
+                    if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                        return;
+                        Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                        dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
+                        dataChunk.pBuffer = (byte*)pBuffer;
+                        dataChunk.BufferLength = (uint)s_chunkTerminator.Length;
+                        pDataChunk = &dataChunk;
                     }
-                    _closed = true;
-                    Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
-                    if (_leftToWrite > 0 && !_inOpaqueMode)
+                    if (!sentHeaders)
                     {
-                        throw new InvalidOperationException(SR.net_io_notenoughbyteswritten);
-                    }
-                    bool sentHeaders = _httpContext.Response.SentHeaders;
-                    if (sentHeaders && _leftToWrite == 0)
-                    {
-                        if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                        return;
-                    }
-
-                    uint statusCode = 0;
-                    if ((_httpContext.Response.BoundaryType == BoundaryType.Chunked || _httpContext.Response.BoundaryType == BoundaryType.None) && (String.Compare(_httpContext.Request.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase) != 0))
-                    {
-                        if (_httpContext.Response.BoundaryType == BoundaryType.None)
-                        {
-                            flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
-                        }
-                        fixed (void* pBuffer = &s_chunkTerminator[0])
-                        {
-                            Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
-                            if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
-                            {
-                                Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = new Interop.HttpApi.HTTP_DATA_CHUNK();
-                                dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                                dataChunk.pBuffer = (byte*)pBuffer;
-                                dataChunk.BufferLength = (uint)s_chunkTerminator.Length;
-                                pDataChunk = &dataChunk;
-                            }
-                            if (!sentHeaders)
-                            {
-                                statusCode = _httpContext.Response.SendHeaders(pDataChunk, null, flags, false);
-                            }
-                            else
-                            {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendResponseEntityBody");
-
-                                statusCode =
-                                    Interop.HttpApi.HttpSendResponseEntityBody(
-                                        _httpContext.RequestQueueHandle,
-                                        _httpContext.RequestId,
-                                        (uint)flags,
-                                        pDataChunk != null ? (ushort)1 : (ushort)0,
-                                        pDataChunk,
-                                        null,
-                                        SafeLocalAllocHandle.Zero,
-                                        0,
-                                        null,
-                                        null);
-
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendResponseEntityBody returned:" + statusCode);
-                                if (_httpContext.Listener.IgnoreWriteExceptions)
-                                {
-                                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Suppressing error");
-                                    statusCode = Interop.HttpApi.ERROR_SUCCESS;
-                                }
-                            }
-                        }
+                        statusCode = _httpContext.Response.SendHeaders(pDataChunk, null, flags, false);
                     }
                     else
                     {
-                        if (!sentHeaders)
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendResponseEntityBody");
+
+                        statusCode =
+                            Interop.HttpApi.HttpSendResponseEntityBody(
+                                _httpContext.RequestQueueHandle,
+                                _httpContext.RequestId,
+                                (uint)flags,
+                                pDataChunk != null ? (ushort)1 : (ushort)0,
+                                pDataChunk,
+                                null,
+                                SafeLocalAllocHandle.Zero,
+                                0,
+                                null,
+                                null);
+
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendResponseEntityBody returned:" + statusCode);
+                        if (_httpContext.Listener.IgnoreWriteExceptions)
                         {
-                            statusCode = _httpContext.Response.SendHeaders(null, null, flags, false);
+                            if (NetEventSource.IsEnabled)
+                                NetEventSource.Info(this, "Suppressing error");
+                            statusCode = Interop.HttpApi.ERROR_SUCCESS;
                         }
                     }
-                    if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
-                    {
-                        Exception exception = new HttpListenerException((int)statusCode);
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception.ToString());
-                        _httpContext.Abort();
-                        throw exception;
-                    }
-                    _leftToWrite = 0;
                 }
             }
-            finally
+            else
             {
-                base.Dispose(disposing);
+                if (!sentHeaders)
+                {
+                    statusCode = _httpContext.Response.SendHeaders(null, null, flags, false);
+                }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
+            {
+                Exception exception = new HttpListenerException((int)statusCode);
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this, exception.ToString());
+                _httpContext.Abort();
+                throw exception;
+            }
+            _leftToWrite = 0;
         }
 
         internal void SwitchToOpaqueMode()
