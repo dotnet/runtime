@@ -113,7 +113,8 @@
 
     <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
     <VerifyClosure Sources="@(_closureFileFiltered)"
-                   IgnoredReferences="@(IgnoredReference)" />
+                   IgnoredReferences="@(IgnoredReference)"
+                   DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
 
   </Target>
 
