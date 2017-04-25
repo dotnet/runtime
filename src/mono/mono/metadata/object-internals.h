@@ -1468,8 +1468,8 @@ ves_icall_TypeBuilder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflect
 MonoArray *
 ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelper *sig);
 
-MonoArray *
-ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelper *sig);
+MonoArrayHandle
+ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelperHandle sig, MonoError *error);
 
 MonoReflectionMarshalAsAttributeHandle
 mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
