@@ -556,8 +556,8 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, double.PositiveInfinity, double.NaN };
             yield return new object[] { 0, double.MinValue, double.PositiveInfinity, double.NaN };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.NegativeInfinity };
-            yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.NegativeInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity };
+            yield return new object[] { double.MinValue, double.MinValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity};
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -582,7 +582,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Cos_Advanced_TestData))]
+        [Theory, MemberData(nameof(Cos_Advanced_TestData))]
         public static void Cos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -612,8 +612,8 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, Math.Cos(double.MaxValue), 0 };
             yield return new object[] { 0, double.MinValue, Math.Cos(double.MinValue), 0 };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity };
-            yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.NegativeInfinity };
+            yield return new object[] { double.MinValue, double.MinValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.NegativeInfinity };
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -634,7 +634,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Cosh_Advanced_TestData))]
+        [Theory, MemberData(nameof(Cosh_Advanced_TestData))]
         public static void Cosh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -830,7 +830,7 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [Theory]
         [MemberData(nameof(Exp_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -840,7 +840,7 @@ namespace System.Numerics.Tests
             // Special case the complex {double.MaxValue, double.MaxValue)
             if (real == double.MaxValue && imaginary == double.MaxValue)
             {
-                expected = new Complex(Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity);
+                expected = new Complex(Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.NegativeInfinity);
             }
             else
             {
@@ -1220,7 +1220,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
         
-        [ConditionalTheory(nameof(Is64Bit))]
+        [Theory]
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -1265,8 +1265,8 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, double.NaN, double.PositiveInfinity };
             yield return new object[] { 0, double.MinValue, double.NaN, double.NegativeInfinity };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, double.PositiveInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity };
-            yield return new object[] { double.MinValue, double.MinValue, double.NegativeInfinity, double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.NegativeInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity };
+            yield return new object[] { double.MinValue, double.MinValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.NegativeInfinity };
 
             foreach (double invalidReal in s_invalidDoubleValues)
             {
@@ -1286,7 +1286,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Sin_Advanced_TestData))]
+        [Theory, MemberData(nameof(Sin_Advanced_TestData))]
         public static void Sin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1316,8 +1316,8 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, double.MaxValue, 0, Math.Sin(double.MaxValue) };
             yield return new object[] { 0, double.MinValue, 0, Math.Sin(double.MinValue) };
 
-            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity };
-            yield return new object[] { double.MinValue, double.MinValue, double.PositiveInfinity, double.NegativeInfinity };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, Math.Cos(double.MaxValue) * double.NegativeInfinity };
+            yield return new object[] { double.MinValue, double.MinValue, Math.Cos(double.MaxValue) * double.NegativeInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity };
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1338,7 +1338,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Sinh_Advanced_TestData))]
+        [Theory, MemberData(nameof(Sinh_Advanced_TestData))]
         public static void Sinh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
