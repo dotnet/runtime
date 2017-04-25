@@ -461,25 +461,25 @@ namespace System.Net
 
         // Recognized attributes in order of expected frequency.
         private static readonly RecognizedAttribute[] s_recognizedAttributes = {
-            new RecognizedAttribute(Cookie.PathAttributeName, CookieToken.Path),
-            new RecognizedAttribute(Cookie.MaxAgeAttributeName, CookieToken.MaxAge),
-            new RecognizedAttribute(Cookie.ExpiresAttributeName, CookieToken.Expires),
-            new RecognizedAttribute(Cookie.VersionAttributeName, CookieToken.Version),
-            new RecognizedAttribute(Cookie.DomainAttributeName, CookieToken.Domain),
-            new RecognizedAttribute(Cookie.SecureAttributeName, CookieToken.Secure),
-            new RecognizedAttribute(Cookie.DiscardAttributeName, CookieToken.Discard),
-            new RecognizedAttribute(Cookie.PortAttributeName, CookieToken.Port),
-            new RecognizedAttribute(Cookie.CommentAttributeName, CookieToken.Comment),
-            new RecognizedAttribute(Cookie.CommentUrlAttributeName, CookieToken.CommentUrl),
-            new RecognizedAttribute(Cookie.HttpOnlyAttributeName, CookieToken.HttpOnly),
+            new RecognizedAttribute(CookieFields.PathAttributeName, CookieToken.Path),
+            new RecognizedAttribute(CookieFields.MaxAgeAttributeName, CookieToken.MaxAge),
+            new RecognizedAttribute(CookieFields.ExpiresAttributeName, CookieToken.Expires),
+            new RecognizedAttribute(CookieFields.VersionAttributeName, CookieToken.Version),
+            new RecognizedAttribute(CookieFields.DomainAttributeName, CookieToken.Domain),
+            new RecognizedAttribute(CookieFields.SecureAttributeName, CookieToken.Secure),
+            new RecognizedAttribute(CookieFields.DiscardAttributeName, CookieToken.Discard),
+            new RecognizedAttribute(CookieFields.PortAttributeName, CookieToken.Port),
+            new RecognizedAttribute(CookieFields.CommentAttributeName, CookieToken.Comment),
+            new RecognizedAttribute(CookieFields.CommentUrlAttributeName, CookieToken.CommentUrl),
+            new RecognizedAttribute(CookieFields.HttpOnlyAttributeName, CookieToken.HttpOnly),
         };
 
         private static readonly RecognizedAttribute[] s_recognizedServerAttributes = {
-            new RecognizedAttribute('$' + Cookie.PathAttributeName, CookieToken.Path),
-            new RecognizedAttribute('$' + Cookie.VersionAttributeName, CookieToken.Version),
-            new RecognizedAttribute('$' + Cookie.DomainAttributeName, CookieToken.Domain),
-            new RecognizedAttribute('$' + Cookie.PortAttributeName, CookieToken.Port),
-            new RecognizedAttribute('$' + Cookie.HttpOnlyAttributeName, CookieToken.HttpOnly),
+            new RecognizedAttribute('$' + CookieFields.PathAttributeName, CookieToken.Path),
+            new RecognizedAttribute('$' + CookieFields.VersionAttributeName, CookieToken.Version),
+            new RecognizedAttribute('$' + CookieFields.DomainAttributeName, CookieToken.Domain),
+            new RecognizedAttribute('$' + CookieFields.PortAttributeName, CookieToken.Port),
+            new RecognizedAttribute('$' + CookieFields.HttpOnlyAttributeName, CookieToken.HttpOnly),
         };
 
         internal CookieToken TokenFromName(bool parseResponseCookies)

@@ -50,6 +50,9 @@
     <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs">
       <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
+      <Link>Common\System\Net\CookieFields.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\CookieParser.cs">
       <Link>ProductionCode\System\Net\CookieParser.cs</Link>
     </Compile>
