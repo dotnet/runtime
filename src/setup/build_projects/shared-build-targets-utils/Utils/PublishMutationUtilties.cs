@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.Cli.Build
             foreach (var binaryName in binariesToBeDeleted)
             {
                 File.Delete(Path.Combine(path, $"{binaryName}{Constants.ExeSuffix}"));
-                File.Delete(Path.Combine(path, $"{binaryName}.dll"));
+                File.Delete(Path.Combine(path, $"{Constants.DynamicLibPrefix}{binaryName}{Constants.DynamicLibSuffix}"));
                 File.Delete(Path.Combine(path, $"{binaryName}.pdb"));
             }
 
