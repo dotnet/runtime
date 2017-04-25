@@ -2043,7 +2043,7 @@ namespace System.Tests
         [Fact]
         public void Replace_NullOldValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("oldValue", () => "Hello".Replace(null, ""));
+            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => "Hello".Replace(null, ""));
         }
 
         [Fact]

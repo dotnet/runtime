@@ -331,7 +331,7 @@ namespace System.Reflection.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot, "The full .NET Framework has a bug and throws a NullReferenceException")]
         public static void LoadFile_NullPath_Netcore_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
         }
 
         [Fact]
@@ -376,8 +376,8 @@ namespace System.Reflection.Tests
         public static void Test_LoadModule_Netfx()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            Assert.Throws<ArgumentNullException>(null, () => assembly.LoadModule("abc", null));
-            Assert.Throws<ArgumentNullException>(null, () => assembly.LoadModule("abc", null, null));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => assembly.LoadModule("abc", null));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => assembly.LoadModule("abc", null, null));
         }
 
 #pragma warning disable 618
@@ -423,16 +423,16 @@ namespace System.Reflection.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() not supported on UapAot")]
         public void LoadFrom_NullAssemblyFile_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
-            Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() not supported on UapAot")]
         public void LoadFrom_EmptyAssemblyFile_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, (() => Assembly.LoadFrom("")));
-            Assert.Throws<ArgumentException>(null, (() => Assembly.UnsafeLoadFrom("")));
+            AssertExtensions.Throws<ArgumentException>(null, (() => Assembly.LoadFrom("")));
+            AssertExtensions.Throws<ArgumentException>(null, (() => Assembly.UnsafeLoadFrom("")));
         }
 
         [Fact]

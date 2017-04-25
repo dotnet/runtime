@@ -59,8 +59,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotUShort_ThrowsArgumentException()
         {
             IComparable comparable = (ushort)234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a ushort
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a ushort
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a ushort
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a ushort
         }
 
         [Theory]

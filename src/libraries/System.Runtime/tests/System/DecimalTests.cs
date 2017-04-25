@@ -78,8 +78,8 @@ namespace System.Tests
         public static void Ctor_IntArray_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("bits", () => new decimal(null)); // Bits is null
-            Assert.Throws<ArgumentException>(null, () => new decimal(new int[3])); // Bits.Length is not 4
-            Assert.Throws<ArgumentException>(null, () => new decimal(new int[5])); // Bits.Length is not 4
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(new int[3])); // Bits.Length is not 4
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(new int[5])); // Bits.Length is not 4
         }
 
         [Fact]
@@ -225,8 +225,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotDecimal_ThrowsArgumentException()
         {
             IComparable comparable = 248m;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("248")); // Obj is not a decimal
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(248)); // Obj is not a decimal
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("248")); // Obj is not a decimal
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(248)); // Obj is not a decimal
         }
 
         public static IEnumerable<object[]> Divide_Valid_TestData()

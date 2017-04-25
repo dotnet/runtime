@@ -62,8 +62,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotInt_ThrowsArgumentException()
         {
             IComparable comparable = 234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not an int
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo((long)234)); // Obj is not an int
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not an int
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo((long)234)); // Obj is not an int
         }
 
         [Theory]
