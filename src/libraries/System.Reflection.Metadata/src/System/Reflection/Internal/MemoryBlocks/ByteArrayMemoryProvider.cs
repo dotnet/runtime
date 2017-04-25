@@ -5,8 +5,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection.Internal
@@ -14,7 +12,7 @@ namespace System.Reflection.Internal
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
         private readonly ImmutableArray<byte> _array;
-        private StrongBox<GCHandle> _pinned;
+        private PinnedObject _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {
@@ -22,15 +20,10 @@ namespace System.Reflection.Internal
             _array = array;
         }
 
-        ~ByteArrayMemoryProvider()
+        protected override void Dispose(bool disposing) 
         {
-            Dispose(disposing: false);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            _pinned?.Value.Free();
-            _pinned = null;
+            Debug.Assert(disposing);
+            Interlocked.Exchange(ref _pinned, null)?.Dispose();
         }
 
         public override int Size => _array.Length;
@@ -53,17 +46,16 @@ namespace System.Reflection.Internal
             {
                 if (_pinned == null)
                 {
-                    var newPinned = new StrongBox<GCHandle>(
-                        GCHandle.Alloc(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array), GCHandleType.Pinned));
+                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array));
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {
                         // another thread has already allocated the handle:
-                        newPinned.Value.Free();
+                        newPinned.Dispose();
                     }
                 }
 
-                return (byte*)_pinned.Value.AddrOfPinnedObject();
+                return _pinned.Pointer;
             }
         }
     }

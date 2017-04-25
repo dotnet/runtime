@@ -44,18 +44,11 @@ namespace System.Reflection.Internal
         /// Disposes the block. 
         /// </summary>
         /// <remarks>
-        /// The operation is idempotent, but must not be called concurrently with any other operations on the block
-        /// or with another call to Dispose.
+        /// The operation is idempotent, but must not be called concurrently with any other operations on the block.
         /// 
         /// Using the block after dispose is an error in our code and therefore no effort is made to throw a tidy 
         /// ObjectDisposedException and null ref or AV is possible.
         /// </remarks>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected abstract void Dispose(bool disposing);
+        public abstract void Dispose();
     }
 }

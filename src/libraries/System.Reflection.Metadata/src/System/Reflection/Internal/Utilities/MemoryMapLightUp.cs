@@ -35,16 +35,12 @@ namespace System.Reflection.Internal
             }
         }
 
-        internal static unsafe byte* AcquirePointer(object accessor, out SafeBuffer safeBuffer)
+        internal static bool TryGetSafeBufferAndPointerOffset(object accessor, out SafeBuffer safeBuffer, out long offset)
         {
-            var memoryMappedViewAccessor = (MemoryMappedViewAccessor)accessor;
-
-            safeBuffer = memoryMappedViewAccessor.SafeMemoryMappedViewHandle;
-
-            byte* ptr = null;
-            safeBuffer.AcquirePointer(ref ptr);
-
-            return ptr + memoryMappedViewAccessor.PointerOffset;
+            var viewAccessor = (MemoryMappedViewAccessor)accessor;
+            safeBuffer = viewAccessor.SafeMemoryMappedViewHandle;
+            offset = viewAccessor.PointerOffset;
+            return true;
         }
     }
 }

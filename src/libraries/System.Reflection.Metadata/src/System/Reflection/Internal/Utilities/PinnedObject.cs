@@ -1,0 +1,47 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace System.Reflection.Internal
+{
+    internal sealed class PinnedObject : CriticalDisposableObject
+    {
+        // can't be read-only since GCHandle is a mutable struct
+        private GCHandle _handle;
+
+        public PinnedObject(object obj)
+        {
+            // Make sure the current thread isn't aborted in between allocating the handle and storing it.
+#if !NETSTANDARD11
+            RuntimeHelpers.PrepareConstrainedRegions();
+#endif
+            try
+            {
+            }
+            finally
+            {
+                _handle = GCHandle.Alloc(obj, GCHandleType.Pinned);
+            }
+        }
+
+        protected override void Release()
+        {
+            // Make sure the current thread isn't aborted in between zeroing the handle and freeing it.
+#if !NETSTANDARD11
+            RuntimeHelpers.PrepareConstrainedRegions();
+#endif
+            try
+            {
+            }
+            finally
+            {
+                _handle.Free();
+            }
+        }
+
+        public unsafe byte* Pointer => (byte*)_handle.AddrOfPinnedObject();
+    }
+}

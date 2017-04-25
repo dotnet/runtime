@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Immutable;
-using System.Diagnostics;
-
 namespace System.Reflection.Internal
 {
     /// <summary>
@@ -25,9 +22,8 @@ namespace System.Reflection.Internal
             _size = size;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            Debug.Assert(disposing);
             _buffer = null;
             _size = 0;
         }

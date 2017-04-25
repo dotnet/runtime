@@ -227,18 +227,15 @@ namespace System.Reflection.Internal
             }
         }
 
-        internal static unsafe byte* AcquirePointer(object accessor, out SafeBuffer safeBuffer)
+        internal static bool TryGetSafeBufferAndPointerOffset(object accessor, out SafeBuffer safeBuffer, out long offset)
         {
             Debug.Assert(s_lazyIsAvailable.GetValueOrDefault());
 
             safeBuffer = (SafeBuffer)s_lazySafeMemoryMappedViewHandle.GetValue(accessor);
-
-            byte* ptr = null;
-            safeBuffer.AcquirePointer(ref ptr);
+            offset = 0;
 
             try
             {
-                long offset;
                 if (s_lazyPointerOffset != null)
                 {
                     offset = (long)s_lazyPointerOffset.GetValue(accessor);
@@ -249,18 +246,18 @@ namespace System.Reflection.Internal
                     offset = (long)s_lazyInternalPointerOffset.GetValue(internalView);
                 }
 
-                return ptr + offset;
+                return true;
             }
             catch (MemberAccessException)
             {
                 s_lazyIsAvailable = false;
-                return null;
+                return false;
             }
             catch (InvalidOperationException)
             {
                 // thrown when accessing unapproved API in a Windows Store app
                 s_lazyIsAvailable = false;
-                return null;
+                return false;
             }
             catch (TargetInvocationException ex)
             {

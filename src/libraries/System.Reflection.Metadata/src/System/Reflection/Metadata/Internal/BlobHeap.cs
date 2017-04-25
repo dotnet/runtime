@@ -121,17 +121,15 @@ namespace System.Reflection.Metadata.Ecma335
         {
             var heap = VirtualHeap.GetOrCreateVirtualHeap(ref _lazyVirtualHeap);
 
-            VirtualHeapBlob virtualBlob;
             lock (heap)
             {
-                if (!heap.Table.TryGetValue(handle.RawValue, out virtualBlob))
+                if (!heap.TryGetMemoryBlock(handle.RawValue, out var block))
                 {
-                    virtualBlob = new VirtualHeapBlob(GetVirtualBlobBytes(handle, unique: false));
-                    heap.Table.Add(handle.RawValue, virtualBlob);
+                    block = heap.AddBlob(handle.RawValue, GetVirtualBlobBytes(handle, unique: false));
                 }
-            }
 
-            return virtualBlob.GetMemoryBlock();
+                return block;
+            }
         }
 
         internal BlobReader GetBlobReader(BlobHandle handle)

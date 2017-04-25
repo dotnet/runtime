@@ -213,10 +213,9 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(handle.IsVirtual);
             var heap = VirtualHeap.GetOrCreateVirtualHeap(ref _lazyVirtualHeap);
 
-            VirtualHeapBlob virtualBlob;
             lock (heap)
             {
-                if (!heap.Table.TryGetValue(handle.RawValue, out virtualBlob))
+                if (!heap.TryGetMemoryBlock(handle.RawValue, out var block))
                 {
                     byte[] bytes;
                     switch (handle.StringKind)
@@ -232,13 +231,12 @@ namespace System.Reflection.Metadata.Ecma335
                         default:
                             throw ExceptionUtilities.UnexpectedValue(handle.StringKind);
                     }
-            
-                    virtualBlob = new VirtualHeapBlob(bytes);
-                    heap.Table.Add(handle.RawValue, virtualBlob);
-                }
-            }
 
-            return virtualBlob.GetMemoryBlock();
+                    block = heap.AddBlob(handle.RawValue, bytes);
+                }
+
+                return block;
+            }
         }
 
         internal BlobReader GetBlobReader(StringHandle handle)

@@ -23,9 +23,8 @@ namespace System.Reflection.Internal
             _start = start;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            Debug.Assert(disposing);
             _provider = null;
         }
 
