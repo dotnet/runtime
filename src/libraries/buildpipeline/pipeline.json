@@ -959,6 +959,33 @@
         "Trusted-All-Debug-Linux",
         "Trusted-All-Debug-Linux-Crossbuild"
       ]
+    },
+    {
+      "Name": "Publish Symbols - Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_ConfigurationGroup": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish-Symbols",
+          "Parameters": {
+          },
+          "ReportingParameters": {
+            "TaskName": "Symbol Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Release - Publish Symbols"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release-Windows",
+        "Trusted-All-Release-OSX",
+        "Trusted-All-Release-Linux",
+        "Trusted-All-Release-Linux-Crossbuild"
+      ]
     }
   ]
 }

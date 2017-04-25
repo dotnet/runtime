@@ -1,0 +1,276 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Set up pipeline-specific git repository",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "-gitUrl $(PB_VstsRepoGitUrl) -root $(Pipeline.SourcesDirectory)",
+        "workingFolder": "",
+        "inlineScript": "param($gitUrl, $root)\n\nif (Test-Path $root)\n{\n  Remove-Item -Recurse -Force $root\n}\ngit clone --no-checkout $gitUrl $root 2>&1 | Write-Host\ncd $root\ngit checkout $env:SourceVersion 2>&1 | Write-Host\n\nWrite-Host (\"##vso[task.setvariable variable=Pipeline.SourcesDirectory;]$root\")",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "sync -ab",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($account, $token, $container)\n.\\sync.cmd -ab -- /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Extract symbol packages; if release branch, archive",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $Branch)\nif ($ConfigGroup -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"UnzipSymbolPackagesForPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\build-managed.cmd -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/v:D",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Symbols to Artifact Services",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
+        "versionSpec": "0.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "symbolServiceURI": "https://microsoft.artifacts.visualstudio.com/DefaultCollection",
+        "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
+        "sourcePath": "$(Pipeline.SourcesDirectory)\\bin\\obj\\SymbolsRequest\\ExtractedPackages",
+        "assemblyPath": "",
+        "toLowerCase": "true",
+        "detailedLog": "true",
+        "expirationInDays": "1",
+        "usePat": "false"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "234347",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "PB_ConfigurationGroup": {
+      "value": "Debug",
+      "allowOverride": true
+    },
+    "PB_CloudDropAccountName": {
+      "value": "dotnetbuildoutput",
+      "allowOverride": true
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "PB_Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "PB_BuildConfiguration": {
+      "value": "release"
+    },
+    "PB_BuildPlatform": {
+      "value": "any cpu"
+    },
+    "Pipeline.SourcesDirectory": {
+      "value": "$(Build.BinariesDirectory)\\pipelineRepository"
+    },
+    "PB_VstsAccountName": {
+      "value": "dagood"
+    },
+    "PB_VstsRepositoryName": {
+      "value": "DotNet-CoreFX-Trusted",
+      "allowOverride": true
+    },
+    "PB_VstsRepoGitUrl": {
+      "value": "https://$(PB_VstsAccountName):$(VstsRepoPat)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VstsRepositoryName)/"
+    },
+    "VstsRepoPat": {
+      "value": null,
+      "isSecret": true
+    },
+    "SourceVersion": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "SourceBranch": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "PB_AzureContainerSymbolPackageGlob": {
+      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)\\symbols\\*.nupkg",
+      "allowOverride": true
+    },
+    "PB_DotNetCoreShareDir": {
+      "value": "passed-by-pipebuild",
+      "allowOverride": true
+    },
+    "SymbolsProject": {
+      "value": "CLR"
+    },
+    "SymbolsStatusMail": {
+      "value": "dagood;mawilkie"
+    },
+    "SymbolsUserName": {
+      "value": "dlab"
+    },
+    "SymbolsRelease": {
+      "value": "rtm"
+    },
+    "SymbolsProductGroup": {
+      "value": "Visual_Studio"
+    },
+    "SymbolsProductName": {
+      "value": "dotnetcore"
+    },
+    "SymbolPublishDestinationDir": {
+      "value": "$(PB_DotNetCoreShareDir)\\$(PB_VstsRepositoryName)\\$(PB_Label)\\"
+    }
+  },
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 180,
+  "jobCancelTimeoutInMinutes": 5,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "false",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0",
+      "labelSourcesFormat": "$(build.buildNumber)"
+    },
+    "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
+    "type": "TfsGit",
+    "name": "DotNet-BuildPipeline",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
+    "defaultBranch": "refs/heads/master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "processParameters": {},
+  "quality": "definition",
+  "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    }
+  },
+  "id": -1,
+  "name": "DotNet-Trusted-Publish-Symbols",
+  "path": "\\",
+  "type": "build",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097642
+  }
+}
