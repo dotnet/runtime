@@ -202,7 +202,7 @@ Activity.Id serves as hierarchical Request-Id in terms of [HTTP standard proposa
 
 e.g. 
 
-`|Server1-5d183ab6-a000b421.1.8e2d4c28_1.`
+`|a000b421-5d183ab6-Server1.1.8e2d4c28_1.`
 
 It starts with '|' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.' or '_'. 
 
@@ -217,7 +217,7 @@ Where base64 and '-' are used in nodes and other characters delimit nodes. Id al
 ### Root Id
 When you start the first Activity for the operation, you may optionaly provide root-id through `Activity.SetParentId(string)` API. 
 
-If you don't provide it, Activity will generate root-id: e.g. `Server-5d183ab6-a000b421`
+If you don't provide it, Activity will generate root-id: e.g. `a000b421-5d183ab6-Server1`
 
 If don't have ParentId from external process and want to generate one, keep in mind that Root-Id
 * MUST be sufficiently large to identify single operation in entire system: use 64(or 128) bit random number or Guid

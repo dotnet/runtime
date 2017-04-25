@@ -6,8 +6,7 @@
 
         private string GenerateInstancePrefix()
         {
-            string suffix = GetRandomNumber().ToString("x");
-            return RootIdPrefix + suffix;
+            return GetRandomNumber().ToString("x");
         }
 
         #endregion
