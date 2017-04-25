@@ -9,24 +9,24 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>02b874feaab181629c42ac046a6723d3e28eb5e6</CoreFxCurrentRef>
-    <CoreClrCurrentRef>48ef31b26c4b2c572204042942aac4ae3fad1d11</CoreClrCurrentRef>
+    <CoreFxCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</CoreFxCurrentRef>
+    <CoreClrCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>02b874feaab181629c42ac046a6723d3e28eb5e6</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>02b874feaab181629c42ac046a6723d3e28eb5e6</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
-    <StandardCurrentRef>8d639b24570e06cd1d8fbefb44cad1d5118e7596</StandardCurrentRef>
+    <StandardCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview2-25224-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>preview2-25223-02</CoreClrExpectedPrerelease>
+    <CoreFxExpectedPrerelease>preview2-25224-03</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>preview2-25224-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25224-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25224-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25224-00</ProjectNTfsTestILCPackageVersion>
-    <NETStandardPackageVersion>2.0.0-preview1-25221-03</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.0.0-preview2-25224-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
