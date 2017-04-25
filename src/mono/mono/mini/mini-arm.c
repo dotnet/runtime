@@ -2165,8 +2165,6 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				lainfo->nslots = ainfo->struct_size / sizeof (gpointer);
 				lainfo->esize = 4;
 			}
-
-			printf ("D: %d\n", ainfo->align);
 			break;
 		case RegTypeStructByAddr:
 		case RegTypeStructByAddrOnStack:
