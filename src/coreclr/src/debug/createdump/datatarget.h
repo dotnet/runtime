@@ -4,7 +4,7 @@
 
 class CrashInfo;
 
-class DataTarget : public ICLRDataTarget, ICorDebugDataTarget4
+class DumpDataTarget : public ICLRDataTarget, ICorDebugDataTarget4
 {
 private:
     LONG m_ref;                         // reference count
@@ -13,8 +13,8 @@ private:
     CrashInfo* m_crashInfo;
 
 public:
-    DataTarget(pid_t pid);
-    virtual ~DataTarget();
+    DumpDataTarget(pid_t pid);
+    virtual ~DumpDataTarget();
     bool Initialize(CrashInfo* crashInfo);
 
     //

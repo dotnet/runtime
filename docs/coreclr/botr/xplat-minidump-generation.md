@@ -61,7 +61,7 @@ Environment variables supported:
     -f, --name - dump path and file name. The pid can be placed in the name with %d. The default is "/tmp/coredump.%d"
     -n, --normal - create minidump (default).
     -h, --withheap - create minidump with heap.
-    -m, --micro - create triage minidump.
+    -t, --triage - create triage minidump.
     -d, --diag - enable diagnostic messages.
 
 # Testing #

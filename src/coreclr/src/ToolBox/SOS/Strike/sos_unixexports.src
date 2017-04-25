@@ -4,6 +4,7 @@
 
 bpmd
 ClrStack
+CreateDump
 DumpArray
 DumpAssembly
 DumpClass
