@@ -13,6 +13,7 @@ using Xunit.NetCore.Extensions;
 
 namespace System.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18718")]
     public class AppDomainTests : RemoteExecutorTestBase
     {
         public AppDomainTests()
