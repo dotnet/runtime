@@ -62,6 +62,9 @@
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
+      <Link>Common\System\Net\CookieFields.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\CookieParser.cs">
       <Link>Common\System\Net\CookieParser.cs</Link>
     </Compile>

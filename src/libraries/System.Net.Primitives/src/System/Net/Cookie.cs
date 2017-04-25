@@ -33,18 +33,6 @@ namespace System.Net
         internal const int MaxSupportedVersion = 1;
         internal const string MaxSupportedVersionString = "1";
 
-        internal const string CommentAttributeName = "Comment";
-        internal const string CommentUrlAttributeName = "CommentURL";
-        internal const string DiscardAttributeName = "Discard";
-        internal const string DomainAttributeName = "Domain";
-        internal const string ExpiresAttributeName = "Expires";
-        internal const string MaxAgeAttributeName = "Max-Age";
-        internal const string PathAttributeName = "Path";
-        internal const string PortAttributeName = "Port";
-        internal const string SecureAttributeName = "Secure";
-        internal const string VersionAttributeName = "Version";
-        internal const string HttpOnlyAttributeName = "HttpOnly";
-
         internal const string SeparatorLiteral = "; ";
         internal const string EqualsLiteral = "=";
         internal const string QuotesLiteral = "\"";
@@ -355,7 +343,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, CommentAttributeName, Comment));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.CommentAttributeName, Comment));
                 }
                 return false;
             }
@@ -366,7 +354,7 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, PathAttributeName, Path));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PathAttributeName, Path));
                 }
                 return false;
             }
@@ -395,7 +383,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, DomainAttributeName, domain == null ? "<null>" : domain));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
                         }
                         return false;
                     }
@@ -407,7 +395,7 @@ namespace System.Net
                         {
                             if (shouldThrow)
                             {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, DomainAttributeName, _domain));
+                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, _domain));
                             }
                             return false;
                         }
@@ -474,7 +462,7 @@ namespace System.Net
                 {
                     if (shouldThrow)
                     {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, DomainAttributeName, _domain));
+                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, _domain));
                     }
                     return false;
                 }
@@ -507,7 +495,7 @@ namespace System.Net
                 {
                     if (shouldThrow)
                     {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, PathAttributeName, _path));
+                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PathAttributeName, _path));
                     }
                     return false;
                 }
@@ -535,7 +523,7 @@ namespace System.Net
                 {
                     if (shouldThrow)
                     {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, PortAttributeName, _port));
+                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, _port));
                     }
                     return false;
                 }
@@ -585,7 +573,7 @@ namespace System.Net
                     // Parse port list
                     if (value[0] != '\"' || value[value.Length - 1] != '\"')
                     {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, PortAttributeName, value));
+                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                     }
                     string[] ports = value.Split(PortSplitDelimiters);
 
@@ -599,13 +587,13 @@ namespace System.Net
                         {
                             if (!Int32.TryParse(ports[i], out port))
                             {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, PortAttributeName, value));
+                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                             }
 
                             // valid values for port 0 - 0xFFFF
                             if ((port < 0) || (port > 0xFFFF))
                             {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, PortAttributeName, value));
+                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                             }
 
                             portList.Add(port);
@@ -742,7 +730,7 @@ namespace System.Net
             // Add the Cookie version if necessary.
             if (Version != 0)
             {
-                sb.Append(SpecialAttributeLiteral + VersionAttributeName + EqualsLiteral); // const strings
+                sb.Append(SpecialAttributeLiteral + CookieFields.VersionAttributeName + EqualsLiteral); // const strings
                 if (IsQuotedVersion) sb.Append('"');
                 sb.Append(_version.ToString(NumberFormatInfo.InvariantInfo));
                 if (IsQuotedVersion) sb.Append('"');
@@ -757,14 +745,14 @@ namespace System.Net
                 // Add the Path if necessary.
                 if (!_pathImplicit && _path.Length > 0)
                 {
-                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PathAttributeName + EqualsLiteral); // const strings
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + CookieFields.PathAttributeName + EqualsLiteral); // const strings
                     sb.Append(_path);
                 }
 
                 // Add the Domain if necessary.
                 if (!_domainImplicit && _domain.Length > 0)
                 {
-                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + DomainAttributeName + EqualsLiteral); // const strings
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + CookieFields.DomainAttributeName + EqualsLiteral); // const strings
                     if (IsQuotedDomain) sb.Append('"');
                     sb.Append(_domain);
                     if (IsQuotedDomain) sb.Append('"');
@@ -774,7 +762,7 @@ namespace System.Net
             // Add the Port if necessary.
             if (!_portImplicit)
             {
-                sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PortAttributeName); // const strings
+                sb.Append(SeparatorLiteral + SpecialAttributeLiteral + CookieFields.PortAttributeName); // const strings
                 if (_port.Length > 0)
                 {
                     sb.Append(EqualsLiteral);
@@ -796,19 +784,19 @@ namespace System.Net
             string result = Name + EqualsLiteral + Value;
             if (_comment != null && _comment.Length > 0)
             {
-                result += SeparatorLiteral + CommentAttributeName + EqualsLiteral + _comment;
+                result += SeparatorLiteral + CookieFields.CommentAttributeName + EqualsLiteral + _comment;
             }
             if (_commentUri != null)
             {
-                result += SeparatorLiteral + CommentUrlAttributeName + EqualsLiteral + QuotesLiteral + _commentUri.ToString() + QuotesLiteral;
+                result += SeparatorLiteral + CookieFields.CommentUrlAttributeName + EqualsLiteral + QuotesLiteral + _commentUri.ToString() + QuotesLiteral;
             }
             if (_discard)
             {
-                result += SeparatorLiteral + DiscardAttributeName;
+                result += SeparatorLiteral + CookieFields.DiscardAttributeName;
             }
             if (!_domainImplicit && _domain != null && _domain.Length > 0)
             {
-                result += SeparatorLiteral + DomainAttributeName + EqualsLiteral + _domain;
+                result += SeparatorLiteral + CookieFields.DomainAttributeName + EqualsLiteral + _domain;
             }
             if (Expires != DateTime.MinValue)
             {
@@ -819,20 +807,20 @@ namespace System.Net
                     // so that the client will discard the cookie immediately.
                     seconds = 0;
                 }
-                result += SeparatorLiteral + MaxAgeAttributeName + EqualsLiteral + seconds.ToString(NumberFormatInfo.InvariantInfo);
+                result += SeparatorLiteral + CookieFields.MaxAgeAttributeName + EqualsLiteral + seconds.ToString(NumberFormatInfo.InvariantInfo);
             }
             if (!_pathImplicit && _path != null && _path.Length > 0)
             {
-                result += SeparatorLiteral + PathAttributeName + EqualsLiteral + _path;
+                result += SeparatorLiteral + CookieFields.PathAttributeName + EqualsLiteral + _path;
             }
             if (!Plain && !_portImplicit && _port != null && _port.Length > 0)
             {
                 // QuotesLiteral are included in _port.
-                result += SeparatorLiteral + PortAttributeName + EqualsLiteral + _port;
+                result += SeparatorLiteral + CookieFields.PortAttributeName + EqualsLiteral + _port;
             }
             if (_version > 0)
             {
-                result += SeparatorLiteral + VersionAttributeName + EqualsLiteral + _version.ToString(NumberFormatInfo.InvariantInfo);
+                result += SeparatorLiteral + CookieFields.VersionAttributeName + EqualsLiteral + _version.ToString(NumberFormatInfo.InvariantInfo);
             }
             return result == EqualsLiteral ? null : result;
         }
