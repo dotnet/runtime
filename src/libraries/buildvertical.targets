@@ -173,13 +173,31 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="BuildAllConfigurations">
+  <Target Name="_getAllBuildConfigurations">
     <ItemGroup>
       <_buildConfigurations Include="$(BuildConfigurations)" />
       <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(_traversalBuildConfigurations)" />
     </ItemGroup>
+  </Target>
 
+  <Target Name="BuildAllConfigurations" DependsOnTargets="_getAllBuildConfigurations">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
   </Target>
+  <Target Name="BuildAll" DependsOnTargets="BuildAllConfigurations" />
+  
+  <Target Name="RebuildAllConfigurations" DependsOnTargets="_getAllBuildConfigurations">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="Rebuild"
+             Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
+  </Target>
+  <Target Name="RebuildAll" DependsOnTargets="RebuildAllConfigurations" />
+
+  <Target Name="CleanAllConfigurations" DependsOnTargets="_getAllBuildConfigurations">
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="Clean"
+             Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
+  </Target>
+  <Target Name="CleanAll" DependsOnTargets="CleanAllConfigurations" />
+  
 </Project>
