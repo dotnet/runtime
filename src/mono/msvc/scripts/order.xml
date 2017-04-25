@@ -3830,7 +3830,7 @@
     </project>
     <project dir="class/Facades/System.Diagnostics.Tracing" library="Facades_System.Diagnostics.Tracing-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
       <output>System.Diagnostics.Tracing.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.Diagnostics.Tracing.dll</library_output>
@@ -4578,7 +4578,7 @@
     </project>
     <project dir="class/Facades/System.Net.Sockets" library="Facades_System.Net.Sockets-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll</flags>
       <output>System.Net.Sockets.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.Net.Sockets.dll</library_output>
