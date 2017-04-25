@@ -314,6 +314,15 @@ int ExecuteManagedAssembly(
     GetDirectory(managedAssemblyAbsolutePath, appPath);
 
     std::string tpaList;
+    if (strlen(managedAssemblyAbsolutePath) > 0)
+    {
+        // Target assembly should be added to the tpa list. Otherwise corerun.exe
+        // may find wrong assembly to execute.
+        // Details can be found at https://github.com/dotnet/coreclr/issues/5631
+        tpaList = managedAssemblyAbsolutePath;
+        tpaList.append(":");
+    }
+
     // Construct native search directory paths
     std::string nativeDllSearchDirs(appPath);
     char *coreLibraries = getenv("CORE_LIBRARIES");
@@ -326,6 +335,7 @@ int ExecuteManagedAssembly(
             AddFilesFromDirectoryToTpaList(coreLibraries, tpaList);
         }
     }
+
     nativeDllSearchDirs.append(":");
     nativeDllSearchDirs.append(clrFilesAbsolutePath);
 

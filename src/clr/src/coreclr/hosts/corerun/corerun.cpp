@@ -470,6 +470,18 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         return false;
     }
 
+    StackSString tpaList;
+    if (!managedAssemblyFullName.IsEmpty())
+    {
+        // Target assembly should be added to the tpa list. Otherwise corerun.exe
+        // may find wrong assembly to execute.
+        // Details can be found at https://github.com/dotnet/coreclr/issues/5631
+        tpaList = managedAssemblyFullName;
+        tpaList.Append(W(';'));
+    }
+
+    tpaList.Append(hostEnvironment.GetTpaList());
+
     //-------------------------------------------------------------
 
     // Create an AppDomain
@@ -499,7 +511,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     };
     const wchar_t *property_values[] = { 
         // TRUSTED_PLATFORM_ASSEMBLIES
-        hostEnvironment.GetTpaList(),
+        tpaList,
         // APP_PATHS
         appPath,
         // APP_NI_PATHS
