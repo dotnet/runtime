@@ -49,11 +49,7 @@ namespace System.Security.Cryptography
         }
 
         [CLSCompliantAttribute(false)]
-        public SecureString KeyPassword
-        {
-            get { return null; }
-            set { throw new PlatformNotSupportedException(); }
-        }
+        public SecureString KeyPassword { get; set; }
 
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }
 

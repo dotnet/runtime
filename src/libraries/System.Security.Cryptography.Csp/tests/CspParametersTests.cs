@@ -33,5 +33,15 @@ namespace System.Security.Cryptography.Csp.Tests
             Assert.Throws<ArgumentException>(
                 () => cspParameters.Flags = (CspProviderFlags)0x0100 | CspProviderFlags.NoPrompt);
         }
+
+        [Fact]
+        public static void KeyPassword()
+        {
+            var cspParameters = new CspParameters();
+            var pwd = new SecureString();
+            pwd.AppendChar('p');
+            cspParameters.KeyPassword = pwd;
+            Assert.Same(pwd, cspParameters.KeyPassword);
+        }
     }
 }
