@@ -30,7 +30,7 @@ namespace System.Tests
         public static void CompareTo_ObjectNotChar_ThrowsArgumentException()
         {
             IComparable comparable = 'h';
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("H")); // Value not a char
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("H")); // Value not a char
         }
 
         public static IEnumerable<object[]> ConvertFromUtf32_TestData()

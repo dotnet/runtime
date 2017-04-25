@@ -141,8 +141,8 @@ namespace System.Tests
         public static void CompareTo_Invalid()
         {
             IComparable comparable = new Version(1, 1);
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(1)); // Obj is not a version
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("1.1")); // Obj is not a version
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(1)); // Obj is not a version
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("1.1")); // Obj is not a version
 
             Version nullVersion = null;
             Version testVersion = new Version(1, 2);

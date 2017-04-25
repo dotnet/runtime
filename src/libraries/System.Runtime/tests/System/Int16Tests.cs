@@ -63,8 +63,8 @@ namespace System.Tests
         public static void CompareTo_ObjectNotShort_ThrowsArgumentException()
         {
             IComparable comparable = (short)234;
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a short
-            Assert.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a short
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a short
+            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a short
         }
 
         [Theory]
