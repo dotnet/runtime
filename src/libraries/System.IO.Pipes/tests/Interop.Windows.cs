@@ -12,10 +12,8 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// The class contains interop declarations and helpers methods for them.
     /// </summary>
-    internal static class Interop
+    internal static partial class Interop
     {
-        #region Windows
-
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern unsafe bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
 
@@ -65,31 +63,8 @@ namespace System.IO.Pipes.Tests
             return false;
         }
 
-        #endregion
-
-        #region Unix
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern unsafe int gethostname(byte* name, int len);
-
-        internal static unsafe bool TryGetHostName(out string hostName)
-        {
-            const int HOST_NAME_MAX = 255; // man gethostname
-            const int ArrLength = HOST_NAME_MAX + 1;
-
-            byte* name = stackalloc byte[ArrLength];
-            int result = gethostname(name, ArrLength);
-
-            if (result == 0)
-            {
-                hostName = Marshal.PtrToStringAnsi((IntPtr)name);
-                return true;
-            }
-
-            hostName = "";
-            return false;
-        }
-
-        #endregion
+        // @todo: These are called by some Unix-specific tests. Those tests should really be split out into
+        // partial classes and included only in Unix builds.
+        internal static bool TryGetHostName(out string hostName) { throw new Exception("Should not call on Windows."); }
     }
 }

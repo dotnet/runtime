@@ -12,7 +12,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.cs" />
     <Compile Include="PipeTest.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
@@ -22,8 +21,6 @@
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
-    <Compile Include="Interop.cs" />
-    <Compile Condition="'$(TargetsUnix)' == 'true'" Include="NativeOverlapped.unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
@@ -48,6 +45,15 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Interop.Windows.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="Interop.Unix.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />
+    <Compile Include="NativeOverlapped.unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
