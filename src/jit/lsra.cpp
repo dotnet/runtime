@@ -4701,7 +4701,9 @@ void LinearScan::buildIntervals()
         for (BasicBlock* succ : block->GetAllSuccs(compiler))
         {
             if (VarSetOps::IsEmpty(compiler, expUseSet))
+            {
                 break;
+            }
 
             if (isBlockVisited(succ))
             {
