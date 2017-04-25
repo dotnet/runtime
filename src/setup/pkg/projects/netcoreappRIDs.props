@@ -16,9 +16,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <OfficialBuildRID Include="debian.8-armel">
+    <!--<OfficialBuildRID Include="debian.8-armel">
       <Platform>armel</Platform>
     </OfficialBuildRID>
+    -->
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-x86">
@@ -34,9 +35,10 @@
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="tizen.4.0.0-armel">
+    <!--<OfficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </OfficialBuildRID>
+    -->
     </ItemGroup>
     
 </Project>
