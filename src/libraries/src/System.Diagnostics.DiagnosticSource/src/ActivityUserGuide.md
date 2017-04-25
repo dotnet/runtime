@@ -194,7 +194,7 @@ Applications start Activity to represent logical piece of work to be done; one A
 The whole operation may be represented as a tree of Activities. All operations done by the distributed system may be represented as a forest of Activities trees.
 Id uniquely identifies Activity in the forest. It has an hierarchical structure to efficiently describe the operation as Activity tree.
 
-Activity.Id serves as hierarchical Request-Id in terms of [HTTP standard proposal for correlation](https://github.com/lmolkova/correlation/blob/master/http_protocol_proposal_v1.md) 
+Activity.Id serves as hierarchical Request-Id in terms of [HTTP Correlation Protocol](HttpCorrelationProtocol.md) 
 
 ### Id Format
 
@@ -206,16 +206,16 @@ e.g.
 
 It starts with '|' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.' or '_'. 
 
-[Root-id](#root-id) identifies the whole operation and 'Id' identifies particular Actvity involved in operation processing.
+[Root-id](#root-id) identifies the whole operation and 'Id' identifies particular Activity involved in operation processing.
 
-'|' indicates Id has hierarchcal structure, which is useful information for logging system. 
+'|' indicates Id has hierarchical structure, which is useful information for logging system. 
 
 * Id is 1024 bytes or shorter
 * Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (hyphen), '.' (dot), '_' (underscore) and '#' (pound) characters. 
 Where base64 and '-' are used in nodes and other characters delimit nodes. Id always ends with one of the delimiters.
 
 ### Root Id
-When you start the first Activity for the operation, you may optionaly provide root-id through `Activity.SetParentId(string)` API. 
+When you start the first Activity for the operation, you may optionally provide root-id through `Activity.SetParentId(string)` API. 
 
 If you don't provide it, Activity will generate root-id: e.g. `a000b421-5d183ab6`
 
@@ -276,7 +276,7 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 `string ParentId { get; private set; }` - Activity may have either an in-process [Parent](#parent) or an external Parent if it was deserialized from request. ParentId together with Id represent the parent-child relationship in logs and allows you to correlate outgoing and incoming requests.
 
 ### RootId
-`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '|' to first '.' occurence.
+`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '|' to first '.' occurrence.
 
 ### Current
 `static Activity Current { get; }` - Returns current Activity which flows across async calls.
