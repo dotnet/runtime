@@ -45,11 +45,11 @@ namespace System.Diagnostics
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         /// <example>
-        /// Id looks like '|Server1-5d183ab6-a000b421.1.8e2d4c28_1.':<para />
-        ///  - '|Server1-5d183ab6-a000b421.' - Id of the first, top-most, Activity created<para />
-        ///  - '|Server1-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
-        ///  - '|Server1-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
-        /// 'Server1-5d183ab6-a000b421' is a <see cref="RootId"/> for the first Activity and all its children
+        /// Id looks like '|a000b421-5d183ab6-Server1.1.8e2d4c28_1.':<para />
+        ///  - '|a000b421-5d183ab6-Server1.' - Id of the first, top-most, Activity created<para />
+        ///  - '|a000b421-5d183ab6-Server1.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
+        ///  - '|a000b421-5d183ab6-Server1.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// 'a000b421-5d183ab6-Server1' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
         public string Id { get; private set; }
 
@@ -371,7 +371,7 @@ namespace System.Diagnostics
 
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
-                string parentId = ParentId[0] == RootIdPrefix ? ParentId : RootIdPrefix + ParentId;
+                string parentId = ParentId[0] == '|' ? ParentId : '|' + ParentId;
 
                 char lastChar = parentId[parentId.Length - 1];
                 if (lastChar != '.' && lastChar != '_')
@@ -398,7 +398,7 @@ namespace System.Diagnostics
             int rootEnd = id.IndexOf('.');
             if (rootEnd < 0)
                 rootEnd = id.Length;
-            int rootStart = id[0] == RootIdPrefix ? 1 : 0;
+            int rootStart = id[0] == '|' ? 1 : 0;
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
@@ -439,9 +439,9 @@ namespace System.Diagnostics
                 Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
             }
 #if DEBUG
-            string ret = s_uniqPrefix + "-" + OperationName.Replace('.', '-') + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + OperationName.Replace('.', '-') + "-" + s_uniqPrefix + '.';
 #else       // To keep things short, we drop the operation name 
-            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + s_uniqPrefix + '.';
 #endif
             return ret;
         }
@@ -466,7 +466,6 @@ namespace System.Diagnostics
         private static long s_currentRootId = (uint)GetRandomNumber();
 
         private const int RequestIdMaxLength = 1024;
-        private const char RootIdPrefix = '|';
 
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
