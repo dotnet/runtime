@@ -1249,7 +1249,7 @@ namespace System.Net.Http
                 // If the exception was due to the cancellation token being canceled, throw cancellation exception.
                 state.Tcs.TrySetCanceled(state.CancellationToken);
             }
-            else if (ex is WinHttpException || ex is IOException)
+            else if (ex is WinHttpException || ex is IOException || ex is InvalidOperationException)
             {
                 // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during
                 // execution. All other exception types, including ArgumentExceptions and ProtocolViolationExceptions
