@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
     public class HelperTests
     {
         [Fact]
