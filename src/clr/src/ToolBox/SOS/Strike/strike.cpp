@@ -14368,6 +14368,80 @@ _EFN_GetManagedObjectFieldInfo(
     return S_OK;
 }
 
+#ifdef FEATURE_PAL
+
+#ifdef __linux__
+#include <dumpcommon.h>
+#include "datatarget.h"
+extern bool CreateDumpForSOS(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType, ICLRDataTarget* dataTarget);
+extern bool g_diagnostics;
+#endif // __linux__
+
+DECLARE_API(CreateDump)
+{
+    INIT_API();
+#ifdef __linux__
+    StringHolder sFileName;
+    BOOL normal = FALSE;
+    BOOL withHeap = FALSE;
+    BOOL triage = FALSE;
+    BOOL diag = FALSE;
+
+    size_t nArg = 0;
+    CMDOption option[] = 
+    {   // name, vptr, type, hasValue
+        {"-n", &normal, COBOOL, FALSE},
+        {"-h", &withHeap, COBOOL, FALSE},
+        {"-t", &triage, COBOOL, FALSE},
+        {"-d", &diag, COBOOL, FALSE},
+    };
+    CMDValue arg[] = 
+    {   // vptr, type
+        {&sFileName.data, COSTRING}
+    };
+    if (!GetCMDOption(args, option, _countof(option), arg, _countof(arg), &nArg))
+    {
+        return E_FAIL;
+    }
+    MINIDUMP_TYPE minidumpType = MiniDumpWithPrivateReadWriteMemory;
+    ULONG pid = 0; 
+    g_ExtSystem->GetCurrentProcessId(&pid);
+
+    if (withHeap)
+    {
+        minidumpType = MiniDumpWithPrivateReadWriteMemory;
+    }
+    else if (triage)
+    {
+        minidumpType = MiniDumpFilterTriage;
+    }
+    else if (normal)
+    {
+        minidumpType = MiniDumpNormal;
+    }
+    g_diagnostics = diag;
+
+    const char* programPath = g_ExtServices->GetCoreClrDirectory();
+    const char* dumpPathTemplate = "/tmp/coredump.%d";
+    ToRelease<ICLRDataTarget> dataTarget = new DataTarget();
+    dataTarget->AddRef();
+
+    if (sFileName.data != nullptr)
+    {
+        dumpPathTemplate = sFileName.data;
+    }
+    if (!CreateDumpForSOS(programPath, dumpPathTemplate, pid, minidumpType, dataTarget))
+    {
+        Status = E_FAIL;
+    } 
+#else // __linux__
+    ExtErr("CreateDump not supported on this platform\n");
+#endif // __linux__
+    return Status;
+}
+
+#endif // FEATURE_PAL
+
 void PrintHelp (__in_z LPCSTR pszCmdName)
 {
     static LPSTR pText = NULL;

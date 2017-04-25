@@ -53,8 +53,8 @@ DumpSigElem
 Examining the GC history           Other
 -----------------------------      -----------------------------
 HistInit (histinit)                FAQ
-HistRoot (histroot)                Help (soshelp)
-HistObj  (histobj)
+HistRoot (histroot)                CreateDump (createdump)
+HistObj  (histobj)                 Help (soshelp)
 HistObjFind (histobjfind)
 HistClear (histclear)
 \\
@@ -616,6 +616,17 @@ for that variable name you specified. Here are some examples:
 The -i options uses DML output for a better debugging experience, so typically you
 should only need to execute "clrstack -i", and from there, click on the DML 
 hyperlinks to inspect the different managed stack frames and managed variables.                             
+\\
+
+COMMAND: createdump.
+createdump [options] [dumpFileName]
+-n - create minidump.
+-h - create minidump with heap (default).
+-t - create triage minidump.
+-d - enable diagnostic messages.
+
+Creates a platform (ELF core on Linux, etc.) minidump. The pid can be placed in the dump 
+file name with %d. The default is '/tmp/coredump.%d'.
 \\
 
 COMMAND: ip2md.

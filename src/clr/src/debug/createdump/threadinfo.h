@@ -19,7 +19,7 @@ private:
 public:
     ThreadInfo(pid_t tid);
     ~ThreadInfo();
-    bool Initialize();
+    bool Initialize(ICLRDataTarget* dataTarget);
     void ResumeThread();
     void GetThreadStack(const CrashInfo& crashInfo, uint64_t* startAddress, size_t* size) const;
     void GetThreadCode(uint64_t* startAddress, size_t* size) const;
@@ -36,6 +36,7 @@ public:
 #endif
 
 private:
-    bool GetRegisters();
+    bool GetRegistersWithPTrace();
+    bool GetRegistersWithDataTarget(ICLRDataTarget* dataTarget);
 };
 

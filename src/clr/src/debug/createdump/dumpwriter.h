@@ -33,14 +33,13 @@ class DumpWriter : IUnknown
 private:
     LONG m_ref;                         // reference count
     int m_fd;
-    DataTarget& m_dataTarget;
     CrashInfo& m_crashInfo;
     BYTE m_tempBuffer[0x4000];
 
 public:
-    DumpWriter(DataTarget& dataTarget, CrashInfo& crashInfo);
+    DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();
-    bool OpenDump(char* dumpFileName);
+    bool OpenDump(const char* dumpFileName);
     bool WriteDump();
 
     // IUnknown

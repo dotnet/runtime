@@ -34,6 +34,7 @@ extern bool g_diagnostics;
 #include <mscoree.h>
 #include <dumpcommon.h>
 #include <arrayholder.h>
+#include <releaseholder.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
