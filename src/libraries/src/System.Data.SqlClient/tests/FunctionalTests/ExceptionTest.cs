@@ -98,6 +98,44 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
+        [Fact]
+        public void NamedPipeInvalidConnStringTest()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+            builder.ConnectTimeout = 2;
+
+            string invalidConnStringError = "(provider: Named Pipes Provider, error: 25 - Connection string is not valid)";
+            string fakeServerName = Guid.NewGuid().ToString("N");
+
+            // Using forward slashes
+            builder.DataSource = "np://" + fakeServerName + "/pipe/sql/query";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // Without pipe token
+            builder.DataSource = @"np:\\" + fakeServerName + @"\sql\query";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // Without a pipe name
+            builder.DataSource = @"np:\\" + fakeServerName + @"\pipe";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // Nothing after server
+            builder.DataSource = @"np:\\" + fakeServerName;
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // No leading slashes
+            builder.DataSource = @"np:" + fakeServerName + @"\pipe\sql\query";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // No server name
+            builder.DataSource = @"np:\\\pipe\sql\query";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+
+            // Nothing but slashes
+            builder.DataSource = @"np:\\\\\";
+            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+        }
+
         private void GenerateConnectionException(string connectionString)
         {
             using (SqlConnection sqlConnection = new SqlConnection(connectionString))
@@ -118,6 +156,14 @@ namespace System.Data.SqlClient.Tests
             Assert.True(exVerifier(ex), "FAILED Exception verifier failed on the exception.");
 
             return ex;
+        }
+
+        private void OpenBadConnection(string connectionString, string errorMsg)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                VerifyConnectionFailure<SqlException>(() => conn.Open(), errorMsg);
+            }
         }
 
         private TException VerifyConnectionFailure<TException>(Action connectAction, string expectedExceptionMessage) where TException : Exception
