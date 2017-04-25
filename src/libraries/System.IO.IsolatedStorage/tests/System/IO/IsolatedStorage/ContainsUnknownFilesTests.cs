@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
     public class ContainsUnknownFilesTests : IsoStorageTest
     {
         private static MethodInfo s_containsUnknownFilesMethod

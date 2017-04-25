@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
     public class IdentityTests : IsoStorageTest
     {
         private class TestStorage : IsolatedStorage
