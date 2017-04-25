@@ -27,8 +27,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             Task.Factory.StartNew(() => { SetupProxy(actualHost, actualPort); });
 
-            Thread.Sleep(2000);
-            Assert.True(Port != -1, "Proxy local port not defined!");
+            for(int i = 0; i < 10 && Port == -1; i++)
+            {
+                Thread.Sleep(500);
+            }
+            if (Port == -1) throw new InvalidOperationException("Proxy local port not defined!");
 
             builder.DataSource = "tcp:127.0.0.1," + Port;
             BaseConnString = builder.ConnectionString;
