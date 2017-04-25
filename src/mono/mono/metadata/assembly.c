@@ -3148,6 +3148,28 @@ get_per_domain_assembly_binding_info (MonoDomain *domain, MonoAssemblyName *anam
 	return info;
 }
 
+void
+mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor, gchar *domain_config_file_name)
+{
+	if (domain->assembly_bindings_parsed)
+		return;
+	mono_domain_lock (domain);
+	if (!domain->assembly_bindings_parsed) {
+
+		gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
+
+		if (!domain_config_file_path)
+			domain_config_file_path = domain_config_file_name;
+
+		mono_config_parse_assembly_bindings (domain_config_file_path, amajor, aminor, domain, assembly_binding_info_parsed);
+		domain->assembly_bindings_parsed = TRUE;
+		if (domain_config_file_name != domain_config_file_path)
+			g_free (domain_config_file_path);
+	}
+
+	mono_domain_unlock (domain);
+}
+
 static MonoAssemblyName*
 mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
 {
@@ -3180,25 +3202,14 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	}
 
 	if (domain && domain->setup && domain->setup->configuration_file) {
+		gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
+		/* expect this to succeed because mono_domain_set_options_from_config () did
+		 * the same thing when the domain was created. */
+		mono_error_assert_ok (&error);
+		mono_domain_parse_assembly_bindings (domain, aname->major, aname->minor, domain_config_file_name);
+		g_free (domain_config_file_name);
+
 		mono_domain_lock (domain);
-		if (!domain->assembly_bindings_parsed) {
-			gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
-			/* expect this to succeed because mono_domain_set_options_from_config () did
-			 * the same thing when the domain was created. */
-			mono_error_assert_ok (&error);
-
-			gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
-
-			if (!domain_config_file_path)
-				domain_config_file_path = domain_config_file_name;
-			
-			mono_config_parse_assembly_bindings (domain_config_file_path, aname->major, aname->minor, domain, assembly_binding_info_parsed);
-			domain->assembly_bindings_parsed = TRUE;
-			if (domain_config_file_name != domain_config_file_path)
-				g_free (domain_config_file_name);
-			g_free (domain_config_file_path);
-		}
-
 		info2 = get_per_domain_assembly_binding_info (domain, aname);
 
 		if (info2) {
@@ -3209,6 +3220,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		}
 
 		mono_domain_unlock (domain);
+
 	}
 
 	if (!info) {
