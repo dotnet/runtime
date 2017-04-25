@@ -207,7 +207,7 @@
       "value": "PassedViaPipeBuild"
     },
     "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
+      "value": "false",
       "allowOverride": true
     },
     "NUGET_FEED_URL": {
