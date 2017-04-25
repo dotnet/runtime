@@ -30,6 +30,8 @@ namespace System.Diagnostics
         /// <summary>Determines if we're running on the .NET Framework (rather than .NET Core).</summary>
         internal static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
+        internal static bool IsNetNative => RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="options">Options to use for the invocation.</param>
@@ -145,6 +147,16 @@ namespace System.Diagnostics
             {
                 psi.FileName = TestConsoleApp;
                 psi.Arguments = testConsoleAppArgs;
+            }
+            else if (IsNetNative)
+            {
+                psi.FileName = TestConsoleApp;
+                psi.Arguments = testConsoleAppArgs;
+
+                // The test pipeline does not have the infrastructure to copy RemoteExecutorConsoleApp.exe to the test directly, let alone
+                // ILC it against whatever assembly it might be asked to load up. (Is UWP even allowed to spin up a process!?)
+                // Until, and unless that's fixed, throw an informative exception so as not to waste debugging time.
+                throw new Exception(".NET Native platforms cannot run tests that use RemoteExecutorTestBase.RemoteInvoke()");
             }
             else
             {
