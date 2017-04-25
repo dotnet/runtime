@@ -51,7 +51,7 @@ namespace System.Net
         private void WriteCore(byte[] buffer, int offset, int size)
         {            
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
-            if (_closed || (size == 0 && _leftToWrite != 0))
+            if (size == 0 && _leftToWrite != 0)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
