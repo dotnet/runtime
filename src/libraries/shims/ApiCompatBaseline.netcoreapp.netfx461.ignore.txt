@@ -92,6 +92,19 @@ CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
 
+// Can't build WindowsIdentities or WindowsPrincipals on non-Windows OSes. https://github.com/dotnet/corefx/issues/18073
+MembersMustExist : Member 'System.Security.Principal.IdentityReferenceCollection.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity..ctor(System.IntPtr, System.String, System.Security.Principal.WindowsAccountType)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity..ctor(System.IntPtr, System.String, System.Security.Principal.WindowsAccountType, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity..ctor(System.Security.Principal.WindowsIdentity)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity..ctor(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.DeviceClaims.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.Impersonate()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.Impersonate(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.UserClaims.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsPrincipal.DeviceClaims.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WindowsPrincipal.UserClaims.get()' does not exist in the implementation but it does exist in the contract.
+
 // Reflection.Emit future unclear and won't be implemented till netcoreapp20. See here: https://github.com/dotnet/corefx/issues/18072
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.AddResourceFile(System.String, System.String, System.Reflection.ResourceAttributes)' does not exist in the implementation but it does exist in the contract.
