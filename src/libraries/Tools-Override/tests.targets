@@ -287,6 +287,7 @@
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(TestGCStressLevel)' != ''" Include="export COMPlus_GCStress=$(TestGCStressLevel)"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(OuterLoop)' == 'true'" Include="export XUNIT_PERFORMANCE_MIN_ITERATION=1"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT' and '$(OuterLoop)' == 'true'" Include="export XUNIT_PERFORMANCE_MAX_ITERATION=1"/>
+      <!-- Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424 -->
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="chmod +x $(TestProgram)"/>
       <TestCommandLines  Condition="'$(TargetOS)'!='Windows_NT'" Include="$(TestCommandLine)"/>
     </ItemGroup>
@@ -306,6 +307,7 @@
       RunnerScriptTemplate="$(MSBuildThisFileDirectory)/$(RunnerTemplateName)"
       ScriptOutputPath ="$(OutputPathForScriptGenerator)"
     />
+    <!-- Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424 -->
     <Exec Condition="'$(TargetOS)'!='Windows_NT'" Command="chmod +x $(OutputPathForScriptGenerator)" />
   </Target>
 
