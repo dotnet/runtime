@@ -3730,6 +3730,10 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 
+#ifdef ENABLE_INTERPRETER
+	mono_interp_init ();
+#endif
+
 	mono_os_mutex_init_recursive (&jit_mutex);
 
 	mono_cross_helpers_run ();
