@@ -491,7 +491,21 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             unsigned varNum = treeNode->gtLclVarCommon.gtLclNum;
             assert(varNum < compiler->lvaCount);
 
-            emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offs);
+            if (varTypeIsFloating(targetType))
+            {
+                if (treeNode->InReg())
+                {
+                    NYI("GT_LCL_FLD with reg-to-reg floating point move");
+                }
+                else
+                {
+                    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+                }
+            }
+            else
+            {
+                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offs);
+            }
         }
             genProduceReg(treeNode);
             break;
