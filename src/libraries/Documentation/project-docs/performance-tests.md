@@ -65,8 +65,11 @@ Next, the project.json for the tests directory also needs to import the xunit li
     "xunit": "2.1.0",  
     "xunit.netcore.extensions": "1.0.0-prerelease-*"  
 ```
-Once that’s all done, you can actually add tests to the file. The basic structure of a perf test file with file name Perf.Dictionary.cs should be like so:
-```
+Once that’s all done, you can actually add tests to the file.
+
+Writing Test Cases
+-----------
+```C#
 using Xunit;
 using Microsoft.Xunit.Performance;
 
@@ -74,18 +77,38 @@ namespace System.Collections.Tests
 {
     public class Perf_Dictionary
     {
-        [Benchmark]
+        private volatile Dictionary<int, string> dict;
+
+        [Benchmark(InnerIterationCount = 2000)]
         public void ctor()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 20000; i++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        new Dictionary<int, string>();
+                        dict = new Dictionary<int, string>();
                     }
         }
     }
 }
 ```
-The perf-test runner handles a lot of the specifics of the testing for you like iteration control. You won't need to add any Asserts or anything generally used in functional testing to get perf measurements, just make sure the thing within the “using” is big enough to avoid timer resolution errors.
 
+The above benchmark will test the performance of the Dictionary<int, string> constructor. Each iteration of the benchmark will call the constructor 2000 times (`InnerIterationCount`).
+
+Test cases should adhere to the following guidelines, within reason:
+
+* Individual test cases should be of the "microbenchmark" variety. They should test a single function, in as isolated an environment as possible.
+* The "real work" must be done inside of the `using (iteration.StartMeasurement())` block. All extra work (setup, cleanup) should be done outside of this block, so as to not pollute the data being collected.
+* Individual iterations of a test case should take from 100 milliseconds to 1 second. This is everything inside of the `using (iteration.StartMeasurement())` block.
+* Test cases may need to use an "inner iteration" concept in order for individual invocations of the "outer iteration" to last from 100 ms to 1s. The example above shows this.
+* Some functions are prone to being entirely optimized out from test cases. For example, if the results of `Vector3.Add()` are not stored anywhere, then there are no observable side-effects, and the entire operation can be optimized out by the JIT. For operations which are susceptible to this, care must be taken to ensure that the operations are not entirely skipped. Try the following:
+  * Pass intermediate values to a volatile static field. This is done in the example code above.
+  * If the value is a struct, compute a value dependent on the structure, and store that in a volatile static field.
+* There are two main ways to detect when a test case is being "optimized out":
+  * Look at the disassembly of the function (with the Visual Studio disassembler, for example).
+  * Observe unusual changes in the duration metric. If your test suddenly takes 1% of its previous time, odds are something has gone wrong.
+
+Avoid the following performance test test anti-patterns:
+* Tests for multiple methods which all end up calling the same final overload. This just adds noise and extra duplicate data to sift through.
+* Having too many test cases which only differ by "input data". For example, testing the same operation on a collection with size 1, 10, 100, 1000, 10000, etc. This is a common pitfall when using `[Theory]` and `[InlineData]`. Instead, focus on the key scenarios and minimize the numbers of test cases. This results in less noise, less data to sift through, and less test maintenance cost.
+* Performing more than a single operation in the "core test loop". There are times when this is necessary, but they are few and far between. Take extra care if you notice that your test case is doing too many things, and try to focus on creating a small, isolated microbenchmark.
