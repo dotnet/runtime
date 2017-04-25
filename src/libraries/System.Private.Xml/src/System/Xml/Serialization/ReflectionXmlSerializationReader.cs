@@ -616,8 +616,7 @@ namespace System.Xml.Serialization
 
         private static void SetMemberValue(object o, object value, string memberName)
         {
-            MemberInfo[] memberInfos = o.GetType().GetMember(memberName);
-            MemberInfo memberInfo = memberInfos[0];
+            MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
             SetMemberValue(o, value, memberInfo);
         }
 

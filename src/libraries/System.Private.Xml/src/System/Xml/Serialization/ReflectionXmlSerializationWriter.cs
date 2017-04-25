@@ -642,13 +642,7 @@ namespace System.Xml.Serialization
 
         private object GetMemberValue(object o, string memberName)
         {
-            MemberInfo[] memberInfos = o.GetType().GetMember(memberName);
-            if (memberInfos == null)
-            {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError, memberName));
-            }
-
-            MemberInfo memberInfo = memberInfos[0];
+            MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
             object memberValue = GetMemberValue(o, memberInfo);
             return memberValue;
         }
@@ -1384,6 +1378,33 @@ namespace System.Xml.Serialization
             WriteElementString = 4,
             WriteNullableStringLiteral = 8,
             Encoded = 16
+        }
+    }
+
+    internal class ReflectionXmlSerializationHelper
+    {
+        public static MemberInfo GetMember(Type declaringType, string memberName)
+        {
+            MemberInfo[] memberInfos = declaringType.GetMember(memberName);
+            if (memberInfos == null || memberInfos.Length == 0)
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalError, memberName));
+            }
+
+            MemberInfo memberInfo = memberInfos[0];
+            if (memberInfos.Length != 1)
+            {
+                foreach (MemberInfo mi in memberInfos)
+                {
+                    if (declaringType == mi.DeclaringType)
+                    {
+                        memberInfo = mi;
+                        break;
+                    }
+                }
+            }
+
+            return memberInfo;
         }
     }
 }
