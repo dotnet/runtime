@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-preview2-25224-03",
-    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25224-02",
+    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-preview2-25225-02",
+    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25225-01",
     "Microsoft.DiaSymReader.Native": "1.4.1",
-    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25224-03",
+    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25225-02",
     "NETStandard.Library": "2.0.0-preview2-25224-01"
   },
   "frameworks": {
