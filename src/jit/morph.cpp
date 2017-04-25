@@ -450,14 +450,16 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
             // For these operations the lower 32 bits of the result only depends
             // upon the lower 32 bits of the operands
             //
-            if ((oper->OperGet() == GT_ADD) || (oper->OperGet() == GT_MUL) || (oper->OperGet() == GT_AND) ||
-                (oper->OperGet() == GT_OR) || (oper->OperGet() == GT_XOR))
+            if (oper->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG, GT_LSH))
             {
                 DEBUG_DESTROY_NODE(tree);
 
                 // Insert narrowing casts for op1 and op2
                 oper->gtOp.gtOp1 = gtNewCastNode(TYP_INT, oper->gtOp.gtOp1, dstType);
-                oper->gtOp.gtOp2 = gtNewCastNode(TYP_INT, oper->gtOp.gtOp2, dstType);
+                if (oper->gtOp.gtOp2 != nullptr)
+                {
+                    oper->gtOp.gtOp2 = gtNewCastNode(TYP_INT, oper->gtOp.gtOp2, dstType);
+                }
 
                 // Clear the GT_MUL_64RSLT if it is set
                 if (oper->gtOper == GT_MUL && (oper->gtFlags & GTF_MUL_64RSLT))
