@@ -2330,11 +2330,7 @@ public:
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
 
 #ifdef _TARGET_X86_
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD)
-    {
-        WRAPPER_NO_CONTRACT;
-        UpdateRegDisplayHelper(pRD, 0);
-    }
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 #endif
 
     virtual ETransitionType GetTransitionType()
