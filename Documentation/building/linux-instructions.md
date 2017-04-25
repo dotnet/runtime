@@ -18,8 +18,8 @@ Toolchain Setup
 Install the following packages for the toolchain: 
 
 - cmake 
-- llvm-3.5 
-- clang-3.5 
+- llvm-3.5 (llvm-3.9 for ARM cross build)
+- clang-3.5 (clang-3.9 for ARM cross build)
 - lldb-3.6
 - lldb-3.6-dev 
 - libunwind8 
@@ -38,6 +38,14 @@ ellismg@linux:~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.6
 ellismg@linux:~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 ellismg@linux:~$ sudo apt-get update
 ```
+
+If you are going to cross build for ARM, you need llvm-3.9 and clang-3.9 and please add below package source instead for Ubuntu 14.04.
+```
+hqueue@linux:~$ echo "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+hqueue@linux:~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+hqueue@linux:~$ sudo apt-get update
+```
+For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
 
 Then install the packages you need:
 
@@ -120,6 +128,8 @@ index 1ed3dbf..c643032 100644
 How to enable -O3 optimization level for ARM/Linux
 ==================================================
 
+If you are using clang-3.9, -O3 optimization is enabled as default and you can skip this section.
+If you are using older version of clang, please follow instructions in this section to enable -O3 optimization.
 Currently, we can build coreclr with -O1 flag of clang in release build mode for Linux/ARM without any bugfix of llvm-3.6. This instruction is to enable -O3 optimization level of clang on Linux/ARM by fixing the bug of llvm.
 
 First, download latest version from the clang-3.6/llvm-3.6 upstream: 
