@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
     public class GetFileNamesTests : IsoStorageTest
     {
         [Fact]

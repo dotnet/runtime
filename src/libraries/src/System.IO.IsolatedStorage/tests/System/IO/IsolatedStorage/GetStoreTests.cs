@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
     public class GetStoreTests : IsoStorageTest
     {
         private static MethodInfo s_verifyScopeMethod;
