@@ -17947,8 +17947,12 @@ GenTreePtr Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, 
         op1               = argInfo.argNode;
         argInfo.argTmpNum = op1->gtLclVarCommon.gtLclNum;
 
-        // Use an equivalent copy if this is the second or subsequent use.
-        if (argInfo.argIsUsed)
+        // Use an equivalent copy if this is the second or subsequent
+        // use, or if we need to retype.
+        //
+        // Note argument type mismatches that prevent inlining should
+        // have been caught in impInlineInitVars.
+        if (argInfo.argIsUsed || (op1->TypeGet() != lclTyp))
         {
             assert(op1->gtOper == GT_LCL_VAR);
             assert(lclNum == op1->gtLclVar.gtLclILoffs);
