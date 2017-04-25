@@ -10,10 +10,10 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</CoreFxCurrentRef>
-    <CoreClrCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</CoreClrCurrentRef>
+    <CoreClrCurrentRef>0f4f8f1f5c89b214649c89af33553a1c2938fff7</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>02b874feaab181629c42ac046a6723d3e28eb5e6</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>02b874feaab181629c42ac046a6723d3e28eb5e6</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>0f4f8f1f5c89b214649c89af33553a1c2938fff7</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>0f4f8f1f5c89b214649c89af33553a1c2938fff7</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
     <StandardCurrentRef>2f636c3c1e8d8490c727d8db83840db34bfd0ada</StandardCurrentRef>
   </PropertyGroup>
@@ -21,11 +21,11 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview2-25224-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>preview2-25224-02</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>preview2-25225-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25224-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25224-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25224-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25225-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25225-01</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25225-01</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.0.0-preview2-25224-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
