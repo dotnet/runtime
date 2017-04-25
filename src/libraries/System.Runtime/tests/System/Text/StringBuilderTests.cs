@@ -5,12 +5,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Tests;
-using System.Text;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    public static class StringBuilderTests
+    public static partial class StringBuilderTests
     {
         private static readonly string s_chunkSplitSource = new string('a', 30);
         private static readonly string s_noCapacityParamName = PlatformDetection.IsFullFramework ? "requiredLength" : "valueCount";
@@ -704,7 +703,7 @@ namespace System.Text.Tests
 
             // Length is positive
             yield return new object[] { "Hello", null, ", Foo {0,2}", new object[] { "Bar" }, "Hello, Foo Bar" }; // MiValue's length > minimum length (so don't prepend whitespace)
-            yield return new object[] { "Hello", null, ", Foo {0,3}", new object[] { "B" }, "Hello, Foo   B" }; // Value's length < minimum length (so prepend whitespace)            
+            yield return new object[] { "Hello", null, ", Foo {0,3}", new object[] { "B" }, "Hello, Foo   B" }; // Value's length < minimum length (so prepend whitespace)
             yield return new object[] { "Hello", null, ", Foo {0,     3}", new object[] { "B" }, "Hello, Foo   B" }; // Same as above, but verify AppendFormat ignores whitespace
             yield return new object[] { "Hello", null, ", Foo {0,0}", new object[] { "Bar" }, "Hello, Foo Bar" }; // Minimum length is 0
 

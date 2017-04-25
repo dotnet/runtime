@@ -137,6 +137,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.netcoreapp.cs" />
+    <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />    
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\TypedReferenceTests.cs" />
