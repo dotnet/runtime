@@ -47,7 +47,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_Indexer_ThrowsTargetParameterCountException_Netfx()
         {
             CompareAttribute attribute = new CompareAttribute("Item");
-            Assert.Throws<ArgumentException>(() => attribute.Validate("b", s_context));
+            Assert.Throws<TargetParameterCountException>(() => attribute.Validate("b", s_context));
         }
 
         [Fact]
