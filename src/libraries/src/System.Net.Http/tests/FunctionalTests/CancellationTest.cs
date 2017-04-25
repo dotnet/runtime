@@ -62,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
                     var stopwatch = Stopwatch.StartNew();
                     if (PlatformDetection.IsFullFramework)
                     {
-                        // .NET Framework throws WebException instead of OperationCancledException.
+                        // .NET Framework throws WebException instead of OperationCanceledException.
                         await Assert.ThrowsAnyAsync<WebException>(async () =>
                         {
                             Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken);
