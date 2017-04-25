@@ -63,12 +63,11 @@ namespace System.Runtime.Versioning
                 safeName.Append('r');
                 safeName.Append(clrID);
             }
-            // TODO -- https://github.com/dotnet/corefx/pull/12113
-            // if ((requires & SxSRequirements.AppDomainID) != 0) {
-            //     safeName.Append(separator);
-            //     safeName.Append("ad");
-            //     safeName.Append(AppDomain.CurrentDomain.Id);
-            // }
+            if ((requires & SxSRequirements.AppDomainID) != 0) {
+                safeName.Append(separator);
+                safeName.Append("ad");
+                safeName.Append(AppDomain.CurrentDomain.Id);
+            }
             if ((requires & SxSRequirements.TypeName) != 0)
             {
                 safeName.Append(separator);
