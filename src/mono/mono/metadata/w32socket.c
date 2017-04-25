@@ -918,8 +918,9 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_length_field, &buffer_size);
 
 		return sockaddr_obj;
+	}
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
-	} else if (saddr->sa_family == AF_INET6) {
+	else if (saddr->sa_family == AF_INET6) {
 		struct sockaddr_in6 *sa_in = (struct sockaddr_in6 *)saddr;
 		int i;
 		int buffer_size = 28;
@@ -987,8 +988,9 @@ get_sockaddr_size (int family)
 	size = 0;
 	if (family == AF_INET) {
 		size = sizeof (struct sockaddr_in);
+	}
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
-	} else if (family == AF_INET6) {
+	else if (family == AF_INET6) {
 		size = sizeof (struct sockaddr_in6);
 	}
 #endif
@@ -1147,8 +1149,9 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 
 		*sa_size = sizeof (struct sockaddr_in);
 		return (struct sockaddr *)sa;
+	}
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
-	} else if (family == AF_INET6) {
+	else if (family == AF_INET6) {
 		struct sockaddr_in6 *sa;
 		int i;
 		guint16 port;
@@ -2250,8 +2253,9 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 #endif
 					
 				ret = mono_w32socket_setsockopt (sock, system_level, system_name, &mreq6, sizeof (mreq6));
-			
-			} else
+
+				break; // Don't check sol_ip
+			}
 #endif
 			if (system_level == sol_ip) {
 #ifdef HAVE_STRUCT_IP_MREQN
@@ -2612,12 +2616,14 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	if (inet_pton (AF_INET, address, &saddr.sin_addr ) == 1) {
 		family = AF_INET;
 		saddr.sin_family = AF_INET;
+	}
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
-	} else if (inet_pton (AF_INET6, address, &saddr6.sin6_addr) == 1) {
+	else if (inet_pton (AF_INET6, address, &saddr6.sin6_addr) == 1) {
 		family = AF_INET6;
 		saddr6.sin6_family = AF_INET6;
+	}
 #endif
-	} else {
+	else {
 		g_free (address);
 		return FALSE;
 	}
