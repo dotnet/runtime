@@ -221,6 +221,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Implemented in 4.7. and Xunit runner currently targets 4.6.1.")]
     public static void DCJS_StringAsRoot()
     {
         foreach (string value in new string[] { "abc", "  a b  ", null, "", " ", "Hello World! 漢 ñ" })
