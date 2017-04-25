@@ -568,45 +568,6 @@
             "#import": [ "opensuse.42.1", "opensuse-x64" ]
         },
 
-        "alpine": {
-            "#import": [ "linux" ]
-        },
-        "alpine-x64": {
-            "#import": [ "alpine", "linux-x64" ]
-        },
-        "alpine-arm": {
-            "#import": [ "alpine", "linux-arm" ]
-        },
-        "alpine-arm64": {
-            "#import": [ "alpine", "linux-arm64" ]
-        },
-
-        "alpine.3": {
-            "#import": [ "alpine" ]
-        },
-        "alpine.3-x64": {
-            "#import": [ "alpine.3", "alpine-x64" ]
-        },
-        "alpine.3-arm": {
-            "#import": [ "alpine.3", "alpine-arm" ]
-        },
-        "alpine.3-arm64": {
-            "#import": [ "alpine.3", "alpine-arm64" ]
-        },
-
-        "alpine.3.4.3": {
-            "#import": [ "alpine.3" ]
-        },
-        "alpine.3.4.3-x64": {
-            "#import": [ "alpine.3.4.3", "alpine.3-x64" ]
-        },
-        "alpine.3.4.3-arm": {
-            "#import": [ "alpine.3.4.3", "alpine.3-arm" ]
-        },
-        "alpine.3.4.3-arm64": {
-            "#import": [ "alpine.3.4.3", "alpine.3-arm64" ]
-        },
-
         "corert": {
             "#import": [ "any" ]
         },
@@ -956,27 +917,6 @@
         "opensuse.42.1-x64-corert": {
             "#import": [ "opensuse.42.1-corert", "opensuse.13.2-x64-corert", "opensuse.42.1-x64" ]
         },
-
-        "alpine-corert": {
-            "#import": [ "linux-corert", "alpine" ]
-        },
-        "alpine-x64-corert": {
-            "#import": [ "alpine-corert", "linux-x64-corert", "alpine-x64" ]
-        },
-
-        "alpine.3-corert": {
-            "#import": [ "alpine-corert", "alpine.3" ]
-        },
-        "alpine.3-x64-corert": {
-            "#import": [ "alpine.3-corert", "alpine-x64-corert", "alpine.3-x64" ]
-        },
-
-        "alpine.3.4.3-corert": {
-            "#import": [ "alpine.3-corert", "alpine.3.4.3" ]
-        },
-        "alpine.3.4.3-x64-corert": {
-            "#import": [ "alpine.3.4.3-corert", "alpine.3-x64-corert", "alpine.3.4.3-x64" ]
-        }
 
     }
 }
