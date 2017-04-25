@@ -159,8 +159,8 @@ namespace System.Tests
         public static void DynamicInvoke_TypeDoesntExactlyMatchRefValueType_ThrowsArgumentException()
         {
             Delegate d = new RefIntDelegate(RefIntMethod);
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke((uint)7));
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke(IntEnum.One));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke((uint)7));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke(IntEnum.One));
         }
 
         [Theory]
@@ -186,8 +186,8 @@ namespace System.Tests
         public static void DynamicInvoke_SizePreservingNonVauePreservingConversion_ThrowsArgumentException()
         {
             Delegate d = new IntIntDelegate(IntIntMethod);
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke(7, (uint)7));
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke(7, U4.Seven));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke(7, (uint)7));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke(7, U4.Seven));
         }
 
         [Fact]
@@ -208,8 +208,8 @@ namespace System.Tests
         public static void DynamicInvoke_ConvertNonMatchingTToNullable_ThrowsArgumentException()
         {
             Delegate d = new NullableDelegate(NullableMethod);
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke((short)7));
-            Assert.Throws<ArgumentException>(null, () => d.DynamicInvoke(IntEnum.Seven));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke((short)7));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.DynamicInvoke(IntEnum.Seven));
         }
 
         [Fact]

@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices.Tests
 
             object key = new object();
             cwt.Add(key, key);
-            Assert.Throws<ArgumentException>(null, () => cwt.Add(key, key)); // duplicate key
+            AssertExtensions.Throws<ArgumentException>(null, () => cwt.Add(key, key)); // duplicate key
         }
 
         [Theory]

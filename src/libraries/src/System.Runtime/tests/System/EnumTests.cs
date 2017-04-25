@@ -341,7 +341,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetName(null, 1)); // Enum type is null
             AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.GetName(t, null)); // Value is null
 
-            Assert.Throws<ArgumentException>(null, () => Enum.GetName(typeof(object), 1)); // Enum type is not an enum
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.GetName(typeof(object), 1)); // Enum type is not an enum
             AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(t, "Red")); // Value is not the type of the enum's raw data
             AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(t, (IntPtr)0)); // Value is out of range
         }
@@ -470,11 +470,11 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.IsDefined(null, 1)); // Enum type is null
             AssertExtensions.Throws<ArgumentNullException>("value", () => Enum.IsDefined(t, null)); // Value is null
 
-            Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, Int32Enum.One)); // Value is different enum type
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, Int32Enum.One)); // Value is different enum type
 
             // Value is not a valid type (MSDN claims this should throw InvalidOperationException)
-            Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, true));
-            Assert.Throws<ArgumentException>(null, () => Enum.IsDefined(t, 'a'));
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, true));
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.IsDefined(t, 'a'));
 
             // Non-integers throw InvalidOperationException prior to Win8P.
             Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(t, (IntPtr)0));
@@ -621,7 +621,7 @@ namespace System.Tests
         public static void HasFlag_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("flag", () => Int32Enum.One.HasFlag(null)); // Flag is null
-            Assert.Throws<ArgumentException>(null, () => Int32Enum.One.HasFlag((SimpleEnum)0x3000)); // Enum is not the same type as the instance
+            AssertExtensions.Throws<ArgumentException>(null, () => Int32Enum.One.HasFlag((SimpleEnum)0x3000)); // Enum is not the same type as the instance
         }
 
         public static IEnumerable<object[]> ToObject_TestData()
@@ -961,8 +961,8 @@ namespace System.Tests
         [Fact]
         public static void CompareTo_ObjectNotEnum_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo((sbyte)1)); // Target is not an enum type
-            Assert.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo(Int32Enum.One)); // Target is a different enum type
+            AssertExtensions.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo((sbyte)1)); // Target is not an enum type
+            AssertExtensions.Throws<ArgumentException>(null, () => SimpleEnum.Red.CompareTo(Int32Enum.One)); // Target is a different enum type
         }
 
         public static IEnumerable<object[]> GetUnderlyingType_TestData()
@@ -1505,10 +1505,10 @@ namespace System.Tests
 
             AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.Format(typeof(object), 1, "F")); // Enum type is not an enum type
 
-            Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (Int32Enum)1, "F")); // Value is of the wrong enum type
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (Int32Enum)1, "F")); // Value is of the wrong enum type
 
-            Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (short)1, "F")); // Value is of the wrong integral
-            Assert.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), "Red", "F")); // Value is of the wrong integral
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), (short)1, "F")); // Value is of the wrong integral
+            AssertExtensions.Throws<ArgumentException>(null, () => Enum.Format(typeof(SimpleEnum), "Red", "F")); // Value is of the wrong integral
 
             Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "")); // Format is empty
             Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "   \t")); // Format is whitespace
