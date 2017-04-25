@@ -33,7 +33,7 @@ namespace WeakReferenceTest
 	}
 
 	public class Tester {
-		static readonly int seed = unchecked(DateTime.Now.Ticks.GetHashCode());
+		public static readonly int seed = unchecked(DateTime.Now.Ticks.GetHashCode());
 
 		Random rand = new Random(seed);
 
@@ -88,6 +88,7 @@ namespace WeakReferenceTest
 		public static void Main (string[] args)
 		{
 			Console.WriteLine("Starting cache testers");
+			Console.WriteLine("Thread seed: " + Tester.seed);
 			List<Tester> testers = new List<Tester>();
 			for (int count = 0; count < 10; count++) {
 				testers.Add(new Tester());
