@@ -13,6 +13,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void TestDecryptorReusability()
         {
+            // See https://github.com/dotnet/corefx/issues/18903 for details
+            if (!ShouldDescriptorBeReusable())
+                return;
+
             byte[] expectedPlainText = new byte[]
             {
                 0x14, 0x30, 0x71, 0xad, 0xed, 0x8e, 0x58, 0x84,
@@ -65,6 +69,20 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Assert.Equal(expectedPlainText, output2);
                 }
             }
+        }
+
+        private static bool ShouldDescriptorBeReusable()
+        {
+            if (!PlatformDetection.IsFullFramework)
+                return true;
+
+            bool doNotResetDecryptor;
+            if (AppContext.TryGetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", out doNotResetDecryptor))
+            {
+                return !doNotResetDecryptor;
+            }
+
+            return false;
         }
     }
 }
