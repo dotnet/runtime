@@ -53,6 +53,11 @@ namespace System.IO.IsolatedStorage
         public void GetUserStoreForApplication()
         {
             var isf = IsolatedStorageFile.GetUserStoreForApplication();
+            VerifyApplicationStore(isf);
+        }
+
+        private void VerifyApplicationStore(IsolatedStorageFile isf)
+        {
             string root = isf.GetUserRootDirectory();
             Assert.EndsWith(@"AppFiles" + Path.DirectorySeparatorChar, root);
             Assert.True(Directory.Exists(root), "store root folder should exist");
@@ -84,6 +89,15 @@ namespace System.IO.IsolatedStorage
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, typeof(object), typeof(object)));
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object()));
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object(), new object()));
+        }
+
+        [Fact]
+        public void GetStore_NullParamsAllowed()
+        {
+            VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (Type)null));
+            VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (Type)null, (Type)null));
+            VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (object)null));
+            VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (object)null, (object)null));
         }
 
         [Fact]
