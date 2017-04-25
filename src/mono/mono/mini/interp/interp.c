@@ -529,9 +529,16 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		} else
 			mono_value_copy (data, val->data.vt, type->data.klass);
 		return;
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *container_class = type->data.generic_class->container_class;
+
+		if (container_class->valuetype && !container_class->enumtype) {
+			mono_value_copy (data, val->data.vt, mono_class_from_mono_type (type));
+			return;
+		}
 		stackval_to_data (&type->data.generic_class->container_class->byval_arg, val, data, pinvoke);
 		return;
+	}
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
