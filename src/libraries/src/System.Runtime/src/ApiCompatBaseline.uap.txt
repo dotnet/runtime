@@ -1,0 +1,6 @@
+Compat issues with assembly System.Runtime:
+MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.Char, System.Object[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.Char, System.String[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.String, System.Object[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.String, System.String[])' does not exist in the implementation but it does exist in the contract.
+Total Issues: 4

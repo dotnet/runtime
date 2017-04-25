@@ -6930,6 +6930,12 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat(string format, params object[] args) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
         public System.Text.StringBuilder AppendLine(string value) { throw null; }
+        public StringBuilder AppendJoin(string separator, params object[] values) { throw null; }
+        public StringBuilder AppendJoin<T>(string separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
+        public StringBuilder AppendJoin(string separator, params string[] values) { throw null; }
+        public StringBuilder AppendJoin(char separator, params object[] values) { throw null; }
+        public StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
+        public StringBuilder AppendJoin(char separator, params string[] values) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
