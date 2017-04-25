@@ -52,7 +52,10 @@
     <Compile Include="System\Data\OperationAbortedException.cs" />
     <Compile Include="System\Data\SqlClient\SqlDbColumn.cs" />
     <Compile Include="System\Data\Common\ActivityCorrelator.cs" />
-    <Compile Include="System\Data\Common\AdapterUtil.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
+      <Link>System\Data\Common\AdapterUtil.cs</Link>
+    </Compile>
+    <Compile Include="System\Data\Common\AdapterUtil.SqlClient.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>

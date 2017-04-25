@@ -151,7 +151,10 @@
     <Compile Include="System\Data\UpdateRowSource.cs" />
     <Compile Include="System\Data\Common\UInt64Storage.cs" />
     <Compile Include="System\Data\Common\AdapterSwitches.cs" />
-    <Compile Include="System\Data\Common\AdapterUtil.cs" />
+    <Compile Include="System\Data\Common\AdapterUtil.Common.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
+      <Link>System\Data\Common\AdapterUtil.cs</Link>
+    </Compile>
     <Compile Include="System\Data\Common\BigIntegerStorage.cs" />
     <Compile Include="System\Data\Common\BooleanStorage.cs" />
     <Compile Include="System\Data\Common\ByteStorage.cs" />

@@ -93,7 +93,7 @@ namespace System.Data.ProviderBase
                 if (-1 == index)
                 {
                     // do the slow search now (kana, width insensitive comparison)
-                    index = LinearIndexOf(fieldName, ADP.compareOptions);
+                    index = LinearIndexOf(fieldName, ADP.DefaultCompareOptions);
                 }
             }
 
