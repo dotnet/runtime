@@ -309,12 +309,25 @@ namespace Microsoft.DotNet.Host.Build
         {
             foreach (var file in Directory.GetFiles(Dirs.CorehostLocalPackages, "*.nupkg"))
             {
-                var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
-                AzurePublisherTool.PublishFile(hostBlob, file);
-                Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+                if (!IsRidAgnosticPackage(file) || EnvVars.PublishRidAgnosticPackages)
+                {
+                    var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
+                    AzurePublisherTool.PublishFile(hostBlob, file);
+                    Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping publishing package {file} to Azure because it is RID-agnostic and EnvVars.PublishRidAgnosticPackages is not set to true.");
+                }
             }
 
             return c.Success();
+        }
+
+        private static bool IsRidAgnosticPackage(string packagePath)
+        {
+            var fileName = Path.GetFileName(packagePath);
+            return !fileName.StartsWith("runtime.", StringComparison.OrdinalIgnoreCase);
         }
 
         [Target]
@@ -323,7 +336,7 @@ namespace Microsoft.DotNet.Host.Build
             // When building on non windows platforms, we don't compile the full set of
             // tfms a package targets (to prevent the need of having mono and the reference
             // assemblies installed. So we shouldn't publish these packages.
-            if (EnvVars.Signed && CurrentPlatform.IsWindows)
+            if (EnvVars.PublishRidAgnosticPackages && CurrentPlatform.IsWindows)
             {
                 foreach (var file in Directory.GetFiles(Dirs.Packages, "*.nupkg"))
                 {
