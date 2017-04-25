@@ -60,6 +60,7 @@ typedef struct  {
 	guint8 version_set_index;
 	const char* new_assembly_name;
 	gboolean only_lower_versions;
+	gboolean framework_facade_assembly;
 } AssemblyVersionMap;
 
 /* Flag bits for assembly_names_equal_flags (). */
@@ -68,8 +69,10 @@ typedef enum {
 	ANAME_EQ_NONE = 0x0,
 	/* Don't compare public key token */
 	ANAME_EQ_IGNORE_PUBKEY = 0x1,
+	/* Don't compare the versions */
+	ANAME_EQ_IGNORE_VERSION = 0x2,
 
-	ANAME_EQ_MASK = 0x1
+	ANAME_EQ_MASK = 0x3
 } AssemblyNameEqFlags;
 
 /* the default search path is empty, the first slot is replaced with the computed value */
@@ -87,6 +90,8 @@ static char **assemblies_path = NULL;
 static char **extra_gac_paths = NULL;
 
 #ifndef DISABLE_ASSEMBLY_REMAPPING
+
+#define FACADE_ASSEMBLY(str) {str, 0, NULL, FALSE, TRUE}
 
 static GHashTable* assembly_remapping_table;
 /* The list of system assemblies what will be remapped to the running
@@ -133,36 +138,141 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"Novell.Directory.Ldap", 0},
 	{"PEAPI", 0},
 	{"System", 0},
+	FACADE_ASSEMBLY ("System.AppContext"),
+	FACADE_ASSEMBLY ("System.Collections"),
+	FACADE_ASSEMBLY ("System.Collections.Concurrent"),
+	FACADE_ASSEMBLY ("System.Collections.NonGeneric"),
+	FACADE_ASSEMBLY ("System.Collections.Specialized"),
+	FACADE_ASSEMBLY ("System.ComponentModel"),
+	FACADE_ASSEMBLY ("System.ComponentModel.Annotations"),
 	{"System.ComponentModel.Composition", 2},
 	{"System.ComponentModel.DataAnnotations", 2},
+	FACADE_ASSEMBLY ("System.ComponentModel.EventBasedAsync"),
+	FACADE_ASSEMBLY ("System.ComponentModel.Primitives"),
+	FACADE_ASSEMBLY ("System.ComponentModel.TypeConverter"),
 	{"System.Configuration", 0},
 	{"System.Configuration.Install", 0},
+	FACADE_ASSEMBLY ("System.Console"),
 	{"System.Core", 2},
 	{"System.Data", 0},
+	FACADE_ASSEMBLY ("System.Data.Common"),
 	{"System.Data.Linq", 2},
 	{"System.Data.OracleClient", 0},
 	{"System.Data.Services", 2},
 	{"System.Data.Services.Client", 2},
+	FACADE_ASSEMBLY ("System.Data.SqlClient"),
 	{"System.Data.SqlXml", 0},
 	{"System.Design", 0},
+	FACADE_ASSEMBLY ("System.Diagnostics.Contracts"),
+	FACADE_ASSEMBLY ("System.Diagnostics.Debug"),
+	FACADE_ASSEMBLY ("System.Diagnostics.FileVersionInfo"),
+	FACADE_ASSEMBLY ("System.Diagnostics.Process"),
+	FACADE_ASSEMBLY ("System.Diagnostics.StackTrace"),
+	FACADE_ASSEMBLY ("System.Diagnostics.TextWriterTraceListener"),
+	FACADE_ASSEMBLY ("System.Diagnostics.Tools"),
+	FACADE_ASSEMBLY ("System.Diagnostics.TraceEvent"),
+	FACADE_ASSEMBLY ("System.Diagnostics.TraceSource"),
+	FACADE_ASSEMBLY ("System.Diagnostics.Tracing"),
 	{"System.DirectoryServices", 0},
 	{"System.Drawing", 0},
 	{"System.Drawing.Design", 0},
+	FACADE_ASSEMBLY ("System.Drawing.Primitives"),
+	FACADE_ASSEMBLY ("System.Dynamic.Runtime"),
 	{"System.EnterpriseServices", 0},
-	{"System.IO.Compression", 2},
+	FACADE_ASSEMBLY ("System.Globalization"),
+	FACADE_ASSEMBLY ("System.Globalization.Calendars"),
+	FACADE_ASSEMBLY ("System.Globalization.Extensions"),
 	{"System.IdentityModel", 3},
 	{"System.IdentityModel.Selectors", 3},
+	FACADE_ASSEMBLY ("System.IO"),
+	{"System.IO.Compression", 2},
+	FACADE_ASSEMBLY ("System.IO.Compression.ZipFile"),
+	FACADE_ASSEMBLY ("System.IO.FileSystem"),
+	FACADE_ASSEMBLY ("System.IO.FileSystem.AccessControl"),
+	FACADE_ASSEMBLY ("System.IO.FileSystem.DriveInfo"),
+	FACADE_ASSEMBLY ("System.IO.FileSystem.Primitives"),
+	FACADE_ASSEMBLY ("System.IO.FileSystem.Watcher"),
+	FACADE_ASSEMBLY ("System.IO.IsolatedStorage"),
+	FACADE_ASSEMBLY ("System.IO.MemoryMappedFiles"),
+	FACADE_ASSEMBLY ("System.IO.Packaging"),
+	FACADE_ASSEMBLY ("System.IO.Pipes"),
+	FACADE_ASSEMBLY ("System.IO.UnmanagedMemoryStream"),
+	FACADE_ASSEMBLY ("System.Linq"),
+	FACADE_ASSEMBLY ("System.Linq.Expressions"),
+	FACADE_ASSEMBLY ("System.Linq.Parallel"),
+	FACADE_ASSEMBLY ("System.Linq.Queryable"),
 	{"System.Management", 0},
 	{"System.Messaging", 0},
 	{"System.Net", 2},
+	FACADE_ASSEMBLY ("System.Net.AuthenticationManager"),
+	FACADE_ASSEMBLY ("System.Net.Cache"),
 	{"System.Net.Http", 4},
+	{"System.Net.Http.Rtc", 0},
+	FACADE_ASSEMBLY ("System.Net.HttpListener"),
+	{"System.Net.NetworkInformation", 0},
+	FACADE_ASSEMBLY ("System.Net.Mail"),
+	FACADE_ASSEMBLY ("System.Net.NameResolution"),
+	FACADE_ASSEMBLY ("System.Net.NetworkInformation"),
+	FACADE_ASSEMBLY ("System.Net.Ping"),
+	FACADE_ASSEMBLY ("System.Net.Primitives"),
+	FACADE_ASSEMBLY ("System.Net.Requests"),
+	FACADE_ASSEMBLY ("System.Net.Security"),
+	FACADE_ASSEMBLY ("System.Net.ServicePoint"),
+	FACADE_ASSEMBLY ("System.Net.Sockets"),
+	FACADE_ASSEMBLY ("System.Net.Utilities"),
+	FACADE_ASSEMBLY ("System.Net.WebHeaderCollection"),
+	FACADE_ASSEMBLY ("System.Net.WebSockets"),
+	FACADE_ASSEMBLY ("System.Net.WebSockets.Client"),
 	{"System.Numerics.Vectors", 3},
+	FACADE_ASSEMBLY ("System.ObjectModel"),
+	FACADE_ASSEMBLY ("System.Reflection"),
+	FACADE_ASSEMBLY ("System.Reflection.Emit"),
+	FACADE_ASSEMBLY ("System.Reflection.Emit.ILGeneration"),
+	FACADE_ASSEMBLY ("System.Reflection.Emit.Lightweight"),
+	FACADE_ASSEMBLY ("System.Reflection.Extensions"),
+	FACADE_ASSEMBLY ("System.Reflection.Primitives"),
+	FACADE_ASSEMBLY ("System.Reflection.TypeExtensions"),
+	FACADE_ASSEMBLY ("System.Resources.ReaderWriter"),
+	FACADE_ASSEMBLY ("System.Resources.ResourceManager"),
+	FACADE_ASSEMBLY ("System.Runtime"),
+	FACADE_ASSEMBLY ("System.Runtime.CompilerServices.VisualC"),
+	FACADE_ASSEMBLY ("System.Runtime.Extensions"),
+	FACADE_ASSEMBLY ("System.Runtime.Handles"),
+	FACADE_ASSEMBLY ("System.Runtime.InteropServices"),
 	{"System.Runtime.InteropServices.RuntimeInformation", 2},
+	FACADE_ASSEMBLY ("System.Runtime.InteropServices.WindowsRuntime"),
+	FACADE_ASSEMBLY ("System.Runtime.Numerics"),
 	{"System.Runtime.Remoting", 0},
 	{"System.Runtime.Serialization", 3},
 	{"System.Runtime.Serialization.Formatters", 3},
 	{"System.Runtime.Serialization.Formatters.Soap", 0},
+	FACADE_ASSEMBLY ("System.Runtime.Serialization.Json"),
+	FACADE_ASSEMBLY ("System.Runtime.Serialization.Primitives"),
+	FACADE_ASSEMBLY ("System.Runtime.Serialization.Xml"),
 	{"System.Security", 0},
+	FACADE_ASSEMBLY ("System.Security.AccessControl"),
+	FACADE_ASSEMBLY ("System.Security.Claims"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Algorithms"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Cng"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Csp"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.DeriveBytes"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encoding"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.Aes"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.ECDiffieHellman"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.ECDsa"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.Hashing"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.Hashing.Algorithms"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.OpenSsl"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Pkcs"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.Primitives"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.ProtectedData"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.RSA"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.RandomNumberGenerator"),
+	FACADE_ASSEMBLY ("System.Security.Cryptography.X509Certificates"),
+	FACADE_ASSEMBLY ("System.Security.Principal"),
+	FACADE_ASSEMBLY ("System.Security.Principal.Windows"),
+	FACADE_ASSEMBLY ("System.Security.SecureString"),
 	{"System.ServiceModel", 3},
 	{"System.ServiceModel.Duplex", 3},
 	{"System.ServiceModel.Http", 3},
@@ -171,8 +281,21 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.ServiceModel.Security", 3},
 	{"System.ServiceModel.Web", 2},
 	{"System.ServiceProcess", 0},
-	{"System.Text.Encoding.CodePages", 3},
+	FACADE_ASSEMBLY ("System.ServiceProcess.ServiceController"),
+	FACADE_ASSEMBLY ("System.Text.Encoding"),
+	FACADE_ASSEMBLY ("System.Text.Encoding.CodePages"),
+	FACADE_ASSEMBLY ("System.Text.Encoding.Extensions"),
+	FACADE_ASSEMBLY ("System.Text.RegularExpressions"),
+	FACADE_ASSEMBLY ("System.Threading"),
+	FACADE_ASSEMBLY ("System.Threading.AccessControl"),
+	FACADE_ASSEMBLY ("System.Threading.Overlapped"),
+	FACADE_ASSEMBLY ("System.Threading.Tasks"),
+	FACADE_ASSEMBLY ("System.Threading.Tasks.Parallel"),
+	FACADE_ASSEMBLY ("System.Threading.Thread"),
+	FACADE_ASSEMBLY ("System.Threading.ThreadPool"),
+	FACADE_ASSEMBLY ("System.Threading.Timer"),
 	{"System.Transactions", 0},
+	FACADE_ASSEMBLY ("System.ValueTuple"),
 	{"System.Web", 0},
 	{"System.Web.Abstractions", 2},
 	{"System.Web.DynamicData", 2},
@@ -180,13 +303,22 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.Web.Mobile", 0},
 	{"System.Web.Routing", 2},
 	{"System.Web.Services", 0},
+	{"System.Windows", 0},
 	{"System.Windows.Forms", 0},
 	{"System.Xml", 0},
 	{"System.Xml.Linq", 2},
-	{"System.Xml.ReaderWriter", 3},
+	FACADE_ASSEMBLY ("System.Xml.ReaderWriter"),
+	{"System.Xml.Serialization", 0},
+	FACADE_ASSEMBLY ("System.Xml.XDocument"),
+	FACADE_ASSEMBLY ("System.Xml.XPath"),
 	{"System.Xml.XPath.XmlDocument", 3},
+	FACADE_ASSEMBLY ("System.Xml.XPath.XDocument"),
+	FACADE_ASSEMBLY ("System.Xml.XmlDocument"),
+	FACADE_ASSEMBLY ("System.Xml.XmlSerializer"),
+	FACADE_ASSEMBLY ("System.Xml.Xsl.Primitives"),
 	{"WindowsBase", 3},
-	{"mscorlib", 0}
+	{"mscorlib", 0},
+	FACADE_ASSEMBLY ("netstandard"),
 };
 #endif
 
@@ -545,8 +677,9 @@ assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNa
 	if (l->culture && r->culture && strcmp (l->culture, r->culture))
 		return FALSE;
 
-	if (l->major != r->major || l->minor != r->minor ||
-			l->build != r->build || l->revision != r->revision)
+	if ((l->major != r->major || l->minor != r->minor ||
+	     l->build != r->build || l->revision != r->revision) &&
+	    (flags & ANAME_EQ_IGNORE_VERSION) == 0)
 		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
 			return FALSE;
 
@@ -1131,6 +1264,12 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		int index = vmap->version_set_index;
 		g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
 		vset = &current_runtime->version_sets [index];
+
+		if (vmap->framework_facade_assembly) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s is a framework Facade asseembly",
+				    aname->name);
+			return aname;
+		}
 
 		if (aname->major == vset->major && aname->minor == vset->minor &&
 			aname->build == vset->build && aname->revision == vset->revision) {
@@ -3148,6 +3287,28 @@ get_per_domain_assembly_binding_info (MonoDomain *domain, MonoAssemblyName *anam
 	return info;
 }
 
+void
+mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor, gchar *domain_config_file_name)
+{
+	if (domain->assembly_bindings_parsed)
+		return;
+	mono_domain_lock (domain);
+	if (!domain->assembly_bindings_parsed) {
+
+		gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
+
+		if (!domain_config_file_path)
+			domain_config_file_path = domain_config_file_name;
+
+		mono_config_parse_assembly_bindings (domain_config_file_path, amajor, aminor, domain, assembly_binding_info_parsed);
+		domain->assembly_bindings_parsed = TRUE;
+		if (domain_config_file_name != domain_config_file_path)
+			g_free (domain_config_file_path);
+	}
+
+	mono_domain_unlock (domain);
+}
+
 static MonoAssemblyName*
 mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
 {
@@ -3180,25 +3341,14 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	}
 
 	if (domain && domain->setup && domain->setup->configuration_file) {
+		gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
+		/* expect this to succeed because mono_domain_set_options_from_config () did
+		 * the same thing when the domain was created. */
+		mono_error_assert_ok (&error);
+		mono_domain_parse_assembly_bindings (domain, aname->major, aname->minor, domain_config_file_name);
+		g_free (domain_config_file_name);
+
 		mono_domain_lock (domain);
-		if (!domain->assembly_bindings_parsed) {
-			gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
-			/* expect this to succeed because mono_domain_set_options_from_config () did
-			 * the same thing when the domain was created. */
-			mono_error_assert_ok (&error);
-
-			gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
-
-			if (!domain_config_file_path)
-				domain_config_file_path = domain_config_file_name;
-			
-			mono_config_parse_assembly_bindings (domain_config_file_path, aname->major, aname->minor, domain, assembly_binding_info_parsed);
-			domain->assembly_bindings_parsed = TRUE;
-			if (domain_config_file_name != domain_config_file_path)
-				g_free (domain_config_file_name);
-			g_free (domain_config_file_path);
-		}
-
 		info2 = get_per_domain_assembly_binding_info (domain, aname);
 
 		if (info2) {
@@ -3209,6 +3359,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		}
 
 		mono_domain_unlock (domain);
+
 	}
 
 	if (!info) {
@@ -3382,7 +3533,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	g_free (corlib_file);
 
 return_corlib_and_facades:
-	if (corlib && !strcmp (runtime->framework_version, "4.5"))  // FIXME: stop hardcoding 4.5 here
+	if (corlib)
 		default_path [1] = g_strdup_printf ("%s/Facades", corlib->basedir);
 		
 	return corlib;
@@ -3452,10 +3603,18 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 #ifndef DISABLE_ASSEMBLY_REMAPPING
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
 	if (vmap) {
-		/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
-		gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
-		return result;
+		if (!vmap->framework_facade_assembly) {
+			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
+			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+			return result;
+		} else {
+			/* For facades, the name and public key token should
+			 * match, but the version doesn't matter. */
+			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_VERSION);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match, returning TRUE" : "don't match, returning FALSE");
+			return result;
+		}
 	}
 #endif
 	return FALSE;
@@ -3517,7 +3676,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, NULL, NULL, status);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, &mono_assembly_candidate_predicate_sn_same_name, aname, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -3526,7 +3685,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, status, refonly, NULL, NULL);
+		result = load_in_path (filename, default_path, status, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);

@@ -1190,6 +1190,7 @@ mini_usage_jitdeveloper (void)
 	
 	fprintf (stdout,
 		 "Runtime and JIT debugging options:\n"
+		 "    --apply-bindings=FILE  Apply assembly bindings from FILE (only for AOT)\n"
 		 "    --breakonex            Inserts a breakpoint on exceptions\n"
 		 "    --break METHOD         Inserts a breakpoint at METHOD entry\n"
 		 "    --break-at-bb METHOD N Inserts a breakpoint in METHOD at BB N\n"
@@ -1552,6 +1553,16 @@ switch_arch (char* argv[], const char* target_arch)
 #define MONO_HANDLERS_ARGUMENT "--handlers="
 #define MONO_HANDLERS_ARGUMENT_LEN G_N_ELEMENTS(MONO_HANDLERS_ARGUMENT)-1
 
+static void
+apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
+{
+	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
+	g_assert (!domain->assembly_bindings_parsed);
+
+	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
+
+}
+
 /**
  * mono_main:
  * \param argc number of arguments in the argv array
@@ -1582,6 +1593,7 @@ mono_main (int argc, char* argv[])
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *attach_options = NULL;
+	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -1768,6 +1780,8 @@ mono_main (int argc, char* argv[])
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
 #endif
+		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
+			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
 			char **splitted;
 
@@ -2131,6 +2145,10 @@ mono_main (int argc, char* argv[])
 	if (test_jit_info_table)
 		jit_info_table_test (domain);
 #endif
+
+	if (mono_compile_aot && extra_bindings_config_file != NULL) {
+		apply_root_domain_configuration_file_bindings (domain, extra_bindings_config_file);
+	}
 
 	assembly = mono_assembly_open_predicate (aname, FALSE, FALSE, NULL, NULL, &open_status);
 	if (!assembly) {
