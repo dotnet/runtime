@@ -94,6 +94,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_WriteStartEndElementAsync()
     {
         string actual;
