@@ -561,7 +561,7 @@ ICALL(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type)
 
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 HANDLES(ICALL(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_field))
-ICALL(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local)
+HANDLES(ICALL(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local))
 
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
 HANDLES(ICALL(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class))

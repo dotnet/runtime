@@ -1465,8 +1465,8 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 MonoReflectionEvent *
 ves_icall_TypeBuilder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
 
-MonoArray *
-ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelper *sig);
+MonoArrayHandle
+ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelperHandle sig, MonoError *error);
 
 MonoArrayHandle
 ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelperHandle sig, MonoError *error);

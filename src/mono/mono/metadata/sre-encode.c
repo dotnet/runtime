@@ -959,14 +959,14 @@ encode_reflection_types (MonoDynamicImage *assembly, MonoArrayHandle sig_argumen
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
-static MonoArray *
-reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoError *error)
+static MonoArrayHandle
+reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, MonoError *error)
 {
-	MonoReflectionModuleBuilder *module = sig->module;
-	MonoDynamicImage *assembly = module != NULL ? module->dynamic_image : NULL;
-	guint32 na = sig->arguments ? mono_array_length (sig->arguments) : 0;
+	MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, sig, module);
+	MonoDynamicImage *assembly = MONO_HANDLE_IS_NULL (module) ? NULL : MONO_HANDLE_GETVAL (module, dynamic_image);
+	MonoArrayHandle sig_arguments = MONO_HANDLE_NEW_GET (MonoArray, sig, arguments);
+	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : mono_array_handle_length (sig_arguments);
 	guint32 buflen, i;
-	MonoArray *result;
 	SigBuffer buf;
 
 	error_init (error);
@@ -977,21 +977,23 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoErro
 	sigbuffer_add_value (&buf, na);
 	if (assembly != NULL){
 		for (i = 0; i < na; ++i) {
-			MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType*, i);
-			encode_reflection_type_raw (assembly, type, &buf, error);
-			if (!is_ok (error)) goto fail;
+			if (!encode_reflection_types (assembly, sig_arguments, i, &buf, error))
+				goto fail;
 		}
 	}
 
 	buflen = buf.p - buf.buf;
-	result = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	MonoArrayHandle result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
 	if (!is_ok (error)) goto fail;
-	memcpy (mono_array_addr (result, char, 0), buf.buf, buflen);
+	uint32_t gchandle;
+	void *base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
+	memcpy (base, buf.buf, buflen);
 	sigbuffer_free (&buf);
+	mono_gchandle_free (gchandle);
 	return result;
 fail:
 	sigbuffer_free (&buf);
-	return NULL;
+	return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 }
 
 static MonoArrayHandle
@@ -1213,13 +1215,11 @@ mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoRe
 #endif /*DISABLE_REFLECTION_EMIT_SAVE*/
 
 #ifndef DISABLE_REFLECTION_EMIT
-MonoArray *
-ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelper *sig)
+MonoArrayHandle
+ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelperHandle sig, MonoError *error)
 {
-	MonoError error;
-	MonoArray *result = reflection_sighelper_get_signature_local (sig, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	error_init (error);
+	return reflection_sighelper_get_signature_local (sig, error);
 }
 
 MonoArrayHandle
@@ -1229,11 +1229,12 @@ ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelperHandle sig
 	return reflection_sighelper_get_signature_field (sig, error);
 }
 #else /* DISABLE_REFLECTION_EMIT */
-MonoArray *
-ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelper *sig)
+MonoArrayHandle
+ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelperHandle sig, MonoError *error)
 {
+	error_init (error);
 	g_assert_not_reached ();
-	return NULL;
+	return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 }
 
 MonoArrayHandle
