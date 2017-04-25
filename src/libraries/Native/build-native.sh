@@ -67,6 +67,14 @@ check_native_prereqs()
     # Check presence of CMake on the path
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
 
+
+    # Minimum required version of clang is version 3.9 for arm/armel cross build
+    if [[ $__CrossBuild == 1 && ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") ]]; then
+        if ! [[ "$__ClangMajorVersion" -gt "3" || ( $__ClangMajorVersion == 3 && $__ClangMinorVersion == 9 ) ]]; then
+            echo "Please install clang3.9 or latest for arm/armel cross build"; exit 1;
+        fi
+    fi
+
     # Check for clang
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
 }
@@ -342,8 +350,13 @@ esac
 # Set the default clang version if not already set
 if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
     if [ $__CrossBuild == 1 ]; then
-        __ClangMajorVersion=3
-        __ClangMinorVersion=6
+        if [[ "$__BuildArch" == "arm" || "$__BuildArch" == "armel" ]]; then
+            __ClangMajorVersion=3
+            __ClangMinorVersion=9
+        else
+            __ClangMajorVersion=3
+            __ClangMinorVersion=6
+        fi
     else
         __ClangMajorVersion=3
         __ClangMinorVersion=5

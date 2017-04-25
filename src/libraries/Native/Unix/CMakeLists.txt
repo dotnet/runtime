@@ -90,7 +90,9 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
       set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l AND DEFINED ENV{CROSSCOMPILE})
+    # Use O1 option when the clang version is smaller than 3.9
+    # Otherwise use O3 option in release build
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.9)
         add_compile_options (-O1)
     else()
         add_compile_options (-O3)
