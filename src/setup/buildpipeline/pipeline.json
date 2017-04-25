@@ -32,28 +32,6 @@
         {
           "Name": "Core-Setup-Linux",
           "Parameters": {
-            "PB_DockerOS": "fedora.24"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Fedora 24",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
-            "PB_DockerOS": "opensuse.42.1"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "OpenSuse 42.1",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
             "PB_DockerOS": "ubuntu.14.04",
             "REPO_ID": "562fbfe0b2d7d0e0a43780c4",
             "REPO_USER": "dotnet",
@@ -97,14 +75,6 @@
         },
         {
           "Name": "Core-Setup-OSX-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "OSX",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-OSX-x64",
           "Parameters": {
             "PB_PortableBuild": "-portable"
           },
@@ -128,30 +98,9 @@
           }
         },
         {
-          "Name": "Core-Setup-RHEL7-x64",
-          "ReportingParameters": {
-            "SubType": "Native",
-            "OperatingSystem": "RedHat 7",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
           "Name": "Core-Setup-Signing-Windows-x64",
           "Parameters": {
-            "SIGNED_PACKAGES": "true"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x64",
-          "Parameters": {
-            "PB_PortableBuild": "-portable",
-            "RID": "win-x64"
+            "PB_PortableBuild": "-portable"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -162,35 +111,14 @@
         },
         {
           "Name": "Core-Setup-Signing-Windows-x86",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x86"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x86",
           "Parameters": {
-            "PB_PortableBuild": "-portable",
-            "RID": "win-x86"
+            "PB_PortableBuild": "-portable"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "SubType": "PortableBuild",
             "Type": "build/product/",
             "Platform": "x86"
-          }
-        },
-        {
-          "Name": "Core-Setup-CrossBuild",
-          "Parameters": {
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
-            "PB_Architecture": "arm",
-            "TargetRid": "ubuntu.14.04-arm"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/"
           }
         },
         {
@@ -208,26 +136,6 @@
           }
         },
         {
-          "Name": "Core-Setup-CrossBuild",
-          "Parameters": {
-            "PB_DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
-            "PB_Architecture": "arm",
-            "TargetRid": "ubuntu.16.04-arm"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm32",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "arm"
-          }
-        },
-        {
           "Name": "Core-Setup-Windows-arm32",
           "Parameters": {
             "PB_PortableBuild": "-portable"
@@ -247,14 +155,6 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm64",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Platform": "arm64"
           }

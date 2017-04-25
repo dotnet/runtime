@@ -57,7 +57,11 @@ namespace Microsoft.DotNet.Cli.Build
             Console.WriteLine($"Publishing file '{file}' to '{blob}'");
 
             CloudBlockBlob blockBlob = _blobContainer.GetBlockBlobReference(blob);
-            blockBlob.UploadFromFileAsync(file).Wait();
+            blockBlob.UploadFromFileAsync(
+                file, 
+                AccessCondition.GenerateIfNotExistsCondition(),
+                options: null,
+                operationContext: null).Wait();
 
             SetBlobPropertiesBasedOnFileType(blockBlob);
         }
