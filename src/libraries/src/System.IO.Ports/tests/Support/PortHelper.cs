@@ -14,7 +14,7 @@ namespace Legacy.Support
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern int GetLastError();
 
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32.dll", EntryPoint = "QueryDosDeviceW", CharSet = CharSet.Unicode)]
         private static extern int QueryDosDevice(string lpDeviceName, IntPtr lpTargetPath, int ucchMax);
 
         public static string[] GetPorts()

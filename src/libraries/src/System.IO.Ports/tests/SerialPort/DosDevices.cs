@@ -139,7 +139,7 @@ namespace System.IO.Ports.Tests
         public const int ERROR_INSUFFICIENT_BUFFER = 122;
         public const int ERROR_MORE_DATA = 234;
 
-        [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("Kernel32.dll", SetLastError = true, EntryPoint = "QueryDosDeviceW", CharSet = CharSet.Unicode)]
         private static extern int QueryDosDevice(string lpDeviceName, char[] lpTargetPath, int ucchMax);
     }
 }

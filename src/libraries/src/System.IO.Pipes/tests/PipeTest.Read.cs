@@ -65,7 +65,7 @@ namespace System.IO.Pipes.Tests
 
                 // Count must be nonnegative
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => pipe.Read(new byte[3], 0, -1));
-                Assert.Throws<System.ArgumentOutOfRangeException>("count", () => { pipe.ReadAsync(new byte[7], 0, -1); });
+                AssertExtensions.Throws<System.ArgumentOutOfRangeException>("count", () => { pipe.ReadAsync(new byte[7], 0, -1); });
             }
         }
 
