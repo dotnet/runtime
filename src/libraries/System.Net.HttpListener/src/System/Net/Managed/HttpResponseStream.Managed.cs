@@ -52,23 +52,6 @@ namespace System.Net
             _stream = stream;
         }
 
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length
-        {
-            get { throw new NotSupportedException(SR.net_noseek); }
-        }
-
-        public override long Position
-        {
-            get { throw new NotSupportedException(SR.net_noseek); }
-            set { throw new NotSupportedException(SR.net_noseek); }
-        }
-
         public override void Close()
         {
             if (_disposed == false)
@@ -148,15 +131,6 @@ namespace System.Net
             }
         }
 
-        public override void Flush()
-        {
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
         private static byte[] s_crlf = new byte[] { 13, 10 };
         private static byte[] GetChunkSizeBytes(int size, bool final)
         {
@@ -189,22 +163,10 @@ namespace System.Net
             catch { }
         }
 
-        public override void Write(byte[] buffer, int offset, int size)
+        private void Write(byte[] buffer, int offset, int size)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
             if (size == 0)
                 return;
 
@@ -241,22 +203,10 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
 
             byte[] bytes = null;
             MemoryStream ms = GetHeaders(false);
@@ -284,14 +234,10 @@ namespace System.Net
             return _stream.BeginWrite(buffer, offset, size, cback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        private void EndWriteCore(IAsyncResult asyncResult)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
 
             if (_ignore_errors)
             {
@@ -309,32 +255,6 @@ namespace System.Net
                 if (_response.SendChunked)
                     _stream.Write(s_crlf, 0, 2);
             }
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count,
-                            AsyncCallback cback, object state)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override int EndRead(IAsyncResult ares)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.net_noseek);
         }
     }
 }
