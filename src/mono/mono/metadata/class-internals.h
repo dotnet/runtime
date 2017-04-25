@@ -390,6 +390,9 @@ typedef struct {
 typedef struct {
 	MonoClassDef class;
 	MonoGenericContainer *generic_container;
+	/* The canonical GENERICINST where we instantiate a generic type definition with its own generic parameters.*/
+	/* Suppose we have class T`2<A,B> {...}.  canonical_inst is the GTD T`2 applied to A and B. */
+	MonoType canonical_inst;
 } MonoClassGtd;
 
 typedef struct {
@@ -1443,6 +1446,9 @@ mono_class_try_get_generic_container (MonoClass *klass);
 
 void
 mono_class_set_generic_container (MonoClass *klass, MonoGenericContainer *container);
+
+MonoType*
+mono_class_gtd_get_canonical_inst (MonoClass *klass);
 
 guint32
 mono_class_get_first_method_idx (MonoClass *klass);

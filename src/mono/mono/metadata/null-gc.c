@@ -426,9 +426,15 @@ mono_gc_is_disabled (void)
 }
 
 void
-mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+mono_gc_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
 {
 	g_assert_not_reached ();
+}
+
+void*
+mono_gc_get_range_copy_func (void)
+{
+	return &mono_gc_wbarrier_range_copy;
 }
 
 guint8*

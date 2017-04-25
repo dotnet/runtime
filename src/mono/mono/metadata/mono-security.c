@@ -77,6 +77,8 @@ GetTokenName (uid_t uid)
 {
 	gchar *uname = NULL;
 
+#ifdef HAVE_PWD_H
+
 #ifdef HAVE_GETPWUID_R
 	struct passwd pwd;
 	size_t fbufsize;
@@ -109,8 +111,12 @@ GetTokenName (uid_t uid)
 	g_free (fbuf);
 #endif
 
+#endif /* HAVE_PWD_H */
+
 	return uname;
 }
+
+#ifdef HAVE_GRP_H
 
 static gboolean
 IsMemberInList (uid_t user, struct group *g) 
@@ -138,9 +144,15 @@ IsMemberInList (uid_t user, struct group *g)
 	return result;
 }
 
+#endif /* HAVE_GRP_H */
+
 static gboolean
 IsDefaultGroup (uid_t user, gid_t group)
 {
+	gboolean result = FALSE;
+
+#ifdef HAVE_PWD_H
+
 #ifdef HAVE_GETPWUID_R
 	struct passwd pwd;
 	size_t fbufsize;
@@ -148,7 +160,6 @@ IsDefaultGroup (uid_t user, gid_t group)
 	gint32 retval;
 #endif
 	struct passwd *p = NULL;
-	gboolean result;
 
 #ifdef HAVE_GETPWUID_R
 #ifdef _SC_GETPW_R_SIZE_MAX
@@ -174,8 +185,12 @@ IsDefaultGroup (uid_t user, gid_t group)
 	g_free (fbuf);
 #endif
 
+#endif /* HAVE_PWD_H */
+
 	return result;
 }
+
+#ifdef HAVE_GRP_H
 
 static gboolean
 IsMemberOf (gid_t user, struct group *g) 
@@ -190,6 +205,9 @@ IsMemberOf (gid_t user, struct group *g)
 	/* is the user in the group list */
 	return IsMemberInList (user, g);
 }
+
+#endif /* HAVE_GRP_H */
+
 #endif /* !HOST_WIN32 */
 
 /* ICALLS */
@@ -249,13 +267,16 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 gpointer
 ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
 {
+	gpointer token = (gpointer)-2;
+
+#ifdef HAVE_PWD_H
+
 #ifdef HAVE_GETPWNAM_R
 	struct passwd pwd;
 	size_t fbufsize;
 	gchar *fbuf;
 	gint32 retval;
 #endif
-	gpointer token = (gpointer) -2;
 	struct passwd *p;
 	gchar *utf8_name;
 	gboolean result;
@@ -286,6 +307,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	g_free (fbuf);
 #endif
 	g_free (utf8_name);
+
+#endif /* HAVE_PWD_H */
 
 	return token;
 }
@@ -383,6 +406,8 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 {
 	gboolean result = FALSE;
 
+#ifdef HAVE_GRP_H
+
 #ifdef HAVE_GETGRGID_R
 	struct group grp;
 	size_t fbufsize;
@@ -414,6 +439,8 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	g_free (fbuf);
 #endif
 
+#endif /* HAVE_GRP_H */
+
 	return result;
 }
 
@@ -421,6 +448,9 @@ gboolean
 ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group)
 {
 	gboolean result = FALSE;
+
+#ifdef HAVE_GRP_H
+
 	gchar *utf8_groupname;
 
 	utf8_groupname = mono_unicode_to_external (mono_string_chars (group));
@@ -453,6 +483,8 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #endif
 		g_free (utf8_groupname);
 	}
+
+#endif /* HAVE_GRP_H */
 
 	return result;
 }

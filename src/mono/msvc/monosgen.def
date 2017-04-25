@@ -243,7 +243,6 @@ mono_dl_fallback_register
 mono_dl_fallback_unregister
 mono_dl_open
 mono_dllmap_insert
-mono_domain_add_class_static_data
 mono_domain_assembly_open
 mono_domain_create
 mono_domain_create_appdomain

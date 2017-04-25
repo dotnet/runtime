@@ -6134,11 +6134,23 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 			clause = &header->clauses [k];
 
 			encode_value (clause->flags, p, &p);
-			if (clause->data.catch_class) {
-				encode_value (1, p, &p);
-				encode_klass_ref (acfg, clause->data.catch_class, p, &p);
-			} else {
-				encode_value (0, p, &p);
+			if (!(clause->flags == MONO_EXCEPTION_CLAUSE_FILTER || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
+				if (clause->data.catch_class) {
+					guint8 *buf2, *p2;
+					int len;
+
+					buf2 = (guint8 *)g_malloc (4096);
+					p2 = buf2;
+					encode_klass_ref (acfg, clause->data.catch_class, p2, &p2);
+					len = p2 - buf2;
+					g_assert (len < 4096);
+					encode_value (len, p, &p);
+					memcpy (p, buf2, len);
+					p += p2 - buf2;
+					g_free (buf2);
+				} else {
+					encode_value (0, p, &p);
+				}
 			}
 
 			/* Emit the IL ranges too, since they might not be available at runtime */

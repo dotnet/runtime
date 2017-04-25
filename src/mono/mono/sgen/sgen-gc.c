@@ -357,7 +357,7 @@ static volatile mword highest_heap_address = 0;
 MonoCoopMutex sgen_interruption_mutex;
 
 int current_collection_generation = -1;
-static volatile gboolean concurrent_collection_in_progress = FALSE;
+volatile gboolean concurrent_collection_in_progress = FALSE;
 
 /* objects that are ready to be finalized */
 static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
@@ -2910,21 +2910,9 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 }
 
 void
-sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+sgen_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
 {
-	GCObject **dest = (GCObject **)_dest;
-	GCObject **src = (GCObject **)_src;
-
-	while (size) {
-		if (bitmap & 0x1)
-			mono_gc_wbarrier_generic_store (dest, *src);
-		else
-			*dest = *src;
-		++src;
-		++dest;
-		size -= SIZEOF_VOID_P;
-		bitmap >>= 1;
-	}
+	remset.wbarrier_range_copy (_dest,_src, size);
 }
 
 /*

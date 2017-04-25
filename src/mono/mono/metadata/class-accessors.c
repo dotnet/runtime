@@ -382,3 +382,10 @@ mono_class_set_is_com_object (MonoClass *klass)
 	mono_loader_unlock ();
 #endif
 }
+
+MonoType*
+mono_class_gtd_get_canonical_inst (MonoClass *klass)
+{
+	g_assert (mono_class_is_gtd (klass));
+	return &((MonoClassGtd*)klass)->canonical_inst;
+}

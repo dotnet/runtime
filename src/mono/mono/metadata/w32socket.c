@@ -204,7 +204,11 @@ convert_family (MonoAddressFamily mono_family)
 	case AddressFamily_InterNetwork:
 		return AF_INET;
 	case AddressFamily_AppleTalk:
+#ifdef AF_APPLETALK
 		return AF_APPLETALK;
+#else
+		return -1;
+#endif
 	case AddressFamily_InterNetworkV6:
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
 		return AF_INET6;
@@ -263,12 +267,14 @@ convert_to_mono_family (guint16 af_family)
 	case AF_DECnet:
 		return AddressFamily_DecNet;
 #endif
+#ifdef AF_APPLETALK
 	case AF_APPLETALK:
 		return AddressFamily_AppleTalk;
+#endif
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
 	case AF_INET6:
-#endif
 		return AddressFamily_InterNetworkV6;
+#endif
 #ifdef AF_IRDA
 	case AF_IRDA:
 		return AddressFamily_Irda;
@@ -296,7 +302,11 @@ convert_type (MonoSocketType mono_type)
 		return -1;
 #endif
 	case SocketType_Seqpacket:
+#ifdef SOCK_SEQPACKET
 		return SOCK_SEQPACKET;
+#else
+		return -1;
+#endif
 	case SocketType_Unknown:
 		g_warning ("System.Net.Sockets.SocketType has unsupported value 0x%x", mono_type);
 		return -1;
@@ -350,8 +360,10 @@ convert_socketflags (gint32 sflags)
 		/* Contains invalid flag values */
 		return -1;
 
+#ifdef MSG_OOB
 	if (sflags & SocketFlags_OutOfBand)
 		flags |= MSG_OOB;
+#endif
 	if (sflags & SocketFlags_Peek)
 		flags |= MSG_PEEK;
 	if (sflags & SocketFlags_DontRoute)
@@ -395,9 +407,11 @@ convert_sockopt_level_and_name (MonoSocketOptionLevel mono_level, MonoSocketOpti
 			 */
 			*system_name = SO_LINGER;
 			break;
+#ifdef SO_DEBUG
 		case SocketOptionName_Debug:
 			*system_name = SO_DEBUG;
 			break;
+#endif
 #ifdef SO_ACCEPTCONN
 		case SocketOptionName_AcceptConnection:
 			*system_name = SO_ACCEPTCONN;
@@ -409,18 +423,22 @@ convert_sockopt_level_and_name (MonoSocketOptionLevel mono_level, MonoSocketOpti
 		case SocketOptionName_KeepAlive:
 			*system_name = SO_KEEPALIVE;
 			break;
+#ifdef SO_DONTROUTE
 		case SocketOptionName_DontRoute:
 			*system_name = SO_DONTROUTE;
 			break;
+#endif
 		case SocketOptionName_Broadcast:
 			*system_name = SO_BROADCAST;
 			break;
 		case SocketOptionName_Linger:
 			*system_name = SO_LINGER;
 			break;
+#ifdef SO_OOBINLINE
 		case SocketOptionName_OutOfBandInline:
 			*system_name = SO_OOBINLINE;
 			break;
+#endif
 		case SocketOptionName_SendBuffer:
 			*system_name = SO_SNDBUF;
 			break;
@@ -478,9 +496,11 @@ convert_sockopt_level_and_name (MonoSocketOptionLevel mono_level, MonoSocketOpti
 		*system_level = mono_networking_get_ip_protocol ();
 		
 		switch (mono_name) {
+#ifdef IP_OPTIONS
 		case SocketOptionName_IPOptions:
 			*system_name = IP_OPTIONS;
 			break;
+#endif
 #ifdef IP_HDRINCL
 		case SocketOptionName_HeaderIncluded:
 			*system_name = IP_HDRINCL;

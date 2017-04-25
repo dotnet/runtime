@@ -181,9 +181,15 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 }
 
 void
-mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+mono_gc_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
 {
-	sgen_wbarrier_value_copy_bitmap (_dest, _src, size, bitmap);
+	sgen_wbarrier_range_copy (_dest, _src, size);
+}
+
+void*
+mono_gc_get_range_copy_func (void)
+{
+	return sgen_get_remset ()->wbarrier_range_copy;
 }
 
 int

@@ -344,6 +344,7 @@ TESTS_CS_SRC=		\
 	generic-static-methods.2.cs	\
 	generic-null-call.2.cs	\
 	generic-special.2.cs	\
+	generic-special2.2.cs	\
 	generic-exceptions.2.cs	\
 	generic-virtual2.2.cs	\
 	generic-valuetype-interface.2.cs	\
@@ -616,6 +617,7 @@ TESTS_GSHARED_SRC = \
 	generic-tailcall2.2.cs			\
 	generic-array-exc.2.cs	\
 	generic-special.2.cs			\
+	generic-special2.2.cs	\
 	generic-exceptions.2.cs	\
 	generic-delegate2.2.cs		\
 	generic-virtual2.2.cs	\
@@ -817,7 +819,10 @@ PROFILE_DISABLED_TESTS += \
 	call_missing_class.exe \
 	ldfld_missing_field.exe \
 	ldfld_missing_class.exe \
-	vt-sync-method.exe
+	vt-sync-method.exe \
+	resolve_method_bug.2.exe \
+	resolve_field_bug.2.exe \
+	resolve_type_bug.2.exe
 
 # Tests which rely on remoting
 PROFILE_DISABLED_TESTS += \
