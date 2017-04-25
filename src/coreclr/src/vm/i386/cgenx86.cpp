@@ -932,6 +932,14 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
+#ifdef FEATURE_READYTORUN
+void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
+    WRAPPER_NO_CONTRACT;
+    UpdateRegDisplayHelper(pRD, 0);
+}
+#endif // FEATURE_READYTORUN
+
 //------------------------------------------------------------------------
 // This is declared as returning WORD instead of PRD_TYPE because of
 // header issues with cgencpu.h including dbginterface.h.
