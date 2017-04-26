@@ -10,68 +10,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class SqlNamedPipesTest
     {
         [CheckConnStrSetupFact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Named pipes with the given input strings are not supported on Unix
         public static void ValidConnStringTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.NpConnStr);
             builder.ConnectTimeout = 5;
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                OpenBadConnection<PlatformNotSupportedException>(builder.ConnectionString);
-            }
-            else
-            {
-                OpenGoodConnection(builder.ConnectionString);
-            }
-        }
-
-#if MANAGED_SNI
-        [CheckConnStrSetupFact]
-        public static void InvalidConnStringTest()
-        {
-            string invalidConnStringError = SystemDataResourceManager.Instance.SNI_ERROR_25;
-
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.NpConnStr);
-            builder.ConnectTimeout = 2;
-
-            string fakeServerName = Guid.NewGuid().ToString("N");
-
-            // Using forward slashes
-            builder.DataSource = "np://" + fakeServerName + "/pipe/sql/query";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // Without pipe token
-            builder.DataSource = @"np:\\" + fakeServerName + @"\sql\query";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // Without a pipe name
-            builder.DataSource = @"np:\\" + fakeServerName + @"\pipe";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // Nothing after server
-            builder.DataSource = @"np:\\" + fakeServerName;
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // No leading slashes
-            builder.DataSource = @"np:" + fakeServerName + @"\pipe\sql\query";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // No server name
-            builder.DataSource = @"np:\\\pipe\sql\query";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // Nothing but slashes
-            builder.DataSource = @"np:\\\\\";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-        }
-#endif
-
-        private static void OpenBadConnection<T>(string connectionString, string errorMessage = null) where T : Exception
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                DataTestUtility.AssertThrowsWrapper<T>(() => conn.Open(), errorMessage);
-            }
+            OpenGoodConnection(builder.ConnectionString);
         }
 
         private static void OpenGoodConnection(string connectionString)
