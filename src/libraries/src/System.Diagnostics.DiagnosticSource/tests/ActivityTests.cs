@@ -406,36 +406,36 @@ namespace System.Diagnostics.Tests
                     var activity = new Activity("activity");
 
                     // Test Activity.Start
-                    Stopwatch sw = Stopwatch.StartNew();
                     source.StartActivity(activity, arguments);
 
-                    // DateTime.UtcNow is not precise on some platforms, we check that StartTime of Activity is within 20ms from now
-                    Assert.True(Math.Abs((DateTime.UtcNow - observer.Activity.StartTimeUtc).TotalMilliseconds) <= 20);
+                    // We 'fix' DateTime on netfx to be precise; 
+                    // comparing Activity StartTime to potentially imprecise DateTime.UtcNow is not correct
+                    // this test does not intend fo check StartTime/Duration precision, so we allow anything within 20ms.
+                    var acceptableNow = DateTime.UtcNow.AddMilliseconds(20);
 
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
-
                     Assert.NotNull(observer.Activity);
-                    Assert.True(DateTime.UtcNow - new TimeSpan(0, 1, 0) <= observer.Activity.StartTimeUtc);
-                    Assert.True(observer.Activity.StartTimeUtc <= DateTime.UtcNow);
+
+                    Assert.True(acceptableNow - new TimeSpan(0, 1, 0) <= observer.Activity.StartTimeUtc);
+                    Assert.True(observer.Activity.StartTimeUtc <= acceptableNow);
                     Assert.True(observer.Activity.Duration == TimeSpan.Zero);
 
                     observer.Reset();
 
-                    //DateTime.UtcNow is not precise on some platforms 
-                    //duration could be Zero if activity lasts less than 16ms
-                    Thread.Sleep(20);
+                    Thread.Sleep(100);
 
                     // Test Activity.Stop
                     source.StopActivity(activity, arguments);
-                    sw.Stop();
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
 
                     // Confirm that duration is set. 
                     Assert.NotNull(observer.Activity);
                     Assert.True(TimeSpan.Zero < observer.Activity.Duration);
-                    Assert.True(observer.Activity.Duration <= sw.Elapsed);
+
+                    // let's only check that Duration is set in StopActivity, we do not intend to check precision here
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddMilliseconds(20));
                 } 
             }
         }
