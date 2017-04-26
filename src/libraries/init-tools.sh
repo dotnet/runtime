@@ -14,54 +14,6 @@ __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PA
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
 __INIT_TOOLS_DONE_MARKER=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/done
 
-# Extended version of platform detection logic from dotnet/cli/scripts/obtain/dotnet-install.sh 16692fc
-get_current_linux_name() {
-    # Detect Distro
-    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
-            echo "ubuntu.16.04"
-            return 0
-        fi
-        if [ "$(cat /etc/*-release | grep -cim1 16.10)" -eq 1 ]; then
-            echo "ubuntu.16.10"
-            return 0
-        fi
-
-        echo "ubuntu"
-        return 0
-    elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-        echo "centos"
-        return 0
-    elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-        echo "rhel"
-        return 0
-    elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-        echo "debian"
-        return 0
-    elif [ "$(cat /etc/*-release | grep -cim1 alpine)" -eq 1 ]; then
-        echo "alpine"
-        return 0
-    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 24)" -eq 1 ]; then
-            echo "fedora.24"
-            return 0
-        fi
-    elif [ "$(cat /etc/*-release | grep -cim1 opensuse)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 13.2)" -eq 1 ]; then
-            echo "opensuse.13.2"
-            return 0
-        fi
-        if [ "$(cat /etc/*-release | grep -cim1 42.1)" -eq 1 ]; then
-            echo "opensuse.42.1"
-            return 0
-        fi
-    fi
-
-    # Cannot determine Linux distribution, assuming Ubuntu 14.04.
-    echo "ubuntu"
-    return 0
-}
-
 if [ -z "$__DOTNET_PKG" ]; then
     if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
         echo "Warning: build not supported on 32 bit Unix"
@@ -75,14 +27,14 @@ OSName=$(uname -s)
             ;;
 
         Linux)
-            __DOTNET_PKG="dotnet-dev-$(get_current_linux_name)-x64"
+            __DOTNET_PKG=dotnet-dev-linux-x64
             OS=Linux
             ;;
 
         *)
-            echo "Unsupported OS '$OSName' detected. Downloading ubuntu-x64 tools."
+            echo "Unsupported OS '$OSName' detected. Downloading linux-x64 tools."
             OS=Linux
-            __DOTNET_PKG=dotnet-dev-ubuntu-x64
+            __DOTNET_PKG=dotnet-dev-linux-x64
             ;;
   esac
 fi
