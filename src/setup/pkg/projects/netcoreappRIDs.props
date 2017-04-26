@@ -16,9 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <OfficialBuildRID Include="debian.8-armel">
-      <Platform>armel</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-x86">
@@ -34,9 +31,15 @@
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="tizen.4.0.0-armel">
+
+    <!-- The following RIDs are not officically supported and are not 
+         built during official builds, however we wish to include them 
+         in our runtime.json to enable others to provide them.  -->
+    <UnofficialBuildRID Include="debian.8-armel">
       <Platform>armel</Platform>
-    </OfficialBuildRID>
-    </ItemGroup>
-    
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+  </ItemGroup>
 </Project>
