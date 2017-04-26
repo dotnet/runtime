@@ -1275,9 +1275,17 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         // We need to make sure that other threads executing checked write barriers
         // will see the g_card_table update before g_lowest/highest_address updates.
         // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. Write barriers access card table
-        // without memory barriers for performance reasons, so we need to flush
-        // the store buffers here.
+        // with address that it does not cover. 
+        //
+        // Even x86's total store ordering is insufficient here because threads reading
+        // g_card_table do so via the instruction cache, whereas g_lowest/highest_address
+        // are read via the data cache.
+        //
+        // The g_card_table update is covered by section 8.1.3 of the Intel Software
+        // Development Manual, Volume 3A (System Programming Guide, Part 1), about
+        // "cross-modifying code": We need all _executing_ threads to invalidate
+        // their instruction cache, which FlushProcessWriteBuffers achieves by sending
+        // an IPI (inter-process interrupt).
         FlushProcessWriteBuffers();
 
         g_lowest_address = args->lowest_address;
