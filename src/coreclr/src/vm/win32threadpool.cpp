@@ -4755,15 +4755,30 @@ DWORD ThreadpoolMgr::FireTimers()
                                   timerInfo,
                                   QUEUE_ONLY /* TimerInfo take care of deleting*/);
 
-                timerInfo->FiringTime = currentTime+timerInfo->Period;
+                if (timerInfo->Period != 0 && timerInfo->Period != (ULONG)-1)
+                {
+                    ULONG nextFiringTime = timerInfo->FiringTime + timerInfo->Period;
+                    DWORD firingInterval;
+                    if (TimeExpired(timerInfo->FiringTime, currentTime, nextFiringTime))
+                    {
+                        // Enough time has elapsed to fire the timer yet again. The timer is not able to keep up with the short
+                        // period, have it fire 1 ms from now to avoid spinning without a delay.
+                        timerInfo->FiringTime = currentTime + 1;
+                        firingInterval = 1;
+                    }
+                    else
+                    {
+                        timerInfo->FiringTime = nextFiringTime;
+                        firingInterval = TimeInterval(nextFiringTime, currentTime);
+                    }
 
-                if ((timerInfo->Period != 0) && (timerInfo->Period != (ULONG) -1) && (nextFiringInterval > timerInfo->Period))
-                    nextFiringInterval = timerInfo->Period;
+                    if (firingInterval < nextFiringInterval)
+                        nextFiringInterval = firingInterval;
+                }
             }
-
             else
             {
-                DWORD firingInterval = TimeInterval(timerInfo->FiringTime,currentTime);
+                DWORD firingInterval = TimeInterval(timerInfo->FiringTime, currentTime);
                 if (firingInterval < nextFiringInterval)
                     nextFiringInterval = firingInterval;
             }
