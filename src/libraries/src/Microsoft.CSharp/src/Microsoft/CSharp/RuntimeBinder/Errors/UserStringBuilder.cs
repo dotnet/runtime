@@ -507,7 +507,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case SYMKIND.SK_LambdaScope:
                 default:
                     // Shouldn't happen.
-                    Debug.Assert(false, "Bad symbol kind");
+                    Debug.Assert(false, $"Bad symbol kind: {sym.getKind()}");
                     break;
             }
         }
