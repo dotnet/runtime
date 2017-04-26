@@ -8,7 +8,7 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
-  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
   <PropertyGroup>
     <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
