@@ -65,7 +65,9 @@
     <MSBuild Projects="@(ProjectReference)"
              Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 
                         '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR 
-                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND '%(ProjectReference.PackageTargetRuntime)' != '')"
+                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
+                         '%(ProjectReference.PackageTargetRuntime)' != '' AND 
+                         '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
              Targets="GetPackageFiles">
       <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
     </MSBuild>
