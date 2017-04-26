@@ -211,6 +211,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void DebuggerAttributeTests()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()));
@@ -221,6 +222,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>), null));
@@ -229,6 +231,7 @@ namespace System.Collections.ObjectModel.Tests
         }
         
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, null));

@@ -19,6 +19,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(SerializeDeserialize_Roundtrips_MemberData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Serialization still WIP in UapAot: https://github.com/dotnet/corefx/issues/18942")]
         public void SerializeDeserialize_Roundtrips(ReadOnlyDictionary<string, string> d)
         {
             ReadOnlyDictionary<string, string> clone = BinaryFormatterHelpers.Clone(d);

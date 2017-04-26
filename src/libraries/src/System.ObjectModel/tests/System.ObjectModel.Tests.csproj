@@ -30,6 +30,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionaryTest.cs">
       <Link>Common\System\CollectionsIDictionaryTest.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
     <Compile Include="KeyedCollection\TestMethods.cs" />
