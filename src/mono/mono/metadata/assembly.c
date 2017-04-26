@@ -3657,6 +3657,13 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
+	MonoAssemblyCandidatePredicate predicate = NULL;
+	void* predicate_ud = NULL;
+#if !defined(DISABLE_STRICT_STRONG_NAMES)
+	predicate = &mono_assembly_candidate_predicate_sn_same_name;
+	predicate_ud = aname;
+#endif
+
 	len = strlen (aname->name);
 	for (ext_index = 0; ext_index < 2; ext_index ++) {
 		ext = ext_index == 0 ? ".dll" : ".exe";
@@ -3676,7 +3683,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, &mono_assembly_candidate_predicate_sn_same_name, aname, status);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, predicate, predicate_ud, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -3685,7 +3692,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, status, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
+		result = load_in_path (filename, default_path, status, refonly, predicate, predicate_ud);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);

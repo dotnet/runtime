@@ -2002,6 +2002,12 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 
 	set_domain_search_path (domain);
 
+	MonoAssemblyCandidatePredicate predicate = NULL;
+	void* predicate_ud = NULL;
+#if !defined(DISABLE_STRICT_STRONG_NAMES)
+	predicate = &mono_assembly_candidate_predicate_sn_same_name;
+	predicate_ud = aname;
+#endif
 	if (domain->search_path && domain->search_path [0] != NULL) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s search path is:", domain->friendly_name);
@@ -2011,11 +2017,11 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 			}
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "End of domain %s search path.", domain->friendly_name);			
 		}
-		result = real_load (domain->search_path, aname->culture, aname->name, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
+		result = real_load (domain->search_path, aname->culture, aname->name, refonly, predicate, predicate_ud);
 	}
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, aname->name, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly, predicate, predicate_ud);
 	}
 
 	return result;

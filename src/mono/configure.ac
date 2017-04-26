@@ -1173,6 +1173,8 @@ fi
 if test "x$mono_feature_disable_assembly_remapping" = "xyes"; then
 	AC_DEFINE(DISABLE_ASSEMBLY_REMAPPING, 1, [Disable assembly remapping.])
 	AC_MSG_NOTICE([Disabled Assembly remapping.])
+	AC_DEFINE(DISABLE_STRICT_STRONG_NAMES, 1, [Disable strict strong name checking.])
+	AC_MSG_NOTICE([Disabled strict strong name checking.])
 fi
 
 if test "x$mono_feature_disable_shared_perfcounters" = "xyes"; then
