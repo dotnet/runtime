@@ -626,6 +626,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate we can create multiple concurrent read-only maps from the same file path.
         /// </summary>
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "On netfx, the MMF.CreateFromFile default FileShare is None. We intentionally changed it in netcoreapp in #6092.")]
         public void FileInUse_CreateFromFile_SucceedsWithReadOnly()
         {
             const int Capacity = 4096;
