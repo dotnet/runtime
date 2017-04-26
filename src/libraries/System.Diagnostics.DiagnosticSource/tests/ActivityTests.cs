@@ -281,13 +281,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StopWithoutTimestamp()
         {
-            // DateTime.UtcNow is not precise on some platforms, but Activity stop time is precise
-            // in this test we set start time, but not stop time and check duration.
-            //
-            // Let's set start time to be 1 sec + possible DateTime.UtcNow error and check that duration is at least 1 sec.
-            // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
-            // that checks duration precision on netfx.
-            var startTime = DateTime.UtcNow.AddMilliseconds(-1020);
+            var startTime = DateTime.UtcNow.AddSeconds(-1);
             var activity = new Activity("activity")
                 .SetStartTime(startTime);
 
@@ -295,7 +289,14 @@ namespace System.Diagnostics.Tests
             Assert.Equal(startTime, activity.StartTimeUtc);
 
             activity.Stop();
-            Assert.True(activity.Duration.TotalSeconds >= 1);
+
+            // DateTime.UtcNow is not precise on some platforms, but Activity stop time is precise
+            // in this test we set start time, but not stop time and check duration.
+            //
+            // Let's check that duration is 1sec - maximum DateTime.UtcNow error or bigger.
+            // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
+            // that checks duration precision on netfx.
+            Assert.True(activity.Duration.TotalMilliseconds >= 1000 - MaxClockErrorMSec);
         }
 
         /// <summary>
@@ -411,20 +412,20 @@ namespace System.Diagnostics.Tests
 
                     var activity = new Activity("activity");
 
+                    var startTime = DateTime.UtcNow;
                     // Test Activity.Start
                     source.StartActivity(activity, arguments);
-
-                    // We 'fix' DateTime on netfx to be precise; 
-                    // comparing Activity StartTime to potentially imprecise DateTime.UtcNow is not correct
-                    // this test does not intend fo check StartTime/Duration precision, so we allow anything within 20ms.
-                    var acceptableNow = DateTime.UtcNow.AddMilliseconds(20);
 
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
                     Assert.NotNull(observer.Activity);
 
-                    Assert.True(acceptableNow - new TimeSpan(0, 1, 0) <= observer.Activity.StartTimeUtc);
-                    Assert.True(observer.Activity.StartTimeUtc <= acceptableNow);
+                    // We 'fix' DateTime on netfx to be precise; 
+                    // comparing Activity StartTime to potentially imprecise DateTime.UtcNow is not correct
+                    // this test does not intend fo check StartTime/Duration precision, so we allow anything within 20ms.
+                    Assert.True(startTime.AddMilliseconds(-1 * MaxClockErrorMSec) <= observer.Activity.StartTimeUtc);
+                    Assert.True(observer.Activity.StartTimeUtc < DateTime.UtcNow.AddMilliseconds(MaxClockErrorMSec));
+
                     Assert.True(observer.Activity.Duration == TimeSpan.Zero);
 
                     observer.Reset();
@@ -441,7 +442,7 @@ namespace System.Diagnostics.Tests
                     Assert.True(TimeSpan.Zero < observer.Activity.Duration);
 
                     // let's only check that Duration is set in StopActivity, we do not intend to check precision here
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddMilliseconds(20));
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddMilliseconds(2 * MaxClockErrorMSec));
                 } 
             }
         }
@@ -527,5 +528,7 @@ namespace System.Diagnostics.Tests
 
             public void OnError(Exception error) { }
         }
+
+        private const int MaxClockErrorMSec = 20;
     }
 }
