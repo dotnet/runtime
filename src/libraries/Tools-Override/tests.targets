@@ -229,13 +229,20 @@
     </PropertyGroup>
     
     <ItemGroup Condition="'$(UseDotNetNativeToolchain)' == 'true' AND '$(Performance)'!='true'" >
+      <TargetExecutableNames Include="xunit.console.netcore.exe"/>
+      <TargetExecutableNames Condition="'%(ProjectReference.Filename)' == 'RemoteExecutorConsoleApp'" Include="RemoteExecutorConsoleApp.exe"/>
       <IlcInputFolderContents Include="$(ILCFXInputFolder)/*" />
       <TestCommandLines Include="mklink /H %(IlcInputFolderContents.Filename)%(IlcInputFolderContents.Extension) $(_Runtime_Path)%(IlcInputFolderContents.Filename)%(IlcInputFolderContents.Extension)" />
       <TestCommandLines Include="copy /y $(_TestILCFolder)\default.rd.xml  %EXECUTION_DIR%" />
-      <TestCommandLines Include="call $(_TestILCFolder)\ilc.exe -ExeName xunit.console.netcore.exe -in %EXECUTION_DIR% -out %EXECUTION_DIR%\native -usedefaultpinvoke -buildtype $(ILCBuildType) -v diag" />
-      <TestCommandLines Include="set ILCERRORLEVEL=%ERRORLEVEL%" />
-      <TestCommandLines Include="if NOT [%ILCERRORLEVEL%] == [0] exit /b %ILCERRORLEVEL%" />
-      <TestCommandLines Include="copy /y $(_TestILCFolder)\CRT\vcruntime140_app.dll %EXECUTION_DIR%\native" />
+      <TestCommandLines Include="rmdir /S /Q %EXECUTION_DIR%int" />
+      <TestCommandLines Include="rmdir /S /Q %EXECUTION_DIR%native" />
+      <TestCommandLines Include="@(TargetExecutableNames -> '
+call %RUNTIME_PATH%\TestILC\ilc.exe -ExeName %(Identity) -in %EXECUTION_DIR% -out %EXECUTION_DIR%int\%(Identity)\ -usedefaultpinvoke -buildtype $(ILCBuildType) -v diag
+set ILCERRORLEVEL=%ERRORLEVEL%
+if NOT [%ILCERRORLEVEL%] == [0] exit /b %ILCERRORLEVEL%
+robocopy /S /NP %EXECUTION_DIR%int\%(Identity)\ %EXECUTION_DIR%native\
+')"/>
+      <TestCommandLines Include="copy /y $(_TestILCFolder)\CRT\vcruntime140_app.dll %EXECUTION_DIR%native" />
       <TestCommandLines Include="echo > %EXECUTION_DIR%\native\$(XunitTestAssembly)"/>
       <TestCommandLines Include="cd native"/>
       <PostExecutionTestCommandLines Include="type Xunit.Console.Output.txt" />

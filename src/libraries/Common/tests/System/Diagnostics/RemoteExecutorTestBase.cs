@@ -143,27 +143,17 @@ namespace System.Diagnostics
             if (!File.Exists(TestConsoleApp))
                 throw new IOException("RemoteExecutorConsoleApp test app isn't present in the test runtime directory.");
 
-            if (IsFullFramework)
+            if (IsFullFramework || IsNetNative)
             {
                 psi.FileName = TestConsoleApp;
                 psi.Arguments = testConsoleAppArgs;
-            }
-            else if (IsNetNative)
-            {
-                psi.FileName = TestConsoleApp;
-                psi.Arguments = testConsoleAppArgs;
-
-                // The test pipeline does not have the infrastructure to copy RemoteExecutorConsoleApp.exe to the test directly, let alone
-                // ILC it against whatever assembly it might be asked to load up. (Is UWP even allowed to spin up a process!?)
-                // Until, and unless that's fixed, throw an informative exception so as not to waste debugging time.
-                throw new Exception(".NET Native platforms cannot run tests that use RemoteExecutorTestBase.RemoteInvoke()");
             }
             else
             {
                 psi.FileName = HostRunner;
                 psi.Arguments = TestConsoleApp + " " + testConsoleAppArgs;
             }
-         
+
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :
