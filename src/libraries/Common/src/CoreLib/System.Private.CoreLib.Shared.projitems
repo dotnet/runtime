@@ -74,6 +74,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DivideByZeroException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\DllNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DuplicateWaitObjectException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\EntryPointNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs"/>
