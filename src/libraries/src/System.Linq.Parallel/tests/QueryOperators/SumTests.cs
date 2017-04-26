@@ -139,6 +139,7 @@ namespace System.Linq.Parallel.Tests
         [OuterLoop]
         [InlineData(1024 * 4)]
         [InlineData(1024 * 64)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core bug fix https://github.com/dotnet/corefx/pull/1215")]
         public static void Sum_Float_Longrunning(int count)
         {
             Sum_Float(count);
