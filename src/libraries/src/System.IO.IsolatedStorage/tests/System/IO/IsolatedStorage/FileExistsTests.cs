@@ -30,17 +30,17 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void FileExists_ThrowsIsolatedStorageException()
+        public void FileExists_Removed_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.FileExists("foo"));
+                Assert.Throws<InvalidOperationException>(() => isf.FileExists("foo"));
             }
         }
 
         [Fact]
-        public void FileExists_ThrowsInvalidOperationException()
+        public void FileExists_Closed_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {

@@ -42,17 +42,17 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void MoveFile_ThrowsIsolatedStorageException()
+        public void MoveFile_Deleted_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.MoveFile("foo", "bar"));
+                Assert.Throws<InvalidOperationException>(() => isf.MoveFile("foo", "bar"));
             }
         }
 
         [Fact]
-        public void MoveFile_ThrowsInvalidOperationException()
+        public void MoveFile_Closed_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {

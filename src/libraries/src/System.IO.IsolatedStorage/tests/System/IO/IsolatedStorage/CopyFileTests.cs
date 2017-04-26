@@ -45,17 +45,17 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void CopyFile_ThrowsIsolatedStorageException()
+        public void CopyDeletedFile_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.CopyFile("foo", "bar"));
+                Assert.Throws<InvalidOperationException>(() => isf.CopyFile("foo", "bar"));
             }
         }
 
         [Fact]
-        public void CopyFile_ThrowsInvalidOperationException()
+        public void CopyClosedFile_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
