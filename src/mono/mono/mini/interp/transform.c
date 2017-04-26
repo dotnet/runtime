@@ -2985,6 +2985,21 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				g_assert(klass->valuetype);
 				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
 				break;
+			case CEE_MONO_TLS: {
+				gint32 key = read32 (td.ip + 1);
+				td.ip += 5;
+				g_assert (key < TLS_KEY_NUM);
+				ADD_CODE (&td, MINT_MONO_TLS);
+				WRITE32 (&td, &key);
+				PUSH_SIMPLE_TYPE (&td, STACK_TYPE_MP);
+				break;
+			}
+			case CEE_MONO_ATOMIC_STORE_I4:
+				CHECK_STACK (&td, 2);
+				SIMPLE_OP (td, MINT_MONO_ATOMIC_STORE_I4);
+				td.sp -= 2;
+				td.ip++;
+				break;
 			case CEE_MONO_SAVE_LMF:
 			case CEE_MONO_RESTORE_LMF:
 			case CEE_MONO_NOT_TAKEN:

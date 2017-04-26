@@ -57,6 +57,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/utils/atomic.h>
 
 #include "interp.h"
 #include "interp-internals.h"
@@ -3101,6 +3102,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			sp -= 2;
 			* (double *) sp->data.p = sp[1].data.f;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)
+			++ip;
+			sp -= 2;
+			InterlockedWrite ((gint32 *) sp->data.p, sp [1].data.i);
+			MINT_IN_BREAK;
 #define BINOP(datamem, op) \
 	--sp; \
 	sp [-1].data.datamem = sp [-1].data.datamem op sp [0].data.datamem; \
@@ -4340,6 +4346,13 @@ array_constructed:
 			if (sp > frame->stack)
 				g_warning ("retobj: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
+		MINT_IN_CASE(MINT_MONO_TLS) {
+			MonoTlsKey key = *(gint32 *)(ip + 1);
+			sp->data.p = ((gpointer (*)()) mono_tls_get_tls_getter (key, FALSE)) ();
+			sp++;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 
 #define RELOP(datamem, op) \
 	--sp; \
