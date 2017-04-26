@@ -794,13 +794,18 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
             if (size >= 2 * REGSIZE_BYTES)
             {
-                // Use ldp/stp to reduce code size and improve performance
+                // We will use ldp/stp to reduce code size and improve performance
+                // so we need to reserve an extra internal register
                 blkNode->gtLsraInfo.internalIntCount++;
             }
 
-            blkNode->gtLsraInfo.setInternalCandidates(l, RBM_ALLINT & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF));
+            // We can't use the special Write Barrier registers, so exclude them from the mask
+            regMaskTP internalIntCandidates = RBM_ALLINT & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
+            blkNode->gtLsraInfo.setInternalCandidates(l, internalIntCandidates);
 
+            // If we have a source address we want it in RBM_WRITE_BARRIER_DST_BYREF.
             dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_DST_BYREF);
+
             // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
             // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
             // which is killed by a StoreObj (and thus needn't be reserved).
@@ -832,7 +837,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
                 if (size >= 2 * REGSIZE_BYTES)
                 {
-                    // Use ldp/stp to reduce code size and improve performance
+                    // We will use ldp/stp to reduce code size and improve performance
+                    // so we need to reserve an extra internal register
                     internalIntCount++;
                 }
 
