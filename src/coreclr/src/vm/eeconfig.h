@@ -758,11 +758,6 @@ public:
     bool    ForbidZap(LPCUTF8 assemblyName) const;
 #endif
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-
-#ifdef _TARGET_AMD64_
-    bool    DisableNativeImageLoad(LPCUTF8 assemblyName) const;
-    bool    IsDisableNativeImageLoadListNonEmpty() const { LIMITED_METHOD_CONTRACT; return (pDisableNativeImageLoadList != NULL); }
-#endif
     
     LPCWSTR ZapSet()                        const { LIMITED_METHOD_CONTRACT; return pZapSet; }
 
@@ -1120,16 +1115,6 @@ private: //----------------------------------------------------------------
     BOOL iForbidZaps;
     AssemblyNamesList * pForbidZapsList;
     AssemblyNamesList * pForbidZapsExcludeList;
-#endif
-
-#ifdef _TARGET_AMD64_
-    // Assemblies for which we will not load a native image. This is from the COMPlus_DisableNativeImageLoadList
-    // variable / reg key. It performs the same function as the config file key "<disableNativeImageLoad>" (except
-    // that is it just a list of assembly names, which the config file key can specify full assembly identities).
-    // This was added to support COMPlus_UseLegacyJit, to support the rollout of RyuJIT to replace JIT64, where
-    // the user can cause the CLR to fall back to JIT64 for JITting but not for NGEN. This allows the user to
-    // force JITting for a specified list of NGEN assemblies.
-    AssemblyNamesList * pDisableNativeImageLoadList;
 #endif
 
     LPCWSTR pZapSet;
