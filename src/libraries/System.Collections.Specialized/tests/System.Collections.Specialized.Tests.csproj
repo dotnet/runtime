@@ -36,6 +36,9 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
     <Compile Include="BitVector32Tests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="HybridDictionary\HybridDictionary.AddTests.cs" />

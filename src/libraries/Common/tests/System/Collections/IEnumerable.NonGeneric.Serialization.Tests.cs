@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -25,26 +24,18 @@ namespace System.Collections.Tests
                 // using ListDictionary.Keys.
                 return;
             }
-            Assert.True(expected.GetType().GetTypeInfo().IsSerializable, "Expected IsSerializable");
 
-            var bf = new BinaryFormatter();
-            using (var ms = new MemoryStream())
+            IEnumerable actual = BinaryFormatterHelpers.Clone(expected);
+            if (Order == EnumerableOrder.Sequential)
             {
-                bf.Serialize(ms, expected);
-                ms.Position = 0;
-                IEnumerable actual = (IEnumerable)bf.Deserialize(ms);
-
-                if (Order == EnumerableOrder.Sequential)
-                {
-                    Assert.Equal(expected, actual);
-                }
-                else
-                {
-                    var expectedSet = new HashSet<object>(expected.Cast<object>());
-                    var actualSet = new HashSet<object>(actual.Cast<object>());
-                    Assert.Subset(expectedSet, actualSet);
-                    Assert.Subset(actualSet, expectedSet);
-                }
+                Assert.Equal(expected, actual);
+            }
+            else
+            {
+                var expectedSet = new HashSet<object>(expected.Cast<object>());
+                var actualSet = new HashSet<object>(actual.Cast<object>());
+                Assert.Subset(expectedSet, actualSet);
+                Assert.Subset(actualSet, expectedSet);
             }
         }
 
