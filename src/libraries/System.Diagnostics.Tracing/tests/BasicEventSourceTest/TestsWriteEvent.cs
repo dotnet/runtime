@@ -639,6 +639,41 @@ namespace BasicEventSourceTests
                         Assert.Equal(1000, (long)evt.PayloadValue(1, "lng"));
                     }));
 
+                tests.Add(new SubTest("Write/Array/EventWithNullByteArray",
+                    delegate ()
+                    {
+                        logger.EventWithByteArrayArg(null, 0);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventWithByteArrayArg", evt.EventName);
+
+                        if (evt.IsEventListener)
+                        {
+                            byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
+                            Assert.Null(retBlob);
+                            Assert.Equal(0, (int)evt.PayloadValue(1, "n"));
+                        }
+                    }));
+
+                tests.Add(new SubTest("Write/Array/EventWithEmptyByteArray",
+                    delegate ()
+                    {
+                        logger.EventWithByteArrayArg(Array.Empty<byte>(), 0);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventWithByteArrayArg", evt.EventName);
+
+                        Assert.Equal(2, evt.PayloadCount);
+                        byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
+                        Assert.True(Equal(Array.Empty<byte>(), retBlob));
+
+                        Assert.Equal(0, (int)evt.PayloadValue(1, "n"));
+                    }));
+
                 // If you only wish to run one or several of the tests you can filter them here by 
                 // Uncommenting the following line.  
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
