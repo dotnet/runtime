@@ -17788,10 +17788,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
 #if defined(UNIX_X86_ABI)
         codeGen->setFrameRequired(true);
+        codeGen->setFramePointerRequiredGCInfo(true);
 #else  // !defined(UNIX_X86_ABI)
         if (add->acdStkLvl != stkDepth)
         {
             codeGen->setFrameRequired(true);
+            codeGen->setFramePointerRequiredGCInfo(true);
         }
 #endif // !defined(UNIX_X86_ABI)
 #endif // _TARGET_X86_
