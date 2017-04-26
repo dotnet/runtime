@@ -281,7 +281,13 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StopWithoutTimestamp()
         {
-            var startTime = DateTime.UtcNow.AddSeconds(-1);
+            // DateTime.UtcNow is not precise on some platforms, but Activity stop time is precise
+            // in this test we set start time, but not stop time and check duration.
+            //
+            // Let's set start time to be 1 sec + possible DateTime.UtcNow error and check that duration is at least 1 sec.
+            // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
+            // that checks duration precision on netfx.
+            var startTime = DateTime.UtcNow.AddMilliseconds(-1020);
             var activity = new Activity("activity")
                 .SetStartTime(startTime);
 
