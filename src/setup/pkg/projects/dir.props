@@ -63,6 +63,10 @@
   <ItemGroup>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
+    <!-- Include Unofficial Build RIDs in runtime.json's but do not include in the platform manifest -->
+    <BuildRID Include="@(UnofficialBuildRID)" Exclude="$(PackageRID)">
+      <ExcludeFromPlatformManifest>true</ExcludeFromPlatformManifest>
+    </BuildRID>
     <BuildRID Include="$(PackageRID)">
       <Platform>$(Platform)</Platform>
     </BuildRID>
