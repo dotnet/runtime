@@ -81,15 +81,19 @@ __toolsDir=$__scriptpath/../Tools
 __dotnet=$__toolsDir/dotnetcli/dotnet
 __packagesDir=$__scriptpath/../packages
 __sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__SharedFxVersion/
-__rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
 
-if [[ $__rid == *"osx"* ]]; then
-    __packageRid="osx-x64"
-elif [[ $__rid == *"rhel.7"* || $__rid == *"centos.7"* ]]; then
-    __packageRid="rhel.7-x64"
-else
-    __packageRid=$__rid
-fi
+case $(uname -s) in
+    Darwin)
+        __packageRid=osx-x64
+        ;;
+    Linux)
+        __packageRid=linux-x64
+        ;;
+    *)
+        echo "Unsupported OS $(uname -s) detected. Skipping crossgen of the toolset."
+        exit 0
+        ;;
+esac
 
 restore_crossgen
 crossgen_everything
