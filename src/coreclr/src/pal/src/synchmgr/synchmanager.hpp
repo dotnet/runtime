@@ -1015,7 +1015,8 @@ namespace CorUnix
 
         static PAL_ERROR GetAbsoluteTimeout(
             DWORD dwTimeout,
-            struct timespec * ptsAbsTmo);
+            struct timespec * ptsAbsTmo,
+            BOOL fPreferMonotonicClock);
     };
 }
 

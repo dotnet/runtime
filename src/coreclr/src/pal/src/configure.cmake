@@ -417,6 +417,9 @@ int main()
 
   exit(ret);
 }" HAVE_CLOCK_MONOTONIC)
+
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+
 check_cxx_source_runs("
 #include <stdlib.h>
 #include <time.h>
