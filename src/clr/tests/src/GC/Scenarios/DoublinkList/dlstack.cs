@@ -13,6 +13,7 @@
 namespace DoubLink {
 
     using System;
+    using System.Runtime.CompilerServices;
 
     public class DLStack
     {
@@ -63,36 +64,50 @@ namespace DoubLink {
 
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public bool DrainFinalizerQueue(int iRep, int iObj)
+        {
+            int lastValue = DLinkNode.FinalCount;
+            while (true)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                if (DLinkNode.FinalCount == iRep * iObj * 10)
+                {
+                    return true;
+                }
+
+                if (DLinkNode.FinalCount != lastValue)
+                {
+                    Console.WriteLine(" Performing Collect/Wait/Collect cycle again");
+                    lastValue = DLinkNode.FinalCount;
+                    continue;
+                }
+
+                Console.WriteLine(" Finalized number stable at " + lastValue);
+                return false;
+            }
+        }
+
 
         public bool runTest(int iRep, int iObj)
         {
-
+            bool success = false;
             for(int i=0; i <10; i++)
             {
                 SetLink(iRep, iObj);
                 MakeLeak(iRep);
             }
 
-			long lastTotalMemory = long.MaxValue;
-			long curTotalMemory = GC.GetTotalMemory(false);
-			
-			while (lastTotalMemory != curTotalMemory)
-			{
-				GC.Collect();
-				GC.WaitForPendingFinalizers();
-
-				lastTotalMemory = curTotalMemory;
-				curTotalMemory = GC.GetTotalMemory(false);
-			}
-
-            if (DLinkNode.FinalCount != iRep * iObj * 10)
+            if (DrainFinalizerQueue(iRep, iObj))
             {
-                // see github#4093 for the rationale for fail-fast in this test.
-                Environment.FailFast(string.Empty);
+                success = true;
             }
 
             Console.WriteLine("{0} DLinkNodes finalized", DLinkNode.FinalCount);
-            return (DLinkNode.FinalCount==iRep*iObj*10);
+            return success;
 
         }
 

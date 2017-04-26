@@ -11,6 +11,7 @@
 namespace DoubLink {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
 
     public class DLCollect
     {
@@ -63,11 +64,38 @@ namespace DoubLink {
 
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public bool DrainFinalizerQueue(int iRep, int iObj)
+        {
+            int lastValue = DLinkNode.FinalCount;
+            while (true)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                if (DLinkNode.FinalCount == iRep * iObj * 10)
+                {
+                    return true;
+                }
+
+                if (DLinkNode.FinalCount != lastValue)
+                {
+                    Console.WriteLine(" Performing Collect/Wait/Collect cycle again");
+                    lastValue = DLinkNode.FinalCount;
+                    continue;
+                }
+
+                Console.WriteLine(" Finalized number stable at " + lastValue);
+                return false;
+            }
+        }
 
         public bool runTest(int iRep, int iObj)
         {
 
             Mv_Collect = new List<DoubLink>(iRep);
+            bool success = false;
             for(int i=0; i <10; i++)
             {
                 SetLink(iRep, iObj);
@@ -75,16 +103,13 @@ namespace DoubLink {
                 GC.Collect();
             }
 
-            GC.WaitForPendingFinalizers();
-
-            if (DLinkNode.FinalCount != iRep * iObj * 10)
+            if (DrainFinalizerQueue(iRep, iObj))
             {
-                // see github#4093 for the rationale for fail-fast in this test.
-                Environment.FailFast(string.Empty);
+                success = true;
             }
 
             Console.WriteLine("{0} DLinkNodes finalized", DLinkNode.FinalCount);
-            return (DLinkNode.FinalCount==iRep*iObj*10);
+            return success;
         }
 
 
