@@ -41,6 +41,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -122,6 +123,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;
