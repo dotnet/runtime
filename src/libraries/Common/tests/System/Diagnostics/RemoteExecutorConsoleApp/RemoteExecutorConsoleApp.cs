@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace RemoteExecutorConsoleApp
 {
@@ -13,7 +14,7 @@ namespace RemoteExecutorConsoleApp
     /// </summary>
     internal static class Program
     {
-        static void Main(string[] args)
+        private static int Main(string[] args)
         {
             // The program expects to be passed the target assembly name to load, the type
             // from that assembly to find, and the method from that assembly to invoke.
@@ -22,6 +23,7 @@ namespace RemoteExecutorConsoleApp
             {
                 Console.Error.WriteLine("Usage: {0} assemblyName typeName methodName", typeof(Program).GetTypeInfo().Assembly.GetName().Name);
                 Environment.Exit(-1);
+                return -1;
             }
 
             string assemblyName = args[0];
@@ -69,10 +71,21 @@ namespace RemoteExecutorConsoleApp
                 (instance as IDisposable)?.Dispose();
             }
 
-            // Use Exit rather than simply returning the exit code so that we forcibly shut down
-            // the process even if there are foreground threads created by the operation that would
-            // end up keeping the process alive potentially indefinitely.
-            Environment.Exit(exitCode);
+            // Environment.Exit not supported on .Net Native - don't even call it to avoid the nuisance exception.
+            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase))
+            {
+                // Use Exit rather than simply returning the exit code so that we forcibly shut down
+                // the process even if there are foreground threads created by the operation that would
+                // end up keeping the process alive potentially indefinitely.
+                try
+                {
+                    Environment.Exit(exitCode);
+                }
+                catch (PlatformNotSupportedException)
+                {
+                }
+            }
+            return exitCode;
         }
 
         private static MethodInfo GetMethod(this Type type, string methodName)
