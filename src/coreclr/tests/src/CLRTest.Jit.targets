@@ -67,7 +67,99 @@ if defined RunningJitDisasm (
       </JitDisasmBatchScript>
     </PropertyGroup>
   </Target>
-  
+
+  <Target
+      Name="GetIlasmRoundTripBashScript"
+      Returns="$(IlasmRoundTripBashScript)">
+    <PropertyGroup>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
+      <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
+
+      <IlasmRoundTripBashScript>
+        <![CDATA[
+# IlasmRoundTrip Script
+
+# Disable Ilasm round-tripping for Linker tests.
+# Todo: Ilasm round-trip on linked binaries.
+
+if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
+then
+    echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+    "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+    ERRORLEVEL=$?
+    if [ $ERRORLEVEL -ne 0 ]
+    then
+      echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
+      exit 1
+    fi
+
+    echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    ERRORLEVEL=$?
+    if [ $ERRORLEVEL -ne 0 ]
+    then
+      echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
+      exit 1
+    fi
+fi
+        ]]>
+      </IlasmRoundTripBashScript>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetIlasmRoundTripBatchScript"
+          Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
+    <PropertyGroup>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
+      <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
+
+      <!-- https://github.com/dotnet/coreclr/issues/2481. Delete /raweh to ildasm once it is resolved.-->
+      <IlasmRoundTripBatchScript>
+        <![CDATA[
+REM IlasmRoundTrip Script
+
+REM Disable Ilasm round-tripping for Linker tests.
+REM Todo: Ilasm round-trip on linked binaries.
+IF NOT DEFINED DoLink (
+  IF DEFINED RunningIlasmRoundTrip (
+    echo %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+    %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+    IF NOT "!ERRORLEVEL!"=="0" (
+      ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
+      Exit /b 1
+    )
+    ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    IF NOT "!ERRORLEVEL!"=="0" (
+      ECHO EXECUTION OF ILASM - FAILED !ERRORLEVEL!
+      Exit /b 1
+    )
+  )
+)
+        ]]>
+      </IlasmRoundTripBatchScript>
+      <BatchIlrtTestLaunchCmds><![CDATA[
+IF NOT DEFINED DoLink (
+  if defined RunningIlasmRoundTrip (
+    ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+    %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+
+    IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
+      ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
+      ECHO FAILED
+      Exit /b 1
+    )
+  )
+)
+]]>
+      </BatchIlrtTestLaunchCmds>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="$(RunWithGcStress) != ''" >
     <CLRTestBatchPreCommands>
 <![CDATA[

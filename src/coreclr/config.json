@@ -270,12 +270,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "IlasmRoundTrip": {
-      "description": "Sets ilasm round trip property.",
-      "valueType": "property",
-      "values": [ true, false ],
-      "defaultValue": true
-    },
     "CreateTestOverlay": {
       "description": "Runs CreateTestOverlay target.",
       "valueType": "target",

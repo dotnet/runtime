@@ -51,6 +51,7 @@ function print_usage {
     echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
     echo '  --jitdisasm                      : Runs jit-dasm on the tests'
     echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
+    echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
@@ -975,6 +976,7 @@ illinker=
 verbose=0
 doCrossgen=0
 jitdisasm=0
+ilasmroundtrip=
 
 for i in "$@"
 do
@@ -1007,6 +1009,9 @@ do
             ;;
         --jitdisasm)
             jitdisasm=1
+            ;;
+        --ilasmroundtrip)
+            ((ilasmroundtrip = 1))
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
@@ -1137,6 +1142,11 @@ fi
 if [[ ! "$jitdisasm" -eq 0 ]]; then
     echo "Running jit disasm"
     export RunningJitDisasm=1
+fi
+
+if [ ! -z "$ilasmroundtrip" ]; then
+    echo "Running Ilasm round trip"
+    export RunningIlasmRoundTrip=1
 fi
 
 # If this is a coverage run, make sure the appropriate args have been passed
