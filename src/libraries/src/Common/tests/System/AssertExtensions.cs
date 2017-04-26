@@ -10,6 +10,8 @@ namespace System
 {
     public static class AssertExtensions
     {
+        private static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
+
         public static void Throws<T>(Action action, string message)
             where T : Exception
         {
@@ -22,7 +24,7 @@ namespace System
             T exception = Assert.Throws<T>(action);
 
             string expectedParamName =
-                RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework") ?
+                IsFullFramework ?
                 netFxParamName : netCoreParamName;
 
             if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
@@ -49,6 +51,34 @@ namespace System
                 Assert.Equal(paramName, exception.ParamName);
 
             return exception;
+        }
+
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action) 
+            where TNetCoreExceptionType : ArgumentException 
+            where TNetFxExceptionType : ArgumentException
+        {
+            if (IsFullFramework)
+            {
+                Throws<TNetFxExceptionType>(paramName, action);
+            }
+            else
+            {
+                Throws<TNetCoreExceptionType>(paramName, action);
+            }
+        }
+
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, Action action)
+            where TNetCoreExceptionType : ArgumentException 
+            where TNetFxExceptionType : ArgumentException
+        {
+            if (IsFullFramework)
+            {
+                Throws<TNetFxExceptionType>(netFxParamName, action);
+            }
+            else
+            {
+                Throws<TNetCoreExceptionType>(netCoreParamName, action);
+            }
         }
     }
 }
