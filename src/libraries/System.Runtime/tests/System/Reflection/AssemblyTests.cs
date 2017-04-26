@@ -90,6 +90,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetCallingAssembly_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "GetCallingAssembly() is not supported on UapAot")]
         public static void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
             Assert.Equal(expected, assembly1.Equals(assembly2));
@@ -480,6 +481,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.CodeBase not supported on UapAot")]
         public static void Load_AssemblyNameWithCodeBase()
         {
             AssemblyName an = typeof(AssemblyTests).Assembly.GetName();
