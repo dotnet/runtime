@@ -71,5 +71,14 @@ namespace Mono.Linker {
 			_assemblies [assembly.Name.Name] = assembly;
 			base.AddSearchDirectory (Path.GetDirectoryName (assembly.MainModule.FileName));
 		}
+
+		protected override void Dispose (bool disposing)
+		{
+			foreach (var asm in _assemblies.Values) {
+				asm.Dispose ();
+			}
+
+			_assemblies.Clear ();
+		}
 	}
 }
