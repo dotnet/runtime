@@ -39,78 +39,6 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Run rd",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "rd",
-        "arguments": "/S /Q jit32",
-        "workingFolder": "src",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run md",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "md",
-        "arguments": "jit32",
-        "workingFolder": "src",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run git",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "git",
-        "arguments": "clone -b $(Jit32Branch) $(Jit32Repo) jit32",
-        "workingFolder": "src",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Run rd",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "rd",
-        "arguments": "/S /Q jit32\\.git",
-        "workingFolder": "src",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run clean.cmd",
@@ -158,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages buildjit32 -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority) $(portableBuild) -- /p:\"ConfigurationGroup=Release\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority) $(portableBuild) -- /p:\"ConfigurationGroup=Release\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -203,7 +131,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild) -ExtraParameters=/p:PackageCompatJit=1",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

@@ -1219,7 +1219,6 @@ EEJitManager::EEJitManager()
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     m_JITCompilerOther = NULL;
 #endif
-    m_fLegacyJitUsed   = FALSE;
 
 #ifdef ALLOW_SXS_JIT
     m_alternateJit     = NULL;
@@ -1371,8 +1370,8 @@ void EEJitManager::SetCpuInfo()
 enum JIT_LOAD_JIT_ID
 {
     JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
-    JIT_LOAD_LEGACY,        // The "legacy" JIT. Normally, this is named "compatjit.dll". This applies to AMD64 on Windows desktop, or x86 on Windows .NET Core.
-    JIT_LOAD_ALTJIT         // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
+    // 501 is JIT_LOAD_LEGACY on some platforms; please do not reuse this value.
+    JIT_LOAD_ALTJIT = 502   // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
 };
 
 enum JIT_LOAD_STATUS
@@ -1628,80 +1627,6 @@ BOOL EEJitManager::LoadJIT()
 
     // Set as a courtesy to code:CorCompileGetRuntimeDll
     s_ngenCompilerDll = m_JITCompiler;
-
-#if defined(_TARGET_X86_)
-    // If COMPlus_UseLegacyJit=1, then we fall back to compatjit.dll.
-    //
-    // This fallback mechanism was introduced for Visual Studio "14" Preview, when JIT64 (the legacy JIT) was replaced with
-    // RyuJIT. It was desired to provide a fallback mechanism in case comptibility problems (or other bugs)
-    // were discovered by customers. Setting this COMPLUS variable to 1 does not affect NGEN: existing NGEN images continue
-    // to be used, and all subsequent NGEN compilations continue to use the new JIT.
-    //
-    // If this is a compilation process, then we don't allow specifying a fallback JIT. This is a case where, when NGEN'ing,
-    // we sometimes need to JIT some things (such as when we are NGEN'ing mscorlib). In that case, we want to use exactly
-    // the same JIT as NGEN uses. And NGEN doesn't follow the COMPlus_UseLegacyJit=1 switch -- it always uses clrjit.dll.
-    //
-    // Note that we always load and initialize the default JIT. This is to handle cases where obfuscators rely on
-    // LoadLibrary("clrjit.dll") returning the module handle of the JIT, and then they call GetProcAddress("getJit") to get
-    // the EE-JIT interface. They also do this without also calling sxsJitStartup()!
-    //
-    // In addition, for reasons related to servicing, we only use RyuJIT when the registry value UseRyuJIT (type DWORD), under
-    // key HKLM\SOFTWARE\Microsoft\.NETFramework, is set to 1. Otherwise, we fall back to JIT64. Note that if this value
-    // is set, we also must use JIT64 for all NGEN compilations as well.
-    //
-    // See the document "RyuJIT Compatibility Fallback Specification.docx" for details.
-    //
-    // For .NET Core 1.2, RyuJIT for x86 is the primary jit (clrjit.dll) and JIT32 for x86 is the fallback, legacy JIT (compatjit.dll).
-    // Thus, the COMPlus_useLegacyJit=1 mechanism has been enabled for x86 CoreCLR. This scenario does not have the UseRyuJIT
-    // registry key, nor the AppX binder mode.
-
-    bool fUseRyuJit = true;
-
-    if ((!IsCompilationProcess() || !fUseRyuJit) &&     // Use RyuJIT for all NGEN, unless we're falling back to JIT64 for everything.
-        (newJitCompiler != nullptr))    // the main JIT must successfully load before we try loading the fallback JIT
-    {
-        BOOL fUsingCompatJit = FALSE;
-
-        if (!fUseRyuJit)
-        {
-            fUsingCompatJit = TRUE;
-        }
-
-        if (!fUsingCompatJit)
-        {
-            DWORD useLegacyJit = Configuration::GetKnobBooleanValue(W("System.JIT.UseWindowsX86CoreLegacyJit"), CLRConfig::EXTERNAL_UseWindowsX86CoreLegacyJit);
-            if (useLegacyJit == 1)
-            {
-                fUsingCompatJit = TRUE;
-            }
-        }
-
-
-        if (fUsingCompatJit)
-        {
-            // Now, load the compat jit and initialize it.
-
-            LPCWSTR pwzJitName = MAKEDLLNAME_W(W("compatjit"));
-
-            // Note: if the compatjit fails to load, we ignore it, and continue to use the main JIT for
-            // everything. You can imagine a policy where if the user requests the compatjit, and we fail
-            // to load it, that we fail noisily. We don't do that currently.
-            ICorJitCompiler* fallbackICorJitCompiler;
-            g_JitLoadData.jld_id = JIT_LOAD_LEGACY;
-            LoadAndInitializeJIT(pwzJitName, &m_JITCompilerOther, &fallbackICorJitCompiler, &g_JitLoadData);
-            if (fallbackICorJitCompiler != nullptr)
-            {
-                // Tell the main JIT to fall back to the "fallback" JIT compiler, in case some
-                // obfuscator tries to directly call the main JIT's getJit() function.
-                newJitCompiler->setRealJit(fallbackICorJitCompiler);
-
-                // Now, the compat JIT will be used.
-                m_fLegacyJitUsed = TRUE;
-            }
-        }
-    }
-#endif // (defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)) || (defined(_TARGET_X86_) )
-
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT
