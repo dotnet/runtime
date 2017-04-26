@@ -44,6 +44,7 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __AgainstPackages=
 set __JitDisasm=
+set __IlasmRoundTrip=
 set __CollectDumps=
 
 :Arg_Loop
@@ -78,6 +79,7 @@ if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&
 if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
@@ -406,6 +408,11 @@ if defined __JitDisasm (
     set RunningJitDisasm=1
 )
 
+if defined __IlasmRoundTrip (
+    echo Running Ilasm round trip
+    set RunningIlasmRoundTrip=1
+)
+
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
@@ -438,6 +445,7 @@ echo jitstressregs n    - Runs the tests with COMPlus_JitStressRegs=n
 echo jitminopts         - Runs the tests with COMPlus_JITMinOpts=1
 echo jitforcerelocs     - Runs the tests with COMPlus_ForceRelocs=1
 echo jitdisasm          - Runs jit-dasm on the tests
+echo ilasmroundtrip     - Runs ilasm round trip on the tests
 echo gcstresslevel n    - Runs the tests with COMPlus_GCStress=n
 echo     0: None                                1: GC on all allocs and 'easy' places
 echo     2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr
