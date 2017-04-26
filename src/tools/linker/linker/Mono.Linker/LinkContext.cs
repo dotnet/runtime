@@ -34,7 +34,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 
-	public class LinkContext {
+	public class LinkContext : IDisposable {
 
 		Pipeline _pipeline;
 		AssemblyAction _coreAction;
@@ -295,6 +295,11 @@ namespace Mono.Linker {
 			string val = null;
 			_parameters.TryGetValue (key, out val);
 			return val;
+		}
+
+		public void Dispose ()
+		{
+			_resolver.Dispose ();
 		}
 	}
 }
