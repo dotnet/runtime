@@ -89,7 +89,7 @@ static char **assemblies_path = NULL;
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 
 #define FACADE_ASSEMBLY(str) {str, 0, NULL, FALSE, TRUE}
 
@@ -967,7 +967,7 @@ mono_assemblies_init (void)
 	mono_os_mutex_init_recursive (&assemblies_mutex);
 	mono_os_mutex_init (&assembly_binding_mutex);
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	assembly_remapping_table = g_hash_table_new (g_str_hash, g_str_equal);
 
 	int i;
@@ -1257,7 +1257,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		return dest_aname;
 	}
 	
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, aname->name);
 	if (vmap) {
 		const AssemblyVersionSet* vset;
@@ -3600,7 +3600,7 @@ exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 gboolean
 framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 {
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
 	if (vmap) {
 		if (!vmap->framework_facade_assembly) {
@@ -3659,7 +3659,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
-#if !defined(DISABLE_STRICT_STRONG_NAMES)
+#if !defined(DISABLE_DESKTOP_LOADER)
 	if (G_LIKELY (mono_loader_get_strict_strong_names ())) {
 		predicate = &mono_assembly_candidate_predicate_sn_same_name;
 		predicate_ud = aname;

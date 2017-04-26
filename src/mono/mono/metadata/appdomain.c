@@ -2004,7 +2004,7 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
-#if !defined(DISABLE_STRICT_STRONG_NAMES)
+#if !defined(DISABLE_DESKTOP_LOADER)
 	if (G_LIKELY (mono_loader_get_strict_strong_names ())) {
 		predicate = &mono_assembly_candidate_predicate_sn_same_name;
 		predicate_ud = aname;

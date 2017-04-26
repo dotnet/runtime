@@ -1049,7 +1049,7 @@ fi
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, 
-     reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters, remoting,
+     reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
 	 security, lldb, mdb, sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
@@ -1170,11 +1170,10 @@ if test "x$mono_feature_disable_normalization" = "xyes"; then
 	AC_MSG_NOTICE([Disabled String normalization support.])
 fi
 
-if test "x$mono_feature_disable_assembly_remapping" = "xyes"; then
-	AC_DEFINE(DISABLE_ASSEMBLY_REMAPPING, 1, [Disable assembly remapping.])
-	AC_MSG_NOTICE([Disabled Assembly remapping.])
-	AC_DEFINE(DISABLE_STRICT_STRONG_NAMES, 1, [Disable strict strong name checking.])
-	AC_MSG_NOTICE([Disabled strict strong name checking.])
+#TODO: remove assembly_remapping feature name once everyone is using desktop_loader
+if test "x$mono_feature_disable_assembly_remapping" = "xyes" || "x$mono_feature_disable_desktop_loader" = "xyes"; then
+	AC_DEFINE(DISABLE_DESKTOP_LOADER, 1, [Disable desktop assembly loader semantics.])
+	AC_MSG_NOTICE([Disabled desktop assembly loader semantics.])
 fi
 
 if test "x$mono_feature_disable_shared_perfcounters" = "xyes"; then
