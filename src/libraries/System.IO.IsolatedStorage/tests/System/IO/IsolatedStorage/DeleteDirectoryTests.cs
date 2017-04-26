@@ -30,17 +30,17 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void DeleteDirectory_ThrowsIsolatedStorageException()
+        public void DeleteRemovedDirectory_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.DeleteDirectory("foo"));
+                Assert.Throws<InvalidOperationException>(() => isf.DeleteDirectory("foo"));
             }
         }
 
         [Fact]
-        public void DeleteDirectory_ThrowsInvalidOperationException()
+        public void DeleteClosedDirectory_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {

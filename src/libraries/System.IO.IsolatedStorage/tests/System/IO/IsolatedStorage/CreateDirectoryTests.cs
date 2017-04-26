@@ -19,12 +19,12 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void CreateDirectory_ThrowsIsolatedStorageException()
+        public void CreateRemovedDirectory_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.Remove();
-                Assert.Throws<IsolatedStorageException>(() => isf.CreateDirectory("foo"));
+                Assert.Throws<InvalidOperationException>(() => isf.CreateDirectory("foo"));
             }
         }
 
@@ -40,7 +40,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        public void CreateDirectory_ThrowsInvalidOperationException()
+        public void CreateClosedDirectory_ThrowsInvalidOperationException()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
