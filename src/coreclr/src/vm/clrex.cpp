@@ -2002,18 +2002,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(LPCWSTR path, HRESULT hr, Exce
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
 
-#ifndef CROSSGEN_COMPILE
-    // Remove path - location must be hidden for security purposes
-
-    LPCWSTR pStart = wcsrchr(path, '\\');
-    if (pStart != NULL)
-        pStart++;
-    else
-        pStart = path;
-#else
-    LPCWSTR pStart = path;
-#endif
-    EX_THROW_WITH_INNER(EEFileLoadException, (StackSString(pStart), hr), pInnerException);
+    EX_THROW_WITH_INNER(EEFileLoadException, (StackSString(path), hr), pInnerException);
 }
 
 /* static */
