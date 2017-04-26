@@ -24,17 +24,5 @@ namespace System.Reflection.Tests
             Assembly a = typeof(AssemblyNameProxyTests).Assembly;
             Assert.Equal(new AssemblyName(a.FullName).ToString(), anp.GetAssemblyName(Path.GetFullPath(a.Location)).ToString());
         }
-
-        public static IEnumerable<object[]> ReferenceMatchesDefinition_TestData()
-        {
-            yield return new object[] { new AssemblyName(typeof(AssemblyNameProxy).GetTypeInfo().Assembly.FullName), new AssemblyName("System.Runtime.Extensions"), true };   
-        }
-
-        [Theory]
-        [MemberData(nameof(ReferenceMatchesDefinition_TestData))]
-        public static void ReferenceMatchesDefinition(AssemblyName a1, AssemblyName a2, bool expected)
-        {
-            Assert.Equal(expected, AssemblyName.ReferenceMatchesDefinition(a1, a2));
-        }
     }
 }
