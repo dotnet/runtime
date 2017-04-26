@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.Net.Native.Compiler": "1.6.1",
     "Microsoft.Private.CoreFx.UAP": "4.4.0-preview2-25225-02",
-    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25225-01",
+    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25226-01",
     "Microsoft.NETCore.Platforms": "2.0.0-preview2-25225-02",
     "NETStandard.Library": "2.0.0-preview2-25224-01",
     "System.ServiceModel.Duplex": "4.4.0-beta-25205-01",
