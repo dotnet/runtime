@@ -859,7 +859,7 @@ MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(pthread_mutex_t *mutex, D
         default:
         {
             struct timespec timeoutTime;
-            PAL_ERROR palError = CPalSynchronizationManager::GetAbsoluteTimeout(timeoutMilliseconds, &timeoutTime);
+            PAL_ERROR palError = CPalSynchronizationManager::GetAbsoluteTimeout(timeoutMilliseconds, &timeoutTime, /*fPreferMonotonicClock*/ FALSE);
             _ASSERTE(palError == NO_ERROR);
             lockResult = pthread_mutex_timedlock(mutex, &timeoutTime);
             break;
