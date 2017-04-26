@@ -1941,6 +1941,14 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--nacl-null-checks-off") == 0){
 			nacl_null_checks_off = TRUE;
 #endif
+		} else if (strncmp (argv [i], "--assembly-loader=", strlen("--assembly-loader=")) == 0) {
+			gchar *arg = argv [i] + strlen ("--assembly-loader=");
+			if (strcmp (arg, "strict") == 0)
+				mono_loader_set_strict_strong_names (TRUE);
+			else if (strcmp (arg, "legacy") == 0)
+				mono_loader_set_strict_strong_names (FALSE);
+			else
+				fprintf (stderr, "Warning: unknown argument to --assembly-loader. Should be \"strict\" or \"legacy\"\n");
 		} else if (strncmp (argv [i], MONO_HANDLERS_ARGUMENT, MONO_HANDLERS_ARGUMENT_LEN) == 0) {
 			//Install specific custom handlers.
 			if (!mono_runtime_install_custom_handlers (argv[i] + MONO_HANDLERS_ARGUMENT_LEN)) {
