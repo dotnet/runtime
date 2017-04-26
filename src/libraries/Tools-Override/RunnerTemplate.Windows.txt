@@ -12,10 +12,10 @@ echo Executing in %EXECUTION_DIR%
 
 :: ========================= BEGIN Test Execution ============================= 
 echo Running tests... Start time: %TIME%
-echo Command(s):
-[[TestRunCommandsEcho]]
 pushd %EXECUTION_DIR%
+echo on
 [[TestRunCommands]]
+@echo off
 popd
 echo Finished running tests.  End time=%TIME%, Exit code = %ERRORLEVEL%
 EXIT /B %ERRORLEVEL%
