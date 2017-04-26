@@ -125,6 +125,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
         public void CreatedDeleted_Success(WatcherChangeTypes changeType)
@@ -134,7 +135,7 @@ namespace System.IO.Tests
             {
                 for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
-                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, WaitForExpectedEventTimeout));
+                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, LongWaitTimeout));
                     while (!t.IsCompleted)
                     {
                         string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
@@ -164,6 +165,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Changed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -174,7 +176,7 @@ namespace System.IO.Tests
                     string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                     File.Create(name).Dispose();
 
-                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, WaitForExpectedEventTimeout));
+                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, LongWaitTimeout));
                     while (!t.IsCompleted)
                     {
                         File.AppendAllText(name, "text");
@@ -199,6 +201,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Renamed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -207,7 +210,7 @@ namespace System.IO.Tests
                 for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
                     Task<WaitForChangedResult> t = Task.Run(() =>
-                        fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, WaitForExpectedEventTimeout)); // on some OSes, the renamed might come through as Deleted/Created
+                        fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, LongWaitTimeout)); // on some OSes, the renamed might come through as Deleted/Created
 
                     string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
                     File.Create(name).Dispose();
