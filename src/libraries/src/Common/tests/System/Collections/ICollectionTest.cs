@@ -122,7 +122,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, items2);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CopyToArrayWithNonZeroBounds()
         {
             object[] items = GenerateItems(16);
@@ -254,12 +254,16 @@ namespace Tests.Collections
         [InlineData(16, 20, 0, 0)]
         [InlineData(16, 20, 0, 4)]
         [InlineData(16, 24, 0, 4)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim arrays of rank 1 still WIP on UapAot: https://github.com/dotnet/corert/issues/3331")]
         public void CopyTo(
             int size,
             int arraySize,
             int arrayLowerBound,
             int copyToIndex)
         {
+            if (arrayLowerBound != 0 && !PlatformDetection.IsNonZeroLowerBoundArraySupported)
+                return;
+
             object[] items = GenerateItems(16);
             ICollection collection = GetCollection(items);
             Array itemArray = Array.CreateInstance(
