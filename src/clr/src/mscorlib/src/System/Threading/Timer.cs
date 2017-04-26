@@ -265,7 +265,19 @@ namespace System.Threading
                             if (timer.m_period != Timeout.UnsignedInfinite)
                             {
                                 timer.m_startTicks = nowTicks;
-                                timer.m_dueTime = timer.m_period;
+                                uint elapsedForNextDueTime = elapsed - timer.m_dueTime;
+                                if (elapsedForNextDueTime < timer.m_period)
+                                {
+                                    // Discount the extra amount of time that has elapsed since the previous firing time to
+                                    // prevent timer ticks from drifting
+                                    timer.m_dueTime = timer.m_period - elapsedForNextDueTime;
+                                }
+                                else
+                                {
+                                    // Enough time has elapsed to fire the timer yet again. The timer is not able to keep up
+                                    // with the short period, have it fire 1 ms from now to avoid spinning without a delay.
+                                    timer.m_dueTime = 1;
+                                }
 
                                 //
                                 // This is a repeating timer; schedule it to run again.
