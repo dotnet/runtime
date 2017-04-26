@@ -14806,6 +14806,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Could point anywhere, example a boxed class static int
                     op1->gtFlags |= GTF_IND_TGTANYWHERE | GTF_GLOB_REF;
                     assertImp(varTypeIsArithmetic(op1->gtType));
+
+                    if (prefixFlags & PREFIX_UNALIGNED)
+                    {
+                        op1->gtFlags |= GTF_IND_UNALIGNED;
+                    }
                 }
                 else
                 {
