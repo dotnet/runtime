@@ -10,13 +10,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
     public static class DecryptorReusabilty
     {
-        [Fact]
+        // See https://github.com/dotnet/corefx/issues/18903 for details
+        [ConditionalFact(nameof(ShouldDescriptorBeReusable))]
         public static void TestDecryptorReusability()
         {
-            // See https://github.com/dotnet/corefx/issues/18903 for details
-            if (!ShouldDescriptorBeReusable())
-                return;
-
             byte[] expectedPlainText = new byte[]
             {
                 0x14, 0x30, 0x71, 0xad, 0xed, 0x8e, 0x58, 0x84,
