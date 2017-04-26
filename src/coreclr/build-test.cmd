@@ -397,6 +397,13 @@ REM ===
 REM =========================================================================================
 
 call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\helixprep.proj  -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %RuntimeIdArg% %TargetsWindowsArg% %__CrossgenArg% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
 
 echo %__MsgPrefix% Prepped test binaries for publishing
 
