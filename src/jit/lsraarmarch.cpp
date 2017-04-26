@@ -803,7 +803,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             regMaskTP internalIntCandidates = RBM_ALLINT & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
             blkNode->gtLsraInfo.setInternalCandidates(l, internalIntCandidates);
 
-            // If we have a source address we want it in RBM_WRITE_BARRIER_DST_BYREF.
+            // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
             dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_DST_BYREF);
 
             // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
