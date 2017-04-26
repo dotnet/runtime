@@ -146,9 +146,16 @@ public class Usage
             // ensure threshold is increasing
             if (!CheckPercentageIncrease(handleCount, prevHandleCount))
             {
-                // see github#4093 for the rationale for fail-fast in this test.
-                Environment.FailFast(string.Empty);
-                return false;
+                Console.WriteLine("Percentage not increasing, performing Collect/WFPF/Collect cycle");
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                if (handleCount == HandleCollectorTest.Count)
+                {
+                    Console.WriteLine("No handles finalized in Collect/WFPF/Collect cycle");
+                    return false;
+                }
             }
             prevHandleCount = handleCount;
         }

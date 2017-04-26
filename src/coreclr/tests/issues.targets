@@ -1,9 +1,6 @@
 <?xml version="1.0" ?>
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinkgen\*">
-            <Issue>6574</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\271010\*">
             <Issue>3392</Issue>
         </ExcludeList>
@@ -42,9 +39,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
             <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
-            <Issue>6553</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d\ldelemnullarr1_il_d.cmd">
             <Issue>4851</Issue>
