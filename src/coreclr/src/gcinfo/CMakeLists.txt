@@ -23,5 +23,15 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 add_subdirectory(lib)
 add_subdirectory(crossgen)
 
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
+    add_subdirectory(gcinfo_arm)
+endif ()
+
+if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
+    add_subdirectory(gcinfo_arm64)
+endif ()
+
 _install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
