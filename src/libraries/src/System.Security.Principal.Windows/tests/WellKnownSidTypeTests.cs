@@ -8,8 +8,13 @@ using Xunit;
 
 public class WellKnownSidTypeTests
 {
-    [ActiveIssue(15436)]
-    [Theory]
+    public static bool AccountIsDomainJoined()
+    {
+        using (var identity = WindowsIdentity.GetCurrent())
+            return identity.Owner.AccountDomainSid != null;
+    }
+
+    [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.NullSid)]
     [InlineData(WellKnownSidType.WorldSid)]
     [InlineData(WellKnownSidType.LocalSid)]
@@ -111,10 +116,13 @@ public class WellKnownSidTypeTests
     [InlineData(WellKnownSidType.WinCapabilityRemovableStorageSid)]
     public void CanCreateSecurityIdentifierFromWellKnownSidType(WellKnownSidType sidType)
     {
-        var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
-        var wellKnownSidInstance = new SecurityIdentifier(sidType, currentDomainSid);
+        using (var identity = WindowsIdentity.GetCurrent())
+        {
+            var currentDomainSid = identity.Owner.AccountDomainSid;
+            var wellKnownSidInstance = new SecurityIdentifier(sidType, currentDomainSid);
 
-        Assert.True(wellKnownSidInstance.IsWellKnown(sidType));
+            Assert.True(wellKnownSidInstance.IsWellKnown(sidType));
+        }
     }
 
     [Theory]
