@@ -11,12 +11,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="$(TestSourceFolder)..\SerializationTypes.netcoreapp.cs" />
-    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.netcoreapp.cs" />
-    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.netcoreapp.cs" />
-  </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
     <Compile Include="$(TestSourceFolder)..\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializer.cs" />

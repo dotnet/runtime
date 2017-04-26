@@ -9,9 +9,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.netcoreapp.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
