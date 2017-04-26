@@ -46,7 +46,7 @@ public:
     // PInvoke stub helpers
     //-------------------------------------------------------
 
-    static FCDECL1(double,          DateMarshaler__ConvertToNative,  INT64 managedDate);
+    static FCDECL1_V(double,        DateMarshaler__ConvertToNative,  INT64 managedDate);
     static FCDECL1_V(INT64,         DateMarshaler__ConvertToManaged, double nativeDate);
 
     static FCDECL4(void,            ValueClassMarshaler__ConvertToNative, LPVOID pDest, LPVOID pSrc, MethodTable* pMT, OBJECTREF *ppCleanupWorkListOnStack);
