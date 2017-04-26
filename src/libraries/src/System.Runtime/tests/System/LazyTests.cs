@@ -359,12 +359,7 @@ namespace System.Tests
         [Fact]
         public static void Serialization_ValueType()
         {
-            var stream = new MemoryStream();
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(stream, new Lazy<int>(() => 42));
-            stream.Seek(0, SeekOrigin.Begin);
-
-            var fortytwo = (Lazy<int>)formatter.Deserialize(stream);
+            Lazy<int> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<int>(() => 42));
             Assert.True(fortytwo.IsValueCreated);
             Assert.Equal(fortytwo.Value, 42);
         }
@@ -372,13 +367,7 @@ namespace System.Tests
         [Fact]
         public static void Serialization_RefType()
         {
-            var stream = new MemoryStream();
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(stream, new Lazy<string>(() => "42"));
-            stream.Seek(0, SeekOrigin.Begin);
-
-            var x = BinaryFormatterHelpers.Clone(new object());
-            var fortytwo = (Lazy<string>)formatter.Deserialize(stream);
+            Lazy<string> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<string>(() => "42"));
             Assert.True(fortytwo.IsValueCreated);
             Assert.Equal(fortytwo.Value, "42");
         }

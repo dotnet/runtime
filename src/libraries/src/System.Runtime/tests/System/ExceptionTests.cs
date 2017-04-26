@@ -19,7 +19,8 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Exception_TargetSite()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Exception.TargetSite always returns null on UapAot.")]
+        public static void Exception_TargetSite_Jit()
         {
             bool caught = false;
 
@@ -32,6 +33,26 @@ namespace System.Tests
                 caught = true;
 
                 Assert.Equal(MethodInfo.GetCurrentMethod(), ex.TargetSite);
+            }
+
+            Assert.True(caught);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Exception.TargetSite always returns null on UapAot.")]
+        public static void Exception_TargetSite_Aot()
+        {
+            bool caught = false;
+
+            try
+            {
+                throw new Exception();
+            }
+            catch (Exception ex)
+            {
+                caught = true;
+
+                Assert.Null(ex.TargetSite);
             }
 
             Assert.True(caught);
