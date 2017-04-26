@@ -11,6 +11,7 @@
 
 namespace DoubLink {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class DoubLinkGen
     {
@@ -61,25 +62,47 @@ namespace DoubLink {
             return 1;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public bool DrainFinalizerQueue(int iRep, int iObj)
+        {
+            int lastValue = DLinkNode.FinalCount;
+            while (true)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                if (DLinkNode.FinalCount == iRep * iObj)
+                {
+                    return true;
+                }
+
+                if (DLinkNode.FinalCount != lastValue)
+                {
+                    Console.WriteLine(" Performing Collect/Wait/Collect cycle again");
+                    lastValue = DLinkNode.FinalCount;
+                    continue;
+                }
+
+                Console.WriteLine(" Finalized number stable at " + lastValue);
+                return false;
+            }
+        }
 
         public bool runTest(int iRep, int iObj)
         {
             SetLink(iRep, iObj);
             Mv_Doub = null;
+            bool success = false;
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            if (DLinkNode.FinalCount != iRep * iObj)
+            if (DrainFinalizerQueue(iRep, iObj))
             {
-                // see github#4093 for the rationale for fail-fast in this test.
-                Environment.FailFast(string.Empty);
+                success = true;
             }
 
             Console.Write(DLinkNode.FinalCount);
             Console.WriteLine(" DLinkNodes finalized");
-            return (DLinkNode.FinalCount==iRep*iObj);
+            return success;
 
         }
 
