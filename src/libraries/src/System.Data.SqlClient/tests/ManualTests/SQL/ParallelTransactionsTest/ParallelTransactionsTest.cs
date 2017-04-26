@@ -10,19 +10,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         #region <<Basic Parallel Test>>
         [CheckConnStrSetupFact]
-        public static void BasicParallelTest_ShouldThrowsUnsupported_Yukon()
+        public static void BasicParallelTest_shouldThrowsUnsupported()
         {
-            BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
-        }
-
-        [CheckConnStrSetupFact]
-        public static void BasicParallelTest_ShouldThrowsUnsupported_Katmai()
-        {
-            BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
-        }
-
-        private static void BasicParallelTest_shouldThrowsUnsupported(string connectionString)
-        {
+            string connectionString = DataTestUtility.TcpConnStr;
             string expectedErrorMessage = SystemDataResourceManager.Instance.ADP_ParallelTransactionsNotSupported(typeof(SqlConnection).Name);
             string tempTableName = "";
             try
@@ -76,19 +66,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region <<MultipleExecutesInSameTransactionTest>>
         [CheckConnStrSetupFact]
-        public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Yukon()
+        public static void MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported()
         {
-            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
-        }
-
-        [CheckConnStrSetupFact]
-        public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Katmai()
-        {
-            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
-        }
-
-        private static void MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(string connectionString)
-        {
+            string connectionString = DataTestUtility.TcpConnStr;
             string expectedErrorMessage = SystemDataResourceManager.Instance.ADP_ParallelTransactionsNotSupported(typeof(SqlConnection).Name);
             string tempTableName = "";
             try
