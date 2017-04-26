@@ -106,7 +106,7 @@ void ves_exec_method (MonoInvocation *frame);
 static char* dump_stack (stackval *stack, stackval *sp);
 static char* dump_frame (MonoInvocation *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, MonoInvocation *top);
-static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context);
+static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
@@ -1426,7 +1426,7 @@ handle_enum:
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
-	ves_exec_method_with_context (&frame, context);
+	ves_exec_method_with_context (&frame, context, NULL, NULL);
 	context->managed_code = 0;
 	if (context == &context_struct)
 		mono_native_tls_set_value (thread_context_id, NULL);
@@ -1582,7 +1582,7 @@ interp_entry (InterpEntryData *data)
 		break;
 	}
 
-	ves_exec_method_with_context (&frame, context);
+	ves_exec_method_with_context (&frame, context, NULL, NULL);
 	context->managed_code = 0;
 	if (context == &context_struct)
 		mono_native_tls_set_value (thread_context_id, NULL);
@@ -2015,11 +2015,8 @@ static int opcode_counts[512];
 #define MINT_IN_DEFAULT default:
 #endif
 
-static void
-ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context);
-
 static void 
-ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception)
+ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception)
 {
 	MonoInvocation child_frame;
 	GSList *finally_ips = NULL;
@@ -2271,7 +2268,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 				}
 			}
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -2355,7 +2352,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -2395,7 +2392,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -2645,7 +2642,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 				sp [0].data.p = unboxed;
 			}
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -2692,7 +2689,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 				sp [0].data.p = unboxed;
 			}
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -3477,7 +3474,7 @@ ves_exec_method_with_context_with_ip (MonoInvocation *frame, ThreadContext *cont
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 
-			ves_exec_method_with_context (&child_frame, context);
+			ves_exec_method_with_context (&child_frame, context, NULL, NULL);
 
 			context->current_frame = frame;
 
@@ -4717,7 +4714,7 @@ array_constructed:
 					stackval retval;
 					memcpy (&dup_frame, inv, sizeof (MonoInvocation));
 					dup_frame.retval = &retval;
-					ves_exec_method_with_context_with_ip (&dup_frame, context, inv->runtime_method->code + clause->data.filter_offset, frame->ex);
+					ves_exec_method_with_context (&dup_frame, context, inv->runtime_method->code + clause->data.filter_offset, frame->ex);
 					if (dup_frame.retval->data.i) {
 #if DEBUG_INTERP
 						if (tracing)
@@ -4865,12 +4862,6 @@ exit_frame:
 	DEBUG_LEAVE ();
 }
 
-static void
-ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
-{
-	ves_exec_method_with_context_with_ip (frame, context, NULL, NULL);
-}
-
 void
 ves_exec_method (MonoInvocation *frame)
 {
@@ -4901,7 +4892,7 @@ ves_exec_method (MonoInvocation *frame)
 	frame->runtime_method = mono_interp_get_runtime_method (context->domain, frame->method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	context->managed_code = 1;
-	ves_exec_method_with_context (frame, context);
+	ves_exec_method_with_context (frame, context, NULL, NULL);
 	context->managed_code = 0;
 	if (frame->ex) {
 		if (context != &context_struct && context->current_env) {
