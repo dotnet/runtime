@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "OpenSCManagerW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal extern static IntPtr OpenSCManager(string machineName, string databaseName, int access);
 
     }
