@@ -108,6 +108,7 @@ struct _MonoInvocation {
 
 typedef struct {
 	MonoDomain *domain;
+	MonoDomain *original_domain;
 	MonoInvocation *base_frame;
 	MonoInvocation *current_frame;
 	MonoInvocation *env_frame;

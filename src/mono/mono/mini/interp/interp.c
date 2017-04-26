@@ -1914,9 +1914,6 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	MonoMethod *wrapper;
 	RuntimeMethod *rmethod;
 
-	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
-		return NULL;
-
 	/* HACK: method_ptr of delegate should point to a runtime method*/
 	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 		return mono_interp_get_runtime_method (mono_domain_get (), method, error);
@@ -4353,6 +4350,21 @@ array_constructed:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_JIT_ATTACH) {
+			++ip;
+
+			context->original_domain = NULL;
+			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			gpointer tls_jit = ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+
+			if (tls_domain != context->domain || !tls_jit)
+				context->original_domain = mono_jit_thread_attach (context->domain);
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_JIT_DETACH)
+			++ip;
+			mono_jit_set_domain (context->original_domain);
+			MINT_IN_BREAK;
 
 #define RELOP(datamem, op) \
 	--sp; \
