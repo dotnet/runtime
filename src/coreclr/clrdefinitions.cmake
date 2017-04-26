@@ -1,9 +1,3 @@
-if(WIN32 AND CLR_CMAKE_TARGET_ARCH_I386 AND BUILD_JIT32)  
-  set(CLR_BUILD_JIT32 1)  
-else()  
-  set(CLR_BUILD_JIT32 0)  
-endif()  
-
 include(clrfeatures.cmake)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
