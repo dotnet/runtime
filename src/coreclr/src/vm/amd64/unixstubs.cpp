@@ -37,7 +37,7 @@ extern "C"
               "  mov %%edx, 12(%[result])\n" \
             : "=a"(eax) /*output in eax*/\
             : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-            : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+            : "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
           );
         return eax;
     }
@@ -52,7 +52,7 @@ extern "C"
               "  mov %%edx, 12(%[result])\n" \
             : "=a"(eax) /*output in eax*/\
             : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-            : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+            : "rbx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
           );
         return eax;
     }
@@ -63,7 +63,7 @@ extern "C"
         __asm("  xgetbv\n" \
             : "=a"(eax) /*output in eax*/\
             : "c"(0) /*inputs - 0 in ecx*/\
-            : "eax", "edx" /* registers that are clobbered*/
+            : "edx" /* registers that are clobbered*/
           );
         // check OS has enabled both XMM and YMM state support
         return ((eax & 0x06) == 0x06) ? 1 : 0;
