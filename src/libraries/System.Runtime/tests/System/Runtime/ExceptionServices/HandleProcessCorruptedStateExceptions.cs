@@ -17,9 +17,15 @@ namespace System.Runtime.ExceptionServices.Tests
         [DllImport("kernel32.dll")]
         static extern void RaiseException(uint dwExceptionCode, uint dwExceptionFlags, uint nNumberOfArguments, IntPtr lpArguments);
 
+        [DllImport("kernel32.dll")]
+        private static extern int SetErrorMode(int uMode);
+
+        private const int SEM_NOGPFAULTERRORBOX = 2;
+
         [HandleProcessCorruptedStateExceptions]
         static void CauseAVInNative()
         {
+            SetErrorMode(SEM_NOGPFAULTERRORBOX);
             try 
             {
                 RaiseException(0xC0000005, 0, 0, IntPtr.Zero);

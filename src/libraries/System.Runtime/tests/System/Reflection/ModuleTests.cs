@@ -81,12 +81,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.FullyQualifiedName does not indicate file location on UwpAot")]
         public void FullyQualifiedName()
         {
             Assert.Equal(Assembly.GetExecutingAssembly().Location, Module.FullyQualifiedName);
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.Name does not indicate file location on UwpAot")]
         public void Name()
         {
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
@@ -115,6 +117,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Module.ToString() does not indicate file location on UwpAot")]
         public void TestToString()
         {
             Assert.Equal("System.Runtime.Tests.dll", Module.ToString());
