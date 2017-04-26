@@ -74,7 +74,7 @@
     Condition="'$(TargetsWindows)' == 'true' ">
 
     <PropertyGroup>
-      <CmdCrossgenVar Condition="'$(Crossgen)' == 'true'">set RunCrossGen=true</CrossgenVar>
+      <CmdCrossgenVar Condition="'$(Crossgen)' == 'true'">set RunCrossGen=true</CmdCrossgenVar>
       <WrapperCmdContents>
         <![CDATA[
 @ECHO OFF
