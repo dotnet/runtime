@@ -477,6 +477,7 @@ static void
 mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboolean aot)
 {
 	MonoTrampInfo *copy;
+	gboolean postpone_domain_reg;
 
 	if (!info)
 		return;
@@ -484,7 +485,15 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 	if (!domain)
 		domain = mono_get_root_domain ();
 
-	copy = g_new0 (MonoTrampInfo, 1);
+	if (domain) {
+		postpone_domain_reg = FALSE;
+		g_assert (domain->mp);
+		copy = mono_mempool_alloc0 (domain->mp, sizeof (MonoTrampInfo));
+	} else {
+		postpone_domain_reg = TRUE;
+		copy = g_new0 (MonoTrampInfo, 1);
+	}
+
 	copy->code = info->code;
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
@@ -498,10 +507,6 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 		copy->uw_info_len = info->uw_info_len;
 	}
 
-	mono_jit_lock ();
-	tramp_infos = g_slist_prepend (tramp_infos, copy);
-	mono_jit_unlock ();
-
 	mono_save_trampoline_xdebug_info (info);
 	mono_lldb_save_trampoline_info (info);
 
@@ -510,9 +515,14 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 		mono_arch_unwindinfo_install_tramp_unwind_info (info->unwind_ops, info->code, info->code_size);
 #endif
 
-	/* Only register trampolines that have unwind infos */
-	if (mono_get_root_domain () && copy->uw_info)
+	if (postpone_domain_reg) {
+		mono_jit_lock ();
+		tramp_infos = g_slist_prepend (tramp_infos, copy);
+		mono_jit_unlock ();
+	} else if (copy->uw_info) {
+		/* Only register trampolines that have unwind infos */
 		register_trampoline_jit_info (domain, copy);
+	}
 
 	if (mono_jit_map_is_enabled ())
 		mono_emit_jit_tramp (info->code, info->code_size, info->name);
