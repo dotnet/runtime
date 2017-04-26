@@ -3463,13 +3463,24 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 
     unsigned slots = cpObjNode->gtSlots;
 
-    // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = cpObjNode->ExtractTempReg();
-    regNumber tmpReg2 = (slots > 1) ? cpObjNode->GetSingleTempReg() : REG_NA;
-    assert(genIsValidIntReg(tmpReg) && (tmpReg != REG_WRITE_BARRIER_SRC_BYREF) && (tmpReg != REG_WRITE_BARRIER_DST_BYREF));
-    assert((slots == 1) || (genIsValidIntReg(tmpReg2) && (tmpReg2 != tmpReg) && (tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF) && (tmpReg2 != REG_WRITE_BARRIER_DST_BYREF)));
+    // Temp register(s) used to perform the sequence of loads and stores.
+    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg2 = REG_NA;
 
-    emitter* emit  = getEmitter();
+    assert(genIsValidIntReg(tmpReg));
+    assert(tmpReg != REG_WRITE_BARRIER_SRC_BYREF);
+    assert(tmpReg != REG_WRITE_BARRIER_DST_BYREF);
+
+    if (slots > 1)
+    {
+        tmpReg2 = cpObjNode->GetSingleTempReg();
+        assert(tmpReg2 != tmpReg);
+        assert(genIsValidIntReg(tmpReg2));
+        assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
+        assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
+    }
+
+    emitter* emit = getEmitter();
 
     BYTE* gcPtrs = cpObjNode->gtGcPtrs;
 
@@ -3484,13 +3495,15 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             else if (gcPtrs[i] == GCT_BYREF)
                 attr = EA_BYREF;
 
-            if((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
+            // Check if two or more remaining slots and use a ldp/stp sequence
+            // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
+            if ((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
             {
-                emit->emitIns_R_R_R_I(INS_ldp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2*TARGET_POINTER_SIZE,
-                                      INS_OPTS_POST_INDEX);
-                emit->emitIns_R_R_R_I(INS_stp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, 2*TARGET_POINTER_SIZE,
-                                      INS_OPTS_POST_INDEX);
-                ++i;
+                emit->emitIns_R_R_R_I(INS_ldp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
+                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                emit->emitIns_R_R_R_I(INS_stp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
+                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                ++i; // extra increment of i, since we are copying two items
             }
             else
             {
@@ -3511,13 +3524,14 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    if((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
+                    // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
+                    if ((i + 1 < slots) && (gcPtrs[i + 1] == TYPE_GC_NONE))
                     {
-                        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2*TARGET_POINTER_SIZE,
-                                              INS_OPTS_POST_INDEX);
-                        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, 2*TARGET_POINTER_SIZE,
-                                              INS_OPTS_POST_INDEX);
-                        ++i;
+                        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
+                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
+                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                        ++i; // extra increment of i, since we are copying two items
                     }
                     else
                     {
