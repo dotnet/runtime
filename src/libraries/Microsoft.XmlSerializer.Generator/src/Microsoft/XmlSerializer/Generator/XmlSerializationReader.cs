@@ -225,7 +225,7 @@ namespace Microsoft.XmlSerializer.Generator
             Writer.Write(" class ");
             Writer.Write(ClassName);
             Writer.Write(" : ");
-            Writer.Write(typeof(XmlSerializationReader).FullName);
+            Writer.Write(typeof(System.Xml.Serialization.XmlSerializationReader).FullName);
             Writer.WriteLine(" {");
             Writer.Indent++;
             foreach (TypeScope scope in Scopes)

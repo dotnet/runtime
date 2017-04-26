@@ -201,12 +201,12 @@ namespace Microsoft.XmlSerializer.Generator
             _writer.Write("public abstract class ");
             _writer.Write(CodeIdentifier.GetCSharpName(baseSerializer));
             _writer.Write(" : ");
-            _writer.Write(typeof(XmlSerializer).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializer).FullName);
             _writer.WriteLine(" {");
             _writer.Indent++;
 
             _writer.Write("protected override ");
-            _writer.Write(typeof(XmlSerializationReader).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializationReader).FullName);
             _writer.WriteLine(" CreateReader() {");
             _writer.Indent++;
             _writer.Write("return new ");
@@ -216,7 +216,7 @@ namespace Microsoft.XmlSerializer.Generator
             _writer.WriteLine("}");
 
             _writer.Write("protected override ");
-            _writer.Write(typeof(XmlSerializationWriter).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializationWriter).FullName);
             _writer.WriteLine(" CreateWriter() {");
             _writer.Indent++;
             _writer.Write("return new ");
@@ -271,7 +271,7 @@ namespace Microsoft.XmlSerializer.Generator
             {
                 _writer.WriteLine();
                 _writer.Write("protected override void Serialize(object objectToSerialize, ");
-                _writer.Write(typeof(XmlSerializationWriter).FullName);
+                _writer.Write(typeof(System.Xml.Serialization.XmlSerializationWriter).FullName);
                 _writer.WriteLine(" writer) {");
                 _writer.Indent++;
                 _writer.Write("((");
@@ -291,7 +291,7 @@ namespace Microsoft.XmlSerializer.Generator
             {
                 _writer.WriteLine();
                 _writer.Write("protected override object Deserialize(");
-                _writer.Write(typeof(XmlSerializationReader).FullName);
+                _writer.Write(typeof(System.Xml.Serialization.XmlSerializationReader).FullName);
                 _writer.WriteLine(" reader) {");
                 _writer.Indent++;
                 _writer.Write("return ((");
@@ -328,7 +328,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void GenerateGetSerializer(Hashtable serializers, XmlMapping[] xmlMappings)
         {
             _writer.Write("public override ");
-            _writer.Write(typeof(XmlSerializer).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializer).FullName);
             _writer.Write(" GetSerializer(");
             _writer.Write(typeof(Type).FullName);
             _writer.WriteLine(" type) {");
@@ -363,18 +363,18 @@ namespace Microsoft.XmlSerializer.Generator
         {
             _writer.WriteLine();
             _writer.Write("public class XmlSerializerContract : global::");
-            _writer.Write(typeof(XmlSerializerImplementation).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializerImplementation).FullName);
             _writer.WriteLine(" {");
             _writer.Indent++;
 
             _writer.Write("public override global::");
-            _writer.Write(typeof(XmlSerializationReader).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializationReader).FullName);
             _writer.Write(" Reader { get { return new ");
             _writer.Write(readerType);
             _writer.WriteLine("(); } }");
 
             _writer.Write("public override global::");
-            _writer.Write(typeof(XmlSerializationWriter).FullName);
+            _writer.Write(typeof(System.Xml.Serialization.XmlSerializationWriter).FullName);
             _writer.Write(" Writer { get { return new ");
             _writer.Write(writerType);
             _writer.WriteLine("(); } }");
