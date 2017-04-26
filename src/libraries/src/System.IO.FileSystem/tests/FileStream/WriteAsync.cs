@@ -10,15 +10,22 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class FileStream_WriteAsync : FileSystemTest
+    public abstract class FileStream_AsyncWrites : FileSystemTest
     {
+        protected virtual string BufferParamName => "buffer";
+        protected virtual string OffsetParamName => "offset";
+        protected virtual string CountParamName => "count";
+        private Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count) =>
+            WriteAsync(stream, buffer, offset, count, CancellationToken.None);
+        protected abstract Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
+
         [Fact]
         public void NullBufferThrows()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, 0, 1)));
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, 0, 1)));
             }
         }
 
@@ -27,12 +34,12 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], -1, 1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], -1, 1)));
 
                 // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, -1, 1)));
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, -1, 1)));
             }
         }
 
@@ -41,16 +48,16 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, -1)));
 
                 // offset is checked before count
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], -1, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], -1, -1)));
 
                 // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, -1, -1)));
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, -1, -1)));
             }
         }
 
@@ -61,25 +68,25 @@ namespace System.IO.Tests
             {
                 // offset out of bounds
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 1, 1)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 1, 1)));
 
                 // offset out of bounds for 0 count WriteAsync
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 2, 0)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 2, 0)));
 
                 // offset out of bounds even for 0 length buffer
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[0], 1, 0)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[0], 1, 0)));
 
                 // combination offset and count out of bounds
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[2], 1, 2)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[2], 1, 2)));
 
                 // edges
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[0], int.MaxValue, 0)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[0], int.MaxValue, 0)));
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[0], int.MaxValue, int.MaxValue)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[0], int.MaxValue, int.MaxValue)));
             }
         }
 
@@ -90,26 +97,26 @@ namespace System.IO.Tests
             {
                 fs.Dispose();
                 Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, 1)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, 1)));
                 // even for noop WriteAsync
                 Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, 0)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, 0)));
 
                 // out of bounds checking happens first
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[2], 1, 2)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[2], 1, 2)));
 
                 // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, -1)));
 
                 // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], -1, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], -1, -1)));
 
                 // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, -1, -1)));
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, -1, -1)));
             }
         }
 
@@ -123,68 +130,28 @@ namespace System.IO.Tests
             using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
             {
                 Assert.Throws<NotSupportedException>(() =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, 1)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, 1)));
 
                 fs.Dispose();
                 // Disposed checking happens first
                 Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, 1)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, 1)));
 
                 // out of bounds checking happens first
                 Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[2], 1, 2)));
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[2], 1, 2)));
 
                 // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, -1)));
 
                 // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], -1, -1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], -1, -1)));
 
                 // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, -1, -1)));
-            }
-        }
-
-        [Fact]
-        public void CancelledTokenFastPath()
-        {
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel();
-            CancellationToken cancelledToken = cts.Token;
-            
-            string fileName = GetTestFilePath();
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
-            {
-                FSAssert.IsCancelled(fs.WriteAsync(new byte[1], 0, 1, cancelledToken), cancelledToken);
-            }
-
-            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
-            {
-                // before read only check
-                FSAssert.IsCancelled(fs.WriteAsync(new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                fs.Dispose();
-                // before disposed check
-                FSAssert.IsCancelled(fs.WriteAsync(new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[2], 1, 2, cancelledToken)));
-
-                // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], 0, -1, cancelledToken)));
-
-                // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[1], -1, -1, cancelledToken)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>("buffer", () =>
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(null, -1, -1, cancelledToken)));
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, -1, -1)));
             }
         }
 
@@ -195,12 +162,12 @@ namespace System.IO.Tests
             {
                 // note that these do not succeed synchronously even though they do nothing.
 
-                await fs.WriteAsync(new byte[0], 0, 0);
-                await fs.WriteAsync(new byte[1], 0, 0);
+                await WriteAsync(fs, new byte[0], 0, 0);
+                await WriteAsync(fs, new byte[1], 0, 0);
                 // even though offset is out of bounds of buffer, this is still allowed
                 // for the last element
-                await fs.WriteAsync(new byte[1], 1, 0);
-                await fs.WriteAsync(new byte[2], 1, 0);
+                await WriteAsync(fs, new byte[1], 1, 0);
+                await WriteAsync(fs, new byte[2], 1, 0);
                 Assert.Equal(0, fs.Length);
                 Assert.Equal(0, fs.Position);
             }
@@ -214,7 +181,7 @@ namespace System.IO.Tests
                 GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, 
                 TestBuffer.Length * 2, useAsync: true))
             {
-                FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[TestBuffer.Length], 0, TestBuffer.Length));
+                FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[TestBuffer.Length], 0, TestBuffer.Length));
             }
         }
 
@@ -223,7 +190,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                await fs.WriteAsync(TestBuffer, 0, TestBuffer.Length);
+                await WriteAsync(fs, TestBuffer, 0, TestBuffer.Length);
                 Assert.Equal(TestBuffer.Length, fs.Length);
                 Assert.Equal(TestBuffer.Length, fs.Position);
 
@@ -242,7 +209,7 @@ namespace System.IO.Tests
             {
                 byte[] buffer = new byte[writeSize];
                 CancellationTokenSource cts = new CancellationTokenSource();
-                Task writeTask = fs.WriteAsync(buffer, 0, buffer.Length, cts.Token);
+                Task writeTask = WriteAsync(fs, buffer, 0, buffer.Length, cts.Token);
                 cts.Cancel();
                 try
                 {
@@ -263,27 +230,27 @@ namespace System.IO.Tests
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, 3, useAsync: true))
             {
                 // Fill buffer; should trigger flush of full buffer, no additional I/O
-                await fs.WriteAsync(TestBuffer, 0, 3);
+                await WriteAsync(fs, TestBuffer, 0, 3);
                 Assert.True(fs.Length == 3);
 
                 // Add to next buffer
-                await fs.WriteAsync(TestBuffer, 0, 1);
+                await WriteAsync(fs, TestBuffer, 0, 1);
                 Assert.True(fs.Length == 4);
 
                 // Complete that buffer; should trigger flush of full buffer, no additional I/O
-                await fs.WriteAsync(TestBuffer, 0, 2);
+                await WriteAsync(fs, TestBuffer, 0, 2);
                 Assert.True(fs.Length == 6);
 
                 // Add to next buffer
-                await fs.WriteAsync(TestBuffer, 0, 2);
+                await WriteAsync(fs, TestBuffer, 0, 2);
                 Assert.True(fs.Length == 8);
 
                 // Overflow buffer with amount that could fit in a buffer; should trigger a flush, with additional I/O
-                await fs.WriteAsync(TestBuffer, 0, 2);
+                await WriteAsync(fs, TestBuffer, 0, 2);
                 Assert.True(fs.Length == 10);
 
                 // Overflow buffer with amount that couldn't fit in a buffer; shouldn't be anything to flush, just an additional I/O
-                await fs.WriteAsync(TestBuffer, 0, 4);
+                await WriteAsync(fs, TestBuffer, 0, 4);
                 Assert.True(fs.Length == 14);
             }
         }
@@ -352,7 +319,7 @@ namespace System.IO.Tests
                 Task[] writes = new Task[numWrites];
                 for (int i = 0; i < numWrites; i++)
                 {
-                    writes[i] = fs.WriteAsync(expectedData, i * writeSize, writeSize, cancellationToken);
+                    writes[i] = WriteAsync(fs, expectedData, i * writeSize, writeSize, cancellationToken);
                     Assert.Null(writes[i].Exception);
                     if (useAsync)
                     {
@@ -384,7 +351,7 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer[0], await ReadByteAsync(fs));
                 Assert.Equal(TestBuffer[1], await ReadByteAsync(fs));
                 Assert.Equal(TestBuffer[2], await ReadByteAsync(fs));
-                await fs.WriteAsync(TestBuffer, 0, TestBuffer.Length);
+                await WriteAsync(fs, TestBuffer, 0, TestBuffer.Length);
 
                 fs.Position = 0;
                 Assert.Equal(TestBuffer[0], await ReadByteAsync(fs));
@@ -442,7 +409,7 @@ namespace System.IO.Tests
                             else
                             {
                                 // 90%: Async write
-                                await stream.WriteAsync(dataToWrite, 0, bytesToWrite, tokenSource.Token);
+                                await WriteAsync(stream, dataToWrite, 0, bytesToWrite, tokenSource.Token);
                             }
                         }
                         catch (TaskCanceledException)
@@ -453,5 +420,63 @@ namespace System.IO.Tests
                 }
             } while (DateTime.UtcNow - testStartTime <= testRunTime);
         }
+    }
+
+    public class FileStream_WriteAsync_AsyncWrites : FileStream_AsyncWrites
+    {
+        protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            stream.WriteAsync(buffer, offset, count, cancellationToken);
+
+        [Fact]
+        public void CancelledTokenFastPath()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            CancellationToken cancelledToken = cts.Token;
+
+            string fileName = GetTestFilePath();
+            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+            {
+                FSAssert.IsCancelled(WriteAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
+            }
+
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                // before read only check
+                FSAssert.IsCancelled(WriteAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
+
+                fs.Dispose();
+                // before disposed check
+                FSAssert.IsCancelled(WriteAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
+
+                // out of bounds checking happens first
+                Assert.Throws<ArgumentException>(null, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[2], 1, 2, cancelledToken)));
+
+                // count is checked prior
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], 0, -1, cancelledToken)));
+
+                // offset is checked prior
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, new byte[1], -1, -1, cancelledToken)));
+
+                // buffer is checked first
+                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
+                    FSAssert.CompletesSynchronously(WriteAsync(fs, null, -1, -1, cancelledToken)));
+            }
+        }
+    }
+
+    public class FileStream_BeginEndWrite_AsyncWrites : FileStream_AsyncWrites
+    {
+        protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            Task.Factory.FromAsync(
+                (callback, state) => stream.BeginWrite(buffer, offset, count, callback, state),
+                iar => stream.EndWrite(iar),
+                null);
+
+        protected override string BufferParamName => "array";
+        protected override string CountParamName => "numBytes";
     }
 }
