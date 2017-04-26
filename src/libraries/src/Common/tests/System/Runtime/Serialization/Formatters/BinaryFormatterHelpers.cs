@@ -27,7 +27,19 @@ namespace System.Runtime.Serialization.Formatters.Tests
 			}
 		}
 
-		public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
+        internal static Lazy<T> Clone<T>(Lazy<T> lazy)
+        {
+            // https://github.com/dotnet/corefx/issues/18942 - Binary serialization still WIP on AOT platforms.
+            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+            {
+                T ignore = lazy.Value;
+                return lazy;
+            }
+
+            return Clone<Lazy<T>>(lazy);
+        }
+
+        public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
 			where T : Exception
 		{
 			for (int i = 0; i < 2; i++)

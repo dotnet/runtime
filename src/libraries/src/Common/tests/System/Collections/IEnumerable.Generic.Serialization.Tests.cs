@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -18,24 +15,18 @@ namespace System.Collections.Tests
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable<T> expected = GenericIEnumerableFactory(count);
-            var bf = new BinaryFormatter();
-            using (var ms = new MemoryStream())
-            {
-                bf.Serialize(ms, expected);
-                ms.Position = 0;
-                IEnumerable<T> actual = (IEnumerable<T>)bf.Deserialize(ms);
+            IEnumerable<T> actual = BinaryFormatterHelpers.Clone(expected);
 
-                if (Order == EnumerableOrder.Sequential)
-                {
-                    Assert.Equal(expected, actual);
-                }
-                else
-                {
-                    var expectedSet = new HashSet<T>(expected);
-                    var actualSet = new HashSet<T>(actual);
-                    Assert.Subset(expectedSet, actualSet);
-                    Assert.Subset(actualSet, expectedSet);
-                }
+            if (Order == EnumerableOrder.Sequential)
+            {
+                Assert.Equal(expected, actual);
+            }
+            else
+            {
+                var expectedSet = new HashSet<T>(expected);
+                var actualSet = new HashSet<T>(actual);
+                Assert.Subset(expectedSet, actualSet);
+                Assert.Subset(actualSet, expectedSet);
             }
         }
     }

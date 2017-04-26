@@ -314,6 +314,7 @@ namespace System.Tests
                              Type.GetType(name, false, ignore) :
                                  assem.GetType(name, false, ignore);
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
         public static void GetTypeByName()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -340,6 +341,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
         public static void GetTypeByNameTypeloadFailure()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -373,6 +375,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
         public static void GetTypeByNameCaseSensitiveTypeloadFailure()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
