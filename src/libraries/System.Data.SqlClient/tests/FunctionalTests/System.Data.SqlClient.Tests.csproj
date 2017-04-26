@@ -10,6 +10,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CloneTests.cs" />
+    <Compile Include="BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />
+    <Compile Include="BaseProviderAsyncTest\MockCommand.cs" />
+    <Compile Include="BaseProviderAsyncTest\MockConnection.cs" />
+    <Compile Include="BaseProviderAsyncTest\MockDataReader.cs" />
     <Compile Include="DiagnosticTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
