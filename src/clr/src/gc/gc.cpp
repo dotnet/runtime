@@ -20356,7 +20356,7 @@ size_t gc_heap::update_brick_table (uint8_t* tree, size_t current_brick,
     dprintf (3, ("tree: %Ix, current b: %Ix, x: %Ix, plug_end: %Ix",
         tree, current_brick, x, plug_end));
 
-    if (tree > 0)
+    if (tree != NULL)
     {
         dprintf (3, ("b- %Ix->%Ix pointing to tree %Ix", 
             current_brick, (size_t)(tree - brick_address (current_brick)), tree));
