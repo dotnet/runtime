@@ -62,7 +62,6 @@ namespace System.Collections.Tests
         [Benchmark]
         [InlineData(1000)]
         [InlineData(10000)]
-        [InlineData(100000)]
         public void Clear(int size)
         {
             List<object> list = CreateList(size);
