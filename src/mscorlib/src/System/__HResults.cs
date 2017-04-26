@@ -44,6 +44,7 @@ namespace System
         internal const int COR_E_ARITHMETIC = unchecked((int)0x80070216);
         internal const int COR_E_ARRAYTYPEMISMATCH = unchecked((int)0x80131503);
         internal const int COR_E_BADIMAGEFORMAT = unchecked((int)0x8007000B);
+        internal const int COR_E_BADEXEFORMAT = unchecked((int)0x800700C1);
         internal const int COR_E_TYPEUNLOADED = unchecked((int)0x80131013);
         internal const int COR_E_CANNOTUNLOADAPPDOMAIN = unchecked((int)0x80131015);
         internal const int COR_E_COMEMULATE = unchecked((int)0x80131535);

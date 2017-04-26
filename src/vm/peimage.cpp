@@ -1189,7 +1189,13 @@ HANDLE PEImage::GetFileHandle()
     }
 
     if (m_hFile == INVALID_HANDLE_VALUE)
+    {
+#if !defined(DACCESS_COMPILE)
+        EEFileLoadException::Throw(m_path, HRESULT_FROM_WIN32(GetLastError()));
+#else // defined(DACCESS_COMPILE)
         ThrowLastError();
+#endif // !defined(DACCESS_COMPILE)
+    }
 
     return m_hFile;
 }

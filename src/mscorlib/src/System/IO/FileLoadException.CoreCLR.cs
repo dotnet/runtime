@@ -27,7 +27,10 @@ namespace System.IO
             GetFileLoadExceptionMessage(hResult, JitHelpers.GetStringHandleOnStack(ref format));
 
             string message = null;
-            GetMessageForHR(hResult, JitHelpers.GetStringHandleOnStack(ref message));
+            if (hResult == System.__HResults.COR_E_BADEXEFORMAT)
+                message = SR.Arg_BadImageFormatException;
+            else 
+                GetMessageForHR(hResult, JitHelpers.GetStringHandleOnStack(ref message));
 
             return string.Format(CultureInfo.CurrentCulture, format, fileName, message);
         }
