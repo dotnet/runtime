@@ -269,7 +269,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(kvp.Value);
                         var status = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        cancelLogged = true;
+                        Volatile.Write(ref cancelLogged, true);
                     }
                 });
 
@@ -288,12 +288,12 @@ namespace System.Net.Http.Functional.Tests
                                     return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
                                 });
                             Task response = client.GetAsync(url, tcs.Token);
-                            await Assert.ThrowsAnyAsync<Exception>(() => Task.WhenAll(response, request));
+                            await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));
                         }).Wait();
                     }
                 }
                 // Poll with a timeout since logging response is not synchronized with returning a response.
-                WaitForTrue(() => cancelLogged, TimeSpan.FromSeconds(1),
+                WaitForTrue(() => Volatile.Read(ref cancelLogged), TimeSpan.FromSeconds(1),
                     "Cancellation was not logged within 1 second timeout.");
                 diagnosticListenerObserver.Disable();
 
@@ -554,7 +554,7 @@ namespace System.Net.Http.Functional.Tests
                         GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
                         var status = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        cancelLogged = true;
+                        Volatile.Write(ref cancelLogged, true);
                     }
                 });
 
@@ -573,12 +573,12 @@ namespace System.Net.Http.Functional.Tests
                                     return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
                                 });
                             Task response = client.GetAsync(url, tcs.Token);
-                            await Assert.ThrowsAnyAsync<Exception>(() => Task.WhenAll(response, request));
+                            await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));
                         }).Wait();
                     }
                 }
                 // Poll with a timeout since logging response is not synchronized with returning a response.
-                WaitForTrue(() => cancelLogged, TimeSpan.FromSeconds(1),
+                WaitForTrue(() => Volatile.Read(ref cancelLogged), TimeSpan.FromSeconds(1),
                     "Cancellation was not logged within 1 second timeout.");
                 diagnosticListenerObserver.Disable();
 
