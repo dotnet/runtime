@@ -612,25 +612,25 @@ namespace System.IO.IsolatedStorage
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type applicationEvidenceType)
         {
             // Scope MUST be Application
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object applicationIdentity)
         {
             // Scope MUST be Application
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object domainIdentity, object assemblyIdentity)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         // https://github.com/dotnet/corefx/issues/10935
