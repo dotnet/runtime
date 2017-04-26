@@ -102,7 +102,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(DWORD                   dwPID
     entry->m_cProcessRef++;
     _ASSERTE(entry->m_cProcessRef > 0);
     _ASSERTE(entry->m_transport != NULL);
-    _ASSERTE(entry->m_hProcess > 0);
+    _ASSERTE((intptr_t)entry->m_hProcess > 0);
     
     *ppTransport = entry->m_transport;
     if (!DuplicateHandle(GetCurrentProcess(), 
@@ -139,7 +139,7 @@ void DbgTransportTarget::ReleaseTransport(DbgTransportSession *pTransport)
 
         _ASSERTE(entry->m_cProcessRef > 0);
         _ASSERTE(entry->m_transport != NULL);
-        _ASSERTE(entry->m_hProcess > 0);
+        _ASSERTE((intptr_t)entry->m_hProcess > 0);
 
         if (entry->m_transport == pTransport)
         {

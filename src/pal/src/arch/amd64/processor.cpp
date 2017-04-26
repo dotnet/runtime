@@ -65,7 +65,7 @@ extern "C" unsigned int XmmYmmStateSupport()
           "end:\n" \
         : "=a"(eax) /* output in eax */ \
         : /* no inputs */ \
-        : "eax", "ebx", "ecx", "edx" /* registers that are clobbered */
+        : "ebx", "ecx", "edx" /* registers that are clobbered */
       );
     // Check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
