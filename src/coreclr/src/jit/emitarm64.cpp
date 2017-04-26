@@ -9331,8 +9331,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // INS_ldp etc...
             // We assume that "idReg1" and "idReg2" are the destination register for all instructions
-            emitGCregDeadUpd(id->idReg1(), dst);
-            emitGCregDeadUpd(id->idReg2(), dst);
+            // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
+            if (id->idGCref() != GCT_NONE)
+            {
+                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                emitGCregLiveUpd(id->idGCref(), id->idReg2(), dst);
+            }
+            else
+            {
+                emitGCregDeadUpd(id->idReg1(), dst);
+                emitGCregDeadUpd(id->idReg2(), dst);
+            }
         }
         else
         {
