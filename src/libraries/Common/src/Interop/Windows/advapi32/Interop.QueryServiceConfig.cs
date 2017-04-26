@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "QueryServiceConfigW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal extern static bool QueryServiceConfig(IntPtr serviceHandle, IntPtr queryServiceConfigPtr, int bufferSize, out int bytesNeeded);
 
     }
