@@ -114,6 +114,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior that added extra checks to BinaryReader/Writer buffers on .Net Core")]
         public void Read_InvalidEncoding()
         {
             using (var str = CreateStream())
