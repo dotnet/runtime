@@ -439,6 +439,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     sub     esp,12
 
     push    esp
+    CHECK_STACK_ALIGNMENT
     call    C_FUNC(OnHijackWorker)
 
     // unused space for floating point state
@@ -474,6 +475,7 @@ NESTED_ENTRY OnHijackFPTripThread, _TEXT, NoHandler
     fstp    QWORD PTR [esp]
 
     push    esp
+    CHECK_STACK_ALIGNMENT
     call    C_FUNC(OnHijackWorker)
 
     // restore top of the floating point stack
