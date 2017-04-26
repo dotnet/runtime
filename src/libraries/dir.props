@@ -36,15 +36,8 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
     <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
-
-    <!-- needs to be defined all the time to avoid indexing every file from the root -->
-    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
-
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
-
-  <!-- Temporarily enable local build of tools -->
-  <Import Project="$(SourceDir)Tools\corefxTools.props" />
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
@@ -139,7 +132,9 @@
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
+
+    <BuildConfigurationFolder>$(ToolsDir)configuration</BuildConfigurationFolder>
+    <BuildConfigurationImportFile>$(BuildConfigurationFolder)/configuration.props</BuildConfigurationImportFile>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>

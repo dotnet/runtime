@@ -13,10 +13,9 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
 
- <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll --> 
- <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" /> 
+ <Import Project="buildvertical.targets" />
 
-  <Target Name="UndefineTestTFM" 
+  <Target Name="UndefineTestTFM"
           BeforeTargets="AssignProjectConfiguration">
     <ItemGroup>
         <!--
@@ -66,7 +65,7 @@
     <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
       <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="('$(IsNetFxNETStandard)' == 'true' OR '$(IsNetFxNETStandardRef)' == 'true') AND '$(BuildingNETFxVertical)' == 'true'" 
+    <BinPlaceConfiguration Condition="('$(IsNetFxNETStandard)' == 'true' OR '$(IsNetFxNETStandardRef)' == 'true') AND '$(BuildingNETFxVertical)' == 'true'"
                            Include="netfx-$(_bc_OSGroup);net462-$(_bc_OSGroup);net47-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNetFxNETStandardRef)'=='true'">$(NetFxPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath Condition="'$(IsNetFxNETStandard)'=='true'">$(NetFxPackageRuntimePath)</PackageFileRuntimePath>
@@ -129,7 +128,7 @@
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
   </ItemGroup>
 
-  <Target Name="ProducesPackageId" 
+  <Target Name="ProducesPackageId"
           Returns="@(PackageIds)">
     <ItemGroup>
       <PackageIds Include="$(Id)" />
