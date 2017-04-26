@@ -3533,7 +3533,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	g_free (corlib_file);
 
 return_corlib_and_facades:
-	if (corlib)
+	if (corlib && !strcmp (runtime->framework_version, "4.5"))  // FIXME: stop hardcoding 4.5 here
 		default_path [1] = g_strdup_printf ("%s/Facades", corlib->basedir);
 		
 	return corlib;
