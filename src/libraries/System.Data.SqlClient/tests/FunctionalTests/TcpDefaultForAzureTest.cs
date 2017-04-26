@@ -32,7 +32,6 @@ namespace System.Data.SqlClient.Tests
             builder.ConnectTimeout = 1;
         }
 
-        [ActiveIssue(16981)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // NP NonAzure connection with no protocol fails correctly on Windows
         public static void NonAzureNoProtocolConnectionTestOnWindows()
