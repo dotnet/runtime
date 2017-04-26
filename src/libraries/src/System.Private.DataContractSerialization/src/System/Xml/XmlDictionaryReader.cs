@@ -856,7 +856,7 @@ namespace System.Xml
             else
             {
                 ReadStartElement();
-                value = ReadContentAsDateTimeOffset().DateTime;
+                value = ReadContentAsDateTime();
                 ReadEndElement();
             }
 
@@ -1667,22 +1667,7 @@ namespace System.Xml
 
             public override DateTime ReadContentAsDateTime()
             {
-                try
-                {
-                    return _reader.ReadContentAsDateTimeOffset().DateTime;
-                }
-                catch (ArgumentException exception)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("DateTime", exception));
-                }
-                catch (FormatException exception)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("DateTime", exception));
-                }
-                catch (OverflowException exception)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException("DateTime", exception));
-                }
+                return _reader.ReadContentAsDateTime();
             }
 
             public override Decimal ReadContentAsDecimal()

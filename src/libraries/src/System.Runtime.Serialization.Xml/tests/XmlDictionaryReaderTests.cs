@@ -93,12 +93,13 @@ namespace System.Runtime.Serialization.Xml.Tests
         [Fact]
         public static void ReadElementContentAsDateTimeTest()
         {
-            string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
+            string xmlFileContent = @"<root><date>2013-01-02T03:04:05.006Z</date></root>";
             Stream sm = GenerateStreamFromString(xmlFileContent);
             XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(sm, XmlDictionaryReaderQuotas.Max);
             reader.ReadToFollowing("date");
             DateTime dt = reader.ReadElementContentAsDateTime();
-            Assert.Equal(new DateTime(2003, 1, 8, 15, 0, 0), dt);
+            DateTime expected = new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc);
+            Assert.Equal(expected, dt);
         }
 
         [Fact]
