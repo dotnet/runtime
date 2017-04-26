@@ -74,7 +74,7 @@
     Condition="'$(TargetsWindows)' == 'true' ">
 
     <PropertyGroup>
-      <CrossgenVar Condition="'$(Crossgen)' == 'true'">set RunCrossGen=true</CrossgenVar>
+      <CmdCrossgenVar Condition="'$(Crossgen)' == 'true'">set RunCrossGen=true</CrossgenVar>
       <WrapperCmdContents>
         <![CDATA[
 @ECHO OFF
@@ -82,7 +82,7 @@ setlocal ENABLEDELAYEDEXPANSION
 pushd %~dp0
 
 set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%
-$(CrossgenVar)
+$(CmdCrossgenVar)
 
 ECHO BEGIN EXECUTION
 ECHO %HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
@@ -121,6 +121,7 @@ EXIT /B %ERRORLEVEL%
 
       <!-- Crossgen FX assemblies, if running R2R tests. 
       TODO - remove this when we build tests on Linux -->
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)export RunCrossGen=true%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)overlayDir=%24CORE_ROOT%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)if [ ! -f %24overlayDir/crossgenCompleted.mrk ]%3B then%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  filesToPrecompile=%24(find -L %24overlayDir -iname \%2A.dll -not -iname \%2A.ni.dll -not -iname \%2A-ms-win-\%2A -type f )%0a</WrapperShContents>
