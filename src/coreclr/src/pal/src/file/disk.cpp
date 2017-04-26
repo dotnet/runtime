@@ -68,6 +68,7 @@ GetDiskFreeSpaceW(
     PathCharString dirNameBufferPathString;
     size_t length;
     char * dirNameBuffer;
+    const char * dirName;
     int size;
 
     PERF_ENTRY(GetDiskFreeSpaceW);
@@ -125,7 +126,7 @@ GetDiskFreeSpaceW(
         if ( size != 0 )
         {
             FILEDosToUnixPathA( dirNameBuffer );
-            statfsRetVal = statfs( dirNameBuffer, &fsInfoBuffer );
+            dirName = dirNameBuffer;
         }
         else
         {
@@ -136,8 +137,10 @@ GetDiskFreeSpaceW(
     }
     else
     {
-        statfsRetVal = statfs( "/", &fsInfoBuffer );
+        dirName = "/";
     }
+
+    statfsRetVal = statfs( dirName, &fsInfoBuffer );
 
     if ( statfsRetVal == 0 )
     {

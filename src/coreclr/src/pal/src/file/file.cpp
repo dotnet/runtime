@@ -2999,8 +2999,11 @@ OUT  PLARGE_INTEGER lpFileSize)
             &dwFileSizeHigh
             );
 
-        lpFileSize->u.LowPart = dwFileSizeLow;
-        lpFileSize->u.HighPart = dwFileSizeHigh;
+        if (NO_ERROR == palError)
+        {
+            lpFileSize->u.LowPart = dwFileSizeLow;
+            lpFileSize->u.HighPart = dwFileSizeHigh;
+        }
     }
     else
     {
