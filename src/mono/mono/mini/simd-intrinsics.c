@@ -2165,6 +2165,19 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	return NULL;
 }
 
+static MonoInst*
+emit_vector_is_hardware_accelerated_intrinsic (MonoCompile *cfg)
+{
+	MonoInst *ins;
+
+	if (simd_supported_versions)
+		EMIT_NEW_ICONST (cfg, ins, 1);
+	else
+		EMIT_NEW_ICONST (cfg, ins, 0);
+	ins->type = STACK_I4;
+	return ins;
+}
+
 /* These should be ordered by name */
 static const SimdIntrinsic vector_t_intrinsics[] = {
 	{ SN_ctor },
@@ -2447,20 +2460,9 @@ emit_sys_numerics_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodS
 	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Vector3", class_name))
 		return emit_vector_intrinsics (cfg, cmethod, fsig, args);
 
-	if (!strcmp ("Vector`1", class_name))
-		return emit_vector_t_intrinsics (cfg, cmethod, fsig, args);
-
 	if (!strcmp ("System.Numerics", nspace) && !strcmp ("Vector", class_name)) {
-		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
-			MonoInst *ins;
-
-			if (simd_supported_versions)
-				EMIT_NEW_ICONST (cfg, ins, 1);
-			else
-				EMIT_NEW_ICONST (cfg, ins, 0);
-			ins->type = STACK_I4;
-			return ins;
-		}
+		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated"))
+			return emit_vector_is_hardware_accelerated_intrinsic (cfg);
 	}
 
 	return NULL;
@@ -2469,10 +2471,17 @@ emit_sys_numerics_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodS
 static MonoInst*
 emit_sys_numerics_vectors_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	const char *nspace = cmethod->klass->name_space;
 	const char *class_name = cmethod->klass->name;
 
 	if (!strcmp (class_name, "Vector`1"))
 		return emit_vector_t_intrinsics (cfg, cmethod, fsig, args);
+
+	if (!strcmp ("System.Numerics", nspace) && !strcmp ("Vector", class_name)) {
+		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated"))
+			return emit_vector_is_hardware_accelerated_intrinsic (cfg);
+	}
+
 	return NULL;
 }
 
