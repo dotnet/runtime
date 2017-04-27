@@ -2849,12 +2849,22 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
     
     PTR_ICLRPrivBinder pBindingContext = NULL;
     
-    // Mscorlib is always bound in context of the TPA Binder. However, since it gets loaded and published
-    // during EEStartup *before* TPAbinder is initialized, we dont have a binding context to publish against.
+    // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
+    // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
     // Thus, we will always return NULL for its binding context.
     if (!IsSystem())
     {
         pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
+        if (!pBindingContext)
+        {
+            // If we do not have any binding context, check if we are dealing with
+            // a dynamically emitted assembly and if so, use its fallback load context
+            // binder reference.
+            if (IsDynamic())
+            {
+                pBindingContext = GetFallbackLoadContextBinder();
+            }
+        }
     }
     
     return pBindingContext;

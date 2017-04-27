@@ -631,7 +631,7 @@ protected:
     // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    ICLRPrivBinder *m_pFallbackLoadContextBinder;
+    PTR_ICLRPrivBinder m_pFallbackLoadContextBinder;
 
 protected:
 
@@ -657,13 +657,13 @@ public:
     bool CanUseWithBindingCache()
     { LIMITED_METHOD_CONTRACT; return !HasHostAssembly(); }
 
-    void SetFallbackLoadContextBinder(ICLRPrivBinder *pFallbackLoadContextBinder)
+    void SetFallbackLoadContextBinder(PTR_ICLRPrivBinder pFallbackLoadContextBinder)
     { 
         LIMITED_METHOD_CONTRACT; 
         m_pFallbackLoadContextBinder = pFallbackLoadContextBinder; 
     }
 
-    ICLRPrivBinder *GetFallbackLoadContextBinder()
+    PTR_ICLRPrivBinder GetFallbackLoadContextBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
