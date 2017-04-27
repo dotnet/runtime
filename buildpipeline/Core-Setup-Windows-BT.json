@@ -15,8 +15,8 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(PB_SourcesDirectory)",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }",
         "workingFolder": "",
+        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    $files = cmd /c dir $path /s /b /-c /a:h /a:-d\n    ForEach($file in $files) {\n        # work around 260 character file name length limit\n        $deleteName = \"$(PB_SourcesDirectory)/delete.me\"\n        Rename-Item -Path $file -NewName $deleteName\n        Remove-Item -Force $deleteName\n   }\n    # this will print out an error each time a file can't be deleted.\n\n    Remove-Item -Recurse -Force $path\n }",
         "failOnStandardError": "true"
       }
     },
@@ -326,7 +326,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "0"
+      "cleanOptions": "0",
+      "labelSourcesFormat": "$(build.buildNumber)",
+      "checkoutNestedSubmodules": "false"
     },
     "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
     "type": "TfsGit",
@@ -336,6 +338,7 @@
     "clean": "false",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
   "queue": {
     "id": 36,
@@ -347,6 +350,7 @@
   },
   "id": 4371,
   "name": "Core-Setup-Windows-BT",
+  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/6257",
   "path": "\\",
   "type": "build",
   "project": {
