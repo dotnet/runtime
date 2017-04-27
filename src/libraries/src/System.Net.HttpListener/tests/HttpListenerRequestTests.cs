@@ -186,6 +186,7 @@ namespace System.Net.Tests
             });
         }
 
+        [Theory]
         [InlineData("Connection: ", false)]
         [InlineData("Connection: Connection\r\nUpgrade: ", false)]
         [InlineData("Connection: Test1\r\nUpgrade: Test2", false)]
