@@ -17,7 +17,6 @@
     <NativeBinary Include="$(BinDir)libsosplugin.so" />
     <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
     <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
-    <NativeBinary Condition="'$(_PlatformDoesNotSupportNiFiles)' != 'true'" Include="$(BinDir)System.Private.CoreLib.ni.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />

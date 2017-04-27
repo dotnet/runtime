@@ -17,12 +17,20 @@
   </Target>
 
   <ItemGroup>
+    <ILToCopy Include="$(BinDir)System.Private.CoreLib.dll"/>
     <PDBSToMove Include="$(BinDir)System.Private.CoreLib.pdb"/>
   </ItemGroup>
 
   <PropertyGroup>
+    <CoreLibPath>$(BinDir)System.Private.CoreLib.dll</CoreLibPath>
     <CoreLibPDBPath>$(BinDir)System.Private.CoreLib.pdb</CoreLibPDBPath>
   </PropertyGroup>
+
+  <Target Name="CopyCoreLib" AfterTargets="Build">
+    <Copy Condition="Exists($(CoreLibPath))"
+        SourceFiles="@(ILToCopy)"
+        DestinationFolder="$(BinDir)IL" />
+  </Target>
 
   <Target Name="MovePDB" AfterTargets="Build">
     <Move Condition="Exists($(CoreLibPDBPath))"
