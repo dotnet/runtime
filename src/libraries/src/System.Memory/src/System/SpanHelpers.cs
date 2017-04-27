@@ -56,22 +56,35 @@ namespace System
                     ? (uint)diff > (uint)-(int)dstByteCount
                     : (ulong)diff > (ulong)-(long)dstByteCount;
 
-                if (srcGreaterThanDst)
+                int direction = srcGreaterThanDst ? 1 : -1;
+                int runCount = srcGreaterThanDst ? 0 : srcLength - 1;
+
+                int loopCount = 0;
+                for (; loopCount < (srcLength & ~7); loopCount += 8)
                 {
-                    // Source address greater than destination address. Can do normal copy.
-                    for (int i = 0; i < srcLength; i++)
-                    {
-                        Unsafe.Add<T>(ref dst, i) = Unsafe.Add<T>(ref src, i);
-                    }
+                    Unsafe.Add<T>(ref dst, runCount + direction * 0) = Unsafe.Add<T>(ref src, runCount + direction * 0);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 1) = Unsafe.Add<T>(ref src, runCount + direction * 1);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 2) = Unsafe.Add<T>(ref src, runCount + direction * 2);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 3) = Unsafe.Add<T>(ref src, runCount + direction * 3);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 4) = Unsafe.Add<T>(ref src, runCount + direction * 4);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 5) = Unsafe.Add<T>(ref src, runCount + direction * 5);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 6) = Unsafe.Add<T>(ref src, runCount + direction * 6);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 7) = Unsafe.Add<T>(ref src, runCount + direction * 7);
+                    runCount += direction * 8;
                 }
-                else
+                if (loopCount < (srcLength & ~3))
                 {
-                    // Source address less than or equal to destination address. Must do backward copy.
-                    int i = srcLength;
-                    while (i-- != 0)
-                    {
-                        Unsafe.Add<T>(ref dst, i) = Unsafe.Add<T>(ref src, i);
-                    }
+                    Unsafe.Add<T>(ref dst, runCount + direction * 0) = Unsafe.Add<T>(ref src, runCount + direction * 0);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 1) = Unsafe.Add<T>(ref src, runCount + direction * 1);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 2) = Unsafe.Add<T>(ref src, runCount + direction * 2);
+                    Unsafe.Add<T>(ref dst, runCount + direction * 3) = Unsafe.Add<T>(ref src, runCount + direction * 3);
+                    runCount += direction * 4;
+                    loopCount += 4;
+                }
+                for (; loopCount < srcLength; ++loopCount)
+                {
+                    Unsafe.Add<T>(ref dst, runCount) = Unsafe.Add<T>(ref src, runCount);
+                    runCount += direction;
                 }
             }
         }
