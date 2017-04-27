@@ -88,17 +88,6 @@
       <resources></resources>
       <response>System.Xml.Linq.dll.sources</response>
     </project>
-    <project dir="class/System.Runtime.InteropServices.RuntimeInformation" library="System.Runtime.InteropServices.RuntimeInformation-basic">
-      <boot>true</boot>
-      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -r:./../../class/lib/basic/System.dll</flags>
-      <output>System.Runtime.InteropServices.RuntimeInformation.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/System.Runtime.InteropServices.RuntimeInformation.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>basic</profile>
-      <resources></resources>
-      <response>System.Runtime.InteropServices.RuntimeInformation.dll.sources</response>
-    </project>
     <project dir="class/Mono.Cecil" library="Mono.Cecil-basic">
       <boot>true</boot>
       <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -keyfile:../mono.snk -d:NET_4_0 /publicsign -r:./../../class/lib/basic/System.Core.dll -r:./../../class/lib/basic/System.dll</flags>
@@ -593,17 +582,6 @@
       <profile>build</profile>
       <resources></resources>
       <response>System.Xml.Linq.dll.sources</response>
-    </project>
-    <project dir="class/System.Runtime.InteropServices.RuntimeInformation" library="System.Runtime.InteropServices.RuntimeInformation-build">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:./../../class/lib/build/System.dll</flags>
-      <output>System.Runtime.InteropServices.RuntimeInformation.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/build/System.Runtime.InteropServices.RuntimeInformation.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>build</profile>
-      <resources></resources>
-      <response>System.Runtime.InteropServices.RuntimeInformation.dll.sources</response>
     </project>
     <project dir="class/System.IO.Compression" library="System.IO.Compression-build">
       <boot>false</boot>
@@ -2640,17 +2618,6 @@
       <resources>System.Web.Http.WebHost.Properties.CommonWebApiResources,../../../external/aspnetwebstack/src/Common/CommonWebApiResources.resx System.Web.Http.WebHost.Properties.SRResources,../../../external/aspnetwebstack/src/System.Web.Http.WebHost/Properties/SRResources.resx</resources>
       <response>System.Web.Http.WebHost.dll.sources</response>
     </project>
-    <project dir="class/System.Runtime.InteropServices.RuntimeInformation" library="System.Runtime.InteropServices.RuntimeInformation-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.dll</flags>
-      <output>System.Runtime.InteropServices.RuntimeInformation.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/System.Runtime.InteropServices.RuntimeInformation.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>System.Runtime.InteropServices.RuntimeInformation.dll.sources</response>
-    </project>
     <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.dll</flags>
@@ -3729,6 +3696,17 @@
       <resources></resources>
       <response>System.Xml.XPath.XDocument.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Runtime.InteropServices.RuntimeInformation" library="Facades_System.Runtime.InteropServices.RuntimeInformation-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /unsafe -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <output>System.Runtime.InteropServices.RuntimeInformation.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_x/Facades/System.Runtime.InteropServices.RuntimeInformation.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>System.Runtime.InteropServices.RuntimeInformation.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Drawing.Primitives" library="Facades_System.Drawing.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Drawing.dll</flags>
@@ -3742,7 +3720,7 @@
     </project>
     <project dir="class/Facades/netstandard" library="Facades_netstandard-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699 /nowarn:618 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll -r:./../../../class/lib/net_4_x/System.Runtime.Serialization.dll -r:./../../../class/lib/net_4_x/System.Core.dll -r:./../../../class/lib/net_4_x/System.Numerics.dll -r:./../../../class/lib/net_4_x/System.Numerics.Vectors.dll -r:./../../../class/lib/net_4_x/System.Net.Http.dll -r:./../../../class/lib/net_4_x/System.Transactions.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.ComponentModel.Composition.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll -r:./../../../class/lib/net_4_x/System.Runtime.InteropServices.RuntimeInformation.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.Cryptography.Algorithms.dll -r:./../../../class/lib/net_4_x/Facades/System.Globalization.Extensions.dll -r:./../../../class/lib/net_4_x/Facades/System.Data.Common.dll -r:./../../../class/lib/net_4_x/Facades/System.Diagnostics.StackTrace.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Xml.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Primitives.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.SecureString.dll -r:./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll -r:./../../../class/lib/net_4_x/Facades/System.Xml.XPath.XDocument.dll -r:./../../../class/lib/net_4_x/System.Web.dll -r:./../../../class/lib/net_4_x/System.Drawing.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699 /nowarn:618 -r:./../../../class/lib/net_4_x/System.dll -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.Xml.Linq.dll -r:./../../../class/lib/net_4_x/System.Runtime.Serialization.dll -r:./../../../class/lib/net_4_x/System.Core.dll -r:./../../../class/lib/net_4_x/System.Numerics.dll -r:./../../../class/lib/net_4_x/System.Numerics.Vectors.dll -r:./../../../class/lib/net_4_x/System.Net.Http.dll -r:./../../../class/lib/net_4_x/System.Transactions.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.dll -r:./../../../class/lib/net_4_x/System.Data.dll -r:./../../../class/lib/net_4_x/System.ComponentModel.Composition.dll -r:./../../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.InteropServices.RuntimeInformation.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.Cryptography.Algorithms.dll -r:./../../../class/lib/net_4_x/Facades/System.Globalization.Extensions.dll -r:./../../../class/lib/net_4_x/Facades/System.Data.Common.dll -r:./../../../class/lib/net_4_x/Facades/System.Diagnostics.StackTrace.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Xml.dll -r:./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Primitives.dll -r:./../../../class/lib/net_4_x/Facades/System.Security.SecureString.dll -r:./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll -r:./../../../class/lib/net_4_x/Facades/System.Xml.XPath.XDocument.dll -r:./../../../class/lib/net_4_x/System.Web.dll -r:./../../../class/lib/net_4_x/System.Drawing.dll</flags>
       <output>netstandard.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/netstandard.dll</library_output>

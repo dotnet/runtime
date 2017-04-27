@@ -175,8 +175,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.Http.SelfHost-ne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.Http.WebHost-net_4_x", "mcs/class/System.Web.Http.WebHost/System.Web.Http.WebHost-net_4_x.csproj", "{2AF7E697-07BA-439E-89BF-076AEE4AE04C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.InteropServices.RuntimeInformation-net_4_x", "mcs/class/System.Runtime.InteropServices.RuntimeInformation/System.Runtime.InteropServices.RuntimeInformation-net_4_x.csproj", "{1E1BC1A8-EAD2-496C-A6D6-8AFABD741F56}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Build.Framework-net_4_x", "mcs/class/Microsoft.Build.Framework/Microsoft.Build.Framework-net_4_x.csproj", "{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Build.Utilities-net_4_x", "mcs/class/Microsoft.Build.Utilities/Microsoft.Build.Utilities-net_4_x.csproj", "{8E5728E0-CEAF-431F-963E-EB1DEE15C506}"
@@ -326,6 +324,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Threading.Overlapped-net_4_x", "mcs/class/Facades/System.Threading.Overlapped/Facades_System.Threading.Overlapped-net_4_x.csproj", "{E8BFEFD2-AAB9-45E6-8523-1F6AEB1918A2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Xml.XPath.XDocument-net_4_x", "mcs/class/Facades/System.Xml.XPath.XDocument/Facades_System.Xml.XPath.XDocument-net_4_x.csproj", "{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Runtime.InteropServices.RuntimeInformation-net_4_x", "mcs/class/Facades/System.Runtime.InteropServices.RuntimeInformation/Facades_System.Runtime.InteropServices.RuntimeInformation-net_4_x.csproj", "{71D02788-3AD8-4C43-BDEB-1A3D277496BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Drawing.Primitives-net_4_x", "mcs/class/Facades/System.Drawing.Primitives/Facades_System.Drawing.Primitives-net_4_x.csproj", "{1AFDB281-5FB8-48A9-8694-7F515D835862}"
 EndProject
@@ -1031,10 +1031,6 @@ Global
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1E1BC1A8-EAD2-496C-A6D6-8AFABD741F56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1E1BC1A8-EAD2-496C-A6D6-8AFABD741F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1E1BC1A8-EAD2-496C-A6D6-8AFABD741F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1E1BC1A8-EAD2-496C-A6D6-8AFABD741F56}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -1335,6 +1331,10 @@ Global
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38F046A2-EEBD-4FE7-B70E-636F5DB4BBF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71D02788-3AD8-4C43-BDEB-1A3D277496BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71D02788-3AD8-4C43-BDEB-1A3D277496BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71D02788-3AD8-4C43-BDEB-1A3D277496BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71D02788-3AD8-4C43-BDEB-1A3D277496BA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AFDB281-5FB8-48A9-8694-7F515D835862}.Release|Any CPU.ActiveCfg = Release|Any CPU
