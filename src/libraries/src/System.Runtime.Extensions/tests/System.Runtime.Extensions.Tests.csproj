@@ -91,6 +91,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>

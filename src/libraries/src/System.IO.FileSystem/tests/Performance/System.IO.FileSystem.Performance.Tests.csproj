@@ -16,7 +16,6 @@
     <Compile Include="..\PortedCommon\ReparsePointUtilities.cs" />
     <Compile Include="..\TestData.cs" />
     <Compile Include="..\FileSystemTest.cs" />
-    <Compile Include="..\PathFeatures.cs" />
     <Compile Include="Perf.Directory.cs" />
     <Compile Include="Perf.File.cs" />
     <Compile Include="Perf.FileInfo.cs" />
@@ -26,6 +25,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
