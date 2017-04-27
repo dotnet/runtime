@@ -379,7 +379,7 @@ build_CoreLib_ni()
 {
     if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
         echo "Generating native image for System.Private.CoreLib."
-        $__BinDir/crossgen $__IbcTuning $__BinDir/System.Private.CoreLib.dll
+        $__BinDir/crossgen /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll
         if [ $? -ne 0 ]; then
             echo "Failed to generate native image for System.Private.CoreLib."
             exit 1
@@ -387,7 +387,7 @@ build_CoreLib_ni()
 
         if [ "$__BuildOS" == "Linux" ]; then
             echo "Generating symbol file for System.Private.CoreLib."
-            $__BinDir/crossgen /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.ni.dll
+            $__BinDir/crossgen /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll
             if [ $? -ne 0 ]; then
                 echo "Failed to generate symbol file for System.Private.CoreLib."
                 exit 1

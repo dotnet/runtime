@@ -311,31 +311,12 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
             bool fAddDelimiter = (refTPAList.GetCount() > 0)?true:false;
             bool fAddFileToTPAList = true;
             LPCWSTR pwszFilename = folderEnumerator.GetFileName();
-            if (fCompilingMscorlib)
+            
+            // No NIs are supported when creating NI images (other than NI of System.Private.CoreLib.dll).
+            if (!fCreatePDB)
             {
-                // When compiling CoreLib, no ".ni.dll" should be on the TPAList.
+                // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-mscorlib assemblies.
                 if (StringEndsWith((LPWSTR)pwszFilename, W(".ni.dll")))
-                {
-                    fAddFileToTPAList = false;
-                }
-            }
-            else
-            {
-                // When creating PDBs, we must ensure that .ni.dlls are in the TPAList
-                if (!fCreatePDB)
-                {
-                    // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-mscorlib assemblies.
-                    if (StringEndsWith((LPWSTR)pwszFilename, W(".ni.dll")))
-                    {
-                        if (!StringEndsWith((LPWSTR)pwszFilename, CoreLibName_NI_W))
-                        {
-                            fAddFileToTPAList = false;
-                        }
-                    }
-                }
-                
-                // Ensure that CoreLib's IL version is also not on the TPAlist for this case.                
-                if (StringEndsWith((LPWSTR)pwszFilename, CoreLibName_IL_W))
                 {
                     fAddFileToTPAList = false;
                 }
