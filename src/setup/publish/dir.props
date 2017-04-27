@@ -40,4 +40,4 @@
     <PublishRid Include="win-arm64"/>
     <PublishRid Include="osx-x64"/>
   </ItemGroup>
-  
+</Project>  
