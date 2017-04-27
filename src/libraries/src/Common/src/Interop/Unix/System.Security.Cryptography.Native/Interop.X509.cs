@@ -129,7 +129,11 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxInit")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool X509StoreCtxInit(SafeX509StoreCtxHandle ctx, SafeX509StoreHandle store, SafeX509Handle x509);
+        internal static extern bool X509StoreCtxInit(
+            SafeX509StoreCtxHandle ctx,
+            SafeX509StoreHandle store,
+            SafeX509Handle x509,
+            SafeX509StackHandle extraCerts);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCert")]
         internal static extern int X509VerifyCert(SafeX509StoreCtxHandle ctx);

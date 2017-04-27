@@ -37,7 +37,6 @@ namespace Internal.Cryptography.Pal
         public static IChainPal BuildChain(
             X509Certificate2 leaf,
             HashSet<X509Certificate2> candidates,
-            HashSet<X509Certificate2> downloaded,
             HashSet<X509Certificate2> systemTrusted,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
@@ -57,9 +56,11 @@ namespace Internal.Cryptography.Pal
             // (If you need to think of it as an X509Store, it's a volatile memory store)
             using (SafeX509StoreHandle store = Interop.Crypto.X509StoreCreate())
             using (SafeX509StoreCtxHandle storeCtx = Interop.Crypto.X509StoreCtxCreate())
+            using (SafeX509StackHandle extraCerts = Interop.Crypto.NewX509Stack())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(store);
                 Interop.Crypto.CheckValidOpenSslHandle(storeCtx);
+                Interop.Crypto.CheckValidOpenSslHandle(extraCerts);
 
                 bool lookupCrl = revocationMode != X509RevocationMode.NoCheck;
 
@@ -67,9 +68,15 @@ namespace Internal.Cryptography.Pal
                 {
                     OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
 
-                    if (!Interop.Crypto.X509StoreAddCert(store, pal.SafeHandle))
+                    using (SafeX509Handle handle = Interop.Crypto.X509UpRef(pal.SafeHandle))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        if (!Interop.Crypto.PushX509StackField(extraCerts, handle))
+                        {
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        }
+
+                        // Ownership was transferred to the cert stack.
+                        handle.SetHandleAsInvalid();
                     }
 
                     if (lookupCrl)
@@ -95,9 +102,19 @@ namespace Internal.Cryptography.Pal
                     }
                 }
 
+                foreach (X509Certificate2 trustedCert in systemTrusted)
+                {
+                    OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)trustedCert.Pal;
+
+                    if (!Interop.Crypto.X509StoreAddCert(store, pal.SafeHandle))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+                }
+
                 SafeX509Handle leafHandle = ((OpenSslX509CertificateReader)leaf.Pal).SafeHandle;
 
-                if (!Interop.Crypto.X509StoreCtxInit(storeCtx, store, leafHandle))
+                if (!Interop.Crypto.X509StoreCtxInit(storeCtx, store, leafHandle, extraCerts))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -144,22 +161,6 @@ namespace Internal.Cryptography.Pal
 
                         // Duplicate the certificate handle
                         X509Certificate2 elementCert = new X509Certificate2(elementCertPtr);
-
-                        // If the last cert is self signed then it's the root cert, do any extra checks.
-                        if (i == maybeRootDepth && IsSelfSigned(elementCert))
-                        {
-                            // If the root certificate was downloaded or the system
-                            // doesn't trust it, it's untrusted.
-                            if (downloaded.Contains(elementCert) ||
-                                !systemTrusted.Contains(elementCert))
-                            {
-                                AddElementStatus(
-                                    Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
-                                    status,
-                                    overallStatus);
-                            }
-                        }
-
                         elements[i] = new X509ChainElement(elementCert, status.ToArray(), "");
                     }
                 }
@@ -416,8 +417,6 @@ namespace Internal.Cryptography.Pal
                     extraStore,
                     userIntermediateCerts,
                     systemIntermediateCerts,
-                    userRootCerts,
-                    systemRootCerts,
                 };
 
                 while (toProcess.Count > 0)
@@ -629,7 +628,7 @@ namespace Internal.Cryptography.Pal
 
             internal int VerifyCallback(int ok, IntPtr ctx)
             {
-                if (ok < 0)
+                if (ok != 0)
                 {
                     return ok;
                 }

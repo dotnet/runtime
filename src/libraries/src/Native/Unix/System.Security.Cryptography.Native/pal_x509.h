@@ -219,7 +219,7 @@ extern "C" void CryptoNative_X509StoreCtxDestroy(X509_STORE_CTX* v);
 /*
 Shims the X509_STORE_CTX_init method.
 */
-extern "C" int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509);
+extern "C" int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509, X509Stack* extraStore);
 
 /*
 Shims the X509_verify_cert method.
