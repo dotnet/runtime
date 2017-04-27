@@ -63,8 +63,11 @@ namespace System.Globalization.Tests
             }
 
             ArgumentException ae = Assert.Throws<ArgumentException>(() => idnStd3True.GetAscii(unicode));
-            // sometimes the desktop returns "Unicode" instead of "unicode" for the parameter name.
-            Assert.Equal("unicode", ae.ParamName, ignoreCase: true);
+            if (!PlatformDetection.IsNetNative)
+            {
+                // sometimes the desktop returns "Unicode" instead of "unicode" for the parameter name.
+                Assert.Equal("unicode", ae.ParamName, ignoreCase: true);
+            }
         }
 
         [Fact]

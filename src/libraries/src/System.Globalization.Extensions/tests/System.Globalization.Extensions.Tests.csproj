@@ -39,6 +39,7 @@
     <EmbeddedResource Include="Normalization\Data\win7.txt">
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
