@@ -25,7 +25,6 @@ public:
         dstCandsIndex          = 0;
         internalCandsIndex     = 0;
         isLocalDefUse          = false;
-        isHelperCallWithKills  = false;
         isLsraAdded            = false;
         isDelayFree            = false;
         hasDelayFreeSrc        = false;
@@ -116,9 +115,6 @@ public:
     // Examples include stack arguments to a call (they are immediately stored), lhs of comma
     // nodes, or top-level nodes that are non-void.
     unsigned char isLocalDefUse : 1;
-
-    // isHelperCallWithKills is set when this is a helper call that kills more than just its in/out regs.
-    unsigned char isHelperCallWithKills : 1;
 
     // Is this node added by LSRA, e.g. as a resolution or copy/reload move.
     unsigned char isLsraAdded : 1;
