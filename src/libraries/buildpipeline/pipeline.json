@@ -73,7 +73,7 @@
             "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Release -portable",
             "PB_SyncArguments": "-p -portable -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64",
+            "PB_TargetQueue": "Centos.71.Amd64+Redhat.72.Amd64+Debian.82.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:\"HelixJobType=test/functional/portable/cli/\""
           },
           "ReportingParameters": {
@@ -571,7 +571,7 @@
             "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Debug -portable",
             "PB_SyncArguments": "-p -portable -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64",
+            "PB_TargetQueue": "Centos.71.Amd64+Redhat.72.Amd64+Debian.82.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:\"HelixJobType=test/functional/portable/cli/\""
           },
           "ReportingParameters": {
