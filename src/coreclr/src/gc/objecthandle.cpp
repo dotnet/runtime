@@ -608,7 +608,8 @@ HandleTableBucketHolder::~HandleTableBucketHolder()
         }
         delete [] m_bucket->pTable;
     }
-    delete m_bucket;
+
+    // we do not own m_bucket, so we shouldn't delete it here.
 }
 
 bool Ref_Initialize()
