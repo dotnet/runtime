@@ -44,7 +44,7 @@ bool coreclr::bind(const pal::string_t& libcoreclr_path)
     pal::string_t coreclr_dll_path(libcoreclr_path);
     append_path(&coreclr_dll_path, LIBCORECLR_NAME);
 
-    if (!pal::load_library(coreclr_dll_path.c_str(), &g_coreclr))
+    if (!pal::load_library(&coreclr_dll_path, &g_coreclr))
     {
         return false;
     }

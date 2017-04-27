@@ -51,7 +51,7 @@ bool pal::touch_file(const pal::string_t& path)
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, PATH_MAX + 1);
+    pal::char_t* buf = ::getcwd(nullptr, 0);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -66,9 +66,9 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-bool pal::load_library(const char_t* path, dll_t* dll)
+bool pal::load_library(const string_t* path, dll_t* dll)
 {
-    *dll = dlopen(path, RTLD_LAZY);
+    *dll = dlopen(path->c_str(), RTLD_LAZY);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load %s, error: %s"), path, dlerror());
@@ -442,12 +442,32 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     mib[3] = -1;
     char buf[PATH_MAX];
     size_t cb = sizeof(buf);
-    if (sysctl(mib, 4, buf, &cb, NULL, 0) == 0)
+    int error_code = 0;
+    error_code = sysctl(mib, 4, buf, &cb, NULL, 0);
+    if (error_code == 0)
     {
         recv->assign(buf);
         return true;
     }
+    
     // ENOMEM
+    if (error_code == ENOMEM)
+    {
+        size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
+        std::unique_ptr<char[]> buffer = new (std::nothrow) char[len];
+
+        if (buffer == NULL)
+        {
+            return false;
+        }
+
+        error_code = sysctl(mib, 4, buffer, &len, NULL, 0);
+        if (error_code == 0)
+        {
+            recv->assign(buffer);
+            return true;
+        }
+    }
     return false;
 }
 #else
