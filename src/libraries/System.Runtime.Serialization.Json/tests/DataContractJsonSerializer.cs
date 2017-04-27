@@ -1290,7 +1290,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty, "PropertyValue");
     }
 
-    #region private type has to be in with in the class
+#region private type has to be in with in the class
     [DataContract]
     private class PrivateType
     {
@@ -1316,7 +1316,7 @@ public static partial class DataContractJsonSerializerTests
             return PrivateProperty;
         }
     }
-    #endregion
+#endregion
 
     [Fact]
     public static void DCJS_EmptyString_Throws()
@@ -1937,7 +1937,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(x.IntMember, y.IntMember);
     }
 
-    #region Array of primitive types
+#region Array of primitive types
 
     [Fact]
     public static void DCJS_ArrayOfBoolean()
@@ -2024,9 +2024,9 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
-    #endregion
+#endregion
 
-    #region Collection
+#region Collection
 
     [Fact]
     public static void DCJS_GenericICollectionOfBoolean()
@@ -2108,9 +2108,9 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
-    #endregion
+#endregion
 
-    #region Generic Dictionary
+#region Generic Dictionary
 
     [Fact]
     public static void DCJS_GenericDictionaryOfInt32Boolean()
@@ -2145,9 +2145,9 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
-    #endregion
+#endregion
 
-    #region Non-Generic Dictionary
+#region Non-Generic Dictionary
 
     [Fact]
     public static void DCJS_NonGenericDictionaryOfInt32Boolean()
@@ -2197,7 +2197,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value.ID, actual.ID);
     }
 
-    #endregion
+#endregion
 
     [Fact]
     public static void DCJS_CreateJsonReaderTest()
@@ -2543,22 +2543,15 @@ public static partial class DataContractJsonSerializerTests
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_DMMMM };
         var actual3 = SerializeAndDeserialize(graph, "{\"DateTime\":\"1, mayo\",\"OffsetMinutes\":60}", dcjsSettings);
         Assert.NotNull(actual3);
-        Assert.True(actual3 == new DateTimeOffset(2017, 5, 1, 1, 0, 0, new TimeSpan(1, 0, 0)));
+        var expected3 = new DateTimeOffset(DateTime.Now.Year, 5, 1, 0, 0, 0, new TimeSpan(1, 0, 0));
+        Assert.True(actual3 == expected3, 
+            $"{nameof(actual3)} was not as expected.\r\nExpected: {expected3} \r\n Actual: {actual3}");
 
         var dt35832 = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 3, 58, 32);
         var dt = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_hmsFt };
-        var dcjs = new DataContractJsonSerializer(typeof(DateTime), dcjsSettings);
-        string actualam;
-        using (var ms = new MemoryStream())
-        {
-            dcjs.WriteObject(ms, new DateTime());
-            ms.Position = 0;
-            var temp = new StreamReader(ms).ReadToEnd();
-            actualam = temp.Substring(temp.IndexOf('a'));
-        }
-
-        var baselinelist = $"[\"03:58:32.00 {actualam},\"12:00:00.00 {actualam},\"12:00:00.00 {actualam},\"03:58:32.00 {actualam}]";
+        string actualam = GetAmString(jsonTypes.DTF_hmsFt); 
+        string baselinelist = $"[\"03:58:32.00 {actualam}\",\"12:00:00.00 {actualam}\",\"12:00:00.00 {actualam}\",\"03:58:32.00 {actualam}\"]";
         var actual4 = SerializeAndDeserialize(jsonTypes.DT_List, baselinelist, dcjsSettings);
         Assert.NotNull(actual4);
         Assert.True(actual4[0] == dt35832);
@@ -2566,7 +2559,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(actual4[2] == dt);
         Assert.True(actual4[3] == dt35832);
 
-        var baselinedictionary = $"[{{\"Key\":\"03:58:32.00 {actualam},\"Value\":\"03:58:32.00 {actualam}}},{{\"Key\":\"12:00:00.00 {actualam},\"Value\":\"12:00:00.00 {actualam}}}]";
+        string baselinedictionary = $"[{{\"Key\":\"03:58:32.00 {actualam}\",\"Value\":\"03:58:32.00 {actualam}\"}},{{\"Key\":\"12:00:00.00 {actualam}\",\"Value\":\"12:00:00.00 {actualam}\"}}]";
         var actual5 = SerializeAndDeserialize(jsonTypes.DT_Dictionary, baselinedictionary, dcjsSettings);
         Assert.NotNull(actual5);
         Assert.True(actual5[dt35832] == dt35832);
@@ -2582,7 +2575,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(18512, TestPlatforms.Linux)]
     public static void DCJS_VerifyDateTimeForDateTimeFormat()
     {
         var jsonTypes = new JsonTypes();
@@ -2606,7 +2598,8 @@ public static partial class DataContractJsonSerializerTests
             EmitTypeInformation = EmitTypeInformation.AsNeeded, 
             KnownTypes = new List<Type>()
         };
-        var baseline = "\"03:58:32.00 a.m.\"";
+        string actualam = GetAmString(jsonTypes.DTF_hmsFt);
+        string baseline = $"\"03:58:32.00 {actualam}\"";
         var actual2 = SerializeAndDeserialize(new DateTime(1, 1, 1, 3, 58, 32), baseline, dcjsSettings);
         Assert.NotNull(actual2);
         Assert.True(actual2 == new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 3, 58, 32));
@@ -2938,5 +2931,19 @@ public static partial class DataContractJsonSerializerTests
     private static string getCheckFailureMsg(string propertyName)
     {
         return string.Format(s_errorMsg, propertyName);
+    }
+
+    private static string GetAmString(DateTimeFormat dateTimeFormat)
+    {
+        var dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = dateTimeFormat };
+        var dcjs = new DataContractJsonSerializer(typeof(DateTime), dcjsSettings);
+        using (var ms = new MemoryStream())
+        {
+            dcjs.WriteObject(ms, new DateTime());
+            ms.Position = 0;
+            string output = new StreamReader(ms).ReadToEnd();
+            string actualam = output.Contains("a.m.") ? "a.m." : "a. m.";
+            return actualam;
+        }
     }
 }
