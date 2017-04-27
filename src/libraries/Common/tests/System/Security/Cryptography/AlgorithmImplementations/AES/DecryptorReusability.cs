@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     public static class DecryptorReusabilty
     {
         // See https://github.com/dotnet/corefx/issues/18903 for details
-        [ConditionalFact(nameof(ShouldDescriptorBeReusable))]
+        [ConditionalFact(nameof(ShouldDecryptorBeReusable))]
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        private static bool ShouldDescriptorBeReusable()
+        private static bool ShouldDecryptorBeReusable()
         {
             if (!PlatformDetection.IsFullFramework)
                 return true;
