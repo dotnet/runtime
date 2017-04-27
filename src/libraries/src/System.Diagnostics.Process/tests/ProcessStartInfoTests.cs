@@ -343,6 +343,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWorkingDirectoryProperty()
         {
+            CreateDefaultProcess();
+            
             // check defaults
             Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
 

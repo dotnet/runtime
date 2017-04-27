@@ -61,6 +61,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestThreadCollectionBehavior()
         {
+            CreateDefaultProcess();
+            
             ProcessThread[] tArray = _process.Threads.Cast<ProcessThread>().ToArray();
             int countOfTArray = tArray.Count();
 
