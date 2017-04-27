@@ -441,14 +441,16 @@ BOOL TypeDesc::CanCastTo(TypeHandle toType, TypeHandlePairList *pVisited)
     // then we must be trying to cast to a class or interface type.
     if (!toType.IsTypeDesc())
     {
-        MethodTable *pMT = GetMethodTable();
-        if (pMT == 0) {
-            // I don't have an underlying method table, therefore I'm
-            // a variable type, pointer type, function pointer type
+        if (!IsArray())
+        {
+            // I am a variable type, pointer type, function pointer type
             // etc.  I am not an object or value type.  Therefore
             // I can't be cast to an object or value type.
             return FALSE;
         }
+
+        MethodTable *pMT = GetMethodTable();
+        _ASSERTE(pMT != 0);
 
         // This does the right thing if 'type' == System.Array or System.Object, System.Clonable ...
         if (pMT->CanCastToClassOrInterface(toType.AsMethodTable(), pVisited) != 0)
@@ -609,14 +611,16 @@ TypeHandle::CastResult TypeDesc::CanCastToNoGC(TypeHandle toType)
     // then we must be trying to cast to a class or interface type.
     if (!toType.IsTypeDesc())
     {
-        MethodTable *pMT = GetMethodTable();
-        if (pMT == 0) {
-            // I don't have an underlying method table, therefore I'm
-            // a variable type, pointer type, function pointer type
+        if (!IsArray())
+        {
+            // I am a variable type, pointer type, function pointer type
             // etc.  I am not an object or value type.  Therefore
             // I can't be cast to an object or value type.
             return TypeHandle::CannotCast;
         }
+
+        MethodTable *pMT = GetMethodTable();
+        _ASSERTE(pMT != 0);
 
         // This does the right thing if 'type' == System.Array or System.Object, System.Clonable ...
         return pMT->CanCastToClassOrInterfaceNoGC(toType.AsMethodTable());
