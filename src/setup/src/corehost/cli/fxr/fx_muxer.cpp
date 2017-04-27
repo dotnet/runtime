@@ -432,24 +432,18 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
 
     // Multi-level SharedFX lookup will look for the most appropriate version in several locations
     // by following the priority rank below (from 1 to 4):
-    // 1. Current working directory
-    // 2. User directory
-    // 3. .exe directory
-    // 4. Global .NET directory
+    //  User directory
+    // .exe directory
+    //  Global .NET directory
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
-    pal::string_t cwd;
     pal::string_t local_dir;
     pal::string_t global_dir;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
     if (multilevel_lookup)
     {
-        if (pal::getcwd(&cwd))
-        {
-            hive_dir.push_back(cwd);
-        }
         if (pal::get_local_dotnet_dir(&local_dir))
         {
             hive_dir.push_back(local_dir);
@@ -643,10 +637,6 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
     if (multilevel_lookup)
     {
-        if (!cwd.empty())
-        {
-            hive_dir.push_back(cwd);
-        }
         if (pal::get_local_dotnet_dir(&local_dir))
         {
             hive_dir.push_back(local_dir);

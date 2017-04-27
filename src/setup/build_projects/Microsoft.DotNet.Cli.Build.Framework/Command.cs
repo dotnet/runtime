@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
 {
@@ -219,6 +220,22 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command WorkingDirectory(string projectDirectory)
         {
             _process.StartInfo.WorkingDirectory = projectDirectory;
+            return this;
+        }
+
+        public Command WithUserProfile(string userprofile)
+        {
+            string _userDir;
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+                _userDir = "USERPROFILE";
+            }
+            else
+            {
+                _userDir = "HOME";
+            }
+
+            _process.StartInfo.Environment[_userDir] = userprofile;
             return this;
         }
 
