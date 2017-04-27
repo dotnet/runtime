@@ -23,7 +23,6 @@ namespace System.Net.Security.Tests
         protected abstract bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream);
 
         [Fact]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public void SslStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -229,7 +228,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public void SslStream_StreamToStream_Write_ReadByte_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
