@@ -1087,7 +1087,11 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
 
     if (verbose)
     {
-        if ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) != 0)
+        if (node->gtUseNum == -1)
+        {
+            // nothing wrong if the node was not consumed
+        }
+        else if ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) != 0)
         {
             printf("Node was consumed twice:\n");
             compiler->gtDispTree(node, nullptr, nullptr, true);
