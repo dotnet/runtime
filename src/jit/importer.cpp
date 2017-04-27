@@ -7325,8 +7325,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // instParam.
                 instParam = gtNewIconNode(0, TYP_REF);
             }
-
-            if (!exactContextNeedsRuntimeLookup)
+            else if (!exactContextNeedsRuntimeLookup)
             {
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
