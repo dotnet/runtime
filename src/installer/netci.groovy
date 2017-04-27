@@ -93,7 +93,7 @@ platformList.each { platform ->
         Utilities.addGithubPRTriggerForBranch(newJob, branch, "${contextString} Build", "(?i).*test\\W+${contextString}.*", true /* trigger on comment phrase only */)
     }
     else {
-        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build", "(?i).*test buildtools please.*")
+        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
     }
 
     ArchivalSettings settings = new ArchivalSettings();
@@ -103,8 +103,6 @@ platformList.each { platform ->
     settings.setFailIfNothingArchived()
 
     Utilities.addArchival(newJob, settings)
-
-    newJob.with { disabled(false) }
 }
 
 // **************************
