@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
-    <ProjectGuid>{38889701-0af4-48b3-999c-e99d639c61b6}</ProjectGuid>
+    <ProjectGuid>{38889701-0AF4-48B3-999C-E99D639C61B6}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -27,6 +27,9 @@
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\Primitives.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\ObjRefSample.cs">
+      <Link>SerializationTestTypes\ObjRefSample.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
