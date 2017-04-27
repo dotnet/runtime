@@ -41,7 +41,7 @@
   </Target>
 
   <!-- override GetPackageIdentity so that it doesn't attempt to gather 
-       files from runtime depdencies,  this prevents folks from needing
+       files from runtime dependencies,  this prevents folks from needing
        packages that don't apply to their local OS.
        https://github.com/dotnet/buildtools/issues/1273 -->
   <Target Name="GetPackageIdentity" Returns="@(_PackageIdentity)" DependsOnTargets="CalculatePackageVersion">

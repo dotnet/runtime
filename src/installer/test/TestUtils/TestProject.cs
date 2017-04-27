@@ -24,9 +24,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _hostPolicyDll;
         private string _hostFxrDll;
 
-        private IEnumerable<string> _compilationFiles;
-        private IEnumerable<string> _outputFiles;
-
         public string ProjectDirectory => _projectDirectory;
         public string ProjectName => _projectName;
 

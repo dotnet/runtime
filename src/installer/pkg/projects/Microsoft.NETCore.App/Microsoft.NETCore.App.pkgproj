@@ -2,9 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
   <PropertyGroup>
     <Version>$(NetCoreAppVersion)</Version>
-    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(NetCoreAppVersion)').ToString(2))</NETCoreAppFramework>
+    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(ProductionVersion)').ToString(2))</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -60,7 +62,6 @@
     </ProjectReference>
   </ItemGroup>
   
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
              Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 

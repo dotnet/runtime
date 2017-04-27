@@ -8,8 +8,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>4a4711d8-4312-49fc-87b5-4f183f4c6a51</ProjectGuid>
     <RootNamespace>Microsoft.Extensions.DependencyModel.Tests</RootNamespace>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'=='' ">..\..\artifacts\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>

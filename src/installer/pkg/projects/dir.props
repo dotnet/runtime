@@ -49,7 +49,17 @@
     </Otherwise>
   </Choose>
 
-  <ItemGroup>
+  <!-- Add required legal files to packages -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
     <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
     <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
   </ItemGroup>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+  <Import Project="dir.targets" />
+  <Import Project="dir.traversal.targets" />
+
+  <Target Name="Build">
+
+    <PropertyGroup>
+        <BuildParams Condition="'$(OSGroup)' == 'Windows_NT'">TargetsWindows=true</BuildParams>
+        <BuildParams Condition="'$(OSGroup)' == 'OSX'">TargetsOSX=true;DistroRid=$(PackageTargetRid)</BuildParams>
+        <BuildParams Condition="'$(BuildParams)' == ''">TargetsLinux=true;DistroRid=$(PackageTargetRid)</BuildParams>
+    </PropertyGroup>
+
+    <MSBuild Projects="packages.builds" Properties="$(BuildParams)"/>
+
+    <ItemGroup>
+        <Nupkgs Include="$(PackageOutputPath)\**\*.nupkg" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(Nupkgs)"
+          DestinationFolder="$(BaseOutputRootPath)corehost"/>
+  </Target>
+  
+</Project>

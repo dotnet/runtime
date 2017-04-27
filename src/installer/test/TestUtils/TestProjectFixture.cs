@@ -1,4 +1,4 @@
-﻿using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -64,12 +64,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _repoDirectoriesProvider = repoDirectoriesProvider;
 
             _testProjectSourceDirectory = testProjectSourceDirectory
-                ?? Path.Combine(repoDirectoriesProvider.RepoRoot, "TestAssets", "TestProjects");
+                ?? Path.Combine(repoDirectoriesProvider.RepoRoot, "src", "test", "Assets", "TestProjects");
             _testArtifactDirectory = _testArtifactDirectory
                 ?? Environment.GetEnvironmentVariable(s_testArtifactDirectoryEnvironmentVariable)
                 ?? Path.Combine(AppContext.BaseDirectory, s_testArtifactDirectoryEnvironmentVariable);
 
-            _sdkDotnet = new DotNetCli(dotnetInstallPath ?? DotNetCli.GetStage0Path(repoDirectoriesProvider.RepoRoot));
+            _sdkDotnet = new DotNetCli(dotnetInstallPath ?? repoDirectoriesProvider.DotnetSDK);
             _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
 
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);

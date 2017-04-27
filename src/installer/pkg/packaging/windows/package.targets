@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Import Project='package.props' />
+    
+    <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+    <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+    <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+    <Target Name="GenerateMsis"
+            Condition="'$(OSGroup)' == 'Windows_NT'">
+      
+      <PropertyGroup>
+        <WixVersion Condition="'$(WixVersion)' == ''">3.10.2</WixVersion>
+        <WixFilename>wix.$(WixVersion).zip</WixFilename>
+      </PropertyGroup>
+
+      <Exec Command="powershell -NoProfile -NoLogo $(GetWixScript) -WixVersion $(WixVersion) -OutputDir $(WixToolsDir)" />
+      
+      <ItemGroup>
+        <_filelist Include="$(WixToolsDir)\**" />
+      </ItemGroup>
+
+      <Message Importance="High" Text="Contents of $(WixToolsDir): @(_filelist)" />
+   
+      <Message Importance="High" Text="Extracting Wix tools from $(WixToolsDir)\$(WixFilename)..." />
+      <ZipFileExtractToDirectory Condition="!Exists('$(WixToolsDir)\candle.exe')"
+                                 SourceArchive="$(WixToolsDir)\$(WixFilename)"
+                                 DestinationDirectory="$(WixToolsDir)"
+                                 OverwriteDestination="false" />
+
+      <GenerateGuidFromName Name="$(PackagesOutDir)$(SharedHostInstallerFile)">
+        <Output TaskParameter="GeneratedGui" PropertyName="SharedHostUpgradeCode" />
+      </GenerateGuidFromName>
+
+      <GenerateGuidFromName Name="$(PackagesOutDir)$(HostFxrInstallerFile)">
+        <Output TaskParameter="GeneratedGui" PropertyName="HostFxrUpgradeCode" />
+      </GenerateGuidFromName>
+
+      <ItemGroup>
+        <WixOutputs Include="$(WixObjRoot)host">
+            <InputDir>$(SharedHostPublishRoot)</InputDir>
+            <BrandName>$(SharedHostBrandName)</BrandName>
+            <InstallerName>$(PackagesOutDir)$(SharedHostInstallerFile)</InstallerName>
+            <UpgradeCode>$(SharedHostUpgradeCode)</UpgradeCode>
+        </WixOutputs>
+        <WixOutputs Include="$(WixObjRoot)hostfxr">
+            <InputDir>$(HostFxrPublishRoot)</InputDir>
+            <BrandName>$(HostFxrBrandName)</BrandName>
+            <InstallerName>$(PackagesOutDir)$(HostFxrInstallerFile)</InstallerName>
+            <UpgradeCode>$(HostFxrUpgradeCode)</UpgradeCode>
+        </WixOutputs>
+        <!-- shared framework has extra arguments so it needs to be in a separate group -->
+        <WixOutputs2 Include="$(WixObjRoot)sharedframework">
+            <InputDir>$(SharedFrameworkPublishRoot)</InputDir>
+            <BrandName>$(SharedFrameworkBrandName)</BrandName>
+            <InstallerName>$(PackagesOutDir)$(SharedFrameworkInstallerFile)</InstallerName>
+        </WixOutputs2>
+      </ItemGroup>
+
+      <RemoveDir Directories="$(WixObjRoot)" />
+      <MakeDir Directories="$(WixObjRoot);@(WixOutputs);@(WixOutputs2)" />
+
+      <GenerateMsiVersion
+        Major="$(MajorVersion)"
+        Minor="$(MinorVersion)"
+        Patch="$(PatchVersion)"
+        BuildNumberMajor="$(BuildNumberMajor)"
+        BuildNumberMinor="$(BuildNumberMajor)">
+        <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
+      </GenerateMsiVersion>
+
+      <GenerateGuidFromName Name="$(PackagesOutDir)$(SharedFrameworkInstallerFile)">
+        <Output TaskParameter="GeneratedGui" PropertyName="SharedFxUpgradeCode" />
+      </GenerateGuidFromName>
+
+      <PropertyGroup>
+        <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
+        <CommonParams>$(MsiVersionString) $(HostVersion) $(ArchParams)</CommonParams>
+        <SharedFxParams>$(MsiVersionString) $(SharedFrameworkName) $(HostVersion) $(SharedFxUpgradeCode) $(ArchParams)</SharedFxParams>
+      </PropertyGroup>
+
+      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs.Filename)\generatemsi.ps1 %(WixOutputs.InputDir) %(WixOutputs.InstallerName) $(WixToolsDir) %(WixOutputs.BrandName) $(CommonParams) %(WixOutputs.Identity) %(WixOutputs.UpgradeCode)" />
+      <!-- shared framework -->
+      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs2.Filename)\generatemsi.ps1 %(WixOutputs2.InputDir) %(WixOutputs2.InstallerName) $(WixToolsDir) %(WixOutputs2.BrandName) $(SharedFxParams) %(WixOutputs2.Identity)" />
+  </Target>
+
+  <Target Name="GenerateBundles"
+          DependsOnTargets="GetBundleDisplayVersion"
+          Condition="'$(OSGroup)' == 'Windows_NT'">
+     <PropertyGroup>
+        <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>
+        <ShareFXMsi>$(PackagesOutDir)$(SharedFrameworkInstallerFile)</ShareFXMsi>
+        <HostMsi>$(PackagesOutDir)$(SharedHostInstallerFile)</HostMsi>
+        <HostFxrMsi>$(PackagesOutDir)$(HostFxrInstallerFile)</HostFxrMsi>
+        <SharedBundle>$(PackagesOutDir)$(CombinedInstallerFile)</SharedBundle>
+        <SharedBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedBrandName>
+        <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
+     </PropertyGroup>
+
+     <GenerateGuidFromName Name="$(SharedBundle)">
+       <Output TaskParameter="GeneratedGui" PropertyName="SharedBundleCode" />
+     </GenerateGuidFromName>
+
+     <PropertyGroup>
+        <BundleParameters>$(ShareFXMsi) $(HostMsi) $(HostFxrMsi) $(SharedBundle) $(WixToolsDir) $(SharedBrandName) $(MsiVersionString) $(BundleDisplayVersion) $(SharedFrameworkName) $(HostVersion) $(SharedBundleCode) $(ArchParams)</BundleParameters>
+     </PropertyGroup>
+
+     <Exec Command="powershell -NoProfile -NoLogo $(SharedFxBundleScript) $(BundleParameters)" />
+  </Target>
+</Project>

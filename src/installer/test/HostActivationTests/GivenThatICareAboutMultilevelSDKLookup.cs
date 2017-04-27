@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using Microsoft.DotNet.InternalAbstractions;
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
             string artifactsDir = Environment.GetEnvironmentVariable("TEST_ARTIFACTS");
-            string builtDotnet = Path.Combine(artifactsDir, "..", "..", "intermediate", "sharedFrameworkPublish");
+            string builtDotnet = Path.Combine(artifactsDir, "sharedFrameworkPublish");
 
             // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
             // necessary to perform the tests
@@ -360,7 +360,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 throw new DirectoryNotFoundException();
             }
 
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "TestAssets", "TestUtils",
+            string dummyRuntimeConfig = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
                 "SDKLookup", "dotnet.runtimeconfig.json");
 
             foreach (string version in availableVersions)
@@ -442,7 +442,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         public void SetGlobalJsonVersion()
         {
             string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "TestAssets", "TestUtils",
+            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "src", "test", "Assets", "TestUtils",
                 "SDKLookup", "global.json");
 
             File.Copy(srcFile, destFile, true);

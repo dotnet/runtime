@@ -49,7 +49,7 @@
     </ProjectReference>
   </ItemGroup>
   
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
              Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 

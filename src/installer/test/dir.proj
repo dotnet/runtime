@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+  <UsingTask TaskName="GetHostInformation" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
+
+  <PropertyGroup>
+    <BuildTestTargets>
+        DetermineTestOutputDirectory;
+        InitBaseDotnetCli;
+        RestoreTests;
+        BuildTests;
+        RunTests;
+    </BuildTestTargets>
+  </PropertyGroup>
+
+  <Target Name="BuildAndTest" DependsOnTargets="$(BuildTestTargets)" />
+  
+  <Target Name="DetermineTestOutputDirectory">
+    <GetHostInformation>
+      <Output TaskParameter="Rid" PropertyName="_HostRid" />
+    </GetHostInformation>
+    <PropertyGroup>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(_HostRid)</TestTargetRid>
+      <TestOSPlatformConfig>$(TestTargetRid).$(ConfigurationGroup)</TestOSPlatformConfig>
+      <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(BaseOutputPath)tests/$(TestOSPlatformConfig)/</TestsOutputDir>
+    </PropertyGroup>
+  </Target>
+
+  <!-- We need a version of the Cli that we can plug the host / shared framework into for testing. -->
+  <Target Name="InitBaseDotnetCli"
+          DependsOnTargets="DetermineTestOutputDirectory">
+    <PropertyGroup>
+      <TestToolsLocalPath Condition="'$(TestToolsLocalPath)' == ''">$(TestsOutputDir)Tools</TestToolsLocalPath>
+      <BootstrapCommand Condition="'$(OSGroup)' == 'Windows_NT'">powershell -NoProfile -ExecutionPolicy unrestricted -Command "$(MSBuildThisFileDirectory)bootstrap/bootstrap.ps1" -ToolsLocalPath $(TestToolsLocalPath) -Architecture $(TargetArchitecture)</BootstrapCommand>
+      <BootstrapCommand Condition="'$(OSGroup)' != 'Windows_NT'">$(MSBuildThisFileDirectory)bootstrap/bootstrap.sh --toolsLocalPath $(TestToolsLocalPath)</BootstrapCommand>
+      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet.exe</DotnetTestToolCommand>
+      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet</DotnetTestToolCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(BootstrapCommand)" 
+          WorkingDirectory="$(MSBuildThisFileDirectory)bootstrap/" />
+  </Target>
+
+  <Target Name="RestoreTests">
+    <ItemGroup>
+      <RestoreTest Include="$(TestDir)/**/project.json" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TempFolderRoot Condition="'$(OSGroup)' == 'Windows_NT'">$(USERPROFILE)\.dotnet\</TempFolderRoot>
+      <TempFolderRoot Condition="'$(OSGroup)' != 'Windows_NT'">$(HOME)/.dotnet/</TempFolderRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <DirsToClean Include="$(TestDir)\**\bin" />
+      <DirsToClean Include="$(TestDir)\**\obj" />
+      <DirsToClean Include="$(TempFolderRoot)$(TargetArchitecture)" />  
+    </ItemGroup>
+
+    <RemoveDir Directories="@(DirsToClean)" />
+    <MakeDir Directories="$(TempFolderRoot)NuGetFallbackFolder" />
+
+    <PropertyGroup>
+      <RestoreSourceArg>@(RestoreTestSource->'--source %(Identity)', ' ')</RestoreSourceArg>
+      <RestoreSourceArg>$(RestoreSourceArg) @(RestoreTestFallbackSource->'--fallbacksource %(Identity)', ' ')</RestoreSourceArg>
+      <RestoreArgs>--disable-parallel --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(RestoreSourceArg)</RestoreArgs>
+    </PropertyGroup>
+
+    <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs)"
+          WorkingDirectory="%(RestoreTest.RootDir)%(RestoreTest.Directory)" 
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
+  </Target>
+
+  <Target Name="BuildTests"
+          DependsOnTargets="DetermineTestOutputDirectory">
+
+    <PropertyGroup>
+      <BuildArgs>--build-base-path $(IntermediateOutputForPackaging) --configuration $(ConfigurationGroup)</BuildArgs>
+    </PropertyGroup>
+
+    <Message Text="Building Tests" Importance="High" />
+    <Message Importance="High" Text="TestProjects: @(TestProjects)" />
+    <Exec Command="$(DotnetTestToolCommand) build $(BuildArgs) %(TestProjects.Identity)" 
+          WorkingDirectory="%(TestProjects.Identity)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
+  </Target>
+
+  <Target Name="RunTest"
+          DependsOnTargets="DetermineTestOutputDirectory"
+          Inputs="%(TestProjects.Identity)"
+          Outputs="fake">
+    <PropertyGroup>
+      <TestProject>%(TestProjects.Identity)</TestProject>
+      <TestProjectFilename>%(TestProjects.Filename)</TestProjectFilename>
+      <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
+      <!-- The tests use the TEST_ARTIFACTS env variable to determine the artifacts folder and then later compare that path to its expected path.
+           So, the TEST_ARTIFACTS variable has to have system specific path separators or the string compoarison will fail. -->   
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>   
+      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>   
+    </PropertyGroup>
+    <PropertyGroup>
+      <TestArgs>--configuration $(ConfigurationGroup)</TestArgs>
+      <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
+      <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.xml</TestResultsXml>
+    </PropertyGroup>
+
+    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs) -xml $(TestResultsXml) -notrait category=failing"
+          WorkingDirectory="$(TestProject)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(TargetRid)"
+          Condition="'$(TestProjectFilename)' != 'HostActivationTests' or '$(IsCrossArch)' != 'true'"
+          ContinueOnError="true"
+          IgnoreStandardErrorWarningFormat="true"
+          IgnoreExitCode="true">
+        <Output TaskParameter="ExitCode" PropertyName="_ErrorCode" />
+    </Exec>
+
+    <ItemGroup>
+      <TestResults Include="$(TestProject)">
+        <ResultsXml>$(TestResultsXml)</ResultsXml>
+        <ExitCode>$(_ErrorCode)</ExitCode>
+      </TestResults>
+    </ItemGroup>
+    <Message Importance="High" Condition="'$(_ErrorCode)' != '0'" Text="Test run failed with exit code '$(_ErrorCode)', see $(TestResultsXml)" />
+  </Target>
+
+  <Target Name="RunTests"
+          DependsOnTargets="PrepareTestFolders;RunTest">
+    <ItemGroup>
+      <FailedTests Include="@(TestResults)" Condition="'%(TestResults.ExitCode)' != '0'">
+      </FailedTests>
+    </ItemGroup>
+    <Message Importance="High" Condition="'@(FailedTests)' != ''" Text="Failed test summary" />
+    <Message Importance="High" Condition="'@(FailedTests)' != ''" Text="  %(FailedTests.Identity) failed with exit code %(FailedTests.ExitCode), see %(FailedTests.ResultsXml)" />      
+    <Error Condition="'@(FailedTests)' != ''" Text="One or more test runs failed." />
+  </Target>
+
+  <Target Name="PrepareTestFolders">
+    <ItemGroup>
+      <SharedFrameworkPublishFiles Include="$(IntermediateOutputRootPath)sharedFrameworkPublish/**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(SharedFrameworkPublishFiles)"
+          DestinationFiles="@(SharedFrameworkPublishFiles->'$(TestsOutputDir)sharedFrameworkPublish/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+</Project>

@@ -4,19 +4,19 @@
     "allowUnsafe": true,
     "compile": {
       "include": [
-        "../../build_projects/shared-build-targets-utils/Utils/DotNetCli.cs",
-        "../../build_projects/shared-build-targets-utils/Utils/EnvVars.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/AnsiConsole.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/AnsiColorExtensions.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/ArgumentEscaper.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/BuildFailureException.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/BuildReporter.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Command.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/CommandResult.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Constants.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Reporter.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Enumerations/BuildPlatform.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/CurrentPlatform.cs"
+        "../build/shared-build-targets-utils/Utils/DotNetCli.cs",
+        "../build/shared-build-targets-utils/Utils/EnvVars.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/AnsiConsole.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/AnsiColorExtensions.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/ArgumentEscaper.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/BuildFailureException.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/BuildReporter.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/Command.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/CommandResult.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/Constants.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/Reporter.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/Enumerations/BuildPlatform.cs",
+        "../build/Microsoft.DotNet.Cli.Build.Framework/CurrentPlatform.cs"
       ]
     }
   },

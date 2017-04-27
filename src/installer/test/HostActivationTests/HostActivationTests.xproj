@@ -8,8 +8,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>386d412c-003c-47b1-8258-0e35865cb7c4</ProjectGuid>
     <RootNamespace>Microsoft.DotNet.Tools.Publish.Tests</RootNamespace>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'=='' ">..\..\artifacts\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
