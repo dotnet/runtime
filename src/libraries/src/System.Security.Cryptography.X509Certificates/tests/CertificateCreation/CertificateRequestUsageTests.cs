@@ -28,7 +28,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 CertificateRequest request = new CertificateRequest(
                     "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     rsa,
-                    HashAlgorithmName.SHA256);
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
 
                 request.CertificateExtensions.Add(sanExtension);
 
@@ -69,7 +70,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 rsa.ImportParameters(TestData.RsaBigExponentParams);
 
-                CertificateRequest request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256);
+                var request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 request.CertificateExtensions.Add(skidExtension);
                 request.CertificateExtensions.Add(akidExtension);
                 request.CertificateExtensions.Add(basicConstraints);
@@ -122,7 +123,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (RSA rsa = RSA.Create())
             {
                 SimpleSelfSign(
-                    new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256),
+                    new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     "1.2.840.113549.1.1.1");
             }
         }
@@ -185,7 +186,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 CertificateRequest request = new CertificateRequest(
                     "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     rsa,
-                    HashAlgorithmName.SHA256);
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
                 cert = request.CreateSelfSigned(now, now.AddDays(90));
@@ -356,7 +358,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 CertificateRequest request = new CertificateRequest(
                     "CN=Double Extension Test",
                     rsa,
-                    HashAlgorithmName.SHA256);
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
 
                 request.CertificateExtensions.Add(
                     new X509BasicConstraintsExtension(true, false, 0, true));
@@ -441,6 +444,168 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             if (CultureInfo.CurrentCulture.Name == "en-US")
             {
                 Assert.Contains("ASN1", exception.Message);
+            }
+        }
+
+        [Fact]
+        public static void ECDSA_Signing_RSA()
+        {
+            using (RSA rsa = RSA.Create())
+            using (ECDsa ecdsa = ECDsa.Create())
+            {
+                var request = new CertificateRequest(
+                    new X500DistinguishedName("CN=Test"),
+                    ecdsa,
+                    HashAlgorithmName.SHA256);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    X509SignatureGenerator generator =
+                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                    request = new CertificateRequest(
+                        new X500DistinguishedName("CN=Leaf"),
+                        rsa,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
+
+                    byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
+
+                    Assert.Throws<ArgumentException>(
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
+
+
+                    // Passes with the generator
+                    using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
+                    {
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void ECDSA_Signing_RSAPublicKey()
+        {
+            using (RSA rsa = RSA.Create())
+            using (ECDsa ecdsa = ECDsa.Create())
+            {
+                var request = new CertificateRequest(
+                    new X500DistinguishedName("CN=Test"),
+                    ecdsa,
+                    HashAlgorithmName.SHA256);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    X509SignatureGenerator rsaGenerator =
+                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                    request = new CertificateRequest(
+                        new X500DistinguishedName("CN=Leaf"),
+                        rsaGenerator.PublicKey,
+                        HashAlgorithmName.SHA256);
+
+                    byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
+
+                    Assert.Throws<ArgumentException>(
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
+
+                    X509SignatureGenerator ecdsaGenerator =
+                        X509SignatureGenerator.CreateForECDsa(ecdsa);
+
+                    // Passes with the generator
+                    using (request.Create(cert.SubjectName, ecdsaGenerator, now, now.AddHours(3), serialNumber))
+                    {
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void RSA_Signing_ECDSA()
+        {
+            using (RSA rsa = RSA.Create())
+            using (ECDsa ecdsa = ECDsa.Create())
+            {
+                var request = new CertificateRequest(
+                    new X500DistinguishedName("CN=Test"),
+                    rsa,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    request = new CertificateRequest(
+                        new X500DistinguishedName("CN=Leaf"),
+                        ecdsa,
+                        HashAlgorithmName.SHA256);
+
+                    byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
+
+                    Assert.Throws<ArgumentException>(
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
+
+                    X509SignatureGenerator generator =
+                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                    // Passes with the generator
+                    using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
+                    {
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void RSACertificateNoPaddingMode()
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                var request = new CertificateRequest(
+                    new X500DistinguishedName("CN=Test"),
+                    rsa,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                {
+                    request = new CertificateRequest(
+                        new X500DistinguishedName("CN=Leaf"),
+                        cert.PublicKey,
+                        HashAlgorithmName.SHA256);
+
+                    byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
+
+                    Assert.Throws<InvalidOperationException>(
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
+
+                    X509SignatureGenerator generator =
+                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                    // Passes with the generator
+                    using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
+                    {
+                    }
+                }
             }
         }
 

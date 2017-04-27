@@ -106,6 +106,9 @@
   <data name="Cryptography_Cert_AlreadyHasPrivateKey" xml:space="preserve">
     <value>The certificate already has an associated private key.</value>
   </data>
+  <data name="Cryptography_CertReq_AlgorithmMustMatch" xml:space="preserve">
+    <value>The issuer certificate public key algorithm ({0}) does not match the value for this certificate request ({1}), use the X509SignatureGenerator overload.</value>
+  </data>
   <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
     <value>The provided notBefore value is later than the notAfter value.</value>
   </data>
@@ -120,6 +123,9 @@
   </data>
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
+  </data>
+  <data name="Cryptography_CertReq_RSAPaddingRequired" xml:space="preserve">
+    <value>The issuer certificate uses an RSA key but no RSASignaturePadding was provided to a constructor. If one cannot be provided, use the X509SignatureGenerator overload.</value>
   </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
