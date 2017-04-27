@@ -62,12 +62,6 @@
   <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'uap'">
-    <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>

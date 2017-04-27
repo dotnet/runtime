@@ -431,19 +431,11 @@ namespace System.Diagnostics
 
         private string GenerateRootId()
         {
-            if (s_uniqPrefix == null)
-            {
-                // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
-                // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
-                // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
-                Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
-            }
-#if DEBUG
-            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + OperationName.Replace('.', '-') + "-" + s_uniqPrefix + '.';
-#else       // To keep things short, we drop the operation name 
-            string ret = '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + '-' + s_uniqPrefix + '.';
-#endif
-            return ret;
+            // It is important that the part that changes frequently be first, because
+            // many hash functions don't 'randomize' the tail of a string.   This makes
+            // sampling based on the hash produce poor samples.   Thus the 'machine part'
+            // of the ID is last.  
+            return  '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_uniqSuffix;
         }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [SecuritySafeCritical]
@@ -456,10 +448,10 @@ namespace System.Diagnostics
         }
 
         private string _rootId;
-
-        // Used to generate an ID 
-        private static string s_uniqPrefix;  //instance unique prefix
         private int _currentChildId;  // A unique number for all children of this activity.  
+
+        // Used to generate an ID it represents the machine and process we are in.  
+        private static readonly string s_uniqSuffix = "-" + GetRandomNumber().ToString("x") + ".";
 
         //A unique number inside the appdomain, randomized between appdomains. 
         //Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
