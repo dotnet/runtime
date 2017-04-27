@@ -284,14 +284,20 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 genConsumeAddress(addrNode);
                 addrReg = addrNode->gtRegNum;
 
+                // If addrReg equal to loReg, swap(loReg, hiReg)
+                // This reduces code complexity by only supporting one addrReg overwrite case
+                if (loReg == addrReg)
+                {
+                    loReg = hiReg;
+                    hiReg = addrReg;
+                }
+
                 CORINFO_CLASS_HANDLE objClass = source->gtObj.gtClass;
 
                 structSize = compiler->info.compCompHnd->getClassSize(objClass);
                 isHfa      = compiler->IsHfa(objClass);
                 gcPtrCount = compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
             }
-
-            bool hasGCpointers = (gcPtrCount > 0); // true if there are any GC pointers in the struct
 
             // If we have an HFA we can't have any GC pointers,
             // if not then the max size for the the struct is 16 bytes
@@ -338,56 +344,31 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 var_types type0 = compiler->getJitGCType(gcPtrs[nextIndex + 0]);
                 var_types type1 = compiler->getJitGCType(gcPtrs[nextIndex + 1]);
 
-                if (hasGCpointers)
+                if (varNode != nullptr)
                 {
-                    // We have GC pointers, so use two ldr instructions
-                    //
-                    // We must do it this way because we can't currently pass or track
-                    // two different emitAttr values for a ldp instruction.
-
-                    // Make sure that the first load instruction does not overwrite the addrReg.
-                    //
-                    if (loReg != addrReg)
-                    {
-                        if (varNode != nullptr)
-                        {
-                            // Load from our varNumImp source
-                            emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
-                            emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp,
-                                              TARGET_POINTER_SIZE);
-                        }
-                        else
-                        {
-                            // Load from our address expression source
-                            emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
-                            emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg,
-                                                structOffset + TARGET_POINTER_SIZE);
-                        }
-                    }
-                    else // loReg == addrReg
-                    {
-                        assert(varNode == nullptr); // because addrReg is REG_NA when varNode is non-null
-                        assert(hiReg != addrReg);
-                        // Load from our address expression source
-                        emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg,
-                                            structOffset + TARGET_POINTER_SIZE);
-                        emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
-                    }
+                    // Load from our varNumImp source, currently we can't use a ldp instruction to do this
+                    emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
+                    emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp, TARGET_POINTER_SIZE);
                 }
-                else // our struct has no GC pointers
+                else
                 {
-                    if (varNode != nullptr)
+                    // check for case of destroying the addrRegister while we still need it
+                    assert(loReg != addrReg);
+                    noway_assert((remainingSize == 2 * TARGET_POINTER_SIZE) || (hiReg != addrReg));
+
+                    // Use a ldp instruction if types match
+                    // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
+                    if (type0 == type1)
                     {
-                        // Load from our varNumImp source, currently we can't use a ldp instruction to do this
-                        emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
-                        emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp, TARGET_POINTER_SIZE);
+                        // Load from our address expression source
+                        emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset);
                     }
                     else
                     {
-                        // Use a ldp instruction
-
                         // Load from our address expression source
-                        emit->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, loReg, hiReg, addrReg, structOffset);
+                        emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
+                        emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg,
+                                            structOffset + TARGET_POINTER_SIZE);
                     }
                 }
 
@@ -408,23 +389,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             //             ldr     w3, [x0, #8]
             //             str     x2, [sp, #16]
             //             str     w3, [sp, #24]
-            //
-            // When the first instruction has a loReg that is the same register as the addrReg,
-            //  we set deferLoad to true and issue the intructions in the reverse order
-            //             ldr     x3, [x2, #8]
-            //             ldr     x2, [x2]
-            //             str     x2, [sp, #16]
-            //             str     x3, [sp, #24]
-            //
 
             var_types nextType = compiler->getJitGCType(gcPtrs[nextIndex]);
             emitAttr  nextAttr = emitTypeSize(nextType);
-            regNumber curReg   = loReg;
-
-            bool      deferLoad   = false;
-            var_types deferType   = TYP_UNKNOWN;
-            emitAttr  deferAttr   = EA_PTRSIZE;
-            int       deferOffset = 0;
 
             while (remainingSize > 0)
             {
@@ -432,31 +399,23 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 {
                     remainingSize -= TARGET_POINTER_SIZE;
 
-                    if ((curReg == addrReg) && (remainingSize != 0))
+                    if (varNode != nullptr)
                     {
-                        deferLoad   = true;
-                        deferType   = nextType;
-                        deferAttr   = emitTypeSize(nextType);
-                        deferOffset = structOffset;
+                        // Load from our varNumImp source
+                        emit->emitIns_R_S(ins_Load(nextType), nextAttr, loReg, varNumInp, structOffset);
                     }
-                    else // the typical case
+                    else
                     {
-                        if (varNode != nullptr)
-                        {
-                            // Load from our varNumImp source
-                            emit->emitIns_R_S(ins_Load(nextType), nextAttr, curReg, varNumInp, structOffset);
-                        }
-                        else
-                        {
-                            // Load from our address expression source
-                            emit->emitIns_R_R_I(ins_Load(nextType), nextAttr, curReg, addrReg, structOffset);
-                        }
-                        // Emit a store instruction to store the register into the outgoing argument area
-                        emit->emitIns_S_R(ins_Store(nextType), nextAttr, curReg, varNumOut, argOffsetOut);
-                        argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
-                        assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+                        assert(loReg != addrReg);
+
+                        // Load from our address expression source
+                        emit->emitIns_R_R_I(ins_Load(nextType), nextAttr, loReg, addrReg, structOffset);
                     }
-                    curReg = hiReg;
+                    // Emit a store instruction to store the register into the outgoing argument area
+                    emit->emitIns_S_R(ins_Store(nextType), nextAttr, loReg, varNumOut, argOffsetOut);
+                    argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
+                    assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+
                     structOffset += TARGET_POINTER_SIZE;
                     nextIndex++;
                     nextType = compiler->getJitGCType(gcPtrs[nextIndex]);
@@ -491,34 +450,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     instruction loadIns  = ins_Load(loadType);
                     emitAttr    loadAttr = emitAttr(loadSize);
 
-                    // When deferLoad is false, curReg can be the same as addrReg
-                    // because the last instruction is allowed to overwrite addrReg.
-                    //
-                    noway_assert(!deferLoad || (curReg != addrReg));
+                    assert(loReg != addrReg);
 
-                    emit->emitIns_R_R_I(loadIns, loadAttr, curReg, addrReg, structOffset);
+                    emit->emitIns_R_R_I(loadIns, loadAttr, loReg, addrReg, structOffset);
 
                     // Emit a store instruction to store the register into the outgoing argument area
-                    emit->emitIns_S_R(ins_Store(loadType), loadAttr, curReg, varNumOut, argOffsetOut);
+                    emit->emitIns_S_R(ins_Store(loadType), loadAttr, loReg, varNumOut, argOffsetOut);
                     argOffsetOut += EA_SIZE_IN_BYTES(loadAttr);
                     assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
                 }
-            }
-
-            if (deferLoad)
-            {
-                // We should never have to do a deferred load when we have a LclVar source
-                assert(varNode == nullptr);
-
-                curReg = addrReg;
-
-                // Load from our address expression source
-                emit->emitIns_R_R_I(ins_Load(deferType), deferAttr, curReg, addrReg, deferOffset);
-
-                // Emit a store instruction to store the register into the outgoing argument area
-                emit->emitIns_S_R(ins_Store(nextType), nextAttr, curReg, varNumOut, argOffsetOut);
-                argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
-                assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
             }
 
 #endif // _TARGET_ARM64_
