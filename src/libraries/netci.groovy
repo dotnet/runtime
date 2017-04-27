@@ -280,37 +280,6 @@ def targetGroupOsMap = ['netcoreapp': ['Windows 10', 'Windows 7', 'Windows_NT', 
 }
 
 // **************************
-// Define perf testing.  Built locally and submitted to Helix.
-// **************************
-
-// builds with secrets should never be available for pull requests.
-// right now perf tests are only run on Win10 (but can be built on any Windows)
-['Windows 10'].each { osName ->
-    ['Debug', 'Release'].each { configurationGroup ->
-
-        def newJobName = "perf_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
-
-        def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
-            steps {
-                helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
-            }
-        }
-
-        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
-
-        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
-
-        // Set up standard options.
-        Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
-
-        // Set a periodic trigger
-        Utilities.addPeriodicTrigger(newJob, '@daily')
-
-        Utilities.addPrivatePermissions(newJob)
-    }
-}
-
-// **************************
 // Define target group vertical builds that will run on every merge.
 // **************************
 [true, false].each { isPR ->
