@@ -6,6 +6,7 @@ using System.Security.Permissions;
 
 namespace System.Drawing.Printing
 {
+    [Serializable]
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public sealed class PrintingPermissionAttribute : CodeAccessSecurityAttribute
     {

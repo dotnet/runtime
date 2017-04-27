@@ -17,11 +17,18 @@ namespace System.Security.Permissions.Tests
         {
             IEnumerable<Type> serializableTypes = typeof(CodeAccessPermission).Assembly
                 .GetTypes()
-                .Where(t => !t.IsAbstract && (t.Attributes & TypeAttributes.Serializable) != 0);
+                .Where(t =>
+                {
+                    bool nonAbstractSerializable = !t.IsAbstract && (t.Attributes & TypeAttributes.Serializable) != 0;
+                    ConstructorInfo ctorInfo = t.GetConstructor(BindingFlags.NonPublic |
+                        BindingFlags.Instance, null, Type.EmptyTypes, null);
+
+                    return (ctorInfo != null) ? nonAbstractSerializable && !ctorInfo.IsAssembly && !ctorInfo.IsFamily : nonAbstractSerializable;
+                });
 
             foreach (Type serializableType in serializableTypes)
             {
-                // Create an instance of the object, with its default ctor if possible, or worst case unitialized (we don't
+                // Create an instance of the object, with its default ctor if possible, or worst case uninitialized (we don't
                 // care about functionality for these types, so an uninitialized object suits our needs).
                 object obj;
                 try
