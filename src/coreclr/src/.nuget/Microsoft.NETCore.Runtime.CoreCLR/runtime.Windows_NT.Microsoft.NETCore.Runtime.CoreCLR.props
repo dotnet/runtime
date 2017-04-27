@@ -19,7 +19,6 @@
     <NativeBinary Include="$(BinDir)mscorrc.debug.dll" />
     <NativeBinary Include="$(BinDir)mscorrc.dll" />
     <NativeBinary Include="$(BinDir)sos.dll" />
-    <NativeBinary Include="$(BinDir)System.Private.CoreLib.ni.dll" />
     <NativeBinary Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
