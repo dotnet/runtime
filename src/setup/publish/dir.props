@@ -3,7 +3,7 @@
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
-    <ContainerName Condition="'$(ContainerName)' == ''">dotnetcli</ContainerName>
+    <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
   </PropertyGroup>
     
