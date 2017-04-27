@@ -4,11 +4,33 @@
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
+#include "longfile.h"
 
 #include <cassert>
 #include <locale>
 #include <codecvt>
 #include <ShlObj.h>
+
+bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
+{
+    pal::string_t path;
+    DWORD dwModuleFileName = MAX_PATH / 2;
+
+    do
+    {
+        path.resize(dwModuleFileName * 2);
+        dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), path.size());
+    } while (dwModuleFileName == path.size());
+
+    if (dwModuleFileName != 0)
+    {
+        *recv = path;
+        return true;
+    }
+
+    return false;
+
+}
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -62,12 +84,27 @@ bool pal::getcwd(pal::string_t* recv)
     return false;
 }
 
-bool pal::load_library(const char_t* path, dll_t* dll)
+bool pal::load_library(const string_t* in_path, dll_t* dll)
 {
+    string_t path = *in_path;
+
     // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR:
     //   In portable apps, coreclr would come from another directory than the host,
     //   so make sure coreclr dependencies can be resolved from coreclr.dll load dir.
-    *dll = ::LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+
+    if (LongFile::IsPathNotFullyQualified(path))
+    {
+        if (!pal::realpath(&path))
+        {
+            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            return false;
+        }
+    }
+    
+    //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
+    assert(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
+
+    *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
@@ -76,7 +113,7 @@ bool pal::load_library(const char_t* path, dll_t* dll)
 
     // Pin the module
     HMODULE dummy_module;
-    if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path, &dummy_module))
+    if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path.c_str(), &dummy_module))
     {
         trace::error(_X("Failed to pin library [%s] in [%s]"), path, _STRINGIFY(__FUNCTION__));
         return false;
@@ -84,8 +121,8 @@ bool pal::load_library(const char_t* path, dll_t* dll)
 
     if (trace::is_enabled())
     {
-        pal::char_t buf[PATH_MAX];
-        ::GetModuleFileNameW(*dll, buf, PATH_MAX);
+        string_t buf;
+        GetModuleFileNameWrapper(*dll, &buf);
         trace::info(_X("Loaded library from %s"), buf);
     }
 
@@ -293,13 +330,7 @@ int pal::xtoi(const char_t* input)
 
 bool pal::get_own_executable_path(string_t* recv)
 {
-    char_t program_path[MAX_PATH];
-    DWORD dwModuleFileName = ::GetModuleFileNameW(NULL, program_path, MAX_PATH);
-    if (dwModuleFileName == 0 || dwModuleFileName >= MAX_PATH) {
-        return false;
-    }
-    recv->assign(program_path);
-    return true;
+    return GetModuleFileNameWrapper(NULL, recv);
 }
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
@@ -347,14 +378,53 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 
 bool pal::realpath(string_t* path)
 {
+
+    if (!LongFile::ShouldNormalize(*path))
+    {
+        return true;
+    }
+
     char_t buf[MAX_PATH];
-    auto res = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    if (res == 0 || res > MAX_PATH)
+    auto size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
+    
+    if (size == 0)
     {
         trace::error(_X("Error resolving full path [%s]"), path->c_str());
         return false;
     }
-    path->assign(buf);
+
+    if (size < MAX_PATH)
+    {
+        path->assign(buf);
+        return true;
+    }
+
+    string_t str;
+    str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
+
+    size = ::GetFullPathNameW(path->c_str() , size, (LPWSTR)str.data() , nullptr);
+    assert(size <= str.size());
+    
+    if (size == 0)
+    {
+        trace::error(_X("Error resolving full path [%s]"), path->c_str());
+        return false;
+    }
+
+    const string_t* prefix = &LongFile::ExtendedPrefix;
+    //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk 
+    if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
+    {
+        prefix = &LongFile::UNCExtendedPathPrefix;
+        str.erase(0, LongFile::UNCPathPrefix.length());
+        size = size - LongFile::UNCPathPrefix.length();
+    }
+
+    str.insert(0, *prefix);
+    str.resize(size + prefix->length());
+    str.shrink_to_fit();
+    *path = str;
+
     return true;
 }
 
@@ -365,11 +435,22 @@ bool pal::file_exists(const string_t& path)
         return false;
     }
 
+    auto pathstring = path.c_str();
+    string_t normalized_path;
+    if (LongFile::ShouldNormalize(path))
+    {
+        normalized_path = path;
+        if (!pal::realpath(&normalized_path))
+        {
+            return false;
+        }
+        pathstring = normalized_path.c_str();
+    }
 
     // We will attempt to fetch attributes for the file or folder in question that are
     // returned only if they exist.
     WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data) != 0) {
+    if (GetFileAttributesExW(pathstring, GetFileExInfoStandard, &data) != 0) {
         return true;
     }
     
@@ -381,11 +462,21 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
     assert(list != nullptr);
 
     std::vector<string_t>& files = *list;
+    string_t normalized_path(path);
 
-    string_t search_string(path);
+    if (LongFile::ShouldNormalize(normalized_path))
+    {
+        if (!pal::realpath(&normalized_path))
+        {
+            return;
+        }
+    }
+
+    string_t search_string(normalized_path);
     append_path(&search_string, pattern.c_str());
 
     WIN32_FIND_DATAW data = { 0 };
+
     auto handle = ::FindFirstFileExW(search_string.c_str(), FindExInfoStandard, &data, FindExSearchNameMatch, NULL, 0);
     if (handle == INVALID_HANDLE_VALUE)
     {
