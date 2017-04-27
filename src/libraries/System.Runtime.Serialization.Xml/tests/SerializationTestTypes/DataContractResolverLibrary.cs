@@ -168,4 +168,47 @@ namespace SerializationTestTypes
             return t;
         }
     }
+        
+    public class UserTypeToPrimitiveTypeResolver : DataContractResolver
+    {
+        public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        {
+            string resolvedTypeName = string.Empty;
+            string resolvedNamespace = "http://www.default.com";
+            switch (dcType.Name)
+            {
+                case "UnknownEmployee":
+                    resolvedTypeName = "int";                                          
+                    resolvedNamespace = "http://www.w3.org/2001/XMLSchema";
+                    break;
+                case "UserTypeContainer":                    
+                    resolvedTypeName = "UserType";                    
+                    break;
+                default:                    
+                    return KTResolver.TryResolveType(dcType, declaredType, null, out typeName, out typeNamespace);
+            }
+            
+            XmlDictionary dic = new XmlDictionary();
+            typeName = dic.Add(resolvedTypeName);
+            typeNamespace = dic.Add(resolvedNamespace);
+            return true;
+        }
+        
+        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
+        {
+            if (typeNamespace.Equals("http://www.default.com"))
+            {
+                if (typeName.Equals("UserType"))
+                {
+                    return typeof(UserTypeContainer);
+                }
+            }
+            if (typeNamespace.Equals("http://www.w3.org/2001/XMLSchema") && typeName.Equals("int"))
+            {
+                return typeof(UnknownEmployee);
+            }
+
+            return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+        }
+    }
 }
