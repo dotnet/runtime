@@ -56,6 +56,9 @@ namespace Microsoft.DotNet.Build.Tasks
         // This code is duplicated in BuildTools task DownloadFromAzure, and that code should be refactored to permit blob listing.
         public async Task<bool> ExecuteAsync()
         {
+            Console.WriteLine("Attach");
+            Console.ReadLine();
+
             ParseConnectionString();
 
             if (Log.HasLoggedErrors)
@@ -65,7 +68,10 @@ namespace Microsoft.DotNet.Build.Tasks
 
             List<string> blobsNames = new List<string>();
             string urlListBlobs = string.Format("https://{0}.blob.core.windows.net/{1}?restype=container&comp=list", AccountName, ContainerName);
-
+            if (!string.IsNullOrWhiteSpace(FilterBlobNames))
+            {
+                urlListBlobs += $"&prefix={FilterBlobNames}";
+            }
             Log.LogMessage(MessageImportance.Low, "Sending request to list blobsNames for container '{0}'.", ContainerName);
 
             using (HttpClient client = new HttpClient())
@@ -104,14 +110,7 @@ namespace Microsoft.DotNet.Build.Tasks
                             nextMarker = responseFile.GetElementsByTagName("NextMarker").Cast<XmlNode>().FirstOrDefault()?.InnerText;
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(FilterBlobNames))
-                    {
-                        BlobNames = blobsNames.Where(b => b.StartsWith(FilterBlobNames)).ToArray();
-                    }
-                    else
-                    {
-                        BlobNames = blobsNames.ToArray();
-                    }
+                    BlobNames = blobsNames.ToArray();
                 }
                 catch (Exception e)
                 {
