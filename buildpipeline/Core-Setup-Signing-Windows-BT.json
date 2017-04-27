@@ -14,8 +14,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-path $(PB_SourcesDirectory)",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }",
+        "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
+        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -556,7 +556,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Copy Publish Artifact: Build Logs",
       "timeoutInMinutes": 0,
       "task": {
@@ -770,7 +770,6 @@
   },
   "id": 6102,
   "name": "Core-Setup-Signing-Windows-BT",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/6102",
   "path": "\\",
   "type": "build",
   "project": {
