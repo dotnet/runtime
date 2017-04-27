@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+       <CoreCLRVersion>2.0.0-preview2-25226-02</CoreCLRVersion>
+       <JitVersion>2.0.0-preview2-25226-02</JitVersion>
+  </PropertyGroup>
+
+  <!-- Create a collection of all project.json files for dependency updates. -->
+  <ItemGroup>
+    <_ProjectJsonExcludes Include="$(SourceDir)test\**\project.json" />
+    <_ProjectJsonExcludes Include="$(SourceDir)pkg\**\project.json" />
+    <ProjectJsonFiles Include="$(SourceDir)**\project.json" Exclude="@(_ProjectJsonExcludes)" />
+  </ItemGroup>
+</Project>

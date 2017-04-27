@@ -10,7 +10,10 @@ def project = GithubProject
 def branch = GithubBranchName
 def isPR = true
 
-def platformList = ['Debian8.2:x64:Debug', 'PortableLinux:x64:Release', 'Ubuntu:arm:Release', 'Ubuntu:x64:Release', 'Ubuntu16.04:arm:Release', 'Ubuntu16.04:x64:Release', 'Ubuntu16.10:x64:Release', 'OSX10.12:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'Fedora24:x64:Debug', 'OpenSUSE42.1:x64:Debug']
+// Move these to the platform list when they are re-enabled
+// [ 'Ubuntu:arm:Release', 'Ubuntu16.04:arm:Release', 'Windows_NT:arm:Debug', ]
+
+def platformList = ['Debian8.2:x64:Debug', 'PortableLinux:x64:Release', 'Ubuntu:x64:Release', 'Ubuntu16.04:x64:Release', 'Ubuntu16.10:x64:Release', 'OSX10.12:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Fedora24:x64:Debug', 'OpenSUSE42.1:x64:Debug']
 
 def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
@@ -28,17 +31,9 @@ platformList.each { platform ->
 
     // Calculate build command
     if (os == 'Windows_NT') {
-        if (architecture == 'arm') {
-            buildCommand = ".\\build.cmd -Configuration ${configuration} -TargetArch ${architecture} -Targets Default"
-        }
-        else {
-            buildCommand = ".\\build.cmd -Configuration ${configuration} -Architecture ${architecture} -Targets Default"
-        }
-
+        buildCommand = ".\\build.cmd -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
     }
-    else if (os == 'Windows_2016') {
-        buildCommand = ".\\build.cmd -Configuration ${configuration} -Architecture ${architecture} -RunInstallerTestsInDocker -Targets Default"
-    }
+/*
     else if ((os.startsWith("Ubuntu") || os.startsWith("Tizen")) &&
              (architecture == 'arm' || architecture == 'armel')) {
         def linuxcodename = '';
@@ -54,12 +49,13 @@ platformList.each { platform ->
         // Call the arm32_ci_script.sh script to perform the cross build by using docker
         buildCommand = "./scripts/arm32_ci_script.sh --buildConfig=${configuration} --${architecture} --linuxCodeName=${linuxcodename} --verbose"
     }
+*/    
     else if (os == 'Ubuntu') {
-        buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu.14.04 --targets Default"
+        buildCommand = "./build.sh --configuration ${configuration} --docker ubuntu.14.04"
     }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --targets Default"
+        buildCommand = "./build.sh ${configuration}"
 
         if (os == 'PortableLinux') {
 
@@ -97,56 +93,58 @@ platformList.each { platform ->
         Utilities.addGithubPRTriggerForBranch(newJob, branch, "${contextString} Build", "(?i).*test\\W+${contextString}.*", true /* trigger on comment phrase only */)
     }
     else {
-        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
+        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build", "(?i).*test buildtools please.*")
     }
 
     ArchivalSettings settings = new ArchivalSettings();
-    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.${it}" }.join(",")
+    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "Bin/*/packages/*.${it},Bin/*/corehost/*.${it}" }.join(",")
     settings.addFiles(archiveString)
     settings.setArchiveOnSuccess()
     settings.setFailIfNothingArchived()
 
     Utilities.addArchival(newJob, settings)
+
+    newJob.with { disabled(false) }
 }
 
 // **************************
 // Define ARM64 building.
 // **************************
-['Windows_NT'].each { os ->
-    ['Release'].each { configurationGroup ->
-        def newJobName = "${configurationGroup.toLowerCase()}_${os.toLowerCase()}_arm64"
-        def arm64Users = ['ianhays', 'kyulee1', 'gkhanna79', 'weshaggard', 'stephentoub', 'rahku', 'ramarag']
-        def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
-            steps {
-                // build the world, but don't run the tests
-                batchFile("build.cmd -Configuration ${configurationGroup} -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir C:\\ats2 -Framework netcoreapp1.1")
-            }
-            label("arm64")
-
-            // Kick off the test run
-            publishers {
-                archiveArtifacts {
-                    pattern("artifacts/win10-arm64/packages/*.zip")
-                    pattern("artifacts/win10-arm64/corehost/*.nupkg")
-                    onlyIfSuccessful(true)
-                    allowEmpty(false)
-                }
-            }
-        }
-
-        // Set up standard options.
-        Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
-
-        // Set a daily trigger
-        Utilities.addPeriodicTrigger(newJob, '@daily')
-
-        // Set up a PR trigger that is only triggerable by certain members
-        Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
-
-        // Set up a per-push trigger
-        Utilities.addGithubPushTrigger(newJob)
-    }
-}
+//['Windows_NT'].each { os ->
+//    ['Release'].each { configurationGroup ->
+//        def newJobName = "${configurationGroup.toLowerCase()}_${os.toLowerCase()}_arm64"
+//        def arm64Users = ['ianhays', 'kyulee1', 'gkhanna79', 'weshaggard', 'stephentoub', 'rahku', 'ramarag']
+//        def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
+//            steps {
+//                // build the world, but don't run the tests
+//                batchFile("build.cmd -ConfigurationGroup ${configurationGroup} -Architecure x64 -TargetArch arm64 -ToolsetDir C:\\ats2 -Framework netcoreapp1.1")
+//            }
+//            label("arm64")
+//
+//            // Kick off the test run
+//            publishers {
+//                archiveArtifacts {
+//                    pattern("artifacts/win10-arm64/packages/*.zip")
+//                    pattern("artifacts/win10-arm64/corehost/*.nupkg")
+//                    onlyIfSuccessful(true)
+//                    allowEmpty(false)
+//                }
+//            }
+//        }
+//
+//        // Set up standard options.
+//        Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
+//
+//        // Set a daily trigger
+//        Utilities.addPeriodicTrigger(newJob, '@daily')
+//
+//        // Set up a PR trigger that is only triggerable by certain members
+//        Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
+//
+//        // Set up a per-push trigger
+//        Utilities.addGithubPushTrigger(newJob)
+//    }
+//}
 
 // Make the call to generate the help job
 Utilities.createHelperJob(this, project, branch,
