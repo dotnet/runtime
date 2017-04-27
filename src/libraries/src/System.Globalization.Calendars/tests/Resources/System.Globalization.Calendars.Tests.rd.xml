@@ -1,0 +1,20 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of [Theory] data which causes xunit to reflect on its ToString(). -->
+    <Type Name="System.Globalization.ChineseLunisolarCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.GregorianCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.HebrewCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.HijriCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.JapaneseCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.JapaneseLunisolarCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.JulianCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.KoreanCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.KoreanLunisolarCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.PersianCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.TaiwanCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.TaiwanLunisolarCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.ThaiBuddhistCalendar" Dynamic="Required Public" />
+    <Type Name="System.Globalization.UmAlQuraCalendar" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
