@@ -106,7 +106,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 CertificateRequest request = new CertificateRequest(
                     $"CN={KeyName}-{provType}-{keyNumber}",
                     rsaCsp,
-                    hashAlgorithm);
+                    hashAlgorithm,
+                    RSASignaturePadding.Pkcs1);
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -121,7 +122,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     request = new CertificateRequest(
                         $"CN={KeyName}-{provType}-{keyNumber}-again",
                         rsa,
-                        hashAlgorithm);
+                        hashAlgorithm,
+                        RSASignaturePadding.Pkcs1);
 
                     X509Certificate2 cert2 = request.Create(
                         request.SubjectName,
@@ -189,7 +191,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     CertificateRequest request = new CertificateRequest(
                         $"CN={KeyName}",
                         rsaCng,
-                        HashAlgorithmName.SHA256);
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
 
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -228,7 +231,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 CertificateRequest request = new CertificateRequest(
                     $"CN={nameof(ThirdPartyProvider_RSA)}",
                     rsaOther,
-                    hashAlgorithm);
+                    hashAlgorithm,
+                    RSASignaturePadding.Pkcs1);
 
                 byte[] signature;
                 byte[] data = request.SubjectName.RawData;
