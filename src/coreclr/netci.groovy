@@ -1854,7 +1854,7 @@ combinedScenarios.each { scenario ->
                                 if (os != 'Windows_NT') {
                                     return
                                 }
-                                if (architecture != 'x64') {
+                                if (architecture != 'x64' && architecture != 'x86') {
                                     return
                                 }
                                 break
