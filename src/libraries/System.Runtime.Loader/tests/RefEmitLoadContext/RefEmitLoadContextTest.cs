@@ -73,6 +73,7 @@ namespace System.Runtime.Loader.Tests
             File.Copy(pathCurrentAssembly, targetPath);
         }
 
+        [ActiveIssue(19062)]
         [Fact]
         public static void LoadRefEmitAssembly()
         {
