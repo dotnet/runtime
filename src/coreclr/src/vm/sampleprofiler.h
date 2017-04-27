@@ -24,7 +24,7 @@ class SampleProfiler
         static void WalkManagedThreads();
 
         // Profiling thread proc.  Invoked on a new thread when profiling is enabled.
-        static DWORD WINAPI SampleProfiler::ThreadProc(void *args);
+        static DWORD WINAPI ThreadProc(void *args);
 
         // True when profiling is enabled.
         static Volatile<BOOL> s_profilingEnabled;
