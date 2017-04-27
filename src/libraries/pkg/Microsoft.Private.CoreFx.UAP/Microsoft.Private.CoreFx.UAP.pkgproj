@@ -32,6 +32,8 @@
     <ExcludeFromClosure Include="System.Core" />
     <ExcludeFromClosure Include="System.Data" />
     <ExcludeFromClosure Include="System.Drawing" />
+    <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Transactions" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

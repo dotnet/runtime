@@ -17,12 +17,47 @@
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Data\Common\DBDataPermission.cs" />
     <Compile Include="System\Data\Common\DBDataPermissionAttribute.cs" />
+    <Compile Include="System\Data\Odbc\OdbcPermission.cs" />
+    <Compile Include="System\Data\Odbc\OdbcPermissionAttribute.cs" />
+    <Compile Include="System\Data\OleDb\OleDbPermission.cs" />
+    <Compile Include="System\Data\OleDb\OleDbPermissionAttribute.cs" />
+    <Compile Include="System\Data\OracleClient\OraclePermission.cs" />
+    <Compile Include="System\Data\OracleClient\OraclePermissionAttribute.cs" />
+    <Compile Include="System\Data\SqlClient\SqlClientPermission.cs" />
+    <Compile Include="System\Data\SqlClient\SqlClientPermissionAttribute.cs" />
+    <Compile Include="System\Diagnostics\EventLogPermission.cs" />
+    <Compile Include="System\Diagnostics\EventLogPermissionAccess.cs" />
+    <Compile Include="System\Diagnostics\EventLogPermissionAttribute.cs" />
+    <Compile Include="System\Diagnostics\EventLogPermissionEntry.cs" />
+    <Compile Include="System\Diagnostics\EventLogPermissionEntryCollection.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterPermission.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterPermissionAccess.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterPermissionAttribute.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterPermissionEntry.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterPermissionEntryCollection.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermission.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermissionAttribute.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermissionLevel.cs" />
+    <Compile Include="System\Net\DnsPermission.cs" />
+    <Compile Include="System\Net\DnsPermissionAttribute.cs" />
+    <Compile Include="System\Net\EndpointPermission.cs" />
+    <Compile Include="System\Net\Mail\SmtpAccess.cs" />
+    <Compile Include="System\Net\Mail\SmtpPermission.cs" />
+    <Compile Include="System\Net\Mail\SmtpPermissionAttribute.cs" />
+    <Compile Include="System\Net\NetworkAccess.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationAccess.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermission.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermissionAttribute.cs" />
+    <Compile Include="System\Net\PeerToPeer\Collaboration\PeerCollaborationPermission.cs" />
+    <Compile Include="System\Net\PeerToPeer\Collaboration\PeerCollaborationPermissionAttribute.cs" />
+    <Compile Include="System\Net\PeerToPeer\PnrpPermission.cs" />
+    <Compile Include="System\Net\PeerToPeer\PnrpPermissionAttribute.cs" />
+    <Compile Include="System\Net\PeerToPeer\PnrpScope.cs" />
+    <Compile Include="System\Net\SocketPermission.cs" />
+    <Compile Include="System\Net\SocketPermissionAttribute.cs" />
+    <Compile Include="System\Net\TransportType.cs" />
+    <Compile Include="System\Net\WebPermission.cs" />
+    <Compile Include="System\Net\WebPermissionAttribute.cs" />
     <Compile Include="System\Security\CodeAccessPermission.cs" />
     <Compile Include="System\Security\HostProtectionException.cs" />
     <Compile Include="System\Security\HostSecurityManager.cs" />
@@ -136,12 +171,17 @@
     <Compile Include="System\Security\SecurityState.cs" />
     <Compile Include="System\Security\SecurityZone.cs" />
     <Compile Include="System\Security\XmlSyntaxException.cs" />
+    <Compile Include="System\Transactions\DistributedTransactionPermission.cs" />
+    <Compile Include="System\Transactions\DistributedTransactionPermissionAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
-    <Reference Include="System.Data"/>
-    <Reference Include="System.Drawing"/>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.OracleClient" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />

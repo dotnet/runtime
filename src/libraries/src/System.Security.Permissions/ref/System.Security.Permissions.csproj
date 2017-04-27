@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{07CAF142-B259-418E-86EF-C4BD8B50253E}</ProjectGuid>
-
     <!-- UAP10.1 is not yet mapped to netstandard2.0, manually duplicate this ref -->
     <PackageTargetFramework>netstandard2.0;uap10.1</PackageTargetFramework>
   </PropertyGroup>
