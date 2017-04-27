@@ -43,7 +43,6 @@ static GENERATE_GET_CLASS_WITH_CACHE (module_builder, "System.Reflection.Emit", 
 static char* string_to_utf8_image_raw (MonoImage *image, MonoString *s, MonoError *error);
 
 #ifndef DISABLE_REFLECTION_EMIT
-static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper, MonoError *error);
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
 static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb);
@@ -641,7 +640,7 @@ mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, cons
 }
 
 
-static guint32
+guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
@@ -722,6 +721,14 @@ mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 origina
 	return token;
 }
 
+#else /* DISABLE_REFLECTION_EMIT */
+
+guint32
+mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec)
+{
+	g_assert_not_reached ();
+	return -1;
+}
 #endif
 
 static gboolean

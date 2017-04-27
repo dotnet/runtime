@@ -141,5 +141,8 @@ mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflecti
 guint32
 mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb, MonoError *error);
 
+guint32
+mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
+
 #endif  /* __MONO_METADATA_SRE_INTERNALS_H__ */
 
