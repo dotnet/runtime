@@ -6398,11 +6398,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 
             nextRegRec->assignedInterval = nextRegRec->previousInterval;
             nextRegRec->previousInterval = nullptr;
-
-            // TODO-ARM-Throughput: For ARM, we can reuse regRec->previousInterval,
-            // if following assertion is always true.
-            // Please take a look at tryAllocateFreeReg().
-            assert(nextRegRec->assignedInterval == regRec->assignedInterval);
         }
 #endif
 #ifdef DEBUG
@@ -6922,17 +6917,20 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 #ifdef _TARGET_ARM_
                 if (assignedInterval->registerType == TYP_DOUBLE && !genIsValidDoubleReg(physRegRecord->regNum))
                 {
+                    // physRegRecord is a second half of a double register.
+
                     // Don't call unassignPhysReg() again, because two FP registers of a double reister are already
                     // unassigned together when this function is called with valid double register number.
+                    regNumber  prevRegNum   = REG_PREV(physRegRecord->regNum);
+                    RegRecord* prevRegRecord = getRegisterRecord(prevRegNum);
+
+                    // Both FP registers of a double reigster should not be allocated to the interval anymore.
+                    assert(assignedInterval->assignedReg != prevRegRecord);
                     assert(assignedInterval->assignedReg != physRegRecord);
                 }
                 else
-                {
+#endif // _TARGET_ARM_
                     unassignPhysReg(physRegRecord, nullptr);
-                }
-#else
-                unassignPhysReg(physRegRecord, nullptr);
-#endif
             }
         }
     }
@@ -7660,15 +7658,6 @@ void LinearScan::allocateRegisters()
             currentInterval->physReg               = assignedRegister;
             regsToFree &= ~assignedRegBit; // we'll set it again later if it's dead
 
-#ifdef _TARGET_ARM_
-            // Update overlapping floating point register for TYP_DOUBLE
-            if (currentInterval->registerType == TYP_DOUBLE)
-            {
-                assert(isFloatRegType(currentInterval->assignedReg->registerType));
-                regsToFree &= ~genRegMask(REG_NEXT(assignedRegister));
-            }
-#endif
-
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
             // node is being evaluated for side effects, or a call whose result
@@ -7683,28 +7672,12 @@ void LinearScan::allocateRegisters()
                     {
                         delayRegsToFree |= assignedRegBit;
 
-#ifdef _TARGET_ARM_
-                        // Update overlapping floating point register for TYP_DOUBLE
-                        if (currentInterval->registerType == TYP_DOUBLE)
-                        {
-                            assert(isFloatRegType(currentInterval->assignedReg->registerType));
-                            delayRegsToFree |= genRegMask(REG_NEXT(assignedRegister));
-                        }
-#endif
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
                     else
                     {
                         regsToFree |= assignedRegBit;
 
-#ifdef _TARGET_ARM_
-                        // Update overlapping floating point register for TYP_DOUBLE
-                        if (currentInterval->registerType == TYP_DOUBLE)
-                        {
-                            assert(isFloatRegType(currentInterval->assignedReg->registerType));
-                            regsToFree |= genRegMask(REG_NEXT(assignedRegister));
-                        }
-#endif
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                     }
                 }
