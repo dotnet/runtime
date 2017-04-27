@@ -211,4 +211,55 @@ namespace SerializationTestTypes
             return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
         }
     }
+
+    [Serializable]
+    public class SimpleResolver_Ser : DataContractResolver
+    {
+        private static readonly string s_defaultNs = "http://schemas.datacontract.org/2004/07/";
+        public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        {
+            string resolvedNamespace = string.Empty;
+            resolvedNamespace = s_defaultNs;
+            XmlDictionary dictionary = new XmlDictionary();
+            typeName = dictionary.Add(dcType.FullName);
+            typeNamespace = dictionary.Add(resolvedNamespace);
+            return true;
+        }
+
+        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
+        {
+            throw new NotImplementedException("Deserialization is supposed to be handled by the SimpleResolver_DeSer resolver.");
+        }
+    }
+
+    [Serializable]
+    public class SimpleResolver_DeSer : DataContractResolver
+    {
+        private static readonly string s_defaultNs = "http://schemas.datacontract.org/2004/07/";
+        public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        {
+            throw new NotImplementedException("Serialization is supposed to be handled by the SimpleResolver_Ser resolver.");
+        }
+
+        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
+        {
+            if (typeNamespace.Equals(s_defaultNs))
+            {
+                if (typeName.Equals(typeof(DCRVariations).FullName))
+                {
+                    return typeof(DCRVariations);
+                }
+                if (typeName.Equals(typeof(Person).FullName))
+                {
+                    return typeof(Person);
+                }
+                if (typeName.Equals(typeof(SimpleDC).FullName))
+                {
+                    return typeof(SimpleDC);
+                }           
+            }
+
+            return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+        }
+    }
 }
