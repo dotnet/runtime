@@ -131,7 +131,7 @@ Daily Builds
 [linux-arm-symbols-targz-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-linux-arm.latest-portable.tar.gz
 
 [ubuntu-14.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_x64_Release_version_badge.svg
-[ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.x64.version
+[ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.14.04-x64.version
 [ubuntu-14.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-host-ubuntu-x64.latest.deb
 [ubuntu-14.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-hostfxr-ubuntu-x64.latest.deb
 [ubuntu-14.04-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-sharedframework-ubuntu-x64.latest.deb
@@ -154,7 +154,7 @@ Daily Builds
 
 
 [ubuntu-16.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Ubuntu_16_04_x64_Release_version_badge.svg
-[ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.16.04.x64.version
+[ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.ubuntu.16.04-x64.version
 [ubuntu-16.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-host-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
@@ -169,7 +169,7 @@ Daily Builds
 [ubuntu-16.04-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-ubuntu.16.04-x64.latest.tar.gz
 
 [ubuntu-16.04-badge-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/sharedfx_Ubuntu_16_04_x64_Release_version_badge.svg
-[ubuntu-16.04-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.ubuntu.16.04.x64.version
+[ubuntu-16.04-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.ubuntu.16.04-x64.version
 [ubuntu-16.04-host-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-host-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-hostfxr-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-sharedfx-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
@@ -193,7 +193,7 @@ Daily Builds
 
 
 [debian-8.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Debian_x64_Release_version_badge.svg
-[debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.debian.x64.version
+[debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.debian.8-x64.version
 [debian-8.2-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-host-debian-x64.latest.deb
 [debian-8.2-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-hostfxr-debian-x64.latest.deb
 [debian-8.2-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-sharedframework-debian-x64.latest.deb

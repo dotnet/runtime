@@ -1,0 +1,337 @@
+{
+  "settings": {
+    "OSGroup": {
+      "description": "OS Group for result binaries.",
+      "valueType": "property",
+      "values": ["Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "Windows_NT"
+     },
+    "RestoreDuringBuild": {
+      "description": "Enables/Disables the restoration of packages.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "Platform": {
+      "description": "Sets the value of the platform.",
+      "valueType": "property",
+      "values": ["x86", "arm", "x64", "amd64"],
+      "defaultValue": "x64"
+    },
+    "Architecture":{
+      "description": "Build on the specified architecture (x64 or x86 (supported only on Windows), default: x64)",
+      "valueType": "property",
+      "values": ["x64", "x86"],
+      "defaultValue": "x64"
+    },
+    "PortableBuild": {
+      "description": "Indicates if this is a portable build.",
+      "valueType": "property",
+      "values": [ "True", "False"],
+      "defaultValue": "False"
+    },
+    "DistroRid": {
+      "description": "Specifies the distro rid for Unix OS.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": "${OSRid}"
+    },
+    "TargetArchitecture":{
+      "description": "Build for the specified architecture (x64, x86 (supported only on Windows), arm, or arm64, default: x64)",
+      "valueType": "property",
+      "values": ["x64", "x86", "arm", "arm64", "armel"],
+      "defaultValue": "x64"
+    },
+    "Framework":{
+      "description": "Build the specified framework (netcoreapp1.0 or netcoreapp1.1, default: netcoreapp1.0)",
+      "valueType": "property",
+      "values": ["netcoreapp1.0", "netcoreapp1.1", "netcoreapp2.0"],
+      "defaultValue": "netcoreapp2.0"
+    },    
+    "ConfigurationGroup": {
+      "description": "Sets the configuration group as Release or Debug.",
+      "valueType": "property",
+      "values": ["Release", "Debug"],
+      "defaultValue": "Debug"
+    },
+    "MsBuildLogging": {
+      "description": "MsBuild logging options.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "/flp:v=normal"
+    },
+    "Project": {
+      "description": "Project where the commands are going to be applied.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "ExtraParameters": {
+      "description": "Extra parameters will be passed to the selected command.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "BatchRestorePackages": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanAllProjects": {
+      "description": "MsBuild target that deletes the binary output directory.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanPackages": {
+      "description": "MsBuild target that deletes the repo-local nuget package directory.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "CleanPackagesCache": {
+      "description": "MsBuild target that deletes the user-local nuget package cache.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
+    "GenerateNativeVersionInfo": {
+      "description": "Enables generation of the native version header.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": true
+    },
+    "GenerateVersionHeader": {
+      "description": "MsBuild target that generates the version header.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+      },
+    "CmakeBuildType": {
+      "description": "Sets the value of the build configuration.",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "Debug"
+    },
+    "HostOs": {
+      "description": "OS for result binaries.",
+      "valueType": "passThrough",
+      "values": ["AnyOS", "Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "defaultValue": "${OSName}"
+    },
+    "ProcessorCount": {
+      "description": "Sets the value of the number of processors available.",
+      "valueType": "passThrough",
+      "values": ["Numeric values"],
+      "defaultValue": "--numproc ${ProcessorCount}"
+    },
+    "AdditionalArgs": {
+      "description": "Pass additional arguments to the native_build script",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
+    "SkipTests": {
+      "description": "Skip running tests",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue":false
+    }
+  },
+  "commands": {
+    "sync":{
+      "alias":{
+        "p":{
+          "description": "Restores all NuGet packages for repository.",
+          "settings":{
+            "RestoreDuringBuild":  true,
+            "BatchRestorePackages": "default"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=sync.log"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildLogging":"/flp:v=normal;LogFile=sync.log",
+          "Project":"build.proj"
+        }
+      }
+    },
+    "build":{
+      "alias":{
+        "binaries":{
+          "description": "Only builds binaries. It doesn't restore packages.",
+          "settings":{
+            "RestoreDuringBuild": false
+          }
+        },
+        "GenerateVersion": {
+          "description": "Generates the version header for native binaries.",
+          "settings": {
+            "GenerateNativeVersionInfo": true,
+            "GenerateVersionHeader": "default"
+          }
+        },
+        "debug":{
+          "description": "Sets ConfigurationGroup=Debug or the value passed by the user.",
+          "settings":{
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        "release":{
+          "description": "Sets ConfigurationGroup=Release or the value passed by the user.",
+          "settings":{
+            "ConfigurationGroup": "Release"
+          }
+        },
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag"
+          }
+        },
+        "cmakelog":{
+          "description": "Writes msbuild log to cmake.log",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=msbuild-cmake.log"
+          }
+        },
+        "os":{
+          "description": "Sets OSGroup=AnyOS or the value passed by the user.",
+          "settings":{
+            "OSGroup": "default"
+          }
+        },
+        "portable":{
+          "description": "Make the build-native script generate binaries that are portable for the platform.",
+          "settings": {
+            "PortableBuild":"true"
+          }
+        },        
+        "skipTests":{
+          "description": "Skips running tests",
+          "settings":{
+            "SkipTests": "true"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "Architecture": "default", 
+           "TargetArchitecture": "default",
+           "OSGroup": "default",
+           "MsBuildLogging":"default",
+           "DistroRid":"default",
+           "Project":"build.proj"
+        }
+      }
+    },
+    "build-native":{
+      "alias":{
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=msbuild-cmake.log"
+          }
+        },
+        "portable":{
+          "description": "Make the build-native script generate binaries that are portable for the platform.",
+          "settings": {
+            "PortableBuild":"true"
+          }
+        }        
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "Architecture": "default", 
+           "TargetArchitecture": "default",
+           "Framework": "default",
+           "OSGroup": "default",
+           "MsBuildLogging":"/flp:v=n;LogFile=msbuild-cmake.log"
+        }
+      }
+    },
+    "build-custom":{
+      "alias":{
+        "verbose":{
+          "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
+          "settings":{
+            "MsBuildLogging": "/flp:v=diag;LogFile=msbuild.log"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "Architecture": "default", 
+           "TargetArchitecture": "default",
+           "Framework": "default",
+           "OSGroup": "default",
+           "MsBuildLogging":"/flp:v=n;LogFile=msbuild.log"
+        }
+      }
+    },
+    "clean":{
+      "alias":{
+        "b":{
+          "description": "Deletes the binary output directory.",
+          "settings":{
+            "CleanAllProjects": "default"
+          }
+        },
+        "p":{
+          "description": "Deletes the repo-local nuget package directory.",
+          "settings":{
+            "CleanPackages": "default"
+          }
+        }
+      },
+      "defaultValues":{
+        "toolName": "msbuild",
+        "settings": {
+          "MsBuildLogging":"/flp:v=normal;LogFile=clean.log",
+          "Project":"build.proj"
+        }
+      }
+    }
+  },
+  "tools": {
+    "msbuild": {
+      "osSpecific":{
+        "windows": {
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false",
+          "path": "Tools/msbuild.cmd"
+        },
+        "unix":{
+          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "path": "Tools/msbuild.sh"
+        }
+      },
+      "valueTypes": {
+        "property": "/p:{name}={value}",
+        "target": "/t:{name}",
+        "internal": "/{name}"
+      }
+    },
+    "terminal": {
+      "osSpecific":{
+        "windows": {
+          "filesExtension": "cmd"
+        },
+        "unix":{
+          "filesExtension": "sh"
+        }
+      },
+      "valueTypes": {}
+    }
+  }
+}
