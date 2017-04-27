@@ -311,7 +311,10 @@ namespace System.Collections.Immutable.Tests
             var map = ImmutableSortedDictionary.Create<string, string>()
                 .Add("firstKey", "1").Add("secondKey", "2");
             var exception = Assert.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
-            Assert.Contains("firstKey", exception.Message);
+            if (!PlatformDetection.IsNetNative) //.Net Native toolchain removes exception messages.
+            {
+                Assert.Contains("firstKey", exception.Message);
+            }
         }
 
         [Fact]
