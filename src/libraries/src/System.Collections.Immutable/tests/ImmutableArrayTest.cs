@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -2169,6 +2170,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesValid(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
@@ -2237,9 +2239,27 @@ namespace System.Collections.Immutable.Tests
         /// <returns>The underlying array.</returns>
         private static T[] GetUnderlyingArray<T>(ImmutableArray<T> array)
         {
-            FieldInfo arrayField = typeof(ImmutableArray<T>)
-                .GetField("array", BindingFlags.Instance | BindingFlags.NonPublic);
-            return (T[])arrayField.GetValue(array);
+            //
+            // There is no documented way of doing this so this helper is inherently fragile.
+            //
+            // The prior version of this used Reflection to get at the private "array" field directly. This will not work on .NET Native
+            // due to the prohibition on internal framework Reflection.
+            //
+            // This alternate method is despicable but ImmutableArray`1 has a documented contract of being exactly one reference-type field in size
+            // (for example, ImmutableInterlocked depends on it.) 
+            //
+            // That leaves precious few candidates for which field is the "array" field...
+            //
+            T[] underlyingArray = Unsafe.As<ImmutableArray<T>, ImmutableArrayLayout<T>>(ref array).array;
+            if (underlyingArray != null && !(((object)underlyingArray) is T[]))
+                throw new Exception("ImmutableArrayTest.GetUnderlyingArray's sneaky trick of getting the underlying array out is no longer valid. This helper needs to be updated or scrapped.");
+            return underlyingArray;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ImmutableArrayLayout<T>
+        {
+            public T[] array;
         }
 
         /// <summary>
