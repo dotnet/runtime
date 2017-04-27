@@ -160,8 +160,7 @@ namespace Mono.Linker {
 		{
 			if (File.Exists (name)) {
 				AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name, _readerParameters);
-				_resolver.CacheAssembly (assembly);
-				return assembly;
+				return _resolver.CacheAssembly (assembly);
 			}
 
 			return Resolve (new AssemblyNameReference (name, new Version ()));
