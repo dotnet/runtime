@@ -111,13 +111,17 @@ internal class IOServices
 
         while (path.Length < characterCount)
         {
+            // Add directory seperator after each dir but not at the end of the path
             path.Append(Path.DirectorySeparatorChar);
-            if (path.Length == characterCount)
-                break;
 
             // Continue adding guids until the character count is hit
             string guid = Guid.NewGuid().ToString();
             path.Append(guid.Substring(0, Math.Min(characterCount - path.Length, guid.Length)));
+            if (path.Length + 1 == characterCount)
+            {
+                // If only one character is missing add a k!
+                path.Append('k');
+            }
             paths.Add(path.ToString());
         }
         Assert.Equal(path.Length, characterCount);
