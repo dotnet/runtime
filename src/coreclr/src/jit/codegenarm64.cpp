@@ -3461,19 +3461,32 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
-    // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = cpObjNode->GetSingleTempReg();
-    assert(genIsValidIntReg(tmpReg));
-
     unsigned slots = cpObjNode->gtSlots;
-    emitter* emit  = getEmitter();
+
+    // Temp register(s) used to perform the sequence of loads and stores.
+    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg2 = REG_NA;
+
+    assert(genIsValidIntReg(tmpReg));
+    assert(tmpReg != REG_WRITE_BARRIER_SRC_BYREF);
+    assert(tmpReg != REG_WRITE_BARRIER_DST_BYREF);
+
+    if (slots > 1)
+    {
+        tmpReg2 = cpObjNode->GetSingleTempReg();
+        assert(tmpReg2 != tmpReg);
+        assert(genIsValidIntReg(tmpReg2));
+        assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
+        assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
+    }
+
+    emitter* emit = getEmitter();
 
     BYTE* gcPtrs = cpObjNode->gtGcPtrs;
 
     // If we can prove it's on the stack we don't need to use the write barrier.
     if (dstOnStack)
     {
-        // TODO-ARM64-CQ: Consider using LDP/STP to save codesize.
         for (unsigned i = 0; i < slots; ++i)
         {
             emitAttr attr = EA_8BYTE;
@@ -3482,10 +3495,23 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             else if (gcPtrs[i] == GCT_BYREF)
                 attr = EA_BYREF;
 
-            emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                INS_OPTS_POST_INDEX);
-            emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                INS_OPTS_POST_INDEX);
+            // Check if two or more remaining slots and use a ldp/stp sequence
+            // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
+            if ((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
+            {
+                emit->emitIns_R_R_R_I(INS_ldp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
+                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                emit->emitIns_R_R_R_I(INS_stp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
+                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                ++i; // extra increment of i, since we are copying two items
+            }
+            else
+            {
+                emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                    INS_OPTS_POST_INDEX);
+                emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                    INS_OPTS_POST_INDEX);
+            }
         }
     }
     else
@@ -3498,11 +3524,22 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             switch (gcPtrs[i])
             {
                 case TYPE_GC_NONE:
-                    // TODO-ARM64-CQ: Consider using LDP/STP to save codesize in case of contigous NON-GC slots.
-                    emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
-                    emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                        INS_OPTS_POST_INDEX);
+                    // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
+                    if ((i + 1 < slots) && (gcPtrs[i + 1] == TYPE_GC_NONE))
+                    {
+                        emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
+                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                        emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
+                                              2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
+                        ++i; // extra increment of i, since we are copying two items
+                    }
+                    else
+                    {
+                        emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                            INS_OPTS_POST_INDEX);
+                        emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                            INS_OPTS_POST_INDEX);
+                    }
                     break;
 
                 default:
