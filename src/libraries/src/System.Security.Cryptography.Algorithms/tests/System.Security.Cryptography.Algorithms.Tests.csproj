@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{508A7D81-6462-459C-9F8F-B58FCCCFC8E7}</ProjectGuid>
-    <DefineConstants>$(DefineConstants);TESTING_CSP_IMPLEMENTATION</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -15,6 +14,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <DefineConstants>$(DefineConstants);TESTING_WINDOWS_IMPLEMENTATION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
