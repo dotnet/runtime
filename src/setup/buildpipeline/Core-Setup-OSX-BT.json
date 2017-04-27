@@ -103,7 +103,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/build.sh",
-        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) /p:TargetRid=$(PB_TargetRid)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration)",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetRid=$(PB_TargetRid)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -247,6 +247,12 @@
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)"
+    },
+    "PB_TargetArchitecture": {
+      "value": "x64"
+    },
+    "PB_TargetRid": {
+      "value": "osx.10.12-$(PB_TargetArchitecture)"
     }
   },
   "demands": [
@@ -301,7 +307,6 @@
   },
   "id": 6192,
   "name": "Core-Setup-OSX-BT",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/6192",
   "path": "\\",
   "type": "build",
   "project": {

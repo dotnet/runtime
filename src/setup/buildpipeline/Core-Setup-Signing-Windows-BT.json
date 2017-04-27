@@ -15,7 +15,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
-        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
+        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        if((Test-Path $DeleteFolder ) -eq 0) {\n            New-Item -ItemType Directory -Force -Path $DeleteFolder\n        }\n        robocopy $path $DeleteFolder /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -151,8 +151,8 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -178,7 +178,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
@@ -205,7 +205,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x86",
         "msbuildLocation": ""
       }
@@ -232,7 +232,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x86",
         "msbuildLocation": ""
       }
@@ -278,7 +278,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
@@ -305,7 +305,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
@@ -332,8 +332,8 @@
         "logProjectEvents": "false",
         "createLogFile": "true",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -359,8 +359,8 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -405,7 +405,7 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
+        "msbuildVersion": "latest",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
@@ -516,8 +516,8 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
