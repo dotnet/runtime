@@ -1381,6 +1381,10 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
+#ifdef _TARGET_ARM64_
+    id->idGCrefReg2(GCT_NONE);
+#endif
+
     // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef _TARGET_AMD64_
