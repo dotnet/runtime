@@ -36,18 +36,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             string baseMultilevelDir = Path.Combine(artifactsDir, "dotnetMultilevelSDKLookup");
             string multilevelDir = CalculateMultilevelDirectory(baseMultilevelDir);
 
-            // The three tested locations will be the cwd, the user folder and the exe dir. Both cwd and exe dir
-            // are easily overwritten, so they will be placed inside the multilevel folder. The actual user location will
-            // be used during tests.
+            // The three tested locations will be the cwd, the user folder and the exe dir. cwd is no longer supported.
+            // Both exe  and user dir will be placed inside the multilevel folder
+            
             _currentWorkingDir = Path.Combine(multilevelDir, "cwd");
-            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
-            {
-                _userDir = Environment.GetEnvironmentVariable("USERPROFILE");
-            }
-            else
-            {
-                _userDir = Environment.GetEnvironmentVariable("HOME");
-            }
+            _userDir = Path.Combine(multilevelDir, "user");
             _executableDir = Path.Combine(multilevelDir, "exe");
 
             // It's necessary to copy the entire publish folder to the exe dir because
@@ -71,12 +64,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .BuildProject();
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
-            // Set a dummy framework version (9999.0.0) in the cwd sharedFx location. We will
-            // always pick the framework from cwd to avoid interference with the sharedFxLookup
-            // test folders in the user dir
-            string cwdDummyFxVersion = Path.Combine(_currentWorkingDir, "shared", "Microsoft.NETCore.App", "9999.0.0");
+            // Set a dummy framework version (9999.0.0) in the exe sharedFx location. We will
+            // always pick the framework from this to avoid interference with the sharedFxLookup
+            string exeDirDummyFxVersion = Path.Combine(_executableDir, "shared", "Microsoft.NETCore.App", "9999.0.0");
             string builtSharedFxDir = fixture.BuiltDotnet.GreatestVersionSharedFxPath;
-            CopyDirectory(builtSharedFxDir, cwdDummyFxVersion);
+            CopyDirectory(builtSharedFxDir, exeDirDummyFxVersion);
 
             // The actual SDK version can be obtained from the built fixture. We'll use it to
             // locate the sdkDir from which we can get the files contained in the version folder
@@ -107,12 +99,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-dummy");
 
             // Specified CLI version: none
-            // CWD: empty
             // User: empty
             // Exe: 9999.0.0
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -132,6 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 9999.0.0 from user dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -145,12 +138,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0-dummy");
 
             // Specified CLI version: none
-            // CWD: 9999.0.0
+            // CWD: 9999.0.0                 --> should not be picked
             // User: 9999.0.0
             // Exe: 9999.0.0
-            // Expected: 9999.0.0 from cwd
+            // Expected: 9999.0.0 from User
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -158,7 +152,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(_cwdSelectedMessage);
+                .HaveStdErrContaining(_userSelectedMessage);
 
             // Remove dummy folders from user dir
             DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0-dummy");
@@ -186,6 +180,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 9999.0.0 from user dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -200,12 +195,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-global-dummy");
 
             // Specified CLI version: 9999.0.0-global-dummy
-            // CWD: 9999.0.0
+            // CWD: 9999.0.0                          --> should not be picked
             // User: 9999.0.0, 9999.0.0-dummy
             // Exe: 9999.0.0-dummy, 9999.0.0-global-dummy
-            // Expected: 9999.0.0 from cwd
+            // Expected: 9999.0.0 from user dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -213,26 +209,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
-            
-            // Add a prerelease dummy version in the cwd
-            AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0-global-dummy");
-
-            // Specified CLI version: 9999.0.0-global-dummy
-            // CWD: 9999.0.0, 9999.0.0-global-dummy
-            // User: 9999.0.0, 9999.0.0-dummy
-            // Exe: 9999.0.0-dummy, 9999.0.0-global-dummy
-            // Expected: 9999.0.0-global-dummy from cwd
-            dotnet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-global-dummy", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
 
             // Remove dummy folders from user dir
             DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0", "9999.0.0-dummy");
@@ -256,6 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -275,6 +253,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 9999.0.1 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -294,6 +273,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 9999.0.1 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -313,6 +293,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 10000.0.0-dummy from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -332,6 +313,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Expected: 10000.0.0 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
