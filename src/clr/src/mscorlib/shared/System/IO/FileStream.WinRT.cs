@@ -51,28 +51,10 @@ namespace System.IO
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, $"{_path} {options} {fAccess} {share} {mode}");
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
 
             return fileHandle;
         }
-
-#if PROJECTN
-        // TODO: These internal methods should be removed once we start consuming updated CoreFX builds
-        public static FileStream InternalOpen(string path, int bufferSize = 4096, bool useAsync = true)
-        {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
-        }
-
-        public static FileStream InternalCreate(string path, int bufferSize = 4096, bool useAsync = true)
-        {
-            return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
-        }
-
-        public static FileStream InternalAppend(string path, int bufferSize = 4096, bool useAsync = true)
-        {
-            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
-        }
-#endif
     }
 }
