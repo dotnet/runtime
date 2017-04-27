@@ -21,6 +21,13 @@ namespace System.Security.Cryptography.Rsa.Tests
             return RSA.Create(keySize);
 #else
             RSA rsa = Create();
+
+            if (PlatformDetection.IsFullFramework && rsa is RSACryptoServiceProvider)
+            {
+                rsa.Dispose();
+                return new RSACryptoServiceProvider(keySize);
+            }
+            
             rsa.KeySize = keySize;
             return rsa;
 #endif
