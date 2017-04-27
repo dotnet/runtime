@@ -14,8 +14,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-path $(PB_SourcesDirectory)",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$(PB_SourcesDirectory)\\deleteme\"\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
+        "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
+        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
