@@ -57,14 +57,7 @@ namespace System
             where TNetCoreExceptionType : ArgumentException 
             where TNetFxExceptionType : ArgumentException
         {
-            if (IsFullFramework)
-            {
-                Throws<TNetFxExceptionType>(paramName, action);
-            }
-            else
-            {
-                Throws<TNetCoreExceptionType>(paramName, action);
-            }
+            Throws<TNetCoreExceptionType, TNetFxExceptionType>(paramName, paramName, action);
         }
 
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, Action action)
