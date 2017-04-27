@@ -219,8 +219,18 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		values [MONO_CUSTOM_ATTR_PARENT] = idx;
-		token = image_create_token_raw (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error); /* FIXME use handles */
-		if (!mono_error_ok (error)) goto fail;
+		g_assert (cattr->ctor != NULL);
+		if (mono_is_sre_ctor_builder (mono_object_class (cattr->ctor))) {
+			MonoReflectionCtorBuilder *ctor = (MonoReflectionCtorBuilder*)cattr->ctor;
+			MonoMethod *method = ctor->mhandle;
+			if (method->klass->image == &assembly->image)
+				token = MONO_TOKEN_METHOD_DEF | ((MonoReflectionCtorBuilder*)cattr->ctor)->table_idx;
+			else
+				token = mono_image_get_methodref_token (assembly, method, FALSE);
+		} else {
+			token = image_create_token_raw (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error); /* FIXME use handles */
+			if (!mono_error_ok (error)) goto fail;
+		}
 		type = mono_metadata_token_index (token);
 		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (mono_metadata_token_table (token)) {
