@@ -62,6 +62,8 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()
         {
+            CreateDefaultProcess();
+
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
@@ -89,6 +91,8 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestBasePriorityOnUnix()
         {
+            CreateDefaultProcess();
+            
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
@@ -194,6 +198,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestId()
         {
+            CreateDefaultProcess();
+            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
@@ -249,6 +255,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMachineName()
         {
+            CreateDefaultProcess();
+            
             // Checking that the MachineName returns some value.
             Assert.NotNull(_process.MachineName);
         }
@@ -273,6 +281,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMaxWorkingSet()
         {
+            CreateDefaultProcess();
+            
             using (Process p = Process.GetCurrentProcess())
             {
                 Assert.True((long)p.MaxWorkingSet > 0);
@@ -325,6 +335,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMinWorkingSet()
         {
+            CreateDefaultProcess();
+            
             using (Process p = Process.GetCurrentProcess())
             {
                 Assert.True((long)p.MaxWorkingSet > 0);
@@ -394,6 +406,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNonpagedSystemMemorySize64()
         {
+            CreateDefaultProcess();
+            
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize64);
         }
 
@@ -407,6 +421,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPagedMemorySize64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize64);
         }
 
@@ -420,6 +436,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPagedSystemMemorySize64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize64);
         }
 
@@ -433,6 +451,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakPagedMemorySize64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize64);
         }
 
@@ -446,6 +466,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakVirtualMemorySize64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize64);
         }
 
@@ -459,6 +481,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakWorkingSet64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet64);
         }
 
@@ -472,6 +496,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPrivateMemorySize64()
         {
+            CreateDefaultProcess();
+
             AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize64);
         }
 
@@ -485,6 +511,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestVirtualMemorySize64()
         {
+            CreateDefaultProcess();
+
             Assert.True(_process.VirtualMemorySize64 > 0);
         }
 
@@ -498,6 +526,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWorkingSet64()
         {
+            CreateDefaultProcess();
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 // resident memory can be 0 on OSX.
@@ -518,6 +548,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessorTime()
         {
+            CreateDefaultProcess();
+            
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
             Assert.True(_process.PrivilegedProcessorTime.TotalSeconds >= 0);
 
@@ -583,6 +615,8 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(~TestPlatforms.OSX)] // getting/setting affinity not supported on OSX
         public void TestProcessorAffinity()
         {
+            CreateDefaultProcess();
+            
             IntPtr curProcessorAffinity = _process.ProcessorAffinity;
             try
             {
@@ -599,6 +633,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPriorityBoostEnabled()
         {
+            CreateDefaultProcess();
+
             bool isPriorityBoostEnabled = _process.PriorityBoostEnabled;
             try
             {
@@ -629,6 +665,8 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestPriorityClassUnix()
         {
+            CreateDefaultProcess();
+
             ProcessPriorityClass priorityClass = _process.PriorityClass;
             try
             {
@@ -647,6 +685,8 @@ namespace System.Diagnostics.Tests
         [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestPriorityClassWindows()
         {
+            CreateDefaultProcess();
+
             ProcessPriorityClass priorityClass = _process.PriorityClass;
             try
             {
@@ -681,6 +721,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestProcessName()
         {
+            CreateDefaultProcess();
+
             // Processes are not hosted by dotnet in the full .NET Framework.
             string expected = PlatformDetection.IsFullFramework ? TestConsoleApp : HostRunner;
             Assert.Equal(Path.GetFileNameWithoutExtension(_process.ProcessName), Path.GetFileNameWithoutExtension(expected), StringComparer.OrdinalIgnoreCase);
@@ -696,6 +738,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestSafeHandle()
         {
+            CreateDefaultProcess();
+
             Assert.False(_process.SafeHandle.IsInvalid);
         }
 
@@ -709,6 +753,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestSessionId()
         {
+            CreateDefaultProcess();
+
             uint sessionId;
 #if TargetsWindows
                 Interop.ProcessIdToSessionId((uint)_process.Id, out sessionId);
@@ -745,6 +791,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestGetProcessById()
         {
+            CreateDefaultProcess();
+
             Process p = Process.GetProcessById(_process.Id);
             Assert.Equal(_process.Id, p.Id);
             Assert.Equal(_process.ProcessName, p.ProcessName);
@@ -1179,6 +1227,8 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // MainWindowHandle is not supported on Unix.
         public void MainWindowHandle_NoWindow_ReturnsEmptyHandle()
         {
+            CreateDefaultProcess();
+
             Assert.Equal(IntPtr.Zero, _process.MainWindowHandle);
             Assert.Equal(_process.MainWindowHandle, _process.MainWindowHandle);
         }
@@ -1187,6 +1237,8 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // MainWindowHandle is not supported on Unix.
         public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
         {
+            CreateDefaultProcess();
+
             Assert.Throws<PlatformNotSupportedException>(() => _process.MainWindowHandle);
         }
 
@@ -1200,6 +1252,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
+            CreateDefaultProcess();
+
             Assert.Empty(_process.MainWindowTitle);
             Assert.Same(_process.MainWindowTitle, _process.MainWindowTitle);
         }
@@ -1215,6 +1269,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void CloseMainWindow_NoWindow_ReturnsFalse()
         {
+            CreateDefaultProcess();
+
             Assert.False(_process.CloseMainWindow());
         }
 
@@ -1261,6 +1317,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNonpagedSystemMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize);
 #pragma warning restore 0618
@@ -1278,6 +1336,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPagedMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize);
 #pragma warning restore 0618
@@ -1295,6 +1355,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPagedSystemMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize);
 #pragma warning restore 0618
@@ -1312,6 +1374,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakPagedMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize);
 #pragma warning restore 0618
@@ -1329,6 +1393,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakVirtualMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize);
 #pragma warning restore 0618
@@ -1346,6 +1412,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPeakWorkingSet()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet);
 #pragma warning restore 0618
@@ -1363,6 +1431,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPrivateMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize);
 #pragma warning restore 0618
@@ -1380,6 +1450,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestVirtualMemorySize()
         {
+            CreateDefaultProcess();
+
 #pragma warning disable 0618
             Assert.Equal(unchecked((int)_process.VirtualMemorySize64), _process.VirtualMemorySize);
 #pragma warning restore 0618
@@ -1397,6 +1469,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWorkingSet()
         {
+            CreateDefaultProcess();
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 // resident memory can be 0 on OSX.
@@ -1453,7 +1527,8 @@ namespace System.Diagnostics.Tests
             Assert.Equal(userName, p.StartInfo.UserName);
             Assert.Same(password, p.StartInfo.Password);
             Assert.Equal(domain, p.StartInfo.Domain);
-            p.Kill();
+
+            Assert.True(p.WaitForExit(WaitInMS));
             password.Dispose();
         }
 

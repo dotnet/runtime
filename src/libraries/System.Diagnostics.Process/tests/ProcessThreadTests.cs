@@ -16,6 +16,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestCommonPriorityAndTimeProperties()
         {
+            CreateDefaultProcess();
+
             ProcessThreadCollection threadCollection = _process.Threads;
             Assert.True(threadCollection.Count > 0);
             ProcessThread thread = threadCollection[0];
@@ -153,6 +155,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestPriorityLevelProperty()
         {
+            CreateDefaultProcess();
             ProcessThread thread = _process.Threads[0];
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -185,6 +188,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestThreadStateProperty()
         {
+            CreateDefaultProcess();
+
             ProcessThread thread = _process.Threads[0];
             if (ThreadState.Wait != thread.ThreadState)
             {
@@ -195,6 +200,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Threads_GetMultipleTimes_ReturnsSameInstance()
         {
+            CreateDefaultProcess();
+
             Assert.Same(_process.Threads, _process.Threads);
         }
 
