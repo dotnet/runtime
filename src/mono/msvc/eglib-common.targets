@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\garray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gbytearray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gerror.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gfile.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\ghashtable.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\giconv.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\glist.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmarkup.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gmem.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\goutput.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gpattern.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gptrarray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gqsort.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gqueue.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gshell.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gslist.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gspawn.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gstr.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gstring.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gunicode.c" />
+    <ClCompile Include="$(MonoSourceLocation)\eglib\src\gutf8.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\glib.h" />
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\gmodule.h" />
+    <ClInclude Include="$(MonoSourceLocation)\eglib\src\sort.frag.h" />
+  </ItemGroup>
+</Project>

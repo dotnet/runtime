@@ -1,111 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <ClCompile Include="..\eglib\src\garray.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gbytearray.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gdate-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gdir-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gerror.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile-posix.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gfile-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\ghashtable.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\giconv.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\glist.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gmarkup.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gmem.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gmisc-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gqueue.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gmodule-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\goutput.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gpath.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gpattern.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gptrarray.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gqsort.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gshell.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gslist.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gspawn.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gstr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gstring.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gtimer-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gunicode.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gutf8.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\eglib\src\gunicode-win32.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\eglib\src\glib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\eglib\src\gmodule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\eglib\src\sort.frag.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\eglib\src\gmodule-win32-internals.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
+  <Import Project="eglib-common.targets.filters" />
+  <Import Project="eglib-win32.targets.filters" />
+  <Import Project="eglib-posix.targets.filters" />
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{d16b81e3-5093-424e-a5d4-e7dd8da49dce}</UniqueIdentifier>
@@ -115,6 +12,21 @@
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{38a39ff1-842b-431b-b54b-24094e8283eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{04853f35-873a-4b07-990a-61dc8ebd5105}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Win32">
+      <UniqueIdentifier>{80953075-5d05-41b9-be90-82497081b11c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{7a01f670-6a6a-4837-b3ac-cd6c08075b4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Win32">
+      <UniqueIdentifier>{c6e3ed6c-6b52-4823-bc4f-2dc9f84e3f5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Posix">
+      <UniqueIdentifier>{3c958a68-b6a1-40d3-834c-b50be09cb819}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

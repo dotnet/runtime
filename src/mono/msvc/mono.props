@@ -17,7 +17,8 @@
     <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
-    <top_srcdir>$(MSBuildProjectDirectory)/..</top_srcdir>
+    <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
+    <top_srcdir>$(MSBuildProjectDirectory)/$(MonoSourceLocation)</top_srcdir>
     <MONO_DIR>$(top_srcdir)</MONO_DIR>
     <MONO_INCLUDE_DIR>$(MONO_DIR)/mono</MONO_INCLUDE_DIR>
     <MONO_EGLIB_INCLUDE_DIR>$(MONO_DIR)/eglib;$(MONO_DIR)/eglib/include;$(MONO_DIR)/eglib/test</MONO_EGLIB_INCLUDE_DIR>
