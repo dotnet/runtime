@@ -5072,7 +5072,8 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                               regNumber   reg2,
                               regNumber   reg3,
                               ssize_t     imm,
-                              insOpts     opt /* = INS_OPTS_NONE */)
+                              insOpts     opt /* = INS_OPTS_NONE */,
+                              emitAttr    attrReg2 /* = EA_UNKNOWN */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -5346,6 +5347,22 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idReg3(reg3);
+
+    if (attrReg2 != EA_UNKNOWN)
+    {
+        if (EA_IS_GCREF(attrReg2))
+        {
+            /* A special value indicates a GCref pointer value */
+
+            id->idGCrefReg2(GCT_GCREF);
+        }
+        else if (EA_IS_BYREF(attrReg2))
+        {
+            /* A special value indicates a Byref pointer value */
+
+            id->idGCrefReg2(GCT_BYREF);
+        }
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -9324,35 +9341,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // for stores, but we ignore those cases here.)
     if (emitInsMayWriteToGCReg(id)) // True if "id->idIns()" writes to a register than can hold GC ref.
     {
-        // If we ever generate instructions that write to multiple registers,
-        // then we'd need to more work here to ensure that changes in the status of GC refs are
-        // tracked properly.
-        if (emitInsMayWriteMultipleRegs(id))
+        // We assume that "idReg1" is the primary destination register for all instructions
+        if (id->idGCref() != GCT_NONE)
         {
-            // INS_ldp etc...
-            // We assume that "idReg1" and "idReg2" are the destination register for all instructions
-            // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
-            if (id->idGCref() != GCT_NONE)
-            {
-                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
-                emitGCregLiveUpd(id->idGCref(), id->idReg2(), dst);
-            }
-            else
-            {
-                emitGCregDeadUpd(id->idReg1(), dst);
-                emitGCregDeadUpd(id->idReg2(), dst);
-            }
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
         }
         else
         {
-            // We assume that "idReg1" is the destination register for all instructions
-            if (id->idGCref() != GCT_NONE)
+            emitGCregDeadUpd(id->idReg1(), dst);
+        }
+
+        if (emitInsMayWriteMultipleRegs(id))
+        {
+            // INS_ldp etc...
+            // "idReg2" is the secondary destination register
+            if (id->idGCrefReg2() != GCT_NONE)
             {
-                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                emitGCregLiveUpd(id->idGCrefReg2(), id->idReg2(), dst);
             }
             else
             {
-                emitGCregDeadUpd(id->idReg1(), dst);
+                emitGCregDeadUpd(id->idReg2(), dst);
             }
         }
     }
