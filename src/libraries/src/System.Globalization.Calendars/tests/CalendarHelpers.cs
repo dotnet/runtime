@@ -167,14 +167,14 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetDaysInYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInYear(year, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInYear(year, era));
         }
 
         [Theory]
         [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetMonthsInYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetMonthsInYear(year, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetMonthsInYear(year, era));
         }
 
         [Theory]
@@ -182,7 +182,7 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public static void GetDaysInMonth_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
         }
 
         [Theory]
@@ -190,7 +190,7 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void GetDaysInMonth_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
         }
 
         [Theory]
@@ -198,7 +198,7 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void IsLeapDay_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
         }
 
         [Theory]
@@ -206,7 +206,7 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public static void IsLeapDay_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
         }
 
         [Theory]
@@ -214,7 +214,7 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void IsLeapMonth_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
         }
 
         [Theory]
@@ -222,21 +222,21 @@ namespace System.Globalization.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public static void IsLeapMonth_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
         }
 
         [Theory]
         [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void IsLeapYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapYear(year, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapYear(year, era));
         }
 
         [Theory]
         [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetLeapMonth_Invalid(Calendar calendar, int year, int month, int day, int era, string expectedParamName)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => calendar.GetLeapMonth(year, era));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(expectedParamName, () => calendar.GetLeapMonth(year, era));
         }
 
         [Theory]
