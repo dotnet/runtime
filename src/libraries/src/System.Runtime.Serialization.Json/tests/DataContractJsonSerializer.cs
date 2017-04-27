@@ -2505,7 +2505,7 @@ public static partial class DataContractJsonSerializerTests
             KnownTypes = new List<Type>()
         };
         var value = new DateTime(2010, 12, 1);
-        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime()).TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(value).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
         var baseline = $"\"\\/Date({1291161600000 - offsetMinutes * 60 * 1000}{timeZoneString})\\/\"";
         var actual = SerializeAndDeserialize(value, baseline, dcjsSettings);
