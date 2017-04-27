@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
         public DateTime UtcDateTime
         {
             get { return _utcDateTime; }
-            set { _utcDateTime = DateTime.SpecifyKind(value, DateTimeKind.Utc); }
+            set { _utcDateTime = value; }
         }
 
         [DataMember(Name = "OffsetMinutes", IsRequired = true)]
