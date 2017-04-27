@@ -10,7 +10,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
     public static class DecryptorReusabilty
     {
-        [Fact]
+        // See https://github.com/dotnet/corefx/issues/18903 for details
+        [ConditionalFact(nameof(ShouldDecryptorBeReusable))]
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]
@@ -65,6 +66,20 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Assert.Equal(expectedPlainText, output2);
                 }
             }
+        }
+
+        private static bool ShouldDecryptorBeReusable()
+        {
+            if (!PlatformDetection.IsFullFramework)
+                return true;
+
+            bool doNotResetDecryptor;
+            if (AppContext.TryGetSwitch("Switch.System.Security.Cryptography.AesCryptoServiceProvider.DontCorrectlyResetDecryptor", out doNotResetDecryptor))
+            {
+                return !doNotResetDecryptor;
+            }
+
+            return false;
         }
     }
 }
