@@ -2747,16 +2747,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         }
         break;
 
-        case GT_LSH:
-        case GT_RSH:
-        case GT_RSZ:
-        case GT_ROL:
-        case GT_ROR:
-            if (tree->gtLsraInfo.isHelperCallWithKills)
-            {
-                killMask = RBM_CALLEE_TRASH;
-            }
-            break;
         case GT_RETURNTRAP:
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             break;
@@ -9943,12 +9933,11 @@ void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node, LsraLocation loca
         dstCandidates = genRegMask(node->gtRegNum);
     }
 
-    internalIntCount      = 0;
-    internalFloatCount    = 0;
-    isLocalDefUse         = false;
-    isHelperCallWithKills = false;
-    isLsraAdded           = false;
-    definesAnyRegisters   = false;
+    internalIntCount    = 0;
+    internalFloatCount  = 0;
+    isLocalDefUse       = false;
+    isLsraAdded         = false;
+    definesAnyRegisters = false;
 
     setDstCandidates(lsra, dstCandidates);
     srcCandsIndex = dstCandsIndex;
@@ -10372,10 +10361,6 @@ void TreeNodeInfo::dump(LinearScan* lsra)
     if (isInitialized)
     {
         printf(" I");
-    }
-    if (isHelperCallWithKills)
-    {
-        printf(" H");
     }
     if (isLsraAdded)
     {
