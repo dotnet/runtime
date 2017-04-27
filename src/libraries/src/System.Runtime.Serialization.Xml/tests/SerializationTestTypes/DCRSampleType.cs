@@ -293,4 +293,18 @@ namespace SerializationTestTypes
     public class PreferredCustomerProxy : PreferredCustomer
     {
     }
+
+    [DataContract]
+    public class UnknownEmployee
+    {
+        [DataMember]
+        public int id = 10000;
+    }
+
+    [DataContract]
+    public class UserTypeContainer
+    {
+        [DataMember]
+        public object unknownData = new UnknownEmployee();
+    }
 }
