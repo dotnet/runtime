@@ -31,6 +31,25 @@ class Test
     }
     #endregion
 
+    #region "Helper"
+    // ************************************************************
+    // Returns the appropriate exit code
+    // *************************************************************
+    static int ExitTest()
+    {
+        if (fails == 0)
+        {
+            Console.WriteLine("PASS");
+            return 100;
+        }
+        else
+        {
+            Console.WriteLine("FAIL - " + fails + " failure(s) occurred");
+            return 101;
+        }
+    }
+    #endregion
+
     #region ReversePInvoke
 
     public static string Call_DelMarshal_InOut(string s)
@@ -219,6 +238,6 @@ class Test
             ReportFailure("Method ReverseP_MarshalStrB_InOut[Managed Side],return value is false");
         }
         #endregion
-        return 100;
+        return ExitTest();
     }
 }
