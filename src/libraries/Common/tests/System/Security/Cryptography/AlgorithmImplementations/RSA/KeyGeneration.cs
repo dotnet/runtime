@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class KeyGeneration
     {
         [Fact]
-#if TESTING_CSP_IMPLEMENTATION
+#if TESTING_WINDOWS_IMPLEMENTATION
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/12388")]
 #endif
         public static void GenerateMinKey()
@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-#if TESTING_CSP_IMPLEMENTATION
+#if TESTING_WINDOWS_IMPLEMENTATION
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/12388")]
 #endif
         public static void GenerateSecondMinKey()
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-#if TESTING_CSP_IMPLEMENTATION
+#if TESTING_WINDOWS_IMPLEMENTATION
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/12388")]
 #endif
         public static void GenerateKey_2048()
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-#if TESTING_CSP_IMPLEMENTATION
+#if TESTING_WINDOWS_IMPLEMENTATION
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/12388")]
 #endif
         public static void GenerateKey_4096()
