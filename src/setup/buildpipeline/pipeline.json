@@ -116,34 +116,7 @@
             "Type": "build/product/",
             "Platform": "x86"
           }
-        },
-        {
-          "Name": "Core-Setup-Windows-BT",
-          "Parameters": {
-            "PB_AdditionalBuildArguments": "-portable",
-            "PB_TargetArchitecture": "arm"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-BT",
-          "Parameters": {
-            "PB_AdditionalBuildArguments": "-portable",
-            "PB_TargetArchitecture": "arm64",
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm64"
-          }
-        }        
+        }
       ]
     }
   ]
