@@ -737,15 +737,30 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
             else if (rp->refType == RefTypeUse)
             {
                 // Ensure that we have consistent def/use on SDSU temps.
-                // However, in the case of a non-commutative rmw def, we must avoid over-constraining
-                // the def, so don't propagate a single-register restriction from the consumer to the producer
+                // However, there are a couple of cases where this may over-constrain allocation:
+                // 1. In the case of a non-commutative rmw def (in which the rmw source must be delay-free), or
+                // 2. In the case where the defining node requires a temp distinct from the target (also a
+                //    delay-free case).
+                // In those cases, if we propagate a single-register restriction from the consumer to the producer
+                // the delayed uses will not see a fixed reference in the PhysReg at that position, and may
+                // incorrectly allocate that register.
+                // TODO-CQ: This means that we may often require a copy at the use of this node's result.
+                // This case could be moved to BuildRefPositionsForNode, at the point where the def RefPosition is
+                // created, causing a RefTypeFixedRef to be added at that location. This, however, results in
+                // more PhysReg RefPositions (a throughput impact), and a large number of diffs that require
+                // further analysis to determine benefit.
+                // See Issue #11274.
                 RefPosition* prevRefPosition = theInterval->recentRefPosition;
                 assert(prevRefPosition != nullptr && theInterval->firstRefPosition == prevRefPosition);
+                // All defs must have a valid treeNode, but we check it below to be conservative.
+                assert(prevRefPosition->treeNode != nullptr);
                 regMaskTP prevAssignment = prevRefPosition->registerAssignment;
                 regMaskTP newAssignment  = (prevAssignment & rp->registerAssignment);
                 if (newAssignment != RBM_NONE)
                 {
-                    if (!theInterval->hasNonCommutativeRMWDef || !isSingleRegister(newAssignment))
+                    if (!isSingleRegister(newAssignment) ||
+                        (!theInterval->hasNonCommutativeRMWDef && (prevRefPosition->treeNode != nullptr) &&
+                         !prevRefPosition->treeNode->gtLsraInfo.isInternalRegDelayFree))
                     {
                         prevRefPosition->registerAssignment = newAssignment;
                     }
