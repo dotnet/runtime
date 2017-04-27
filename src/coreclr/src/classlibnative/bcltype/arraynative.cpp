@@ -319,14 +319,16 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
             return AssignDontKnow;
     }
     
-    const CorElementType srcElType = srcTH.GetSignatureCorElementType();
-    const CorElementType destElType = destTH.GetSignatureCorElementType();
+    const CorElementType srcElType = srcTH.GetVerifierCorElementType();
+    const CorElementType destElType = destTH.GetVerifierCorElementType();
     _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
     _ASSERTE(destElType < ELEMENT_TYPE_MAX);
 
     // Copying primitives from one type to another
     if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
     {
+        if (srcElType == destElType)
+            return AssignWillWork;
         if (InvokeUtil::CanPrimitiveWiden(destElType, srcElType))
             return AssignPrimitiveWiden;
         else
@@ -349,10 +351,6 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
     if (srcTH.IsInterface() && destElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
 
-    // Enum is stored as a primitive of type dest.
-    if (srcTH.IsEnum() && srcTH.GetInternalCorElementType() == destElType)
-        return AssignWillWork;
-    
     return AssignDontKnow;
 }
 
@@ -405,14 +403,16 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
             return AssignWrongType;
     }
     
-    const CorElementType srcElType = srcTH.GetSignatureCorElementType();
-    const CorElementType destElType = destTH.GetSignatureCorElementType();
+    const CorElementType srcElType = srcTH.GetVerifierCorElementType();
+    const CorElementType destElType = destTH.GetVerifierCorElementType();
     _ASSERTE(srcElType < ELEMENT_TYPE_MAX);
     _ASSERTE(destElType < ELEMENT_TYPE_MAX);
 
     // Copying primitives from one type to another
     if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
     {
+        if (srcElType == destElType)
+            return AssignWillWork;
         if (InvokeUtil::CanPrimitiveWiden(destElType, srcElType))
             return AssignPrimitiveWiden;
         else
@@ -435,10 +435,6 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     if (srcTH.IsInterface() && destElType != ELEMENT_TYPE_VALUETYPE)
         return AssignMustCast;
 
-    // Enum is stored as a primitive of type dest.
-    if (srcTH.IsEnum() && srcTH.GetInternalCorElementType() == destElType)
-        return AssignWillWork;
-    
     return AssignWrongType;
 }
 
@@ -631,8 +627,8 @@ void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
     TypeHandle srcTH = pSrc->GetArrayElementTypeHandle();
     TypeHandle destTH = pDest->GetArrayElementTypeHandle();
 
-    const CorElementType srcElType = srcTH.GetSignatureCorElementType();
-    const CorElementType destElType = destTH.GetSignatureCorElementType();
+    const CorElementType srcElType = srcTH.GetVerifierCorElementType();
+    const CorElementType destElType = destTH.GetVerifierCorElementType();
     const unsigned int srcSize = GetSizeForCorElementType(srcElType);
     const unsigned int destSize = GetSizeForCorElementType(destElType);
 
