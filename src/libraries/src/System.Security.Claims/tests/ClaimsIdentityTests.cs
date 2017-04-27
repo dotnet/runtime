@@ -33,7 +33,7 @@ namespace System.Security.Claims
         public void Ctor_AuthenticationType_Blank()
         {
             var id = new ClaimsIdentity("");
-            Assert.Null(id.AuthenticationType);
+            Assert.Equal(string.Empty, id.AuthenticationType);
             Assert.Null(id.Actor);
             Assert.Null(id.BootstrapContext);
             Assert.NotNull(id.Claims);
@@ -190,7 +190,7 @@ namespace System.Security.Claims
         public void Ctor_EnumerableClaimAuthNameRoleType_AllEmpty()
         {
             var id = new ClaimsIdentity(new Claim[0], "", "", "");
-            Assert.Null(id.AuthenticationType);
+            Assert.Equal(string.Empty, id.AuthenticationType);
             Assert.Null(id.Actor);
             Assert.Null(id.BootstrapContext);
             Assert.NotNull(id.Claims);
@@ -211,7 +211,7 @@ namespace System.Security.Claims
                     new Claim (ClaimsIdentity.DefaultNameClaimType, "claim_name_value"),
                 },
                        "", "", "");
-            Assert.Null(id.AuthenticationType);
+            Assert.Equal(string.Empty, id.AuthenticationType);
             Assert.Null(id.Actor);
             Assert.Null(id.BootstrapContext);
             Assert.NotNull(id.Claims);
@@ -264,7 +264,7 @@ namespace System.Security.Claims
         public void Ctor_IdentityEnumerableClaimAuthNameRoleType_IdentityNullRestEmpty()
         {
             var id = new ClaimsIdentity(null, new Claim[0], "", "", "");
-            Assert.Null(id.AuthenticationType);
+            Assert.Equal(string.Empty, id.AuthenticationType);
             Assert.Null(id.Actor);
             Assert.Null(id.BootstrapContext);
             Assert.NotNull(id.Claims);
@@ -287,7 +287,7 @@ namespace System.Security.Claims
                 },
                        "", "", "");
 
-            Assert.Null(id.AuthenticationType);
+            Assert.Equal(string.Empty, id.AuthenticationType);
             Assert.Null(id.Actor);
             Assert.Null(id.BootstrapContext);
             Assert.NotNull(id.Claims);
