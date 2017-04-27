@@ -15,9 +15,6 @@
   <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <DefineConstants>$(DefineConstants);TESTING_WINDOWS_IMPLEMENTATION</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
