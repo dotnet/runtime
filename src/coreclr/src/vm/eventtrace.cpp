@@ -4465,10 +4465,10 @@ extern "C"
 
 #ifdef _TARGET_AMD64_
             // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
-            // If we have turned on the JIT keyword to the VERBOSE setting (needed to get JIT names) then
+            // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
             // we assume that we also want good stack traces so we need to publish unwind information so
             // ETW can get at it
-            if(bIsPublicTraceHandle && ETW_CATEGORY_ENABLED((*context), TRACE_LEVEL_VERBOSE, CLR_RUNDOWNJIT_KEYWORD))
+            if(bIsPublicTraceHandle && ETW_CATEGORY_ENABLED((*context), TRACE_LEVEL_INFORMATION, CLR_RUNDOWNJIT_KEYWORD))
                 UnwindInfoTable::PublishUnwindInfo(g_fEEStarted != FALSE);
 #endif
 
