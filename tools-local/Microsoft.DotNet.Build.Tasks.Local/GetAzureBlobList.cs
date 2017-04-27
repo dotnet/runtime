@@ -56,9 +56,6 @@ namespace Microsoft.DotNet.Build.Tasks
         // This code is duplicated in BuildTools task DownloadFromAzure, and that code should be refactored to permit blob listing.
         public async Task<bool> ExecuteAsync()
         {
-            Console.WriteLine("Attach");
-            Console.ReadLine();
-
             ParseConnectionString();
 
             if (Log.HasLoggedErrors)
