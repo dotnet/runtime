@@ -56,18 +56,12 @@ endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})
 
-add_library(System.Security.Cryptography.Native
-    SHARED
-    $<TARGET_OBJECTS:objlib>
-)
-
 add_library(System.Security.Cryptography.Native.OpenSsl
     SHARED
     $<TARGET_OBJECTS:objlib>
 )
 
 # Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.OpenSsl PROPERTIES PREFIX "")
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -80,19 +74,10 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
     )
 
     # Link with libdl.so to get the dlopen / dlsym / dlclose
-    target_link_libraries(System.Security.Cryptography.Native
-      dl
-    )
-
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
       dl
     )
 else()
-    target_link_libraries(System.Security.Cryptography.Native
-      ${OPENSSL_CRYPTO_LIBRARY}
-      ${OPENSSL_SSL_LIBRARY}
-    )
-  
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
       ${OPENSSL_CRYPTO_LIBRARY}
       ${OPENSSL_SSL_LIBRARY}
@@ -107,12 +92,6 @@ else()
     #
     # So, after compiling, rewrite the references to libcrypto to be more flexible.
     if (APPLE)
-        add_custom_command(TARGET System.Security.Cryptography.Native POST_BUILD
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib @rpath/libcrypto.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native>
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libssl.1.0.0.dylib @rpath/libssl.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native>
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -add_rpath @loader_path $<TARGET_FILE:System.Security.Cryptography.Native>
-            )
-    
         add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
             COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib @rpath/libcrypto.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
             COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libssl.1.0.0.dylib @rpath/libssl.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
@@ -123,5 +102,4 @@ endif()
 
 include(configure.cmake)
 
-install_library_and_symbols (System.Security.Cryptography.Native)
 install_library_and_symbols (System.Security.Cryptography.Native.OpenSsl)
