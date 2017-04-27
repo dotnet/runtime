@@ -123,16 +123,16 @@ extern "C" DLL_EXPORT int __cdecl Writeline(char * pFormat, int i, char c, doubl
 }
 
 
-typedef LPCTSTR (__stdcall * Test_DelMarshal_InOut)(/*[in]*/ LPCSTR s);
+typedef LPCWSTR (__stdcall * Test_DelMarshal_InOut)(/*[in]*/ LPCSTR s);
 extern "C" DLL_EXPORT BOOL __cdecl RPinvoke_DelMarshal_InOut(Test_DelMarshal_InOut d, /*[in]*/ LPCSTR s)
 {
-    LPCTSTR str = d(s);
-    const char *ret = "Return";    
+    LPCWSTR str = d(s);
+    LPCWSTR ret = W("Return");    
 
-    size_t lenstr = _tcslen(str);
-    size_t lenret = _tcslen(ret);
+    size_t lenstr = wcslen(str);
+    size_t lenret = wcslen(ret);
 
-    if((lenret != lenstr)||(_tcsncmp(str,ret,lenstr)!=0))
+    if((lenret != lenstr)||(wcsncmp(str,ret,lenstr)!=0))
     {
         printf("Error in RPinvoke_DelMarshal_InOut, Returned value didn't match\n");
         return FALSE;
