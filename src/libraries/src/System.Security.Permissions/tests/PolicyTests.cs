@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Permissions.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has actual implementation, not stubs")]
     public class PolicyTests
     {
         [Fact]
