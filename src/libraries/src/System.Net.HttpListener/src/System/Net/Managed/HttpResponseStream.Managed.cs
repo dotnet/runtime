@@ -37,11 +37,10 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class HttpResponseStream : Stream
+    internal partial class HttpResponseStream : Stream
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;
-        private bool _disposed;
         private bool _trailer_sent;
         private Stream _stream;
 
@@ -52,66 +51,45 @@ namespace System.Net
             _stream = stream;
         }
 
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length
+        private void DisposeCore()
         {
-            get { throw new NotSupportedException(SR.net_noseek); }
-        }
-
-        public override long Position
-        {
-            get { throw new NotSupportedException(SR.net_noseek); }
-            set { throw new NotSupportedException(SR.net_noseek); }
-        }
-
-        public override void Close()
-        {
-            if (_disposed == false)
+            byte[] bytes = null;
+            MemoryStream ms = GetHeaders(true);
+            bool chunked = _response.SendChunked;
+            if (_stream.CanWrite)
             {
-                _disposed = true;
-                byte[] bytes = null;
-                MemoryStream ms = GetHeaders(true);
-                bool chunked = _response.SendChunked;
-                if (_stream.CanWrite)
+                try
                 {
-                    try
+                    if (ms != null)
                     {
-                        if (ms != null)
-                        {
-                            long start = ms.Position;
-                            if (chunked && !_trailer_sent)
-                            {
-                                bytes = GetChunkSizeBytes(0, true);
-                                ms.Position = ms.Length;
-                                ms.Write(bytes, 0, bytes.Length);
-                            }
-                            InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
-                            _trailer_sent = true;
-                        }
-                        else if (chunked && !_trailer_sent)
+                        long start = ms.Position;
+                        if (chunked && !_trailer_sent)
                         {
                             bytes = GetChunkSizeBytes(0, true);
-                            InternalWrite(bytes, 0, bytes.Length);
-                            _trailer_sent = true;
+                            ms.Position = ms.Length;
+                            ms.Write(bytes, 0, bytes.Length);
                         }
+                        InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
+                        _trailer_sent = true;
                     }
-                    catch (IOException)
+                    else if (chunked && !_trailer_sent)
                     {
-                        // Ignore error due to connection reset by peer
+                        bytes = GetChunkSizeBytes(0, true);
+                        InternalWrite(bytes, 0, bytes.Length);
+                        _trailer_sent = true;
                     }
                 }
-                _response.Close();
+                catch (IOException)
+                {
+                    // Ignore error due to connection reset by peer
+                }
             }
+            _response.Close();
         }
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
-            if (_disposed)
+            if (_closed)
                 throw new ObjectDisposedException(GetType().ToString());
 
             if (_stream.CanWrite)
@@ -148,15 +126,6 @@ namespace System.Net
             }
         }
 
-        public override void Flush()
-        {
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
         private static byte[] s_crlf = new byte[] { 13, 10 };
         private static byte[] GetChunkSizeBytes(int size, bool final)
         {
@@ -189,22 +158,8 @@ namespace System.Net
             catch { }
         }
 
-        public override void Write(byte[] buffer, int offset, int size)
+        private void WriteCore(byte[] buffer, int offset, int size)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().ToString());
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
             if (size == 0)
                 return;
 
@@ -241,21 +196,15 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().ToString());
-            if (buffer == null)
+            if (_closed)
             {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                ares._callback = cback;
+                ares._state = state;
+                ares.Complete();
+                return ares;
             }
 
             byte[] bytes = null;
@@ -284,14 +233,10 @@ namespace System.Net
             return _stream.BeginWrite(buffer, offset, size, cback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult)
+        private void EndWriteCore(IAsyncResult asyncResult)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().ToString());
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            if (_closed)
+                return;
 
             if (_ignore_errors)
             {
@@ -309,32 +254,6 @@ namespace System.Net
                 if (_response.SendChunked)
                     _stream.Write(s_crlf, 0, 2);
             }
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count,
-                            AsyncCallback cback, object state)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override int EndRead(IAsyncResult ares)
-        {
-            throw new InvalidOperationException(SR.net_writeonlystream);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.net_noseek);
         }
     }
 }

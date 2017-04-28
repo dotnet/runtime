@@ -62,15 +62,7 @@ namespace System.Net.Tests
                     }
 
                     byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
-                    // [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix])
-                    if (PlatformDetection.IsWindows)
-                    {
-                        await outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<ObjectDisposedException>(() => outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length));
-                    }
+                    await outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
                 }
 
                 string clientString = await clientTask;
@@ -107,16 +99,8 @@ namespace System.Net.Tests
                         outputStream.Close();
                     }
 
-                    // [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix])
                     byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
-                    if (PlatformDetection.IsWindows)
-                    {
-                        outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
-                    }
-                    else
-                    {
-                        Assert.Throws<ObjectDisposedException>(() => outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length));
-                    }
+                    outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
                 }
 
                 string clientString = await clientTask;
