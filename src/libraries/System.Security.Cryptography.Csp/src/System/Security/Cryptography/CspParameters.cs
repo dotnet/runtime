@@ -9,7 +9,7 @@ using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
-    public sealed class CspParameters
+    public sealed partial class CspParameters
     {
         public int ProviderType;
         public string ProviderName;
@@ -48,9 +48,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [CLSCompliantAttribute(false)]
-        public SecureString KeyPassword { get; set; }
-
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }
 
         public CspParameters(int dwTypeIn) : this(dwTypeIn, null, null) { }
@@ -76,6 +73,7 @@ namespace System.Security.Cryptography
             ProviderName = parameters.ProviderName;
             KeyContainerName = parameters.KeyContainerName;
             KeyNumber = parameters.KeyNumber;
+            KeyPassword = parameters.KeyPassword;
             Flags = parameters.Flags;
             _parentWindowHandle = parameters._parentWindowHandle;
         }

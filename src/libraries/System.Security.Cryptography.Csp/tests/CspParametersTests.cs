@@ -8,11 +8,12 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public static class CspParametersTests
     {
+        const int PROV_RSA_FULL = 1;
+        const int PROV_RSA_AES = 24;
+
         [Fact]
         public static void DefaultProvider()
         {
-            const int PROV_RSA_AES = 24;
-
             CspParameters cspParameters = new CspParameters();
 
             // An awful lot of work goes into this calculation in the product code,
@@ -35,13 +36,101 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
-        public static void KeyPassword()
+        public static void KeyPassword_SetGet()
         {
             var cspParameters = new CspParameters();
-            var pwd = new SecureString();
-            pwd.AppendChar('p');
-            cspParameters.KeyPassword = pwd;
-            Assert.Same(pwd, cspParameters.KeyPassword);
+            using (var pwd = new SecureString())
+            {
+                pwd.AppendChar('p');
+                cspParameters.KeyPassword = pwd;
+                Assert.Same(pwd, cspParameters.KeyPassword);
+            }
+        }
+
+        [Theory(Skip = "Manual test - requires Smart Card - read instructions")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)
+        {
+            // Find info about your smart card:
+            // > certutil -scinfo -silent
+            //   You should see something like:
+            //   Provider = Microsoft Base Smart Card Crypto Provider
+            //   Key Container = {123ABCDE-1234-ABCD-1234-ABCD1234ABCD}
+            // Fill consts below
+            // Run this test - enter correct/incorrect password for your smart card when asked
+            const string provider = "Microsoft Base Smart Card Crypto Provider";
+            const string container = "{123ABCDE-1234-ABCD-1234-ABCD1234ABCD}";
+
+            Console.Write($"Enter {(correctPassword ? "correct" : "incorrect")} password: ");
+
+            using (var pwd = ReadPassword())
+            {
+                var cspParameters = new CspParameters(1, provider, container)
+                {
+                    KeyNumber = (int)KeyNumber.Exchange,
+                    Flags = CspProviderFlags.UseExistingKey | CspProviderFlags.UseMachineKeyStore,
+                    KeyPassword = pwd
+                };
+
+                Action sign = () =>
+                {
+                    using (var rsa = new RSACryptoServiceProvider(cspParameters))
+                    {
+                        var signed = rsa.SignData(new byte[3] { 1, 2, 3 }, "sha256");
+                        Console.WriteLine(Convert.ToBase64String(signed));
+                    }
+                };
+
+                if (correctPassword)
+                    sign();
+                else
+                    Assert.ThrowsAny<CryptographicException>(sign);
+            }
+        }
+
+        static SecureString ReadPassword()
+        {
+            var ret = new SecureString();
+
+            while (true)
+            {
+                ConsoleKeyInfo c = Console.ReadKey(true);
+                if (c.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+                else if (c.Key == ConsoleKey.Escape)
+                {
+                    for (int i = 0; i < ret.Length; i++)
+                        Console.Write("\b \b");
+
+                    ret.Clear();
+                }
+                else if (c.Key == ConsoleKey.Backspace)
+                {
+                    if (ret.Length > 0)
+                    {
+                        Console.Write("\b \b");
+                        ret.RemoveAt(ret.Length - 1);
+                    }
+                }
+                else if (c.Key == ConsoleKey.LeftArrow
+                    || c.Key == ConsoleKey.RightArrow
+                    || c.Key == ConsoleKey.DownArrow
+                    || c.Key == ConsoleKey.UpArrow)
+                {
+                    // ignore
+                }
+                else
+                {
+                    Console.Write("*");
+                    ret.AppendChar(c.KeyChar);
+                }
+            }
+
+            return ret;
         }
     }
 }
