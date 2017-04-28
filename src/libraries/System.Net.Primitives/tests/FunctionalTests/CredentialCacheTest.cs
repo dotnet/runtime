@@ -62,7 +62,6 @@ namespace System.Net.Primitives.Functional.Tests
 
             cc.Add(uriPrefix2, authenticationType1, credential3); count++;
             cc.Add(uriPrefix2, authenticationType2, credential4); count++;
-            
             return new CredentialCacheCount(cc, count);
         }
 
