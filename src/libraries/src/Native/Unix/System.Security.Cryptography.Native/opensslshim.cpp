@@ -25,6 +25,12 @@ bool OpenLibrary()
         libssl = dlopen("libssl.so.10", RTLD_LAZY);
     }
 
+    if (libssl == nullptr)
+    {
+        // Debian 9 has dropped support for SSLv3 and so they have bumped their soname
+        libssl = dlopen("libssl.so.1.0.2", RTLD_LAZY);
+    }
+
     return libssl != nullptr;
 }
 
