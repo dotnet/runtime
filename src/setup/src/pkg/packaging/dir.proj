@@ -109,6 +109,10 @@
         DestinationArchive="$(PackagesOutDir)$(SharedFrameworkCompressedFile)"
         OverwriteDestination="true" />
 
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(SharedFrameworkPublishSymbolsDir)"
+        DestinationArchive="$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)"
+        OverwriteDestination="true" />
   </Target>
 
   <Target Name="GenerateTarBall"
@@ -117,17 +121,20 @@
       <CombinedCompressedFileSet Include="$(CombinedPublishRoot)/**" />
       <HostFxrCompressedFileSet Include="$(HostFxrPublishRoot)/**" />
       <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
+      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsBinDir)/**" />
     </ItemGroup>
     <PropertyGroup>
       <CombinedCompressedFiles>@(CombinedCompressedFileSet->'%(Identity)', ' ')</CombinedCompressedFiles>
       <HostFxrCompressedFiles>@(HostFxrCompressedFileSet->'%(Identity)', ' ')</HostFxrCompressedFiles>
       <SharedFrameworkCompressedFiles>@(SharedFrameworkCompressedFileSet->'%(Identity)', ' ')</SharedFrameworkCompressedFiles>
+      <SharedFrameworkSymbolsCompressedFiles>@(SharedFrameworkSymbolsCompressedFileSet->'%(Identity)', ' ')</SharedFrameworkSymbolsCompressedFiles>
     </PropertyGroup>
     <!-- We can't use the '-C' option of tar to just compressed the full contents of a directory because we end up getting a 
          "file changed as we read it error" from tar.  Instead, pass the full file list to tar. -->
     <Exec Command="tar -czf $(PackagesOutDir)$(CombinedCompressedFile) $(CombinedCompressedFiles)" />
     <Exec Command="tar -czf $(PackagesOutDir)$(HostFxrCompressedFile) $(HostFxrCompressedFiles)" />
     <Exec Command="tar -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) $(SharedFrameworkCompressedFiles)" />
+    <Exec Command="tar -czf $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile) $(SharedFrameworkSymbolsCompressedFiles)" />
   </Target>
   
   <Import Project="windows\package.targets" />
