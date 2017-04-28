@@ -2402,7 +2402,7 @@ void Compiler::impSpillLclRefs(ssize_t lclNum)
  *  Returns the basic block of the actual handler.
  */
 
-BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd)
+BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter)
 {
     // Do not inject the basic block twice on reimport. This should be
     // hit only under JIT stress. See if the block is the one we injected.
@@ -2440,8 +2440,14 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
      * moved around since it is tied to a fixed location (EAX) */
     arg->gtFlags |= GTF_ORDER_SIDEEFF;
 
+#if defined(JIT32_GCENCODER)
+    const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
+#else
+    const bool forceInsertNewBlock = compStressCompile(STRESS_CATCH_ARG, 5);
+#endif // defined(JIT32_GCENCODER)
+
     /* Spill GT_CATCH_ARG to a temp if there are jumps to the beginning of the handler */
-    if (hndBlk->bbRefs > 1 || compStressCompile(STRESS_CATCH_ARG, 5))
+    if (hndBlk->bbRefs > 1 || forceInsertNewBlock)
     {
         if (hndBlk->bbRefs == 1)
         {
@@ -15620,7 +15626,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdHndBeg!
-                hndBegBB = impPushCatchArgOnStack(hndBegBB, clsHnd);
+                hndBegBB = impPushCatchArgOnStack(hndBegBB, clsHnd, false);
             }
 
             // Queue up the handler for importing
@@ -15641,7 +15647,8 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
-                filterBB = impPushCatchArgOnStack(filterBB, impGetObjectClass());
+                const bool isSingleBlockFilter = (filterBB->bbNext == hndBegBB);
+                filterBB = impPushCatchArgOnStack(filterBB, impGetObjectClass(), isSingleBlockFilter);
 
                 impImportBlockPending(filterBB);
             }
