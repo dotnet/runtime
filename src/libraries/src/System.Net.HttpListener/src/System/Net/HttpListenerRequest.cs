@@ -5,12 +5,44 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.Net.WebSockets;
 using System.Text;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
+        private string[] _acceptTypes;
+        private string[] _userLanguages;
+        private string _rawUrl;
+        private Uri _requestUri;
+        private Version _version;
+
+        public string[] AcceptTypes
+        {
+            get
+            {
+                if (_acceptTypes == null)
+                {
+                    _acceptTypes = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]);
+                }
+
+                return _acceptTypes;
+            }
+        }
+
+        public string[] UserLanguages
+        {
+            get
+            {
+                if (_userLanguages == null)
+                {
+                    _userLanguages = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]);
+                }
+
+                return _userLanguages;
+            }
+        }
 
         public Encoding ContentEncoding
         {
@@ -50,6 +82,90 @@ namespace System.Net
                 return Encoding.Default;
             }
         }
+
+        public string ContentType => Headers[HttpKnownHeaderNames.ContentType];
+
+        public bool IsLocal => LocalEndPoint.Address.Equals(RemoteEndPoint.Address);
+
+        public bool IsWebSocketRequest
+        {
+            get
+            {
+                if (!SupportsWebSockets)
+                {
+                    return false;
+                }
+
+                bool foundConnectionUpgradeHeader = false;
+                if (string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Upgrade]))
+                {
+                    return false;
+                }
+
+                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection))
+                {
+                    if (string.Equals(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundConnectionUpgradeHeader = true;
+                        break;
+                    }
+                }
+
+                if (!foundConnectionUpgradeHeader)
+                {
+                    return false;
+                }
+
+                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade))
+                {
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public NameValueCollection QueryString
+        {
+            get
+            {
+                NameValueCollection queryString = new NameValueCollection();
+                Helpers.FillFromString(queryString, Url.Query, true, ContentEncoding);
+                return queryString;
+            }
+        }
+
+        public string RawUrl => _rawUrl;
+
+        private string RequestScheme => IsSecureConnection ? UriScheme.Https : UriScheme.Http;
+
+        public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent];
+
+        public string UserHostAddress => LocalEndPoint.ToString();
+
+        public string UserHostName => Headers[HttpKnownHeaderNames.Host];
+
+        public Uri UrlReferrer
+        {
+            get
+            {
+                string referrer = Headers[HttpKnownHeaderNames.Referer];
+                if (referrer == null)
+                {
+                    return null;
+                }
+
+                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out Uri urlReferrer);
+                return success ? urlReferrer : null;
+            }
+        }
+
+        public Uri Url => RequestUri;
+
+        public Version ProtocolVersion => _version;
 
         private static class Helpers
         {
