@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         protected override int BlockSize { get { return 128; } }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework implements this, Core does not")]
         public void ProduceLegacyHmacValues()
         {
             using (var h = new HMACSHA512())
