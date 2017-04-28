@@ -536,42 +536,6 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     RETURN pLoadedAssembly;
 }
 
-/* static */ 
-void QCALLTYPE AssemblyNative::GetLoadedAssembliesInternal(QCall::ObjectHandleOnStack assemblies)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    
-    MethodTable * pAssemblyClass = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
-    
-    PTR_AppDomain pCurDomain = GetAppDomain();
-
-    SetSHash<PTR_DomainAssembly> assemblySet;
-    pCurDomain->GetCacheAssemblyList(assemblySet);
-    size_t nArrayElems = assemblySet.GetCount();    
-    PTRARRAYREF     AsmArray = NULL;
-
-    GCX_COOP();
-    
-    GCPROTECT_BEGIN(AsmArray); 
-    AsmArray = (PTRARRAYREF) AllocateObjectArray( (DWORD)nArrayElems, pAssemblyClass);
-    for(auto it = assemblySet.Begin(); it != assemblySet.End(); it++)
-    {
-        PTR_DomainAssembly assem = *it;
-        OBJECTREF o = (OBJECTREF)assem->GetExposedAssemblyObject();
-        _ASSERTE(o != NULL);
-        _ASSERTE(nArrayElems > 0);
-        AsmArray->SetAt(--nArrayElems, o);
-    }        
-
-    assemblies.Set(AsmArray);
-    
-    GCPROTECT_END();    
-    
-    END_QCALL;    
-} 
-
 /* static */
 void QCALLTYPE AssemblyNative::LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
