@@ -6038,6 +6038,19 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
     }
 
     regRec->assignedInterval = interval;
+
+#ifdef _TARGET_ARM_
+    // Update second RegRecord of double register
+    if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
+    {
+        assert(genIsValidDoubleReg(regRec->regNum));
+
+        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+
+        nextRegRec->assignedInterval = interval;
+    }
+#endif // _TARGET_ARM_
 }
 
 // Assign the given physical register interval to the given interval
@@ -6048,16 +6061,6 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 
     checkAndAssignInterval(regRec, interval);
     interval->assignedReg = regRec;
-
-#ifdef _TARGET_ARM_
-    if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-
-        checkAndAssignInterval(nextRegRec, interval);
-    }
-#endif // _TARGET_ARM_
 
     interval->physReg  = regRec->regNum;
     interval->isActive = true;
@@ -6250,6 +6253,19 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
     }
 
     regRec->assignedInterval = nullptr;
+
+#ifdef _TARGET_ARM_
+    // Update second RegRecord of double register
+    if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
+    {
+        assert(genIsValidDoubleReg(regRec->regNum));
+
+        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+
+        nextRegRec->assignedInterval = nullptr;
+    }
+#endif // _TARGET_ARM_
 }
 
 //------------------------------------------------------------------------
@@ -6275,15 +6291,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     assert(assignedInterval != nullptr);
     checkAndClearInterval(regRec, spillRefPosition);
     regNumber thisRegNum = regRec->regNum;
-
-#ifdef _TARGET_ARM_
-    if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-        checkAndClearInterval(nextRegRec, spillRefPosition);
-    }
-#endif // _TARGET_ARM_
 
 #ifdef DEBUG
     if (VERBOSE && !dumpTerse)
