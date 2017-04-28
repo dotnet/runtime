@@ -526,8 +526,28 @@ leave:
 void
 mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
 {
-	MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, base_dir));
-	MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, config_file_name));
+	HANDLE_FUNCTION_ENTER ();
+	MonoError error;
+	mono_domain_set_config_checked (domain, base_dir, config_file_name, &error);
+	mono_error_cleanup (&error);
+	HANDLE_FUNCTION_RETURN ();
+}
+
+gboolean
+mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const char *config_file_name, MonoError *error)
+{
+	error_init (error);
+	MonoAppDomainSetupHandle setup = MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup);
+	MonoStringHandle base_dir_str = mono_string_new_handle (domain, base_dir, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_SET (setup, application_base, base_dir_str);
+	MonoStringHandle config_file_name_str = mono_string_new_handle (domain, config_file_name, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_SET (setup, configuration_file, config_file_name_str);
+leave:
+	return is_ok (error);
 }
 
 static MonoAppDomainSetupHandle
