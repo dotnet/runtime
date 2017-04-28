@@ -1333,7 +1333,7 @@ namespace Mono.Linker.Steps {
 				MarkFields (returnTypeDefinition, includeStaticFields);
 			}
 
-			if (method.HasThis) {
+			if (method.HasThis && !method.DeclaringType.IsImport) {
 				MarkFields (method.DeclaringType, includeStaticFields);
 			}
 
