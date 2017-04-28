@@ -5350,6 +5350,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
     if (attrReg2 != EA_UNKNOWN)
     {
+        assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
         if (EA_IS_GCREF(attrReg2))
         {
             /* A special value indicates a GCref pointer value */
