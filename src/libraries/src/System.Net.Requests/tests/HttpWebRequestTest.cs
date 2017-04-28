@@ -509,6 +509,7 @@ namespace System.Net.Tests
             Assert.True(responseBody.Contains("Content-Type"));
         }
 
+        [ActiveIssue(19083)]
         [Theory, MemberData(nameof(EchoServers))]
         public void Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException(Uri remoteServer)
         {
