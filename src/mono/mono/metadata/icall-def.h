@@ -546,7 +546,7 @@ ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 HANDLES(ICALL(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method))
 
 ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
-ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type)
+HANDLES(ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type))
 
 ICALL_TYPE(MODULEB, "System.Reflection.Emit.ModuleBuilder", MODULEB_10)
 ICALL(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken)
