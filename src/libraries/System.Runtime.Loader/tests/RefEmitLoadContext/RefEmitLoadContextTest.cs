@@ -123,6 +123,23 @@ namespace System.Runtime.Loader.Tests
 
             // Load context of the statically loaded assembly is the custom load context in which dynamic assembly was created
             Assert.Equal(loadContextRefEmitAssembly, AssemblyLoadContext.GetLoadContext((Assembly)asmRefEmitLoadedStatic));
+
+            // Enumerate the assemblies in the AppDomain and confirm that the Dynamically generated assembly is present.
+            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            bool fDynamicAssemblyFound = false;
+            foreach (Assembly asm in loadedAssemblies)
+            {
+                if (asmRefEmitLoaded == asm)
+                {
+                    if (asm.FullName == asmRefEmitLoaded.FullName)    
+                    {
+                        fDynamicAssemblyFound = true;
+                        break;
+                    }
+                }
+            }
+
+            Assert.Equal(true, fDynamicAssemblyFound);
         }
     }
 }
