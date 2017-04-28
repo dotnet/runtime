@@ -646,6 +646,14 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern Assembly[] nGetAssemblies(bool forIntrospection);
+
+        internal Assembly[] GetAssemblies(bool forIntrospection)
+        {
+            return nGetAssemblies(forIntrospection);
+        }
+
         // this is true when we've removed the handles etc so really can't do anything
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsUnloadingForcedFinalize();
