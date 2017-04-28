@@ -872,7 +872,7 @@ ICALL_TYPE(TENC, "System.Text.EncodingHelper", TENC_1)
 HANDLES(ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_EncodingHelper_InternalCodePage))
 
 ICALL_TYPE(UNORM, "System.Text.Normalization", UNORM_1)
-ICALL(UNORM_1, "load_normalization_resource", ves_icall_System_Text_Normalization_load_normalization_resource)
+HANDLES(ICALL(UNORM_1, "load_normalization_resource", ves_icall_System_Text_Normalization_load_normalization_resource))
 
 ICALL_TYPE(ILOCK, "System.Threading.Interlocked", ILOCK_1)
 ICALL(ILOCK_1, "Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int)
