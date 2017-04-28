@@ -12,6 +12,7 @@
   <PropertyGroup>
     <NetCoreBuild Condition=" $(Configuration.StartsWith('netcore')) Or '$(NuGetRestoreTargets)' != '' ">true</NetCoreBuild>
     <NetCoreBuild Condition=" '$(NetCoreBuild)' == '' ">false</NetCoreBuild>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="NetCore.props" Condition=" $(NetCoreBuild) " />
   <PropertyGroup>
@@ -25,7 +26,7 @@
     <RootNamespace>Mono.Linker</RootNamespace>
     <AssemblyName Condition=" ! $(NetCoreBuild) ">monolinker</AssemblyName>
     <AssemblyName Condition=" $(NetCoreBuild) ">illink</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -110,6 +111,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="README" />
   </ItemGroup>
   <ItemGroup>
@@ -119,8 +121,6 @@
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup Condition=" $(NetCoreBuild) ">
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
       <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
       <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Release' ">Configuration=netstandard_Release</SetConfiguration>
