@@ -235,3 +235,6 @@
 
 #endif // !defined(CROSSGEN_COMPILE)
 
+#if defined(FEATURE_INTERPRETER) && defined(CROSSGEN_COMPILE)
+#undef FEATURE_INTERPRETER
+#endif
