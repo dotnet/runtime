@@ -285,22 +285,21 @@ namespace System.Linq.Expressions.Compiler
                         paramType = paramType.GetElementType();
                     }
 
-                    UnaryExpression e = Expression.Convert(
-                        Expression.Call(
-                            node.Method,
-                            Expression.Convert(node.Operand, paramType)
-                        ),
-                        node.Type
-                    );
+                    UnaryExpression operand = Expression.Convert(node.Operand, paramType);
+                    Debug.Assert(operand.Method == null);
 
-                    EmitConvert(e, flags);
+                    node = Expression.Convert(Expression.Call(node.Method, operand), node.Type);
+
+                    Debug.Assert(node.Method == null);
                 }
                 else
                 {
                     EmitUnaryMethod(node, flags);
+                    return;
                 }
             }
-            else if (node.Type == typeof(void))
+
+            if (node.Type == typeof(void))
             {
                 EmitExpressionAsVoid(node.Operand, flags);
             }

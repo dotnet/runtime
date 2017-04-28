@@ -529,34 +529,37 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitSwitchBuckets(SwitchInfo info, List<List<SwitchLabel>> buckets, int first, int last)
         {
-            if (first == last)
+            for (;;)
             {
-                EmitSwitchBucket(info, buckets[first]);
-                return;
-            }
+                if (first == last)
+                {
+                    EmitSwitchBucket(info, buckets[first]);
+                    return;
+                }
 
-            // Split the buckets into two groups, and use an if test to find
-            // the right bucket. This ensures we'll only need O(lg(B)) tests
-            // where B is the number of buckets
-            int mid = (int)(((long)first + last + 1) / 2);
+                // Split the buckets into two groups, and use an if test to find
+                // the right bucket. This ensures we'll only need O(lg(B)) tests
+                // where B is the number of buckets
+                int mid = (int)(((long)first + last + 1) / 2);
 
-            if (first == mid - 1)
-            {
-                EmitSwitchBucket(info, buckets[first]);
-            }
-            else
-            {
-                // If the first half contains more than one, we need to emit an
-                // explicit guard
-                Label secondHalf = _ilg.DefineLabel();
-                _ilg.Emit(OpCodes.Ldloc, info.Value);
-                EmitConstant(buckets[mid - 1].Last().Constant);
-                _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
-                EmitSwitchBuckets(info, buckets, first, mid - 1);
-                _ilg.MarkLabel(secondHalf);
-            }
+                if (first == mid - 1)
+                {
+                    EmitSwitchBucket(info, buckets[first]);
+                }
+                else
+                {
+                    // If the first half contains more than one, we need to emit an
+                    // explicit guard
+                    Label secondHalf = _ilg.DefineLabel();
+                    _ilg.Emit(OpCodes.Ldloc, info.Value);
+                    EmitConstant(buckets[mid - 1].Last().Constant);
+                    _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
+                    EmitSwitchBuckets(info, buckets, first, mid - 1);
+                    _ilg.MarkLabel(secondHalf);
+                }
 
-            EmitSwitchBuckets(info, buckets, mid, last);
+                first = mid;
+            }
         }
 
         private void EmitSwitchBucket(SwitchInfo info, List<SwitchLabel> bucket)
