@@ -141,6 +141,9 @@ namespace System.Data.SqlClient.SNI
                     _pipeStream.Dispose();
                     _pipeStream = null;
                 }
+
+                //Release any references held by _stream.
+                _stream = null;
             }
         }
 
