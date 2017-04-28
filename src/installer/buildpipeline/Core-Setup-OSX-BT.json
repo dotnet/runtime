@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetRid=$(PB_TargetRid)",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetRid=$(PB_TargetRid) /p:PortableBuild=$(PB_PortableBuild)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -194,7 +194,7 @@
       "allowOverride": true
     },
     "PB_BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default",
+      "value": "--skip-prereqs --configuration $(BuildConfiguration) $(PB_PortableBuildArg)",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
@@ -253,6 +253,12 @@
     },
     "PB_TargetRid": {
       "value": "osx.10.12-$(PB_TargetArchitecture)"
+    },
+    "PB_PortableBuildArg": {
+      "value": "-portable"
+    },
+    "PB_PortableBuild": {
+      "value": "true"
     }
   },
   "demands": [
