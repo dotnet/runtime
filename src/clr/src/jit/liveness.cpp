@@ -418,6 +418,8 @@ void Compiler::fgPerBlockLocalVarLiveness()
     }
 #endif // DEBUG
 
+    unsigned livenessVarEpoch = GetCurLVEpoch();
+
     BasicBlock* block;
 
 #if CAN_DISABLE_DFA
@@ -587,6 +589,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         block->bbMemoryLiveIn = emptyMemoryKindSet;
     }
 
+    noway_assert(livenessVarEpoch == GetCurLVEpoch());
 #ifdef DEBUG
     if (verbose)
     {

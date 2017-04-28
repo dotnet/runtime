@@ -178,14 +178,20 @@ private:
         return res;
     }
 
-    inline void ClearD(Env env)
+    inline void OldStyleClearD(Env env)
     {
-        // Recall that ClearD does *not* require "*this" to be of the current epoch.
-        Uint64BitSetOps::ClearD(env, m_bits);
+        // Recall that OldStyleClearD does *not* require "*this" to be of the current epoch.
+        Uint64BitSetOps::OldStyleClearD(env, m_bits);
 #ifdef DEBUG
         // But it updates it to of the current epoch.
         m_epoch = BitSetTraits::GetEpoch(env);
 #endif
+    }
+
+    inline void ClearD(Env env)
+    {
+        assert(m_epoch == BitSetTraits::GetEpoch(env));
+        Uint64BitSetOps::ClearD(env, m_bits);
     }
 
     inline bool IsEmpty(Env env) const
@@ -367,6 +373,11 @@ public:
     static void AssignNoCopy(Env env, BST& lhs, BSTValArg rhs)
     {
         lhs = rhs;
+    }
+
+    static void OldStyleClearD(Env env, BST& bs)
+    {
+        bs.OldStyleClearD(env);
     }
 
     static void ClearD(Env env, BST& bs)

@@ -296,7 +296,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
     VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
     for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
     {
-        VarSetOps::ClearD(this, optCopyPropKillSet);
+        VarSetOps::OldStyleClearD(this, optCopyPropKillSet);
 
         // Walk the tree to find if any local variable can be replaced with current live definitions.
         for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
