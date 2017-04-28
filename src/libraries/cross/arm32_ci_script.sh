@@ -261,7 +261,6 @@ function cross_build_corefx_with_docker {
         pushd $__managedPath
         rm apphost corerun dotnet
         rm *.so
-        rm *.ni.dll
         popd
         cp $__nativePath/* $__runtimePath/
         mv $__managedPath/* $__runtimePath/
