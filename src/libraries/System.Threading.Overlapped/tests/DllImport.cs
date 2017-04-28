@@ -8,11 +8,29 @@ using System.Threading;
 
 internal static class DllImport
 {
+#if !uap
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
     internal static extern Win32Handle CreateFile(String lpFileName,
        FileAccess dwDesiredAccess, FileShare dwShareMode,
        IntPtr securityAttrs, CreationDisposition dwCreationDisposition,
        FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);
+#else
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    internal static unsafe extern Win32Handle CreateFile2(string lpFileName,
+        FileAccess dwDesiredAccess, FileShare dwShareMode,
+        CreationDisposition dwCreationDisposition, CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct CREATEFILE2_EXTENDED_PARAMETERS
+    {
+        internal uint dwSize;
+        internal FileAttributes dwFileAttributes;
+        internal FileAttributes dwFileFlags;
+        internal uint dwSecurityQosFlags;
+        internal IntPtr lpSecurityAttributes;
+        internal IntPtr hTemplateFile;
+    }
+#endif
 
     [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern unsafe int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);

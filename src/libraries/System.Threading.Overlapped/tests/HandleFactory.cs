@@ -22,9 +22,25 @@ internal static partial class HandleFactory
         return CreateHandle(async:true, fileName:fileName);
     }
 
-    private static Win32Handle CreateHandle(bool async, string fileName = null)
+    private static unsafe Win32Handle CreateHandle(bool async, string fileName = null)
     {
+#if !uap
         // Assume the current directory is writable
         return DllImport.CreateFile(fileName ?? @"Overlapped.tmp", DllImport.FileAccess.GenericWrite, DllImport.FileShare.Write, IntPtr.Zero, DllImport.CreationDisposition.CreateAlways, async ? DllImport.FileAttributes.Overlapped : DllImport.FileAttributes.Normal, IntPtr.Zero);
+#else
+        var p = new DllImport.CREATEFILE2_EXTENDED_PARAMETERS();
+        p.dwSize = (uint)sizeof(DllImport.CREATEFILE2_EXTENDED_PARAMETERS);
+        p.dwFileAttributes = DllImport.FileAttributes.Normal;
+        p.dwFileFlags = async ? DllImport.FileAttributes.Overlapped : DllImport.FileAttributes.Normal;
+        p.dwSecurityQosFlags = (uint)0;
+        p.lpSecurityAttributes = IntPtr.Zero;
+        p.hTemplateFile = IntPtr.Zero;
+        return DllImport.CreateFile2(
+            fileName ?? @"Overlapped.tmp",
+            DllImport.FileAccess.GenericWrite,
+            DllImport.FileShare.Write,
+            DllImport.CreationDisposition.CreateAlways,
+            &p);
+#endif
     }
 }
