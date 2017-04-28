@@ -253,7 +253,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 		result = mono_string_new_utf16_checked (mono_domain_get (), uniname, size, &error);
 	}
 	else
-		result = mono_string_new (mono_domain_get (), "");
+		result = mono_string_new_checked (mono_domain_get (), "", &error);
 
 	if (uniname)
 		g_free (uniname);

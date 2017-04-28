@@ -3253,10 +3253,13 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 			if (is_ok (&inner_error)) {
 				char  *tmp;
 				tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
-				g_free (strace);	
-				MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, mono_string_new (domain, tmp));
+				g_free (strace);
+				MonoString *tmp_str = mono_string_new_checked (domain, tmp, &inner_error);
 				g_free (tmp);
-			} else
+				if (is_ok (&inner_error))
+					MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, tmp_str);
+			};
+			if (!is_ok (&inner_error))
 				mono_error_cleanup (&inner_error); /* no stack trace, but at least throw the original exception */
 		}
 		mono_set_pending_exception ((MonoException*)exc);

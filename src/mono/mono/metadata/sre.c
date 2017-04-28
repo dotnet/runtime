@@ -519,7 +519,8 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 	rmb->call_conv = mb->call_conv;
 	rmb->code = NULL;
 	rmb->type = mb->type;
-	rmb->name = mono_string_new (mono_domain_get (), name);
+	rmb->name = mono_string_new_checked (mono_domain_get (), name, error);
+	return_val_if_nok (error, FALSE);
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
 	rmb->skip_visibility = FALSE;

@@ -845,7 +845,9 @@ finalizer_thread (gpointer unused)
 	MonoError error;
 	gboolean wait = TRUE;
 
-	mono_thread_set_name_internal (mono_thread_internal_current (), mono_string_new (mono_get_root_domain (), "Finalizer"), FALSE, FALSE, &error);
+	MonoString *finalizer = mono_string_new_checked (mono_get_root_domain (), "Finalizer", &error);
+	mono_error_assert_ok (&error);
+	mono_thread_set_name_internal (mono_thread_internal_current (), finalizer, FALSE, FALSE, &error);
 	mono_error_assert_ok (&error);
 
 	/* Register a hazard free queue pump callback */

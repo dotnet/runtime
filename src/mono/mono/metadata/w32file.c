@@ -405,7 +405,10 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	if (mono_error_set_pending_exception (&error))
 		goto leave;
 	for (i = 0; i < names->len; i++) {
-		mono_array_setref (result, i, mono_string_new (domain, (const char *)g_ptr_array_index (names, i)));
+		MonoString *name = mono_string_new_checked (domain, (const char *)g_ptr_array_index (names, i), &error);
+		if (mono_error_set_pending_exception (&error))
+			goto leave;
+		mono_array_setref (result, i, name);
 		g_free (g_ptr_array_index (names, i));
 	}
 leave:
@@ -420,8 +423,9 @@ typedef struct {
 } IncrementalFind;
 	
 static gboolean
-incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, MonoString **result)
+incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, MonoString **result, MonoError *error)
 {
+	error_init (error);
 	gchar *utf8_result;
 	gchar *full_name;
 	
@@ -434,8 +438,10 @@ incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, Mo
 	
 	full_name = g_build_filename (handle->utf8_path, utf8_result, NULL);
 	g_free (utf8_result);
-	*result = mono_string_new (mono_domain_get (), full_name);
+	*result = mono_string_new_checked (mono_domain_get (), full_name, error);
 	g_free (full_name);
+	if (!is_ok (error))
+		return FALSE;
 	
 	return TRUE;
 }
@@ -535,7 +541,11 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 	ifh->domain = mono_domain_get ();
 	*handle = ifh;
 
-	while (incremental_find_check_match (ifh, &data, &result) == 0){
+	while (incremental_find_check_match (ifh, &data, &result, &error) == 0){
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		if (mono_w32file_find_next (find_handle, &data) == FALSE){
 			int e = mono_w32error_get_last ();
 			if (e != ERROR_NO_MORE_FILES)
@@ -544,27 +554,33 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 		}
 	}
 	*result_attr = data.dwFileAttributes;
-	
+
 	return result;
 }
 
 /* FIXME make gc suspendable */
 MonoString *
-ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint32 *error)
+ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint32 *ioerror)
 {
+	MonoError error;
 	IncrementalFind *ifh = (IncrementalFind *)handle;
 	WIN32_FIND_DATA data;
 	MonoString *result;
 
-	*error = ERROR_SUCCESS;
+	error_init (&error);
+	*ioerror = ERROR_SUCCESS;
 	do {
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		if (mono_w32file_find_next (ifh->find_handle, &data) == FALSE){
 			int e = mono_w32error_get_last ();
 			if (e != ERROR_NO_MORE_FILES)
-				*error = e;
+				*ioerror = e;
 			return NULL;
 		}
-	} while (incremental_find_check_match (ifh, &data, &result) == 0);
+	} while (incremental_find_check_match (ifh, &data, &result, &error) == 0);
 
 	*result_attr = data.dwFileAttributes;
 	return result;

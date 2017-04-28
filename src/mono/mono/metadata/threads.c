@@ -3727,7 +3727,10 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 					sf->il_offset = location->il_offset;
 
 					if (location && location->source_file) {
-						MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, location->source_file));
+						MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
+						if (!is_ok (error))
+							goto leave;
+						MONO_OBJECT_SETREF (sf, filename, filename);
 						sf->line = location->row;
 						sf->column = location->column;
 					}

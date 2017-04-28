@@ -166,13 +166,14 @@ process_set_field_string (MonoObject *obj, const gchar *fieldname, const gunicha
 }
 
 static void
-process_set_field_string_char (MonoObject *obj, const gchar *fieldname, const gchar *val)
+process_set_field_string_char (MonoObject *obj, const gchar *fieldname, const gchar *val, MonoError *error)
 {
 	MonoDomain *domain;
 	MonoClass *klass;
 	MonoClassField *field;
 	MonoString *string;
 
+	error_init (error);
 	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, val));
 
 	domain = mono_object_domain (obj);
@@ -184,7 +185,8 @@ process_set_field_string_char (MonoObject *obj, const gchar *fieldname, const gc
 	field = mono_class_get_field_from_name (klass, fieldname);
 	g_assert (field);
 
-	string = mono_string_new (domain, val);
+	string = mono_string_new_checked (domain, val, error);
+	return_if_nok (error);
 
 	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
 }
@@ -532,13 +534,16 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 	filename = g_strdup_printf ("[In Memory] %s", modulename);
 
 	process_get_assembly_fileversion (filever, assembly);
-	process_set_field_string_char (filever, "filename", filename);
+	process_set_field_string_char (filever, "filename", filename, error);
+	return_val_if_nok (error, NULL);
 	process_set_field_object (item, "version_info", filever);
 
 	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
 	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
-	process_set_field_string_char (item, "filename", filename);
-	process_set_field_string_char (item, "modulename", modulename);
+	process_set_field_string_char (item, "filename", filename, error);
+	return_val_if_nok (error, NULL);
+	process_set_field_string_char (item, "modulename", modulename, error);
+	return_val_if_nok (error, NULL);
 
 	g_free (filename);
 
