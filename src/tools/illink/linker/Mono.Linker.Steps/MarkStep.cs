@@ -1328,7 +1328,7 @@ namespace Mono.Linker.Steps {
 		{
 			TypeDefinition returnTypeDefinition = ResolveTypeDefinition (method.ReturnType);
 			const bool includeStaticFields = false;
-			if (returnTypeDefinition != null) {
+			if (returnTypeDefinition != null && !returnTypeDefinition.IsImport) {
 				MarkDefaultConstructor (returnTypeDefinition);
 				MarkFields (returnTypeDefinition, includeStaticFields);
 			}
@@ -1343,7 +1343,7 @@ namespace Mono.Linker.Steps {
 					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
 				}
 				TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
-				if (paramTypeDefinition != null) {
+				if (paramTypeDefinition != null && !paramTypeDefinition.IsImport) {
 					MarkFields (paramTypeDefinition, includeStaticFields);
 					if (pd.ParameterType.IsByReference) {
 						MarkDefaultConstructor (paramTypeDefinition);
