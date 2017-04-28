@@ -6292,6 +6292,21 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     checkAndClearInterval(regRec, spillRefPosition);
     regNumber thisRegNum = regRec->regNum;
 
+#ifdef _TARGET_ARM_
+    regNumber  nextRegNum = REG_NA;
+    RegRecord* nextRegRec = nullptr;
+
+    // Prepare second half RegRecord of a double register for TYP_DOUBLE
+    if (assignedInterval->registerType == TYP_DOUBLE)
+    {
+        assert(isFloatRegType(regRec->registerType));
+        assert(genIsValidDoubleReg(regRec->regNum));
+
+        nextRegNum = REG_NEXT(regRec->regNum);
+        nextRegRec = getRegisterRecord(nextRegNum);
+    }
+#endif // _TARGET_ARM_
+
 #ifdef DEBUG
     if (VERBOSE && !dumpTerse)
     {
@@ -6395,18 +6410,17 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         regRec->assignedInterval = regRec->previousInterval;
         regRec->previousInterval = nullptr;
 #ifdef _TARGET_ARM_
-        // Update overlapping floating point register for TYP_DOUBLE
+        // Update second half RegRecord of a double register for TYP_DOUBLE
         if (regRec->assignedInterval->registerType == TYP_DOUBLE)
         {
             assert(isFloatRegType(regRec->registerType));
-
-            regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-            RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+            assert(genIsValidDoubleReg(regRec->regNum));
 
             nextRegRec->assignedInterval = nextRegRec->previousInterval;
             nextRegRec->previousInterval = nullptr;
         }
-#endif
+#endif // _TARGET_ARM_
+
 #ifdef DEBUG
         if (spill)
         {
@@ -6423,6 +6437,18 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     {
         regRec->assignedInterval = nullptr;
         regRec->previousInterval = nullptr;
+
+#ifdef _TARGET_ARM_
+        // Update second half RegRecord of a double register for TYP_DOUBLE
+        if (assignedInterval->registerType == TYP_DOUBLE)
+        {
+            assert(isFloatRegType(regRec->registerType));
+            assert(genIsValidDoubleReg(regRec->regNum));
+
+            nextRegRec->assignedInterval = nullptr;
+            nextRegRec->previousInterval = nullptr;
+        }
+#endif // _TARGET_ARM_
     }
 }
 
