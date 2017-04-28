@@ -282,6 +282,34 @@ namespace System.Net.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Read_Disposed_ReturnsZero(bool transferEncodingChunked)
+        {
+            const string Text = "Some-String";
+            int bufferSize = Encoding.UTF8.GetByteCount(Text);
+            Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.TransferEncodingChunked = transferEncodingChunked;
+                Task<HttpResponseMessage> clientTask = client.PostAsync(_factory.ListeningUrl, new StringContent(Text));
+
+                HttpListenerContext context = await contextTask;
+                context.Request.InputStream.Close();
+
+                byte[] buffer = new byte[bufferSize];
+                Assert.Equal(0, context.Request.InputStream.Read(buffer, 0, buffer.Length));
+                Assert.Equal(new byte[bufferSize], buffer);
+
+                IAsyncResult result = context.Request.InputStream.BeginRead(buffer, 0, buffer.Length, null, null);
+                Assert.Equal(0, context.Request.InputStream.EndRead(result));
+                Assert.Equal(new byte[bufferSize], buffer);
+
+                context.Response.Close();
+            }
+        }
+
         [Fact]
         public async Task CanSeek_Get_ReturnsFalse()
         {

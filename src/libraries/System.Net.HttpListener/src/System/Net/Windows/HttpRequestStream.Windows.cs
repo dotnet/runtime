@@ -6,16 +6,15 @@ using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal sealed unsafe class HttpRequestStream : Stream
+    internal sealed unsafe partial class HttpRequestStream : Stream
     {
+        private bool _closed;
         private readonly HttpListenerContext _httpContext;
         private uint _dataChunkOffset;
         private int _dataChunkIndex;
-        private bool _closed;
         internal const int MaxReadSize = 0x20000; //http.sys recommends we limit reads to 128k
         private bool _inOpaqueMode;
 
@@ -25,37 +24,6 @@ namespace System.Net
             _httpContext = httpContext;
         }
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool CanRead
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        internal bool Closed
-        {
-            get
-            {
-                return _closed;
-            }
-        }
 
         internal bool BufferedDataChunksAvailable
         {
@@ -76,70 +44,8 @@ namespace System.Net
             }
         }
 
-        public override void Flush()
+        private int ReadCore(byte[] buffer, int offset, int size)
         {
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        public override long Length
-        {
-            get
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-        }
-
-        public override long Position
-        {
-            get
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-            set
-            {
-                throw new NotSupportedException(SR.net_noseek);
-            }
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override int Read(byte[] buffer, int offset, int size)
-        {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, "size:" + size + " offset:" + offset);
-            }
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
-            if (size == 0 || _closed)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "dataRead:0");
-                return 0;
-            }
-
             uint dataRead = 0;
 
             if (_dataChunkIndex != -1)
@@ -213,22 +119,8 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "statusCode:" + statusCode + " _closed:" + _closed);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public IAsyncResult BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " size:" + size + " offset:" + offset);
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
             if (size == 0 || _closed)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -370,37 +262,6 @@ namespace System.Net
             }
 
             return (int)dataRead + (int)castedAsyncResult._dataAlreadyRead;
-        }
-
-        public override void Write(byte[] buffer, int offset, int size)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
-        }
-
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
-        }
-
-        public override void EndWrite(IAsyncResult asyncResult)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_closed:" + _closed);
-                _closed = true;
-            }
-            finally
-            {
-                base.Dispose(disposing);
-            }
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal void SwitchToOpaqueMode()

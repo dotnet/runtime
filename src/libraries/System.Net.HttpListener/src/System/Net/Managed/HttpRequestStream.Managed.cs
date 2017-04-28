@@ -36,13 +36,13 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal class HttpRequestStream : Stream
+    internal partial class HttpRequestStream : Stream
     {
         private byte[] _buffer;
         private int _offset;
         private int _length;
         private long _remainingBody;
-        private bool _disposed;
+        protected bool _closed;
         private Stream _stream;
 
         internal HttpRequestStream(Stream stream, byte[] buffer, int offset, int length)
@@ -59,52 +59,11 @@ namespace System.Net
             _remainingBody = contentlength;
         }
 
-        public override bool CanRead => true;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => false;
-
-        public override long Length
-        {
-            get { throw new NotSupportedException(SR.net_noseek); }
-        }
-
-        public override long Position
-        {
-            get { throw new NotSupportedException(SR.net_noseek); }
-            set { throw new NotSupportedException(SR.net_noseek); }
-        }
-
-        public override void Close() => _disposed = true;
-
-        public override void Flush()
-        {
-        }
-        
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-
         // Returns 0 if we can keep reading from the base stream,
         // > 0 if we read something from the buffer.
         // -1 if we had a content length set and we finished reading that many bytes.
         private int FillFromBuffer(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-            int len = buffer.Length;
-            if (offset > len)
-                throw new ArgumentException(nameof(offset), SR.offset_out_of_range);
-            if (offset > len - count)
-                throw new ArgumentException(nameof(count), SR.offset_out_of_range);
-
             if (_remainingBody == 0)
                 return -1;
 
@@ -130,23 +89,8 @@ namespace System.Net
             return size;
         }
 
-        public override int Read(byte[] buffer, int offset, int size)
+        protected virtual int ReadCore(byte[] buffer, int offset, int size)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
-
             // Call FillFromBuffer to check for buffer boundaries even when remaining_body is 0
             int nread = FillFromBuffer(buffer, offset, size);
             if (nread == -1)
@@ -164,21 +108,15 @@ namespace System.Net
             return nread;
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
+        protected virtual IAsyncResult BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());
-            if (buffer == null)
+            if (size == 0 || _closed)
             {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (size < 0 || size > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                ares._callback = cback;
+                ares._state = state;
+                ares.Complete();
+                return ares;
             }
 
             int nread = FillFromBuffer(buffer, offset, size);
@@ -207,9 +145,6 @@ namespace System.Net
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());
-
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
@@ -221,6 +156,9 @@ namespace System.Net
                 return r._synchRead;
             }
 
+            if (_closed)
+                return 0;
+
             int nread = _stream.EndRead(asyncResult);
             if (_remainingBody > 0 && nread > 0)
             {
@@ -228,32 +166,6 @@ namespace System.Net
             }
 
             return nread;
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.net_noseek);
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
-        }
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count,
-                            AsyncCallback cback, object state)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
-        }
-
-        public override void EndWrite(IAsyncResult async_result)
-        {
-            throw new InvalidOperationException(SR.net_readonlystream);
         }
     }
 }
