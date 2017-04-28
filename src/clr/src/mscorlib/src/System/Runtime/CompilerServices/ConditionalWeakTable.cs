@@ -651,16 +651,10 @@ namespace System.Runtime.CompilerServices
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
-                    if (_entries[entriesIndex].HashCode == hashCode)
+                    if (_entries[entriesIndex].HashCode == hashCode && _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out value) == key)
                     {
-                        object primary, secondary;
-                        _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out primary, out secondary);
-                        if (primary == key)
-                        {
-                            GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                            value = secondary;
-                            return entriesIndex;
-                        }
+                        GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
+                        return entriesIndex;
                     }
                 }
 
@@ -677,7 +671,7 @@ namespace System.Runtime.CompilerServices
                 if (index < _entries.Length)
                 {
                     object oKey, oValue;
-                    _entries[index].depHnd.GetPrimaryAndSecondary(out oKey, out oValue);
+                    oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out oValue);
                     GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
                     if (oKey != null)
@@ -921,8 +915,8 @@ namespace System.Runtime.CompilerServices
                     {
                         for (int entriesIndex = _buckets[bucket]; entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                         {
-                            object primary = null, secondary = null;
-                            _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out primary, out secondary);
+                            object primary, secondary;
+                            primary = _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out secondary);
 
                             // Now that we've secured a strong reference to the secondary, must check the primary again
                             // to ensure it didn't expire (otherwise, we open a race where TryGetValue misreports an
@@ -951,7 +945,7 @@ namespace System.Runtime.CompilerServices
                         }
 
                         object thisKey, thisValue;
-                        _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out thisKey, out thisValue);
+                        thisKey = _entries[entriesIndex].depHnd.GetPrimaryAndSecondary(out thisValue);
                         if (Equals(thisKey, key))
                         {
                             GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
@@ -1069,10 +1063,8 @@ namespace System.Runtime.CompilerServices
         #region Constructors
         public DependentHandle(object primary, object secondary)
         {
-            IntPtr handle = (IntPtr)0;
-            nInitialize(primary, secondary, out handle);
             // no need to check for null result: nInitialize expected to throw OOM.
-            _handle = handle;
+            _handle = nInitialize(primary, secondary);
         }
         #endregion
 
@@ -1084,14 +1076,12 @@ namespace System.Runtime.CompilerServices
         // primary.
         public object GetPrimary()
         {
-            object primary;
-            nGetPrimary(_handle, out primary);
-            return primary;
+            return nGetPrimary(_handle);
         }
 
-        public void GetPrimaryAndSecondary(out object primary, out object secondary)
+        public object GetPrimaryAndSecondary(out object secondary)
         {
-            nGetPrimaryAndSecondary(_handle, out primary, out secondary);
+            return nGetPrimaryAndSecondary(_handle, out secondary);
         }
 
         public void SetPrimary(object primary)
@@ -1121,13 +1111,13 @@ namespace System.Runtime.CompilerServices
 
         #region Private Members
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nInitialize(object primary, object secondary, out IntPtr dependentHandle);
+        private static extern IntPtr nInitialize(object primary, object secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nGetPrimary(IntPtr dependentHandle, out object primary);
+        private static extern object nGetPrimary(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nGetPrimaryAndSecondary(IntPtr dependentHandle, out object primary, out object secondary);
+        private static extern object nGetPrimaryAndSecondary(IntPtr dependentHandle, out object secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void nSetPrimary(IntPtr dependentHandle, object primary);
