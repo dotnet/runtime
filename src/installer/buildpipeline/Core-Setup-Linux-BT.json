@@ -177,7 +177,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild)",
+        "arguments": "run --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=Linux",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
