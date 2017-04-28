@@ -92,6 +92,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop rejects zero length content: corefx#18724")]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -99,13 +100,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
             {
                 CmsRecipient cmsRecipient = new CmsRecipient(cert);
-                try
-                {
-                    ecms.Encrypt(cmsRecipient);
-                }
-                catch (CryptographicException) when (PlatformDetection.IsFullFramework) // Expected on full FX
-                {
-                }
+                ecms.Encrypt(cmsRecipient);
             }
             byte[] encodedMessage = ecms.Encode();
             ValidateZeroLengthContent(encodedMessage);
