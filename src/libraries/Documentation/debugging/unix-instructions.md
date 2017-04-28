@@ -21,10 +21,12 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 - Matching runtime bits from the crash. To get these, you should either:
   - Download the matching Jenkins archive onto your repro machine.
   - Check out the corefx repository at the appropriate commit and re-build the necessary portions.
+- lldb version 3.8+. Versions 3.6+ of lldb work with regular debugging, but not core debugging. Make sure the version of lldb you have installed is >= 3.8.
+- libsosplugin.so built against a matching version of lldb. Unfortunately, the one that is included in the CoreCLR nuget package is built against version 3.6. You will need to build coreclr from source to get the correct version. Luckily, this will help you get the next file:
 - Symbols for libcoreclr.so. libcoreclr.so.dbg should be copied to your "runtime" folder. To get this file, you can:
-  - Download the matching "symbols" nuget package from myget.org. You want the same package version that is used to build corefx. There is a "Download Symbols" button in the myget UI for this purpose.
   - Build coreclr at the matching commit. In order to determine which commit was used to build a version of libcoreclr.so, run the following command:
     `strings libcoreclr.so | grep "@(#)"`
+  - You can also download the matching "symbols" nuget package from myget.org. You want the same package version that is used to build corefx. There is a "Download Symbols" button in the myget UI for this purpose.
 
 Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
@@ -37,8 +39,6 @@ lldb -O "settings set target.exec-search-paths <runtime-path>" --core <core-file
 - `<dotnet-path>`: The path to the dotnet executable, potentially in the `<runtime-path>` folder.
 
 lldb should start debugging successfully at this point. You should see stacktraces with resolved symbols for libcoreclr.so. At this point, you can run `plugin load <libsosplugin.so-path>`, and begin using SOS commands, as above.
-
-NOTE: Some older versions of lldb do not work with core dumps correctly. If you are encountering issues, try to use version 3.8 or higher.
 
 ## Using Visual Studio Code
 
