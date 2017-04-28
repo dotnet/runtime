@@ -32,28 +32,13 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
     <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
-
-    <!-- needs to be defined all the time to avoid indexing every file from the root -->
-    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
-
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
 
-  <!-- Temporarily enable local build of tools -->
-  <Import Project="$(SourceDir)Tools\corefxTools.props" />
-
-  <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
-
-  <PropertyGroup>
-    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
-  </PropertyGroup>
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
@@ -70,44 +55,18 @@
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
-  <!-- list of nuget package sources passed to dnu -->
+  <!-- list of nuget package sources passed to nuget restore -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Example to consume local CoreCLR package:
          /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
-    <DnuSourceList Include="$(OverridePackageSource)" />
+    <DotnetSourceList Include="$(OverridePackageSource)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
-
-  <!-- list of directories to perform batch restore -->
-  <ItemGroup>
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(RunningOnUnix)'!='true'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(RunningOnUnix)'=='true'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(RunningOnUnix)'!='true'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(RunningOnUnix)'=='true'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-    <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
-
-    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-
-    <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(UseNuGetHttpCache)'!='true'">$(DnuRestoreCommand) --no-cache</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/').TrimEnd('\'))" $(DnuRestoreSource)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
-  </PropertyGroup>
 
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
@@ -139,7 +98,9 @@
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
+
+    <BuildConfigurationFolder>$(ToolsDir)configuration</BuildConfigurationFolder>
+    <BuildConfigurationImportFile>$(BuildConfigurationFolder)/configuration.props</BuildConfigurationImportFile>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>

@@ -30,27 +30,19 @@
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
-      BuildCoreFxTools;
+      GenerateConfigurationProperties;
       CreateOrUpdateCurrentVersionFile;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <Target Name="BuildCoreFxTools">
-    <ItemGroup>
-      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj" />
-      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj">
-        <TargetGroup>net46</TargetGroup>
-      </BuildToolsProject>
-      <BuildToolsProject Include="src\Tools\GenerateProps\GenerateProps.proj" />
-    </ItemGroup>
-    <MSBuild Projects="@(BuildToolsProject)"
-             ContinueOnError="ErrorAndContinue"
-             Condition="'%(Identity)' != ''"
-             Properties="Configuration=%(BuildToolsProject.TargetGroup);TargetGroup=%(BuildToolsProject.TargetGroup)" />
+  <!-- Generate the configurations for this repo -->
+  <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="GenerateConfigurationProperties">
+    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
   </Target>
 
-  <Target Name="Sync" DependsOnTargets="BuildCoreFxTools">
+  <Target Name="Sync" DependsOnTargets="GenerateConfigurationProperties">
     <ItemGroup>
       <ExternalProject Include="external\dir.proj" />
     </ItemGroup>
@@ -59,7 +51,7 @@
              ContinueOnError="ErrorAndContinue" />
   </Target>
 
-  <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
