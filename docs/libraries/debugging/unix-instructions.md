@@ -26,7 +26,7 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
   - Build coreclr at the matching commit. In order to determine which commit was used to build a version of libcoreclr.so, run the following command:
     `strings libcoreclr.so | grep "@(#)"`
 
-Once you have everything listed above, you are ready to start debugging. You need to specify an extra to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
+Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
 ```
 lldb -O "settings set target.exec-search-paths <runtime-path>" --core <core-file-path> <dotnet-path>
