@@ -656,7 +656,7 @@ protected:
         // The instrDescCGCA struct's member keeping the GC-ness of the first return register is _idcSecondRetRegGCType.
         GCtype _idGCref : 2; // GCref operand? (value is a "GCtype")
 #ifdef _TARGET_ARM64_
-        GCtype _idGCref2 : 2; // GCref operand fir register 2? (value is a "GCtype")
+        GCtype _idGCref2 : 2;
 #endif
 
         // Note that we use the _idReg1 and _idReg2 fields to hold
