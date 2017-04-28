@@ -52,7 +52,7 @@ namespace System.Net.WebSockets
 
         private WebSocketBuffer(ArraySegment<byte> internalBuffer, int receiveBufferSize, int sendBufferSize)
         {
-            Debug.Assert(internalBuffer != null, "'internalBuffer' MUST NOT be NULL.");
+            Debug.Assert(internalBuffer.Array != null, "'internalBuffer.Array' MUST NOT be NULL.");
             Debug.Assert(receiveBufferSize >= MinReceiveBufferSize,
                 "'receiveBufferSize' MUST be at least " + MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
             Debug.Assert(sendBufferSize >= MinSendBufferSize,
