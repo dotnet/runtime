@@ -944,5 +944,11 @@ mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 m
 void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst);
 
+void
+mono_loader_set_strict_strong_names (gboolean enabled);
+
+gboolean
+mono_loader_get_strict_strong_names (void);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

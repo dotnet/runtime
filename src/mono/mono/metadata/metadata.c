@@ -519,6 +519,13 @@ mono_tables_names [] = {
 
 #endif
 
+/* If TRUE (but also see DISABLE_STICT_STRONG_NAMES #define), Mono will check
+ * that the public key token and version of a candidate assembly matches the
+ * requested strong name.  If FALSE, as long as the name matches, the candidate
+ * will be allowed.
+ */
+static gboolean check_strong_names_strictly = TRUE;
+
 // Amount initially reserved in each imageset's mempool.
 // FIXME: This number is arbitrary, a more practical number should be found
 #define INITIAL_IMAGE_SET_SIZE    1024
@@ -6918,4 +6925,16 @@ mono_find_image_set_owner (void *ptr)
 	image_sets_unlock ();
 
 	return owner;
+}
+
+void
+mono_loader_set_strict_strong_names (gboolean enabled)
+{
+	check_strong_names_strictly = enabled;
+}
+
+gboolean
+mono_loader_get_strict_strong_names (void)
+{
+	return check_strong_names_strictly;
 }

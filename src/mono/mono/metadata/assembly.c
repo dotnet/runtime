@@ -89,7 +89,7 @@ static char **assemblies_path = NULL;
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 
 #define FACADE_ASSEMBLY(str) {str, 0, NULL, FALSE, TRUE}
 
@@ -968,7 +968,7 @@ mono_assemblies_init (void)
 	mono_os_mutex_init_recursive (&assemblies_mutex);
 	mono_os_mutex_init (&assembly_binding_mutex);
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	assembly_remapping_table = g_hash_table_new (g_str_hash, g_str_equal);
 
 	int i;
@@ -1258,7 +1258,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		return dest_aname;
 	}
 	
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, aname->name);
 	if (vmap) {
 		const AssemblyVersionSet* vset;
@@ -3534,7 +3534,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	g_free (corlib_file);
 
 return_corlib_and_facades:
-	if (corlib)
+	if (corlib && !strcmp (runtime->framework_version, "4.5"))  // FIXME: stop hardcoding 4.5 here
 		default_path [1] = g_strdup_printf ("%s/Facades", corlib->basedir);
 		
 	return corlib;
@@ -3601,7 +3601,7 @@ exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 gboolean
 framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 {
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#ifndef DISABLE_DESKTOP_LOADER
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
 	if (vmap) {
 		if (!vmap->framework_facade_assembly) {
@@ -3658,6 +3658,15 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
+	MonoAssemblyCandidatePredicate predicate = NULL;
+	void* predicate_ud = NULL;
+#if !defined(DISABLE_DESKTOP_LOADER)
+	if (G_LIKELY (mono_loader_get_strict_strong_names ())) {
+		predicate = &mono_assembly_candidate_predicate_sn_same_name;
+		predicate_ud = aname;
+	}
+#endif
+
 	len = strlen (aname->name);
 	for (ext_index = 0; ext_index < 2; ext_index ++) {
 		ext = ext_index == 0 ? ".dll" : ".exe";
@@ -3677,7 +3686,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, &mono_assembly_candidate_predicate_sn_same_name, aname, status);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, predicate, predicate_ud, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -3686,7 +3695,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, status, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
+		result = load_in_path (filename, default_path, status, refonly, predicate, predicate_ud);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);
