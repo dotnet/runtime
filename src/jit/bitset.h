@@ -205,9 +205,13 @@ class BitSetOps
     // Destructively set "bs" to be the empty set.  This method is unique, in that it does *not*
     // require "bs" to be a bitset of the current epoch.  It ensures that it is after, however.
     // (If the representation is indirect, this requires allocating a new, empty representation.
-    // If this is a performance issue, we could provide a new version of ClearD that assumes/asserts
+    // If this is a performance issue, we could provide a new version of OldStyleClearD that assumes/asserts
     // that the rep is for the current epoch -- this would be useful if a given bitset were repeatedly
     // cleared within an epoch.)
+    // TODO #11263: delete it.
+    static void OldStyleClearD(Env env, BitSetType& bs);
+
+    // Destructively set "bs" to be the empty set.
     static void ClearD(Env env, BitSetType& bs);
 
     // Returns a copy of "bs".  If the representation of "bs" involves a level of indirection, the data
@@ -325,6 +329,11 @@ public:
     {
         BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_AssignNocopy);
         BSO::AssignNoCopy(env, lhs, rhs);
+    }
+    static void OldStyleClearD(Env env, BitSetType& bs)
+    {
+        BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_OldStyleClearD);
+        BSO::OldStyleClearD(env, bs);
     }
     static void ClearD(Env env, BitSetType& bs)
     {
