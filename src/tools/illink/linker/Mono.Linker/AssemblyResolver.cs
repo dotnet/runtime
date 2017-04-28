@@ -41,7 +41,7 @@ namespace Mono.Linker {
 
 		readonly Dictionary<string, AssemblyDefinition> _assemblies;
 
-		public System.Collections.IDictionary AssemblyCache {
+		public IDictionary<string, AssemblyDefinition> AssemblyCache {
 			get { return _assemblies; }
 		}
 
