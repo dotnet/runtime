@@ -84,6 +84,15 @@
 
     <!--  CopyHostFxrToVersionedDirectory -->
     <Copy SourceFiles="$(CoreHostLockedDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)\host\fxr\$(HostVersion)" />
+
+    <!-- Copy symbols to publish folder -->
+    <ItemGroup>
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*.pdb" />
+    </ItemGroup>
+    <RemoveDir Directories="$(SharedFrameworkPublishSymbolsDir)"
+               Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
+    <MakeDir Directories="$(SharedFrameworkPublishSymbolsDir)" />
+    <Copy SourceFiles="@(SharedFrameworkSymbols)" DestinationFolder="$(SharedFrameworkPublishSymbolsDir)" />
   </Target>
 
   <Target Name="GenerateVersionFile"
