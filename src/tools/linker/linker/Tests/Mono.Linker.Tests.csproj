@@ -41,7 +41,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="nunit.framework">
-      <HintPath>packages\NUnit.3.6.1\lib\net45\nunit.framework.dll</HintPath>
+      <HintPath>..\..\packages\NUnit.3.6.1\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -56,13 +56,13 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Linker.csproj">
-      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
-      <Name>Mono.Linker</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\cecil\Mono.Cecil.csproj">
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Mono.Linker.csproj">
+      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
+      <Name>Mono.Linker</Name>
     </ProjectReference>
     <ProjectReference Include="TestCases\TestCases.csproj">
       <Project>{26D857FB-EEE3-4A5B-95BC-DAB39F880A99}</Project>
