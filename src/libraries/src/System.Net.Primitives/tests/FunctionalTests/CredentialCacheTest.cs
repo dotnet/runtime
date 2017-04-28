@@ -394,22 +394,17 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
-        public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success_net46()
+        public static void Add_DefaultCredentials_ThrowsArgumentException()
         {
             NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
             CredentialCache cc = new CredentialCache();
-
-            // The full framework throw System.ArgumentException with the message
-            // 'Default credentials cannot be supplied for the authenticationType1 authentication scheme.'
             AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success()
+        public static void AddRemove_UriAuthenticationType_Success()
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            NetworkCredential nc = credential1;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(uriPrefix1, authenticationType1, nc);
@@ -421,10 +416,9 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void AddRemove_HostPortAuthenticationTypeDefaultCredentials_Success()
+        public static void AddRemove_HostPortAuthenticationType_Success()
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            NetworkCredential nc = credential1;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(host1, port1, authenticationType1, nc);
