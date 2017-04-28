@@ -29,13 +29,15 @@ extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method()
 
 extern "C" const SSL_METHOD* CryptoNative_SslV3Method()
 {
-#ifdef OPENSSL_NO_SSL3_METHOD
-    return nullptr;
-#else
-    const SSL_METHOD* method = SSLv3_method();
-    assert(method != nullptr);
-    return method;
+    const SSL_METHOD* method = nullptr;
+#ifndef OPENSSL_NO_SSL3_METHOD
+    if (API_EXISTS(SSLv3_method))
+    {
+        method = SSLv3_method();
+        assert(method != nullptr);
+    }
 #endif
+    return method;
 }
 
 extern "C" const SSL_METHOD* CryptoNative_TlsV1Method()
