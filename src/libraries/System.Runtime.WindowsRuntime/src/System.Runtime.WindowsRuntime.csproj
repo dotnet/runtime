@@ -81,13 +81,28 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
       <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
+    </Compile>
     <Compile Include="System\InternalHelpers.cs" />
+    <Compile Include="System\IO\HANDLE_ACCESS_OPTIONS.cs" />
+    <Compile Include="System\IO\HANDLE_CREATION_OPTIONS.cs" />
+    <Compile Include="System\IO\HANDLE_OPTIONS.cs" />
+    <Compile Include="System\IO\HANDLE_SHARING_OPTION.cs" />
+    <Compile Include="System\IO\IStorageFolderHandleAccess.cs" />
+    <Compile Include="System\IO\IStorageItemHandleAccess.cs" />
     <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\IO\StreamOperationsImplementation.cs" />

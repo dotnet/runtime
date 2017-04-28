@@ -99,11 +99,13 @@ namespace System.IO
         }
 
         /// <summary>
-        ///     Returns a HRESULT for the specified Win32 error code.
+        /// If not already an HRESULT, returns an HRESULT for the specified Win32 error code.
         /// </summary>
         internal static int MakeHRFromErrorCode(int errorCode)
         {
-            Debug.Assert((0xFFFF0000 & errorCode) == 0, "This is an HRESULT, not an error code!");
+            // Don't convert it if it is already an HRESULT
+            if ((0xFFFF0000 & errorCode) != 0)
+                return errorCode;
 
             return unchecked(((int)0x80070000) | errorCode);
         }
