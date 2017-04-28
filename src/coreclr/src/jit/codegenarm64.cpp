@@ -3487,31 +3487,29 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     // If we can prove it's on the stack we don't need to use the write barrier.
     if (dstOnStack)
     {
-        for (unsigned i = 0; i < slots; ++i)
+        unsigned i = 0;
+        // Check if two or more remaining slots and use a ldp/stp sequence
+        while (i < slots - 1)
         {
-            emitAttr attr = EA_8BYTE;
-            if (gcPtrs[i] == GCT_GCREF)
-                attr = EA_GCREF;
-            else if (gcPtrs[i] == GCT_BYREF)
-                attr = EA_BYREF;
+            emitAttr attr0 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 0]));
+            emitAttr attr1 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 1]));
 
-            // Check if two or more remaining slots and use a ldp/stp sequence
-            // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
-            if ((i + 1 < slots) && (gcPtrs[i] == gcPtrs[i + 1]))
-            {
-                emit->emitIns_R_R_R_I(INS_ldp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
-                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                emit->emitIns_R_R_R_I(INS_stp, attr, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF,
-                                      2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
-                ++i; // extra increment of i, since we are copying two items
-            }
-            else
-            {
-                emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                    INS_OPTS_POST_INDEX);
-                emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                    INS_OPTS_POST_INDEX);
-            }
+            emit->emitIns_R_R_R_I(INS_ldp, attr0, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, 2 * TARGET_POINTER_SIZE,
+                                  INS_OPTS_POST_INDEX, attr1);
+            emit->emitIns_R_R_R_I(INS_stp, attr0, tmpReg, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, 2 * TARGET_POINTER_SIZE,
+                                  INS_OPTS_POST_INDEX, attr1);
+            i += 2;
+        }
+
+        // Use a ldr/str sequence for the last remainder
+        if (i < slots)
+        {
+            emitAttr attr0 = emitTypeSize(compiler->getJitGCType(gcPtrs[i + 0]));
+
+            emit->emitIns_R_R_I(INS_ldr, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                INS_OPTS_POST_INDEX);
+            emit->emitIns_R_R_I(INS_str, attr0, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                INS_OPTS_POST_INDEX);
         }
     }
     else

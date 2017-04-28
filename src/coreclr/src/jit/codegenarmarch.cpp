@@ -356,20 +356,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     assert(loReg != addrReg);
                     noway_assert((remainingSize == 2 * TARGET_POINTER_SIZE) || (hiReg != addrReg));
 
-                    // Use a ldp instruction if types match
-                    // TODO-ARM64-CQ: Current limitations only allows using ldp/stp when both of the GC types match
-                    if (type0 == type1)
-                    {
-                        // Load from our address expression source
-                        emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset);
-                    }
-                    else
-                    {
-                        // Load from our address expression source
-                        emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
-                        emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg,
-                                            structOffset + TARGET_POINTER_SIZE);
-                    }
+                    // Load from our address expression source
+                    emit->emitIns_R_R_R_I(INS_ldp, emitTypeSize(type0), loReg, hiReg, addrReg, structOffset,
+                                          INS_OPTS_NONE, emitTypeSize(type0));
                 }
 
                 // Emit two store instructions to store the two registers into the outgoing argument area
