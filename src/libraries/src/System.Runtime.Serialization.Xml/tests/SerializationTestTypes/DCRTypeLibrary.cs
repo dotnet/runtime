@@ -73,7 +73,7 @@ namespace SerializationTestTypes
     }
 
 
-    [DataContract(Namespace = "http://Microsoft.ServiceModel.Samples")]
+    [DataContract(Namespace = "NonExistNamespace")]
     public class Employee
     {
         [DataMember]
