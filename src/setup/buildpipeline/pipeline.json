@@ -78,9 +78,25 @@
           }
         },
         {
+          "Name": "Core-Setup-Linux-BT",
+          "Parameters": {
+            "PB_DistroRid": "rhel.7.2-x64",
+            "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_PortableBuildArg": "-portable",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuildArg": "-portable",
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
@@ -94,7 +110,7 @@
           "Parameters": {
             "PB_DistroRid": "win7-x64",
             "PB_TargetArchitecture": "x64",
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -108,7 +124,7 @@
           "Parameters": {
             "PB_DistroRid": "win7-x86",
             "PB_TargetArchitecture": "x86",
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
