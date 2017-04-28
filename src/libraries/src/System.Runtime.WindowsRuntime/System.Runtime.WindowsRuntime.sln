@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "src\System.Runtime.WindowsRuntime.csproj", "{844A2A0B-4169-49C3-B367-AFDC4894E487}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -13,20 +13,59 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6ABF965C-8997-4A43-8D10-425AC8614CCF}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Configurations.props = tests\Configurations.props
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime.Tests", "tests\System.Runtime.WindowsRuntime.Tests.csproj", "{C4854B44-ABFE-4BB5-8F89-F35FE6201338}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		uapaot-Windows_NT-Debug|Any CPU = uapaot-Windows_NT-Debug|Any CPU
+		uapaot-Windows_NT-Release|Any CPU = uapaot-Windows_NT-Release|Any CPU
+		uap-Windows_NT-Debug|Any CPU = uap-Windows_NT-Debug|Any CPU
+		uap-Windows_NT-Release|Any CPU = uap-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
 		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
 		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
 		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uapaot-Windows_NT-Debug|Any CPU.ActiveCfg = uapaot-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uapaot-Windows_NT-Debug|Any CPU.Build.0 = uapaot-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uapaot-Windows_NT-Release|Any CPU.ActiveCfg = uapaot-Windows_NT-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uapaot-Windows_NT-Release|Any CPU.Build.0 = uapaot-Windows_NT-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uap-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uap-Windows_NT-Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uap-Windows_NT-Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.uap-Windows_NT-Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.ActiveCfg = uap-Debug|Any CPU
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.Build.0 = uap-Debug|Any CPU
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.ActiveCfg = uap-Release|Any CPU
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.Build.0 = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uapaot-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uapaot-Windows_NT-Debug|Any CPU.Build.0 = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uapaot-Windows_NT-Release|Any CPU.ActiveCfg = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uapaot-Windows_NT-Release|Any CPU.Build.0 = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uap-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uap-Windows_NT-Debug|Any CPU.Build.0 = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uap-Windows_NT-Release|Any CPU.ActiveCfg = uap-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.uap-Windows_NT-Release|Any CPU.Build.0 = uap-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uapaot-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uapaot-Windows_NT-Debug|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uapaot-Windows_NT-Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uapaot-Windows_NT-Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uap-Windows_NT-Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uap-Windows_NT-Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uap-Windows_NT-Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.uap-Windows_NT-Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -34,5 +73,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{844A2A0B-4169-49C3-B367-AFDC4894E487} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+		{C4854B44-ABFE-4BB5-8F89-F35FE6201338} = {6ABF965C-8997-4A43-8D10-425AC8614CCF}
 	EndGlobalSection
 EndGlobal
