@@ -34,6 +34,11 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        private class GenericType<T>
+        {
+            public int AlwaysInt32 { get; set; }
+        }
+
         [Fact]
         public void NullPropertyAccessor()
         {
@@ -95,6 +100,15 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(Unreadable<>).GetMember("WriteOnly")[0];
             PropertyInfo property = typeof(Unreadable<>).GetProperty("WriteOnly");
+            Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void OpenGenericTypesNonGenericMember()
+        {
+            MemberInfo member = typeof(GenericType<>).GetMember(nameof(GenericType<int>.AlwaysInt32))[0];
+            PropertyInfo property = typeof(GenericType<>).GetProperty(nameof(GenericType<int>.AlwaysInt32));
             Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
             Assert.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
         }
