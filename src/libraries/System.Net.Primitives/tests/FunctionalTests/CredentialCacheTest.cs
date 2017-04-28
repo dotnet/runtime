@@ -22,6 +22,11 @@ namespace System.Net.Primitives.Functional.Tests
 
         private static readonly string authenticationType1 = "authenticationType1";
         private static readonly string authenticationType2 = "authenticationType2";
+        
+        private static readonly string authenticationTypeNTLM = "NTLM";
+        private static readonly string authenticationTypeKerberos = "Kerberos";
+        private static readonly string authenticationTypeNegotiate = "Negotiate";
+        private static readonly string authenticationTypeBasic = "Basic";
 
         private static readonly NetworkCredential credential1 = new NetworkCredential("username1", "password");
         private static readonly NetworkCredential credential2 = new NetworkCredential("username2", "password");
@@ -57,7 +62,7 @@ namespace System.Net.Primitives.Functional.Tests
 
             cc.Add(uriPrefix2, authenticationType1, credential3); count++;
             cc.Add(uriPrefix2, authenticationType2, credential4); count++;
-
+            
             return new CredentialCacheCount(cc, count);
         }
 
@@ -94,6 +99,37 @@ namespace System.Net.Primitives.Functional.Tests
             yield return CreateHostPortCredentialCacheCount();
             yield return CreateUriAndHostPortCredentialCacheCount();
         }
+        
+        public static IEnumerable<object[]> StandardAuthTypeWithNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationTypeNTLM, credential1},
+                new object[] {authenticationTypeKerberos, credential2},
+                new object[] {authenticationTypeNegotiate, credential3},
+                new object[] {authenticationTypeBasic, credential4},
+                
+                new object[] {authenticationTypeNTLM, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeKerberos, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeNegotiate, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                // Default credentials cannot be supplied for the Basic authentication scheme.
+            };
+            
+        public static IEnumerable<object[]> CustomAuthTypeWithDefaultNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationType1, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationType2, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+            };
+            
+        public static IEnumerable<object[]> CustomAuthTypeWithCustomNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationType1, credential1},
+                new object[] {authenticationType1, credential2},
+                
+                new object[] {authenticationType2, credential1},
+                new object[] {authenticationType2, credential2},
+            };
 
         [Fact]
         public static void Ctor_Empty_Success()
@@ -392,15 +428,43 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(String.Empty, c.Password);
             Assert.Equal(String.Empty, c.Domain);
         }
-
-        [Fact]
-        public static void Add_DefaultCredentials_ThrowsArgumentException()
+        
+        [Theory]
+        [MemberData(nameof(StandardAuthTypeWithNetworkCredential))]
+        [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
+        public static void Add_UriAuthenticationType_Success(string authType, NetworkCredential nc)
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
             CredentialCache cc = new CredentialCache();
-            AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
+            cc.Add(uriPrefix1, authType, nc);
+            Assert.Equal(nc, cc.GetCredential(uriPrefix1, authType));
         }
-
+        
+        [Theory]
+        [MemberData(nameof(CustomAuthTypeWithDefaultNetworkCredential))]
+        public static void Add_UriCustomAuthTypeWithDefaultCredential_ThrowsArgumentException(string authType, NetworkCredential nc)
+        {
+            CredentialCache cc = new CredentialCache();
+            AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
+        }
+        
+        [Theory]
+        [MemberData(nameof(StandardAuthTypeWithNetworkCredential))]
+        [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
+        public static void Add_HostPortAuthenticationType_Success(string authType, NetworkCredential nc)
+        {
+            CredentialCache cc = new CredentialCache();
+            cc.Add(host1, port1, authType, nc);
+            Assert.Equal(nc, cc.GetCredential(host1, port1, authType));
+        }
+        
+        [Theory]
+        [MemberData(nameof(CustomAuthTypeWithDefaultNetworkCredential))]
+        public static void Add_HostPortCustomAuthTypeWithDefaultCredential_ThrowsArgumentException(string authType, NetworkCredential nc)
+        {
+            CredentialCache cc = new CredentialCache();
+            AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
+        }
+        
         [Fact]
         public static void AddRemove_UriAuthenticationType_Success()
         {
