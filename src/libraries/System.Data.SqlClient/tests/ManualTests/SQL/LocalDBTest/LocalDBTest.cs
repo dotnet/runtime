@@ -29,6 +29,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             OpenConnection(builder.ConnectionString);
         }
 
+        [ConditionalFact(nameof(IsLocalDBEnvironmentSet))]
+        public static void InvalidDBTest()
+        {
+            using (var connection = new SqlConnection(@"Data Source=(localdb)\MSSQLLOCALDB;Database=DOES_NOT_EXIST;Pooling=false;"))
+            {
+                DataTestUtility.AssertThrowsWrapper<SqlException>(() => connection.Open());
+            }
+        }
+
         private static void OpenConnection(string connString)
         {
             using (SqlConnection connection = new SqlConnection(connString))

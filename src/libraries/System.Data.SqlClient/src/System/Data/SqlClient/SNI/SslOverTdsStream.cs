@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.IO.Pipes;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -160,7 +161,12 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public override void Flush()
         {
-            _stream.Flush();
+            // Can sometimes get Pipe broken errors from flushing a PipeStream.
+            // PipeStream.Flush() also doesn't do anything, anyway.
+            if (!(_stream is PipeStream))
+            {
+                _stream.Flush();
+            }
         }
 
         /// <summary>
