@@ -139,11 +139,14 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             Value = new DateTime(549269870000L, DateTimeKind.Utc)
         };
 
-        TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeOjbect,
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+        if (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer())
+        {
+            TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeOjbect,
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>");
 
-        Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
+            Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
+        }
     }
 
     [Fact]
