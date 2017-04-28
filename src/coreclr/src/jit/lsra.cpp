@@ -1317,6 +1317,8 @@ void LinearScan::setBlockSequence()
     compiler->EnsureBasicBlockEpoch();
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
     BlockSet BLOCKSET_INIT_NOCOPY(readySet, BlockSetOps::MakeEmpty(compiler));
+    BlockSet BLOCKSET_INIT_NOCOPY(predSet, BlockSetOps::MakeEmpty(compiler));
+
     assert(blockSequence == nullptr && bbSeqCount == 0);
     blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
@@ -1400,7 +1402,7 @@ void LinearScan::setBlockSequence()
             // (i.e. pred-first or random, since layout order is handled above).
             if (!BlockSetOps::IsMember(compiler, readySet, succ->bbNum))
             {
-                addToBlockSequenceWorkList(readySet, succ);
+                addToBlockSequenceWorkList(readySet, succ, predSet);
                 BlockSetOps::AddElemD(compiler, readySet, succ->bbNum);
             }
         }
@@ -1433,7 +1435,7 @@ void LinearScan::setBlockSequence()
                 {
                     if (!isBlockVisited(block))
                     {
-                        addToBlockSequenceWorkList(readySet, block);
+                        addToBlockSequenceWorkList(readySet, block, predSet);
                         BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
                     }
                 }
@@ -1442,7 +1444,7 @@ void LinearScan::setBlockSequence()
                 {
                     if (!isBlockVisited(block))
                     {
-                        addToBlockSequenceWorkList(readySet, block);
+                        addToBlockSequenceWorkList(readySet, block, predSet);
                         BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
                     }
                 }
@@ -1540,6 +1542,9 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 // Arguments:
 //    sequencedBlockSet - the set of blocks that are already sequenced
 //    block             - the new block to be added
+//    predSet           - the buffer to save predecessors set. A block set allocated by the caller used here as a
+//    temporary block set for constructing a predecessor set. Allocated by the caller to avoid reallocating a new block
+//    set with every call to this function
 //
 // Return Value:
 //    None.
@@ -1561,13 +1566,13 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 //    Note also that, when random traversal order is implemented, this method
 //    should insert the blocks into the list in random order, so that we can always
 //    simply select the first block in the list.
-void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block)
+void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet)
 {
     // The block that is being added is not already sequenced
     assert(!BlockSetOps::IsMember(compiler, sequencedBlockSet, block->bbNum));
 
     // Get predSet of block
-    BlockSet  BLOCKSET_INIT_NOCOPY(predSet, BlockSetOps::MakeEmpty(compiler));
+    BlockSetOps::ClearD(compiler, predSet);
     flowList* pred;
     for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
@@ -1723,6 +1728,8 @@ void LinearScan::doLinearScan()
     }
 #endif // DEBUG
 
+    unsigned lsraBlockEpoch = compiler->GetCurBasicBlockEpoch();
+
     splitBBNumToTargetBBNumMap = nullptr;
 
     // This is complicated by the fact that physical registers have refs associated
@@ -1738,7 +1745,7 @@ void LinearScan::doLinearScan()
 
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
-    BlockSetOps::ClearD(compiler, bbVisitedSet);
+    clearVisitedBlocks();
     initVarRegMaps();
     allocateRegisters();
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
@@ -1759,6 +1766,7 @@ void LinearScan::doLinearScan()
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
     compiler->compLSRADone = true;
+    noway_assert(lsraBlockEpoch = compiler->GetCurBasicBlockEpoch());
 }
 
 //------------------------------------------------------------------------
