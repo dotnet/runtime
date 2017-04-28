@@ -6563,42 +6563,38 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 #endif // DEBUG
 
 #ifdef _TARGET_ARM_
-//-------------------------------------------------------------------------------
-// isOverlappedRegRecord : Is interval assigned to overlapped register?
+//--------------------------------------------------------------------------------------
+// isSecondHalfReg: Test if recRec is second half of double reigster
+//                  which is assigned to an interval.
 //
 // Arguments:
-//    assignedInterval - an interval assigned to some register
-//    physRegRecord - a register which be tested
+//    regRec - a register to be tested
+//    interval - an interval which is assigned to some register
+//
+// Assumptions:
+//    The interval must have been assigned to some register
 //
 // Return Value:
-//    True if an interval is assigned to a register which overlaps physRegRecord
+//    True only if regRec is second half of assignedReg in interval
 //
-bool LinearScan::isOverlappedRegRecord(Interval* assignedInterval, RegRecord* physRegRecord)
+bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
 {
-    RegRecord* assignedReg = assignedInterval->assignedReg;
+    RegRecord* assignedReg = interval->assignedReg;
 
-    if (assignedReg == physRegRecord)
+    if (assignedReg != nullptr && interval->registerType == TYP_DOUBLE)
     {
-        return true;
-    }
-    else if (assignedInterval->registerType == TYP_DOUBLE)
-    {
-        // Check whether physRegRecord is overlapped by assignedReg
-        RegRecord* altPhysRegRecord;
-        regNumber  regNum = physRegRecord->regNum;
+        // interval should have been allocated to a valid double register
+        assert(genIsValidDoubleReg(assignedReg->regNum));
 
-        if (genIsValidFloatReg(regNum))
-        {
-            // Should not be a valid double reg
-            assert(!genIsValidDoubleReg(regNum));
+        // Find a second half RegRecord of double register
+        regNumber firstRegNum  = assignedReg->regNum;
+        regNumber secondRegNum = REG_NEXT(firstRegNum);
 
-            // Make regNum of overlapping double register
-            regNum = REG_PREV(regNum);
-            assert(genIsValidDoubleReg(regNum));
+        assert(genIsValidFloatReg(secondRegNum) && !genIsValidDoubleReg(secondRegNum));
 
-            altPhysRegRecord = getRegisterRecord(regNum);
-            return assignedReg == altPhysRegRecord;
-        }
+        RegRecord* secondRegRec = getRegisterRecord(secondRegNum);
+
+        return secondRegRec == regRec;
     }
 
     return false;
@@ -6815,7 +6811,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 }
 #ifdef _TARGET_ARM_
                 // Consider overlapping floating point register for TYP_DOUBLE
-                else if (!assignedInterval->isConstant && isOverlappedRegRecord(assignedInterval, physRegRecord))
+                else if (!assignedInterval->isConstant && isSecondHalfReg(physRegRecord, assignedInterval))
                 {
                     assert(assignedInterval->assignedReg->regNum == REG_PREV(physRegRecord->regNum));
                 }
@@ -6954,7 +6950,7 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 
                     // Don't call unassignPhysReg() again, because two FP registers of a double reister are already
                     // unassigned together when this function is called with valid double register number.
-                    regNumber  prevRegNum   = REG_PREV(physRegRecord->regNum);
+                    regNumber  prevRegNum    = REG_PREV(physRegRecord->regNum);
                     RegRecord* prevRegRecord = getRegisterRecord(prevRegNum);
 
                     // Both FP registers of a double reigster should not be allocated to the interval anymore.
