@@ -18,6 +18,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(100000)]
         [InlineData(1000000)]
         [InlineData(10000000)]
+        [ActiveIssue(18463, TestPlatforms.OSX)] // Hits the max-open-file limit often on OSX.
         public void CreateNew(int capacity)
         {
             const int innerIterations = 1000;
