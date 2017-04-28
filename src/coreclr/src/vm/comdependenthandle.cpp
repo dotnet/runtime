@@ -17,22 +17,22 @@
 
 
 
-FCIMPL3(VOID, DependentHandle::nInitialize, Object *_primary, Object *_secondary, OBJECTHANDLE *outHandle)
+FCIMPL2(OBJECTHANDLE, DependentHandle::nInitialize, Object *_primary, Object *_secondary)
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(outHandle != NULL && *outHandle == NULL);  // Multiple initializations disallowed 
-
     OBJECTREF primary(_primary);
     OBJECTREF secondary(_secondary);
+    OBJECTHANDLE result = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
+    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
     
     // Create the handle.
-    *outHandle = GetAppDomain()->CreateDependentHandle(primary, secondary);
+    result = GetAppDomain()->CreateDependentHandle(primary, secondary);
 
     HELPER_METHOD_FRAME_END_POLL();
 
+    return result;
 }
 FCIMPLEND
 
@@ -55,22 +55,22 @@ FCIMPLEND
 
 
 
-FCIMPL2(VOID, DependentHandle::nGetPrimary, OBJECTHANDLE handle, Object **outPrimary)
+FCIMPL1(Object*, DependentHandle::nGetPrimary, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
-    _ASSERTE(handle != NULL && outPrimary != NULL);
-    *outPrimary = OBJECTREFToObject(ObjectFromHandle(handle));
+    FCUnique(0x54);
+    _ASSERTE(handle != NULL);
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 FCIMPLEND
 
 
 
-FCIMPL3(VOID, DependentHandle::nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outPrimary, Object **outSecondary)
+FCIMPL2(Object*, DependentHandle::nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outSecondary)
 {
     FCALL_CONTRACT;
-    _ASSERTE(handle != NULL && outPrimary != NULL && outSecondary != NULL);
-    *outPrimary = OBJECTREFToObject(ObjectFromHandle(handle));
     *outSecondary = OBJECTREFToObject(GetDependentHandleSecondary(handle));
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 FCIMPLEND
 
