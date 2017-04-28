@@ -672,7 +672,7 @@
       "value": "false"
     },
     "PB_PortableBuild": {
-      "value": "",
+      "value": "false",
       "allowOverride": true
     },
     "NUGET_SYMBOLS_FEED_URL": {
@@ -708,7 +708,7 @@
       "value": "real"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture)"
+      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)"

@@ -177,7 +177,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration)",
+        "arguments": "run --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -287,7 +287,7 @@
       "allowOverride": true
     },
     "PB_BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration)",
+      "value": "--skip-prereqs --configuration $(BuildConfiguration) $(PB_PortableBuildArg)",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
@@ -378,6 +378,12 @@
     },
     "PB_TargetArchitecture": {
       "value": "x64"
+    },
+    "PB_PortableBuildArg": {
+      "value": ""
+    },
+    "PB_PortableBuild": {
+      "value": "false"
     }
   },
   "demands": [
@@ -441,6 +447,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097642
+    "revision": 418097676
   }
 }
