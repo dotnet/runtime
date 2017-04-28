@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,18 +14,15 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
-        private Uri _requestUri;
         private ulong _requestId;
         internal ulong _connectionId;
         private SslStatus _sslStatus;
-        private string _rawUrl;
         private string _cookedUrlHost;
         private string _cookedUrlPath;
         private string _cookedUrlQuery;
@@ -34,7 +30,6 @@ namespace System.Net
         private Stream _requestStream;
         private string _httpMethod;
         private bool? _keepAlive;
-        private Version _version;
         private WebHeaderCollection _webHeaders;
         private IPEndPoint _localEndPoint;
         private IPEndPoint _remoteEndPoint;
@@ -116,13 +111,7 @@ namespace System.Net
             }
         }
 
-        internal HttpListenerContext HttpListenerContext
-        {
-            get
-            {
-                return _httpContext;
-            }
-        }
+        internal HttpListenerContext HttpListenerContext => _httpContext;
 
         // Note: RequestBuffer may get moved in memory. If you dereference a pointer from inside the RequestBuffer, 
         // you must use 'OriginalBlobAddress' below to adjust the location of the pointer to match the location of
@@ -161,13 +150,7 @@ namespace System.Net
             _memoryBlob.ReleasePins();
         }
 
-        internal ulong RequestId
-        {
-            get
-            {
-                return _requestId;
-            }
-        }
+        internal ulong RequestId => _requestId;
 
         public Guid RequestTraceIdentifier
         {
@@ -176,14 +159,6 @@ namespace System.Net
                 Guid guid = new Guid();
                 *(1 + (ulong*)&guid) = RequestId;
                 return guid;
-            }
-        }
-
-        public string[] AcceptTypes
-        {
-            get
-            {
-                return Helpers.ParseMultivalueHeader(GetKnownHeader(HttpRequestHeader.Accept));
             }
         }
 
@@ -217,14 +192,6 @@ namespace System.Net
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_contentLength:{_contentLength} _boundaryType:{_boundaryType}");
                 return _contentLength;
-            }
-        }
-
-        public string ContentType
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.ContentType);
             }
         }
 
@@ -277,140 +244,12 @@ namespace System.Net
             }
         }
 
-        public bool IsLocal
-        {
-            get
-            {
-                return LocalEndPoint.Address.Equals(RemoteEndPoint.Address);
-            }
-        }
-
-        public bool IsSecureConnection
-        {
-            get
-            {
-                return _sslStatus != SslStatus.Insecure;
-            }
-        }
-
-        public bool IsWebSocketRequest
-        {
-            get
-            {
-                if (!WebSocketProtocolComponent.IsSupported)
-                {
-                    return false;
-                }
-
-                bool foundConnectionUpgradeHeader = false;
-                if (string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Upgrade]))
-                {
-                    return false;
-                }
-
-                foreach (string connection in this.Headers.GetValues(HttpKnownHeaderNames.Connection))
-                {
-                    if (string.Compare(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        foundConnectionUpgradeHeader = true;
-                        break;
-                    }
-                }
-
-                if (!foundConnectionUpgradeHeader)
-                {
-                    return false;
-                }
-
-                foreach (string upgrade in this.Headers.GetValues(HttpKnownHeaderNames.Upgrade))
-                {
-                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        public NameValueCollection QueryString
-        {
-            get
-            {
-                NameValueCollection queryString = new NameValueCollection();
-                Helpers.FillFromString(queryString, Url.Query, true, ContentEncoding);
-                return queryString;
-            }
-        }
-
-        public string RawUrl
-        {
-            get
-            {
-                return _rawUrl;
-            }
-        }
+        public bool IsSecureConnection => _sslStatus != SslStatus.Insecure;
 
         public string ServiceName
         {
-            get { return _serviceName; }
-            internal set { _serviceName = value; }
-        }
-
-        public Uri Url
-        {
-            get
-            {
-                return RequestUri;
-            }
-        }
-
-        public Uri UrlReferrer
-        {
-            get
-            {
-                string referrer = GetKnownHeader(HttpRequestHeader.Referer);
-                if (referrer == null)
-                {
-                    return null;
-                }
-                Uri urlReferrer;
-                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out urlReferrer);
-                return success ? urlReferrer : null;
-            }
-        }
-
-        public string UserAgent
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.UserAgent);
-            }
-        }
-
-        public string UserHostAddress
-        {
-            get
-            {
-                return LocalEndPoint.ToString();
-            }
-        }
-
-        public string UserHostName
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.Host);
-            }
-        }
-
-        public string[] UserLanguages
-        {
-            get
-            {
-                return Helpers.ParseMultivalueHeader(GetKnownHeader(HttpRequestHeader.AcceptLanguage));
-            }
+            get => _serviceName;
+            internal set => _serviceName = value;
         }
 
         public int ClientCertificateError
@@ -429,18 +268,12 @@ namespace System.Net
 
         internal X509Certificate2 ClientCertificate
         {
-            set
-            {
-                _clientCertificate = value;
-            }
+            set => _clientCertificate = value;
         }
 
         internal ListenerClientCertState ClientCertState
         {
-            set
-            {
-                _clientCertState = value;
-            }
+            set => _clientCertState = value;
         }
 
         internal void SetClientCertificateError(int clientCertificateError)
@@ -507,13 +340,7 @@ namespace System.Net
                 this);
         }
 
-        public TransportContext TransportContext
-        {
-            get
-            {
-                return new HttpListenerRequestContext(this);
-            }
-        }
+        public TransportContext TransportContext => new HttpListenerRequestContext(this);
 
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {
@@ -540,14 +367,6 @@ namespace System.Net
                     }
                 }
                 return _cookies;
-            }
-        }
-
-        public Version ProtocolVersion
-        {
-            get
-            {
-                return _version;
             }
         }
 
@@ -847,14 +666,6 @@ namespace System.Net
             _clientCertState = ListenerClientCertState.Completed;
         }
 
-        private string RequestScheme
-        {
-            get
-            {
-                return IsSecureConnection ? "https" : "http";
-            }
-        }
-
         private Uri RequestUri
         {
             get
@@ -887,5 +698,7 @@ namespace System.Net
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
         }
+
+        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }
