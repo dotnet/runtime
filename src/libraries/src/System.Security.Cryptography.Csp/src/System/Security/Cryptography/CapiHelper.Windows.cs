@@ -250,11 +250,12 @@ namespace Internal.NativeCrypto
             // Go ahead and try to open the CSP.  If we fail, make sure the CSP
             // returned is 0 as that is going to be the error check in the caller.
             flags |= MapCspProviderFlags((int)cspParameters.Flags);
-            if (S_OK != AcquireCryptContext(out hProv, containerName, providerName, providerType, flags))
+            int hr = AcquireCryptContext(out hProv, containerName, providerName, providerType, flags);
+            if (hr != S_OK)
             {
                 hProv.Dispose();
                 safeProvHandle = SafeProvHandle.InvalidHandle;
-                return GetErrorCode();
+                return hr;
             }
 
             hProv.ContainerName = containerName;
@@ -282,7 +283,7 @@ namespace Internal.NativeCrypto
         {
             SafeProvHandle safeProvHandle;
             uint flag = 0;
-            uint hr = unchecked((uint)OpenCSP(parameters, flag, out safeProvHandle));
+            int hr = OpenCSP(parameters, flag, out safeProvHandle);
             //Open container failed 
             if (hr != S_OK)
             {
@@ -290,11 +291,11 @@ namespace Internal.NativeCrypto
                 // If UseExistingKey flag is used and the key container does not exist
                 // throw an exception without attempting to create the container.
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
-                                                        ((hr != (uint)CryptKeyError.NTE_KEYSET_NOT_DEF && hr !=
-                                                        (uint)CryptKeyError.NTE_BAD_KEYSET && hr !=
-                                                        (uint)CryptKeyError.NTE_FILENOTFOUND)))
+                                                        ((hr != unchecked((int)CryptKeyError.NTE_KEYSET_NOT_DEF)
+                                                        && hr != unchecked((int)CryptKeyError.NTE_BAD_KEYSET)
+                                                        && hr != unchecked((int)CryptKeyError.NTE_FILENOTFOUND))))
                 {
-                    throw ((int)hr).ToCryptographicException();
+                    throw hr.ToCryptographicException();
                 }
 
                 //Create a new CSP. This method throws exception on failure
@@ -304,7 +305,34 @@ namespace Internal.NativeCrypto
             if (parameters.ParentWindowHandle != IntPtr.Zero)
             {
                 IntPtr parentWindowHandle = parameters.ParentWindowHandle;
-                Interop.CryptSetProvParam(safeProvHandle, CryptGetProvParam.PP_CLIENT_HWND, ref parentWindowHandle, 0);
+
+                if (!Interop.CryptSetProvParamIndirectPtr(safeProvHandle, CryptGetProvParam.PP_CLIENT_HWND, ref parentWindowHandle, 0))
+                {
+                    throw GetErrorCode().ToCryptographicException();
+                }
+            }
+
+            if (parameters.KeyPassword != null)
+            {
+                IntPtr password = Marshal.SecureStringToCoTaskMemAnsi(parameters.KeyPassword);
+                try
+                {
+                    CryptGetProvParam param =
+                        (parameters.KeyNumber == (int)KeySpec.AT_SIGNATURE) ?
+                            CryptGetProvParam.PP_SIGNATURE_PIN :
+                            CryptGetProvParam.PP_KEYEXCHANGE_PIN;
+                    if (!Interop.CryptSetProvParam(safeProvHandle, param, password, 0))
+                    {
+                        throw GetErrorCode().ToCryptographicException();
+                    }
+                }
+                finally
+                {
+                    if (password != IntPtr.Zero)
+                    {
+                        Marshal.ZeroFreeCoTaskMemAnsi(password);
+                    }
+                }
             }
 
             return safeProvHandle;
@@ -1478,9 +1506,13 @@ namespace Internal.NativeCrypto
             public static extern bool CryptGetProvParam(SafeProvHandle safeProvHandle, int dwParam, byte[] pbData,
                                                         ref int dwDataLen, int dwFlags);
 
+            [DllImport(Libraries.Advapi32, SetLastError = true, EntryPoint = "CryptSetProvParam")]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool CryptSetProvParamIndirectPtr(SafeProvHandle safeProvHandle, CryptGetProvParam dwParam, ref IntPtr pbData, int dwFlags);
+
             [DllImport(Libraries.Advapi32, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptSetProvParam(SafeProvHandle safeProvHandle, CryptGetProvParam dwParam, ref IntPtr pbData, int dwFlags);
+            public static extern bool CryptSetProvParam(SafeProvHandle safeProvHandle, CryptGetProvParam dwParam, IntPtr pbData, int dwFlags);
 
             [DllImport(Libraries.Advapi32, SetLastError = true, EntryPoint = "CryptGetUserKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
@@ -1682,6 +1714,8 @@ namespace Internal.NativeCrypto
         {
             PP_CLIENT_HWND = 1,
             PP_IMPTYPE = 3,
+            PP_KEYEXCHANGE_PIN = 32,
+            PP_SIGNATURE_PIN = 33,
             PP_UNIQUE_CONTAINER = 36
         }
 

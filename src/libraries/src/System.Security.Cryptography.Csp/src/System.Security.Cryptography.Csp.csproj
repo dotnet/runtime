@@ -31,9 +31,10 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
   </ItemGroup>
-    <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\CspParameters.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.Unix.cs" />
@@ -46,6 +47,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\CspParameters.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.Windows.cs" />
