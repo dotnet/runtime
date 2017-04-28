@@ -1,6 +1,0 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\dir.targets" />
-
-  <!-- this depends on the tasks and targets that we're building -->
-  <Target Name="GetBinPlaceConfiguration" />
-</Project>
