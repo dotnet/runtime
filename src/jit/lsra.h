@@ -695,7 +695,7 @@ private:
     void processBlockEndLocations(BasicBlock* current);
 
 #ifdef _TARGET_ARM_
-    bool isOverlappedRegRecord(Interval* assignedInterval, RegRecord* physRegRecord);
+    bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
 #endif
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
