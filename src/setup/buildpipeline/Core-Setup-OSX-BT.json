@@ -103,7 +103,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/build.sh",
-        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) /p:TargetRid=$(PB_TargetRid)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetRid=$(PB_TargetRid) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -250,9 +250,6 @@
     },
     "PB_TargetArchitecture": {
       "value": "x64"
-    },
-    "PB_TargetRid": {
-      "value": "osx.10.12-$(PB_TargetArchitecture)"
     },
     "PB_PortableBuildArg": {
       "value": "-portable"
