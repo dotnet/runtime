@@ -1723,6 +1723,12 @@ mdToken CEECompileInfo::TryEncodeMethodAsToken(
         if (!pReferencingModule->IsInCurrentVersionBubble())
             return mdTokenNil;
 
+        // If this is a MemberRef with TypeSpec, we might come to here because we resolved the method
+        // into a non-generic base class in the same version bubble. However, since we don't have the
+        // proper type context during ExternalMethodFixupWorker, we can't really encode using token
+        if (pResolvedToken->pTypeSpec != NULL)
+            return mdTokenNil;
+            
         unsigned methodToken = pResolvedToken->token;
 
         switch (TypeFromToken(methodToken))
