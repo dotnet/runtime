@@ -78,7 +78,7 @@
         "assemblyPath": "",
         "toLowerCase": "true",
         "detailedLog": "true",
-        "expirationInDays": "1",
+        "expirationInDays": "30",
         "usePat": "false"
       }
     }
