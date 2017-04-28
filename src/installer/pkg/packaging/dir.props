@@ -20,6 +20,7 @@
     <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
     <HostFxrCompressedFile>dotnet-hostfxr-$(ProductMoniker)$(CompressedFileExtension)</HostFxrCompressedFile>
     <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
   </PropertyGroup>
 
   <PropertyGroup>
