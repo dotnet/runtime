@@ -31,6 +31,15 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(authType));
             }
+            
+            if ((cred is SystemNetworkCredential)
+                && !((string.Compare(authType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase)==0)
+                     || (string.Compare(authType, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase)==0)
+                     || (string.Compare(authType, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase)==0))
+                )
+            {
+                throw new ArgumentException(SR.Format(SR.net_nodefaultcreds, authType), "authType");
+            }
 
             ++_version;
 
