@@ -73,7 +73,6 @@ namespace System.Runtime.Loader.Tests
             File.Copy(pathCurrentAssembly, targetPath);
         }
 
-        [ActiveIssue(19062)]
         [Fact]
         public static void LoadRefEmitAssembly()
         {
@@ -95,7 +94,8 @@ namespace System.Runtime.Loader.Tests
             
             // Load the assembly in the specified load context
             var asmTargetAsm = loadContext.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyNameStr));
-            var loadedContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
+            var creatorLoadContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
+            Assert.Equal(loadContext, creatorLoadContext);
 
             // Get reference to the helper method that will RefEmit an assembly and return reference to it.
             Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass");
@@ -106,9 +106,10 @@ namespace System.Runtime.Loader.Tests
             var asmRefEmitLoaded = (Assembly)method.Invoke(null, new object[] {assemblyNameRefEmit, builderType});
             Assert.NotNull(asmRefEmitLoaded);
 
-            // Assert that Dynamically emitted assemblies do not have a load context associated with them.
+            // Assert that Dynamically emitted assemblies load context is the same as that of the assembly
+            // that created them.
             var loadContextRefEmitAssembly = AssemblyLoadContext.GetLoadContext(asmRefEmitLoaded);
-            Assert.Equal(null, loadContextRefEmitAssembly);
+            Assert.Equal(creatorLoadContext, loadContextRefEmitAssembly);
 
             // Invoke the method that will trigger a static load in the dynamically generated assembly.
             Type typeRefEmit = asmRefEmitLoaded.GetType("RefEmitTestType");
@@ -121,7 +122,7 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(asmRefEmitLoadedStatic);
 
             // Load context of the statically loaded assembly is the custom load context in which dynamic assembly was created
-            Assert.Equal(loadContext, AssemblyLoadContext.GetLoadContext((Assembly)asmRefEmitLoadedStatic));
+            Assert.Equal(loadContextRefEmitAssembly, AssemblyLoadContext.GetLoadContext((Assembly)asmRefEmitLoadedStatic));
         }
     }
 }
