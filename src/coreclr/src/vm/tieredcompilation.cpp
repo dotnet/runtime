@@ -337,7 +337,11 @@ void TieredCompilationManager::InstallMethodCode(MethodDesc* pMethod, PCODE pCod
     _ASSERTE(!pMethod->IsNativeCodeStableAfterInit());
 
     PCODE pExistingCode = pMethod->GetNativeCode();
+#ifdef FEATURE_INTERPRETER
+    if (!pMethod->SetNativeCodeInterlocked(pCode, pExistingCode, TRUE))
+#else
     if (!pMethod->SetNativeCodeInterlocked(pCode, pExistingCode))
+#endif
     {
         //We aren't there yet, but when the feature is finished we shouldn't be racing against any other code mutator and there would be no
         //reason for this to fail
