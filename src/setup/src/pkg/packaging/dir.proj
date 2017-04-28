@@ -121,7 +121,7 @@
       <CombinedCompressedFileSet Include="$(CombinedPublishRoot)/**" />
       <HostFxrCompressedFileSet Include="$(HostFxrPublishRoot)/**" />
       <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
-      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsBinDir)/**" />
+      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsDir)/**" />
     </ItemGroup>
     <PropertyGroup>
       <CombinedCompressedFiles>@(CombinedCompressedFileSet->'%(Identity)', ' ')</CombinedCompressedFiles>
