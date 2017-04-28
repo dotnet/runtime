@@ -1380,147 +1380,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public async Task PostAsync_ResponseContentRead_RequestContentDisposedAfterResponseBuffered()
-        {
-            using (var client = new HttpClient())
-            {
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
-                {
-                    bool contentDisposed = false;
-                    Task<HttpResponseMessage> post = client.SendAsync(new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = new DelegateContent
-                        {
-                            SerializeToStreamAsyncDelegate = (contentStream, contentTransport) => contentStream.WriteAsync(new byte[100], 0, 100),
-                            TryComputeLengthDelegate = () => Tuple.Create<bool, long>(true, 100),
-                            DisposeDelegate = _ => contentDisposed = true
-                        }
-                    }, HttpCompletionOption.ResponseContentRead);
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
-                    {
-                        // Read headers from client
-                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-
-                        // Send back all headers and some but not all of the response
-                        await writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 10\r\n\r\n");
-                        await writer.WriteAsync("abcd"); // less than contentLength
-
-                        // The request content should not be disposed of until all of the response has been sent
-                        await Task.Delay(1); // a little time to let data propagate
-                        Assert.False(contentDisposed, "Expected request content not to be disposed");
-
-                        // Send remaining response content
-                        await writer.WriteAsync("efghij");
-                        s.Shutdown(SocketShutdown.Send);
-
-                        // The task should complete and the request content should be disposed
-                        using (HttpResponseMessage response = await post)
-                        {
-                            Assert.True(contentDisposed, "Expected request content to be disposed");
-                            Assert.Equal("abcdefghij", await response.Content.ReadAsStringAsync());
-                        }
-
-                        return null;
-                    });
-                });
-            }
-        }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public async Task PostAsync_ResponseHeadersRead_RequestContentDisposedAfterRequestFullySentAndResponseHeadersReceived()
+        [Theory, MemberData(nameof(EchoServers))] // NOTE: will not work for in-box System.Net.Http.dll due to disposal of request content
+        public async Task PostAsync_ReuseRequestContent_Success(Uri remoteServer)
         {
+            const string ContentString = "This is the content string.";
             using (var client = new HttpClient())
             {
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                var content = new StringContent(ContentString);
+                for (int i = 0; i < 2; i++)
                 {
-                    var trigger = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    bool contentDisposed = false;
-                    Task<HttpResponseMessage> post = client.SendAsync(new HttpRequestMessage(HttpMethod.Post, url)
+                    using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
                     {
-                        Content = new DelegateContent
-                        {
-                            SerializeToStreamAsyncDelegate = async (contentStream, contentTransport) =>
-                            {
-                                await contentStream.WriteAsync(new byte[50], 0, 50);
-                                await trigger.Task;
-                                await contentStream.WriteAsync(new byte[50], 0, 50);
-                            },
-                            TryComputeLengthDelegate = () => Tuple.Create<bool, long>(true, 100),
-                            DisposeDelegate = _ => contentDisposed = true
-                        }
-                    }, HttpCompletionOption.ResponseHeadersRead);
-
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
-                    {
-                        // Read headers from client
-                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-
-                        // Send back all headers and some but not all of the response
-                        await writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 10\r\n\r\n");
-                        await writer.WriteAsync("abcd"); // less than contentLength
-
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                        {
-                            Assert.False(contentDisposed, "Expected request content to not be disposed while request data still being sent");
-                        }
-                        else // [ActiveIssue(9006, TestPlatforms.AnyUnix)]
-                        {
-                            await post;
-                            Assert.True(contentDisposed, "Current implementation will dispose of the request content once response headers arrive");
-                        }
-
-                        // Allow request content to complete
-                        trigger.SetResult(true);
-
-                        // Send remaining response content
-                        await writer.WriteAsync("efghij");
-                        s.Shutdown(SocketShutdown.Send);
-
-                        // The task should complete and the request content should be disposed
-                        using (HttpResponseMessage response = await post)
-                        {
-                            Assert.True(contentDisposed, "Expected request content to be disposed");
-                            Assert.Equal("abcdefghij", await response.Content.ReadAsStringAsync());
-                        }
-
-                        return null;
-                    });
-                });
-            }
-        }
-
-        private sealed class DelegateContent : HttpContent
-        {
-            internal Func<Stream, TransportContext, Task> SerializeToStreamAsyncDelegate;
-            internal Func<Tuple<bool, long>> TryComputeLengthDelegate;
-            internal Action<bool> DisposeDelegate;
-
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            {
-                return SerializeToStreamAsyncDelegate != null ?
-                    SerializeToStreamAsyncDelegate(stream, context) :
-                    Task.CompletedTask;
-            }
-
-            protected override bool TryComputeLength(out long length)
-            {
-                if (TryComputeLengthDelegate != null)
-                {
-                    var result = TryComputeLengthDelegate();
-                    length = result.Item2;
-                    return result.Item1;
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Contains(ContentString, await response.Content.ReadAsStringAsync());
+                    }
                 }
-
-                length = 0;
-                return false;
             }
-
-            protected override void Dispose(bool disposing) =>
-                DisposeDelegate?.Invoke(disposing);
         }
 
         [OuterLoop] // TODO: Issue #11345
