@@ -1340,7 +1340,7 @@ RET:
         while (iter.NextElem(this, &varNum))
         {
             // We'll need this for one of the calls...
-            VarSetOps::ClearD(this, varAsSet);
+            VarSetOps::OldStyleClearD(this, varAsSet);
             VarSetOps::AddElemD(this, varAsSet, varNum);
 
             // If this varBit and lastUse?
@@ -6348,7 +6348,7 @@ void Compiler::rpPredictRegUse()
         /*  Zero the variable/register interference graph */
         for (unsigned i = 0; i < REG_COUNT; i++)
         {
-            VarSetOps::ClearD(this, raLclRegIntf[i]);
+            VarSetOps::OldStyleClearD(this, raLclRegIntf[i]);
         }
 
         // if there are PInvoke calls and compLvFrameListRoot is enregistered,

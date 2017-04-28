@@ -1472,8 +1472,8 @@ void emitter::emitBegProlog()
     /* Nothing is live on entry to the prolog */
 
     // These were initialized to Empty at the start of compilation.
-    VarSetOps::ClearD(emitComp, emitInitGCrefVars);
-    VarSetOps::ClearD(emitComp, emitPrevGCrefVars);
+    VarSetOps::OldStyleClearD(emitComp, emitInitGCrefVars);
+    VarSetOps::OldStyleClearD(emitComp, emitPrevGCrefVars);
     emitInitGCrefRegs = RBM_NONE;
     emitPrevGCrefRegs = RBM_NONE;
     emitInitByrefRegs = RBM_NONE;
@@ -4564,7 +4564,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     /* Assume no live GC ref variables on entry */
 
-    VarSetOps::ClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
+    VarSetOps::OldStyleClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
     emitThisGCrefRegs = emitThisByrefRegs = RBM_NONE;
     emitThisGCrefVset                     = true;
 
