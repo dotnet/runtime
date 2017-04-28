@@ -24,6 +24,12 @@ namespace System
         {
             T exception = Assert.Throws<T>(action);
 
+            if (netFxParamName == null && IsFullFramework)
+            {
+                // Param name varies between NETFX versions -- skip checking it
+                return;
+            }
+
             string expectedParamName =
                 IsFullFramework ?
                 netFxParamName : netCoreParamName;
