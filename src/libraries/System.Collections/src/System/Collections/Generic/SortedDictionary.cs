@@ -965,10 +965,6 @@ namespace System.Collections.Generic
 
         public TreeSet(IComparer<T> comparer) : base(comparer) { }
 
-        public TreeSet(ICollection<T> collection) : base(collection) { }
-
-        public TreeSet(ICollection<T> collection, IComparer<T> comparer) : base(collection, comparer) { }
-
         public TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 
         internal override bool AddIfNotPresent(T item)
