@@ -116,6 +116,23 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>
+        /// <param name="value">The value to encode.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeUnsignedInteger(uint value)
+        {
+            byte[] bytes = BitConverter.GetBytes(value);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(bytes);
+            }
+
+            return SegmentedEncodeUnsignedInteger(bytes);
+        }
+
+        /// <summary>
+        /// Encode the segments { tag, length, value } of an unsigned integer.
+        /// </summary>
         /// <param name="bigEndianBytes">The value to encode, in big integer representation.</param>
         /// <returns>The encoded segments { tag, length, value }</returns>
         internal static byte[][] SegmentedEncodeUnsignedInteger(byte[] bigEndianBytes)

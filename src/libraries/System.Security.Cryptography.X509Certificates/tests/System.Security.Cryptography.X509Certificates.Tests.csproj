@@ -22,6 +22,7 @@
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
+    <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
     <Compile Include="CertTests.cs" />
     <Compile Include="ChainHolder.cs" />
