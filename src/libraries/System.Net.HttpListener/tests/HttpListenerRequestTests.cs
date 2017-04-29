@@ -470,7 +470,6 @@ namespace System.Net.Tests
                 }
             };
 
-            /*[ActiveIssue(18486)]
             yield return new object[]
             {
                 "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection
@@ -479,7 +478,7 @@ namespace System.Net.Tests
                     new Cookie("name2", "value2"),
                     new Cookie("name3", "value3")
                 }
-            };*/
+            };
 
             yield return new object[]
             {
@@ -495,7 +494,6 @@ namespace System.Net.Tests
             yield return new object[] { "cookie: $Domain", new CookieCollection() };
             yield return new object[] { "cookie: $Port", new CookieCollection() };
 
-            /*[ActiveIssue(18486)]
             yield return new object[]
             {
                 "cookie:name=value; domain=.domain.com", new CookieCollection
@@ -512,7 +510,7 @@ namespace System.Net.Tests
                     new Cookie("name", "value"),
                     new Cookie("expires", "invaliddate")
                 }
-            };*/
+            };
 
             yield return new object[] { "cookie: ", new CookieCollection() };
             yield return new object[] { "Unknown-Header: Test", new CookieCollection() };

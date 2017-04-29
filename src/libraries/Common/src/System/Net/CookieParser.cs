@@ -817,7 +817,7 @@ namespace System.Net
                                 case CookieToken.Unknown:
                                     // this is a new cookie, the token is for the next cookie.
                                     _savedCookie = new Cookie();
-                                    SetCookieName(cookie, _tokenizer.Name);
+                                    SetCookieName(_savedCookie, _tokenizer.Name);
                                     _savedCookie.Value = _tokenizer.Value;
                                     return cookie;
                             }

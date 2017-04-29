@@ -70,7 +70,7 @@
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\CookieComparer.cs">
-      <Link>ProductionCode\System\Net\CookieComparer.cs</Link>
+      <Link>Common\System\Net\CookieComparer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
       <Link>Common\System\Net\CookieFields.cs</Link>

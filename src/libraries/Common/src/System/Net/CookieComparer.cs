@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Net
 {
     internal static class CookieComparer
@@ -24,13 +22,7 @@ namespace System.Net
 
             // NB: The only path is case sensitive as per spec. However, many Windows applications assume
             //     case-insensitivity.
-            if ((result = string.Compare(left.Path, right.Path, StringComparison.Ordinal)) != 0)
-            {
-                return result;
-            }
-
-            // They are equal here even if variants are still different.
-            return 0;
+            return string.Compare(left.Path, right.Path, StringComparison.Ordinal);
         }
     }
 }
