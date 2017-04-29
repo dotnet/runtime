@@ -14,8 +14,6 @@ namespace System.Xml
             this.mapper = mapper;
         }
 
-        internal abstract void Reset();
-
         internal abstract XmlNode CurrentNode { get; }
 
         internal abstract bool Next();

@@ -34,7 +34,6 @@
     <Compile Include="System\Xml\RegionIterator.cs" />
     <Compile Include="System\Data\updatestatus.cs" />
     <Compile Include="System\Data\XDRSchema.cs" />
-    <Compile Include="System\Data\XmlContent.cs" />
     <Compile Include="System\Data\XmlDataLoader.cs" />
     <Compile Include="System\Data\XMLDiffLoader.cs" />
     <Compile Include="System\Data\XmlKeywords.cs" />
@@ -176,7 +175,6 @@
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
     </Compile>
-    <Compile Include="System\Data\Common\DBConnectionString.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilderDescriptor.cs" />
