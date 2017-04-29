@@ -614,7 +614,8 @@ namespace System.Net
                                     {
                                         domainSet = true;
                                         cookie.Domain = CheckQuoted(_tokenizer.Value);
-                                        cookie.IsQuotedDomain = _tokenizer.Quoted;
+                                        // TODO: this is internal.
+                                        // cookie.IsQuotedDomain = _tokenizer.Quoted;
                                     }
                                     break;
 
@@ -686,7 +687,8 @@ namespace System.Net
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out parsed))
                                         {
                                             cookie.Version = parsed;
-                                            cookie.IsQuotedVersion = _tokenizer.Quoted;
+                                            // TODO: this is internal.
+                                            // cookie.IsQuotedVersion = _tokenizer.Quoted;
                                         }
                                         else
                                         {
@@ -773,7 +775,8 @@ namespace System.Net
                                     {
                                         domainSet = true;
                                         cookie.Domain = CheckQuoted(_tokenizer.Value);
-                                        cookie.IsQuotedDomain = _tokenizer.Quoted;
+                                        // TODO: this is internal.
+                                        // cookie.IsQuotedDomain = _tokenizer.Quoted;
                                     }
                                     break;
 
