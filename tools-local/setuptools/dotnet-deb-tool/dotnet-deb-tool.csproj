@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>dotnet-deb-tool</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>dotnet-deb-tool</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tool\**\*" />
+    <Compile Include="..\..\..\src\test\build\Microsoft.DotNet.Cli.Build.Framework\ArgumentEscaper.cs" />
+
+    <Content Include="tool\**">
+      <PackagePath>lib/$(TargetFramework)/tool/%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="prefercliruntime">
+      <Pack>true</Pack>
+      <PackagePath>\prefercliruntime</PackagePath>
+    </Content>
+</ItemGroup>
+
+</Project>
