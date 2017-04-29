@@ -53,6 +53,7 @@
     <LocalBuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+    <DotnetSdkPath Condition="'$(DotnetSdkPath)'==''">$(ToolsDir)dotnetclisdk/</DotnetSdkPath>
   </PropertyGroup>
 
   <!-- Setting up Versioning -->
@@ -137,6 +138,8 @@
   <PropertyGroup>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetSdkPath)dotnet.exe</DotnetSdkToolCommand>
+    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetSdkPath)dotnet</DotnetSdkToolCommand>
     <OverrideToolHost Condition="'$(MSBuildRuntimeType)' == 'Core'">$(DotnetToolCommand)</OverrideToolHost>
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
 
