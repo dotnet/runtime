@@ -3,3 +3,4 @@ Microsoft.CodeAnalysis.VisualBasic.dll
 System.Net.NameResolution.dll
 System.Net.Sockets.dll
 System.Net.Primitives.dll
+System.Private.CoreLib.dll
