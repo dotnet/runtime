@@ -31,6 +31,7 @@ namespace System.Runtime.InteropServices
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices.ComTypes;
+    using System.StubHelpers;
 
     [Serializable]
     public enum CustomQueryInterfaceMode
@@ -406,9 +407,9 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Read from memory
         //====================================================================
-        public static byte ReadByte([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
+        public static byte ReadByte(Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => Marshal.ReadByte(nativeHome, offset));
         }
 
         public static unsafe byte ReadByte(IntPtr ptr, int ofs)
@@ -430,9 +431,9 @@ namespace System.Runtime.InteropServices
             return ReadByte(ptr, 0);
         }
 
-        public static short ReadInt16([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
+        public static short ReadInt16(Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => Marshal.ReadInt16(nativeHome, offset));
         }
 
         public static unsafe short ReadInt16(IntPtr ptr, int ofs)
@@ -467,9 +468,9 @@ namespace System.Runtime.InteropServices
             return ReadInt16(ptr, 0);
         }
 
-        public static int ReadInt32([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
+        public static int ReadInt32(object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => Marshal.ReadInt32(nativeHome, offset));
         }
 
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
@@ -506,7 +507,7 @@ namespace System.Runtime.InteropServices
             return ReadInt32(ptr, 0);
         }
 
-        public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
+        public static IntPtr ReadIntPtr(Object ptr, int ofs)
         {
 #if BIT64
             return (IntPtr)ReadInt64(ptr, ofs);
@@ -535,7 +536,7 @@ namespace System.Runtime.InteropServices
 
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => Marshal.ReadInt64(nativeHome, offset));
         }
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
@@ -576,6 +577,41 @@ namespace System.Runtime.InteropServices
             return ReadInt64(ptr, 0);
         }
 
+        //====================================================================
+        // Read value from marshaled object (marshaled using AsAny)
+        // It's quite slow and can return back dangling pointers
+        // It's only there for backcompact
+        // I don't think we should spend time optimizing it
+        // People should really call the IntPtr overload instead
+        //====================================================================
+        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
+        {
+            // We AV on desktop if passing NULL. So this is technically a breaking change but is an improvement
+            if (ptr == null)
+                throw new ArgumentNullException(nameof(ptr));
+
+            int dwFlags = 
+                (int)AsAnyMarshaler.AsAnyFlags.In | 
+                (int)AsAnyMarshaler.AsAnyFlags.IsAnsi | 
+                (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
+
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();                
+            AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
+                
+            IntPtr pNativeHome = IntPtr.Zero;
+
+            try
+            {
+                pNativeHome = marshaler.ConvertToNative(ptr, dwFlags);
+                return readValueHelper(pNativeHome, ofs);
+            }
+            finally
+            {
+                marshaler.ClearNative(pNativeHome);
+            }    
+        }
+
+
 
         //====================================================================
         // Write to memory
@@ -594,9 +630,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteByte([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, byte val)
+        public static void WriteByte(Object ptr, int ofs, byte val)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => Marshal.WriteByte(nativeHome, offset, value));
         }
 
         public static void WriteByte(IntPtr ptr, byte val)
@@ -629,9 +665,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt16([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, short val)
+        public static void WriteInt16(Object ptr, int ofs, short val)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, short value) => Marshal.WriteInt16(nativeHome, offset, value));
         }
 
         public static void WriteInt16(IntPtr ptr, short val)
@@ -681,9 +717,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt32([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, int val)
+        public static void WriteInt32(Object ptr, int ofs, int val)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, int value) => Marshal.WriteInt32(nativeHome, offset, value));
         }
 
         public static void WriteInt32(IntPtr ptr, int val)
@@ -700,7 +736,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static void WriteIntPtr([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, IntPtr val)
+        public static void WriteIntPtr(Object ptr, int ofs, IntPtr val)
         {
 #if BIT64
             WriteInt64(ptr, ofs, (long)val);
@@ -749,9 +785,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt64([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, long val)
+        public static void WriteInt64(Object ptr, int ofs, long val)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
+            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, long value) => Marshal.WriteInt64(nativeHome, offset, value));
         }
 
         public static void WriteInt64(IntPtr ptr, long val)
@@ -759,6 +795,41 @@ namespace System.Runtime.InteropServices
             WriteInt64(ptr, 0, val);
         }
 
+        //====================================================================
+        // Write value into marshaled object (marshaled using AsAny) and
+        // propagate the value back
+        // It's quite slow and is only there for backcompact
+        // I don't think we should spend time optimizing it
+        // People should really call the IntPtr overload instead
+        //====================================================================
+        private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
+        {
+            // We AV on desktop if passing NULL. So this is technically a breaking change but is an improvement
+            if (ptr == null)
+                throw new ArgumentNullException(nameof(ptr));
+                            
+            int dwFlags = 
+                (int)AsAnyMarshaler.AsAnyFlags.In | 
+                (int)AsAnyMarshaler.AsAnyFlags.Out | 
+                (int)AsAnyMarshaler.AsAnyFlags.IsAnsi | 
+                (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
+
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();                
+            AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
+                
+            IntPtr pNativeHome = IntPtr.Zero;
+
+            try
+            {
+                pNativeHome = marshaler.ConvertToNative(ptr, dwFlags);
+                writeValueHelper(pNativeHome, ofs, val);
+                marshaler.ConvertToManaged(ptr, pNativeHome);
+            }
+            finally
+            {
+                marshaler.ClearNative(pNativeHome);
+            }            
+        }
 
         //====================================================================
         // GetLastWin32Error

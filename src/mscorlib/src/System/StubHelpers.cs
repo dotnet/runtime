@@ -700,6 +700,17 @@ namespace System.StubHelpers
 
     internal static class MngdNativeArrayMarshaler
     {
+        // Needs to match exactly with MngdNativeArrayMarshaler in ilmarshalers.h
+        internal struct MarshalerState
+        {
+            IntPtr m_pElementMT;
+            IntPtr m_Array;
+            int m_NativeDataValid;
+            int m_BestFitMap;
+            int m_ThrowOnUnmappableChar;
+            short m_vt;
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags);
 
@@ -949,11 +960,21 @@ namespace System.StubHelpers
         // Cleanup list to be destroyed when clearing the native view (for layouts with SafeHandles).
         private CleanupWorkList cleanupWorkList;
 
-        private static bool IsIn(int dwFlags) { return ((dwFlags & 0x10000000) != 0); }
-        private static bool IsOut(int dwFlags) { return ((dwFlags & 0x20000000) != 0); }
-        private static bool IsAnsi(int dwFlags) { return ((dwFlags & 0x00FF0000) != 0); }
-        private static bool IsThrowOn(int dwFlags) { return ((dwFlags & 0x0000FF00) != 0); }
-        private static bool IsBestFit(int dwFlags) { return ((dwFlags & 0x000000FF) != 0); }
+        [Flags]
+        internal enum AsAnyFlags
+        {
+            In = 0x10000000,
+            Out = 0x20000000,
+            IsAnsi = 0x00FF0000,
+            IsThrowOn = 0x0000FF00,
+            IsBestFit = 0x000000FF
+        }
+
+        private static bool IsIn(int dwFlags) { return ((dwFlags & (int)AsAnyFlags.In) != 0); }
+        private static bool IsOut(int dwFlags) { return ((dwFlags & (int)AsAnyFlags.Out) != 0); }
+        private static bool IsAnsi(int dwFlags) { return ((dwFlags & (int)AsAnyFlags.IsAnsi) != 0); }
+        private static bool IsThrowOn(int dwFlags) { return ((dwFlags & (int)AsAnyFlags.IsThrowOn) != 0); }
+        private static bool IsBestFit(int dwFlags) { return ((dwFlags & (int)AsAnyFlags.IsBestFit) != 0); }
 
         internal AsAnyMarshaler(IntPtr pvArrayMarshaler)
         {
