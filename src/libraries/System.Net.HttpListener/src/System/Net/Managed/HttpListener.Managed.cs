@@ -27,7 +27,8 @@ namespace System.Net
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                CheckDisposed();
+                return _timeoutManager;
             }
         }
 
