@@ -40,11 +40,14 @@ WARNING:   When setting properties based on their current state (for example:
 if [ ! -z ${RunCrossGen+x} ]%3B then
     export COMPlus_ZapRequire=$(ZapRequire)
     export COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
+    if [ ! -f $(MSBuildProjectName).org ]%3B then
         TakeLock
-        if [ ! -f $(MSBuildProjectName).ni.exe ]%3B then
-          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
-          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
+        if [ ! -f $(MSBuildProjectName).org ]%3B then
+          mkdir IL
+          cp $(MSBuildProjectName).exe IL/$(MSBuildProjectName).exe
+          mv $(MSBuildProjectName).exe $(MSBuildProjectName).org
+          echo $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+          $_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD/IL%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
           __cgExitCode=$?
           if [ $__cgExitCode -ne 0 ]
           then
@@ -73,12 +76,15 @@ REM CrossGen Script
 if defined RunCrossGen ( 
     set COMPlus_ZapRequire=$(ZapRequire)
     set COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if not exist "$(MSBuildProjectName).ni.exe" (
+    if not exist "$(MSBuildProjectName).org" (
         call :TakeLock
         set CrossGenStatus=0
-        if not exist "$(MSBuildProjectName).ni.exe" (
-            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25 $(MSBuildProjectName).exe
-            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25 $(MSBuildProjectName).exe
+        if not exist "$(MSBuildProjectName).org" (
+            mkdir IL
+            copy $(MSBuildProjectName).exe IL\$(MSBuildProjectName).exe 
+            ren $(MSBuildProjectName).exe $(MSBuildProjectName).org
+            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
             set CrossGenStatus=!ERRORLEVEL!
         )
         call :ReleaseLock
