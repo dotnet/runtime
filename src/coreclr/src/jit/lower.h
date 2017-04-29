@@ -293,6 +293,9 @@ private:
     void AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node);
 
     GenTree* LowerSwitch(GenTree* node);
+    bool TryLowerSwitchToBitTest(
+        BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+
     void LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
