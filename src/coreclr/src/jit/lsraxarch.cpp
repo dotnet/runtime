@@ -343,6 +343,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_BT:
             info->srcCount = GetOperandSourceCount(tree->gtOp.gtOp1);
             info->srcCount += GetOperandSourceCount(tree->gtOp.gtOp2);
             break;
