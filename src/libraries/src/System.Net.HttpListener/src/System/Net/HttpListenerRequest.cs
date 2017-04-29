@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
 
 namespace System.Net
@@ -14,6 +15,7 @@ namespace System.Net
     {
         private string[] _acceptTypes;
         private string[] _userLanguages;
+        private CookieCollection _cookies;
         private string _rawUrl;
         private Uri _requestUri;
         private Version _version;
@@ -41,6 +43,69 @@ namespace System.Net
                 }
 
                 return _userLanguages;
+            }
+        }
+
+        private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
+            CookieCollection cookies = new CookieCollection();
+            CookieParser parser = new CookieParser(setCookieHeader);
+            for (;;)
+            {
+                Cookie cookie = parser.GetServer();
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie:" + cookie?.ToString());
+                if (cookie == null)
+                {
+                    // EOF, done.
+                    break;
+                }
+                if (cookie.Name.Length == 0)
+                {
+                    continue;
+                }
+
+                // This is a modified copy of CoookieCollection.InternalAdd, which is internal to System.Net.Primitives.
+                // It differs from the original in some subtle ways.
+                // Firstly, new Variant cookies will not overwrite older ones. We can't have this behaviour as Cookie.Variant
+                // is internal. This violates the Cookie2 spec.
+                // Secondly, if the Cookie version is not the MaxSupportedVersion, we don't set the CookieCollection.IsOtherVersionSeen
+                // to true. This causes different behaviour when calling CookieContainer.GetCookieHeader. This doesn't matter, as we are
+                // just using CookieCollection (not CookieContainer) here.
+                bool cookieExists = false;
+                foreach (Cookie addedCookie in cookies)
+                {
+                    if (CookieComparer.Compare(cookie, addedCookie) == 0)
+                    {
+                        cookieExists = true;
+                        break;
+                    }
+                }
+                if (!cookieExists)
+                {
+                    cookies.Add(cookie);
+                }
+            }
+            return cookies;
+        }
+
+        public CookieCollection Cookies
+        {
+            get
+            {
+                if (_cookies == null)
+                {
+                    string cookieString = Headers[HttpKnownHeaderNames.Cookie];
+                    if (cookieString != null && cookieString.Length > 0)
+                    {
+                        _cookies = ParseCookies(RequestUri, cookieString);
+                    }
+                    if (_cookies == null)
+                    {
+                        _cookies = new CookieCollection();
+                    }
+                }
+                return _cookies;
             }
         }
 
