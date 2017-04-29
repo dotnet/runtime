@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Net
@@ -542,6 +543,18 @@ namespace System.Net
             return _tokenizer.GetCookieString();
         }
 
+        private static void SetCookieName(Cookie cookie, string name)
+        {
+            try
+            {
+                cookie.Name = name;
+            }
+            catch (CookieException)
+            {
+                Debug.Assert(cookie.Name == string.Empty);
+            }
+        }
+
         // Get
         //
         // Gets the next cookie or null if there are no more cookies.
@@ -566,11 +579,7 @@ namespace System.Net
                 if (cookie == null && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
                 {
                     cookie = new Cookie();
-                    if (cookie.InternalSetName(_tokenizer.Name) == false)
-                    {
-                        // This cookie will be rejected
-                        cookie.InternalSetName(string.Empty);
-                    }
+                    SetCookieName(cookie, _tokenizer.Name);
                     cookie.Value = _tokenizer.Value;
                 }
                 else
@@ -623,7 +632,7 @@ namespace System.Net
                                         else
                                         {
                                             // This cookie will be rejected
-                                            cookie.InternalSetName(string.Empty);
+                                            SetCookieName(cookie, string.Empty);
                                         }
                                     }
                                     break;
@@ -640,7 +649,7 @@ namespace System.Net
                                         else
                                         {
                                             // This cookie will be rejected
-                                            cookie.InternalSetName(string.Empty);
+                                            SetCookieName(cookie, string.Empty);
                                         }
                                     }
                                     break;
@@ -664,7 +673,7 @@ namespace System.Net
                                         catch
                                         {
                                             // This cookie will be rejected
-                                            cookie.InternalSetName(string.Empty);
+                                            SetCookieName(cookie, string.Empty);
                                         }
                                     }
                                     break;
@@ -682,7 +691,7 @@ namespace System.Net
                                         else
                                         {
                                             // This cookie will be rejected
-                                            cookie.InternalSetName(string.Empty);
+                                            SetCookieName(cookie, string.Empty);
                                         }
                                     }
                                     break;
@@ -749,11 +758,7 @@ namespace System.Net
                     {
                         cookie = new Cookie();
                     }
-                    if (cookie.InternalSetName(_tokenizer.Name) == false)
-                    {
-                        // will be rejected
-                        cookie.InternalSetName(string.Empty);
-                    }
+                    SetCookieName(cookie, _tokenizer.Name);
                     cookie.Value = _tokenizer.Value;
                 }
                 else
@@ -790,8 +795,8 @@ namespace System.Net
                                         }
                                         catch (CookieException)
                                         {
-                                            // this cookie will be rejected
-                                            cookie.InternalSetName(string.Empty);
+                                            // This cookie will be rejected
+                                            SetCookieName(cookie, string.Empty);
                                         }
                                     }
                                     break;
@@ -809,11 +814,7 @@ namespace System.Net
                                 case CookieToken.Unknown:
                                     // this is a new cookie, the token is for the next cookie.
                                     _savedCookie = new Cookie();
-                                    if (_savedCookie.InternalSetName(_tokenizer.Name) == false)
-                                    {
-                                        // will be rejected
-                                        _savedCookie.InternalSetName(string.Empty);
-                                    }
+                                    SetCookieName(cookie, _tokenizer.Name);
                                     _savedCookie.Value = _tokenizer.Value;
                                     return cookie;
                             }
