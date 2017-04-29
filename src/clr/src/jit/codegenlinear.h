@@ -163,6 +163,7 @@ void genCodeForShiftLong(GenTreePtr tree);
 
 #ifdef _TARGET_XARCH_
 void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
+void genCodeForBT(GenTreeOp* bt);
 #endif // _TARGET_XARCH_
 
 void genCodeForCast(GenTreeOp* tree);
