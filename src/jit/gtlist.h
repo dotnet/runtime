@@ -225,7 +225,10 @@ GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE)   // Check
                                                                         // by GenTreeCC::gtCondition is true.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified 
                                                                         // by GenTreeCC::gtCondition is true and 0 otherwise.
-
+#ifdef _TARGET_XARCH_
+GTNODE(BT               , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // The XARCH BT instruction. Like CMP, this sets the condition flags (CF
+                                                                        // to be precise) and does not produce a value.
+#endif
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------
