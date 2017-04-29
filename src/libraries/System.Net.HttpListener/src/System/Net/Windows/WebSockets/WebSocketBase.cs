@@ -291,7 +291,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(messageType == WebSocketMessageType.Binary || messageType == WebSocketMessageType.Text,
                 "'messageType' MUST be either 'WebSocketMessageType.Binary' or 'WebSocketMessageType.Text'.");
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer.Array != null);
 
             string inputParameter = string.Empty;
             if (NetEventSource.IsEnabled)
