@@ -76,35 +76,6 @@ namespace System.Linq.Parallel
                     comparer.Equals(key1, key2));
         }
 
-        // If value is in set, remove it and return true; otherwise return false
-        internal bool Remove(TKey key)
-        {
-            int hashCode = GetKeyHashCode(key);
-            int bucket = hashCode % buckets.Length;
-            int last = -1;
-            for (int i = buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
-            {
-                if (slots[i].hashCode == hashCode && AreKeysEqual(slots[i].key, key))
-                {
-                    if (last < 0)
-                    {
-                        buckets[bucket] = slots[i].next + 1;
-                    }
-                    else
-                    {
-                        slots[last].next = slots[i].next;
-                    }
-                    slots[i].hashCode = -1;
-                    slots[i].key = default(TKey);
-                    slots[i].value = default(TValue);
-                    slots[i].next = freeList;
-                    freeList = i;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private bool Find(TKey key, bool add, bool set, ref TValue value)
         {
             int hashCode = GetKeyHashCode(key);

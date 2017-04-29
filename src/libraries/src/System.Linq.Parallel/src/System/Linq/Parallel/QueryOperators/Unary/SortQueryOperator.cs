@@ -80,19 +80,9 @@ namespace System.Linq.Parallel
         // Accessor the key selector.
         //
 
-        internal Func<TInputOutput, TSortKey> KeySelector
-        {
-            get { return _keySelector; }
-        }
-
         //---------------------------------------------------------------------------------------
         // Accessor the key comparer.
         //
-
-        internal IComparer<TSortKey> KeyComparer
-        {
-            get { return _comparer; }
-        }
 
         //---------------------------------------------------------------------------------------
         // Opens the current operator. This involves opening the child operator tree, enumerating
@@ -215,11 +205,6 @@ namespace System.Linq.Parallel
         //---------------------------------------------------------------------------------------
         // Accessor for the key comparison routine.
         //
-
-        public IComparer<TSortKey> KeyComparer
-        {
-            get { return _keyComparer; }
-        }
 
         //---------------------------------------------------------------------------------------
         // Moves to the next element in the sorted output. When called for the first time, the
