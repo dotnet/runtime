@@ -413,13 +413,20 @@ namespace System.Tests
             int ctr = 0;
             foreach (var a in assemblies2)
             {
-                if (a.Location == typeof(AppDomain).Assembly.Location)
-                    ctr++;
+                // Dynamic assemblies do not support Location property.
+                if (!a.IsDynamic)
+                {
+                    if (a.Location == typeof(AppDomain).Assembly.Location)
+                        ctr++;
+                }
             }
             foreach (var a in assemblies)
             {
-                if (a.Location == typeof(AppDomain).Assembly.Location)
-                    ctr--;
+                if (!a.IsDynamic)
+                {
+                    if (a.Location == typeof(AppDomain).Assembly.Location)
+                        ctr--;
+                }
             }
             Assert.True(ctr > 0, "Assembly.LoadFile should cause file to be loaded again");
         }
