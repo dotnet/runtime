@@ -160,6 +160,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />
     <Compile Include="System\Runtime\Serialization\XPathQueryGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
+    <Compile Include="System\Runtime\Serialization\SurrogateDataContract.cs" />
     <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
