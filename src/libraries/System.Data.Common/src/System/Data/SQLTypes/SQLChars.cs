@@ -644,33 +644,7 @@ namespace System.Data.SqlTypes
                 return _sqlchars == null || _sqlchars.IsNull;
             }
         }
-
-        // Always can read/write/seek, unless sb is null, 
-        // which means the stream has been closed.
-        public override bool CanRead
-        {
-            get
-            {
-                return _sqlchars != null && !_sqlchars.IsNull;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                return _sqlchars != null;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                return _sqlchars != null && (!_sqlchars.IsNull || _sqlchars._rgchBuf != null);
-            }
-        }
-
+        
         public override long Length
         {
             get
@@ -769,29 +743,6 @@ namespace System.Data.SqlTypes
             _lPosition += count;
         }
 
-        public override int ReadChar()
-        {
-            CheckIfStreamClosed();
-
-            // If at the end of stream, return -1, rather than call SqlChars.Readchar,
-            // which will throw exception. This is the behavior for Stream.
-            //
-            if (_lPosition >= _sqlchars.Length)
-                return -1;
-
-            int ret = _sqlchars[_lPosition];
-            _lPosition++;
-            return ret;
-        }
-
-        public override void WriteChar(char value)
-        {
-            CheckIfStreamClosed();
-
-            _sqlchars[_lPosition] = value;
-            _lPosition++;
-        }
-
         public override void SetLength(long value)
         {
             CheckIfStreamClosed();
@@ -799,13 +750,6 @@ namespace System.Data.SqlTypes
             _sqlchars.SetLength(value);
             if (_lPosition > value)
                 _lPosition = value;
-        }
-
-        // Flush is a no-op if underlying SqlChars is not a stream on SqlChars
-        public override void Flush()
-        {
-            if (_sqlchars.FStream())
-                _sqlchars._stream.Flush();
         }
 
         protected override void Dispose(bool disposing)

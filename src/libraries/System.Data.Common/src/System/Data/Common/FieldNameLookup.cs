@@ -23,30 +23,6 @@ namespace System.Data.ProviderBase
         private CompareInfo _compareInfo;
         private int _defaultLocaleID;
 
-        public FieldNameLookup(string[] fieldNames, int defaultLocaleID)
-        {
-            if (null == fieldNames)
-            {
-                throw ADP.ArgumentNull(nameof(fieldNames));
-            }
-            _fieldNames = fieldNames;
-            _defaultLocaleID = defaultLocaleID;
-        }
-
-        public FieldNameLookup(System.Collections.ObjectModel.ReadOnlyCollection<string> columnNames, int defaultLocaleID)
-        {
-            int length = columnNames.Count;
-            string[] fieldNames = new string[length];
-            for (int i = 0; i < length; ++i)
-            {
-                fieldNames[i] = columnNames[i];
-                Debug.Assert(null != fieldNames[i]);
-            }
-            _fieldNames = fieldNames;
-            _defaultLocaleID = defaultLocaleID;
-            GenerateLookup();
-        }
-
         public FieldNameLookup(IDataRecord reader, int defaultLocaleID)
         {
             int length = reader.FieldCount;
@@ -72,17 +48,6 @@ namespace System.Data.ProviderBase
                 throw ADP.IndexOutOfRange(fieldName);
             }
             return index;
-        }
-
-        public int IndexOfName(string fieldName)
-        {
-            if (null == _fieldNameLookup)
-            {
-                GenerateLookup();
-            }
-            // via case sensitive search, first match with lowest ordinal matches
-            object value = _fieldNameLookup[fieldName];
-            return ((null != value) ? (int)value : -1);
         }
 
         public int IndexOf(string fieldName)

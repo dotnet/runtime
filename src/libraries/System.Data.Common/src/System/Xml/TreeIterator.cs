@@ -21,11 +21,6 @@ namespace System.Xml
             _currentNode = nodeTop;
         }
 
-        internal override void Reset()
-        {
-            _currentNode = _nodeTop;
-        }
-
         internal override XmlNode CurrentNode => _currentNode;
 
         internal override bool Next()

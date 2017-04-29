@@ -2675,15 +2675,6 @@ namespace System.Data
             }
         }
 
-        internal XmlDataTreeWriter(DataSet ds, DataTable dt)
-        { // need to modify this also
-            _ds = ds;
-            _dt = dt;
-
-            _dTables.Add(dt);
-            _topLevelTables = ds.TopLevelTables();
-        }
-
         internal XmlDataTreeWriter(DataTable dt, bool writeHierarchy)
         {
             _dt = dt;

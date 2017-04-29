@@ -106,12 +106,6 @@ namespace System.Data.Common
         //     strip quotes from value
         internal readonly bool _useOdbcRules;
 
-        // called by derived classes that may cache based on connectionString
-        public DbConnectionOptions(string connectionString)
-            : this(connectionString, null, false)
-        {
-        }
-
         // synonyms hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
         public DbConnectionOptions(string connectionString, Hashtable synonyms, bool useOdbcRules)
@@ -129,16 +123,6 @@ namespace System.Data.Common
             }
         }
 
-        protected DbConnectionOptions(DbConnectionOptions connectionOptions)
-        { // Clone used by SqlConnectionString
-            _usersConnectionString = connectionOptions._usersConnectionString;
-            _hasPasswordKeyword = connectionOptions._hasPasswordKeyword;
-            _hasUserIdKeyword = connectionOptions._hasUserIdKeyword;
-            _useOdbcRules = connectionOptions._useOdbcRules;
-            _parsetable = connectionOptions._parsetable;
-            _keyChain = connectionOptions._keyChain;
-        }
-
         public string UsersConnectionString(bool hidePassword) =>
             UsersConnectionString(hidePassword, false);
 
@@ -152,42 +136,11 @@ namespace System.Data.Common
             return connectionString ?? string.Empty;
         }
 
-        internal string UsersConnectionStringForTrace() =>
-            UsersConnectionString(true, true);
-
-        internal bool HasBlankPassword
-        {
-            get
-            {
-                if (!ConvertValueToIntegratedSecurity())
-                {
-                    if (_parsetable.ContainsKey(KEY.Password))
-                    {
-                        return string.IsNullOrEmpty((string)_parsetable[KEY.Password]);
-                    }
-                    else
-                    if (_parsetable.ContainsKey(SYNONYM.Pwd))
-                    {
-                        return string.IsNullOrEmpty((string)_parsetable[SYNONYM.Pwd]);
-                    }
-                    else
-                    {
-                        return ((_parsetable.ContainsKey(KEY.User_ID) && !string.IsNullOrEmpty((string)_parsetable[KEY.User_ID])) || (_parsetable.ContainsKey(SYNONYM.UID) && !string.IsNullOrEmpty((string)_parsetable[SYNONYM.UID])));
-                    }
-                }
-                return false;
-            }
-        }
-
         internal bool HasPersistablePassword => _hasPasswordKeyword ?
             ConvertValueToBoolean(KEY.Persist_Security_Info, false) :
             true; // no password means persistable password so we don't have to munge
 
-        public bool IsEmpty => (null == _keyChain);
-
         internal Hashtable Parsetable => _parsetable;
-
-        public ICollection Keys => _parsetable.Keys;
 
         public string this[string keyword] => (string)_parsetable[keyword];
 
@@ -303,81 +256,8 @@ namespace System.Data.Common
             }
         }
 
-        // same as Boolean, but with SSPI thrown in as valid yes
-        public bool ConvertValueToIntegratedSecurity()
-        {
-            object value = _parsetable[KEY.Integrated_Security];
-            if (null == value)
-            {
-                return false;
-            }
-            return ConvertValueToIntegratedSecurityInternal((string)value);
-        }
-
-        internal bool ConvertValueToIntegratedSecurityInternal(string stringValue)
-        {
-            if (CompareInsensitiveInvariant(stringValue, "sspi") || CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
-            {
-                return true;
-            }
-            else if (CompareInsensitiveInvariant(stringValue, "false") || CompareInsensitiveInvariant(stringValue, "no"))
-            {
-                return false;
-            }
-            else
-            {
-                string tmp = stringValue.Trim();  // Remove leading & trailing whitespace.
-                if (CompareInsensitiveInvariant(tmp, "sspi") || CompareInsensitiveInvariant(tmp, "true") || CompareInsensitiveInvariant(tmp, "yes"))
-                {
-                    return true;
-                }
-                else if (CompareInsensitiveInvariant(tmp, "false") || CompareInsensitiveInvariant(tmp, "no"))
-                {
-                    return false;
-                }
-                else
-                {
-                    throw ADP.InvalidConnectionOptionValue(KEY.Integrated_Security);
-                }
-            }
-        }
-
-        public int ConvertValueToInt32(string keyName, int defaultValue)
-        {
-            object value = _parsetable[keyName];
-            if (null == value)
-            {
-                return defaultValue;
-            }
-            return ConvertToInt32Internal(keyName, (string)value);
-        }
-
-        internal static int ConvertToInt32Internal(string keyname, string stringValue)
-        {
-            try
-            {
-                return System.Int32.Parse(stringValue, System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (FormatException e)
-            {
-                throw ADP.InvalidConnectionOptionValue(keyname, e);
-            }
-            catch (OverflowException e)
-            {
-                throw ADP.InvalidConnectionOptionValue(keyname, e);
-            }
-        }
-
-        public string ConvertValueToString(string keyName, string defaultValue)
-        {
-            string value = (string)_parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
-        }
-
         private static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
             (0 == StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst));
-
-        public bool ContainsKey(string keyword) => _parsetable.ContainsKey(keyword);
 
         protected internal virtual string Expand() => _usersConnectionString;
 

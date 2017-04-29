@@ -18,13 +18,6 @@ namespace System.Data
 
         internal DataViewSetting() { }
 
-        internal DataViewSetting(string sort, string rowFilter, DataViewRowState rowStateFilter)
-        {
-            _sort = sort;
-            _rowFilter = rowFilter;
-            _rowStateFilter = rowStateFilter;
-        }
-
         public bool ApplyDefaultSort
         {
             get { return _applyDefaultSort; }
