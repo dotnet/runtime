@@ -66,17 +66,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     "generator",
                     () => request.Create(testRoot.SubjectName, null, DateTimeOffset.MinValue, DateTimeOffset.MinValue, null));
 
+                DateTimeOffset notAfter = testRoot.NotAfter;
+                DateTimeOffset notBefore = testRoot.NotBefore;
+
                 Assert.Throws<ArgumentException>(
                     null,
-                    () => request.Create(testRoot, DateTimeOffset.MaxValue, DateTimeOffset.MinValue, null));
+                    () => request.Create(testRoot, notAfter, notBefore, null));
 
                 Assert.Throws<ArgumentException>(
                     "serialNumber",
-                    () => request.Create(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, null));
+                    () => request.Create(testRoot, notBefore, notAfter, null));
 
                 Assert.Throws<ArgumentException>(
                     "serialNumber",
-                    () => request.Create(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, Array.Empty<byte>()));
+                    () => request.Create(testRoot, notBefore, notAfter, Array.Empty<byte>()));
             }
         }
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -59,6 +60,140 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     intermed1Key,
                     intermed2Key,
                     leafPubKey);
+            }
+        }
+
+        [Theory]
+        // A root cert doing the issuing
+        [InlineData(false, null, X509KeyUsageFlags.None, false)]
+        [InlineData(false, null, X509KeyUsageFlags.KeyCertSign, false)]
+        [InlineData(false, null, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(false, null, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(false, false, X509KeyUsageFlags.None, false)]
+        [InlineData(false, false, X509KeyUsageFlags.KeyCertSign, false)]
+        [InlineData(false, false, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(false, false, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(false, true, X509KeyUsageFlags.None, true)]
+        [InlineData(false, true, X509KeyUsageFlags.KeyCertSign, true)]
+        [InlineData(false, true, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(false, true, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, true)]
+
+        // An intermediate doing the issuing
+        [InlineData(true, null, X509KeyUsageFlags.None, false)]
+        [InlineData(true, null, X509KeyUsageFlags.KeyCertSign, false)]
+        [InlineData(true, null, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(true, null, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(true, false, X509KeyUsageFlags.None, false)]
+        [InlineData(true, false, X509KeyUsageFlags.KeyCertSign, false)]
+        [InlineData(true, false, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(true, false, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(true, true, X509KeyUsageFlags.None, true)]
+        [InlineData(true, true, X509KeyUsageFlags.KeyCertSign, true)]
+        [InlineData(true, true, X509KeyUsageFlags.DigitalSignature, false)]
+        [InlineData(true, true, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, true)]
+        public static void ChainCertRequirements(bool useIntermed, bool? isCA, X509KeyUsageFlags keyUsage, bool expectSuccess)
+        {
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA384;
+
+            ECDsa rootKey = null;
+            ECDsa intermedKey = null;
+            ECDsa leafKey = null;
+
+            X509Certificate2 rootCert = null;
+            X509Certificate2 intermedCert = null;
+            X509Certificate2 leafCert = null;
+
+            try
+            {
+                rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP384);
+
+                var request = new CertificateRequest("CN=Root", rootKey, hashAlgorithm);
+
+                if (useIntermed || isCA.HasValue)
+                {
+                    request.CertificateExtensions.Add(
+                        new X509BasicConstraintsExtension(useIntermed || isCA.Value, false, 0, true));
+                }
+
+                X509KeyUsageFlags rootFlags = useIntermed ? X509KeyUsageFlags.KeyCertSign : keyUsage;
+
+                if (rootFlags != X509KeyUsageFlags.None)
+                {
+                    request.CertificateExtensions.Add(new X509KeyUsageExtension(rootFlags, true));
+                }
+
+                DateTimeOffset start = DateTimeOffset.UtcNow.AddHours(-1);
+                DateTimeOffset end = start.AddHours(2);
+
+                rootCert = request.CreateSelfSigned(start, end);
+
+                X509Certificate2 signerCert = rootCert;
+
+                if (useIntermed)
+                {
+                    intermedKey = ECDsa.Create(ECCurve.NamedCurves.nistP384);
+                    request = new CertificateRequest("CN=Intermediate", intermedKey, hashAlgorithm);
+
+                    if (isCA.HasValue)
+                    {
+                        request.CertificateExtensions.Add(
+                            new X509BasicConstraintsExtension(isCA.Value, false, 0, true));
+                    }
+
+                    if (keyUsage != X509KeyUsageFlags.None)
+                    {
+                        request.CertificateExtensions.Add(new X509KeyUsageExtension(keyUsage, true));
+                    }
+
+                    using (X509Certificate2 tmp = request.Create(rootCert, start, end, new byte[] { 6, 0, 2, 2, 10, 23 }))
+                    {
+                        intermedCert = tmp.CopyWithPrivateKey(intermedKey);
+                    }
+
+                    signerCert = intermedCert;
+                }
+
+                leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                request = new CertificateRequest("CN=Leaf", leafKey, hashAlgorithm);
+
+                byte[] leafSerialNumber = { 2, 4, 6, 0, 1 };
+
+                if (!expectSuccess)
+                {
+                    Assert.Throws<ArgumentException>(
+                        "issuerCertificate",
+                        () =>
+                        {
+                            request.Create(signerCert, start, end, leafSerialNumber)?.Dispose();
+                        });
+
+                    return;
+                }
+
+                leafCert = request.Create(signerCert, start, end, leafSerialNumber);
+
+                using (X509Chain chain = new X509Chain())
+                {
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                    chain.ChainPolicy.ExtraStore.Add(rootCert);
+
+                    if (useIntermed)
+                    {
+                        chain.ChainPolicy.ExtraStore.Add(intermedCert);
+                    }
+
+                    RunChain(chain, leafCert, true, "Chain verification");
+                }
+            }
+            finally
+            {
+                leafCert?.Dispose();
+                leafKey?.Dispose();
+                intermedCert?.Dispose();
+                intermedKey?.Dispose();
+                rootCert?.Dispose();
+                rootKey?.Dispose();
             }
         }
 
