@@ -109,6 +109,9 @@
   <data name="Cryptography_CertReq_AlgorithmMustMatch" xml:space="preserve">
     <value>The issuer certificate public key algorithm ({0}) does not match the value for this certificate request ({1}), use the X509SignatureGenerator overload.</value>
   </data>
+  <data name="Cryptography_CertReq_BasicConstraintsRequired" xml:space="preserve">
+    <value>The issuer certificate does not have a Basic Constraints extension.</value>
+  </data>
   <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
     <value>The provided notBefore value is later than the notAfter value.</value>
   </data>
@@ -118,8 +121,20 @@
   <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
     <value>An X509Extension with OID '{0}' has already been specified.</value>
   </data>
+  <data name="Cryptography_CertReq_IssuerBasicConstraintsInvalid" xml:space="preserve">
+    <value>The issuer certificate does not have an appropriate value for the Basic Constraints extension.</value>
+  </data>
+  <data name="Cryptography_CertReq_IssuerKeyUsageInvalid" xml:space="preserve">
+    <value>The issuer certificate's Key Usage extension is present but does not contain the KeyCertSign flag.</value>
+  </data>
   <data name="Cryptography_CertReq_IssuerRequiresPrivateKey" xml:space="preserve">
     <value>The provided issuer certificate does not have an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_NotAfterNotNested" xml:space="preserve">
+    <value>The requested notAfter value ({0}) is later than issuerCertificate.NotAfter ({1}).</value>
+  </data>
+  <data name="Cryptography_CertReq_NotBeforeNotNested" xml:space="preserve">
+    <value>The requested notBefore value ({0}) is earlier than issuerCertificate.NotBefore ({1}).</value>
   </data>
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
