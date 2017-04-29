@@ -461,6 +461,16 @@ namespace System.Net.Tests
                 }
             };
 
+            // Not added if the cookie already exists.
+            yield return new object[]
+            {
+                "cookie: name=value,name=value", new CookieCollection
+                {
+                    new Cookie("name", "value")
+                }
+            };
+
+            /*[ActiveIssue(18486)]
             yield return new object[]
             {
                 "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection
@@ -469,25 +479,23 @@ namespace System.Net.Tests
                     new Cookie("name2", "value2"),
                     new Cookie("name3", "value3")
                 }
+            };*/
+
+            yield return new object[]
+            {
+                "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
+                {
+                    new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
+                }
             };
 
-            // [ActiveIssue(18128)] // Hangs on Unix
-            if (PlatformDetection.IsWindows)
-            {
-                yield return new object[]
-                {
-                    "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
-                    {
-                        new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
-                    }
-                };
-
-                yield return new object[] { "cookie: =value", new CookieCollection() };
-            }
+            yield return new object[] { "cookie: =value", new CookieCollection() };
 
             yield return new object[] { "cookie: $Path", new CookieCollection() };
             yield return new object[] { "cookie: $Domain", new CookieCollection() };
             yield return new object[] { "cookie: $Port", new CookieCollection() };
+
+            /*[ActiveIssue(18486)]
             yield return new object[]
             {
                 "cookie:name=value; domain=.domain.com", new CookieCollection
@@ -504,7 +512,7 @@ namespace System.Net.Tests
                     new Cookie("name", "value"),
                     new Cookie("expires", "invaliddate")
                 }
-            };
+            };*/
 
             yield return new object[] { "cookie: ", new CookieCollection() };
             yield return new object[] { "Unknown-Header: Test", new CookieCollection() };
@@ -512,7 +520,6 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(Cookies_TestData))]
-        [ActiveIssue(18486, TestPlatforms.Windows)]
         public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
             await GetRequest("POST", null, new[] { cookieString }, (_, request) =>

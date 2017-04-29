@@ -53,7 +53,6 @@ namespace System.Net
 
         private long _contentLength;
         private bool _clSet;
-        private CookieCollection _cookies;
         private WebHeaderCollection _headers;
         private string _method;
         private Stream _inputStream;
@@ -261,63 +260,6 @@ namespace System.Net
                     }
 
                     break;
-                case "cookie":
-                    if (_cookies == null)
-                        _cookies = new CookieCollection();
-
-                    string[] cookieStrings = val.Split(new char[] { ',', ';' });
-                    Cookie current = null;
-                    int version = 0;
-                    foreach (string cookieString in cookieStrings)
-                    {
-                        string str = cookieString.Trim();
-                        if (str.Length == 0)
-                            continue;
-                        if (str.StartsWith("$Version"))
-                        {
-                            version = Int32.Parse(Unquote(str.Substring(str.IndexOf('=') + 1)));
-                        }
-                        else if (str.StartsWith("$Path"))
-                        {
-                            if (current != null)
-                                current.Path = str.Substring(str.IndexOf('=') + 1).Trim();
-                        }
-                        else if (str.StartsWith("$Domain"))
-                        {
-                            if (current != null)
-                                current.Domain = str.Substring(str.IndexOf('=') + 1).Trim();
-                        }
-                        else if (str.StartsWith("$Port"))
-                        {
-                            if (current != null)
-                                current.Port = str.Substring(str.IndexOf('=') + 1).Trim();
-                        }
-                        else
-                        {
-                            if (current != null)
-                            {
-                                _cookies.Add(current);
-                            }
-                            current = new Cookie();
-                            int idx = str.IndexOf('=');
-                            if (idx > 0)
-                            {
-                                current.Name = str.Substring(0, idx).Trim();
-                                current.Value = str.Substring(idx + 1).Trim();
-                            }
-                            else
-                            {
-                                current.Name = str.Trim();
-                                current.Value = String.Empty;
-                            }
-                            current.Version = version;
-                        }
-                    }
-                    if (current != null)
-                    {
-                        _cookies.Add(current);
-                    }
-                    break;
             }
         }
 
@@ -376,16 +318,6 @@ namespace System.Net
                     _contentLength = -1;
 
                 return _contentLength;
-            }
-        }
-
-        public CookieCollection Cookies
-        {
-            get
-            {
-                if (_cookies == null)
-                    _cookies = new CookieCollection();
-                return _cookies;
             }
         }
 
