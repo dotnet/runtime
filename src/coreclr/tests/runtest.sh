@@ -407,7 +407,7 @@ function precompile_overlay_assemblies {
                 $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
                 local exitCode=$?
                 if [[ $exitCode != 0 ]]; then
-                    if [ grep -q -e '0x80131018' $filename.stderr ]; then
+                    if grep -q -e '0x80131018' $filename.stderr; then
                         printf "\n\t$filename is not a managed assembly.\n\n"
                     else
                         echo Unable to precompile $filename.
