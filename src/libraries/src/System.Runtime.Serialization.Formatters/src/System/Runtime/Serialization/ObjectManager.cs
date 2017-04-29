@@ -976,11 +976,6 @@ namespace System.Runtime.Serialization
             _onDeserializationHandler = (DeserializationEventHandler)Delegate.Combine(_onDeserializationHandler, handler);
         }
 
-        internal virtual void RemoveOnDeserialization(DeserializationEventHandler handler)
-        {
-            _onDeserializationHandler = (DeserializationEventHandler)Delegate.Remove(_onDeserializationHandler, handler);
-        }
-
         internal virtual void AddOnDeserialized(object obj)
         {
             SerializationEvents cache = SerializationEventsCache.GetSerializationEventsForType(obj.GetType());
