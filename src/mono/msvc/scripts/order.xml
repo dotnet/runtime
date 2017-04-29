@@ -990,6 +990,28 @@
       <resources></resources>
       <response>System.Text.Encoding.CodePages.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Text.RegularExpressions" library="Facades_System.Text.RegularExpressions-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/build/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/build/System.dll</flags>
+      <output>System.Text.RegularExpressions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/build/Facades/System.Text.RegularExpressions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>System.Text.RegularExpressions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Diagnostics.Contracts" library="Facades_System.Diagnostics.Contracts-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/build/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <output>System.Diagnostics.Contracts.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/build/Facades/System.Diagnostics.Contracts.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>System.Diagnostics.Contracts.dll.sources</response>
+    </project>
     <project dir="tools/resgen" library="resgen-build">
       <boot></boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:System -r:System.Xml -r:System.Core -r:System.Drawing</flags>
