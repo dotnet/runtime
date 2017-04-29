@@ -52,6 +52,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\RSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\RSAPkcs1X509SignatureGenerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\RSAPssX509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreLocation.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />

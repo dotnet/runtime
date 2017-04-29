@@ -10,6 +10,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 {
     public static class CertificateRequestChainTests
     {
+        public static bool PlatformSupportsPss { get; } = DetectPssSupport();
+
         [Fact]
         public static void CreateChain_ECC()
         {
@@ -458,6 +460,86 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 intermed1CertWithKey?.Dispose();
                 rootCertWithKey?.Dispose();
             }
+        }
+
+        [ConditionalFact(nameof(PlatformSupportsPss))]
+        public static void CreateChain_RSAPSS()
+        {
+            using (RSA rootKey = RSA.Create())
+            using (RSA intermedKey = RSA.Create())
+            using (RSA leafKey = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                X509Certificate2 rootCertWithKey = null;
+                X509Certificate2 intermedCertWithKey = null;
+                X509Certificate2 leafCert = null;
+                CertificateRequest request;
+
+                RSASignaturePadding padding = RSASignaturePadding.Pss;
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+                DateTimeOffset notAfter = notBefore.AddHours(1);
+
+                try
+                {
+                    request = new CertificateRequest("CN=Root", rootKey, HashAlgorithmName.SHA512, padding);
+                    request.CertificateExtensions.Add(
+                        new X509BasicConstraintsExtension(true, false, 0, true));
+
+                    rootCertWithKey = request.CreateSelfSigned(notBefore, notAfter);
+
+                    byte[] intermedSerial = { 1, 2, 3, 5, 7, 11, 13 };
+
+                    request = new CertificateRequest("CN=Intermediate", intermedKey, HashAlgorithmName.SHA384, padding);
+                    request.CertificateExtensions.Add(
+                        new X509BasicConstraintsExtension(true, true, 1, true));
+
+                    X509Certificate2 intermedPublic = request.Create(rootCertWithKey, notBefore, notAfter, intermedSerial);
+                    intermedCertWithKey = intermedPublic.CopyWithPrivateKey(intermedKey);
+                    intermedPublic.Dispose();
+
+                    request = new CertificateRequest("CN=Leaf", leafKey, HashAlgorithmName.SHA256, padding);
+                    request.CertificateExtensions.Add(
+                        new X509BasicConstraintsExtension(false, false, 0, true));
+
+                    byte[] leafSerial = { 1, 1, 2, 6, 12, 60, 60, };
+
+                    leafCert = request.Create(intermedCertWithKey, notBefore, notAfter, leafSerial);
+
+                    using (X509Chain chain = new X509Chain())
+                    {
+                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chain.ChainPolicy.ExtraStore.Add(intermedCertWithKey);
+                        chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
+
+                        RunChain(chain, leafCert, true, "Chain build");
+                    }
+                }
+                finally
+                {
+                    leafCert?.Dispose();
+                    intermedCertWithKey?.Dispose();
+                    rootCertWithKey?.Dispose();
+                }
+            }
+        }
+
+        private static bool DetectPssSupport()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (RSA rsa = cert.GetRSAPrivateKey())
+            {
+                try
+                {
+                    rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                }
+                catch (CryptographicException)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
