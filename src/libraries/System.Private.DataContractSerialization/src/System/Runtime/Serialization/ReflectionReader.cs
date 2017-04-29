@@ -42,6 +42,11 @@ namespace System.Runtime.Serialization
                 ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             }
 
+            if (obj is IObjectReference objectReference)
+            {
+                obj = context.GetRealObject(objectReference, context.GetObjectId());
+            }
+
             obj = ResolveAdapterObject(obj, classContract);
             InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);

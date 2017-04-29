@@ -1108,4 +1108,7 @@
   <data name="PlatformNotSupported_Canonicalization" xml:space="preserve">
     <value>The canonicalization process is not supported on this platform.</value>
   </data>
+  <data name="FactoryTypeNotISerializable" xml:space="preserve">
+    <value>Factory type '{0}' for ISerializable type '{1}' must also be ISerializable.</value>
+  </data>
 </root>
