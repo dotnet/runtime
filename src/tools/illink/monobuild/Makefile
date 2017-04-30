@@ -13,4 +13,4 @@ prepare:
 	nuget restore ../linker.sln
 
 check: prepare
-	mono ../packages/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ../linker/Tests/bin/$(CONFIGURATION)/Mono.Linker.Tests.dll
+	mono ../packages/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe --result="TestResults.xml;format=nunit2" ../linker/Tests/bin/$(CONFIGURATION)/Mono.Linker.Tests.dll
