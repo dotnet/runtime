@@ -4,12 +4,13 @@
 
 #line 2 "asmparse.y"
 
- // Licensed to the .NET Foundation under one or more agreements.
- // The .NET Foundation licenses this file to you under the MIT license.
- // See the LICENSE file in the project root for more information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //
 // File asmparse.y
 //
+
 #include "ilasmpch.h"
 
 #include "grammar_before.cpp"
@@ -1729,7 +1730,7 @@ YYSTATIC YYCONST short yyrecover[] = {
 #endif
 
 /* SCCSWHAT( "@(#)yypars.c	3.1 88/11/16 22:00:49	" ) */
-#line 3 "D:\\ProjectK3\\src\\tools\\devdiv\\x86\\yypars.c"
+#line 3 "O:\\tfs\\cgm\\src\\Tools\\devdiv\\amd64\\yypars.c"
 #if ! defined(YYAPI_PACKAGE)
 /*
 **  YYAPI_TOKENNAME		: name used for return value of yylex	
@@ -1852,8 +1853,17 @@ YYLOCAL YYNEAR YYPASCAL YYPARSER()
 
 	YYAPI_TOKENNAME = YYAPI_TOKENNONE;
 	yystate = 0;
-	yyps= &yys[-1];
-	yypv= &yyv[-1];
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:6200) // Index '-1' is out of valid index range...for non-stack buffer...
+#endif
+    yyps= &yys[-1];
+    yypv= &yyv[-1];
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+
 #endif
 
 #ifdef YYDUMP
@@ -4872,7 +4882,7 @@ case 834:
 case 835:
 #line 2045 "asmparse.y"
 { PASMM->SetManifestResAsmRef(yypvt[-0].string); } break;/* End of actions */
-#line 329 "D:\\ProjectK3\\src\\tools\\devdiv\\x86\\yypars.c"
+#line 329 "O:\\tfs\\cgm\\src\\Tools\\devdiv\\amd64\\yypars.c"
 			}
 		}
 		goto yystack;  /* stack new state and value */
