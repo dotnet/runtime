@@ -2838,6 +2838,11 @@ void Compiler::optUnrollLoops()
     // to outermost order
     for (unsigned lnum = optLoopCount - 1; lnum != ~0U; --lnum)
     {
+        // This is necessary due to an apparent analysis limitation since
+        // optLoopCount must be strictly greater than 0 upon entry and lnum
+        // cannot wrap due to the loop termination condition.
+        PREFAST_ASSUME(lnum != 0U - 1);
+
         BasicBlock* block;
         BasicBlock* head;
         BasicBlock* bottom;
