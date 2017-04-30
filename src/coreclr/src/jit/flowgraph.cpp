@@ -4335,7 +4335,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
     DECODE_OPCODE:
 
-        if (opcode >= CEE_COUNT)
+        if ((unsigned)opcode >= CEE_COUNT)
         {
             BADCODE3("Illegal opcode", ": %02X", (int)opcode);
         }
@@ -5231,7 +5231,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
 
         /* Get the size of additional parameters */
 
-        noway_assert(opcode < CEE_COUNT);
+        noway_assert((unsigned)opcode < CEE_COUNT);
 
         sz = opcodeSizes[opcode];
 
