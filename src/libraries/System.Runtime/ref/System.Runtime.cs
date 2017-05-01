@@ -165,22 +165,6 @@ namespace System
         public void Handle(System.Func<System.Exception, bool> predicate) { }
         public override string ToString() { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ArgIterator
-    {
-        public ArgIterator(System.RuntimeArgumentHandle arglist) { }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe ArgIterator(System.RuntimeArgumentHandle arglist, void *ptr) { }
-        public void End() { }
-        public override bool Equals(Object o) { throw null; }
-        public override int GetHashCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public System.TypedReference GetNextArg() { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth) { throw null; }
-        public unsafe System.RuntimeTypeHandle GetNextArgType() { throw null; }
-        public int GetRemainingCount() { throw null; }
-    }
     public partial class ArgumentException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
         public ArgumentException() { }
@@ -2022,7 +2006,6 @@ namespace System
         public static string Concat(string str0, string str1, string str2) { throw null; }
         public static string Concat(string str0, string str1, string str2, string str3) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static string Concat(object arg0, object arg1, object arg2, object arg3, __arglist) { throw null; } 
         public static string Concat(params string[] values) { throw null; }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(string value) { throw null; }
