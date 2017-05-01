@@ -13,6 +13,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern System.Threading.Thread
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 .assembly extern System.Linq
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                     
@@ -2786,21 +2791,22 @@
     .entrypoint
     .maxstack  1
 
-    ldstr      "Condition1.Test1"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition1.Test2"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition1.Test3"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition2.Test1"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition2.Test2"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
+    // Disable tests intending to test tail.call,pop,ret sequence.
+    //ldstr      "Condition1.Test1"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition1.Test2"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition1.Test3"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition2.Test1"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition2.Test2"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
     ldstr      "Condition3.Test1"
     call       int32 TailcallVerify.Program::Run(string)
     pop
@@ -2935,12 +2941,13 @@
     ldstr      "Condition20.Test1"
     call       int32 TailcallVerify.Program::Run(string)
     pop
-    ldstr      "Condition21.Test1"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition21.Test2"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
+    // Disable tests intending to test tail.call,pop,ret sequence.
+    //ldstr      "Condition21.Test1"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
+    //ldstr      "Condition21.Test2"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
     ldstr      "Condition21.Test3"
     call       int32 TailcallVerify.Program::Run(string)
     pop
@@ -2950,9 +2957,10 @@
     ldstr      "Condition21.Test7"
     call       int32 TailcallVerify.Program::Run(string)
     pop
-    ldstr      "Condition22.Test2"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
+    // Disable tests intending to test tail.call,pop,ret sequence.
+    //ldstr      "Condition22.Test2"
+    //call       int32 TailcallVerify.Program::Run(string)
+    //pop
     ldstr      "Condition22.Test4"
     call       int32 TailcallVerify.Program::Run(string)
     ret    
@@ -3561,7 +3569,8 @@
     IL_0056:  ldc.i4.3
     IL_0057:  ldc.i4.4
     IL_0058:  ldloc.0
-    IL_0059:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeIsOdd1(int32,
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_0059:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeIsOdd1(int32,
                                                                                                            int32,
                                                                                                            int32,
                                                                                                            int32,
@@ -3940,7 +3949,8 @@
     IL_0032:  ldloca.s   CS$0$0000
     IL_0034:  initobj    TailcallVerify.ValueType3Bytes
     IL_003a:  ldloc.0
-    IL_003b:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeIsEven2(int32,
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_003b:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeIsEven2(int32,
                                                                                                             int32,
                                                                                                             int32,
                                                                                                             valuetype TailcallVerify.ValueType3Bytes)
@@ -4610,7 +4620,8 @@
     IL_0037:  ldloca.s   CS$0$0000
     IL_0039:  initobj    TailcallVerify.ValueType3Bytes
     IL_003f:  ldloc.0
-    IL_0040:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeE4(int32,
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_0040:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition21::CalleeE4(int32,
                                                                                                        int32,
                                                                                                        int32,
                                                                                                        int32,
@@ -9265,7 +9276,8 @@
     IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition2::Result
-    IL_002e:  tail. call       int32 TailcallVerify.Condition2::Callee1()
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002e:  call       int32 TailcallVerify.Condition2::Callee1()
     IL_0033:  pop
     IL_0034:  ret
   } // end of method Condition2::Caller1
@@ -9366,7 +9378,8 @@
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition2::Result
     IL_002e:  ldc.i4.0
-    IL_002f:  tail. call       string TailcallVerify.Condition2::Callee2(int32)
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002f:  call       string TailcallVerify.Condition2::Callee2(int32)
     IL_0034:  pop
     IL_0035:  ret
   } // end of method Condition2::Caller2
@@ -9501,7 +9514,8 @@
     IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition1::Result
-    IL_002e:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee1()
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002e:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee1()
     IL_0033:  pop
     IL_0034:  ret
   } // end of method Condition1::Caller1
@@ -9607,7 +9621,8 @@
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition1::Result
     IL_002e:  ldc.i4.0
-    IL_002f:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee2(int32)
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002f:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee2(int32)
     IL_0034:  pop
     IL_0035:  ret
   } // end of method Condition1::Caller2
@@ -9720,7 +9735,8 @@
     IL_0047:  ldc.i4     0x7fffffff
     IL_004c:  ldc.i4     0x80000000
     IL_0051:  ldc.i4     0x7fffffff
-    IL_0056:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee3(int32,
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_0056:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee3(int32,
                                                                                                      int32,
                                                                                                      int32,
                                                                                                      int32,
@@ -9914,7 +9930,8 @@
     IL_0099:  ldc.r8     -1.7976931348623157e+308
     IL_00a2:  ldc.r4     3.4028235e+038
     IL_00a7:  ldloc.1
-    IL_00a8:  tail. call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee4(int32,
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_00a8:  call       valuetype TailcallVerify.ValueType3Bytes TailcallVerify.Condition1::Callee4(int32,
                                                                                                      int64,
                                                                                                      valuetype TailcallVerify.ValueType3Bytes,
                                                                                                      int16,
