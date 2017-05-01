@@ -107,6 +107,8 @@ Test cases should adhere to the following guidelines, within reason:
 * There are two main ways to detect when a test case is being "optimized out":
   * Look at the disassembly of the function (with the Visual Studio disassembler, for example).
   * Observe unusual changes in the duration metric. If your test suddenly takes 1% of its previous time, odds are something has gone wrong.
+* Before using intrinsic data types (int, string, etc) to represent value and reference types in your test, consider if the code under test is optimized for those types versus normal classes and structs.
+  * Also consider interfaces. For example, methods on ```List<T>``` using equality will be much faster on Ts that implement  ```IEquatable<T>```.
 
 Avoid the following performance test test anti-patterns:
 * Tests for multiple methods which all end up calling the same final overload. This just adds noise and extra duplicate data to sift through.
