@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <UsingTask TaskName="ChangeEntryPointLibraryName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
+  <PropertyGroup>
+    <BuildTargets>
+      PublishSharedFrameworkAndSharedHost;
+      GenerateRuntimeGraph;
+      CopyHostArtifactsToSharedFramework;
+      GenerateVersionFile;
+    </BuildTargets>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(BuildTargets)" />
+
+  <Target Name="PublishSharedFrameworkAndSharedHost"
+          DependsOnTargets="RestoreLockedCoreHost;GenerateSharedFrameworkProject">
+    
+    <PropertyGroup>
+      <RestoreArgs>--fallbacksource $(PackagesOutDir) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</RestoreArgs>
+    </PropertyGroup>  
+
+    <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
+
+    <Exec Command="$(DotnetToolCommand) restore --verbosity verbose --disable-parallel --infer-runtimes $(RestoreArgs)"
+          WorkingDirectory="$(SharedFrameworkSourceRoot)" />
+
+    <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
+    <Exec Command="$(DotnetToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) -r $(TargetRid) $(SharedFrameworkSourceRoot)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+
+    <!-- Clean deps.json -->
+    <ChangeEntryPointLibraryName DepsFile="$(SharedFrameworkNameAndVersionRoot)/framework.deps.json" />
+
+    <!-- Clean up artifacts that dotnet-publish generates which we don't need -->
+    <ItemGroup>
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.exe" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.dll" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.pdb" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.runtimeconfig.json" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\apphost$(ExeSuffix)" />
+    </ItemGroup>
+
+    <Message Text="To delete: @(ToDelete)" />
+    <Delete Files="@(ToDelete)" />
+
+    <!-- Rename deps file -->
+    <Move SourceFiles="$(SharedFrameworkNameAndVersionRoot)\framework.deps.json" 
+          DestinationFiles="$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json" />
+    
+    <!-- Copy Muxer -->
+    <Copy SourceFiles="$(CoreHostLockedDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)" />
+
+    <!--  CopyHostFxrToVersionedDirectory -->
+    <Copy SourceFiles="$(CoreHostLockedDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)\host\fxr\$(HostVersion)" />
+
+    <!-- Copy symbols to publish folder -->
+    <ItemGroup>
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*.pdb" />
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(SymbolFileExtension)" />
+    </ItemGroup>
+    <RemoveDir Directories="$(SharedFrameworkPublishSymbolsDir)"
+               Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
+    <MakeDir Directories="$(SharedFrameworkPublishSymbolsDir)" />
+    <Copy SourceFiles="@(SharedFrameworkSymbols)" DestinationFolder="$(SharedFrameworkPublishSymbolsDir)" />
+  </Target>
+
+  <Target Name="GenerateVersionFile"
+          DependsOnTargets="GetLatestCommitHash">
+
+    <!-- Generate .version file -->
+    <ItemGroup>
+      <VersionLines Include="$(LatestCommit)" />
+      <VersionLines Include="$(HostFullVersion)" />      
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(SharedFrameworkNameAndVersionRoot)\.version"
+      Lines="@(VersionLines)"
+      Overwrite="true" />
+  </Target>
+
+  <Target Name="CopyHostArtifactsToSharedFramework">
+    <ItemGroup>
+      <HostArtifacts Include="$(CoreHostLockedDir)dotnet$(ExeSuffix)" />
+      <HostArtifacts Include="$(CoreHostLockedDir)$(DotnetHostFxrBaseName)" />
+      <!-- Hostpolicy should be the latest and not the locked version as it is supposed to evolve for -->
+      <!-- the framework and has a tight coupling with coreclr's API in the framework. -->
+      <HostArtifacts Include="$(CoreHostOutputDir)\$(HostPolicyBaseName)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HostArtifacts)" DestinationFolder="$(SharedFrameworkNameAndVersionRoot)" />
+  </Target>
+
+  <Target Name="GenerateRuntimeGraph">
+    <PropertyGroup>
+      <runtimeGraphGeneratorName>DepsProcessor</runtimeGraphGeneratorName>
+      <runtimeGraphGeneratorProject>$(ProjectDir)tools-local/setuptools/independent/$(runtimeGraphGeneratorName)</runtimeGraphGeneratorProject>
+      <runtimeGraphGeneratorOutput>$(IntermediateOutputRootPath)setuptools/independent/$(runtimeGraphGeneratorName)</runtimeGraphGeneratorOutput>
+      <runtimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</runtimeGraphGeneratorRuntime>
+      <runtimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</runtimeGraphGeneratorRuntime>
+      <runtimeGraphGeneratorRuntime Condition="'$(runtimeGraphGeneratorRuntime)'==''">linux</runtimeGraphGeneratorRuntime>      
+    </PropertyGroup>
+
+    <Exec Command="$(DotnetToolCommand) publish --output $(runtimeGraphGeneratorOutput) $(runtimeGraphGeneratorProject) "
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+
+    <PropertyGroup>
+      <RuntimeGraphGeneratorExe>$(runtimeGraphGeneratorOutput)/$(runtimeGraphGeneratorName)$(ExeSuffix)</RuntimeGraphGeneratorExe>
+      <DepsJson>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</DepsJson>
+
+    </PropertyGroup>
+
+    <Exec Command="$(RuntimeGraphGeneratorExe) --project $(SharedFrameworkSourceRoot) --deps $(DepsJson) $(runtimeGraphGeneratorRuntime)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+  </Target>
+
+  <Target Name="RestoreLockedCoreHost">
+    <ItemGroup>
+      <ProjJsonLines Include='{' />
+      <ProjJsonLines Include='  "dependencies": {' />
+      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHostResolver"  :  "$(HostFullVersion)",' />
+      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHost"  :  "$(HostFullVersion)"' />
+      <ProjJsonLines Include='  },' />
+      <ProjJsonLines Include='  "frameworks": {' />
+      <ProjJsonLines Include='    "$(Framework)": {}' />
+      <ProjJsonLines Include='  },' />
+      <ProjJsonLines Include='  "runtimes": {' />
+      <ProjJsonLines Include='    "$(PackageTargetRid)": {}' />
+      <ProjJsonLines Include='  }' />
+      <ProjJsonLines Include='}' />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <JsonDir>$(IntermediateOutputRootPath)lockedHostTemp</JsonDir>
+    </PropertyGroup>
+
+    <MakeDir Condition="!Exists('$(JsonDir)')" Directories="$(JsonDir)" />
+
+    <WriteLinesToFile
+      File="$(JsonDir)\project.json"
+      Lines="@(ProjJsonLines)"
+      Overwrite="true" />
+    
+    <PropertyGroup>
+      <RestoreArgs>--source https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json --fallbacksource $(PackagesOutDir) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</RestoreArgs>
+    </PropertyGroup>  
+
+    <Exec Command="$(DotnetToolCommand) restore --verbosity verbose $(RestoreArgs)"
+          WorkingDirectory="$(JsonDir)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+
+    <PropertyGroup>
+      <PublishArgs>--output $(CoreHostLockedDir) --no-build -r $(PackageTargetRid)</PublishArgs>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(CoreHostLockedDir)" />
+
+    <Exec Command="$(DotnetToolCommand) publish $(PublishArgs)"
+          WorkingDirectory="$(JsonDir)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+  </Target>
+
+  <Target Name="GenerateSharedFrameworkProject">
+
+    <MakeDir Condition="!Exists('$(IntermediateOutputRootPath)sharedFramework')" 
+             Directories="$(IntermediateOutputRootPath)sharedFramework;$(SharedFrameworkSourceRoot)" />
+
+    <ItemGroup>
+      <SharedFrameworkFiles Include="$(MSBuildThisFileDirectory)sharedframework\**\*.cs" />
+    </ItemGroup>
+    <PropertyGroup>
+      <SharedFrameworkTemplate>$(MSBuildThisFileDirectory)sharedframework\framework\project.json.template</SharedFrameworkTemplate>
+    </PropertyGroup>
+
+    <Copy SourceFiles="@(SharedFrameworkFiles)" DestinationFolder="$(SharedFrameworkSourceRoot)"/>
+
+    <ReplaceFileContents
+      InputFile="$(SharedFrameworkTemplate)"
+      DestinationFile="$(SharedFrameworkSourceRoot)\project.json"
+      ReplacementPatterns="%24(NetCoreAppVersion);%24(RID);%24(TargetFramework)"
+      ReplacementStrings="$(HostFullVersion);$(TargetRid);$(Framework)" />
+
+  </Target>
+  
+</Project>
