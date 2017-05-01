@@ -5,11 +5,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class StringComparerTests
+    public static partial class StringComparerTests
     {
         [Fact]
         public static void TestCurrent()
