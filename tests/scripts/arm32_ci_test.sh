@@ -81,25 +81,11 @@ else
 fi
 
 if [ "$__abi" == "armel" ]; then
-    # TODO: Make use of a single Tizen rootfs for build and test
-
-    # TODO-cleanup: the latest docker image already has mic installed.
-    # Prepare Tizen (armel) environment
-    #echo "deb http://download.tizen.org/tools/latest-release/Ubuntu_14.04 /" >> /etc/apt/sources.list
-    #apt-get update
-    #apt-get -y -qq --force-yes install mic
-
+    # Prepare armel emulation environment
     pushd ${CORECLR_DIR}/cross/armel/tizen
-    mic --non-interactive create fs --pack-to=tizen.tar.gz tizen-dotnet.ks
-    if [ -d ${__ROOTFS_DIR} ]; then
-        mv ${__ROOTFS_DIR} ${__ROOTFS_DIR}_build
-    fi
-    mkdir -p ${__ROOTFS_DIR}
-    tar -zxf mic-output/tizen.tar.gz -C ${__ROOTFS_DIR}
     apt-get update
     apt-get -y -qq --force-yes --reinstall install qemu binfmt-support qemu-user-static
     __qemuARM=$(which qemu-arm-static)
-    cp $__qemuARM ${CORECLR_DIR}/cross/rootfs/armel/usr/bin/
     cp $__qemuARM ${__ROOTFS_DIR}/usr/bin/
     popd
 fi
