@@ -885,14 +885,16 @@ protected:
         void checkSizes();
 
         union idAddrUnion {
-            // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
-            // about reading what we think is here, to avoid unexpected corruption issues.
+// TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
+// about reading what we think is here, to avoid unexpected corruption issues.
 
+#ifndef _TARGET_ARM64_
             emitLclVarAddr iiaLclVar;
-            BasicBlock*    iiaBBlabel;
-            insGroup*      iiaIGlabel;
-            BYTE*          iiaAddr;
-            emitAddrMode   iiaAddrMode;
+#endif
+            BasicBlock*  iiaBBlabel;
+            insGroup*    iiaIGlabel;
+            BYTE*        iiaAddr;
+            emitAddrMode iiaAddrMode;
 
             CORINFO_FIELD_HANDLE iiaFieldHnd; // iiaFieldHandle is also used to encode
                                               // an offset into the JIT data constant area
@@ -923,11 +925,12 @@ protected:
 
             struct
             {
+#ifdef _TARGET_ARM64_
+                emitLclVarAddr iiaLclVar;
+                unsigned       _idReg3Scaled : 1; // Reg3 is scaled by idOpSize bits
+#endif
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
-#ifdef _TARGET_ARM64_
-                unsigned _idReg3Scaled : 1; // Reg3 is scaled by idOpSize bits
-#endif
             };
 #elif defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
             struct
@@ -2020,6 +2023,9 @@ public:
 
     // Returns true if the instruction may write to more than one register.
     bool emitInsMayWriteMultipleRegs(instrDesc* id);
+
+    // Returns "true" if instruction "id->idIns()" writes to a LclVar stack slot pair.
+    bool emitInsWritesToLclVarStackLocPair(instrDesc* id);
 #endif // _TARGET_ARMARCH_
 
     /************************************************************************/
