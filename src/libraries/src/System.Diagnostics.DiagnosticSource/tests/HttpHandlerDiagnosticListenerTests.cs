@@ -84,8 +84,7 @@ namespace System.Diagnostics.Tests
 
                 // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
                 // at least two events, one for request send, and one for response receive
-                Assert.True(eventRecords.Records.Count >= 2,
-                    "Didn't get two or more events from Http Diagnostic Listener. Something is wrong.");
+                Assert.Equal(2, eventRecords.Records.Count);
             }
         }
 
@@ -103,7 +102,7 @@ namespace System.Diagnostics.Tests
                 // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
                 // at least two events, one for request send, and one for response receive
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.True(eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")) >= 1);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
 
                 // Check to make sure: The first record must be a request, the next record must be a response. 
                 // The rest is unknown number of responses (it depends on # of redirections)
@@ -119,13 +118,6 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
                 WebRequest stopRequest = ReadPublicProperty<WebRequest>(stopEvent.Value, "Request");
                 Assert.Equal(startRequest, stopRequest);
-
-                foreach (var pair in eventRecords.Records)
-                {
-                    WebRequest thisRequest = ReadPublicProperty<WebRequest>(pair.Value, "Request");
-                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", pair.Key);
-                    Assert.Equal(startRequest, thisRequest);
-                }
             }
         }
 
@@ -184,7 +176,7 @@ namespace System.Diagnostics.Tests
                 await new HttpClient().GetAsync("http://www.bing.com");
 
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.True(eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")) >= 1);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
 
                 WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
                 var requestId = thisRequest.Headers["Request-Id"];
@@ -285,7 +277,7 @@ namespace System.Diagnostics.Tests
                 // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
                 // at least two events, one for request send, and one for response receive
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.True(eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")) >= 1);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
 
 
                 // Check to make sure: The first record must be a request, the last record must be a response. Records in
@@ -317,6 +309,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMultipleConcurrentRequests()
         {
+            ServicePointManager.DefaultConnectionLimit = Int32.MaxValue;
             var parentActivity = new Activity("parent").Start();
             using (var eventRecords = new EventObserverAndRecorder())
             {
@@ -347,24 +340,28 @@ namespace System.Diagnostics.Tests
 
                 // Issue all requests simultaneously
                 HttpClient httpClient = new HttpClient();
-                List<Task<HttpResponseMessage>> tasks = new List<Task<HttpResponseMessage>>();
+
+                Dictionary<string, Task<HttpResponseMessage>> tasks = new Dictionary<string, Task<HttpResponseMessage>>();
 
                 CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 foreach (string url in requestData.Keys)
                 {
-                    tasks.Add(httpClient.GetAsync(url, cts.Token));
+                    tasks.Add(url, httpClient.GetAsync(url, cts.Token));
                 }
 
-                Task.WaitAll(tasks.ToArray());
+                // wait up to 10 sec for all requests and suppress exceptions
+                Task.WhenAll(tasks.Select(t => t.Value).ToArray()).ContinueWith(tt => {}).Wait();
 
-                // Examine the result. Make sure we got them all.
+                // Examine the result. Make sure we got all successful requests.
 
                 // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
-                Assert.Equal(requestData.Count, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.True(eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")) >= requestData.Count);
+                // exactly 1 Start event per request and exaclty 1 Stop event per response (if request succeeded)
+                var successfulTasks = tasks.Where(t => t.Value.Status == TaskStatus.RanToCompletion);
 
-                // Check to make sure: We have a WebRequest and a WebResponse for each URL
+                Assert.Equal(tasks.Count(), eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(successfulTasks.Count(), eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                // Check to make sure: We have a WebRequest and a WebResponse for each successful request
                 foreach (var pair in eventRecords.Records)
                 {
                     object eventFields = pair.Value;
@@ -393,16 +390,9 @@ namespace System.Diagnostics.Tests
                         var childSuffix = requestId.Substring(0, parentActivity.Id.Length);
                         Assert.True(childSuffix.IndexOf('.') == childSuffix.Length - 1);
 
-                        WebRequest previousSeenRequest = tuple?.Item1;
-                        WebResponse previousSeenResponse = tuple?.Item2;
-
-                        // We see have seen an HttpWebRequest before for this URL/host, make sure it's the same one,
-                        // Then update the tuple with the request object, if we didn't have one
-                        Assert.True(previousSeenRequest == null || previousSeenRequest == request,
-                            "Didn't expect to see a different WebRequest object going to the same url host for: " +
-                            request.RequestUri.OriginalString);
+                        Assert.Null(requestData[request.RequestUri.OriginalString]);
                         requestData[request.RequestUri.OriginalString] =
-                            new Tuple<WebRequest, WebResponse>(previousSeenRequest ?? request, previousSeenResponse);
+                            new Tuple<WebRequest, WebResponse>(request, null);
                     }
                     else
                     {
@@ -431,12 +421,15 @@ namespace System.Diagnostics.Tests
                     }
                 }
 
-                // Finally, make sure we have request and response objects for every entry
+                // Finally, make sure we have request and response objects for every successful request
                 foreach (KeyValuePair<string, Tuple<WebRequest, WebResponse>> pair in requestData)
                 {
-                    Assert.NotNull(pair.Value);
-                    Assert.NotNull(pair.Value.Item1);
-                    Assert.NotNull(pair.Value.Item2);
+                    if (successfulTasks.Any(t => t.Key == pair.Key))
+                    {
+                        Assert.NotNull(pair.Value);
+                        Assert.NotNull(pair.Value.Item1);
+                        Assert.NotNull(pair.Value.Item2);
+                    }
                 }
             }
         }
