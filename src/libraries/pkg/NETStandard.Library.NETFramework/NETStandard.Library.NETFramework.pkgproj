@@ -13,6 +13,10 @@
 
     <IsFrameworkPackage>true</IsFrameworkPackage>
     <IncludeLibFiles>true</IncludeLibFiles>
+    
+    <!-- ValidatePackage doesn't evaluate our targets/props so it does 
+         not find any of the assets in this package -->
+    <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   
   <ItemGroup>
