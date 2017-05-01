@@ -1,6 +1,5 @@
 Compat issues with assembly System.Runtime:
 MembersMustExist : Member 'System.GC.GetAllocatedBytesForCurrentThread()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Replace(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Replace(System.String, System.String, System.StringComparison)' does not exist in the implementation but it does exist in the contract.
