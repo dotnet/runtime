@@ -12,18 +12,6 @@
 #include <mono/metadata/abi-details.h>
 
 
-//XXX maybe move to mini.h / mini.c?
-
-static int
-mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass)
-{
-	if (cfg->gshared)
-		return mono_class_check_context_used (klass);
-	else
-		return 0;
-}
-
-
 #define is_complex_isinst(klass) (mono_class_is_interface (klass) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || mono_class_is_sealed (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 static int
