@@ -53,11 +53,6 @@
     <Message Importance="High" Text="Restoring all packages..." />
     
     <Exec Command="$(DnuRestoreCommand) %(DnuRestoreDirs.AdditionalArgs) %(DnuRestoreDirs.Identity)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
-
-    <ItemGroup>
-      <_allPackagesConfigs Include="$(MSBuildProjectDirectory)\src\**\packages.config"/>
-    </ItemGroup>
-    <Exec Condition="'@(_allPackagesConfigs)' != ''" Command="$(NugetRestoreCommand) &quot;%(_allPackagesConfigs.FullPath)&quot;" StandardOutputImportance="Low" />
   </Target>
 
   <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
