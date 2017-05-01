@@ -581,19 +581,19 @@ get_current_locale_name (void)
 	return ret;
 }
 
-MonoString*
-ves_icall_System_Globalization_CultureInfo_get_current_locale_name (void)
+MonoStringHandle
+ves_icall_System_Globalization_CultureInfo_get_current_locale_name (MonoError *error)
 {
+	error_init (error);
 	gchar *locale;
-	MonoString* ret;
 	MonoDomain *domain;
 
 	locale = get_current_locale_name ();
 	if (locale == NULL)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
 
 	domain = mono_domain_get ();
-	ret = mono_string_new (domain, locale);
+	MonoStringHandle ret = mono_string_new_handle (domain, locale, error);
 	g_free (locale);
 
 	return ret;
