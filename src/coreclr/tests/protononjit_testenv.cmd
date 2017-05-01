@@ -1,12 +1,12 @@
 @REM -------------------------------------------------------------------------
 @REM 
-@REM  This script provides x86 LEGACY_BACKEND JIT test environment settings
+@REM  This script provides test environment settings for prototype/cross-targeting JITs.
 @REM
 @REM -------------------------------------------------------------------------
 
 set COMPLUS_AltJit=*
 set COMPLUS_AltJitNgen=*
-set COMPLUS_AltJitName=legacyjit.dll
+set COMPLUS_AltJitName=protononjit.dll
 set COMPLUS_NoGuiOnAssert=1
 set COMPLUS_AltJitAssertOnNYI=1
 

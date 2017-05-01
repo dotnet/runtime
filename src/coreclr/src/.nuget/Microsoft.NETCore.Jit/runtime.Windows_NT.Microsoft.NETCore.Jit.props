@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <NativeBinary Include="$(BinDir)clrjit.dll" />
-    <NativeBinary Condition="'$(Platform)' == 'x86' and '$(PackageCompatJit)' != ''" Include="$(BinDir)compatjit.dll" />
     <CrossArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)$(CrossTargetComponentFolder)\clrjit.dll" />
 
     <!-- prevent accidental inclusion in AOT projects. -->
