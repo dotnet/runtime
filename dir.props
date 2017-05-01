@@ -120,6 +120,9 @@
       <AdditionalArgs>%(AdditionalArgs) --disable-parallel --infer-runtimes</AdditionalArgs>
     </DnuRestoreDirs>
     <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)src/pkg/deps" />
+
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -134,6 +137,8 @@
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
+
+    <SdkRestoreCommand>$(DotnetSdkToolCommand) restore --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</SdkRestoreCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
