@@ -58,8 +58,8 @@ Daily Builds
 [build-1.0.X]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=4187&_a=completed
 
 
-[win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win-x64_portable_Release_version_badge.svg
-[win-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win-x64_portable.version
+[win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win-x64_Release_version_badge.svg
+[win-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win-x64.version
 [win-x64-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-win-x64.latest-portable.exe
 [win-x64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-win-x64.latest-portable.zip
 [win-x64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-win-x64.latest-portable.zip
@@ -74,8 +74,8 @@ Daily Builds
 [win-x64-installer-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-win-x64.latest.exe
 [win-x64-zip-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-win-x64.latest.zip
 
-[win-x86-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win-x86_portable_Release_version_badge.svg
-[win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win-x86_portable.version
+[win-x86-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win-x86_Release_version_badge.svg
+[win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win-x86.version
 [win-x86-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-win-x86.latest-portable.exe
 [win-x86-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-win-x86.latest-portable.zip
 [win-x86-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-win-x86.latest-portable.zip
@@ -90,18 +90,18 @@ Daily Builds
 [win-x86-installer-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-win-x86.latest.exe
 [win-x86-zip-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-win-x86.latest.zip
 
-[win-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win_portable_arm_Release_version_badge.svg
+[win-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win_arm_Release_version_badge.svg
 [win-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win.arm.portable.version
 [win-arm-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-win-arm.latest-portable.zip
 [win-arm-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-win-arm.latest-portable.zip
 
-[win-arm64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win_portable_arm64_Release_version_badge.svg
+[win-arm64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_win_arm64_Release_version_badge.svg
 [win-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win.arm64.portable.version
 [win-arm64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-win-arm64.latest-portable.zip
 [win-arm64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-win-arm64.latest-portable.zip
 
-[osx-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_osx-x64_portable_Release_version_badge.svg
-[osx-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.osx-x64_portable.version
+[osx-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_osx-x64_Release_version_badge.svg
+[osx-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.osx-x64.version
 [osx-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-osx-x64.latest-portable.pkg
 [osx-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-osx-x64.latest-portable.tar.gz
 [osx-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-osx-x64.latest-portable.tar.gz
@@ -117,12 +117,12 @@ Daily Builds
 [osx-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-osx-x64.latest.tar.gz
 
 
-[linux-x64-badge-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux-x64_portable_Release_version_badge.svg
-[linux-x64-version-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.linux-x64_portable.version
+[linux-x64-badge-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux-x64_Release_version_badge.svg
+[linux-x64-version-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.linux-x64.version
 [linux-x64-targz-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-linux-x64.latest-portable.tar.gz
 [linux-x64-symbols-targz-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-linux-x64.latest-portable.tar.gz
 
-[linux-arm-badge-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux_portable_arm_Release_version_badge.svg
+[linux-arm-badge-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux_arm_Release_version_badge.svg
 [linux-arm-version-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.linux.arm.portable.version
 [linux-arm-targz-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-linux-arm.latest-portable.tar.gz
 [linux-arm-symbols-targz-master-portable]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-linux-arm.latest-portable.tar.gz
