@@ -37,11 +37,11 @@ If you are having issues with the "full" .NET Framework (also called "Desktop"),
 
 ### Issue Guide
 
-This section is **in progress** here: [New contributor Docs - Issues](https://github.com/dotnet/corefx/wiki/Issues) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
+This section is **in progress** here: [New contributor Docs - Issues](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#issue-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
 
 ### Contributing Guide
 
-This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/Contributions) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!) 
+This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#contributing-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!) 
 
 ### Useful Links
 
