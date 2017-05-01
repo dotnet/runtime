@@ -5,9 +5,12 @@
       <RelativeBlobPath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</RelativeBlobPath>
     </PropertyGroup>
     <ItemGroup>
+      <PublishFile Include="@(CompressedFile)" />
+      <PublishFile Include="@(RuntimePackageFile)" />
+      <PublishFile Condition="'$(PublishRidAgnosticPackages)' == 'true'" Include="@(IdentityPackageFile)" />
       <Project Include="publish.proj">
         <PublishTarget>UploadToAzure</PublishTarget>
-        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(CompressedFile);$(OutputVersionBadge);RelativeBlobPath=$(RelativeBlobPath)</AdditionalProperties>
+        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(PublishFile);$(OutputVersionBadge);RelativeBlobPath=$(RelativeBlobPath)</AdditionalProperties>
       </Project>
     </ItemGroup>
   </Target>
