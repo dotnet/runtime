@@ -358,7 +358,8 @@
     // Code size       7 (0x7)
     .maxstack  8
     //.line 114,114 : 3,16 ''
-    IL_0000:  tail. call       valuetype RetBuff RetBufferBug::TailCallee()
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_0000:  call       valuetype RetBuff RetBufferBug::TailCallee()
     IL_0005:  pop
     //.line 115,115 : 2,3 ''
     IL_0006:  ret
