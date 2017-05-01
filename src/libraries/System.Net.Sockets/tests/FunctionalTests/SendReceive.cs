@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
         public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
         public virtual bool GuaranteedSendOrdering => true;
         public virtual bool ValidatesArrayArguments => true;
-        public virtual bool SupportsNonBlocking => true;
+        public virtual bool UsesSync => false;
 
         [Theory]
         [InlineData(null, 0, 0)] // null array
@@ -138,6 +138,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
         }
+
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
@@ -653,7 +654,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true, 1)]
         public async Task SendRecv_BlockingNonBlocking_LingerTimeout_Success(bool blocking, int lingerTimeout)
         {
-            if (!SupportsNonBlocking) return;
+            if (UsesSync) return;
 
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -688,7 +689,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(~TestPlatforms.OSX)] // SendBufferSize, ReceiveBufferSize = 0 not supported on OSX.
         public async Task SendRecv_NoBuffering_Success()
         {
-            if (!SupportsNonBlocking) return;
+            if (UsesSync) return;
 
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -719,6 +720,38 @@ namespace System.Net.Sockets.Tests
                     }
                     Assert.Equal(sendBuffer.Length, totalReceived);
                     await sendTask;
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task SendRecv_DisposeDuringPendingReceive_ThrowsSocketException()
+        {
+            if (UsesSync) return; // if sync, can't guarantee call will have been initiated by time of disposal
+
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = AcceptAsync(listener);
+                await Task.WhenAll(
+                    acceptTask,
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    Task receiveTask = client.ReceiveAsync(new ArraySegment<byte>(new byte[1]), SocketFlags.None);
+                    Assert.False(receiveTask.IsCompleted, "Receive should be pending");
+
+                    client.Dispose();
+
+                    var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                    Assert.True(
+                        se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
+                        $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
                 }
             }
         }
@@ -924,7 +957,7 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.SendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint));
 
         public override bool GuaranteedSendOrdering => false;
-        public override bool SupportsNonBlocking => false;
+        public override bool UsesSync => true;
     }
 
     public sealed class SendReceiveApm : SendReceive
