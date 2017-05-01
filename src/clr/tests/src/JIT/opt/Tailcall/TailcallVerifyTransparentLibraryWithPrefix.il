@@ -198,7 +198,8 @@
     IL_0022:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition22::Result
-    IL_002e:  tail. call       int32 TailcallVerify.Condition22::Callee2()
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002e:  call       int32 TailcallVerify.Condition22::Callee2()
     IL_0033:  pop
     IL_0034:  ret
   } // end of method Condition22::Caller2
@@ -307,7 +308,8 @@
     IL_0027:  ldc.i4.s   101
     IL_0029:  stsfld     int32 TailcallVerify.Condition22::Result
     IL_002e:  ldarg.0
-    IL_002f:  tail. callvirt   instance int32 TailcallVerify.Condition22::Callee3()
+//            tail.      // tail.call, pop, ret sequence is never valid for .NET Core (but is accepted by .NET x64)
+    IL_002f:  callvirt   instance int32 TailcallVerify.Condition22::Callee3()
     IL_0034:  pop
     IL_0035:  ret
   } // end of method Condition22::Caller3
