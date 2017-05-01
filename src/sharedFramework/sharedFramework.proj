@@ -76,7 +76,7 @@
     <!-- Generate .version file -->
     <ItemGroup>
       <VersionLines Include="$(LatestCommit)" />
-      <VersionLines Include="$(HostFullVersion)" />      
+      <VersionLines Include="$(HostFullVersion)" />
     </ItemGroup>
 
     <WriteLinesToFile
@@ -171,10 +171,10 @@
              Directories="$(IntermediateOutputRootPath)sharedFramework;$(SharedFrameworkSourceRoot)" />
 
     <ItemGroup>
-      <SharedFrameworkFiles Include="$(MSBuildThisFileDirectory)sharedframework\**\*.cs" />
+      <SharedFrameworkFiles Include="$(MSBuildThisFileDirectory)**\*.cs" />
     </ItemGroup>
     <PropertyGroup>
-      <SharedFrameworkTemplate>$(MSBuildThisFileDirectory)sharedframework\framework\project.json.template</SharedFrameworkTemplate>
+      <SharedFrameworkTemplate>$(MSBuildThisFileDirectory)framework\project.json.template</SharedFrameworkTemplate>
     </PropertyGroup>
 
     <Copy SourceFiles="@(SharedFrameworkFiles)" DestinationFolder="$(SharedFrameworkSourceRoot)"/>
