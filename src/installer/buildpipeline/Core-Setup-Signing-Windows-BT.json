@@ -171,7 +171,7 @@
         "solution": "$(PB_SourcesDirectory)\\sign.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignCoreHost $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs)",
+        "msbuildArguments": "/t:SignBinaries $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -254,33 +254,6 @@
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Sign Shared Framework Crossgened Assemblies",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\sign.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignSharedFrameworkCrossgenedAssemblies $(PB_CommonMSBuildArgs) $(MsbuildSigningArguments)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
       }
     },
     {
