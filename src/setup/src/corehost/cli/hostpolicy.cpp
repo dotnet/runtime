@@ -240,7 +240,7 @@ int run(const arguments_t& args)
     }
 
     // Shut down the CoreCLR
-    hr = coreclr::shutdown(host_handle, domain_id);
+    hr = coreclr::shutdown(host_handle, domain_id, (int*)&exit_code);
     if (!SUCCEEDED(hr))
     {
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);
