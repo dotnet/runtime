@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestProjects Include="$(TestDir)/HostActivationTests" />
-    <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests" />
+    <TestProjects Include="$(TestDir)/HostActivationTests/HostActivationTests.csproj" />
+    <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests/Microsoft.Extensions.DependencyModel.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <RestoreTestFallbackSource Include="$(CoreHostOutputDir.TrimEnd('/\'.ToCharArray()))" />
