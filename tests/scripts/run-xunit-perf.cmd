@@ -173,11 +173,7 @@ rem ****************************************************************************
 rem ****************************************************************************
 rem   Sets the test architecture.
 rem ****************************************************************************
-  IF /I [%TEST_ARCHITECTURE%] == [x86jit32] (
-      set TEST_ARCH=x86
-  ) ELSE (
-      set TEST_ARCH=%TEST_ARCHITECTURE%
-  )
+  set TEST_ARCH=%TEST_ARCHITECTURE%
   exit /b 0
 
 :verify_core_overlay
@@ -320,14 +316,4 @@ rem ****************************************************************************
 rem ****************************************************************************
 rem   Skip known failures
 rem ****************************************************************************
-  IF /I [%TEST_ARCHITECTURE%] == [x86jit32] (
-    IF /I "%~1" == "CscBench" (
-      rem https://github.com/dotnet/coreclr/issues/11088
-      exit /b 1
-    )
-    IF /I "%~1" == "SciMark2" (
-      rem https://github.com/dotnet/coreclr/issues/11089
-      exit /b 1
-    )
-  )
   exit /b 0

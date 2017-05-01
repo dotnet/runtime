@@ -327,10 +327,6 @@ HRESULT EEConfig::Init()
 
     iRequireZaps = REQUIRE_ZAPS_NONE;
 
-#ifdef _TARGET_AMD64_
-    pDisableNativeImageLoadList = NULL;
-#endif
-
     // new loader behavior switches
 
     m_fDeveloperInstallation = false;
@@ -487,11 +483,6 @@ HRESULT EEConfig::Cleanup()
     
     if (pForbidZapsExcludeList)
         delete pForbidZapsExcludeList;
-#endif
-
-#ifdef _TARGET_AMD64_
-    if (pDisableNativeImageLoadList)
-        delete pDisableNativeImageLoadList;
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -996,16 +987,6 @@ HRESULT EEConfig::sync()
     }
 #endif
 
-#ifdef _TARGET_AMD64_
-    if (!IsCompilationProcess())
-    {
-        NewArrayHolder<WCHAR> wszDisableNativeImageLoadList;
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableNativeImageLoadList, &wszDisableNativeImageLoadList));
-        if (wszDisableNativeImageLoadList)
-            pDisableNativeImageLoadList = new AssemblyNamesList(wszDisableNativeImageLoadList);
-    }
-#endif
-
 #ifdef FEATURE_LOADER_OPTIMIZATION
     dwSharePolicy           = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LoaderOptimization, dwSharePolicy);
 #endif
@@ -1454,18 +1435,6 @@ bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 
     return false;
 }
-
-#ifdef _TARGET_AMD64_
-bool EEConfig::DisableNativeImageLoad(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pDisableNativeImageLoadList != NULL && pDisableNativeImageLoadList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
-#endif
 
 /**************************************************************/
 #ifdef _DEBUG

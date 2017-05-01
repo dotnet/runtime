@@ -53,7 +53,6 @@ jit_list = {
     'Windows_NT': {
         'x64': 'clrjit.dll',
         'x86': 'clrjit.dll',
-        'x86jit32': 'compatjit.dll'
     },
     'Linux': {
         'x64': 'libclrjit.so'
@@ -126,7 +125,7 @@ def validate_args(args):
         if not helper(arg):
             raise Exception('Argument: %s is not valid.' % (arg))
 
-    valid_archs = {'Windows_NT': ['x86', 'x64', 'x86jit32'], 'Linux': ['x64']}
+    valid_archs = {'Windows_NT': ['x86', 'x64'], 'Linux': ['x64']}
     valid_build_types = ['Release']
     valid_run_types = ['rolling', 'private']
     valid_os = ['Windows_NT', 'Ubuntu14.04']
@@ -280,9 +279,6 @@ def main(args):
 
     architecture, operating_system, os_group, build_type, run_type, clr_root, assembly_root, benchview_path = validate_args(args)
     arch = architecture
-
-    if architecture == 'x86jit32':
-        arch = 'x86'
 
     current_dir = os.getcwd()
     jit = jit_list[os_group][architecture]
