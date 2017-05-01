@@ -4,6 +4,7 @@
 
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
     <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
   </ItemGroup>
 

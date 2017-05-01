@@ -43,13 +43,7 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
-  </Target>
 
-  <Target Name="SignAssemblies" DependsOnTargets="GetSignAssembliesFiles">
-    <CallTarget Targets="SignFiles" />
-  </Target>
-
-  <Target Name="GetSignAssembliesFiles">
     <ItemGroup>
       <FilesToSign Include="$(IntermediateOutputPath)forPackaging/**/*.dll">
         <Authenticode>$(CertificateId)</Authenticode>
