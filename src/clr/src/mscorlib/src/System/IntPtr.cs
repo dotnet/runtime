@@ -25,7 +25,7 @@ namespace System
     [Serializable]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
-        unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
+        unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
 
         public static readonly IntPtr Zero;
 
@@ -33,16 +33,16 @@ namespace System
         [Pure]
         internal unsafe bool IsNull()
         {
-            return (m_value == null);
+            return (_value == null);
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(int value)
         {
 #if BIT64
-            m_value = (void*)(long)value;
+            _value = (void*)(long)value;
 #else // !BIT64 (32)
-                m_value = (void *)value;
+                _value = (void *)value;
 #endif
         }
 
@@ -50,9 +50,9 @@ namespace System
         public unsafe IntPtr(long value)
         {
 #if BIT64
-            m_value = (void*)value;
+            _value = (void*)value;
 #else // !BIT64 (32)
-                m_value = (void *)checked((int)value);
+                _value = (void *)checked((int)value);
 #endif
         }
 
@@ -60,7 +60,7 @@ namespace System
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(void* value)
         {
-            m_value = value;
+            _value = value;
         }
 
         private unsafe IntPtr(SerializationInfo info, StreamingContext context)
@@ -72,7 +72,7 @@ namespace System
                 throw new ArgumentException(SR.Serialization_InvalidPtrValue);
             }
 
-            m_value = (void*)l;
+            _value = (void*)l;
         }
 
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -83,9 +83,9 @@ namespace System
             }
             Contract.EndContractBlock();
 #if BIT64
-            info.AddValue("value", (long)(m_value));
+            info.AddValue("value", (long)(_value));
 #else // !BIT64 (32)
-                info.AddValue("value", (long)((int)m_value));
+                info.AddValue("value", (long)((int)_value));
 #endif
         }
 
@@ -93,23 +93,23 @@ namespace System
         {
             if (obj is IntPtr)
             {
-                return (m_value == ((IntPtr)obj).m_value);
+                return (_value == ((IntPtr)obj)._value);
             }
             return false;
         }
 
         unsafe bool IEquatable<IntPtr>.Equals(IntPtr other)
         {
-            return m_value == other.m_value;
+            return _value == other._value;
         }
 
         public unsafe override int GetHashCode()
         {
 #if BIT64
-            long l = (long)m_value;
+            long l = (long)_value;
             return (unchecked((int)l) ^ (int)(l >> 32));
 #else // !BIT64 (32)
-            return unchecked((int)m_value);
+            return unchecked((int)_value);
 #endif
         }
 
@@ -117,10 +117,10 @@ namespace System
         public unsafe int ToInt32()
         {
 #if BIT64
-            long l = (long)m_value;
+            long l = (long)_value;
             return checked((int)l);
 #else // !BIT64 (32)
-                return (int)m_value;
+                return (int)_value;
 #endif
         }
 
@@ -128,18 +128,18 @@ namespace System
         public unsafe long ToInt64()
         {
 #if BIT64
-            return (long)m_value;
+            return (long)_value;
 #else // !BIT64 (32)
-                return (long)(int)m_value;
+                return (long)(int)_value;
 #endif
         }
 
         public unsafe override String ToString()
         {
 #if BIT64
-            return ((long)m_value).ToString(CultureInfo.InvariantCulture);
+            return ((long)_value).ToString(CultureInfo.InvariantCulture);
 #else // !BIT64 (32)
-                return ((int)m_value).ToString(CultureInfo.InvariantCulture);
+                return ((int)_value).ToString(CultureInfo.InvariantCulture);
 #endif
         }
 
@@ -148,9 +148,9 @@ namespace System
             Contract.Ensures(Contract.Result<String>() != null);
 
 #if BIT64
-            return ((long)m_value).ToString(format, CultureInfo.InvariantCulture);
+            return ((long)_value).ToString(format, CultureInfo.InvariantCulture);
 #else // !BIT64 (32)
-                return ((int)m_value).ToString(format, CultureInfo.InvariantCulture);
+                return ((int)_value).ToString(format, CultureInfo.InvariantCulture);
 #endif
         }
 
@@ -178,17 +178,17 @@ namespace System
         [System.Runtime.Versioning.NonVersionable]
         public static unsafe explicit operator void* (IntPtr value)
         {
-            return value.m_value;
+            return value._value;
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static explicit operator int(IntPtr value)
         {
 #if BIT64
-            long l = (long)value.m_value;
+            long l = (long)value._value;
             return checked((int)l);
 #else // !BIT64 (32)
-                return (int)value.m_value;
+                return (int)value._value;
 #endif
         }
 
@@ -196,22 +196,22 @@ namespace System
         public unsafe static explicit operator long(IntPtr value)
         {
 #if BIT64
-            return (long)value.m_value;
+            return (long)value._value;
 #else // !BIT64 (32)
-                return (long)(int)value.m_value;
+                return (long)(int)value._value;
 #endif
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
         {
-            return value1.m_value == value2.m_value;
+            return value1._value == value2._value;
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
         {
-            return value1.m_value != value2.m_value;
+            return value1._value != value2._value;
         }
 
         [System.Runtime.Versioning.NonVersionable]
@@ -265,7 +265,7 @@ namespace System
         [System.Runtime.Versioning.NonVersionable]
         public unsafe void* ToPointer()
         {
-            return m_value;
+            return _value;
         }
     }
 }
