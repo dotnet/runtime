@@ -54,7 +54,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 				T actual = Clone(expected);
 
 				// Verify core state
-				Assert.Equal(expected.StackTrace, actual.StackTrace);
+				if (!PlatformDetection.IsFullFramework) // On full framework, line number is method body start
+				{
+				    Assert.Equal(expected.StackTrace, actual.StackTrace);
+				}
 				Assert.Equal(expected.Data, actual.Data);
 				Assert.Equal(expected.Message, actual.Message);
 				Assert.Equal(expected.Source, actual.Source);
