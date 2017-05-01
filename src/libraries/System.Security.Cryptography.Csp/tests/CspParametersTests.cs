@@ -47,7 +47,8 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [Theory(Skip = "Manual test - requires Smart Card - read instructions")]
+        //Manual test - requires Smart Card - read instructions
+        //[Theory]
         [InlineData(true)]
         [InlineData(false)]
         public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)
@@ -89,7 +90,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        static SecureString ReadPassword()
+        private static SecureString ReadPassword()
         {
             var ret = new SecureString();
 
