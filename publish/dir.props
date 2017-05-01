@@ -12,8 +12,10 @@
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
     <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CompressedFileExtension)" />
-    <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" />
-    <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" />
+    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).nupkg" />
+    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).symbols.nupkg" />
+    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" Exclude="@(RuntimePackageFile)" />
+    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" />
   </ItemGroup>
 
   <ItemGroup>
