@@ -17055,8 +17055,8 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
 //
 // Return Value:
 //    A block with the desired characteristics, so the new block will be inserted after this one.
-//    If there is no suitable location, return nullptr. This should basically never happen except in the case of
-//    single-block filters.
+//    If there is no suitable location, return nullptr. This should basically never happen.
+//
 BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
                                         bool        putInTryRegion,
                                         BasicBlock* startBlk,
