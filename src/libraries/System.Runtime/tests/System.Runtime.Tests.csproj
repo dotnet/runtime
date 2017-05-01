@@ -125,6 +125,7 @@
     <Compile Include="Helpers.netcoreapp.cs" />
     <Compile Include="System\ActivatorTests.netcoreapp.cs" />
     <Compile Include="System\ArrayTests.netcoreapp.cs" />
+    <Compile Include="System\ArraySegmentTests.netcoreapp.cs" />
     <Compile Include="System\EnumTests.netcoreapp.cs" />
     <Compile Include="System\GCTests.netcoreapp.cs" />
     <Compile Include="System\IntPtrTests.netcoreapp.cs" />

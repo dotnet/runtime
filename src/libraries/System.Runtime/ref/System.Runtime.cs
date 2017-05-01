@@ -346,14 +346,24 @@ namespace System
         public ArraySegment(T[] array, int offset, int count) { throw null; }
         public T[] Array { get { throw null; } }
         public int Count { get { throw null; } }
+        public static ArraySegment<T> Empty { get { throw null; } }
         public int Offset { get { throw null; } }
+        public T this[int index] { get { throw null; } set { } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         T System.Collections.Generic.IList<T>.this[int index] { get { throw null; } set { } }
         T System.Collections.Generic.IReadOnlyList<T>.this[int index] { get { throw null; } }
+        public void CopyTo(T[] destination) { throw null; }
+        public void CopyTo(T[] destination, int destinationIndex) { throw null; }
+        public void CopyTo(ArraySegment<T> destination) { throw null; }
         public bool Equals(System.ArraySegment<T> obj) { throw null; }
         public override bool Equals(object obj) { throw null; }
+        public Enumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
+        public ArraySegment<T> Slice(int index) { throw null; }
+        public ArraySegment<T> Slice(int index, int count) { throw null; }
+        public T[] ToArray() { throw null; }
         public static bool operator ==(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
+        public static implicit operator ArraySegment<T>(T[] array) { throw null; }
         public static bool operator !=(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
         void System.Collections.Generic.ICollection<T>.Add(T item) { }
         void System.Collections.Generic.ICollection<T>.Clear() { }
@@ -365,6 +375,15 @@ namespace System
         void System.Collections.Generic.IList<T>.Insert(int index, T item) { }
         void System.Collections.Generic.IList<T>.RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public T Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            public void Dispose() { }
+            public bool MoveNext() { throw null; }
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
     public partial class ArrayTypeMismatchException : System.SystemException
     {
