@@ -442,6 +442,31 @@
       ]
     },
     {
+      "Name": "Publish Symbols - Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildType": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish-Symbols",
+          "Parameters": {
+          },
+          "ReportingParameters": {
+            "TaskName": "Symbol Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Release - Publish Symbols"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release",
+        "Trusted-Crossbuild-Release"
+      ]
+    },
+    {
       "Name": "Publish Packages to Drop - Checked",
       "Parameters": {
         "TreatWarningsAsErrors": "false"
