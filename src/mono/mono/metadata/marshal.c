@@ -10930,13 +10930,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 	memcpy (dest_addr, src, length * element_size);
 }
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr)
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr, MonoError *error)
 {
+	error_init (error);
 	if (ptr == NULL)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
 	else
-		return mono_string_new (mono_domain_get (), ptr);
+		return mono_string_new_handle (mono_domain_get (), ptr, error);
 }
 
 MonoString *

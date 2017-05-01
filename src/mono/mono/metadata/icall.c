@@ -6822,9 +6822,10 @@ static const char *encodings [] = {
  * 1 at entry, and we can not compute a suitable code page number,
  * returns the code page as a string
  */
-ICALL_EXPORT MonoString*
-ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page) 
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page, MonoError *error)
 {
+	error_init (error);
 	const char *cset;
 	const char *p;
 	char *c;
@@ -6866,9 +6867,9 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page)
 	g_free (codepage);
 	
 	if (want_name && *int_code_page == -1)
-		return mono_string_new (mono_domain_get (), cset);
+		return mono_string_new_handle (mono_domain_get (), cset, error);
 	else
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
 }
 
 ICALL_EXPORT MonoBoolean
@@ -7096,53 +7097,54 @@ ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method)
 	return result;
 }
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError *error)
 {
-	MonoString *mcpath;
+	error_init (error);
 	gchar *path;
 
 	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", mono_get_runtime_info ()->framework_version, "machine.config", NULL);
 
 	mono_icall_make_platform_path (path);
 
-	mcpath = mono_string_new (mono_domain_get (), path);
+	MonoStringHandle mcpath = mono_string_new_handle (mono_domain_get (), path, error);
 	g_free (path);
 
-	g_assert (mcpath);
+	mono_error_assert_ok (error);
 
 	return mcpath;
 }
 
-/* this is an icall */
-static MonoString *
-get_bundled_app_config (void)
+static MonoStringHandle
+ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config (MonoError *error)
 {
-	MonoError error;
+	error_init (error);
 	const gchar *app_config;
 	MonoDomain *domain;
-	MonoString *file;
 	gchar *config_file_name, *config_file_path;
 	gsize len, config_file_path_length, config_ext_length;
 	gchar *module;
 
 	domain = mono_domain_get ();
-	file = domain->setup->configuration_file;
-	if (!file || file->length == 0)
+	MonoStringHandle file = MONO_HANDLE_NEW (MonoString, domain->setup->configuration_file);
+	if (MONO_HANDLE_IS_NULL (file) || MONO_HANDLE_GETVAL (file, length) == 0)
 		return NULL;
 
 	// Retrieve config file and remove the extension
-	config_file_name = mono_string_to_utf8_checked (file, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	config_file_name = mono_string_handle_to_utf8 (file, error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoString, NULL_HANDLE));
+
 	config_file_path = mono_portability_find_file (config_file_name, TRUE);
 	if (!config_file_path)
 		config_file_path = config_file_name;
 
 	config_file_path_length = strlen (config_file_path);
 	config_ext_length = strlen (".config");
-	if (config_file_path_length <= config_ext_length)
-		return NULL;
+	if (config_file_path_length <= config_ext_length) {
+		if (config_file_name != config_file_path)
+			g_free (config_file_name);
+		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
+	}
 
 	len = config_file_path_length - config_ext_length;
 	module = (gchar *)g_malloc0 (len + 1);
@@ -7156,9 +7158,9 @@ get_bundled_app_config (void)
 	g_free (config_file_path);
 
 	if (!app_config)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
 
-	return mono_string_new (mono_domain_get (), app_config);
+	return mono_string_new_handle (mono_domain_get (), app_config, error);
 }
 
 static MonoStringHandle
@@ -7194,17 +7196,17 @@ ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_con
 }
 
 
-ICALL_EXPORT MonoString *
-ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
 {
-	MonoString *ipath;
+	error_init (error);
 	gchar *path;
 
 	path = g_path_get_dirname (mono_get_config_dir ());
 
 	mono_icall_make_platform_path (path);
 
-	ipath = mono_string_new (mono_domain_get (), path);
+	MonoStringHandle ipath = mono_string_new_handle (mono_domain_get (), path, error);
 	g_free (path);
 
 	return ipath;

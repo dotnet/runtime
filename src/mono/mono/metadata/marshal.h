@@ -436,8 +436,8 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
 								      MonoArray *dest, gint32 length);
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr);
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr, MonoError *error);
 
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len);

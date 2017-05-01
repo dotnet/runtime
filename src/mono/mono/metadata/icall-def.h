@@ -172,11 +172,11 @@ ICALL(CLRCONFIG_1, "CheckThrowUnobservedTaskExceptions", ves_icall_System_CLRCon
 
 ICALL_TYPE(DEFAULTC, "System.Configuration.DefaultConfig", DEFAULTC_1)
 HANDLES(ICALL(DEFAULTC_1, "get_bundled_machine_config", ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config))
-ICALL(DEFAULTC_2, "get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
+HANDLES(ICALL(DEFAULTC_2, "get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path))
 
 /* Note that the below icall shares the same function as DefaultConfig uses */
 ICALL_TYPE(INTCFGHOST, "System.Configuration.InternalConfigurationHost", INTCFGHOST_1)
-ICALL(INTCFGHOST_1, "get_bundled_app_config", get_bundled_app_config)
+HANDLES(ICALL(INTCFGHOST_1, "get_bundled_app_config", ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config))
 HANDLES(ICALL(INTCFGHOST_2, "get_bundled_machine_config", ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_config))
 
 ICALL_TYPE(CONSOLE, "System.ConsoleDriver", CONSOLE_1)
@@ -267,7 +267,7 @@ ICALL(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineAr
 ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames)
 ICALL(ENV_31, "GetIs64BitOperatingSystem", ves_icall_System_Environment_GetIs64BitOperatingSystem)
 ICALL(ENV_4, "GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives )
-ICALL(ENV_5, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
+HANDLES(ICALL(ENV_5, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path))
 HANDLES(ICALL(ENV_51, "GetNewLine", ves_icall_System_Environment_get_NewLine))
 HANDLES(ICALL(ENV_6, "GetOSVersionString", ves_icall_System_Environment_GetOSVersionString))
 ICALL(ENV_6a, "GetPageSize", mono_pagesize)
@@ -700,7 +700,7 @@ ICALL(MARSHAL_48, "IsComObject", ves_icall_System_Runtime_InteropServices_Marsha
 ICALL(MARSHAL_12, "OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf)
 ICALL(MARSHAL_13, "Prelink", ves_icall_System_Runtime_InteropServices_Marshal_Prelink)
 ICALL(MARSHAL_14, "PrelinkAll", ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll)
-ICALL(MARSHAL_15, "PtrToStringAnsi(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi)
+HANDLES(ICALL(MARSHAL_15, "PtrToStringAnsi(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi))
 ICALL(MARSHAL_16, "PtrToStringAnsi(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len)
 ICALL(MARSHAL_17, "PtrToStringBSTR", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR)
 ICALL(MARSHAL_18, "PtrToStringUni(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni)
@@ -869,7 +869,7 @@ ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
 ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
 
 ICALL_TYPE(TENC, "System.Text.EncodingHelper", TENC_1)
-ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_EncodingHelper_InternalCodePage)
+HANDLES(ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_EncodingHelper_InternalCodePage))
 
 ICALL_TYPE(UNORM, "System.Text.Normalization", UNORM_1)
 ICALL(UNORM_1, "load_normalization_resource", ves_icall_System_Text_Normalization_load_normalization_resource)
@@ -1050,8 +1050,8 @@ ICALL(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals)
 ICALL(VALUET_2, "InternalGetHashCode", ves_icall_System_ValueType_InternalGetHashCode)
 
 ICALL_TYPE(WEBIC, "System.Web.Util.ICalls", WEBIC_1)
-ICALL(WEBIC_1, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
-ICALL(WEBIC_2, "GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir)
+HANDLES(ICALL(WEBIC_1, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path))
+HANDLES(ICALL(WEBIC_2, "GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir))
 HANDLES(ICALL(WEBIC_3, "GetUnmanagedResourcesPtr", ves_icall_get_resources_ptr))
 
 #ifndef DISABLE_COM
