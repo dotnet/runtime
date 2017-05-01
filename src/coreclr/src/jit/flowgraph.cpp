@@ -17055,8 +17055,8 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
 //
 // Return Value:
 //    A block with the desired characteristics, so the new block will be inserted after this one.
-//    If there is no suitable location, return nullptr. This should basically never happen except in the case of
-//    single-block filters.
+//    If there is no suitable location, return nullptr. This should basically never happen.
+//
 BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
                                         bool        putInTryRegion,
                                         BasicBlock* startBlk,
@@ -17284,19 +17284,21 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
 
 DONE:
 
+#if defined(JIT32_GCENCODER)
     // If we are inserting into a filter and the best block is the end of the filter region, we need to
-    // insert after its predecessor instead: the CLR ABI states that the terminal block of a filter region
-    // is its exit block. If the filter region consists of a single block, a new block cannot be inserted
-    // without either splitting the single block before inserting a new block or inserting the new block
-    // before the single block and updating the filter description such that the inserted block is marked
-    // as the entry block for the filter. This work must be done by the caller; this function returns
-    // `nullptr` to indicate this case.
-    if (insertingIntoFilter && (bestBlk == endBlk->bbPrev) && (bestBlk == startBlk))
+    // insert after its predecessor instead: the JIT32 GC encoding used by the x86 CLR ABI  states that the
+    // terminal block of a filter region is its exit block. If the filter region consists of a single block,
+    // a new block cannot be inserted without either splitting the single block before inserting a new block
+    // or inserting the new block before the single block and updating the filter description such that the
+    // inserted block is marked as the entry block for the filter. Becuase this sort of split can be complex
+    // (especially given that it must ensure that the liveness of the exception object is properly tracked),
+    // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
+    if (insertingIntoFilter && (bestBlk == endBlk->bbPrev))
     {
-        assert(bestBlk != nullptr);
-        assert(bestBlk->bbJumpKind == BBJ_EHFILTERRET);
-        bestBlk = nullptr;
+        assert(bestBlk != startBlk);
+        bestBlk = bestBlk->bbPrev;
     }
+#endif // defined(JIT32_GCENCODER)
 
     return bestBlk;
 }
@@ -17474,21 +17476,6 @@ BasicBlock* Compiler::fgNewBBinRegion(BBjumpKinds jumpKind,
 
     // Now find the insertion point.
     afterBlk = fgFindInsertPoint(regionIndex, putInTryRegion, startBlk, endBlk, nearBlk, nullptr, runRarely);
-
-    // If afterBlk is nullptr, we must be inserting into a single-block filter region. Because the CLR ABI requires
-    // that control exits a filter via the last instruction in the filter range, this situation requires logically
-    // splitting the single block. In practice, we simply insert a new block at the beginning of the filter region
-    // that transfers control flow to the existing single block.
-    if (afterBlk == nullptr)
-    {
-        assert(putInFilter);
-
-        BasicBlock* newFilterEntryBlock = fgNewBBbefore(BBJ_ALWAYS, startBlk, true);
-        newFilterEntryBlock->bbJumpDest = startBlk;
-        fgAddRefPred(startBlk, newFilterEntryBlock);
-
-        afterBlk = newFilterEntryBlock;
-    }
 
 _FoundAfterBlk:;
 
