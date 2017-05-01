@@ -198,7 +198,7 @@
         "solution": "$(PB_SourcesDirectory)\\src\\pkg\\dir.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:IncludeAllRuntimePackagesInPlatformManifest=false $(PB_CommonMSBuildArgs) /flp:v=diag;LogFile=$(PB_SourcesDirectory)\\packages.log",
+        "msbuildArguments": "/p:IncludeAllRuntimePackagesInPlatformManifest=false $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\packages.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -225,7 +225,7 @@
         "solution": "$(PB_SourcesDirectory)\\src\\managed\\dir.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs) /flp:v=diag;LogFile=$(PB_SourcesDirectory)\\sharedframework.log",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\sharedframework.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -306,7 +306,7 @@
         "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs) /flp:v=diag",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:BuildFullPlatformManifest=$(PB_BuildFullPlatformManifest) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\packaging.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -495,7 +495,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs)  /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken)",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs)  /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishRidAgnosticPackages=$(PB_PublishRidAgnosticPackages) /p:BuildFullPlatformManifest=$(PB_BuildFullPlatformManifest) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -713,6 +713,12 @@
     },
     "PB_CleanAgent": {
       "value": "true"
+    },
+    "PB_PublishRidAgnosticPackages": {
+      "value": "false"
+    },
+    "PB_BuildFullPlatformManifest": {
+      "value": "false"
     }
   },
   "demands": [
