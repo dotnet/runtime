@@ -485,7 +485,8 @@ common_sources = \
 	llvm-runtime.h	\
 	type-checking.c \
 	lldb.h			\
-	lldb.c
+	lldb.c	\
+	memory-access.c
 
 test_sources = 			\
 	basic-calls.cs 		\
