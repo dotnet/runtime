@@ -141,7 +141,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)/src/corehost/build.proj",
+        "solution": "$(PB_SourcesDirectory)/src/src.builds",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "$(PB_CommonMSBuildArgs)",

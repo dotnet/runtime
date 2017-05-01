@@ -10,6 +10,7 @@
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
+    <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -144,7 +145,7 @@
     <ItemGroup>
       <_filesToCrossGen Include="@(FilesToPackage)" 
                         Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
-        <CrossGenedPath>$(_crossGenIntermediatePath)/%(FileName)%(Extension)</CrossGenedPath>
+        <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
       </_filesToCrossGen>
 
       <FilesToPackage Remove="@(_filesToCrossGen)" />
@@ -183,12 +184,13 @@
     </ItemGroup>
 
     <MakeDir Directories="$(_crossGenIntermediatePath)" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenedPath)'))" />
     <WriteLinesToFile File="$(_crossGenResponseFile)" Lines="@(_crossGenArgs)" Overwrite="true" />
 
     <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
   </Target>
   
-  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;CrossGen" Returns="@(FilesToPackage)" />
+  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen" Returns="@(FilesToPackage)" />
 
   <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
     <!-- hack because current nuget task doesn't return version for ReferencedNuGetPackages,
@@ -216,7 +218,7 @@
     <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
   </Target>
  
-  <!-- only calculate paths from this project, don't copy -->
+  <!-- Run crossgen -->
   <Target Name="Build" DependsOnTargets="CrossGen;GetFilesToPackage" />
   
   <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
