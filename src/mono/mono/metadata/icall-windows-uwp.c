@@ -13,18 +13,19 @@
 #include <windows.h>
 #include "mono/metadata/icall-windows-internals.h"
 
-MonoString *
-mono_icall_get_machine_name (void)
+MonoStringHandle
+mono_icall_get_machine_name (MonoError *error)
 {
 	g_unsupported_api ("GetComputerName");
-	return mono_string_new (mono_domain_get (), "mono");
+	return mono_string_new_handle (mono_domain_get (), "mono", error);
 }
 
-MonoString *
-mono_icall_get_windows_folder_path (int folder)
+MonoStringHandle
+mono_icall_get_windows_folder_path (int folder, MonoError *error)
 {
+	error_init (error);
 	g_unsupported_api ("SHGetFolderPath");
-	return mono_string_new (mono_domain_get (), "");
+	return mono_string_new_handle (mono_domain_get (), "", error);
 }
 
 MonoArray *

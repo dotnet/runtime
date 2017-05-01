@@ -23,26 +23,26 @@ mono_icall_get_file_path_prefix (const gchar *path);
 gpointer
 mono_icall_module_get_hinstance (MonoReflectionModuleHandle module);
 
-MonoString *
-mono_icall_get_machine_name (void);
+MonoStringHandle
+mono_icall_get_machine_name (MonoError *error);
 
 int
 mono_icall_get_platform (void);
 
-MonoString *
-mono_icall_get_new_line (void);
+MonoStringHandle
+mono_icall_get_new_line (MonoError *error);
 
 MonoBoolean
 mono_icall_is_64bit_os (void);
 
 MonoArray *
-mono_icall_get_environment_variable_names (void);
+mono_icall_get_environment_variable_names (MonoError *error);
 
 void
 mono_icall_set_environment_variable (MonoString *name, MonoString *value);
 
-MonoString *
-mono_icall_get_windows_folder_path (int folder);
+MonoStringHandle
+mono_icall_get_windows_folder_path (int folder, MonoError *error);
 
 void
 mono_icall_broadcast_setting_change (void);
