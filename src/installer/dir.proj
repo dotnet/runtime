@@ -10,7 +10,7 @@
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)src.builds" />
     <Project Include="$(MSBuildThisFileDirectory)pkg/dir.proj" />
-    <Project Include="$(MSBuildThisFileDirectory)managed/sharedFramework.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)sharedFramework/sharedFramework.proj" />
   </ItemGroup>
 
   <!-- Tasks from buildtools for easy project.json dependency updates -->

@@ -222,7 +222,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\managed\\sharedFramework.proj",
+        "solution": "$(PB_SourcesDirectory)\\src\\sharedFramework\\sharedFramework.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "$(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\sharedframework.log",
