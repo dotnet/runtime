@@ -4,9 +4,12 @@
   <UsingTask TaskName="GetHostInformation" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <PropertyGroup>
+    <DotnetTestToolCommand>$(DotnetSdkToolCommand)</DotnetTestToolCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <BuildTestTargets>
         DetermineTestOutputDirectory;
-        InitBaseDotnetCli;
         RestoreTests;
         BuildTests;
         RunTests;
@@ -26,24 +29,10 @@
     </PropertyGroup>
   </Target>
 
-  <!-- We need a version of the Cli that we can plug the host / shared framework into for testing. -->
-  <Target Name="InitBaseDotnetCli"
-          DependsOnTargets="DetermineTestOutputDirectory">
-    <PropertyGroup>
-      <TestToolsLocalPath Condition="'$(TestToolsLocalPath)' == ''">$(TestsOutputDir)Tools</TestToolsLocalPath>
-      <BootstrapCommand Condition="'$(OSGroup)' == 'Windows_NT'">powershell -NoProfile -ExecutionPolicy unrestricted -Command "$(MSBuildThisFileDirectory)bootstrap/bootstrap.ps1" -ToolsLocalPath $(TestToolsLocalPath) -Architecture $(TargetArchitecture)</BootstrapCommand>
-      <BootstrapCommand Condition="'$(OSGroup)' != 'Windows_NT'">$(MSBuildThisFileDirectory)bootstrap/bootstrap.sh --toolsLocalPath $(TestToolsLocalPath)</BootstrapCommand>
-      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet.exe</DotnetTestToolCommand>
-      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet</DotnetTestToolCommand>
-    </PropertyGroup>
-
-    <Exec Command="$(BootstrapCommand)" 
-          WorkingDirectory="$(MSBuildThisFileDirectory)bootstrap/" />
-  </Target>
-
   <Target Name="RestoreTests">
     <ItemGroup>
-      <RestoreTest Include="$(TestDir)/**/project.json" />
+      <!--<RestoreTest Include="$(TestDir)/**/project.json" />-->
+      <RestoreTest Include="$(TestDir)/**/*.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -61,12 +50,16 @@
 
     <PropertyGroup>
       <RestoreSourceArg>@(RestoreTestSource->'--source %(Identity)', ' ')</RestoreSourceArg>
-      <RestoreSourceArg>$(RestoreSourceArg) @(RestoreTestFallbackSource->'--fallbacksource %(Identity)', ' ')</RestoreSourceArg>
+      <RestoreSourceArg>$(RestoreSourceArg) @(RestoreTestFallbackSource->'--source %(Identity)', ' ')</RestoreSourceArg>
       <RestoreArgs>--disable-parallel --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(RestoreSourceArg)</RestoreArgs>
     </PropertyGroup>
 
+    <!--
     <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs)"
           WorkingDirectory="%(RestoreTest.RootDir)%(RestoreTest.Directory)" 
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
+    -->
+    <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
 
@@ -74,13 +67,13 @@
           DependsOnTargets="DetermineTestOutputDirectory">
 
     <PropertyGroup>
-      <BuildArgs>--build-base-path $(IntermediateOutputForPackaging) --configuration $(ConfigurationGroup)</BuildArgs>
+      <BuildArgs>--configuration $(ConfigurationGroup)</BuildArgs>
     </PropertyGroup>
 
     <Message Text="Building Tests" Importance="High" />
     <Message Importance="High" Text="TestProjects: @(TestProjects)" />
-    <Exec Command="$(DotnetTestToolCommand) build $(BuildArgs) %(TestProjects.Identity)" 
-          WorkingDirectory="%(TestProjects.Identity)"
+    <Exec Command="$(DotnetTestToolCommand) build $(BuildArgs) %(TestProjects.Identity)"
+          WorkingDirectory="$([System.IO.Path]::GetDirectoryName(%(TestProjects.Identity)))"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
 
@@ -103,8 +96,8 @@
       <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.xml</TestResultsXml>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs) -xml $(TestResultsXml) -notrait category=failing"
-          WorkingDirectory="$(TestProject)"
+    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs)"
+          WorkingDirectory="$([System.IO.Path]::GetDirectoryName($(TestProject)))"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(TargetRid)"
           Condition="'$(TestProjectFilename)' != 'HostActivationTests' or '$(IsCrossArch)' != 'true'"
           ContinueOnError="true"
