@@ -181,12 +181,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd">
-            <Issue>9880</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
-            <Issue>9880</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
