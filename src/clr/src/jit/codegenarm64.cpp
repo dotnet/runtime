@@ -2597,9 +2597,7 @@ void CodeGen::genCodeForLoadPairOffset(regNumber dst, regNumber dst2, GenTree* b
         if (base->gtOper == GT_LCL_FLD_ADDR)
             offset += base->gtLclFld.gtLclOffs;
 
-        // TODO-ARM64-CQ: Implement support for using a ldp instruction with a varNum (see emitIns_R_S)
-        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst, base->gtLclVarCommon.gtLclNum, offset);
-        emit->emitIns_R_S(INS_ldr, EA_8BYTE, dst2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+        emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, dst, dst2, base->gtLclVarCommon.gtLclNum, offset);
     }
     else
     {
