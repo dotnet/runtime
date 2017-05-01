@@ -758,6 +758,9 @@ void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
+void emitIns_S_S_R_R(
+    instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
+
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
 void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val);
