@@ -84,6 +84,7 @@
     <PropertyGroup>
       <TestProject>%(TestProjects.Identity)</TestProject>
       <TestProjectFilename>%(TestProjects.Filename)</TestProjectFilename>
+      <TestWorkingDirectory>$([System.IO.Path]::GetDirectoryName($(TestProject)))</TestWorkingDirectory>
       <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
       <!-- The tests use the TEST_ARTIFACTS env variable to determine the artifacts folder and then later compare that path to its expected path.
            So, the TEST_ARTIFACTS variable has to have system specific path separators or the string compoarison will fail. -->   
@@ -95,9 +96,8 @@
       <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
       <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.xml</TestResultsXml>
     </PropertyGroup>
-
-    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs)"
-          WorkingDirectory="$([System.IO.Path]::GetDirectoryName($(TestProject)))"
+    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
+          WorkingDirectory="$(TestWorkingDirectory)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(TargetRid)"
           Condition="'$(TestProjectFilename)' != 'HostActivationTests' or '$(IsCrossArch)' != 'true'"
           ContinueOnError="true"

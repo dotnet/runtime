@@ -21,6 +21,8 @@
     <PackageReference Include="xunit.netcore.extensions" Version="1.0.0-prerelease-00206" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta1-build3642" />
   </ItemGroup>
 
 </Project>

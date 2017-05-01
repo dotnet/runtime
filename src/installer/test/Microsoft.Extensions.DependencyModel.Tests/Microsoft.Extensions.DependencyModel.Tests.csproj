@@ -28,6 +28,8 @@
 
     <!-- TODO: Should this dependency be removed? -->
     <PackageReference Include="Microsoft.DotNet.ProjectModel" Version="1.0.0-rc2-002702" />
+
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta1-build3642" />
   </ItemGroup>
 
 </Project>
