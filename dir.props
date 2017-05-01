@@ -266,8 +266,7 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <PortableLabel Condition="'$(PortableBuild)' == 'true'">_portable</PortableLabel>
-    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)$(PortableLabel)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>
