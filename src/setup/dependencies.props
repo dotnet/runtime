@@ -1,14 +1,59 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+
+  <!-- For detailed explanation of the reference versions see:
+
+        https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md
+        https://github.com/dotnet/buildtools/blob/master/Documentation/annotated-dependency-props.md
+
+       These ref versions are pulled from https://github.com/dotnet/versions.
+  -->
   <PropertyGroup>
-       <CoreCLRVersion>2.0.0-preview2-25226-02</CoreCLRVersion>
-       <JitVersion>2.0.0-preview2-25226-02</JitVersion>
+    <CoreFxCurrentRef>f3d23289c93469d99c811fe911679d6c96ebfebf</CoreFxCurrentRef>
+    <CoreClrCurrentRef>f3d23289c93469d99c811fe911679d6c96ebfebf</CoreClrCurrentRef>
+    <StandardCurrentRef>f3d23289c93469d99c811fe911679d6c96ebfebf</StandardCurrentRef>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PlatformPackageVersion>2.0.0-preview2-25226-02</PlatformPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.0.0-preview2-25226-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
+  </PropertyGroup>
+  
+  <!-- Package dependency verification/auto-upgrade configuration. -->
+  <PropertyGroup>
+    <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
+    <DependencyBranch>master</DependencyBranch>
+    <CurrentRefXmlPath>$(MSBuildThisFileFullPath)</CurrentRefXmlPath>
   </PropertyGroup>
 
-  <!-- Create a collection of all project.json files for dependency updates. -->
   <ItemGroup>
-    <_ProjectJsonExcludes Include="$(SourceDir)test\**\project.json" />
-    <_ProjectJsonExcludes Include="$(SourceDir)pkg\**\project.json" />
-    <ProjectJsonFiles Include="$(SourceDir)**\project.json" Exclude="@(_ProjectJsonExcludes)" />
+    <RemoteDependencyBuildInfo Include="CoreFx">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="CoreClr">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="Standard">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+
+    <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
+      <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
+    </DependencyBuildInfo>
+    
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PlatformPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Platforms</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
+    </XmlUpdateStep>
   </ItemGroup>
 </Project>
