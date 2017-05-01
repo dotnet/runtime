@@ -603,12 +603,31 @@ namespace System.Diagnostics
 
         private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
         {
-            // Response event could be received several times for the same request
-            if (request.Headers[RequestIdHeaderName] != null)
+            // Response event could be received several times for the same request in case it was redirected
+            // IsLastResponse checks if response is the last one (no more redirects will happen)
+            // based on response StatusCode and number or redirects done so far
+            if (request.Headers[RequestIdHeaderName] != null && IsLastResponse(request, response))
             {
                 // only send Stop if request was instrumented
                 this.Write(RequestStopName, new { Request = request, Response = response });
             }
+        }
+
+        private bool IsLastResponse(HttpWebRequest request, HttpWebResponse response)
+        {
+            if (request.AllowAutoRedirect)
+            {
+                if (response.StatusCode == HttpStatusCode.Ambiguous       ||  // 300
+                    response.StatusCode == HttpStatusCode.Moved           ||  // 301
+                    response.StatusCode == HttpStatusCode.Redirect        ||  // 302
+                    response.StatusCode == HttpStatusCode.RedirectMethod  ||  // 303
+                    response.StatusCode == HttpStatusCode.RedirectKeepVerb)   // 307
+                {
+                    return s_autoRedirectsAccessor(request) >= request.MaximumAutomaticRedirections;
+                }
+            }
+
+            return true;
         }
 
         private static void PrepareReflectionObjects()
@@ -624,17 +643,29 @@ namespace System.Diagnostics
             s_writeListField = s_connectionType?.GetField("m_WriteList", BindingFlags.Instance | BindingFlags.NonPublic);
 
             // Second step: Generate an accessor for HttpWebRequest._HttpResponse
-            FieldInfo field = typeof(HttpWebRequest).GetField("_HttpResponse", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            string methodName = field?.ReflectedType.FullName + ".get_" + field.Name;
-            if (!string.IsNullOrEmpty(methodName))
+            FieldInfo responseField = typeof(HttpWebRequest).GetField("_HttpResponse", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (responseField != null)
             {
+                string methodName = responseField.ReflectedType.FullName + ".get_" + responseField.Name;
                 DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(HttpWebResponse), new Type[] { typeof(HttpWebRequest) }, true);
                 ILGenerator generator = getterMethod.GetILGenerator();
                 generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldfld, field);
+                generator.Emit(OpCodes.Ldfld, responseField);
                 generator.Emit(OpCodes.Ret);
                 s_httpResponseAccessor = (Func<HttpWebRequest, HttpWebResponse>)getterMethod.CreateDelegate(typeof(Func<HttpWebRequest, HttpWebResponse>));
+            }
+
+            // Third step: Generate an accessor for HttpWebRequest._AutoRedirects
+            FieldInfo redirectsField = typeof(HttpWebRequest).GetField("_AutoRedirects", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (redirectsField != null)
+            {
+                string methodName = redirectsField.ReflectedType.FullName + ".get_" + redirectsField.Name;
+                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(int), new Type[] { typeof(HttpWebRequest) }, true);
+                ILGenerator generator = getterMethod.GetILGenerator();
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldfld, redirectsField);
+                generator.Emit(OpCodes.Ret);
+                s_autoRedirectsAccessor = (Func<HttpWebRequest, int>)getterMethod.CreateDelegate(typeof(Func<HttpWebRequest, int>));
             }
 
             // Double checking to make sure we have all the pieces initialized
@@ -643,7 +674,8 @@ namespace System.Diagnostics
                 s_connectionListField == null ||
                 s_connectionType == null ||
                 s_writeListField == null ||
-                s_httpResponseAccessor == null)
+                s_httpResponseAccessor == null ||
+                s_autoRedirectsAccessor == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to initialize all required reflection objects");
@@ -688,6 +720,7 @@ namespace System.Diagnostics
         private static Type s_connectionType;
         private static FieldInfo s_writeListField;
         private static Func<HttpWebRequest, HttpWebResponse> s_httpResponseAccessor;
+        private static Func<HttpWebRequest, int> s_autoRedirectsAccessor;
 
 #endregion
     }
