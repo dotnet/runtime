@@ -2094,42 +2094,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LCL_FLD:
-        {
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-            assert(varNode->gtLclNum < compiler->lvaCount);
-            unsigned   varNum = varNode->gtLclNum;
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-            if (targetType == TYP_STRUCT)
-            {
-                NYI("GT_LCL_FLD with TYP_STRUCT");
-            }
-            emitAttr size = emitTypeSize(targetType);
-
-            noway_assert(targetType != TYP_STRUCT);
-            noway_assert(targetReg != REG_NA);
-
-            unsigned offset = treeNode->gtLclFld.gtLclOffs;
-
-            if (varTypeIsFloating(targetType))
-            {
-                if (treeNode->InReg())
-                {
-                    NYI("GT_LCL_FLD with register to register Floating point move");
-                }
-                else
-                {
-                    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offset);
-                }
-            }
-            else
-            {
-                size = EA_SET_SIZE(size, EA_8BYTE);
-                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offset);
-            }
-            genProduceReg(treeNode);
-        }
-        break;
+            genCodeForLclFld(treeNode->AsLclFld());
+            break;
 
         case GT_LCL_VAR:
         {
