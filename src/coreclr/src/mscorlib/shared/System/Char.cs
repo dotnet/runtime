@@ -26,7 +26,7 @@ namespace System
         //
         // Member Variables
         //
-        internal char m_value;
+        private char _value;
 
         //
         // Public Constants
@@ -102,7 +102,7 @@ namespace System
         // Calculate a hashcode for a 2 byte Unicode character.
         public override int GetHashCode()
         {
-            return (int)m_value | ((int)m_value << 16);
+            return (int)_value | ((int)_value << 16);
         }
 
         // Used for comparing two boxed Char objects.
@@ -113,13 +113,13 @@ namespace System
             {
                 return false;
             }
-            return (m_value == ((Char)obj).m_value);
+            return (_value == ((Char)obj)._value);
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public bool Equals(Char obj)
         {
-            return m_value == obj;
+            return _value == obj;
         }
 
         // Compares this object to another object, returning an integer that
@@ -140,13 +140,13 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
-            return (m_value - ((Char)value).m_value);
+            return (_value - ((Char)value)._value);
         }
 
         [Pure]
         public int CompareTo(Char value)
         {
-            return (m_value - value);
+            return (_value - value);
         }
 
         // Overrides System.Object.ToString.
@@ -154,14 +154,14 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Char.ToString(m_value);
+            return Char.ToString(_value);
         }
 
         [Pure]
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Char.ToString(m_value);
+            return Char.ToString(_value);
         }
 
         //
@@ -477,47 +477,47 @@ namespace System
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            return m_value;
+            return _value;
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            return Convert.ToSByte(m_value);
+            return Convert.ToSByte(_value);
         }
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(m_value);
+            return Convert.ToByte(_value);
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            return Convert.ToInt16(m_value);
+            return Convert.ToInt16(_value);
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return Convert.ToUInt16(m_value);
+            return Convert.ToUInt16(_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            return Convert.ToInt32(m_value);
+            return Convert.ToInt32(_value);
         }
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return Convert.ToUInt32(m_value);
+            return Convert.ToUInt32(_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(m_value);
+            return Convert.ToInt64(_value);
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            return Convert.ToUInt64(m_value);
+            return Convert.ToUInt64(_value);
         }
 
         float IConvertible.ToSingle(IFormatProvider provider)
