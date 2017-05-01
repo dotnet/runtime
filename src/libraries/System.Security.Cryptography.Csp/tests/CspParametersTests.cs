@@ -101,13 +101,6 @@ namespace System.Security.Cryptography.Csp.Tests
                     Console.WriteLine();
                     break;
                 }
-                else if (c.Key == ConsoleKey.Escape)
-                {
-                    for (int i = 0; i < ret.Length; i++)
-                        Console.Write("\b \b");
-
-                    ret.Clear();
-                }
                 else if (c.Key == ConsoleKey.Backspace)
                 {
                     if (ret.Length > 0)
@@ -115,13 +108,6 @@ namespace System.Security.Cryptography.Csp.Tests
                         Console.Write("\b \b");
                         ret.RemoveAt(ret.Length - 1);
                     }
-                }
-                else if (c.Key == ConsoleKey.LeftArrow
-                    || c.Key == ConsoleKey.RightArrow
-                    || c.Key == ConsoleKey.DownArrow
-                    || c.Key == ConsoleKey.UpArrow)
-                {
-                    // ignore
                 }
                 else
                 {

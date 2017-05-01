@@ -283,7 +283,7 @@ namespace Internal.NativeCrypto
         {
             SafeProvHandle safeProvHandle;
             uint flag = 0;
-            int hr = OpenCSP(parameters, flag, out safeProvHandle);
+            uint hr = unchecked((uint)OpenCSP(parameters, flag, out safeProvHandle));
             //Open container failed 
             if (hr != S_OK)
             {
@@ -291,11 +291,11 @@ namespace Internal.NativeCrypto
                 // If UseExistingKey flag is used and the key container does not exist
                 // throw an exception without attempting to create the container.
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
-                                                        ((hr != unchecked((int)CryptKeyError.NTE_KEYSET_NOT_DEF)
-                                                        && hr != unchecked((int)CryptKeyError.NTE_BAD_KEYSET)
-                                                        && hr != unchecked((int)CryptKeyError.NTE_FILENOTFOUND))))
+                                                        ((hr != (uint)CryptKeyError.NTE_KEYSET_NOT_DEF && hr !=
+                                                        (uint)CryptKeyError.NTE_BAD_KEYSET && hr !=
+                                                        (uint)CryptKeyError.NTE_FILENOTFOUND)))
                 {
-                    throw hr.ToCryptographicException();
+                    throw ((int)hr).ToCryptographicException();
                 }
 
                 //Create a new CSP. This method throws exception on failure
