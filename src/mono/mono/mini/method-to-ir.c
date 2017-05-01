@@ -11012,18 +11012,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			if (ins_flag & MONO_INST_VOLATILE) {
-				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
-			}
+
 			/* FIXME: should check item at sp [1] is compatible with the type of the store. */
-			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
-			ins->flags |= ins_flag;
-			if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
-				generic_class_is_reference_type (cfg, klass) && !MONO_INS_IS_PCONST_NULL (sp [1])) {
-				/* insert call to write barrier */
-				mini_emit_write_barrier (cfg, sp [0], sp [1]);
-			}
+			mini_emit_memory_store (cfg, &klass->byval_arg, sp [0], sp [1], ins_flag);
 			ins_flag = 0;
 			ip += 5;
 			inline_costs += 1;

@@ -165,4 +165,25 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 	return ins;
 }
 
+
+void
+mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoInst *value, int ins_flag)
+{
+	MonoInst *ins;
+
+	if (ins_flag & MONO_INST_VOLATILE) {
+		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+	}
+	/* FIXME: should check item at sp [1] is compatible with the type of the store. */
+
+	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, type, dest->dreg, 0, value->dreg);
+	ins->flags |= ins_flag;
+	if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
+		mini_type_is_reference (type) && !MONO_INS_IS_PCONST_NULL (value)) {
+		/* insert call to write barrier */
+		mini_emit_write_barrier (cfg, dest, value);
+	}
+}
+
 #endif
