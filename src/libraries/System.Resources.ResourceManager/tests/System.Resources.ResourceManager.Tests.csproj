@@ -18,6 +18,9 @@
       <DependentUpon>TestResx.resx</DependentUpon>
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
       <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
     </Compile>
