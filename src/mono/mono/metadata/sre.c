@@ -3417,6 +3417,11 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 			return_if_nok (error);
 		}
 
+		if (!klass->enumtype && !mono_type_get_underlying_type (field->type)) {
+			mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
+			continue;
+		}
+
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
 			char *base = mono_array_addr (rva_data, char, 0);
 			size_t size = mono_array_length (rva_data);
@@ -3442,7 +3447,9 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	mono_class_layout_fields (klass, instance_size, packing_size, TRUE);
+	if (!mono_class_has_failure (klass)) {
+		mono_class_layout_fields (klass, instance_size, packing_size, TRUE);
+	}
 }
 
 static void

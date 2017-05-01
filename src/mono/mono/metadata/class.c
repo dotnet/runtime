@@ -1602,6 +1602,11 @@ mono_class_setup_fields (MonoClass *klass)
 			g_assert (field->type);
 		}
 
+		if (!mono_type_get_underlying_type (field->type)) {
+			mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
+			break;
+		}
+
 		if (mono_field_is_deleted (field))
 			continue;
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
