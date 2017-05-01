@@ -853,6 +853,48 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
+    NYI_IF(targetReg == REG_NA, "GT_LCL_FLD: load local field not into a register is not supported");
+
+    emitAttr size   = emitTypeSize(targetType);
+    unsigned offs   = tree->gtLclOffs;
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+
+    if (varTypeIsFloating(targetType))
+    {
+        if (tree->InReg())
+        {
+            NYI("GT_LCL_FLD with register to register Floating point move");
+        }
+        else
+        {
+            emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+        }
+    }
+    else
+    {
+#ifdef _TARGET_ARM64_
+        size = EA_SET_SIZE(size, EA_8BYTE);
+#endif // _TARGET_ARM64_
+        emit->emitIns_R_S(ins_Move_Extend(targetType, tree->InReg()), size, targetReg, varNum, offs);
+    }
+
+    genProduceReg(tree);
+}
+
 // Generate code for a CpBlk node by the means of the VM memcpy helper call
 // Preconditions:
 // a) The size argument of the CpBlk is not an integer constant

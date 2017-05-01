@@ -482,32 +482,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LCL_FLD:
-        {
-            NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
-            NYI_IF(treeNode->gtRegNum == REG_NA, "GT_LCL_FLD: load local field not into a register is not supported");
-
-            emitAttr size   = emitTypeSize(targetType);
-            unsigned offs   = treeNode->gtLclFld.gtLclOffs;
-            unsigned varNum = treeNode->gtLclVarCommon.gtLclNum;
-            assert(varNum < compiler->lvaCount);
-
-            if (varTypeIsFloating(targetType))
-            {
-                if (treeNode->InReg())
-                {
-                    NYI("GT_LCL_FLD with reg-to-reg floating point move");
-                }
-                else
-                {
-                    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
-                }
-            }
-            else
-            {
-                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offs);
-            }
-        }
-            genProduceReg(treeNode);
+            genCodeForLclFld(treeNode->AsLclFld());
             break;
 
         case GT_STORE_LCL_FLD:
