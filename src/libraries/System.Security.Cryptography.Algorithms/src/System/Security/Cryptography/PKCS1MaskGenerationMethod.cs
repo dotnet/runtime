@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     public class PKCS1MaskGenerationMethod : MaskGenerationMethod
     {
-        private readonly string _hashNameValue;
+        private string _hashNameValue;
         
         public PKCS1MaskGenerationMethod()
         {
@@ -18,19 +18,13 @@ namespace System.Security.Cryptography
         public string HashName
         {
             get { return _hashNameValue; }
-            set 
-            {
-                if (value != null && value != "SHA1")
-                {
-                    throw new PlatformNotSupportedException();
-                }
-            }
+            set { _hashNameValue = value ?? "SHA1"; }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "CryptoConfig.CreateFromName may return platform-dependent objects, so this implementation is limited to SHA-1 for now")]
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn)
         {
-            using (HashAlgorithm hasher = SHA1.Create())
+            using (HashAlgorithm hasher = (HashAlgorithm)CryptoConfig.CreateFromName(_hashNameValue))
             {
                 byte[] rgbCounter = new byte[4];
                 byte[] rgbT = new byte[cbReturn];
