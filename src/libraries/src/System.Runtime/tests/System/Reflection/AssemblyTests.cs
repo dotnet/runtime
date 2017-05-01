@@ -336,13 +336,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Core fixed a bug where LoadFile(null) throws a NullReferenceException")]
-        public static void LoadFile_NullPath_Netfx_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => Assembly.LoadFile(null));
-        }
-
-        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFile() not supported on UapAot")]
         public static void LoadFile_NoSuchPath_ThrowsArgumentException()
         {
