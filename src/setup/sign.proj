@@ -21,11 +21,11 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="SignCoreHost" DependsOnTargets="GetSignCoreHostFiles">
+  <Target Name="SignBinaries" DependsOnTargets="GetSignBinaryFiles">
     <CallTarget Targets="SignFiles" />
   </Target>
 
-  <Target Name="GetSignCoreHostFiles">
+  <Target Name="GetSignBinaryFiles">
     <ItemGroup>
       <FilesToSign Include="$(OutDir)corehost/**/hostfxr.dll">
         <Authenticode>$(CertificateId)</Authenticode>
@@ -37,30 +37,9 @@
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
-  </Target>
 
-  <Target Name="SignSharedFrameworkCrossgenedAssemblies" DependsOnTargets="GetSignSharedFrameworkCrossgenedAssembliesFiles">
-    <CallTarget Targets="SignFiles" />
-  </Target>
-
-  <Target Name="GetSignSharedFrameworkCrossgenedAssembliesFiles">
     <ItemGroup>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/Microsoft.*.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/mscorlib.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/netstandard.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/SOS.NETCore.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/System.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/System.*.dll">
+      <FilesToSign Include="$(CrossGenRootPath)/**/*.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
