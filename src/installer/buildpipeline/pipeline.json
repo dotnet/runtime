@@ -110,7 +110,9 @@
           "Parameters": {
             "PB_DistroRid": "win7-x64",
             "PB_TargetArchitecture": "x64",
-            "PB_PortableBuild": "true"
+            "PB_PortableBuild": "true",
+            "PB_PublishRidAgnosticPackages": "true",
+            "PB_BuildFullPlatformManifest": "true"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",

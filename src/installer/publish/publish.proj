@@ -35,7 +35,7 @@
                    AccountKey="$(AzureAccessToken)"
                    ContainerName="$(ContainerName)"
                    Items="@(ItemsToPublish)" 
-                   Overwrite="true" />
+                   Overwrite="false" />
   </Target>
 
   <Target Name="PublishDebFilesToDebianRepo"
