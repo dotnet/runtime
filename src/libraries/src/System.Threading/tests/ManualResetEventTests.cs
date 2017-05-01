@@ -52,7 +52,7 @@ namespace System.Threading.Tests
             }
             Assert.True(t.Result);
 
-            Assert.True(WaitHandle.WaitAll(handles, 0));
+            Assert.True(Task.Run(() => WaitHandle.WaitAll(handles, 0)).Result); // Task.Run used to ensure MTA thread (necessary for desktop)
         }
 
         [Fact]
