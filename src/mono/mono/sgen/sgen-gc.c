@@ -236,6 +236,9 @@ static gboolean do_dump_nursery_content = FALSE;
 static gboolean enable_nursery_canaries = FALSE;
 
 static gboolean precleaning_enabled = TRUE;
+static gboolean dynamic_nursery = FALSE;
+static size_t min_nursery_size = 0;
+static size_t max_nursery_size = 0;
 
 #ifdef HEAVY_STATISTICS
 guint64 stat_objects_alloced_degraded = 0;
@@ -288,8 +291,8 @@ static guint64 time_major_fragment_creation = 0;
 
 static guint64 time_max = 0;
 
-static int sgen_max_pause_time = SGEN_MAX_PAUSE_TIME;
-static float sgen_max_pause_margin = SGEN_MAX_PAUSE_MARGIN;
+static int sgen_max_pause_time = SGEN_DEFAULT_MAX_PAUSE_TIME;
+static float sgen_max_pause_margin = SGEN_DEFAULT_MAX_PAUSE_MARGIN;
 
 static SGEN_TV_DECLARE (time_major_conc_collection_start);
 static SGEN_TV_DECLARE (time_major_conc_collection_end);
@@ -333,12 +336,31 @@ nursery_canaries_enabled (void)
 
 #if defined(HAVE_CONC_GC_AS_DEFAULT)
 /* Use concurrent major on deskstop platforms */
-#define DEFAULT_MAJOR_INIT sgen_marksweep_conc_init
-#define DEFAULT_MAJOR_NAME "marksweep-conc"
+#define DEFAULT_MAJOR SGEN_MAJOR_CONCURRENT
 #else
-#define DEFAULT_MAJOR_INIT sgen_marksweep_init
-#define DEFAULT_MAJOR_NAME "marksweep"
+#define DEFAULT_MAJOR SGEN_MAJOR_SERIAL
 #endif
+
+typedef enum {
+	SGEN_MAJOR_DEFAULT,
+	SGEN_MAJOR_SERIAL,
+	SGEN_MAJOR_CONCURRENT,
+	SGEN_MAJOR_CONCURRENT_PARALLEL
+} SgenMajor;
+
+typedef enum {
+	SGEN_MINOR_DEFAULT,
+	SGEN_MINOR_SIMPLE,
+	SGEN_MINOR_SIMPLE_PARALLEL,
+	SGEN_MINOR_SPLIT
+} SgenMinor;
+
+typedef enum {
+	SGEN_MODE_NONE,
+	SGEN_MODE_BALANCED,
+	SGEN_MODE_THROUGHPUT,
+	SGEN_MODE_PAUSE
+} SgenMode;
 
 /*
  * ######################################################################
@@ -1622,7 +1644,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	SgenGrayQueue gc_thread_gray_queue;
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 	ScanCopyContext ctx;
-	int duration;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	SGEN_TV_DECLARE (last_minor_collection_start_tv);
@@ -1755,12 +1776,18 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 		sgen_check_remset_consistency ();
 
 
-	TV_GETTIME (btv);
-	duration = (int)(TV_ELAPSED (last_minor_collection_start_tv, btv) / 10000);
-	if (duration > (sgen_max_pause_time * sgen_max_pause_margin))
-		sgen_resize_nursery (TRUE);
-	else
-		sgen_resize_nursery (FALSE);
+	if (sgen_max_pause_time) {
+		int duration;
+
+		TV_GETTIME (btv);
+		duration = (int)(TV_ELAPSED (last_minor_collection_start_tv, btv) / 10000);
+		if (duration > (sgen_max_pause_time * sgen_max_pause_margin))
+			sgen_resize_nursery (TRUE);
+		else
+			sgen_resize_nursery (FALSE);
+	} else {
+			sgen_resize_nursery (FALSE);
+	}
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -2999,13 +3026,162 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 	return TRUE;
 }
 
+static SgenMinor
+parse_sgen_minor (const char *opt)
+{
+	if (!opt)
+		return SGEN_MINOR_DEFAULT;
+
+	if (!strcmp (opt, "simple")) {
+		return SGEN_MINOR_SIMPLE;
+	} else if (!strcmp (opt, "simple-par")) {
+		return SGEN_MINOR_SIMPLE_PARALLEL;
+	} else if (!strcmp (opt, "split")) {
+		return SGEN_MINOR_SPLIT;
+	} else {
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default instead.", "Unknown minor collector `%s'.", opt);
+		return SGEN_MINOR_DEFAULT;
+	}
+}
+
+static SgenMajor
+parse_sgen_major (const char *opt)
+{
+	if (!opt)
+		return SGEN_MAJOR_DEFAULT;
+
+	if (!strcmp (opt, "marksweep")) {
+		return SGEN_MAJOR_SERIAL;
+	} else if (!strcmp (opt, "marksweep-conc")) {
+		return SGEN_MAJOR_CONCURRENT;
+	} else if (!strcmp (opt, "marksweep-conc-par")) {
+		return SGEN_MAJOR_CONCURRENT_PARALLEL;
+	} else {
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default instead.", "Unknown major collector `%s'.", opt);
+		return SGEN_MAJOR_DEFAULT;
+	}
+
+}
+
+static SgenMode
+parse_sgen_mode (const char *opt)
+{
+	if (!opt)
+		return SGEN_MODE_NONE;
+
+	if (!strcmp (opt, "balanced")) {
+		return SGEN_MODE_BALANCED;
+	} else if (!strcmp (opt, "throughput")) {
+		return SGEN_MODE_THROUGHPUT;
+	} else if (!strcmp (opt, "pause") || g_str_has_prefix (opt, "pause:")) {
+		return SGEN_MODE_PAUSE;
+	} else {
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default configurations.", "Unknown mode `%s'.", opt);
+		return SGEN_MODE_NONE;
+	}
+}
+
+static void
+init_sgen_minor (SgenMinor minor)
+{
+	switch (minor) {
+	case SGEN_MINOR_DEFAULT:
+	case SGEN_MINOR_SIMPLE:
+		sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
+		break;
+	case SGEN_MINOR_SIMPLE_PARALLEL:
+		sgen_simple_nursery_init (&sgen_minor_collector, TRUE);
+		break;
+	case SGEN_MINOR_SPLIT:
+		sgen_split_nursery_init (&sgen_minor_collector);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void
+init_sgen_major (SgenMajor major)
+{
+	if (major == SGEN_MAJOR_DEFAULT)
+		major = DEFAULT_MAJOR;
+
+	switch (major) {
+	case SGEN_MAJOR_SERIAL:
+		sgen_marksweep_init (&major_collector);
+		break;
+	case SGEN_MAJOR_CONCURRENT:
+		sgen_marksweep_conc_init (&major_collector);
+		break;
+	case SGEN_MAJOR_CONCURRENT_PARALLEL:
+		sgen_marksweep_conc_par_init (&major_collector);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+/*
+ * If sgen mode is set, major/minor configuration is fixed. The other gc_params
+ * are parsed and processed after major/minor initialization, so it can potentially
+ * override some knobs set by the sgen mode. We can consider locking out additional
+ * configurations when gc_modes are used.
+ */
+static void
+init_sgen_mode (SgenMode mode)
+{
+	SgenMinor minor = SGEN_MINOR_DEFAULT;
+	SgenMajor major = SGEN_MAJOR_DEFAULT;
+
+	switch (mode) {
+	case SGEN_MODE_BALANCED:
+		/*
+		 * Use a dynamic parallel nursery with a major concurrent collector.
+		 * This uses the default values for max pause time and nursery size.
+		 */
+		minor = SGEN_MINOR_SIMPLE;
+		major = SGEN_MAJOR_CONCURRENT;
+		dynamic_nursery = TRUE;
+		break;
+	case SGEN_MODE_THROUGHPUT:
+		/*
+		 * Use concurrent major to let the mutator do more work. Use a larger
+		 * nursery, without pause time constraints, in order to collect more
+		 * objects in parallel and avoid repetitive collection tasks (pinning,
+		 * root scanning etc)
+		 */
+		minor = SGEN_MINOR_SIMPLE_PARALLEL;
+		major = SGEN_MAJOR_CONCURRENT;
+		dynamic_nursery = TRUE;
+		sgen_max_pause_time = 0;
+		break;
+	case SGEN_MODE_PAUSE:
+		/*
+		 * Use concurrent major and dynamic nursery with a more
+		 * aggressive shrinking relative to pause times.
+		 * FIXME use parallel minors
+		 */
+		minor = SGEN_MINOR_SIMPLE;
+		major = SGEN_MAJOR_CONCURRENT;
+		dynamic_nursery = TRUE;
+		sgen_max_pause_margin = SGEN_PAUSE_MODE_MAX_PAUSE_MARGIN;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	init_sgen_minor (minor);
+	init_sgen_major (major);
+}
+
 void
 sgen_gc_init (void)
 {
 	char *env;
 	char **opts, **ptr;
-	char *major_collector_opt = NULL;
-	char *minor_collector_opt = NULL;
+	SgenMajor sgen_major = SGEN_MAJOR_DEFAULT;
+	SgenMinor sgen_minor = SGEN_MINOR_DEFAULT;
+	SgenMode sgen_mode = SGEN_MODE_NONE;
 	char *params_opts = NULL;
 	char *debug_opts = NULL;
 	size_t max_heap = 0;
@@ -3014,8 +3190,6 @@ sgen_gc_init (void)
 	gboolean debug_print_allowance = FALSE;
 	double allowance_ratio = 0, save_target = 0;
 	gboolean cement_enabled = TRUE;
-	gboolean dynamic_nursery = FALSE;
-	size_t min_nursery_size = 0, max_nursery_size = 0;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -3058,10 +3232,13 @@ sgen_gc_init (void)
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "major=")) {
 				opt = strchr (opt, '=') + 1;
-				major_collector_opt = g_strdup (opt);
+				sgen_major = parse_sgen_major (opt);
 			} else if (g_str_has_prefix (opt, "minor=")) {
 				opt = strchr (opt, '=') + 1;
-				minor_collector_opt = g_strdup (opt);
+				sgen_minor = parse_sgen_minor (opt);
+			} else if (g_str_has_prefix (opt, "mode=")) {
+				opt = strchr (opt, '=') + 1;
+				sgen_mode = parse_sgen_mode (opt);
 			}
 		}
 	} else {
@@ -3083,34 +3260,13 @@ sgen_gc_init (void)
 
 	sgen_client_init ();
 
-	if (!minor_collector_opt) {
-		sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
+	if (sgen_mode != SGEN_MODE_NONE) {
+		if (sgen_minor != SGEN_MINOR_DEFAULT || sgen_major != SGEN_MAJOR_DEFAULT)
+			sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring major/minor configuration", "Major/minor configurations cannot be used with sgen modes");
+		init_sgen_mode (sgen_mode);
 	} else {
-		if (!strcmp (minor_collector_opt, "simple")) {
-		use_simple_nursery:
-			sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
-		} else if (!strcmp (minor_collector_opt, "simple-par")) {
-			sgen_simple_nursery_init (&sgen_minor_collector, TRUE);
-		} else if (!strcmp (minor_collector_opt, "split")) {
-			sgen_split_nursery_init (&sgen_minor_collector);
-		} else {
-			sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `simple` instead.", "Unknown minor collector `%s'.", minor_collector_opt);
-			goto use_simple_nursery;
-		}
-	}
-
-	if (!major_collector_opt) {
-	use_default_major:
-		DEFAULT_MAJOR_INIT (&major_collector);
-	} else if (!strcmp (major_collector_opt, "marksweep")) {
-		sgen_marksweep_init (&major_collector);
-	} else if (!strcmp (major_collector_opt, "marksweep-conc")) {
-		sgen_marksweep_conc_init (&major_collector);
-	} else if (!strcmp (major_collector_opt, "marksweep-conc-par")) {
-		sgen_marksweep_conc_par_init (&major_collector);
-	} else {
-		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `" DEFAULT_MAJOR_NAME "` instead.", "Unknown major collector `%s'.", major_collector_opt);
-		goto use_default_major;
+		init_sgen_minor (sgen_minor);
+		init_sgen_major (sgen_major);
 	}
 
 	if (opts) {
@@ -3124,6 +3280,17 @@ sgen_gc_init (void)
 				continue;
 			if (g_str_has_prefix (opt, "minor="))
 				continue;
+			if (g_str_has_prefix (opt, "mode=")) {
+				if (g_str_has_prefix (opt, "mode=pause:")) {
+					char *str_pause = strchr (opt, ':') + 1;
+					int pause = atoi (str_pause);
+					if (pause)
+						sgen_max_pause_time = pause;
+					else
+						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default", "Invalid maximum pause time for `pause` sgen mode");
+				}
+				continue;
+			}
 			if (g_str_has_prefix (opt, "max-heap-size=")) {
 				size_t page_size = mono_pagesize ();
 				size_t max_heap_candidate = 0;
@@ -3239,6 +3406,7 @@ sgen_gc_init (void)
 			fprintf (stderr, "\n%s must be a comma-delimited list of one or more of the following:\n", MONO_GC_PARAMS_NAME);
 			fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 			fprintf (stderr, "  soft-heap-limit=n (where N is an integer, possibly with a k, m or a g suffix)\n");
+			fprintf (stderr, "  mode=MODE (where MODE is 'balanced', 'throughput' or 'pause[:N]' and N is maximum pause in milliseconds)\n");
 			fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 			fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-conc', `marksweep-par')\n");
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
@@ -3259,12 +3427,6 @@ sgen_gc_init (void)
 		}
 		g_strfreev (opts);
 	}
-
-	if (major_collector_opt)
-		g_free (major_collector_opt);
-
-	if (minor_collector_opt)
-		g_free (minor_collector_opt);
 
 	if (params_opts)
 		g_free (params_opts);
