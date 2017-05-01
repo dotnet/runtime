@@ -296,6 +296,7 @@ namespace System.Resources
             bw.Write((int)resMgrHeaderBlob.Length);
 
             // Write the rest of the ResMgr header
+            Debug.Assert(resMgrHeaderBlob.Length > 0, "ResourceWriter: Expected non empty header");
             resMgrHeaderBlob.Seek(0, SeekOrigin.Begin);
             resMgrHeaderBlob.CopyTo(bw.BaseStream, (int)resMgrHeaderBlob.Length);
             // End ResourceManager header
@@ -418,8 +419,11 @@ namespace System.Resources
                 bw.Write(startOfDataSection);
 
                 // Write name section.
-                nameSection.Seek(0, SeekOrigin.Begin);
-                nameSection.CopyTo(bw.BaseStream, (int)nameSection.Length);
+                if (nameSection.Length > 0)
+                {
+                    nameSection.Seek(0, SeekOrigin.Begin);
+                    nameSection.CopyTo(bw.BaseStream, (int)nameSection.Length);
+                }
                 names.Dispose();
 
                 // Write data section.
