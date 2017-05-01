@@ -44,7 +44,7 @@
 
   <!-- Redistributed package content from other nuget packages-->
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.UniversalWindowsPlatform.depproj">
+    <ProjectReference Include="src\Microsoft.NETCore.UniversalWindowsPlatform.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
