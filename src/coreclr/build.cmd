@@ -75,7 +75,6 @@ set __BuildArchArm64=0
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
 set __BuildTypeRelease=0
-set __BuildJit32=0
 set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=0"
 
 set __PgoInstrument=0
@@ -142,11 +141,9 @@ if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!proce
 if /i "%1" == "skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildjit32"          (set __BuildJit32=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "compatjitcrossgen"   (set __CompatJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildstandalonegc"   (set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following can be deleted once the CI system that passes it is updated to not pass it.
@@ -318,7 +315,7 @@ if %__BuildNative% EQU 1 (
 
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% "-DBUILD_JIT32=%__BuildJit32%" %__BuildStandaloneGC% !__ExtraCmakeArgs!
+    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildStandaloneGC% !__ExtraCmakeArgs!
 	@if defined _echo @echo on
     popd
 :SkipConfigure
@@ -430,10 +427,6 @@ if %__BuildCoreLib% EQU 1 (
 		set __nugetBuildArgs=-buildNugetPackage=true
 	)
 
-    set PackageCompatJit=
-    if "%__BuildJit32%" == "1" (
-        set PackageCompatJit=1
-    )
     @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! !__nugetBuildArgs! %__RunArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
@@ -450,10 +443,6 @@ set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    if "%__CompatJitCrossgen%"=="1" (
-        set COMPlus_UseWindowsX86CoreLegacyJit=1
-    )
-
     echo "%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     "%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
@@ -468,10 +457,6 @@ if %__BuildNativeCoreLib% EQU 1 (
         :: Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
         goto CrossgenFailure
-    )
-
-    if "%__CompatJitCrossgen%"=="1" (
-        set COMPlus_UseWindowsX86CoreLegacyJit=
     )
 )
 

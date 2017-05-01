@@ -303,9 +303,6 @@ Name | Description | Type | Class | Default Value | Flags
 `StackSamplingNumMethods` | Number of evolving methods to track as hot and JIT them in the background at a given point of execution. | DWORD | UNSUPPORTED | 32 | 
 `AltJitNgen` | Enables AltJit for NGEN and selectively limits it to the specified methods. | STRING | INTERNAL | | REGUTIL_default
 `JitNoCMOV` |  | DWORD | INTERNAL | 0 | REGUTIL_default
-`UseRyuJIT` | Set to 1 by .NET 4.6 installer to indicate RyuJIT should be used, not JIT64. | DWORD | INTERNAL | 0 | IgnoreEnv / IgnoreHKCU / IgnoreConfigFiles
-`useLegacyJit` | Set to 1 to do all JITing with compatjit.dll. Only applicable to x64. | DWORD | EXTERNAL | 0 | 
-`DisableNativeImageLoadList` | Refuse to load native images corresponding to one of the assemblies on this semicolon-delimited list of assembly names. | STRING | EXTERNAL | | REGUTIL_default
 `JitValNumCSE` | Enables ValNum CSE for the specified methods | STRING | INTERNAL | | REGUTIL_default 
 `JitLexicalCSE` | Enables Lexical CSE for the specified methods | STRING | INTERNAL | | REGUTIL_default 
 `JitNoCSE` |  | DWORD | INTERNAL | 0 | REGUTIL_default
