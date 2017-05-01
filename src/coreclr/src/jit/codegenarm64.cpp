@@ -2638,9 +2638,7 @@ void CodeGen::genCodeForStorePairOffset(regNumber src, regNumber src2, GenTree* 
         if (base->gtOper == GT_LCL_FLD_ADDR)
             offset += base->gtLclFld.gtLclOffs;
 
-        // TODO-ARM64-CQ: Implement support for using a stp instruction with a varNum (see emitIns_S_R)
-        emit->emitIns_S_R(INS_str, EA_8BYTE, src, base->gtLclVarCommon.gtLclNum, offset);
-        emit->emitIns_S_R(INS_str, EA_8BYTE, src2, base->gtLclVarCommon.gtLclNum, offset + REGSIZE_BYTES);
+        emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, src, src2, base->gtLclVarCommon.gtLclNum, offset);
     }
     else
     {

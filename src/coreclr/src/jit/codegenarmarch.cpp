@@ -735,10 +735,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                           INS_OPTS_NONE, emitTypeSize(type0));
                 }
 
-                // Emit two store instructions to store the two registers into the outgoing argument area
-                emit->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), loReg, varNumOut, argOffsetOut);
-                emit->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), hiReg, varNumOut,
-                                  argOffsetOut + TARGET_POINTER_SIZE);
+                // Emit stp instruction to store the two registers into the outgoing argument area
+                emit->emitIns_S_S_R_R(INS_stp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumOut,
+                                      argOffsetOut);
                 argOffsetOut += (2 * TARGET_POINTER_SIZE); // We stored 16-bytes of the struct
                 assert(argOffsetOut <= argOffsetMax);      // We can't write beyound the outgoing area area
 
