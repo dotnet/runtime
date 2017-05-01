@@ -34,6 +34,30 @@
     <ExcludeFromClosure Include="System.Drawing" />
     <ExcludeFromClosure Include="System.Net" />
     <ExcludeFromClosure Include="System.Transactions" />
+
+    <!-- Permit the following implementation-only assemblies -->
+    <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
+      <Value>
+        Microsoft.VisualBasic;
+        System.Diagnostics.DiagnosticSource;
+        System.Private.DataContractSerialization;
+        System.Private.Uri;
+        System.Private.Xml;
+        System.Private.Xml.Linq;
+        System.Reflection.Emit.ILGeneration;
+        System.Reflection.Emit.Lightweight;
+        System.Reflection.Emit;
+        System.Security.AccessControl;
+        System.Security.Cryptography.Cng;
+        System.Security.Principal.Windows;
+        System.Threading.Tasks.Extensions;
+      </Value>
+    </ValidatePackageSuppression>
+    <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != '' AND '$(TargetGroup)' == 'uapaot'" Include="PermitInbox">
+      <Value>
+        System.Private.Reflection.Metadata.Ecma335;
+      </Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
-
-    <!-- these packages don't follow the patterns expected by package validation -->
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <SkipValidatePackage>true</SkipValidatePackage>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
     <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
@@ -149,6 +145,16 @@
         <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
         <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
       </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetValidateFramework">
+    <ItemGroup>
+      <!-- Update validation with locally authored RID list -->
+      <DefaultValidateFramework Remove="$(TargetFramework)"/>
+      <DefaultValidateFramework Include="$(TargetFramework)">
+        <RuntimeIDs>@(BuildRID)</RuntimeIDs>
+      </DefaultValidateFramework>
     </ItemGroup>
   </Target>
 </Project>
