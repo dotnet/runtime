@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
         }
 
-        [Fact]
+        //[Fact]
         public void Muxer_activation_of_dotnet_test_XUnit_on_Standalone_Test_App_Succeeds()
         {
             var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories);
