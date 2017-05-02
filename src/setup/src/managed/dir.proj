@@ -88,6 +88,7 @@
     <!-- Copy symbols to publish folder -->
     <ItemGroup>
       <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*.pdb" />
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(SymbolFileExtension)" />
     </ItemGroup>
     <RemoveDir Directories="$(SharedFrameworkPublishSymbolsDir)"
                Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
