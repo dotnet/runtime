@@ -23,7 +23,7 @@ if(-Not (Test-Path "$CommonScript"))
 } 
 . "$CommonScript"
 
-$CompressionRoot = Join-Path $RepoRoot "src\pkg\packaging"
+$PackagingRoot = Join-Path $RepoRoot "src\pkg\packaging"
 
 $InstallFileswsx = "$WixObjRoot\install-files.wxs"
 $InstallFilesWixobj = "$WixObjRoot\install-files.wixobj"
@@ -62,13 +62,13 @@ function RunCandle
     pushd "$WixRoot"
 
     Write-Host Running candle..
-    $AuthWsxRoot = Join-Path $CompressionRoot "windows\sharedframework"
+    $AuthWsxRoot = Join-Path $PackagingRoot "windows\sharedframework"
     $SharedFrameworkComponentVersion = $SharedFrameworkNugetVersion.Replace('-', '_');
 
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
         -dSharedFrameworkSource="$SharedFrameworkPublishRoot" `
-        -dMicrosoftEula="$CompressionRoot\osx\sharedframework\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\osx\sharedframework\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dFrameworkName="$SharedFrameworkNugetName" `
         -dFrameworkDisplayVersion="$SharedFrameworkNugetVersion" `

@@ -23,7 +23,7 @@ if(-Not (Test-Path "$CommonScript"))
 } 
 . "$CommonScript"
 
-$CompressionRoot = Join-Path $RepoRoot "src\pkg\packaging"
+$PackagingRoot = Join-Path $RepoRoot "src\pkg\packaging"
 
 $InstallFileswsx = "$WixObjRoot\install-files.wxs"
 $InstallFilesWixobj = "$WixObjRoot\install-files.wixobj"
@@ -61,14 +61,14 @@ function RunCandle
     pushd "$WixRoot"
 
     Write-Host Running candle..
-    $AuthWsxRoot =  Join-Path $CompressionRoot "windows\hostfxr"
+    $AuthWsxRoot =  Join-Path $PackagingRoot "windows\hostfxr"
 
     $ComponentVersion = $HostFxrNugetVersion.Replace('-', '_');
 
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
         -dHostFxrSrc="$HostFxrPublishRoot" `
-        -dMicrosoftEula="$CompressionRoot\osx\hostfxr\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\osx\hostfxr\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$HostFxrMSIVersion" `
         -dNugetVersion="$HostFxrNugetVersion" `

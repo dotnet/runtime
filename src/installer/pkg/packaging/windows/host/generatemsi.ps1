@@ -22,20 +22,20 @@ if(-Not (Test-Path "$CommonScript"))
 } 
 . "$CommonScript"
 
-$CompressionRoot = Join-Path $RepoRoot "src\pkg\packaging"
+$PackagingRoot = Join-Path $RepoRoot "src\pkg\packaging"
 function RunCandle
 {
     $result = $true
     pushd "$WixRoot"
 
     Write-Host Running candle..
-    $AuthWsxRoot =  Join-Path $CompressionRoot "windows\host"
+    $AuthWsxRoot =  Join-Path $PackagingRoot "windows\host"
 
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
         -ext WixDependencyExtension.dll `
         -dHostSrc="$SharedHostPublishRoot" `
-        -dMicrosoftEula="$CompressionRoot\osx\sharedhost\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\osx\sharedhost\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$SharedHostMSIVersion" `
         -dNugetVersion="$SharedHostNugetVersion" `

@@ -5,14 +5,7 @@
   <Import Project="dir.traversal.targets" />
 
   <Target Name="Build">
-
-    <PropertyGroup>
-        <BuildParams Condition="'$(OSGroup)' == 'Windows_NT'">TargetsWindows=true</BuildParams>
-        <BuildParams Condition="'$(OSGroup)' == 'OSX'">TargetsOSX=true;DistroRid=$(PackageTargetRid)</BuildParams>
-        <BuildParams Condition="'$(BuildParams)' == ''">TargetsLinux=true;DistroRid=$(PackageTargetRid)</BuildParams>
-    </PropertyGroup>
-
-    <MSBuild Projects="packages.builds" Properties="$(BuildParams)"/>
+    <MSBuild Projects="packages.builds" />
 
     <ItemGroup>
         <Nupkgs Include="$(PackageOutputPath)\**\*.nupkg" />

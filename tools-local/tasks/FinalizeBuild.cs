@@ -126,7 +126,7 @@ namespace Microsoft.DotNet.Build.Tasks
             string[] blobs = GetBlobList(sourceFolder);
             foreach (string blob in blobs)
             {
-                string targetName = _versionRegex.Replace(Path.GetFileName(blob), "Latest");
+                string targetName = _versionRegex.Replace(Path.GetFileName(blob), "latest");
                 string sourceBlob = blob.Replace($"/{ContainerName}/", "");
                 string destinationBlob = $"{destinationFolder}{targetName}";
                 Log.LogMessage($"Copying blob '{sourceBlob}' to '{destinationBlob}'");
