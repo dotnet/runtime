@@ -32,6 +32,8 @@
 #include <unicode/usearch.h>
 #include <unicode/utf16.h>
 #include <unicode/utypes.h>
+#include <unicode/urename.h>
+#include <unicode/ustring.h>
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
