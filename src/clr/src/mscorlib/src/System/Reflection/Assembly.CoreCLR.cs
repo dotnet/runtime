@@ -15,11 +15,74 @@ namespace System.Reflection
 {
     public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
+        private static volatile bool s_LoadFromResolveHandlerSetup = false;
+        private static object s_syncRootLoadFrom = new object();
+        private static List<string> s_LoadFromAssemblyList = new List<string>();
+        private static object s_syncLoadFromAssemblyList = new object();
+
+        private static Assembly LoadFromResolveHandler(object sender, ResolveEventArgs args)
+        {
+            Assembly requestingAssembly = args.RequestingAssembly;
+            
+            // Requesting assembly for LoadFrom is always loaded in defaultContext - proceed only if that
+            // is the case.
+            if (AssemblyLoadContext.Default != AssemblyLoadContext.GetLoadContext(requestingAssembly))
+                return null;
+
+            // Get the path where requesting assembly lives and check if it is in the list
+            // of assemblies for which LoadFrom was invoked.
+            bool fRequestorLoadedViaLoadFrom = false;
+            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            if (string.IsNullOrEmpty(requestorPath))
+                return null;
+
+            lock(s_syncLoadFromAssemblyList)
+            {
+                fRequestorLoadedViaLoadFrom = s_LoadFromAssemblyList.Contains(requestorPath);
+            }
+            
+            // If the requestor assembly was not loaded using LoadFrom, exit.
+            if (!fRequestorLoadedViaLoadFrom)
+                return null;
+
+            // Requestor assembly was loaded using loadFrom, so look for its dependencies
+            // in the same folder as it.
+            // Form the name of the assembly using the path of the assembly that requested its load.
+            AssemblyName requestedAssemblyName = new AssemblyName(args.Name);
+            string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath), requestedAssemblyName.Name+".dll");
+
+            return AssemblyLoadContext.Default.LoadFromAssemblyPath(requestedAssemblyPath);
+        }
+
         public static Assembly LoadFrom(String assemblyFile)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
+            
             string fullPath = Path.GetFullPath(assemblyFile);
+
+            if (!s_LoadFromResolveHandlerSetup)
+            {
+                lock (s_syncRootLoadFrom)
+                {
+                    if (!s_LoadFromResolveHandlerSetup)
+                    {
+                        AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LoadFromResolveHandler);
+                        s_LoadFromResolveHandlerSetup = true;
+                    }
+                }
+            }
+
+            // Add the path to the LoadFrom path list which we will consult
+            // before handling the resolves in our handler.
+            lock(s_syncLoadFromAssemblyList)
+            {
+                if (!s_LoadFromAssemblyList.Contains(fullPath))
+                {
+                    s_LoadFromAssemblyList.Add(fullPath);
+                }
+            }
+
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
 
