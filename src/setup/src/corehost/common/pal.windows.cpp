@@ -34,38 +34,6 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void pal::setup_api_sets(const std::unordered_set<pal::string_t>& api_sets)
-{
-    if (api_sets.empty())
-    {
-        return;
-    }
-
-    pal::string_t path;
-
-    (void) getenv(_X("PATH"), &path);
-
-    // We need this ugly hack, as the PInvoked DLL's static dependencies can come from
-    // some other NATIVE_DLL_SEARCH_DIRECTORIES and not necessarily side by side. However,
-    // CoreCLR.dll loads PInvoke DLLs with LOAD_WITH_ALTERED_SEARCH_PATH. Note that this
-    // option cannot be combined with LOAD_LIBRARY_SEARCH_USER_DIRS, so the AddDllDirectory
-    // doesn't help much in telling CoreCLR where to load the PInvoke DLLs from.
-    // So we resort to modifying the PATH variable on our own hoping Windows loader will do the right thing.
-    for (const auto& as : api_sets)
-    {
-        // AddDllDirectory is still needed for Standalone App's CoreCLR load.
-        ::AddDllDirectory(as.c_str());
-
-        // Path patch is needed for static dependencies of a PInvoked DLL load out of the nuget cache.
-        path.push_back(PATH_SEPARATOR);
-        path.append(as);
-    }
-
-    trace::verbose(_X("Setting PATH=%s"), path.c_str());
-
-    ::SetEnvironmentVariableW(_X("PATH"), path.c_str());
-}
-
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();

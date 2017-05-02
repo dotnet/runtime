@@ -146,9 +146,6 @@ int run(const arguments_t& args)
     size_t property_size = property_keys.size();
     assert(property_keys.size() == property_values.size());
 
-    // Add API sets to the process DLL search
-    pal::setup_api_sets(resolver.get_api_sets());
-
     // Bind CoreCLR
     pal::string_t clr_dir = get_directory(clr_path);
     trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
