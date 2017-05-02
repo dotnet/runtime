@@ -35,8 +35,8 @@ setlocal
   call :set_perf_run_log       || exit /b 1
   call :setup_sandbox          || exit /b 1
 
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\project.json"                                        || exit /b 1
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\project.json" -c Release -o "%CORECLR_REPO%\sandbox" || exit /b 1
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj"                                        || exit /b 1
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" -c Release -o "%CORECLR_REPO%\sandbox" || exit /b 1
 
   rem TODO: Remove the version of the package to copy. e.g.) if multiple version exist, then error out?
   call :run_cmd xcopy /sy "%CORECLR_REPO%\packages\Microsoft.Diagnostics.Tracing.TraceEvent\1.0.3-alpha-experimental\lib\native"\* . >> %RUNLOG%  || exit /b 1

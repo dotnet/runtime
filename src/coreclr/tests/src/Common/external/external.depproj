@@ -5,19 +5,54 @@
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
-    <ProjectJson>$(MSBuildThisFileDirectory)project.json</ProjectJson>
-    <ProjectLockJson>$(MSBuildThisFileDirectory)project.lock.json</ProjectLockJson>
+    <RestoreOutputPath>$(MSBuildThisFileDirectory)obj</RestoreOutputPath>
     <Language>C#</Language>
     <NugetTargetMoniker>.NETCoreApp,Version=v1.1</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netcoreapp1.1</NugetTargetMonikerShort>
     <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.console</XUnitRunnerPackageId>
     <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Compilers">
+      <Version>1.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.api">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.core">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.execution">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.metrics">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>1.0.3-alpha-experimental</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>9.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.console.netcore">
+      <Version>1.0.2-prerelease-00177</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.utility">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
+    <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+  </PropertyGroup>
   <ItemGroup>
     <PackageToInclude Include="xunit.abstractions"/>
     <PackageToInclude Include="xunit.assert"/>
@@ -39,6 +74,10 @@
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(SourceDir)Common\external\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netfx'">
     <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe')"
