@@ -558,76 +558,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        {
-            // TODO-ARM-CQ: Check if we can use the currently set flags.
-            // TODO-ARM-CQ: Check for the case where we can simply transfer the carry bit to a register
-            //         (signed < or >= where targetReg != REG_NA)
-
-            GenTreeOp* tree = treeNode->AsOp();
-            GenTreePtr op1  = tree->gtOp1->gtEffectiveVal();
-            GenTreePtr op2  = tree->gtOp2->gtEffectiveVal();
-
-            genConsumeIfReg(op1);
-            genConsumeIfReg(op2);
-
-            instruction ins = INS_cmp;
-            emitAttr    cmpAttr;
-            if (varTypeIsFloating(op1))
-            {
-                assert(op1->TypeGet() == op2->TypeGet());
-                ins     = INS_vcmp;
-                cmpAttr = emitTypeSize(op1->TypeGet());
-                emit->emitInsBinary(ins, cmpAttr, op1, op2);
-                // vmrs with register 0xf has special meaning of transferring flags
-                emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
-            }
-            else if (varTypeIsLong(op1))
-            {
-#ifdef DEBUG
-                // The result of an unlowered long compare on a 32-bit target must either be
-                // a) materialized into a register, or
-                // b) unused.
-                //
-                // A long compare that has a result that is used but not materialized into a register should
-                // have been handled by Lowering::LowerCompare.
-
-                LIR::Use use;
-                assert((treeNode->gtRegNum != REG_NA) || !LIR::AsRange(compiler->compCurBB).TryGetUse(treeNode, &use));
-#endif
-                genCompareLong(treeNode);
-                break;
-            }
-            else
-            {
-                var_types op1Type = op1->TypeGet();
-                var_types op2Type = op2->TypeGet();
-                assert(!varTypeIsFloating(op2Type));
-                ins = INS_cmp;
-                if (op1Type == op2Type)
-                {
-                    cmpAttr = emitTypeSize(op1Type);
-                }
-                else
-                {
-                    var_types cmpType    = TYP_INT;
-                    bool      op1Is64Bit = (varTypeIsLong(op1Type) || op1Type == TYP_REF);
-                    bool      op2Is64Bit = (varTypeIsLong(op2Type) || op2Type == TYP_REF);
-                    NYI_IF(op1Is64Bit || op2Is64Bit, "Long compare");
-                    assert(!op1->isUsedFromMemory() || op1Type == op2Type);
-                    assert(!op2->isUsedFromMemory() || op1Type == op2Type);
-                    cmpAttr = emitTypeSize(cmpType);
-                }
-                emit->emitInsBinary(ins, cmpAttr, op1, op2);
-            }
-
-            // Are we evaluating this into a register?
-            if (targetReg != REG_NA)
-            {
-                genSetRegToCond(targetReg, tree);
-                genProduceReg(tree);
-            }
-        }
-        break;
+            genCodeForCompare(treeNode->AsOp());
+            break;
 
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode);
@@ -1543,6 +1475,86 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
 
     genProduceReg(lea);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    // TODO-ARM-CQ: Check if we can use the currently set flags.
+    // TODO-ARM-CQ: Check for the case where we can simply transfer the carry bit to a register
+    //         (signed < or >= where targetReg != REG_NA)
+
+    GenTreePtr op1 = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr op2 = tree->gtOp2->gtEffectiveVal();
+
+    if (varTypeIsLong(op1))
+    {
+#ifdef DEBUG
+        // The result of an unlowered long compare on a 32-bit target must either be
+        // a) materialized into a register, or
+        // b) unused.
+        //
+        // A long compare that has a result that is used but not materialized into a register should
+        // have been handled by Lowering::LowerCompare.
+
+        LIR::Use use;
+        assert((tree->gtRegNum != REG_NA) || !LIR::AsRange(compiler->compCurBB).TryGetUse(tree, &use));
+#endif
+        genCompareLong(tree);
+    }
+    else
+    {
+        regNumber targetReg = tree->gtRegNum;
+        emitter* emit = getEmitter();
+        emitAttr cmpAttr;
+
+        genConsumeIfReg(op1);
+        genConsumeIfReg(op2);
+
+        if (varTypeIsFloating(op1))
+        {
+            assert(op1->TypeGet() == op2->TypeGet());
+            instruction ins = INS_vcmp;
+            cmpAttr = emitTypeSize(op1->TypeGet());
+            emit->emitInsBinary(ins, cmpAttr, op1, op2);
+            // vmrs with register 0xf has special meaning of transferring flags
+            emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
+        }
+        else
+        {
+            var_types op1Type = op1->TypeGet();
+            var_types op2Type = op2->TypeGet();
+            assert(!varTypeIsFloating(op2Type));
+            instruction ins = INS_cmp;
+            if (op1Type == op2Type)
+            {
+                cmpAttr = emitTypeSize(op1Type);
+            }
+            else
+            {
+                var_types cmpType    = TYP_INT;
+                bool      op1Is64Bit = (varTypeIsLong(op1Type) || op1Type == TYP_REF);
+                bool      op2Is64Bit = (varTypeIsLong(op2Type) || op2Type == TYP_REF);
+                NYI_IF(op1Is64Bit || op2Is64Bit, "Long compare");
+                assert(!op1->isUsedFromMemory() || op1Type == op2Type);
+                assert(!op2->isUsedFromMemory() || op1Type == op2Type);
+                cmpAttr = emitTypeSize(cmpType);
+            }
+            emit->emitInsBinary(ins, cmpAttr, op1, op2);
+        }
+
+        // Are we evaluating this into a register?
+        if (targetReg != REG_NA)
+        {
+            genSetRegToCond(targetReg, tree);
+            genProduceReg(tree);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
