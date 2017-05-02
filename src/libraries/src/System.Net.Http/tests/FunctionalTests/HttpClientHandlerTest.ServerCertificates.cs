@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16805")]
-    public class HttpClientHandler_ServerCertificates_Test
+    public partial class HttpClientHandler_ServerCertificates_Test
     {
         [OuterLoop] // TODO: Issue #11345
         [Fact]
@@ -188,32 +188,8 @@ namespace System.Net.Http.Functional.Tests
             }
             catch (HttpRequestException)
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!ShouldSuppressRevocationException)
                     throw;
-
-                // If a run on a clean macOS ever fails we need to consider that "false"
-                // for CheckCertificateRevocationList is actually "use a system default" now,
-                // and may require changing how this option is exposed. Considering the variety of
-                // systems this should probably be complex like
-                // enum RevocationCheckingOption {
-                //     // Use it if able
-                //     BestPlatformSecurity = 0,
-                //     // Don't use it, if that's an option.
-                //     BestPlatformPerformance,
-                //     // Required
-                //     MustCheck,
-                //     // Prohibited
-                //     MustNotCheck,
-                // }
-
-                switch (CurlSslVersionDescription())
-                {
-                    case "SecureTransport":
-                        // Suppress the exception, making the test pass.
-                        break;
-                    default:
-                        throw;
-                }
             }
         }
 
@@ -336,31 +312,5 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
-        internal static bool BackendSupportsCustomCertificateHandling
-        {
-            get
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return true;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    return false;
-                }
-
-                // For other Unix-based systems it's true if (and only if) the openssl backend
-                // is used with libcurl.
-                return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
-            }
-        }
-
-        private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
-        private static extern string CurlSslVersionDescription();
-
     }
 }

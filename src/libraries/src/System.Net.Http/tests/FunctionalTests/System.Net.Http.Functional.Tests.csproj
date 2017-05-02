@@ -70,7 +70,11 @@
     <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
+    <Compile Include="HttpClientHandlerTest.ServerCertificates.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
+    <Compile Include="HttpClientHandlerTest.ServerCertificates.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
+    <Compile Include="HttpClientHandlerTest.SslProtocols.Unix.cs" Condition="'$(TargetsUnix)' == 'true'"/>
+    <Compile Include="HttpClientHandlerTest.SslProtocols.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
