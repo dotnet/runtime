@@ -118,11 +118,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 //    working_dir
 //      The directory where the search for global.json (which can
 //      control the resolved SDK version) starts and proceeds
-//      upwards. This directory may also be searched for SDKs if
-//      multi-level lookup has not been disabled by the user's
-//      environment. This mimics the current working directory's
-//      interpretation when the dotnet exectuable resolves the SDK
-//      for CLI commands.
+//      upwards. 
 //
 //    buffer
 //      The buffer where the resolved SDK path will be written.
