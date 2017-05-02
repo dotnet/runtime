@@ -17,7 +17,7 @@ set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
 
 if("$ENV{__CrossToolChainTargetRID}" MATCHES "tizen.*")
-    set(TIZEN_TOOLCHAIN "armv7l-tizen-linux-gnueabi/4.9.2")
+    set(TIZEN_TOOLCHAIN "armv7l-tizen-linux-gnueabi/6.2.1")
     include_directories(${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/)
     include_directories(${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/armv7l-tizen-linux-gnueabi)
     add_compile_options(-Wno-deprecated-declarations) # compile-time option
