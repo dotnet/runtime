@@ -85,6 +85,33 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
+        public async Task OverlappingFlushAsync_DuringReadAsync()
+        {
+            byte[] buffer = new byte[32];
+            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
+            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, StripHeaders))
+            using (var unzip = CreateStream(readStream, CompressionMode.Decompress, true))
+            {
+                Task task = null;
+                try
+                {
+                    readStream.manualResetEvent.Reset();
+                    readStream.ReadHit = false;
+                    task = ReadAsync(unzip, buffer, 0, 32);
+                    Assert.True(readStream.ReadHit);
+                    Assert.Throws<InvalidOperationException>(() => { unzip.FlushAsync(); }); // "overlapping read"
+                }
+                finally
+                {
+                    // Unblock Async operations
+                    readStream.manualResetEvent.Set();
+                    // The original ReadAsync should be able to complete
+                    Assert.True(task.Wait(100 * 500));
+                }
+            }
+        }
+
+        [Fact]
         public async Task OverlappingWriteAsync()
         {
             byte[] buffer = null;
@@ -101,7 +128,6 @@ namespace System.IO.Compression.Tests
                 try
                 {
                     task = WriteAsync(zip, buffer, 0, buffer.Length);    // write needs to be bigger than the internal write buffer
-                    Assert.True(writeStream.WriteHit);
                     Assert.Throws<InvalidOperationException>(() => { zip.WriteAsync(buffer, 32, 32); }); // "overlapping write"
                 }
                 finally
@@ -110,12 +136,12 @@ namespace System.IO.Compression.Tests
                     writeStream.manualResetEvent.Set();
                     // The original WriteAsync should be able to complete
                     Assert.True(task.Wait(100 * 500));
+                    Assert.True(writeStream.WriteHit);
                 }
             }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task OverlappingReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -127,7 +153,6 @@ namespace System.IO.Compression.Tests
                 try
                 {
                     task = ReadAsync(unzip, buffer, 0, 32);
-                    Assert.True(readStream.ReadHit);
                     Assert.Throws<InvalidOperationException>(() => { ReadAsync(unzip, buffer, 0, 32); }); // "overlapping read"
                 }
                 finally
@@ -136,31 +161,7 @@ namespace System.IO.Compression.Tests
                     readStream.manualResetEvent.Set();
                     // The original ReadAsync should be able to complete
                     Assert.True(task.Wait(100 * 500));
-                }
-            }
-        }
-
-        [Fact]
-        public async Task OverlappingFlushAsync_DuringReadAsync()
-        {
-            byte[] buffer = new byte[32];
-            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
-            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, StripHeaders))
-            using (var unzip = CreateStream(readStream, CompressionMode.Decompress, true))
-            {
-                Task task = null;
-                try
-                {
-                    task = ReadAsync(unzip, buffer, 0, 32);
                     Assert.True(readStream.ReadHit);
-                    Assert.Throws<InvalidOperationException>(() => { unzip.FlushAsync(); }); // "overlapping read"
-                }
-                finally
-                {
-                    // Unblock Async operations
-                    readStream.manualResetEvent.Set();
-                    // The original ReadAsync should be able to complete
-                    Assert.True(task.Wait(100 * 500));
                 }
             }
         }
