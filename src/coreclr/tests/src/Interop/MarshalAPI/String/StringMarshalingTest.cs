@@ -52,6 +52,39 @@ public class StringMarshalingTest
         }
     }
 
+    private unsafe void SecureStringToBSTRToString()
+    {
+        foreach (String ts in TestStrings)
+        {
+            SecureString secureString = new SecureString();
+            foreach (char character in ts)
+            {
+                secureString.AppendChar(character);
+            }
+
+            IntPtr BStr = IntPtr.Zero;
+            String str;
+
+            try
+            {
+                BStr = Marshal.SecureStringToBSTR(secureString);
+                str = Marshal.PtrToStringBSTR(BStr);
+            }
+            finally
+            {
+                if (BStr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeBSTR(BStr);
+                }
+            }
+
+            if (!str.Equals(ts))
+            {
+                throw new Exception();
+            }
+        }
+    }
+
     private void StringToCoTaskMemAnsiToString()
     {
         foreach (String ts in TestStrings)
@@ -201,6 +234,7 @@ public class StringMarshalingTest
     public  bool RunTests()
     {
         StringToBStrToString();
+        SecureStringToBSTRToString();
         StringToCoTaskMemAnsiToString();
         StringToCoTaskMemUniToString();
         StringToHGlobalAnsiToString();

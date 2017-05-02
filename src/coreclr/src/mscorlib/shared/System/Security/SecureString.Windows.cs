@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32;
@@ -157,11 +158,7 @@ namespace System.Security
                 _buffer.AcquirePointer(ref bufferPtr);
                 int resultByteLength = (length + 1) * sizeof(char);
 
-                ptr = Interop.OleAut32.SysAllocStringLen(null, length);
-                if (ptr == IntPtr.Zero)
-                {
-                    throw new OutOfMemoryException();
-                }
+                ptr = PInvokeMarshal.AllocBSTR(length);
 
                 Buffer.MemoryCopy(bufferPtr, (byte*)ptr, resultByteLength, length * sizeof(char));
 
@@ -174,8 +171,8 @@ namespace System.Security
                 // If we failed for any reason, free the new buffer
                 if (result == IntPtr.Zero && ptr != IntPtr.Zero)
                 {
-                    Interop.NtDll.ZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
-                    Interop.OleAut32.SysFreeString(ptr);
+                    RuntimeImports.RhZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
+                    PInvokeMarshal.FreeBSTR(ptr);
                 }
 
                 if (bufferPtr != null)
@@ -223,7 +220,7 @@ namespace System.Security
                 // If we failed for any reason, free the new buffer
                 if (result == IntPtr.Zero && ptr != IntPtr.Zero)
                 {
-                    Interop.NtDll.ZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
+                    RuntimeImports.RhZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
                     MarshalFree(ptr, globalAlloc);
                 }
 
