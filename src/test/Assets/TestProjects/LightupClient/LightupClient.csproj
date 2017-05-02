@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>LightupClient</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>LightupClient</PackageId>
+    <RuntimeFrameworkVersion>2.0.0-*</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+</Project>

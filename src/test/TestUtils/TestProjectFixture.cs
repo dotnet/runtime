@@ -282,7 +282,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             var restoreArgs = new List<string>();
             foreach (var fallbackSource in fallbackSources)
             {
-                restoreArgs.Add("-f");
+                restoreArgs.Add("--source");
                 restoreArgs.Add(fallbackSource);
             }
             restoreArgs.Add("--disable-parallel");
@@ -310,6 +310,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
+            throw new NotImplementedException("This routine should be deleted and replaced.");
             var sourceProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json.template");
             var targetProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json");
 
