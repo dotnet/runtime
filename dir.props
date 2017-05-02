@@ -111,6 +111,8 @@
     <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)Bin\**\project.json" />
     
     <_ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json" Exclude="@(_DnuExcludeProjectJsonFiles)" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\deps\project.json" />
     <DnuRestoreDirs Include="@(_ProjectJsonFiles->'%(RootDir)%(Directory)')">
       <AdditionalArgs>%(AdditionalArgs) --disable-parallel</AdditionalArgs>
     </DnuRestoreDirs>
