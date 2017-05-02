@@ -13,6 +13,8 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
+    
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(NuGetRuntimeIdentifier)</PackageTargetRuntime>
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
   </PropertyGroup>
@@ -81,15 +83,20 @@
       <Platform>$(Platform)</Platform>
     </BuildRID>
   </ItemGroup>
+  
+  <PropertyGroup>
+    <_projectExtension Condition="Exists('$(MSBuildProjectName).pkgproj')">.pkgproj</_projectExtension>
+    <_projectExtension Condition="'$(_projectExtension)' == '' AND Exists('$(MSBuildProjectName).depproj')">.depproj</_projectExtension>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">x64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);NuGetRuntimeIdentifier=%(Identity);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
-    <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
+    <Project Include="@(_project->'$(MSBuildProjectName)$(_projectExtension)')" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
