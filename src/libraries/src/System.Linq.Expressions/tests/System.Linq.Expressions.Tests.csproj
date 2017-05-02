@@ -56,7 +56,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
-    <Compile Include="DebugViewTests.cs" />
     <Compile Include="Array\ArrayAccessTests.cs" />
     <Compile Include="Array\ArrayArrayIndexTests.cs" />
     <Compile Include="Array\ArrayArrayLengthTests.cs" />
@@ -119,7 +118,6 @@
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="DebugInfo\DebugInfoExpressionTests.cs" />
     <Compile Include="DebugInfo\SymbolDocumentInfoTests.cs" />
-    <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Default\DefaultTests.cs" />
     <Compile Include="DelegateType\ActionTypeTests.cs" />
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
@@ -288,6 +286,12 @@
     <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
     <Compile Include="ILReader\LocalsSignatureParser.cs" />
     <Compile Include="ILReader\SigParser.cs" />
+  </ItemGroup>
+  <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
+       The proper way to test these is via the debugger expression evaluator, not Reflection. -->
+  <ItemGroup  Condition="'$(TargetGroup)'!='uapaot'">
+    <Compile Include="DebugViewTests.cs" />
+    <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="xunit.execution.dotnet" />
