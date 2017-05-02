@@ -218,7 +218,8 @@ interp_ex_handler (MonoException *ex) {
 	if (context == NULL)
 		return;
 	stack_trace = dump_frame (context->current_frame);
-	ex->stack_trace = mono_string_new (mono_domain_get(), stack_trace);
+	ex->stack_trace = mono_string_new_checked (mono_domain_get(), stack_trace, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	g_free (stack_trace);
 	if (context->current_env == NULL || strcmp(ex->object.vtable->klass->name, "ExecutionEngineException") == 0) {
 		char *strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
@@ -561,9 +562,11 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 static void
 fill_in_trace (MonoException *exception, MonoInvocation *frame)
 {
+	MonoError error;
 	char *stack_trace = dump_frame (frame);
 	MonoDomain *domain = mono_domain_get();
-	(exception)->stack_trace = mono_string_new (domain, stack_trace);
+	(exception)->stack_trace = mono_string_new_checked (domain, stack_trace, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	(exception)->trace_ips = get_trace_ips (domain, frame);
 	g_free (stack_trace);
 }
@@ -5120,8 +5123,10 @@ interp_ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	if (need_file_info) {
 		if (column)
 			*column = 0;
-		if (file)
-			*file = mono_string_new (mono_domain_get (), "unknown");
+		if (file) {
+			*file = mono_string_new_checked (mono_domain_get (), "unknown", &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		}
 	}
 
 	return TRUE;
@@ -5168,7 +5173,11 @@ interp_ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_fi
 			
 			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
 
-			sf->filename = filename? mono_string_new (domain, filename): NULL;
+			sf->filename = NULL;
+			if (filename) {
+				sf->filename = mono_string_new_checked (domain, filename, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			}
 			sf->column = 0;
 
 			g_free (filename);
