@@ -277,15 +277,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
-        public TestProjectFixture RestoreProject(string[] fallbackSources)
+        public TestProjectFixture RestoreProject(string[] fallbackSources, string extraMSBuildProperties = null)
         {
             var restoreArgs = new List<string>();
             foreach (var fallbackSource in fallbackSources)
             {
-                restoreArgs.Add("--source");
-                restoreArgs.Add(fallbackSource);
+                //restoreArgs.Add("--source");
+                //restoreArgs.Add(fallbackSource);
             }
             restoreArgs.Add("--disable-parallel");
+
+            if (extraMSBuildProperties != null)
+            {
+                restoreArgs.Add(extraMSBuildProperties);
+            }
 
             _sdkDotnet.Restore(restoreArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
@@ -310,16 +315,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            throw new NotImplementedException("This routine should be deleted and replaced.");
-            var sourceProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json.template");
-            var targetProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json");
-
-            // apply RID to template
-            File.WriteAllText(targetProjectJson, File.ReadAllText(sourceProjectJson).Replace("{RID}", rid));
-
             if ( ! _testProject.IsRestored())
             {
-                RestoreProject(fallbackSources);
+                string extraMSBuildProperties = $"/p:RuntimeIdentifiers={rid} /p:RuntimeIdentifier={rid}";
+                RestoreProject(fallbackSources, extraMSBuildProperties);
             }
 
             return this;

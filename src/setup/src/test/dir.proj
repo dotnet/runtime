@@ -4,12 +4,9 @@
   <UsingTask TaskName="GetHostInformation" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <PropertyGroup>
-    <DotnetTestToolCommand>$(DotnetSdkToolCommand)</DotnetTestToolCommand>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <BuildTestTargets>
         DetermineTestOutputDirectory;
+        InitBaseDotnetCli;
         RestoreTests;
         BuildTests;
         RunTests;
@@ -29,9 +26,25 @@
     </PropertyGroup>
   </Target>
 
+  <!-- We need a version of the Cli that we can plug the host / shared framework into for testing. -->
+  <Target Name="InitBaseDotnetCli"
+          DependsOnTargets="DetermineTestOutputDirectory">
+    <PropertyGroup>
+      <TestToolsLocalPath Condition="'$(TestToolsLocalPath)' == ''">$(TestsOutputDir)Tools</TestToolsLocalPath>
+      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet.exe</DotnetTestToolCommand>
+      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet</DotnetTestToolCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SeedCliCopyFiles Include="$(DotnetSdkPath)/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SeedCliCopyFiles)"
+          DestinationFiles="@(SeedCliCopyFiles->'$(TestToolsLocalPath)/dotnetcli/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+
   <Target Name="RestoreTests">
     <ItemGroup>
-      <!--<RestoreTest Include="$(TestDir)/**/project.json" />-->
       <RestoreTest Include="$(TestDir)/**/*.csproj" />
     </ItemGroup>
 
@@ -52,13 +65,10 @@
       <RestoreSourceArg>@(RestoreTestSource->'--source %(Identity)', ' ')</RestoreSourceArg>
       <RestoreSourceArg>$(RestoreSourceArg) @(RestoreTestFallbackSource->'--source %(Identity)', ' ')</RestoreSourceArg>
       <RestoreArgs>--disable-parallel --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(RestoreSourceArg)</RestoreArgs>
+      <RestoreArgs>$(RestoreArgs) /p:MNAVersion=$(ProductVersion) /p:TestTargetRid=$(TestTargetRid)</RestoreArgs>
     </PropertyGroup>
 
-    <!--
-    <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs)"
-          WorkingDirectory="%(RestoreTest.RootDir)%(RestoreTest.Directory)" 
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
-    -->
+    <Message Importance="high" Text="Microsoft.NETCore.App Version: $(ProductVersion)" />
     <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>

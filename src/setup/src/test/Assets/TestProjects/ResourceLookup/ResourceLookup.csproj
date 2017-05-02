@@ -5,7 +5,7 @@
     <AssemblyName>ResourceLookup</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>ResourceLookup</PackageId>
-    <RuntimeFrameworkVersion>2.0.0-preview2-*</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
