@@ -13,6 +13,7 @@
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
     <!-- Set the project.json directory for generated TestWrappers. -->
     <TestWrappersPackagesConfigFileDirectory>$(MSBuildThisFileDirectory)TestWrappersConfig\</TestWrappersPackagesConfigFileDirectory>
+    <AssemblyKey>Test</AssemblyKey>
   </PropertyGroup>
 
   <!-- Expose the target OS in a more convenient fashion -->
@@ -75,16 +76,22 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
+  <!-- Don't reference the mscorlib facade -->
+  <PropertyGroup>
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+  </PropertyGroup>
+
   <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
   <PropertyGroup>
     <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
   </PropertyGroup>
   
   <PropertyGroup>
-    <ProjectJson>$(SourceDir)Common\test_dependencies\project.json</ProjectJson>
-    <ProjectLockJson>$(SourceDir)Common\test_dependencies\project.lock.json</ProjectLockJson>
+    <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
+    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 </Project>
