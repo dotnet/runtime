@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref unusualExponentParameters, ref exported);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void ImportExport1032()
         {
             RSAParameters imported = TestData.RSA1032Parameters;
