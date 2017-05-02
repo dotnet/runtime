@@ -282,10 +282,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             var restoreArgs = new List<string>();
             foreach (var fallbackSource in fallbackSources)
             {
-                //restoreArgs.Add("--source");
-                //restoreArgs.Add(fallbackSource);
+                restoreArgs.Add("--source");
+                restoreArgs.Add(fallbackSource);
             }
             restoreArgs.Add("--disable-parallel");
+
+            restoreArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
 
             if (extraMSBuildProperties != null)
             {
