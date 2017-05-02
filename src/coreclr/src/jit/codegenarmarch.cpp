@@ -95,7 +95,7 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
 //
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
-    assert(treeNode->OperGet() == GT_PUTARG_STK);
+    assert(treeNode->OperIs(GT_PUTARG_STK));
     var_types  targetType = treeNode->TypeGet();
     GenTreePtr source     = treeNode->gtOp1;
     emitter*   emit       = getEmitter();
@@ -537,12 +537,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 //
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
-    assert(tree->OperGet() == GT_PUTARG_STK);
+    assert(tree->OperIs(GT_PUTARG_REG));
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-    assert(targetType !=
-           TYP_STRUCT); // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
+    // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
+    assert(targetType != TYP_STRUCT);
 
     // We have a normal non-Struct targetType
 
