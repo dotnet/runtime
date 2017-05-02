@@ -154,6 +154,13 @@ namespace System.Security.Cryptography.EcDsa.Tests
                     KeySize = 160,
                     CurveType = ECCurve.ECCurveType.PrimeShortWeierstrass,
                 };
+                yield return new CurveDef
+                {
+                    Curve = ECDsaTestData.GetNistP256ExplicitCurve(),
+                    KeySize = 256,
+                    CurveType = ECCurve.ECCurveType.PrimeShortWeierstrass,
+                    DisplayName = "NIST P-256",
+                };
             }
         }
 
