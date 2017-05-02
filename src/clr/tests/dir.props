@@ -36,7 +36,7 @@
   <!-- Common properties -->
   <PropertyGroup>
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\bin\</RootBinDir>
   </PropertyGroup>
 
 <!-- Default Test platform to deploy the netstandard compiled tests to -->
@@ -91,7 +91,7 @@
   
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
+    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\**\*.csproj&quot;" />
   </ItemGroup>
   
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -104,9 +104,8 @@
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>    
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
 
-    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
+    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
   </PropertyGroup>
