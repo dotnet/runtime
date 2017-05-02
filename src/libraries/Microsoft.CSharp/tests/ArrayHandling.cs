@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
     public class ArrayHandling
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "No size array not supported")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
         public void SingleRankNonSZArray()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
@@ -35,11 +35,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multi-dimensional array not supported")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
         public void MultiDimArrayTypeNames()
         {
             dynamic d = new int[3, 2, 1];
-            ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
             Assert.Contains("int[,,]", ex.Message);
 
             d = Array.CreateInstance(typeof(int), new[] { 3, 2, 1 }, new[] { -2, 2, -0 });
@@ -48,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multi-dimensional array not supported")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
         public void IncorrectNumberOfIndices()
         {
             dynamic d = new int[2, 2, 2];
