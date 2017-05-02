@@ -7968,13 +7968,19 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_APPDOMAIN_CREATE_STRING: {
 		char *s;
 		MonoString *o;
+		MonoError error;
 
 		domain = decode_domainid (p, &p, end, NULL, &err);
 		if (err != ERR_NONE)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new (domain, s);
+		o = mono_string_new_checked (domain, s, &error);
+		if (!is_ok (&error)) {
+			DEBUG_PRINTF (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+			return ERR_INVALID_OBJECT;
+		}
 		buffer_add_objid (buf, (MonoObject*)o);
 		break;
 	}
@@ -10141,7 +10147,9 @@ debugger_thread (void *arg)
 	debugger_thread_id = mono_native_thread_id_get ();
 
 	MonoInternalThread *internal = mono_thread_internal_current ();
-	mono_thread_set_name_internal (internal, mono_string_new (mono_domain_get (), "Debugger agent"), TRUE, FALSE, &error);
+	MonoString *str = mono_string_new_checked (mono_domain_get (), "Debugger agent", &error);
+	mono_error_assert_ok (&error);
+	mono_thread_set_name_internal (internal, str, TRUE, FALSE, &error);
 	mono_error_assert_ok (&error);
 
 	internal->state |= ThreadState_Background;
