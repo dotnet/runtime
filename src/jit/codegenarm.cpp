@@ -1221,8 +1221,8 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
 
-    regNumber targetReg  = tree->gtRegNum;
-    instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+    regNumber   targetReg = tree->gtRegNum;
+    instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
@@ -1333,8 +1333,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         assert(!isRegCandidate);
-        getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum,
-                          tree->gtLclNum, 0);
+        getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum, tree->gtLclNum, 0);
         genProduceReg(tree);
     }
 }
@@ -1519,8 +1518,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     else
     {
         regNumber targetReg = tree->gtRegNum;
-        emitter* emit = getEmitter();
-        emitAttr cmpAttr;
+        emitter*  emit      = getEmitter();
+        emitAttr  cmpAttr;
 
         genConsumeIfReg(op1);
         genConsumeIfReg(op2);
@@ -1529,7 +1528,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         {
             assert(op1->TypeGet() == op2->TypeGet());
             instruction ins = INS_vcmp;
-            cmpAttr = emitTypeSize(op1->TypeGet());
+            cmpAttr         = emitTypeSize(op1->TypeGet());
             emit->emitInsBinary(ins, cmpAttr, op1, op2);
             // vmrs with register 0xf has special meaning of transferring flags
             emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
