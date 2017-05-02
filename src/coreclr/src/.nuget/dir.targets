@@ -32,10 +32,10 @@
 
     <ItemGroup Condition="'$(HasCrossTargetComponents)'=='true'">
       <NativeWithSymbolFile Include="@(CrossArchitectureSpecificNativeFileAndSymbol)">
-        <TargetPath>runtimes/$(CrossTargetComponentFolder)_$(PackagePlatform)/native</TargetPath>
+        <TargetPath>runtimes/$(CrossTargetComponentFolder)_$(Platform)/native</TargetPath>
       </NativeWithSymbolFile>
       <NativeWithSymbolFile Include="@(CrossArchitectureSpecificToolFile)">
-        <TargetPath>tools/$(CrossTargetComponentFolder)_$(PackagePlatform)</TargetPath>
+        <TargetPath>tools/$(CrossTargetComponentFolder)_$(Platform)</TargetPath>
       </NativeWithSymbolFile>
     </ItemGroup>
 
