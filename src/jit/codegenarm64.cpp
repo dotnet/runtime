@@ -2452,57 +2452,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_SWAP:
-        {
-            // Swap is only supported for lclVar operands that are enregistered
-            // We do not consume or produce any registers.  Both operands remain enregistered.
-            // However, the gc-ness may change.
-            assert(genIsRegCandidateLocal(treeNode->gtOp.gtOp1) && genIsRegCandidateLocal(treeNode->gtOp.gtOp2));
-
-            GenTreeLclVarCommon* lcl1    = treeNode->gtOp.gtOp1->AsLclVarCommon();
-            LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->gtLclNum]);
-            var_types            type1   = varDsc1->TypeGet();
-            GenTreeLclVarCommon* lcl2    = treeNode->gtOp.gtOp2->AsLclVarCommon();
-            LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->gtLclNum]);
-            var_types            type2   = varDsc2->TypeGet();
-
-            // We must have both int or both fp regs
-            assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
-
-            // FP swap is not yet implemented (and should have NYI'd in LSRA)
-            assert(!varTypeIsFloating(type1));
-
-            regNumber oldOp1Reg     = lcl1->gtRegNum;
-            regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
-            regNumber oldOp2Reg     = lcl2->gtRegNum;
-            regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
-
-            // We don't call genUpdateVarReg because we don't have a tree node with the new register.
-            varDsc1->lvRegNum = oldOp2Reg;
-            varDsc2->lvRegNum = oldOp1Reg;
-
-            // Do the xchg
-            emitAttr size = EA_PTRSIZE;
-            if (varTypeGCtype(type1) != varTypeGCtype(type2))
-            {
-                // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
-                // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
-                size = EA_GCREF;
-            }
-
-            NYI("register swap");
-            // inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);
-
-            // Update the gcInfo.
-            // Manually remove these regs for the gc sets (mostly to avoid confusing duplicative dump output)
-            gcInfo.gcRegByrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
-            gcInfo.gcRegGCrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
-
-            // gcMarkRegPtrVal will do the appropriate thing for non-gc types.
-            // It will also dump the updates.
-            gcInfo.gcMarkRegPtrVal(oldOp2Reg, type1);
-            gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
-        }
-        break;
+            genCodeForSwap(treeNode->AsOp());
+            break;
 
         case GT_LIST:
         case GT_FIELD_LIST:
@@ -4126,6 +4077,63 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForSwap: Produce code for a GT_SWAP node.
+//
+// Arguments:
+//    tree - the GT_SWAP node
+//
+void CodeGen::genCodeForSwap(GenTreeOp* tree)
+{
+    // Swap is only supported for lclVar operands that are enregistered
+    // We do not consume or produce any registers.  Both operands remain enregistered.
+    // However, the gc-ness may change.
+    assert(genIsRegCandidateLocal(tree->gtOp1) && genIsRegCandidateLocal(tree->gtOp2));
+
+    GenTreeLclVarCommon* lcl1    = tree->gtOp1->AsLclVarCommon();
+    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->gtLclNum]);
+    var_types            type1   = varDsc1->TypeGet();
+    GenTreeLclVarCommon* lcl2    = tree->gtOp2->AsLclVarCommon();
+    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->gtLclNum]);
+    var_types            type2   = varDsc2->TypeGet();
+
+    // We must have both int or both fp regs
+    assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
+
+    // FP swap is not yet implemented (and should have NYI'd in LSRA)
+    assert(!varTypeIsFloating(type1));
+
+    regNumber oldOp1Reg     = lcl1->gtRegNum;
+    regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
+    regNumber oldOp2Reg     = lcl2->gtRegNum;
+    regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
+
+    // We don't call genUpdateVarReg because we don't have a tree node with the new register.
+    varDsc1->lvRegNum = oldOp2Reg;
+    varDsc2->lvRegNum = oldOp1Reg;
+
+    // Do the xchg
+    emitAttr size = EA_PTRSIZE;
+    if (varTypeGCtype(type1) != varTypeGCtype(type2))
+    {
+        // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
+        // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
+        size = EA_GCREF;
+    }
+
+    NYI("register swap");
+    // inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);
+
+    // Update the gcInfo.
+    // Manually remove these regs for the gc sets (mostly to avoid confusing duplicative dump output)
+    gcInfo.gcRegByrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
+    gcInfo.gcRegGCrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
+
+    // gcMarkRegPtrVal will do the appropriate thing for non-gc types.
+    // It will also dump the updates.
+    gcInfo.gcMarkRegPtrVal(oldOp2Reg, type1);
+    gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
+}
 
 //-------------------------------------------------------------------------------------------
 // genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value

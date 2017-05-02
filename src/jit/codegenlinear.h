@@ -178,6 +178,8 @@ void genCodeForReturnTrap(GenTreeOp* tree);
 
 void genCodeForStoreInd(GenTreeStoreInd* tree);
 
+void genCodeForSwap(GenTreeOp* tree);
+
 void genCodeForCpObj(GenTreeObj* cpObjNode);
 
 void genCodeForCpBlk(GenTreeBlk* cpBlkNode);

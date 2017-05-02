@@ -699,9 +699,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_CMPXCHG:
-        {
             NYI("GT_CMPXCHG");
-        }
             genProduceReg(treeNode);
             break;
 
