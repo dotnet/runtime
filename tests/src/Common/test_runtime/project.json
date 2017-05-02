@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25301-02",
+    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25302-01",
     "Microsoft.DotNet.CoreCLR.TestDependencies": "1.0.0-prerelease",
     "jit-dasm": "0.0.1.4",
     "cijobs": "0.0.1.2",
