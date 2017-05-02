@@ -652,6 +652,8 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 					mono_error_set_out_of_memory (error_out, "Could not allocate assembly name");
 					break;
 				}
+			} else {
+				assembly_name = mono_string_empty (domain);
 			}
 
 			exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", "TypeLoadException", type_name, assembly_name, error_out);
