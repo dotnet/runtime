@@ -140,7 +140,6 @@ namespace System.Net.Sockets
                     WSABuffers[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffer.Array, buffer.Offset);
                 }
 
-                // This may throw ObjectDisposedException.
                 unsafe
                 {
                     SocketError errorCode = Interop.Winsock.WSASend(
@@ -269,7 +268,6 @@ namespace System.Net.Sockets
                     WSABuffers[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffer.Array, buffer.Offset);
                 }
 
-                // This can throw ObjectDisposedException.
                 unsafe
                 {
                     SocketError errorCode = Interop.Winsock.WSARecv(
@@ -828,16 +826,16 @@ namespace System.Net.Sockets
             asyncResult.SetUnmanagedStructures(buffer, offset, count, null);
             try
             {
-                // This can throw ObjectDisposedException.
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSASend(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     ref asyncResult._singleBuffer,
                     1, // There is only ever 1 buffer being sent.
                     out bytesTransferred,
                     socketFlags,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }
@@ -854,16 +852,16 @@ namespace System.Net.Sockets
             asyncResult.SetUnmanagedStructures(buffers);
             try
             {
-                // This can throw ObjectDisposedException.
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSASend(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     asyncResult._wsaBuffers,
                     asyncResult._wsaBuffers.Length,
                     out bytesTransferred,
                     socketFlags,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }
@@ -937,7 +935,7 @@ namespace System.Net.Sockets
             {
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSASendTo(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     ref asyncResult._singleBuffer,
                     1, // There is only ever 1 buffer being sent.
                     out bytesTransferred,
@@ -946,6 +944,7 @@ namespace System.Net.Sockets
                     asyncResult.SocketAddress.Size,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }
@@ -962,16 +961,16 @@ namespace System.Net.Sockets
             asyncResult.SetUnmanagedStructures(buffer, offset, count, null);
             try
             {
-                // This can throw ObjectDisposedException.
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSARecv(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     ref asyncResult._singleBuffer,
                     1,
                     out bytesTransferred,
                     ref socketFlags,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }
@@ -988,16 +987,16 @@ namespace System.Net.Sockets
             asyncResult.SetUnmanagedStructures(buffers);
             try
             {
-                // This can throw ObjectDisposedException.
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSARecv(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     asyncResult._wsaBuffers,
                     asyncResult._wsaBuffers.Length,
                     out bytesTransferred,
                     ref socketFlags,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }
@@ -1016,7 +1015,7 @@ namespace System.Net.Sockets
             {
                 int bytesTransferred;
                 SocketError errorCode = Interop.Winsock.WSARecvFrom(
-                    handle,
+                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                     ref asyncResult._singleBuffer,
                     1,
                     out bytesTransferred,
@@ -1025,6 +1024,7 @@ namespace System.Net.Sockets
                     asyncResult.GetSocketAddressSizePtr(),
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
+                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
             }

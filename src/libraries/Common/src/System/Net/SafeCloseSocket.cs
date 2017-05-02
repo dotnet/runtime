@@ -141,18 +141,15 @@ namespace System.Net.Sockets
 
             _released = true;
             InnerSafeCloseSocket innerSocket = _innerSocket == null ? null : Interlocked.Exchange<InnerSafeCloseSocket>(ref _innerSocket, null);
-            if (innerSocket != null)
-            {
+
 #if DEBUG
-                // On AppDomain unload we may still have pending Overlapped operations.
-                // ThreadPoolBoundHandle should handle this scenario by canceling them.
-                innerSocket.LogRemainingOperations();
+            // On AppDomain unload we may still have pending Overlapped operations.
+            // ThreadPoolBoundHandle should handle this scenario by canceling them.
+            innerSocket?.LogRemainingOperations();
 #endif
 
-                innerSocket.DangerousRelease();
-            }
-
             InnerReleaseHandle();
+            innerSocket?.DangerousRelease();
 
             return true;
         }
