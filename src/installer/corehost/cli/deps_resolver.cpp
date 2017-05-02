@@ -592,12 +592,6 @@ bool deps_resolver_t::resolve_probe_dirs(
             return report_missing_assembly_in_manifest(entry);
         }
 
-        if (m_api_set_paths.empty() && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.App"), false))
-        {
-            m_api_set_paths.insert(action(candidate));
-        }
-
         return true;
     };
 
