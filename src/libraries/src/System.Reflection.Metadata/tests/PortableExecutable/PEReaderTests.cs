@@ -505,7 +505,7 @@ namespace System.Reflection.PortableExecutable.Tests
             var ddBuilder = new DebugDirectoryBuilder();
             ddBuilder.AddCodeViewEntry(@"/a/b/a.pdb", id, portablePdbVersion: 0);
             ddBuilder.AddReproducibleEntry();
-            ddBuilder.AddCodeViewEntry(@"/a/b/c.pdb", id, portablePdbVersion: 0x0100);
+            ddBuilder.AddCodeViewEntry(@"/a/b/c.pdb", id, portablePdbVersion: 0x0100, age: 0x1234);
             ddBuilder.AddCodeViewEntry(@"/a/b/d.pdb", id, portablePdbVersion: 0x0100);
 
             var peStream = new MemoryStream(TestBuilders.BuildPEWithDebugDirectory(ddBuilder));

@@ -52,9 +52,34 @@ namespace System.Reflection.PortableExecutable
             BlobContentId pdbContentId,
             ushort portablePdbVersion)
         {
+            AddCodeViewEntry(pdbPath, pdbContentId, portablePdbVersion, age: 1);
+        }
+
+        /// <summary>
+        /// Adds a CodeView entry.
+        /// </summary>
+        /// <param name="pdbPath">Path to the PDB. Shall not be empty.</param>
+        /// <param name="pdbContentId">Unique id of the PDB content.</param>
+        /// <param name="portablePdbVersion">Version of Portable PDB format (e.g. 0x0100 for 1.0), or 0 if the PDB is not portable.</param>
+        /// <param name="age">Age (iteration) of the PDB. Shall be 1 for Portable PDBs.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pdbPath"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pdbPath"/> contains NUL character.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="age"/> is less than 1.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="portablePdbVersion"/> is smaller than 0x0100.</exception>
+        internal void AddCodeViewEntry(
+            string pdbPath,
+            BlobContentId pdbContentId,
+            ushort portablePdbVersion,
+            int age)
+        {
             if (pdbPath == null)
             {
                 Throw.ArgumentNull(nameof(pdbPath));
+            }
+
+            if (age < 1)
+            {
+                Throw.ArgumentOutOfRange(nameof(age));
             }
 
             // We allow NUL characters to allow for padding for backward compat purposes.
@@ -68,7 +93,7 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentOutOfRange(nameof(portablePdbVersion));
             }
 
-            int dataSize = WriteCodeViewData(_dataBuilder, pdbPath, pdbContentId.Guid);
+            int dataSize = WriteCodeViewData(_dataBuilder, pdbPath, pdbContentId.Guid, age);
             
             AddEntry(
                 type: DebugDirectoryEntryType.CodeView,
@@ -85,7 +110,7 @@ namespace System.Reflection.PortableExecutable
             AddEntry(type: DebugDirectoryEntryType.Reproducible, version: 0, stamp: 0);
         }
 
-        private static int WriteCodeViewData(BlobBuilder builder, string pdbPath, Guid pdbGuid)
+        private static int WriteCodeViewData(BlobBuilder builder, string pdbPath, Guid pdbGuid, int age)
         {
             int start = builder.Count;
 
@@ -98,7 +123,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteGuid(pdbGuid);
 
             // age
-            builder.WriteUInt32(1);
+            builder.WriteInt32(age);
 
             // UTF-8 encoded zero-terminated path to PDB
             int pathStart = builder.Count;

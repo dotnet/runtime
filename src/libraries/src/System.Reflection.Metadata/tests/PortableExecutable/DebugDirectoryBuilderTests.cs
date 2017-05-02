@@ -32,7 +32,11 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("", default(BlobContentId), 0x0100));
             Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("\0", default(BlobContentId), 0x0100));
             Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("\0xx", default(BlobContentId), 0x0100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, 0));
             builder.AddCodeViewEntry("foo\0", default(BlobContentId), 0x0100);
+            builder.AddCodeViewEntry("baz\0", default(BlobContentId), 0x0100, int.MaxValue);
             Assert.Throws<ArgumentNullException>(() => builder.AddCodeViewEntry(null, default(BlobContentId), 0x0100));
             builder.AddCodeViewEntry("foo", default(BlobContentId), 0);
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("foo", default(BlobContentId), 0x0001));
@@ -99,7 +103,7 @@ namespace System.Reflection.PortableExecutable.Tests
         {
             var b = new DebugDirectoryBuilder();
             var id = new BlobContentId(new Guid("3C88E66E-E0B9-4508-9290-11E0DB51A1C5"), 0x12345678);
-            b.AddCodeViewEntry("foo.pdb" + new string('\0', 260 - "foo.pdb".Length - 1), id, 0xABCD);
+            b.AddCodeViewEntry("foo.pdb" + new string('\0', 260 - "foo.pdb".Length - 1), id, 0xABCD, 0x99);
 
             var blob = new BlobBuilder();
             b.Serialize(blob, new SectionLocation(0x1000, 0x2000), 0x50);
@@ -117,7 +121,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 // data
                 (byte)'R', (byte)'S', (byte)'D', (byte)'S',
                 0x6E, 0xE6, 0x88, 0x3C, 0xB9, 0xE0, 0x08, 0x45, 0x92, 0x90, 0x11, 0xE0, 0xDB, 0x51, 0xA1, 0xC5, // GUID
-                0x01, 0x00, 0x00, 0x00, // age
+                0x99, 0x00, 0x00, 0x00, // age
                 (byte)'f', (byte)'o', (byte)'o', (byte)'.', (byte)'p', (byte)'d', (byte)'b', 0x00, // path
                 // path padding:
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
