@@ -7,21 +7,9 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
-
-    <!-- Cannot figure out why dotnet-test-xunit.dll doesn't run.
-    <Compile Include="GivenThatICareAboutDotnetTestXunitScenarios.cs" /> -->
-
-    <Compile Include="GivenThatICareAboutLightupAppActivation.cs" />
-    <!-- These test cases seem to add global state which corrupts other test cases. -->
-<!--
-    <Compile Include="GivenThatICareAboutMultilevelSDKLookup.cs" />
-    <Compile Include="GivenThatICareAboutMultilevelSharedFxLookup.cs" />
-  -->
-
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
   </ItemGroup>
 

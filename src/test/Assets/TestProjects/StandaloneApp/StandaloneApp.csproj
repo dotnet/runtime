@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>StandaloneApp</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>StandaloneApp</PackageId>
+    <RuntimeIdentifiers>$(TestTargetRid)</RuntimeIdentifiers>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+  </ItemGroup>
+
+</Project>

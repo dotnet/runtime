@@ -5,10 +5,7 @@ namespace StandaloneTestApp
 {
     public class Program
     {
-        public static void Main()
-        {
-            Console.WriteLine("Dummy Entrypoint");
-        }
+        // SDK generates an entry point method automatically now, with no opt-out mechanism.
 
         [Fact]
         public void PassingTest()

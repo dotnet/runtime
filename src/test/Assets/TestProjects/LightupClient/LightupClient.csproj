@@ -5,7 +5,7 @@
     <AssemblyName>LightupClient</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>LightupClient</PackageId>
-    <RuntimeFrameworkVersion>2.0.0-*</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
 </Project>
