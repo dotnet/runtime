@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.ComputeSignature();
 
             Assert.Null(signedXml.SigningKeyName);
-            Assert.Equal(SignedXml.XmlDsigRSASHA256Url, signedXml.SignatureMethod);
+            Assert.Equal("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", signedXml.SignatureMethod);
             Assert.Equal(key.KeySize / 8, signedXml.SignatureValue.Length);
             Assert.Null(signedXml.SigningKeyName);
 

@@ -754,7 +754,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static AsymmetricAlgorithm GetAnyPublicKey(X509Certificate2 certificate)
         {
-            return (AsymmetricAlgorithm)certificate.GetRSAPublicKey() ?? certificate.GetDSAPublicKey();
+            return (AsymmetricAlgorithm)certificate.GetRSAPublicKey();
         }
     }
 }
