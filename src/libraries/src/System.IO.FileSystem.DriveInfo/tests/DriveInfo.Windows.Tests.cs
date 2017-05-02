@@ -154,22 +154,35 @@ namespace System.IO.FileSystem.DriveInfoTests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetVolumeLabel_Returns_CorrectLabel()
         {
-            int serialNumber, maxFileNameLen, fileSystemFlags;
-            int volNameLen = 50;
-            int fileNameLen = 50;
-            StringBuilder volumeName = new StringBuilder(volNameLen);
-            StringBuilder fileSystemName = new StringBuilder(fileNameLen);
+            void DoDriveCheck()
+            {
+                // Get Volume Label - valid drive
+                int serialNumber, maxFileNameLen, fileSystemFlags;
+                int volNameLen = 50;
+                int fileNameLen = 50;
+                StringBuilder volumeName = new StringBuilder(volNameLen);
+                StringBuilder fileSystemName = new StringBuilder(fileNameLen);
 
-            // Get Volume Label - valid drive
-            var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
-            bool r = GetVolumeInformation(validDrive.Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileNameLen);
-            if (r)
+                DriveInfo validDrive = DriveInfo.GetDrives().First(d => d.DriveType == DriveType.Fixed);
+                bool volumeInformationSuccess = GetVolumeInformation(validDrive.Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileNameLen);
+
+                if (volumeInformationSuccess)
+                {
+                    Assert.Equal(volumeName.ToString(), validDrive.VolumeLabel);
+                }
+                else // if we can't compare the volumeName, we should at least check that getting it doesn't throw
+                {
+                    var name = validDrive.VolumeLabel;
+                }
+            };
+            
+            if (PlatformDetection.IsWinRT)
             {
-                Assert.Equal(volumeName.ToString(), validDrive.VolumeLabel);
+                Assert.Throws<UnauthorizedAccessException>(() => DoDriveCheck());
             }
-            else // if we can't compare the volumeName, we should at least check that getting it doesn't throw
+            else 
             {
-                var name = validDrive.VolumeLabel;
+                DoDriveCheck();
             }
         }
 
