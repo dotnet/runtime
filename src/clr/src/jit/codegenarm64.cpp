@@ -2897,8 +2897,8 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
 
-    regNumber targetReg  = tree->gtRegNum;
-    instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+    regNumber   targetReg = tree->gtRegNum;
+    instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
@@ -4319,8 +4319,8 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
 //
 void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
-    regNumber targetReg  = tree->gtRegNum;
-    emitter*  emit       = getEmitter();
+    regNumber targetReg = tree->gtRegNum;
+    emitter*  emit      = getEmitter();
 
     // TODO-ARM64-CQ: Check if we can use the currently set flags.
     // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
