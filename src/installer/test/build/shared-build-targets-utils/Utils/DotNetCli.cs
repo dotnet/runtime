@@ -96,7 +96,7 @@ namespace Microsoft.DotNet.Cli.Build
             GreatestVersionSharedFxPath = sharedFxVersionDirectories
                 .OrderByDescending(p => p.ToLower())
                 .First();
- 
+
             var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory); 
             GreatestVersionHostFxrPath = hostFxrVersionDirectories 
                 .OrderByDescending(p => p.ToLower()) 

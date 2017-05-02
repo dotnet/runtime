@@ -46,10 +46,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
 
-            _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID+".Debug", "Tools", "dotnetcli");
+            _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Debug", "Tools", "dotnetcli");
             if (!Directory.Exists(_dotnetSDK))
             {
-                _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID+".Release", "Tools", "dotnetcli");
+                _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Release", "Tools", "dotnetcli");
             }
             if (!Directory.Exists(_dotnetSDK))
             {
@@ -64,7 +64,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, "packages");
 
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
-
             _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Debug", "sharedFrameworkPublish");
             if(!Directory.Exists(_builtDotnet))
                 _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Release", "sharedFrameworkPublish");

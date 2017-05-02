@@ -5,7 +5,7 @@
     <AssemblyName>SharedFxLookupPortableApp</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>SharedFxLookupPortableApp</PackageId>
-    <RuntimeFrameworkVersion>2.0.0-*</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
