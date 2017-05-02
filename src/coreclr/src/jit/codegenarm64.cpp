@@ -1541,6 +1541,177 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForLclVar: Produce code for a GT_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_LCL_VAR node
+//
+void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
+{
+    var_types targetType = tree->TypeGet();
+    emitter*  emit       = getEmitter();
+
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+    LclVarDsc* varDsc         = &(compiler->lvaTable[varNum]);
+    bool       isRegCandidate = varDsc->lvIsRegCandidate();
+
+    // lcl_vars are not defs
+    assert((tree->gtFlags & GTF_VAR_DEF) == 0);
+
+    if (isRegCandidate && !(tree->gtFlags & GTF_VAR_DEATH))
+    {
+        assert((tree->InReg()) || (tree->gtFlags & GTF_SPILLED));
+    }
+
+    // If this is a register candidate that has been spilled, genConsumeReg() will
+    // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
+
+    if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
+    {
+        assert(!isRegCandidate);
+
+        // targetType must be a normal scalar type and not a TYP_STRUCT
+        assert(targetType != TYP_STRUCT);
+
+        instruction ins  = ins_Load(targetType);
+        emitAttr    attr = emitTypeSize(targetType);
+
+        attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+
+        emit->emitIns_R_S(ins, attr, tree->gtRegNum, varNum, 0);
+        genProduceReg(tree);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclFld: Produce code for a GT_STORE_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_FLD node
+//
+void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+    noway_assert(targetType != TYP_STRUCT);
+
+    // record the offset
+    unsigned offset = tree->gtLclOffs;
+
+    // We must have a stack store with GT_STORE_LCL_FLD
+    noway_assert(!tree->InReg());
+    noway_assert(targetReg == REG_NA);
+
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+
+    // Ensure that lclVar nodes are typed correctly.
+    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+    genConsumeRegs(data);
+
+    regNumber dataReg = REG_NA;
+    if (data->isContainedIntOrIImmed())
+    {
+        assert(data->IsIntegralConst(0));
+        dataReg = REG_ZR;
+    }
+    else
+    {
+        assert(!data->isContained());
+        dataReg = data->gtRegNum;
+    }
+    assert(dataReg != REG_NA);
+
+    instruction ins = ins_Store(targetType);
+
+    emitAttr attr = emitTypeSize(targetType);
+
+    attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+
+    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+
+    genUpdateLife(tree);
+
+    varDsc->lvRegNum = REG_STK;
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+
+    // Ensure that lclVar nodes are typed correctly.
+    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+
+    // var = call, where call returns a multi-reg return value
+    // case is handled separately.
+    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    {
+        genMultiRegCallStoreToLocal(tree);
+    }
+    else
+    {
+        genConsumeRegs(data);
+
+        regNumber dataReg = REG_NA;
+        if (data->isContainedIntOrIImmed())
+        {
+            assert(data->IsIntegralConst(0));
+            dataReg = REG_ZR;
+        }
+        else
+        {
+            assert(!data->isContained());
+            dataReg = data->gtRegNum;
+        }
+        assert(dataReg != REG_NA);
+
+        if (targetReg == REG_NA) // store into stack based LclVar
+        {
+            inst_set_SV_var(tree);
+
+            instruction ins  = ins_Store(targetType);
+            emitAttr    attr = emitTypeSize(targetType);
+
+            attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+
+            genUpdateLife(tree);
+
+            varDsc->lvRegNum = REG_STK;
+        }
+        else // store into register (i.e move into register)
+        {
+            if (dataReg != targetReg)
+            {
+                // Assign into targetReg when dataReg (from op1) is not the same register
+                inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
+            }
+            genProduceReg(tree);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
 //
 // Arguments:
@@ -1911,27 +2082,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_NOT:
-            assert(!varTypeIsFloating(targetType));
-
-            __fallthrough;
-
         case GT_NEG:
-        {
-            instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
-
-            // The arithmetic node must be sitting in a register (since it's not contained)
-            assert(!treeNode->isContained());
-            // The dst can only be a register.
-            assert(targetReg != REG_NA);
-
-            GenTreePtr operand = treeNode->gtGetOp1();
-            assert(!operand->isContained());
-            // The src must be a register.
-            regNumber operandReg = genConsumeReg(operand);
-
-            getEmitter()->emitIns_R_R(ins, emitTypeSize(treeNode), targetReg, operandReg);
-        }
-            genProduceReg(treeNode);
+            genCodeForNegNot(treeNode);
             break;
 
         case GT_DIV:
@@ -2094,194 +2246,20 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LCL_FLD:
-        {
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-            assert(varNode->gtLclNum < compiler->lvaCount);
-            unsigned   varNum = varNode->gtLclNum;
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-            if (targetType == TYP_STRUCT)
-            {
-                NYI("GT_LCL_FLD with TYP_STRUCT");
-            }
-            emitAttr size = emitTypeSize(targetType);
-
-            noway_assert(targetType != TYP_STRUCT);
-            noway_assert(targetReg != REG_NA);
-
-            unsigned offset = treeNode->gtLclFld.gtLclOffs;
-
-            if (varTypeIsFloating(targetType))
-            {
-                if (treeNode->InReg())
-                {
-                    NYI("GT_LCL_FLD with register to register Floating point move");
-                }
-                else
-                {
-                    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offset);
-                }
-            }
-            else
-            {
-                size = EA_SET_SIZE(size, EA_8BYTE);
-                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offset);
-            }
-            genProduceReg(treeNode);
-        }
-        break;
+            genCodeForLclFld(treeNode->AsLclFld());
+            break;
 
         case GT_LCL_VAR:
-        {
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-
-            unsigned varNum = varNode->gtLclNum;
-            assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc         = &(compiler->lvaTable[varNum]);
-            bool       isRegCandidate = varDsc->lvIsRegCandidate();
-
-            // lcl_vars are not defs
-            assert((treeNode->gtFlags & GTF_VAR_DEF) == 0);
-
-            if (isRegCandidate && !(treeNode->gtFlags & GTF_VAR_DEATH))
-            {
-                assert((treeNode->InReg()) || (treeNode->gtFlags & GTF_SPILLED));
-            }
-
-            // If this is a register candidate that has been spilled, genConsumeReg() will
-            // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
-
-            if (!treeNode->InReg() && !(treeNode->gtFlags & GTF_SPILLED))
-            {
-                assert(!isRegCandidate);
-
-                // targetType must be a normal scalar type and not a TYP_STRUCT
-                assert(targetType != TYP_STRUCT);
-
-                instruction ins  = ins_Load(targetType);
-                emitAttr    attr = emitTypeSize(targetType);
-
-                attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
-
-                emit->emitIns_R_S(ins, attr, targetReg, varNum, 0);
-                genProduceReg(treeNode);
-            }
-        }
-        break;
+            genCodeForLclVar(treeNode->AsLclVar());
+            break;
 
         case GT_STORE_LCL_FLD:
-        {
-            noway_assert(targetType != TYP_STRUCT);
-
-            // record the offset
-            unsigned offset = treeNode->gtLclFld.gtLclOffs;
-
-            // We must have a stack store with GT_STORE_LCL_FLD
-            noway_assert(!treeNode->InReg());
-            noway_assert(targetReg == REG_NA);
-
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-            unsigned             varNum  = varNode->gtLclNum;
-            assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-            // Ensure that lclVar nodes are typed correctly.
-            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
-            GenTreePtr data = treeNode->gtOp.gtOp1->gtEffectiveVal();
-            genConsumeRegs(data);
-
-            regNumber dataReg = REG_NA;
-            if (data->isContainedIntOrIImmed())
-            {
-                assert(data->IsIntegralConst(0));
-                dataReg = REG_ZR;
-            }
-            else
-            {
-                assert(!data->isContained());
-                dataReg = data->gtRegNum;
-            }
-            assert(dataReg != REG_NA);
-
-            instruction ins = ins_Store(targetType);
-
-            emitAttr attr = emitTypeSize(targetType);
-
-            attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
-
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
-
-            genUpdateLife(varNode);
-
-            varDsc->lvRegNum = REG_STK;
-        }
-        break;
+            genCodeForStoreLclFld(treeNode->AsLclFld());
+            break;
 
         case GT_STORE_LCL_VAR:
-        {
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-
-            unsigned varNum = varNode->gtLclNum;
-            assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-            unsigned   offset = 0;
-
-            // Ensure that lclVar nodes are typed correctly.
-            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
-            GenTreePtr data = treeNode->gtOp.gtOp1->gtEffectiveVal();
-
-            // var = call, where call returns a multi-reg return value
-            // case is handled separately.
-            if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
-            {
-                genMultiRegCallStoreToLocal(treeNode);
-            }
-            else
-            {
-                genConsumeRegs(data);
-
-                regNumber dataReg = REG_NA;
-                if (data->isContainedIntOrIImmed())
-                {
-                    assert(data->IsIntegralConst(0));
-                    dataReg = REG_ZR;
-                }
-                else
-                {
-                    assert(!data->isContained());
-                    dataReg = data->gtRegNum;
-                }
-                assert(dataReg != REG_NA);
-
-                if (targetReg == REG_NA) // store into stack based LclVar
-                {
-                    inst_set_SV_var(varNode);
-
-                    instruction ins  = ins_Store(targetType);
-                    emitAttr    attr = emitTypeSize(targetType);
-
-                    attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
-
-                    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
-
-                    genUpdateLife(varNode);
-
-                    varDsc->lvRegNum = REG_STK;
-                }
-                else // store into register (i.e move into register)
-                {
-                    if (dataReg != targetReg)
-                    {
-                        // Assign into targetReg when dataReg (from op1) is not the same register
-                        inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
-                    }
-                    genProduceReg(treeNode);
-                }
-            }
-        }
-        break;
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
 
         case GT_RETFILT:
             // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in
@@ -2300,14 +2278,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LEA:
-        {
             // if we are here, it is the case where there is an LEA that cannot
             // be folded into a parent instruction
-            GenTreeAddrMode* lea = treeNode->AsAddrMode();
-            genLeaInstruction(lea);
-        }
-        // genLeaInstruction calls genProduceReg()
-        break;
+            genLeaInstruction(treeNode->AsAddrMode());
+            break;
 
         case GT_IND:
             genConsumeAddress(treeNode->AsIndir()->Addr());
@@ -2348,265 +2322,28 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        {
-            // TODO-ARM64-CQ: Check if we can use the currently set flags.
-            // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
-            //         (signed < or >= where targetReg != REG_NA)
-
-            GenTreeOp* tree    = treeNode->AsOp();
-            GenTreePtr op1     = tree->gtOp1;
-            GenTreePtr op2     = tree->gtOp2;
-            var_types  op1Type = op1->TypeGet();
-            var_types  op2Type = op2->TypeGet();
-
-            assert(!op1->isUsedFromMemory());
-            assert(!op2->isUsedFromMemory());
-
-            genConsumeOperands(tree);
-
-            emitAttr cmpSize = EA_UNKNOWN;
-
-            if (varTypeIsFloating(op1Type))
-            {
-                assert(varTypeIsFloating(op2Type));
-                assert(!op1->isContained());
-                assert(op1Type == op2Type);
-                cmpSize = EA_ATTR(genTypeSize(op1Type));
-
-                if (op2->IsIntegralConst(0))
-                {
-                    emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
-                }
-                else
-                {
-                    assert(!op2->isContained());
-                    emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
-                }
-            }
-            else
-            {
-                assert(!varTypeIsFloating(op2Type));
-                // We don't support swapping op1 and op2 to generate cmp reg, imm
-                assert(!op1->isContainedIntOrIImmed());
-
-                // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
-                // extended as part of the instruction (using "CMP (extended register)").
-                // We should use that if possible, swapping operands
-                // (and reversing the condition) if necessary.
-                unsigned op1Size = genTypeSize(op1Type);
-                unsigned op2Size = genTypeSize(op2Type);
-
-                if ((op1Size < 4) || (op1Size < op2Size))
-                {
-                    // We need to sign/zero extend op1 up to 32 or 64 bits.
-                    instruction ins = ins_Move_Extend(op1Type, true);
-                    inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-                }
-
-                if (!op2->isContainedIntOrIImmed())
-                {
-                    if ((op2Size < 4) || (op2Size < op1Size))
-                    {
-                        // We need to sign/zero extend op2 up to 32 or 64 bits.
-                        instruction ins = ins_Move_Extend(op2Type, true);
-                        inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
-                    }
-                }
-                cmpSize = EA_4BYTE;
-                if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
-                {
-                    cmpSize = EA_8BYTE;
-                }
-
-                if (op2->isContainedIntOrIImmed())
-                {
-                    GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-                    emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
-                }
-                else
-                {
-                    emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
-                }
-            }
-
-            // Are we evaluating this into a register?
-            if (targetReg != REG_NA)
-            {
-                genSetRegToCond(targetReg, tree);
-                genProduceReg(tree);
-            }
-        }
-        break;
+            genCodeForCompare(treeNode->AsOp());
+            break;
 
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode);
             break;
 
         case GT_RETURNTRAP:
-        {
-            // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
-            // based on the contents of 'data'
-
-            GenTree* data = treeNode->gtOp.gtOp1;
-            genConsumeRegs(data);
-            emit->emitIns_R_I(INS_cmp, EA_4BYTE, data->gtRegNum, 0);
-
-            BasicBlock* skipLabel = genCreateTempLabel();
-
-            emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
-            inst_JMP(jmpEqual, skipLabel);
-            // emit the call to the EE-helper that stops for GC (or other reasons)
-
-            genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
-            genDefineTempLabel(skipLabel);
-        }
-        break;
+            genCodeForReturnTrap(treeNode->AsOp());
+            break;
 
         case GT_STOREIND:
-        {
-            GenTree*                 data             = treeNode->gtOp.gtOp2;
-            GenTree*                 addr             = treeNode->gtOp.gtOp1;
-            GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
-            if (writeBarrierForm != GCInfo::WBF_NoBarrier)
-            {
-                // data and addr must be in registers.
-                // Consume both registers so that any copies of interfering
-                // registers are taken care of.
-                genConsumeOperands(treeNode->AsOp());
-
-#if NOGC_WRITE_BARRIERS
-                // At this point, we should not have any interference.
-                // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
-                //  as that is where 'addr' must go.
-                noway_assert(data->gtRegNum != REG_WRITE_BARRIER_DST_BYREF);
-
-                // 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
-                if (addr->gtRegNum != REG_WRITE_BARRIER_DST_BYREF)
-                {
-                    inst_RV_RV(INS_mov, REG_WRITE_BARRIER_DST_BYREF, addr->gtRegNum, addr->TypeGet());
-                }
-
-                // 'data'  goes into x15 (REG_WRITE_BARRIER)
-                if (data->gtRegNum != REG_WRITE_BARRIER)
-                {
-                    inst_RV_RV(INS_mov, REG_WRITE_BARRIER, data->gtRegNum, data->TypeGet());
-                }
-#else
-                // At this point, we should not have any interference.
-                // That is, 'data' must not be in REG_ARG_0,
-                //  as that is where 'addr' must go.
-                noway_assert(data->gtRegNum != REG_ARG_0);
-
-                // addr goes in REG_ARG_0
-                if (addr->gtRegNum != REG_ARG_0)
-                {
-                    inst_RV_RV(INS_mov, REG_ARG_0, addr->gtRegNum, addr->TypeGet());
-                }
-
-                // data goes in REG_ARG_1
-                if (data->gtRegNum != REG_ARG_1)
-                {
-                    inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
-                }
-#endif // NOGC_WRITE_BARRIERS
-
-                genGCWriteBarrier(treeNode, writeBarrierForm);
-            }
-            else // A normal store, not a WriteBarrier store
-            {
-                bool     reverseOps  = ((treeNode->gtFlags & GTF_REVERSE_OPS) != 0);
-                bool     dataIsUnary = false;
-                GenTree* nonRMWsrc   = nullptr;
-                // We must consume the operands in the proper execution order,
-                // so that liveness is updated appropriately.
-                if (!reverseOps)
-                {
-                    genConsumeAddress(addr);
-                }
-
-                if (!data->isContained())
-                {
-                    genConsumeRegs(data);
-                }
-
-                if (reverseOps)
-                {
-                    genConsumeAddress(addr);
-                }
-
-                regNumber dataReg = REG_NA;
-                if (data->isContainedIntOrIImmed())
-                {
-                    assert(data->IsIntegralConst(0));
-                    dataReg = REG_ZR;
-                }
-                else // data is not contained, so evaluate it into a register
-                {
-                    assert(!data->isContained());
-                    dataReg = data->gtRegNum;
-                }
-
-                emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(treeNode), dataReg, treeNode->AsIndir());
-            }
-        }
-        break;
+            genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
 
         case GT_COPY:
             // This is handled at the time we call genConsumeReg() on the GT_COPY
             break;
 
         case GT_SWAP:
-        {
-            // Swap is only supported for lclVar operands that are enregistered
-            // We do not consume or produce any registers.  Both operands remain enregistered.
-            // However, the gc-ness may change.
-            assert(genIsRegCandidateLocal(treeNode->gtOp.gtOp1) && genIsRegCandidateLocal(treeNode->gtOp.gtOp2));
-
-            GenTreeLclVarCommon* lcl1    = treeNode->gtOp.gtOp1->AsLclVarCommon();
-            LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->gtLclNum]);
-            var_types            type1   = varDsc1->TypeGet();
-            GenTreeLclVarCommon* lcl2    = treeNode->gtOp.gtOp2->AsLclVarCommon();
-            LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->gtLclNum]);
-            var_types            type2   = varDsc2->TypeGet();
-
-            // We must have both int or both fp regs
-            assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
-
-            // FP swap is not yet implemented (and should have NYI'd in LSRA)
-            assert(!varTypeIsFloating(type1));
-
-            regNumber oldOp1Reg     = lcl1->gtRegNum;
-            regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
-            regNumber oldOp2Reg     = lcl2->gtRegNum;
-            regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
-
-            // We don't call genUpdateVarReg because we don't have a tree node with the new register.
-            varDsc1->lvRegNum = oldOp2Reg;
-            varDsc2->lvRegNum = oldOp1Reg;
-
-            // Do the xchg
-            emitAttr size = EA_PTRSIZE;
-            if (varTypeGCtype(type1) != varTypeGCtype(type2))
-            {
-                // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
-                // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
-                size = EA_GCREF;
-            }
-
-            NYI("register swap");
-            // inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);
-
-            // Update the gcInfo.
-            // Manually remove these regs for the gc sets (mostly to avoid confusing duplicative dump output)
-            gcInfo.gcRegByrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
-            gcInfo.gcRegGCrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
-
-            // gcMarkRegPtrVal will do the appropriate thing for non-gc types.
-            // It will also dump the updates.
-            gcInfo.gcMarkRegPtrVal(oldOp2Reg, type1);
-            gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
-        }
-        break;
+            genCodeForSwap(treeNode->AsOp());
+            break;
 
         case GT_LIST:
         case GT_FIELD_LIST:
@@ -2619,19 +2356,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_PUTARG_REG:
-            assert(targetType != TYP_STRUCT); // Any TYP_STRUCT register args should have been removed by
-                                              // fgMorphMultiregStructArg
-            // We have a normal non-Struct targetType
-            {
-                GenTree* op1 = treeNode->gtOp.gtOp1;
-                // If child node is not already in the register we need, move it
-                genConsumeReg(op1);
-                if (targetReg != op1->gtRegNum)
-                {
-                    inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
-                }
-            }
-            genProduceReg(treeNode);
+            genPutArgReg(treeNode->AsOp());
             break;
 
         case GT_CALL:
@@ -3154,6 +2879,38 @@ BAILOUT:
         getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, targetReg, compiler->lvaReturnEspCheck, 0);
     }
 #endif
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForNegNot(GenTree* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+
+    var_types targetType = tree->TypeGet();
+
+    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
+
+    regNumber   targetReg = tree->gtRegNum;
+    instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTreePtr operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    getEmitter()->emitIns_R_R(ins, emitTypeSize(tree), targetReg, operandReg);
 
     genProduceReg(tree);
 }
@@ -4104,6 +3861,188 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     genProduceReg(lea);
 }
 
+//------------------------------------------------------------------------
+// genCodeForReturnTrap: Produce code for a GT_RETURNTRAP node.
+//
+// Arguments:
+//    tree - the GT_RETURNTRAP node
+//
+void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
+{
+    assert(tree->OperGet() == GT_RETURNTRAP);
+
+    // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
+    // based on the contents of 'data'
+
+    GenTree* data = tree->gtOp1;
+    genConsumeRegs(data);
+    getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, data->gtRegNum, 0);
+
+    BasicBlock* skipLabel = genCreateTempLabel();
+
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, skipLabel);
+    // emit the call to the EE-helper that stops for GC (or other reasons)
+
+    genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
+    genDefineTempLabel(skipLabel);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree*  data       = tree->Data();
+    GenTree*  addr       = tree->Addr();
+    var_types targetType = tree->TypeGet();
+    emitter*  emit       = getEmitter();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        // data and addr must be in registers.
+        // Consume both registers so that any copies of interfering
+        // registers are taken care of.
+        genConsumeOperands(tree);
+
+#if NOGC_WRITE_BARRIERS
+        // At this point, we should not have any interference.
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
+        //  as that is where 'addr' must go.
+        noway_assert(data->gtRegNum != REG_WRITE_BARRIER_DST_BYREF);
+
+        // 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
+        if (addr->gtRegNum != REG_WRITE_BARRIER_DST_BYREF)
+        {
+            inst_RV_RV(INS_mov, REG_WRITE_BARRIER_DST_BYREF, addr->gtRegNum, addr->TypeGet());
+        }
+
+        // 'data'  goes into x15 (REG_WRITE_BARRIER)
+        if (data->gtRegNum != REG_WRITE_BARRIER)
+        {
+            inst_RV_RV(INS_mov, REG_WRITE_BARRIER, data->gtRegNum, data->TypeGet());
+        }
+#else
+        // At this point, we should not have any interference.
+        // That is, 'data' must not be in REG_ARG_0,
+        //  as that is where 'addr' must go.
+        noway_assert(data->gtRegNum != REG_ARG_0);
+
+        // addr goes in REG_ARG_0
+        if (addr->gtRegNum != REG_ARG_0)
+        {
+            inst_RV_RV(INS_mov, REG_ARG_0, addr->gtRegNum, addr->TypeGet());
+        }
+
+        // data goes in REG_ARG_1
+        if (data->gtRegNum != REG_ARG_1)
+        {
+            inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
+        }
+#endif // NOGC_WRITE_BARRIERS
+
+        genGCWriteBarrier(tree, writeBarrierForm);
+    }
+    else // A normal store, not a WriteBarrier store
+    {
+        bool     reverseOps  = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
+        bool     dataIsUnary = false;
+        GenTree* nonRMWsrc   = nullptr;
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        if (!reverseOps)
+        {
+            genConsumeAddress(addr);
+        }
+
+        if (!data->isContained())
+        {
+            genConsumeRegs(data);
+        }
+
+        if (reverseOps)
+        {
+            genConsumeAddress(addr);
+        }
+
+        regNumber dataReg = REG_NA;
+        if (data->isContainedIntOrIImmed())
+        {
+            assert(data->IsIntegralConst(0));
+            dataReg = REG_ZR;
+        }
+        else // data is not contained, so evaluate it into a register
+        {
+            assert(!data->isContained());
+            dataReg = data->gtRegNum;
+        }
+
+        emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), dataReg, tree);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForSwap: Produce code for a GT_SWAP node.
+//
+// Arguments:
+//    tree - the GT_SWAP node
+//
+void CodeGen::genCodeForSwap(GenTreeOp* tree)
+{
+    // Swap is only supported for lclVar operands that are enregistered
+    // We do not consume or produce any registers.  Both operands remain enregistered.
+    // However, the gc-ness may change.
+    assert(genIsRegCandidateLocal(tree->gtOp1) && genIsRegCandidateLocal(tree->gtOp2));
+
+    GenTreeLclVarCommon* lcl1    = tree->gtOp1->AsLclVarCommon();
+    LclVarDsc*           varDsc1 = &(compiler->lvaTable[lcl1->gtLclNum]);
+    var_types            type1   = varDsc1->TypeGet();
+    GenTreeLclVarCommon* lcl2    = tree->gtOp2->AsLclVarCommon();
+    LclVarDsc*           varDsc2 = &(compiler->lvaTable[lcl2->gtLclNum]);
+    var_types            type2   = varDsc2->TypeGet();
+
+    // We must have both int or both fp regs
+    assert(!varTypeIsFloating(type1) || varTypeIsFloating(type2));
+
+    // FP swap is not yet implemented (and should have NYI'd in LSRA)
+    assert(!varTypeIsFloating(type1));
+
+    regNumber oldOp1Reg     = lcl1->gtRegNum;
+    regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
+    regNumber oldOp2Reg     = lcl2->gtRegNum;
+    regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
+
+    // We don't call genUpdateVarReg because we don't have a tree node with the new register.
+    varDsc1->lvRegNum = oldOp2Reg;
+    varDsc2->lvRegNum = oldOp1Reg;
+
+    // Do the xchg
+    emitAttr size = EA_PTRSIZE;
+    if (varTypeGCtype(type1) != varTypeGCtype(type2))
+    {
+        // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
+        // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
+        size = EA_GCREF;
+    }
+
+    NYI("register swap");
+    // inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);
+
+    // Update the gcInfo.
+    // Manually remove these regs for the gc sets (mostly to avoid confusing duplicative dump output)
+    gcInfo.gcRegByrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
+    gcInfo.gcRegGCrefSetCur &= ~(oldOp1RegMask | oldOp2RegMask);
+
+    // gcMarkRegPtrVal will do the appropriate thing for non-gc types.
+    // It will also dump the updates.
+    gcInfo.gcMarkRegPtrVal(oldOp2Reg, type1);
+    gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
+}
+
 //-------------------------------------------------------------------------------------------
 // genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
 //                   corresponding to a binary Relational operator result.
@@ -4368,6 +4307,104 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
         emit->emitIns_R_R(ins_Copy(targetType), emitTypeSize(treeNode), treeNode->gtRegNum, fpReg);
     }
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    regNumber targetReg = tree->gtRegNum;
+    emitter*  emit      = getEmitter();
+
+    // TODO-ARM64-CQ: Check if we can use the currently set flags.
+    // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
+    //         (signed < or >= where targetReg != REG_NA)
+
+    GenTreePtr op1     = tree->gtOp1;
+    GenTreePtr op2     = tree->gtOp2;
+    var_types  op1Type = op1->TypeGet();
+    var_types  op2Type = op2->TypeGet();
+
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+
+    genConsumeOperands(tree);
+
+    emitAttr cmpSize = EA_UNKNOWN;
+
+    if (varTypeIsFloating(op1Type))
+    {
+        assert(varTypeIsFloating(op2Type));
+        assert(!op1->isContained());
+        assert(op1Type == op2Type);
+        cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+        if (op2->IsIntegralConst(0))
+        {
+            emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
+        }
+        else
+        {
+            assert(!op2->isContained());
+            emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+        }
+    }
+    else
+    {
+        assert(!varTypeIsFloating(op2Type));
+        // We don't support swapping op1 and op2 to generate cmp reg, imm
+        assert(!op1->isContainedIntOrIImmed());
+
+        // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
+        // extended as part of the instruction (using "CMP (extended register)").
+        // We should use that if possible, swapping operands
+        // (and reversing the condition) if necessary.
+        unsigned op1Size = genTypeSize(op1Type);
+        unsigned op2Size = genTypeSize(op2Type);
+
+        if ((op1Size < 4) || (op1Size < op2Size))
+        {
+            // We need to sign/zero extend op1 up to 32 or 64 bits.
+            instruction ins = ins_Move_Extend(op1Type, true);
+            inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
+        }
+
+        if (!op2->isContainedIntOrIImmed())
+        {
+            if ((op2Size < 4) || (op2Size < op1Size))
+            {
+                // We need to sign/zero extend op2 up to 32 or 64 bits.
+                instruction ins = ins_Move_Extend(op2Type, true);
+                inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
+            }
+        }
+        cmpSize = EA_4BYTE;
+        if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
+        {
+            cmpSize = EA_8BYTE;
+        }
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+            emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
+        }
+        else
+        {
+            emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+        }
+    }
+
+    // Are we evaluating this into a register?
+    if (targetReg != REG_NA)
+    {
+        genSetRegToCond(targetReg, tree);
+        genProduceReg(tree);
+    }
 }
 
 int CodeGenInterface::genSPtoFPdelta()

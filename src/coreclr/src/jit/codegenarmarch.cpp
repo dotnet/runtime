@@ -95,7 +95,7 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
 //
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
-    assert(treeNode->OperGet() == GT_PUTARG_STK);
+    assert(treeNode->OperIs(GT_PUTARG_STK));
     var_types  targetType = treeNode->TypeGet();
     GenTreePtr source     = treeNode->gtOp1;
     emitter*   emit       = getEmitter();
@@ -455,6 +455,38 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     }
 }
 
+//---------------------------------------------------------------------
+// genPutArgReg - generate code for a GT_PUTARG_REG node
+//
+// Arguments
+//    treeNode - the GT_PUTARG_REG node
+//
+// Return value:
+//    None
+//
+void CodeGen::genPutArgReg(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_PUTARG_REG));
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+
+    // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
+    assert(targetType != TYP_STRUCT);
+
+    // We have a normal non-Struct targetType
+
+    GenTree* op1 = tree->gtOp1;
+    genConsumeReg(op1);
+
+    // If child node is not already in the register we need, move it
+    if (targetReg != op1->gtRegNum)
+    {
+        inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
+    }
+
+    genProduceReg(tree);
+}
+
 //----------------------------------------------------------------------------------
 // genMultiRegCallStoreToLocal: store multi-reg return value of a call node to a local
 //
@@ -777,6 +809,48 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
         ssize_t  shiftByImm = shiftBy->gtIntCon.gtIconVal & (immWidth - 1);
 
         getEmitter()->emitIns_R_R_I(ins, size, tree->gtRegNum, operand->gtRegNum, shiftByImm);
+    }
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
+    NYI_IF(targetReg == REG_NA, "GT_LCL_FLD: load local field not into a register is not supported");
+
+    emitAttr size   = emitTypeSize(targetType);
+    unsigned offs   = tree->gtLclOffs;
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+
+    if (varTypeIsFloating(targetType))
+    {
+        if (tree->InReg())
+        {
+            NYI("GT_LCL_FLD with register to register Floating point move");
+        }
+        else
+        {
+            emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+        }
+    }
+    else
+    {
+#ifdef _TARGET_ARM64_
+        size = EA_SET_SIZE(size, EA_8BYTE);
+#endif // _TARGET_ARM64_
+        emit->emitIns_R_S(ins_Move_Extend(targetType, tree->InReg()), size, targetReg, varNum, offs);
     }
 
     genProduceReg(tree);
