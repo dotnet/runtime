@@ -8,7 +8,7 @@
     <toolConsumerProjectName>dotnet-deb-tool-consumer.csproj</toolConsumerProjectName>
     <debianConfigJsonFileName>debian_config.json</debianConfigJsonFileName>
     <consumingProjectDirectory>$(IntermediateOutputRootPath)$(toolConsumerProjectName)</consumingProjectDirectory>
-    <debPackaginfConfigPath>$(CompressionRoot)deb/</debPackaginfConfigPath>
+    <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
     <HostFxrDebPkgName>dotnet-hostfxr-$(HostVersion)</HostFxrDebPkgName>
     <SharedFxDebPkgName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>

@@ -61,6 +61,12 @@
 
   <!-- Versioning --> 
   <PropertyGroup>
+    <!-- Dev builds get a minor version, by default, of '0'.  Our tests restore packages with
+         a -* version, and include myget sources, so any package published the same day to myget
+         will conflict with the local build and override the local built package.  Prevent this
+         by setting the non-official build minor version to 9 -->
+    <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
+
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
@@ -87,11 +93,6 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
-  <!-- Common nuget properties -->
-  <PropertyGroup>
-    <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(ToolsDir)NuGet.CommandLine/NuGet.exe</NuGetToolPath>
-  </PropertyGroup>
-
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup>
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
@@ -110,6 +111,8 @@
     <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)Bin\**\project.json" />
     
     <_ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json" Exclude="@(_DnuExcludeProjectJsonFiles)" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\deps\project.json" />
     <DnuRestoreDirs Include="@(_ProjectJsonFiles->'%(RootDir)%(Directory)')">
       <AdditionalArgs>%(AdditionalArgs) --disable-parallel</AdditionalArgs>
     </DnuRestoreDirs>
@@ -246,7 +249,8 @@
     <OSPlatformConfig>$(TargetRid).$(ConfigurationGroup)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <BaseOutputRootPath>$(BaseOutputPath)$(OSPlatformConfig)\</BaseOutputRootPath>   
+    <BaseOutputRootPath>$(BaseOutputPath)$(OSPlatformConfig)\</BaseOutputRootPath>
+    <CrossGenRootPath>$(BaseOutputRootPath)\crossgen</CrossGenRootPath>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\</OutputPath>
 
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
@@ -266,8 +270,7 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <PortableLabel Condition="'$(PortableBuild)' == 'true'">_portable</PortableLabel>
-    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)$(PortableLabel)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(TargetRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>
