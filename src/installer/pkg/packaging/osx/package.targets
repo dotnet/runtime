@@ -19,21 +19,21 @@
             <Root>$(SharedFrameworkPublishRoot)</Root>
             <Script>$(OSXScriptRoot)sharedframework/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(SharedFxComponentId).pkg</OutFile>
-            <InstallerFile>$(SharedFrameworkInstallerFile)</InstallerFile>
+            <InstallerFile>$(PackagesOutDir)$(SharedFrameworkInstallerFile)</InstallerFile>
         </OSXPackages>
         <OSXPackages Include="sharedhost">
             <Id>$(SharedHostComponentId)</Id>
             <Root>$(SharedHostPublishRoot)</Root>
             <Script>$(OSXScriptRoot)sharedhost/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(SharedHostComponentId).pkg</OutFile>
-            <InstallerFile>$(SharedHostInstallerFile)</InstallerFile>
+            <InstallerFile>$(PackagesOutDir)$(SharedHostInstallerFile)</InstallerFile>
         </OSXPackages>
         <OSXPackages Include="hostfxr">
             <Id>$(HostFxrComponentId)</Id>
             <Root>$(HostFxrPublishRoot)</Root>
             <Script>$(OSXScriptRoot)hostfxr/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(HostFxrComponentId).pkg</OutFile>
-            <InstallerFile>$(HostFxrInstallerFile)</InstallerFile>
+            <InstallerFile>$(PackagesOutDir)$(HostFxrInstallerFile)</InstallerFile>
         </OSXPackages>
     </ItemGroup>
 
@@ -50,7 +50,7 @@
     <PropertyGroup>
         <SharedFxScriptRoot>$(OSXScriptRoot)sharedframework/</SharedFxScriptRoot>
         <ResourcePath>$(SharedFxScriptRoot)resources</ResourcePath>
-        <OutFilePath>$(PackagesIntermediateDir)$(CombinedInstallerFile)</OutFilePath>
+        <OutFilePath>$(PackagesOutDir)$(CombinedInstallerFile)</OutFilePath>
         <TemplateFile>shared-framework-distribution-template.xml</TemplateFile>
         <DistributionFile>$(PackagesIntermediateDir)$(TemplateFile)</DistributionFile>
     </PropertyGroup>
