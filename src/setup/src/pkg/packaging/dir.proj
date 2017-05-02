@@ -123,18 +123,25 @@
       <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
       <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsDir)/**" />
     </ItemGroup>
-    <PropertyGroup>
-      <CombinedCompressedFiles>@(CombinedCompressedFileSet->'%(Identity)', ' ')</CombinedCompressedFiles>
-      <HostFxrCompressedFiles>@(HostFxrCompressedFileSet->'%(Identity)', ' ')</HostFxrCompressedFiles>
-      <SharedFrameworkCompressedFiles>@(SharedFrameworkCompressedFileSet->'%(Identity)', ' ')</SharedFrameworkCompressedFiles>
-      <SharedFrameworkSymbolsCompressedFiles>@(SharedFrameworkSymbolsCompressedFileSet->'%(Identity)', ' ')</SharedFrameworkSymbolsCompressedFiles>
-    </PropertyGroup>
-    <!-- We can't use the '-C' option of tar to just compressed the full contents of a directory because we end up getting a 
-         "file changed as we read it error" from tar.  Instead, pass the full file list to tar. -->
-    <Exec Command="tar -czf $(PackagesOutDir)$(CombinedCompressedFile) $(CombinedCompressedFiles)" />
-    <Exec Command="tar -czf $(PackagesOutDir)$(HostFxrCompressedFile) $(HostFxrCompressedFiles)" />
-    <Exec Command="tar -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) $(SharedFrameworkCompressedFiles)" />
-    <Exec Command="tar -czf $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile) $(SharedFrameworkSymbolsCompressedFiles)" />
+
+    <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
+         we use -C so that we get a relative folder structure which is compressed rather than the full path -->
+    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(PackagesOutDir)$(CombinedCompressedFile) ." 
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(PackagesOutDir)$(HostFxrCompressedFile) ." 
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(CombinedCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(CombinedCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(HostFxrCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
   
   <Import Project="windows\package.targets" />

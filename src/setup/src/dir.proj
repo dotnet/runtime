@@ -7,15 +7,10 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
-    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)src.builds" />
     <Project Include="$(MSBuildThisFileDirectory)pkg/dir.proj" />
-    <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)sharedFramework/sharedFramework.proj" />
   </ItemGroup>
 
   <!-- Tasks from buildtools for easy project.json dependency updates -->

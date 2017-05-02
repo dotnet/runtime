@@ -57,7 +57,7 @@
 
   <!-- Redistributed package content from other nuget packages-->
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.App.depproj">
+    <ProjectReference Include="src\Microsoft.NETCore.App.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>

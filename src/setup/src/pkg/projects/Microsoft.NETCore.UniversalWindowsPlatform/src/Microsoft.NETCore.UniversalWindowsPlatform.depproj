@@ -7,19 +7,21 @@
     <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
-    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
-    <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
+    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+    <PackageTargetFramework>uap10.1</PackageTargetFramework>
+    <PrimaryPackage>Microsoft.Private.CoreFx.UAP</PrimaryPackage>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
     <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
-         Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
+         Targets for an empty runtime.json to reduce conflicts from 1.x packages,
+         and toolset. -->
     <DependenciesToPackage Include="NETStandard.Library" />
     <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
     <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
+    <DependenciesToPackage Include="Microsoft.Net.Native.Compiler" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
@@ -28,27 +30,18 @@
     <ItemGroup  Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <_runtimeCLR Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'coreclr' OR '%(ReferenceCopyLocalPaths.FileName)' == 'libcoreclr'" />
     </ItemGroup>
-    <!-- start with all the files resolved -->
-    <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
-      <_runtimePackageId>%(_runtimeCLR.NuGetPackageId)</_runtimePackageId>
-      <_runtimePackageVersion>%(_runtimeCLR.NuGetPackageVersion)</_runtimePackageVersion>
-      <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId)/$(_runtimePackageVersion)</_runtimePackagePath>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
       <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
         <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
              calculate it by looking for native in the path -->
         <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+        <!-- We previously shipped a clrcompression on the lib folder, so we need to flag it as native in here -->
+        <IsNative Condition="'%(FileName)%(Extension)' == 'clrcompression.dll'">true</IsNative>
       </_FilesToPackage>
       <_FilesToPackage>
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
-      </_FilesToPackage>
-      <_FilesToPackage Include="$(_runtimePackagePath)/tools/*.*">
-        <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
-        <TargetPath>tools</TargetPath>
       </_FilesToPackage>
     </ItemGroup>
 
@@ -82,7 +75,12 @@
     <!-- simple check to make sure we don't accidentally pull an old 
          package that should have been merged to the primary package -->
     <ItemGroup>
-      <PermittedSystemPackages Include="System.ValueTuple" />
+      <PermittedSystemPackages Include="System.ServiceModel.Duplex" />
+      <PermittedSystemPackages Include="System.ServiceModel.Http" />
+      <PermittedSystemPackages Include="System.ServiceModel.NetTcp" />
+      <PermittedSystemPackages Include="System.ServiceModel.Primitives" />
+      <PermittedSystemPackages Include="System.ServiceModel.Security" />
+      <PermittedSystemPackages Include="System.Private.ServiceModel" />
       <_secondarySystemPackages Include="@(_secondaryFilesByPackagePath->'%(NuGetPackageId)')"
                                 Condition="$([System.String]::new('%(NuGetPackageId)').Contains('System.'))" />
       <_secondarySystemPackages Remove="@(PermittedSystemPackages)" />
