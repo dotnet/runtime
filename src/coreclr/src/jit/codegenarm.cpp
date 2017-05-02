@@ -441,32 +441,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // The per-case functions call genProduceReg()
             break;
 
-        case GT_LCL_VAR:
-        {
-            GenTreeLclVarCommon* lcl = treeNode->AsLclVarCommon();
-            // lcl_vars are not defs
-            assert((treeNode->gtFlags & GTF_VAR_DEF) == 0);
-
-            bool isRegCandidate = compiler->lvaTable[lcl->gtLclNum].lvIsRegCandidate();
-
-            if (isRegCandidate && !(treeNode->gtFlags & GTF_VAR_DEATH))
-            {
-                assert((treeNode->InReg()) || (treeNode->gtFlags & GTF_SPILLED));
-            }
-
-            // If this is a register candidate that has been spilled, genConsumeReg() will
-            // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
-
-            if (!treeNode->InReg() && !(treeNode->gtFlags & GTF_SPILLED))
-            {
-                assert(!isRegCandidate);
-                emit->emitIns_R_S(ins_Load(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode->gtRegNum,
-                                  lcl->gtLclNum, 0);
-                genProduceReg(treeNode);
-            }
-        }
-        break;
-
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
         {
@@ -485,79 +459,17 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForLclFld(treeNode->AsLclFld());
             break;
 
+        case GT_LCL_VAR:
+            genCodeForLclVar(treeNode->AsLclVar());
+            break;
+
         case GT_STORE_LCL_FLD:
             genCodeForStoreLclFld(treeNode->AsLclFld());
             break;
 
         case GT_STORE_LCL_VAR:
-        {
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-
-            unsigned varNum = varNode->gtLclNum;
-            assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-            unsigned   offset = 0;
-
-            // Ensure that lclVar nodes are typed correctly.
-            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
-            GenTreePtr data = treeNode->gtOp.gtOp1->gtEffectiveVal();
-
-            // var = call, where call returns a multi-reg return value
-            // case is handled separately.
-            if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
-            {
-                genMultiRegCallStoreToLocal(treeNode);
-                break;
-            }
-            else
-            {
-                if (treeNode->TypeGet() == TYP_LONG)
-                {
-                    genStoreLongLclVar(treeNode);
-                    break;
-                }
-
-                genConsumeRegs(data);
-
-                regNumber dataReg = REG_NA;
-                if (data->isContainedIntOrIImmed())
-                {
-                    assert(data->IsIntegralConst(0));
-                    NYI_ARM("st.lclVar contained operand");
-                }
-                else
-                {
-                    assert(!data->isContained());
-                    dataReg = data->gtRegNum;
-                }
-                assert(dataReg != REG_NA);
-
-                if (targetReg == REG_NA) // store into stack based LclVar
-                {
-                    inst_set_SV_var(varNode);
-
-                    instruction ins  = ins_Store(targetType);
-                    emitAttr    attr = emitTypeSize(targetType);
-
-                    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
-
-                    genUpdateLife(varNode);
-
-                    varDsc->lvRegNum = REG_STK;
-                }
-                else // store into register (i.e move into register)
-                {
-                    if (dataReg != targetReg)
-                    {
-                        // Assign into targetReg when dataReg (from op1) is not the same register
-                        inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
-                    }
-                    genProduceReg(treeNode);
-                }
-            }
-        }
-        break;
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
 
         case GT_RETFILT:
             // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in
@@ -1554,6 +1466,36 @@ void CodeGen::genCodeForShiftLong(GenTreePtr tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForLclVar: Produce code for a GT_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_LCL_VAR node
+//
+void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
+{
+    // lcl_vars are not defs
+    assert((tree->gtFlags & GTF_VAR_DEF) == 0);
+
+    bool isRegCandidate = compiler->lvaTable[tree->gtLclNum].lvIsRegCandidate();
+
+    if (isRegCandidate && !(tree->gtFlags & GTF_VAR_DEATH))
+    {
+        assert((tree->InReg()) || (tree->gtFlags & GTF_SPILLED));
+    }
+
+    // If this is a register candidate that has been spilled, genConsumeReg() will
+    // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
+
+    if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
+    {
+        assert(!isRegCandidate);
+        getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum,
+                          tree->gtLclNum, 0);
+        genProduceReg(tree);
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForStoreLclFld: Produce code for a GT_STORE_LCL_FLD node.
 //
 // Arguments:
@@ -1598,6 +1540,79 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     genUpdateLife(tree);
     varDsc->lvRegNum = REG_STK;
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+
+    // Ensure that lclVar nodes are typed correctly.
+    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+
+    // var = call, where call returns a multi-reg return value
+    // case is handled separately.
+    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    {
+        genMultiRegCallStoreToLocal(tree);
+    }
+    else if (tree->TypeGet() == TYP_LONG)
+    {
+        genStoreLongLclVar(tree);
+    }
+    else
+    {
+        genConsumeRegs(data);
+
+        regNumber dataReg = REG_NA;
+        if (data->isContainedIntOrIImmed())
+        {
+            assert(data->IsIntegralConst(0));
+            NYI_ARM("st.lclVar contained operand");
+        }
+        else
+        {
+            assert(!data->isContained());
+            dataReg = data->gtRegNum;
+        }
+        assert(dataReg != REG_NA);
+
+        if (targetReg == REG_NA) // store into stack based LclVar
+        {
+            inst_set_SV_var(tree);
+
+            instruction ins  = ins_Store(targetType);
+            emitAttr    attr = emitTypeSize(targetType);
+
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+
+            genUpdateLife(tree);
+
+            varDsc->lvRegNum = REG_STK;
+        }
+        else // store into register (i.e move into register)
+        {
+            if (dataReg != targetReg)
+            {
+                // Assign into targetReg when dataReg (from op1) is not the same register
+                inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
+            }
+            genProduceReg(tree);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

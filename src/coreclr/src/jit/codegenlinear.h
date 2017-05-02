@@ -166,9 +166,13 @@ void genCodeForShiftLong(GenTreePtr tree);
 void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 #endif // _TARGET_XARCH_
 
+void genCodeForLclVar(GenTreeLclVar* tree);
+
 void genCodeForLclFld(GenTreeLclFld* tree);
 
 void genCodeForStoreLclFld(GenTreeLclFld* tree);
+
+void genCodeForStoreLclVar(GenTreeLclVar* tree);
 
 void genCodeForCpObj(GenTreeObj* cpObjNode);
 
