@@ -58,6 +58,15 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
+        [Target(nameof(PrepareTargets.Init),
+        nameof(PublishTargets.InitPublish),
+        nameof(PublishTargets.PublishInstallerArtifacts))]
+        [Environment("PUBLISH_TO_AZURE_BLOB", "1", "true")] // This is set by CI systems
+        public static BuildTargetResult PublishInstallers(BuildTargetContext c)
+        {
+            return c.Success();
+        }
+
         [Target]
         [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         [BuildArchitectures(BuildArchitecture.x64)]
@@ -262,6 +271,13 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishManagedPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
         public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();
+
+        [Target(
+            nameof(PublishTargets.PublishInstallerFilesToAzure),
+            nameof(PublishTargets.PublishDotnetDebToolPackage),
+            nameof(PublishTargets.PublishDebFilesToDebianRepo),
+            nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
+        public static BuildTargetResult PublishInstallerArtifacts(BuildTargetContext c) => c.Success();
 
         [Target(
             nameof(PublishTargets.PublishSharedHostInstallerFileToAzure),
