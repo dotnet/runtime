@@ -355,34 +355,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_NOT:
-            assert(!varTypeIsFloating(targetType));
-
-            __fallthrough;
-
         case GT_NEG:
-        {
-            instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
-
-            // The arithmetic node must be sitting in a register (since it's not contained)
-            assert(!treeNode->isContained());
-            // The dst can only be a register.
-            assert(targetReg != REG_NA);
-
-            GenTreePtr operand = treeNode->gtGetOp1();
-            assert(!operand->isContained());
-            // The src must be a register.
-            regNumber operandReg = genConsumeReg(operand);
-
-            if (ins == INS_vneg)
-            {
-                getEmitter()->emitIns_R_R(ins, emitTypeSize(treeNode), targetReg, operandReg);
-            }
-            else
-            {
-                getEmitter()->emitIns_R_R_I(ins, emitTypeSize(treeNode), targetReg, operandReg, 0);
-            }
-        }
-            genProduceReg(treeNode);
+            genCodeForNegNot(treeNode);
             break;
 
         case GT_OR:
@@ -488,14 +462,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LEA:
-        {
             // if we are here, it is the case where there is an LEA that cannot
             // be folded into a parent instruction
-            GenTreeAddrMode* lea = treeNode->AsAddrMode();
-            genLeaInstruction(lea);
-        }
-        // genLeaInstruction calls genProduceReg()
-        break;
+            genLeaInstruction(treeNode->AsAddrMode());
+            break;
 
         case GT_IND:
             genConsumeAddress(treeNode->AsIndir()->Addr());
@@ -1235,6 +1205,45 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         getEmitter()->emitEnableGC();
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForNegNot(GenTree* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+
+    var_types targetType = tree->TypeGet();
+
+    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
+
+    regNumber targetReg  = tree->gtRegNum;
+    instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTreePtr operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    if (ins == INS_vneg)
+    {
+        getEmitter()->emitIns_R_R(ins, emitTypeSize(tree), targetReg, operandReg);
+    }
+    else
+    {
+        getEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), targetReg, operandReg, 0);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
