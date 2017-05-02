@@ -184,8 +184,11 @@ namespace System.Reflection.Tests
         {
             AssemblyName assemblyName = new AssemblyName(name);
 
-            string extended = $"{expectedName}, Culture=neutral, PublicKeyToken=null";
-            Assert.True(assemblyName.FullName == expectedName || assemblyName.FullName == extended);
+            expectedName = expectedName.ToLowerInvariant();
+            string extended = $"{expectedName}, Culture=neutral, PublicKeyToken=null".ToLowerInvariant();
+            string afn = assemblyName.FullName.ToLowerInvariant();
+
+            Assert.True(afn == expectedName || afn == extended, $"Expected\n{afn} == {expectedName}\nor\n{afn} == {extended}");
         }
 
         [Fact]
