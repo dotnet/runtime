@@ -45,7 +45,12 @@ void genCkfinite(GenTreePtr treeNode);
 void genIntrinsic(GenTreePtr treeNode);
 
 void genPutArgStk(GenTreePutArgStk* treeNode);
+
+void genPutArgReg(GenTreeOp* tree);
+
+#if defined(_TARGET_XARCH_)
 unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
+#endif // _TARGET_XARCH_
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 unsigned getFirstArgWithStackSlot();

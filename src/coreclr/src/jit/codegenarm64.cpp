@@ -2466,19 +2466,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_PUTARG_REG:
-            assert(targetType != TYP_STRUCT); // Any TYP_STRUCT register args should have been removed by
-                                              // fgMorphMultiregStructArg
-            // We have a normal non-Struct targetType
-            {
-                GenTree* op1 = treeNode->gtOp.gtOp1;
-                // If child node is not already in the register we need, move it
-                genConsumeReg(op1);
-                if (targetReg != op1->gtRegNum)
-                {
-                    inst_RV_RV(ins_Copy(targetType), targetReg, op1->gtRegNum, targetType);
-                }
-            }
-            genProduceReg(treeNode);
+            genPutArgReg(treeNode->AsOp());
             break;
 
         case GT_CALL:
