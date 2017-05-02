@@ -3,10 +3,10 @@
   
   <PropertyGroup Condition="'$(PortableBuild)' != 'true' and '$(PackageRID)' == ''">
     <PackageRID>$(DistroRid)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
