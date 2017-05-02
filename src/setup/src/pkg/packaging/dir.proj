@@ -160,8 +160,8 @@
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
     <ItemGroup>
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -171,7 +171,8 @@
       <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetSdkToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(BuildBasePathArg) $(OutputArg) $(ConfigArg) $(VersionSuffixArg)" />
+    <Exec Command="$(DotnetSdkToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(BuildBasePathArg) $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
+          Condition="'@(PackageProjects)' != ''" />
   </Target>
   
 </Project>
